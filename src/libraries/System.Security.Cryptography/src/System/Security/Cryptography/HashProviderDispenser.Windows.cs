@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using NTSTATUS = Interop.BCrypt.NTSTATUS;
-using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
-using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 using BCryptAlgorithmCache = Interop.BCrypt.BCryptAlgorithmCache;
+using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
+using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
+using NTSTATUS = Interop.BCrypt.NTSTATUS;
 
 namespace System.Security.Cryptography
 {
@@ -25,6 +25,52 @@ namespace System.Security.Cryptography
         public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             return new HashProviderCng(hashAlgorithmId, key, isHmac: true);
+        }
+
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                // We know that MD5, SHA1, and SHA2 are supported on all platforms. Don't bother asking.
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                case HashAlgorithmNames.CSHAKE128:
+                case HashAlgorithmNames.CSHAKE256:
+                    return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.None);
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                // We know that MD5, SHA1, and SHA2 are supported on all platforms. Don't bother asking.
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                    return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG);
+                default:
+                    return false;
+            }
         }
 
         public static class OneShotHashProvider
@@ -63,6 +109,12 @@ namespace System.Security.Cryptography
                 }
             }
 
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                Debug.Assert(Interop.BCrypt.PseudoHandlesSupported);
+                HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out _);
+            }
+
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 int hashSize; // in bytes
@@ -70,7 +122,7 @@ namespace System.Security.Cryptography
                 // Use a pseudo-handle if available.
                 if (Interop.BCrypt.PseudoHandlesSupported)
                 {
-                    HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac : false, destination, out hashSize);
+                    HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out hashSize);
                     return hashSize;
                 }
                 else
@@ -143,6 +195,37 @@ namespace System.Security.Cryptography
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA512_ALG_HANDLE;
                     digestSizeInBytes = SHA512.HashSizeInBytes;
                 }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_256)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_256_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_256_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_256.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_384)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_384_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_384_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_384.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_512)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_512_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_512_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_512.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.CSHAKE128)
+                {
+                    algHandle = Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE128_ALG_HANDLE;
+                    digestSizeInBytes = destination.Length;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.CSHAKE256)
+                {
+                    algHandle = Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE256_ALG_HANDLE;
+                    digestSizeInBytes = destination.Length;
+                }
                 else
                 {
                     Debug.Fail("Unknown hash algorithm.");
@@ -157,7 +240,7 @@ namespace System.Security.Cryptography
 
                 fixed (byte* pKey = &MemoryMarshal.GetReference(key))
                 fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
-                fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+                fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
                 {
                     NTSTATUS ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pKey, key.Length, pSrc, source.Length, pDest, digestSizeInBytes);
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+	<assembly fullname="test">
+		<type fullname="Mono.Linker.Tests.Cases.Warnings.WarningSuppression.DetectRedundantSuppressionsFromXML">
+			<type name="DetectRedundantSuppressions">
+				<method name="Test">
+					<attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+						<argument>ILLink</argument>
+						<argument>IL2026</argument>
+					</attribute>
+				</method>
+				<attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+					<argument>ILLink</argument>
+					<argument>IL2109</argument>
+				</attribute>
+			</type>
+		</type>
+	</assembly>
+</linker>

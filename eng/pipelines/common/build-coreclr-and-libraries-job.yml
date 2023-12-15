@@ -9,11 +9,11 @@ parameters:
   crossBuild: false
   timeoutInMinutes: ''
   signBinaries: false
-  stagedBuild: false
   variables: {}
   pool: ''
   platform: ''
   testBuildPlatforms: []
+  disableComponentGovernance: false
 
 jobs:
 - template: /eng/pipelines/coreclr/templates/build-job.yml
@@ -28,9 +28,9 @@ jobs:
     crossBuild: ${{ parameters.crossBuild }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
 - template: /eng/pipelines/libraries/build-job.yml
   parameters:
@@ -50,3 +50,4 @@ jobs:
     liveRuntimeBuildConfig: ${{ parameters.buildConfig }}
     platform: ${{ parameters.platform }}
     testBuildPlatforms: ${{ parameters.testBuildPlatforms }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}

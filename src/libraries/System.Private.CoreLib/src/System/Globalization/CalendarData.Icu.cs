@@ -33,6 +33,7 @@ namespace System.Globalization
     {
         private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
+            // ToDo: think if not to convert this function with multiple calls to JS into one call with multiple data requested at once
             Debug.Assert(!GlobalizationMode.UseNls);
 
             bool result = true;
@@ -61,7 +62,7 @@ namespace System.Globalization
 
                 // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
-                saLeapYearMonthNames = (string[]) saMonthNames.Clone();
+                saLeapYearMonthNames = (string[])saMonthNames.Clone();
                 saLeapYearMonthNames[6] = leapHebrewMonthName;
 
                 // The returned data from ICU has 6th month name as 'Adar I' and 7th month name as 'Adar'
@@ -81,15 +82,6 @@ namespace System.Globalization
             return result;
         }
 
-        internal static int IcuGetTwoDigitYearMax()
-        {
-            Debug.Assert(!GlobalizationMode.UseNls);
-
-            // There is no user override for this value on Linux or in ICU.
-            // So just return -1 to use the hard-coded defaults.
-            return -1;
-        }
-
         // Call native side to figure out which calendars are allowed
         internal static int IcuGetCalendars(string localeName, CalendarId[] calendars)
         {
@@ -97,7 +89,15 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
 
             // NOTE: there are no 'user overrides' on Linux
-            int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+            int count;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
+            else
+                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#else
+            count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#endif
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)
@@ -436,13 +436,15 @@ namespace System.Globalization
             try
             {
                 ReadOnlySpan<char> calendarStringSpan = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(calendarStringPtr);
-                ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
+#pragma warning disable 8500
+                IcuEnumCalendarsData* callbackContext = (IcuEnumCalendarsData*)context;
+#pragma warning restore 8500
 
-                if (callbackContext.DisallowDuplicates)
+                if (callbackContext->DisallowDuplicates)
                 {
-                    foreach (string existingResult in callbackContext.Results)
+                    foreach (string existingResult in callbackContext->Results)
                     {
-                        if (string.CompareOrdinal(calendarStringSpan, existingResult) == 0)
+                        if (calendarStringSpan.SequenceEqual(existingResult))
                         {
                             // the value is already in the results, so don't add it again
                             return;
@@ -450,7 +452,7 @@ namespace System.Globalization
                     }
                 }
 
-                callbackContext.Results.Add(calendarStringSpan.ToString());
+                callbackContext->Results.Add(calendarStringSpan.ToString());
             }
             catch (Exception e)
             {

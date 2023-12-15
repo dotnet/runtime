@@ -36,7 +36,7 @@ namespace System.Net
 {
     internal sealed class HttpStreamAsyncResult : IAsyncResult
     {
-        private object _locker = new object();
+        private readonly object _locker = new object();
         private ManualResetEvent? _handle;
         private bool _completed;
 

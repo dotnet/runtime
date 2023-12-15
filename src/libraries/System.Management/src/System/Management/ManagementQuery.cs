@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.Reflection;
-using System.ComponentModel.Design.Serialization;
-using System.ComponentModel;
 
 namespace System.Management
 {
@@ -126,7 +126,7 @@ namespace System.Management
             // Next character should be the operator if any
             if (op != null)
             {
-                if (0 != q.IndexOf(op, StringComparison.Ordinal))
+                if (!q.StartsWith(op, StringComparison.Ordinal))
                     throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
                 // Strip off the op and any leading WS
@@ -1666,7 +1666,7 @@ namespace System.Management
             q = q.Remove(0, TokenOf.Length).TrimStart(null);
 
             // Next character should be "{"
-            if (0 != q.IndexOf('{'))
+            if (!q.StartsWith('{'))
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             // Strip off the "{" and any leading WS
@@ -2183,7 +2183,7 @@ namespace System.Management
             q = q.Remove(0, TokenOf.Length).TrimStart(null);
 
             // Next character should be "{"
-            if (0 != q.IndexOf('{'))
+            if (!q.StartsWith('{'))
                 throw new ArgumentException(SR.InvalidQuery);    // Invalid query
 
             // Strip off the "{" and any leading WS

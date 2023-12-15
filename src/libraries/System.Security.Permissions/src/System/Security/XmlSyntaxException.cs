@@ -14,6 +14,9 @@ namespace System.Security
         public XmlSyntaxException(int lineNumber, string message) { }
         public XmlSyntaxException(string message) { }
         public XmlSyntaxException(string message, Exception inner) { }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         private XmlSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

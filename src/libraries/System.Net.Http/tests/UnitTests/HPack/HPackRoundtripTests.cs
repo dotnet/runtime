@@ -98,11 +98,8 @@ namespace System.Net.Http.Unit.Tests.HPack
 
             void WriteBytes(ReadOnlySpan<byte> bytes)
             {
-                if (bytes.Length > buffer.AvailableLength)
-                {
-                    buffer.EnsureAvailableSpace(bytes.Length);
-                    FillAvailableSpaceWithOnes(buffer);
-                }
+                buffer.EnsureAvailableSpace(bytes.Length);
+                FillAvailableSpaceWithOnes(buffer);
 
                 bytes.CopyTo(buffer.AvailableSpan);
                 buffer.Commit(bytes.Length);
@@ -113,7 +110,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 int bytesWritten;
                 while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, buffer.AvailableSpan, out bytesWritten))
                 {
-                    buffer.EnsureAvailableSpace(buffer.AvailableLength + 1);
+                    buffer.Grow();
                     FillAvailableSpaceWithOnes(buffer);
                 }
 
@@ -125,7 +122,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 int bytesWritten;
                 while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, buffer.AvailableSpan, out bytesWritten))
                 {
-                    buffer.EnsureAvailableSpace(buffer.AvailableLength + 1);
+                    buffer.Grow();
                     FillAvailableSpaceWithOnes(buffer);
                 }
 

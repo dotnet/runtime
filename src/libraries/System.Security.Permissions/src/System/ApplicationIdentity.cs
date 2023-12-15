@@ -10,11 +10,6 @@ namespace System
     {
         private ApplicationIdentity() { }
         public ApplicationIdentity(string applicationIdentityFullName) { }
-        private ApplicationIdentity(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public string FullName { get { return null; } }
         public string CodeBase { get { return null; } }
         public override string ToString() { return null; }

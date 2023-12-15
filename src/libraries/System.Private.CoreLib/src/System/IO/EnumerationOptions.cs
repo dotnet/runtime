@@ -51,7 +51,7 @@ namespace System.IO
         /// <value><see langword="true" /> to recurse into subdirectories; otherwise, <see langword="false" />.</value>
         public bool RecurseSubdirectories { get; set; }
 
-        /// <summary>Gets or sets a value that indicates whether to skip files or directories when access is denied (for example, <see cref="System.UnauthorizedAccessException" /> or <see cref="System.Security.SecurityException" />). The default is <see langword="true" />.</summary>
+        /// <summary>Gets or sets a value that indicates whether to skip files or directories when access is denied (for example, <see cref="UnauthorizedAccessException" /> or <see cref="Security.SecurityException" />). The default is <see langword="true" />.</summary>
         /// <value><see langword="true" /> to skip innacessible files or directories; otherwise, <see langword="false" />.</value>
         public bool IgnoreInaccessible { get; set; }
 
@@ -88,10 +88,7 @@ namespace System.IO
             get => _maxRecursionDepth;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _maxRecursionDepth = value;
             }

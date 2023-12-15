@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Internals;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,8 +15,10 @@ namespace System.Net
     {
         public const bool SupportsGetAddrInfoAsync = false;
 
+#pragma warning disable IDE0060
         internal static Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+#pragma warning restore IDE0060
 
         private static SocketError GetSocketErrorForNativeError(int error)
         {

@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="castclass_ldloc_r.il" />
     <Compile Include="castclass_ldloc.il" />
   </ItemGroup>
 </Project>

@@ -40,10 +40,13 @@ namespace System.Buffers
         /// </summary>
         public bool HasPrecision => _precision != NoPrecision;
 
+        /// <summary>Gets the precision if one was specified; otherwise, 0.</summary>
+        internal byte PrecisionOrZero => _precision != NoPrecision ? _precision : (byte)0;
+
         /// <summary>
         /// true if the StandardFormat == default(StandardFormat)
         /// </summary>
-        public bool IsDefault => _format == 0 && _precision == 0;
+        public bool IsDefault => (_format | _precision) == 0;
 
         /// <summary>
         /// Create a StandardFormat.
@@ -144,12 +147,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns the format in classic .NET format.
         /// </summary>
-        public override string ToString()
-        {
-            Span<char> buffer = stackalloc char[FormatStringLength];
-            int charsWritten = Format(buffer);
-            return new string(buffer.Slice(0, charsWritten));
-        }
+        public override string ToString() => new string(Format(stackalloc char[FormatStringLength]));
 
         /// <summary>The exact buffer length required by <see cref="Format"/>.</summary>
         internal const int FormatStringLength = 3;
@@ -157,17 +155,15 @@ namespace System.Buffers
         /// <summary>
         /// Formats the format in classic .NET format.
         /// </summary>
-        internal int Format(Span<char> destination)
+        internal Span<char> Format(Span<char> destination)
         {
             Debug.Assert(destination.Length == FormatStringLength);
 
-            int count = 0;
             char symbol = Symbol;
 
             if (symbol != default && destination.Length == FormatStringLength)
             {
                 destination[0] = symbol;
-                count = 1;
 
                 uint precision = Precision;
                 if (precision != NoPrecision)
@@ -185,15 +181,18 @@ namespace System.Buffers
                         uint div;
                         (div, precision) = Math.DivRem(precision, 10);
                         destination[1] = (char)('0' + div % 10);
-                        count = 2;
+                        destination[2] = (char)('0' + precision);
+                        return destination;
                     }
 
-                    destination[count] = (char)('0' + precision);
-                    count++;
+                    destination[1] = (char)('0' + precision);
+                    return destination.Slice(0, 2);
                 }
+
+                return destination.Slice(0, 1);
             }
 
-            return count;
+            return default;
         }
 
         /// <summary>

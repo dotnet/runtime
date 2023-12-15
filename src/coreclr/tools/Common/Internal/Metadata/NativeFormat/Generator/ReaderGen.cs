@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace NativeFormatGen;
+
 //
 // This class generates most of the implementation of the MetadataReader for the NativeAOT format,
 // ensuring that the contract defined by CsPublicGen2 is implemented.The generated file is
@@ -8,7 +10,7 @@
 // source counterpart 'NativeFormatReader.cs'.
 //
 
-class ReaderGen : CsWriter
+internal sealed class ReaderGen : CsWriter
 {
     public ReaderGen(string fileName)
         : base(fileName)
@@ -23,9 +25,15 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable CA1066 // IEquatable<T> implementations aren't used");
         WriteLine("#pragma warning disable CA1822");
         WriteLine("#pragma warning disable IDE0059");
+        WriteLine("#pragma warning disable SA1121");
+        WriteLine("#pragma warning disable IDE0036, SA1129");
         WriteLine();
 
+        WriteLine("using System;");
+        WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Diagnostics;");
         WriteLine("using System.Reflection;");
+        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine();
 
@@ -36,7 +44,7 @@ class ReaderGen : CsWriter
             EmitRecord(record);
             EmitHandle(record);
         }
-        
+
         foreach (var typeName in SchemaDef.TypeNamesWithCollectionTypes)
         {
             EmitCollection(typeName + "HandleCollection", typeName + "Handle");
@@ -133,13 +141,12 @@ class ReaderGen : CsWriter
 
         OpenScope($"internal {handleName}(int value)");
         WriteLine("HandleType hType = (HandleType)(value >> 24);");
-        WriteLine($"if (!(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null))");
-        WriteLine("    throw new ArgumentException();");
+        WriteLine($"Debug.Assert(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null);");
         WriteLine($"_value = (value & 0x00FFFFFF) | (((int)HandleType.{record.Name}) << 24);");
         WriteLine("_Validate();");
         CloseScope();
 
-        OpenScope($"public static implicit operator  Handle({handleName} handle)");
+        OpenScope($"public static implicit operator Handle({handleName} handle)");
         WriteLine("return new Handle(handle._value);");
         CloseScope("Handle");
 
@@ -263,7 +270,7 @@ class ReaderGen : CsWriter
             if (record.Name == "ConstantStringValue")
             {
                 WriteLine("if (IsNull(handle))");
-                WriteLine("    return default(ConstantStringValue);");
+                WriteLine("    return new ConstantStringValue();");
             }
             WriteLine($"{record.Name} record;");
             WriteLine("record._reader = this;");

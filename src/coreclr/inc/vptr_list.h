@@ -13,8 +13,9 @@ VPTR_CLASS(EECodeManager)
 
 VPTR_CLASS(RangeList)
 VPTR_CLASS(LockedRangeList)
+VPTR_CLASS(CodeRangeMapRangeList)
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 VPTR_CLASS(EditAndContinueModule)
 #endif
 VPTR_CLASS(Module)
@@ -33,7 +34,6 @@ VPTR_CLASS(JumpStubStubManager)
 VPTR_CLASS(RangeSectionStubManager)
 VPTR_CLASS(ILStubManager)
 VPTR_CLASS(InteropDispatchStubManager)
-VPTR_CLASS(DelegateInvokeStubManager)
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallStubManager)
 #endif

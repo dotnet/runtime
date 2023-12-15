@@ -656,9 +656,9 @@ namespace SerializationTestTypes
                     _sampleTypeList.Add(typeof(CallBackSample_IDeserializationCallback_Explicit));
                     _sampleTypeList.Add(typeof(CallBackSample_OnDeserialized_Private_Base));
                     _sampleTypeList.Add(typeof(CallBackSample_OnDeserialized_Public_Derived));
-                    _sampleTypeList.Add(typeof(CDC_Possitive));
+                    _sampleTypeList.Add(typeof(CDC_Positive));
                     _sampleTypeList.Add(typeof(CDC_PrivateAdd));
-                    _sampleTypeList.Add(typeof(Base_Possitive_VirtualAdd));
+                    _sampleTypeList.Add(typeof(Base_Positive_VirtualAdd));
                     _sampleTypeList.Add(typeof(CDC_NewAddToPrivate));
                     _sampleTypeList.Add(typeof(CDC_PrivateDefaultCtor));
                     _sampleTypeList.Add(typeof(NonDCPerson));

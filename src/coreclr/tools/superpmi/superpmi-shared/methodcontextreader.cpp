@@ -308,7 +308,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
         // one-by-one till we find a matching hash
         for (; curTOCIndex < (int)this->tocFile.GetTocCount(); curTOCIndex++)
         {
-            if (_strnicmp(this->Hash, this->tocFile.GetElementPtr(curTOCIndex)->Hash, MD5_HASH_BUFFER_SIZE) == 0)
+            if (_strnicmp(this->Hash, this->tocFile.GetElementPtr(curTOCIndex)->Hash, MM3_HASH_BUFFER_SIZE) == 0)
             {
                 // We found a match, return this specific method
                 return this->GetSpecificMethodContext(this->tocFile.GetElementPtr(curTOCIndex++)->Number);
@@ -330,7 +330,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
             if (mcb.allDone() || mcb.Error())
                 return mcb;
 
-            char mcHash[MD5_HASH_BUFFER_SIZE];
+            char mcHash[MM3_HASH_BUFFER_SIZE];
 
             // Create a temporary copy of mcb.buff plus ending 2-byte canary
             // this will get freed up by MethodContext constructor
@@ -342,10 +342,10 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
             if (!MethodContext::Initialize(-1, buff, mcb.size, &mc))
                 return MethodContextBuffer(-1);
 
-            mc->dumpMethodMD5HashToBuffer(mcHash, MD5_HASH_BUFFER_SIZE);
+            mc->dumpMethodHashToBuffer(mcHash, MM3_HASH_BUFFER_SIZE);
             delete mc;
 
-            if (_strnicmp(this->Hash, mcHash, MD5_HASH_BUFFER_SIZE) == 0)
+            if (_strnicmp(this->Hash, mcHash, MM3_HASH_BUFFER_SIZE) == 0)
             {
                 // We found a match, return this specific method
                 return mcb;
@@ -406,18 +406,59 @@ bool MethodContextReader::isValid()
     return this->fileHandle != INVALID_HANDLE_VALUE && this->mutex != INVALID_HANDLE_VALUE;
 }
 
+// Return a measure of "progress" through the method contexts, as follows:
+// 1. With a given set of indices, this is the current index array position.
+// 2. With a TOC, this is the current method context number.
+// 3. Otherwise, it is the current byte offset in the method context file.
+// Only useful when compared with `TotalWork()`.
+double MethodContextReader::Progress()
+{
+    if (this->hasIndex())
+    {
+        return (double)this->curIndexPos;
+    }
+    else if (this->hasTOC())
+    {
+        return (double)this->curMCIndex;
+    }
+    else
+    {
+        this->AcquireLock();
+        __int64 pos = 0;
+        SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
+        this->ReleaseLock();
+        return (double)pos;
+    }
+}
+
+// Return a measure of the total amount of work to be done, as follows:
+// 1. With a given set of indices, this is the total number of indices to return.
+// 2. With a TOC, this is the number of method contexts in the TOC.
+// 3. Otherwise, it is the size in bytes of the method context file.
+// Only useful when compared with `Progress()`.
+double MethodContextReader::TotalWork()
+{
+    if (this->hasIndex())
+    {
+        return (double)this->IndexCount;
+    }
+    else if (this->hasTOC())
+    {
+        return (double)this->tocFile.GetTocCount();
+    }
+    else
+    {
+        return (double)this->fileSize;
+    }
+}
+
+// Compute a percentage completion value using the previously defined
+// Progress() and TotalWork() functions.
+// Note that this is not useful to the user as a total percentage complete number
+// in the case of small number of methods and a large compile repeat count.
 double MethodContextReader::PercentComplete()
 {
-    if (this->hasIndex() && this->hasTOC())
-    {
-        // Best estimate I can come up with...
-        return 100.0 * (double)this->curIndexPos / (double)this->IndexCount;
-    }
-    this->AcquireLock();
-    __int64 pos = 0;
-    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
-    this->ReleaseLock();
-    return 100.0 * (double)pos / (double)this->fileSize;
+    return 100.0 * Progress() / TotalWork();
 }
 
 // Binary search to get this method number from the index
@@ -532,7 +573,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
                 curr++;
             }
 
-            if (hash.length() == MD5_HASH_BUFFER_SIZE - 1)
+            if (hash.length() == MM3_HASH_BUFFER_SIZE - 1)
             {
                 StringList* node    = new StringList();
                 node->hash          = hash;
@@ -566,8 +607,8 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 {
     if (excludedMethodsList != nullptr)
     {
-        char md5HashBuf[MD5_HASH_BUFFER_SIZE] = {0};
-        mc->dumpMethodMD5HashToBuffer(md5HashBuf, MD5_HASH_BUFFER_SIZE);
+        char md5HashBuf[MM3_HASH_BUFFER_SIZE] = {0};
+        mc->dumpMethodHashToBuffer(md5HashBuf, MM3_HASH_BUFFER_SIZE);
         for (StringList* node = excludedMethodsList; node != nullptr; node = node->next)
         {
             if (strcmp(node->hash.c_str(), md5HashBuf) == 0)

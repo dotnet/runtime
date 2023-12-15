@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="gettypetypeofmatrix.cs" />
+  </ItemGroup>
+</Project>

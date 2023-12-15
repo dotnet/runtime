@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private unsafe ICertificatePal? CopyWithPersistedCngKey(CngKey cngKey)
+        private unsafe CertificatePal? CopyWithPersistedCngKey(CngKey cngKey)
         {
             if (string.IsNullOrEmpty(cngKey.KeyName))
             {
@@ -550,7 +550,7 @@ namespace System.Security.Cryptography.X509Certificates
             return false;
         }
 
-        private unsafe ICertificatePal? CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
+        private unsafe CertificatePal? CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
         {
             if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
             {
@@ -585,7 +585,7 @@ namespace System.Security.Cryptography.X509Certificates
             return pal;
         }
 
-        private ICertificatePal CopyWithEphemeralKey(CngKey cngKey)
+        private CertificatePal CopyWithEphemeralKey(CngKey cngKey)
         {
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
 

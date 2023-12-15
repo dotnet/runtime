@@ -548,14 +548,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Min1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Min();
+            var val = new[] { 0, 2, 1 }.AsQueryable().Min();
             Assert.Equal(0, val);
         }
 
         [Fact]
         public void Min2()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Min(n => n);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Min(n => n);
             Assert.Equal(0, val);
         }
 

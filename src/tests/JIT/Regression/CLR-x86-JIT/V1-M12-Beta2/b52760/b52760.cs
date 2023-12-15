@@ -2,21 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class CC
+    public class CC
     {
         static ulong AA_Static1()
         {
             ulong loc = 10;
             return loc *= loc;
         }
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             AA_Static1();
-            return 100;
         }
     }
 }

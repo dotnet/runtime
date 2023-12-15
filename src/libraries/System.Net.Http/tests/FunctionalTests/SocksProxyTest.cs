@@ -35,11 +35,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (PlatformDetection.IsAndroid && useSsl && host == "::1")
-            {
-                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {

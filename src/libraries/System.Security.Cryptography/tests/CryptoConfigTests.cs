@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void AddOID_EmptyString_Throws()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => CryptoConfig.AddOID(string.Empty, string.Empty));
+            AssertExtensions.Throws<ArgumentException>("names", () => CryptoConfig.AddOID(string.Empty, string.Empty));
         }
 
         [Fact]
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void AddAlgorithm_EmptyString_Throws()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), string.Empty));
+            AssertExtensions.Throws<ArgumentException>("names", () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), string.Empty));
         }
 
         [Fact]

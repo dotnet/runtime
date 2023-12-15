@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly GitHub_24278 { }
 .assembly extern xunit.core {}
 
@@ -14,7 +14,7 @@
 // This happens in MainMethod at IL_0013:
 // V_0 is not initialized by IL instructions of one of the path to IL_0013 and must be zeroed in the prolog since it is live at IL_0013.
 
-.class private auto ansi beforefieldinit GitHub_24278.Program
+.class public auto ansi beforefieldinit GitHub_24278.Program
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static bool  True() cil managed noinlining
@@ -53,8 +53,8 @@
     IL_001e:  ret
   } // end of method Program::MainMethod
 
-  .method private hidebysig static int32
-          Main(string[] args) cil managed
+  .method public hidebysig static int32
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

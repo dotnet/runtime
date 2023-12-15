@@ -178,7 +178,7 @@ HRESULT SymbolInfo::SetMethodProps(mdToken method, mdToken cls, LPCWSTR wszName)
     {
         m_LastMethod.method=method;
         m_LastMethod.cls=cls;
-        m_LastMethod.wszName=wszName;
+        m_LastMethod.wszName.Set(wszName);
         m_LastMethod.wszName.Normalize();
     }
     EX_CATCH_HRESULT(hr)
@@ -258,7 +258,7 @@ STDMETHODIMP SymbolInfo::GetTypeDefProps (             // S_OK or error.
         *pdwTypeDefFlags=classInfo->flags;
 
 
-    SIZE_T cch=wcslen(classInfo->wszName)+1;
+    SIZE_T cch=u16_strlen(classInfo->wszName)+1;
     if (cch > UINT32_MAX)
         return E_UNEXPECTED;
     *pchTypeDef=(ULONG)cch;
@@ -309,7 +309,7 @@ STDMETHODIMP SymbolInfo::GetMethodProps (
 
 
     *pClass=m_LastMethod.cls;
-    SIZE_T cch=wcslen(m_LastMethod.wszName)+1;
+    SIZE_T cch=u16_strlen(m_LastMethod.wszName)+1;
     if(cch > UINT32_MAX)
         return E_UNEXPECTED;
     *pchMethod=(ULONG)cch;

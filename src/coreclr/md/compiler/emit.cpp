@@ -39,15 +39,10 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MethodRec   *pRecord = NULL;        // The new record.
     RID         iRecord;                // The new record's RID.
     LPUTF8      szNameUtf8;
     UTF8STR(szName, szNameUtf8);
-
-    LOG((LOGMD, "MD: RegMeta::DefineMethod(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), dwMethodFlags, pvSigBlob, cbSigBlob, ulCodeRVA, dwImplFlags, pmd));
 
     LOCKWRITE();
 
@@ -117,9 +112,9 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
     // #define COR_CTOR_METHOD_NAME_W      L".ctor"
     // #define COR_CCTOR_METHOD_NAME_W     L".cctor"
 
-    if (!wcscmp(szName, W(".ctor")) || // COR_CTOR_METHOD_NAME_W
-        !wcscmp(szName, W(".cctor")) || // COR_CCTOR_METHOD_NAME_W
-        !wcsncmp(szName, W("_VtblGap"), 8) )
+    if (!u16_strcmp(szName, W(".ctor")) || // COR_CTOR_METHOD_NAME_W
+        !u16_strcmp(szName, W(".cctor")) || // COR_CCTOR_METHOD_NAME_W
+        !u16_strncmp(szName, W("_VtblGap"), 8) ) // All methods that begin with the characters "_VtblGap" are considered to be VTable Gap methods
     {
         dwMethodFlags |= mdRTSpecialName | mdSpecialName;
     }
@@ -130,8 +125,6 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
 
 ErrExit:
     SetCallerExternal();
-
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
@@ -150,13 +143,9 @@ STDMETHODIMP RegMeta::DefineMethodImpl(       // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MethodImplRec   *pMethodImplRec = NULL;
     RID             iMethodImplRec;
 
-    LOG((LOGMD, "MD RegMeta::DefineMethodImpl(0x%08x, 0x%08x, 0x%08x)\n",
-        td, tkBody, tkDecl));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -194,9 +183,6 @@ STDMETHODIMP RegMeta::DefineMethodImpl(       // S_OK or error.
 
     IfFailGo(UpdateENCLog2(TBL_MethodImpl, iMethodImplRec));
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineMethodImpl
@@ -214,12 +200,8 @@ STDMETHODIMP RegMeta::SetMethodImplFlags(     // [IN] S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MethodRec   *pMethodRec;
 
-    LOG((LOGMD, "MD RegMeta::SetMethodImplFlags(0x%08x, 0x%08x)\n",
-        md, dwImplFlags));
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(md) == mdtMethodDef && dwImplFlags != UINT32_MAX);
@@ -231,7 +213,6 @@ STDMETHODIMP RegMeta::SetMethodImplFlags(     // [IN] S_OK or error.
     IfFailGo(UpdateENCLog(md));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetMethodImplFlags
@@ -249,18 +230,13 @@ STDMETHODIMP RegMeta::SetFieldRVA(            // [IN] S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     FieldRVARec     *pFieldRVARec;
     RID             iFieldRVA;
     FieldRec        *pFieldRec;
 
-    LOG((LOGMD, "MD RegMeta::SetFieldRVA(0x%08x, 0x%08x)\n",
-        fd, ulRVA));
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(fd) == mdtFieldDef);
-
 
     IfFailGo(m_pStgdb->m_MiniMd.FindFieldRVAHelper(fd, &iFieldRVA));
 
@@ -290,7 +266,6 @@ STDMETHODIMP RegMeta::SetFieldRVA(            // [IN] S_OK or error.
     IfFailGo(UpdateENCLog2(TBL_FieldRVA, iFieldRVA));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetFieldRVA
@@ -384,11 +359,6 @@ STDMETHODIMP RegMeta::DefineTypeRefByName(    // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::DefineTypeRefByName(0x%08x, %S, 0x%08x)\n",
-        tkResolutionScope, MDSTR(szName), ptr));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -397,8 +367,6 @@ STDMETHODIMP RegMeta::DefineTypeRefByName(    // S_OK or error.
     IfFailGo(_DefineTypeRef(tkResolutionScope, szName, TRUE, ptr));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineTypeRefByName
@@ -420,8 +388,6 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     IMetaDataImport2 *pImport2 = NULL;
     IMDCommon        *pImport2MDCommon = NULL;
 
@@ -433,12 +399,6 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
 
     IMetaModelCommon *pAssemImportMetaModelCommon;
     IMetaModelCommon *pImport2MetaModelCommon;
-
-    LOG((LOGMD, "MD RegMeta::DefineImportType(0x%08x, 0x%08x, 0x%08x, 0x%08x, "
-                "0x%08x, 0x%08x, 0x%08x)\n",
-                pAssemImport, pbHashValue, cbHashValue,
-                pImport, tdImport, pAssemEmit, ptr));
-
 
     LOCKWRITE();
 
@@ -476,7 +436,7 @@ ErrExit:
         pImport2MDCommon->Release();
     if (pAssemImportMDCommon)
         pAssemImportMDCommon->Release();
-    END_ENTRYPOINT_NOTHROW;
+
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportType
@@ -496,15 +456,11 @@ STDMETHODIMP RegMeta::DefineMemberRef(        // S_OK or error
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MemberRefRec    *pRecord = 0;       // The MemberRef record.
     RID             iRecord;            // RID of new MemberRef record.
     LPUTF8          szNameUtf8;
     UTF8STR(szName, szNameUtf8);
 
-    LOG((LOGMD, "MD RegMeta::DefineMemberRef(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        tkImport, MDSTR(szName), pvSigBlob, cbSigBlob, pmr));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -565,8 +521,6 @@ STDMETHODIMP RegMeta::DefineMemberRef(        // S_OK or error
     IfFailGo(UpdateENCLog(*pmr));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineMemberRef
@@ -588,15 +542,6 @@ STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::DefineImportMember("
-        "0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,"
-        " 0x%08x, 0x%08x, 0x%08x)\n",
-        pAssemImport, pbHashValue, cbHashValue, pImport, mbMember,
-        pAssemEmit, tkImport, pmr));
 
     // No need to lock this function. All the functions that it calls are public APIs.
 
@@ -681,8 +626,6 @@ STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
         pmr));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportMember
@@ -706,11 +649,6 @@ STDMETHODIMP RegMeta::DefineEvent(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::DefineEvent(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, szEvent, dwEventFlags, tkEventType, mdAddOn, mdRemoveOn, mdFire, rmdOtherMethods, pmdEvent));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -730,8 +668,6 @@ STDMETHODIMP RegMeta::DefineEvent(
     IfFailGo(_SetEventProps2(*pmdEvent, mdAddOn, mdRemoveOn, mdFire, rmdOtherMethods, IsENCOn()));
     IfFailGo(UpdateENCLog(*pmdEvent));
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineEvent
@@ -753,12 +689,8 @@ STDMETHODIMP RegMeta::SetClassLayout(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;              // A result.
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     int         index = 0;              // Loop control.
 
-    LOG((LOGMD, "MD RegMeta::SetClassLayout(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, dwPackSize, rFieldOffsets, ulClassSize));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -784,8 +716,6 @@ STDMETHODIMP RegMeta::SetClassLayout(
     IfFailGo(_SetClassLayout(td, dwPackSize, ulClassSize));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetClassLayout
@@ -885,8 +815,6 @@ STDMETHODIMP RegMeta::DeleteClassLayout(
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ClassLayoutRec  *pClassLayoutRec;
     TypeDefRec  *pTypeDefRec;
     FieldLayoutRec *pFieldLayoutRec;
@@ -897,7 +825,6 @@ STDMETHODIMP RegMeta::DeleteClassLayout(
     RID         ridCur;
     ULONG       index;
 
-    LOG((LOGMD, "MD RegMeta::DeleteClassLayout(0x%08x)\n", td));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -944,7 +871,6 @@ STDMETHODIMP RegMeta::DeleteClassLayout(
         }
     }
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -964,11 +890,6 @@ STDMETHODIMP RegMeta::SetFieldMarshal(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::SetFieldMarshal(0x%08x, 0x%08x, 0x%08x)\n",
-        tk, pvNativeType, cbNativeType));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -976,7 +897,6 @@ STDMETHODIMP RegMeta::SetFieldMarshal(
     hr = _SetFieldMarshal(tk, pvNativeType, cbNativeType);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetFieldMarshal
@@ -1046,14 +966,9 @@ STDMETHODIMP RegMeta::DeleteFieldMarshal(
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     FieldMarshalRec *pFieldMarshRec;
     RID         iFieldMarshRec;
 
-
-
-    LOG((LOGMD, "MD RegMeta::DeleteFieldMarshal(0x%08x)\n", tk));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1096,7 +1011,6 @@ STDMETHODIMP RegMeta::DeleteFieldMarshal(
     IfFailGo(UpdateENCLog2(TBL_FieldMarshal, iFieldMarshRec));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -1116,10 +1030,6 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::DefinePermissionSet(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tk, dwAction, pvPermission, cbPermission, ppm));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1127,7 +1037,6 @@ STDMETHODIMP RegMeta::DefinePermissionSet(
     IfFailGo(_DefinePermissionSet(tk, dwAction, pvPermission, cbPermission, ppm));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -1226,19 +1135,12 @@ STDMETHODIMP RegMeta::SetRVA(                 // [IN] S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::SetRVA(0x%08x, 0x%08x)\n",
-        md, ulRVA));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
     IfFailGo(_SetRVA(md, ulRVA, UINT32_MAX));    // 0xbaad
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetRVA
@@ -1258,11 +1160,6 @@ STDMETHODIMP RegMeta::GetTokenFromSig(        // [IN] S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::GetTokenFromSig(0x%08x, 0x%08x, 0x%08x)\n",
-        pvSig, cbSig, pmsig));
-
     LOCKWRITE();
 
     _ASSERTE(pmsig);
@@ -1271,8 +1168,6 @@ STDMETHODIMP RegMeta::GetTokenFromSig(        // [IN] S_OK or error.
     IfFailGo(_GetTokenFromSig(pvSig, cbSig, pmsig));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::GetTokenFromSig
@@ -1289,9 +1184,6 @@ STDMETHODIMP RegMeta::DefineModuleRef(        // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::DefineModuleRef(%S, 0x%08x)\n", MDSTR(szName), pmur));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1299,18 +1191,15 @@ STDMETHODIMP RegMeta::DefineModuleRef(        // S_OK or error.
     hr = _DefineModuleRef(szName, pmur);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineModuleRef
 
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
 HRESULT RegMeta::_DefineModuleRef(        // S_OK or error.
     LPCWSTR     szName,                 // [IN] DLL name
     mdModuleRef *pmur)                  // [OUT] returned module ref token
 {
-#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
-    return E_NOTIMPL;
-#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT     hr = S_OK;
     ModuleRefRec *pModuleRef = 0;       // The ModuleRef record.
     RID         iModuleRef;             // Rid of new ModuleRef record.
@@ -1355,8 +1244,8 @@ HRESULT RegMeta::_DefineModuleRef(        // S_OK or error.
 ErrExit:
 
     return hr;
-#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::_DefineModuleRef
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 
 //*****************************************************************************
 // Set the parent for the specified MemberRef.
@@ -1370,12 +1259,8 @@ STDMETHODIMP RegMeta::SetParent(                      // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MemberRefRec *pMemberRef;
 
-    LOG((LOGMD, "MD RegMeta::SetParent(0x%08x, 0x%08x)\n",
-        mr, tk));
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(mr) == mdtMemberRef);
@@ -1384,7 +1269,7 @@ STDMETHODIMP RegMeta::SetParent(                      // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.GetMemberRefRecord(RidFromToken(mr), &pMemberRef));
 
-    // If the token is nil set it to to m_tdModule.
+    // If the token is nil set it to m_tdModule.
     tk = IsNilToken(tk) ? m_tdModule : tk;
 
     // Set the parent.
@@ -1396,8 +1281,6 @@ STDMETHODIMP RegMeta::SetParent(                      // S_OK or error.
     IfFailGo(UpdateENCLog(mr));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetParent
@@ -1415,13 +1298,9 @@ STDMETHODIMP RegMeta::GetTokenFromTypeSpec(   // [IN] S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     TypeSpecRec *pTypeSpecRec;
     RID         iRec;
 
-    LOG((LOGMD, "MD RegMeta::GetTokenFromTypeSpec(0x%08x, 0x%08x, 0x%08x)\n",
-        pvSig, cbSig, ptypespec));
     LOCKWRITE();
 
     _ASSERTE(ptypespec);
@@ -1458,8 +1337,6 @@ STDMETHODIMP RegMeta::GetTokenFromTypeSpec(   // [IN] S_OK or error.
     IfFailGo(UpdateENCLog(*ptypespec));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::GetTokenFromTypeSpec
@@ -1480,17 +1357,11 @@ STDMETHODIMP RegMeta::DefineUserString(       // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     UINT32      nIndex;                 // Index into the user string heap.
     CQuickBytes qb;                     // For storing the string with the byte prefix.
     ULONG       ulMemSize;              // Size of memory taken by the string passed in.
     PBYTE       pb;                     // Pointer into memory allocated by qb.
 
-
-
-    LOG((LOGMD, "MD RegMeta::DefineUserString(0x%08x, 0x%08x, 0x%08x)\n",
-        szString, cchString, pstk));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1519,8 +1390,6 @@ STDMETHODIMP RegMeta::DefineUserString(       // S_OK or error.
         *pstk = TokenFromRid(nIndex, mdtString);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineUserString
@@ -1540,9 +1409,6 @@ STDMETHODIMP RegMeta::DeleteToken(
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::DeleteToken(0x%08x)\n", tkObj));
     LOCKWRITE();
 
     if (!IsValidToken(tkObj))
@@ -1700,10 +1566,7 @@ STDMETHODIMP RegMeta::DeleteToken(
         break;
     }
 
-    ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
+ErrExit:
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -1724,10 +1587,6 @@ STDMETHODIMP RegMeta::SetTypeDefProps(        // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::SetTypeDefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            td, dwTypeDefFlags, tkExtends, rtkImplements));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1735,8 +1594,6 @@ STDMETHODIMP RegMeta::SetTypeDefProps(        // S_OK or error.
     hr = _SetTypeDefProps(td, dwTypeDefFlags, tkExtends, rtkImplements);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetTypeDefProps
@@ -1758,11 +1615,6 @@ STDMETHODIMP RegMeta::DefineNestedType(       // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineNestedType(%S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            MDSTR(szTypeDef), dwTypeDefFlags, tkExtends,
-            rtkImplements, tdEncloser, ptd));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1774,7 +1626,6 @@ STDMETHODIMP RegMeta::DefineNestedType(       // S_OK or error.
                 tkExtends, rtkImplements, tdEncloser, ptd));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineNestedType
@@ -1796,13 +1647,9 @@ STDMETHODIMP RegMeta::DefineGenericParam(   // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     mdToken     tkRet = mdGenericParamNil;
     mdToken tkOwnerType = TypeFromToken(tkOwner);
 
-    LOG((LOGMD, "RegMeta::DefineGenericParam(0x%08x, %d, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-         tkOwner, ulParamSeq, dwParamFlags, szName, reserved, rtkConstraints, pgp));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -1871,8 +1718,6 @@ ErrExit:
     if(pgp != NULL)
         *pgp = tkRet;
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineGenericParam
@@ -1891,11 +1736,6 @@ STDMETHODIMP RegMeta::SetGenericParamProps(      // S_OK or error.
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::SetGenericParamProps(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-         gp, dwParamFlags,szName,reserved,rtkConstraints));
 
     if (reserved != 0)
         IfFailGo(META_E_BAD_INPUT_PARAMETER);
@@ -1916,8 +1756,6 @@ STDMETHODIMP RegMeta::SetGenericParamProps(      // S_OK or error.
         hr =  META_E_BAD_INPUT_PARAMETER;
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetGenericParamProps
@@ -2008,10 +1846,6 @@ STDMETHODIMP RegMeta::GetReferencedTypeSysTables(   // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::GetReferencedTypeSysTables()\n"));
-
     ULONG64 refTablesBitVector = 0;
     ULONG count = 0;
     ULONG* ptr = NULL;
@@ -2045,8 +1879,6 @@ STDMETHODIMP RegMeta::GetReferencedTypeSysTables(   // S_OK or error.
     }
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::GetReferencedTypeSysTables
@@ -2063,15 +1895,9 @@ STDMETHODIMP RegMeta::DefinePdbStream(      // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefinePdbStream()\n"));
-
     IfFailGo(m_pStgdb->m_pPdbHeap->SetData(pdbStream));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefinePdbStream
@@ -2102,9 +1928,6 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
     UINT32* partsIndexesPtr = NULL;
     char* stringToken = NULL;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineDocument(%s)\n", docName));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2176,8 +1999,6 @@ ErrExit:
     if (partsIndexes != NULL)
         delete[] partsIndexes;
 
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineDocument
@@ -2195,10 +2016,6 @@ STDMETHODIMP RegMeta::DefineSequencePoints(     // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineSequencePoints()\n"));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2214,8 +2031,6 @@ STDMETHODIMP RegMeta::DefineSequencePoints(     // S_OK or error.
         MethodDebugInformationRec::COL_SequencePoints, pMethodDbgInfo, sequencePtsBlob, sequencePtsBlobSize));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineSequencePoints
@@ -2236,10 +2051,6 @@ STDMETHODIMP RegMeta::DefineLocalScope(     // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineLocalScope()\n"));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2258,8 +2069,6 @@ STDMETHODIMP RegMeta::DefineLocalScope(     // S_OK or error.
     m_pStgdb->m_MiniMd.SetSorted(TBL_LocalScope, true);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineLocalScope
@@ -2278,10 +2087,6 @@ STDMETHODIMP RegMeta::DefineLocalVariable(      // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineLocalVariable(%s)\n", name));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2297,8 +2102,6 @@ STDMETHODIMP RegMeta::DefineLocalVariable(      // S_OK or error.
     *locVarToken = TokenFromRid(localVariableRecord, mdtLocalVariable);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineLocalVariable
@@ -2318,14 +2121,9 @@ STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MethodSpecRec   *pRecord = 0;       // The MethodSpec record.
     RID             iRecord;            // RID of new MethodSpec record.
 
-
-    LOG((LOGMD, "MD RegMeta::DefineMethodSpec(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tkImport, pvSigBlob, cbSigBlob, pmi));
     LOCKWRITE();
 
     // See if this version of the metadata can do Generics
@@ -2386,8 +2184,6 @@ STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error
     IfFailGo(UpdateENCLog(*pmi));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineMethodSpec
@@ -2406,10 +2202,6 @@ STDMETHODIMP RegMeta::SetMethodProps(         // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::SetMethodProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            md, dwMethodFlags, ulCodeRVA, dwImplFlags));
     LOCKWRITE();
 
     if (dwMethodFlags != UINT32_MAX)
@@ -2422,8 +2214,6 @@ STDMETHODIMP RegMeta::SetMethodProps(         // S_OK or error.
     hr = _SetMethodProps(md, dwMethodFlags, ulCodeRVA, dwImplFlags);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetMethodProps
@@ -2445,10 +2235,6 @@ STDMETHODIMP RegMeta::SetEventProps(    // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::SetEventProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-         ev, dwEventFlags, tkEventType, mdAddOn, mdRemoveOn, mdFire, rmdOtherMethods));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2457,8 +2243,6 @@ STDMETHODIMP RegMeta::SetEventProps(    // S_OK or error.
     IfFailGo(_SetEventProps2(ev, mdAddOn, mdRemoveOn, mdFire, rmdOtherMethods, true));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetEventProps
@@ -2476,13 +2260,9 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     USHORT      sAction = static_cast<USHORT>(dwAction);    // Corresponding DeclSec field is a USHORT.
     mdPermission tkPerm;
 
-    LOG((LOGMD, "MD RegMeta::SetPermissionSetProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tk, dwAction, pvPermission, cbPermission, ppm));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2499,8 +2279,6 @@ STDMETHODIMP RegMeta::SetPermissionSetProps(  // S_OK or error.
         *ppm = tkPerm;
     IfFailGo(_SetPermissionSetProps(tkPerm, dwAction, pvPermission, cbPermission));
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -2521,10 +2299,6 @@ STDMETHODIMP RegMeta::DefinePinvokeMap(       // Return code.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::DefinePinvokeMap(0x%08x, 0x%08x, %S, 0x%08x)\n",
-        tk, dwMappingFlags, MDSTR(szImportName), mrImportDLL));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2532,8 +2306,6 @@ STDMETHODIMP RegMeta::DefinePinvokeMap(       // Return code.
     hr = _DefinePinvokeMap(tk, dwMappingFlags, szImportName, mrImportDLL);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefinePinvokeMap
@@ -2644,13 +2416,9 @@ STDMETHODIMP RegMeta::SetPinvokeMap(          // Return code.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ImplMapRec  *pRecord;
     RID         iRecord;
 
-    LOG((LOGMD, "MD RegMeta::SetPinvokeMap(0x%08x, 0x%08x, %S, 0x%08x)\n",
-        tk, dwMappingFlags, MDSTR(szImportName), mrImportDLL));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2678,8 +2446,6 @@ STDMETHODIMP RegMeta::SetPinvokeMap(          // Return code.
     IfFailGo(UpdateENCLog2(TBL_ImplMap, iRecord));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetPinvokeMap
@@ -2693,12 +2459,9 @@ STDMETHODIMP RegMeta::DeletePinvokeMap(       // Return code.
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ImplMapRec  *pRecord;
     RID         iRecord;
 
-    LOG((LOGMD, "MD RegMeta::DeletePinvokeMap(0x%08x)\n", tk));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -2741,7 +2504,6 @@ STDMETHODIMP RegMeta::DeletePinvokeMap(       // Return code.
     IfFailGo(UpdateENCLog2(TBL_ImplMap, iRecord));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;
@@ -2767,15 +2529,10 @@ HRESULT RegMeta::DefineField(           // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     FieldRec    *pRecord = NULL;        // The new record.
     RID         iRecord;                // RID of new record.
     LPUTF8      szNameUtf8;
     UTF8STR(szName, szNameUtf8);
-
-    LOG((LOGMD, "MD: RegMeta::DefineField(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), dwFieldFlags, pvSigBlob, cbSigBlob, dwCPlusTypeFlag, pValue, cchValue, pmd));
 
     LOCKWRITE();
 
@@ -2851,7 +2608,7 @@ HRESULT RegMeta::DefineField(           // S_OK or error.
     // macro in the code below to work around this issue.
     // #define COR_ENUM_FIELD_NAME_W       L"value__"
 
-    if (!wcscmp(szName, W("value__")))
+    if (!u16_strcmp(szName, W("value__")))
     {
         dwFieldFlags |= fdRTSpecialName | fdSpecialName;
     }
@@ -2861,9 +2618,6 @@ HRESULT RegMeta::DefineField(           // S_OK or error.
 
 ErrExit:
     SetCallerExternal();
-
-
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
@@ -2891,18 +2645,12 @@ HRESULT RegMeta::DefineProperty(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     PropertyRec *pPropRec = NULL;
     RID         iPropRec;
     PropertyMapRec *pPropMap;
     RID         iPropMap;
     LPUTF8      szUTF8Property;
     UTF8STR(szProperty, szUTF8Property);
-
-    LOG((LOGMD, "MD RegMeta::DefineProperty(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, szProperty, dwPropFlags, pvSig, cbSig, dwCPlusTypeFlag, pValue, cchValue, mdSetter, mdGetter,
-        rmdOtherMethods, pmdProp));
 
     LOCKWRITE();
 
@@ -2977,9 +2725,6 @@ HRESULT RegMeta::DefineProperty(
 ErrExit:
     SetCallerExternal();
 
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineProperty
@@ -3003,13 +2748,9 @@ HRESULT RegMeta::DefineParam(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     RID         iRecord;
     ParamRec    *pRecord = 0;
 
-    LOG((LOGMD, "MD RegMeta::DefineParam(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        md, ulParamSeq, MDSTR(szName), dwParamFlags, dwCPlusTypeFlag, pValue, cchValue, ppd));
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(md) == mdtMethodDef && md != mdMethodDefNil &&
@@ -3058,7 +2799,6 @@ HRESULT RegMeta::DefineParam(
 
 ErrExit:
     ;
-    END_ENTRYPOINT_NOTHROW;
     SetCallerExternal();
 
     return hr;
@@ -3080,11 +2820,6 @@ HRESULT RegMeta::SetFieldProps(           // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD: RegMeta::SetFieldProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        fd, dwFieldFlags, dwCPlusTypeFlag, pValue, cchValue));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -3100,8 +2835,6 @@ HRESULT RegMeta::SetFieldProps(           // S_OK or error.
     hr = _SetFieldProps(fd, dwFieldFlags, dwCPlusTypeFlag, pValue, cchValue);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetFieldProps
@@ -3124,12 +2857,6 @@ HRESULT RegMeta::SetPropertyProps(      // S_OK or error.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::SetPropertyProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        pr, dwPropFlags, dwCPlusTypeFlag, pValue, cchValue, mdSetter, mdGetter,
-        rmdOtherMethods));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -3137,8 +2864,6 @@ HRESULT RegMeta::SetPropertyProps(      // S_OK or error.
     hr = _SetPropertyProps(pr, dwPropFlags, dwCPlusTypeFlag, pValue, cchValue, mdSetter, mdGetter, rmdOtherMethods);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetPropertyProps
@@ -3160,10 +2885,6 @@ HRESULT RegMeta::SetParamProps(         // Return code.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::SetParamProps(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        pd, MDSTR(szName), dwParamFlags, dwCPlusTypeFlag, pValue, cchValue));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -3171,8 +2892,6 @@ HRESULT RegMeta::SetParamProps(         // Return code.
     hr = _SetParamProps(pd, szName, dwParamFlags, dwCPlusTypeFlag, pValue, cchValue);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetParamProps
@@ -3185,8 +2904,6 @@ STDMETHODIMP RegMeta::ApplyEditAndContinue(   // S_OK or error.
 {
 #ifdef FEATURE_METADATA_EMIT_ALL
     HRESULT hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     IMetaDataImport2 *pImport=0;        // Interface on the delta metadata.
     RegMeta     *pDeltaMD=0;            // The delta metadata.
@@ -3207,7 +2924,7 @@ STDMETHODIMP RegMeta::ApplyEditAndContinue(   // S_OK or error.
 ErrExit:
     if (pImport)
         pImport->Release();
-    END_ENTRYPOINT_NOTHROW;
+
     return hr;
 #else //!FEATURE_METADATA_EMIT_ALL
     return E_NOTIMPL;

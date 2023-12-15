@@ -294,7 +294,7 @@ namespace System.Linq.Parallel
     // the elements ordering key.
     //
 
-    internal struct ConcatKey<TLeftKey, TRightKey>
+    internal readonly struct ConcatKey<TLeftKey, TRightKey>
     {
         private readonly TLeftKey? _leftKey;
         private readonly TRightKey? _rightKey;

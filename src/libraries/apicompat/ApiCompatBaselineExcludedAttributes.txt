@@ -1,5 +1,6 @@
 // These attributes shouldn't be checked against baseline reference assemblies
 
 T:System.CLSCompliantAttribute
+T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute
 T:System.ComponentModel.EditorBrowsableAttribute
 T:System.ObsoleteAttribute

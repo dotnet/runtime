@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -14,11 +15,7 @@ namespace System.IO
     /// <summary>Base class for test classes the use temporary files that need to be cleaned up.</summary>
     public abstract partial class FileCleanupTestBase : IDisposable
     {
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-
         private string fallbackGuid = Guid.NewGuid().ToString("N").Substring(0, 10);
-
-        protected static bool IsProcessElevated => s_isElevated.Value;
 
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase(string tempDirectory = null)
@@ -205,30 +202,29 @@ namespace System.IO
 
                 if (!handle.IsInvalid)
                 {
-                    const int InitialBufferSize = 4096;
-                    char[]? buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
-                    uint result = GetFinalPathNameByHandle(handle, buffer);
+                    char[] buffer = new char[4096];
+                    uint result;
+                    fixed (char* bufPtr = buffer)
+                    {
+                        result = Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
+                    }
+
+                    if (result == 0)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    Debug.Assert(result <= buffer.Length);
 
                     // Remove extended prefix
                     int skip = PathInternal.IsExtended(buffer) ? 4 : 0;
 
-                    return new string(
-                        buffer,
-                        skip,
-                        (int)result - skip);
+                    return new string(buffer, skip, (int)result - skip);
                 }
             }
             catch { }
 
             return TestDirectory;
-        }
-
-        private unsafe uint GetFinalPathNameByHandle(SafeFileHandle handle, char[] buffer)
-        {
-            fixed (char* bufPtr = buffer)
-            {
-                return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
-            }
         }
 
         protected string CreateTestDirectory(params string[] paths)

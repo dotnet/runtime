@@ -102,10 +102,6 @@ PEImage::~PEImage()
 
     if (m_pMDImport)
         m_pMDImport->Release();
-#ifdef METADATATRACKER_ENABLED
-    if (m_pMDTracker != NULL)
-        m_pMDTracker->Deactivate();
-#endif // METADATATRACKER_ENABLED
 
 }
 
@@ -145,11 +141,11 @@ ULONG PEImage::Release()
         result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing %p\n", this));
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);
-                PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetPathHash(), &locator);
+                PEImage* deleted = (PEImage *)s_Images->DeleteValue(m_pathHash, &locator);
                 _ASSERTE(deleted == this);
             }
         }
@@ -174,7 +170,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         MODE_ANY;
     }
     CONTRACT_CHECK_END;
-
+#ifdef TARGET_WINDOWS
     CCHECK_START
     {
         // This is not intended to be an exhaustive test, just to provide a sanity check
@@ -190,7 +186,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         {
             // Drive path
             i++;
-            SString sDrivePath(SString::Literal, ":\\");
+            SString sDrivePath(SString::Literal, W(":\\"));
             CCHECK(path.Skip(i, sDrivePath));
         }
         else
@@ -201,19 +197,19 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         while (i != path.End())
         {
             // Check for multiple slashes
-            if(*i != '\\')
+            if(*i != DIRECTORY_SEPARATOR_CHAR_A)
             {
 
                 // Check for . or ..
                 SString sParentDir(SString::Ascii, "..");
                 SString sCurrentDir(SString::Ascii, ".");
                 if ((path.Skip(i, sParentDir) || path.Skip(i, sCurrentDir))
-                    && (path.Match(i, '\\')))
+                    && (path.Match(i, DIRECTORY_SEPARATOR_CHAR_A)))
                 {
                     CCHECK_FAIL("Illegal . or ..");
                 }
 
-                if (!path.Find(i, '\\'))
+                if (!path.Find(i, DIRECTORY_SEPARATOR_CHAR_A))
                     break;
             }
 
@@ -221,6 +217,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         }
     }
     CCHECK_END;
+#endif // TARGET_WINDOWS
 
     CHECK_OK;
 }
@@ -252,12 +249,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-
-#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-        if (pImage->GetPath().Equals(path))
-#else
         if (pImage->GetPath().EqualsCaseInsensitive(path))
-#endif
         {
             ret = TRUE;
         }
@@ -317,12 +309,6 @@ void PEImage::OpenMDImport()
 
         if(pMeta==NULL)
             return;
-
-#if METADATATRACKER_ENABLED
-        m_pMDTracker = MetaDataTracker::GetOrCreateMetaDataTracker((BYTE *)pMeta,
-                                                               cMeta,
-                                                               GetPath().GetUnicode());
-#endif // METADATATRACKER_ENABLED
 
         IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
                                                  cMeta,
@@ -395,20 +381,6 @@ void PEImage::GetMVID(GUID *pMvid)
 
 #endif // _DEBUG
 }
-
-void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EEFileLoadException::Throw(m_path, hrError);
-}
-
 
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
@@ -646,15 +618,13 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 PEImage::PEImage():
     m_path(),
+    m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_bundleFileLocation(),
     m_hFile(INVALID_HANDLE_VALUE),
     m_dwPEKind(0),
     m_dwMachine(0),
-#ifdef METADATATRACKER_DATA
-    m_pMDTracker(NULL),
-#endif // METADATATRACKER_DATA
     m_pMDImport(NULL)
 {
     CONTRACTL
@@ -898,7 +868,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
 
-    ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+    ErrorModeHolder mode{};
     m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS

@@ -5,8 +5,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Test
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public class Test
 {
     private const string RelativeSubdirectoryName = "RelativeNative";
     private const string PathEnvSubdirectoryName = "Subdirectory";
@@ -18,7 +20,7 @@ class Test
     private const string RelativePath1Unix =  @"./RelativeNative/../libDllImportPath_Relative";
     private const string RelativePath3Unix = @"../DllImportPathTest/libDllImportPath_Relative";
 
-    private const string UnicodeFileName = "DllImportPath_Unicode✔";
+    private const string UnicodeFileName = "DllImportPath_Unicode\u2714";
 
     [DllImport(@"DllImportPath_Local", EntryPoint = "GetZero")]
     private static extern int GetZero_Local1();
@@ -168,7 +170,8 @@ class Test
         GetZero_Exe();
     }
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -4,9 +4,9 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -200,7 +200,7 @@ namespace System.Text.Json
 
         internal ReadOnlyMemory<byte> GetRootRawValue()
         {
-            return GetRawValue(0, includeQuotes : true);
+            return GetRawValue(0, includeQuotes: true);
         }
 
         internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
@@ -287,8 +287,6 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            int matchIndex = isPropertyName ? index - DbRow.Size : index;
-
             byte[]? otherUtf8TextArray = null;
 
             int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
@@ -296,19 +294,16 @@ namespace System.Text.Json
                 stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
 
-            ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
-            OperationStatus status = JsonWriterHelper.ToUtf8(utf16Text, otherUtf8Text, out int consumed, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(otherText, otherUtf8Text, out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
             bool result;
-            if (status > OperationStatus.DestinationTooSmall)   // Equivalent to: (status == NeedMoreData || status == InvalidData)
+            if (status == OperationStatus.InvalidData)
             {
                 result = false;
             }
             else
             {
                 Debug.Assert(status == OperationStatus.Done);
-                Debug.Assert(consumed == utf16Text.Length);
-
                 result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
@@ -877,6 +872,15 @@ namespace System.Text.Json
                 rented.AsSpan().Clear();
                 ArrayPool<byte>.Shared.Return(rented.Array);
             }
+        }
+
+        internal void WritePropertyName(int index, Utf8JsonWriter writer)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index - DbRow.Size);
+            Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
+            WritePropertyName(row, writer);
         }
 
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)

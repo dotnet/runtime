@@ -9,4 +9,5 @@ internal sealed class WasmLogMessage
 {
     public string? method { get; set; }
     public string? payload { get; set; }
+    public object[]? arguments { get; set; }
 }

@@ -70,12 +70,12 @@ namespace System.Security.Cryptography.X509Certificates
             return pal;
         }
 
-        public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        internal static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
             byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         internal AppleCertificatePal(SafeSecCertificateHandle certHandle)
@@ -100,8 +100,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             _certHandle = null!;
             _identityHandle = null;
-
-            DisposeTempKeychain();
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;

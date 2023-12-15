@@ -123,8 +123,7 @@ static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorit
         }
     }
 
-    // Requires macOS 10.13+ or iOS 11+
-    /*if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Pss)
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Pss)
     {
         switch (hashAlgorithm)
         {
@@ -133,7 +132,7 @@ static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorit
             case PAL_SHA384: return kSecKeyAlgorithmRSASignatureDigestPSSSHA384;
             case PAL_SHA512: return kSecKeyAlgorithmRSASignatureDigestPSSSHA512;
         }
-    }*/
+    }
 
     if (signatureAlgorithm == PAL_SignatureAlgorithm_RSA_Raw)
     {

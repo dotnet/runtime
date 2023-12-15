@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -11,6 +12,12 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
+#if NET8_0_OR_GREATER
+        private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("\\[]+*&,");
+#else
+        private static ReadOnlySpan<char> s_charsToEscape => "\\[]+*&,".AsSpan();
+#endif
+
         [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
         {
@@ -27,11 +34,31 @@ namespace System.Reflection.TypeLoading
             return copy;
         }
 
+        [return: NotNullIfNotNull(nameof(original))]
+        // Converts an array of modified types to unmodified types when unmodified are requested.
+        // This prevents inconsistencies such as allowing modifiers to be returned.
+        // This doesn't affect performance since we need to clone arrays anyway before returning to the caller.
+        public static Type[]? CloneArrayToUnmodifiedTypes(this Type[]? original)
+        {
+            if (original == null)
+                return null;
+
+            if (original.Length == 0)
+                return Type.EmptyTypes;
+
+            Type[] copy = new Type[original.Length];
+            for (int i = 0; i < original.Length; i++)
+            {
+                copy[i] = original[i].UnderlyingSystemType;
+            }
+
+            return copy;
+        }
+
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
-            // todo: use IEnumerable<T> extension: return new ReadOnlyCollection<T>(enumeration.ToArray());
             List<T> list = new List<T>(enumeration);
-            return new ReadOnlyCollection<T>(list.ToArray());
+            return Array.AsReadOnly(list.ToArray());
         }
 
         public static int GetTokenRowNumber(this int token) => token & 0x00ffffff;
@@ -76,7 +103,7 @@ namespace System.Reflection.TypeLoading
         public static string EscapeTypeNameIdentifier(this string identifier)
         {
             // Some characters in a type name need to be escaped
-            if (identifier.IndexOfAny(s_charsToEscape) != -1)
+            if (TypeNameContainsTypeParserMetacharacters(identifier))
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
                 foreach (char c in identifier)
@@ -93,17 +120,25 @@ namespace System.Reflection.TypeLoading
 
         public static bool TypeNameContainsTypeParserMetacharacters(this string identifier)
         {
-            return identifier.IndexOfAny(s_charsToEscape) != -1;
+            return identifier.AsSpan().IndexOfAny(s_charsToEscape) >= 0;
         }
 
         public static bool NeedsEscapingInTypeName(this char c)
         {
-            return Array.IndexOf(s_charsToEscape, c) >= 0;
+#if NET8_0_OR_GREATER
+            return s_charsToEscape.Contains(c);
+#else
+            return s_charsToEscape.IndexOf(c) >= 0;
+#endif
         }
 
         public static string UnescapeTypeNameIdentifier(this string identifier)
         {
+#if NET5_0_OR_GREATER
+            if (identifier.Contains('\\'))
+#else
             if (identifier.IndexOf('\\') != -1)
+#endif
             {
                 StringBuilder sbUnescapedName = new StringBuilder(identifier.Length);
                 for (int i = 0; i < identifier.Length; i++)
@@ -120,8 +155,6 @@ namespace System.Reflection.TypeLoading
             }
             return identifier;
         }
-
-        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
         /// <summary>
         /// For AssemblyReferences, convert "unspecified" components from the ECMA format (0xffff) to the in-memory System.Version format (0xffffffff).
@@ -294,35 +327,6 @@ namespace System.Reflection.TypeLoading
                 };
 
             return (RoType?)Type.GetType(name, assemblyResolver: assemblyResolver, typeResolver: typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
-        }
-
-        public static Type[] ExtractCustomModifiers(this RoType type, bool isRequired)
-        {
-            int count = 0;
-            RoType walk = type;
-            while (walk is RoModifiedType roModifiedType)
-            {
-                if (roModifiedType.IsRequired == isRequired)
-                {
-                    count++;
-                }
-                walk = roModifiedType.UnmodifiedType;
-            }
-
-            Type[] modifiers = new Type[count];
-            walk = type;
-            int index = count;
-            while (walk is RoModifiedType roModifiedType)
-            {
-                if (roModifiedType.IsRequired == isRequired)
-                {
-                    modifiers[--index] = roModifiedType.Modifier;
-                }
-                walk = roModifiedType.UnmodifiedType;
-            }
-            Debug.Assert(index == 0);
-
-            return modifiers;
         }
 
         public static RoType SkipTypeWrappers(this RoType type)

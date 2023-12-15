@@ -3,7 +3,6 @@
 
 using System;
 using Microsoft.Win32.SafeHandles;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
@@ -22,6 +21,29 @@ internal static partial class Interop
         public uint QuotaNonPagedPoolUsage;
         public uint PagefileUsage;
         public uint PeakPagefileUsage;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct STARTUPINFO
+    {
+        public int cb;
+        public IntPtr lpReserved;
+        public IntPtr lpDesktop;
+        public IntPtr lpTitle;
+        public int dwX;
+        public int dwY;
+        public int dwXSize;
+        public int dwYSize;
+        public int dwXCountChars;
+        public int dwYCountChars;
+        public int dwFillAttribute;
+        public int dwFlags;
+        public short wShowWindow;
+        public short cbReserved2;
+        public IntPtr lpReserved2;
+        public IntPtr hStdInput;
+        public IntPtr hStdOutput;
+        public IntPtr hStdError;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -59,6 +81,9 @@ internal static partial class Interop
     [DllImport("kernel32.dll")]
     public static extern int GetProcessId(SafeProcessHandle nativeHandle);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    public static extern void GetStartupInfoW(out STARTUPINFO lpStartupInfo);
+
     [DllImport("kernel32.dll")]
     internal static extern int GetConsoleCP();
 
@@ -71,12 +96,6 @@ internal static partial class Interop
     [DllImport("kernel32.dll")]
     internal static extern int SetConsoleOutputCP(int codePage);
 
-    [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern uint NetUserAdd(string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
-
-    [DllImport("netapi32.dll", CharSet = CharSet.Unicode)]
-    internal static extern uint NetUserDel(string servername, string username);
-
     [DllImport("advapi32.dll")]
     internal static extern bool OpenProcessToken(SafeProcessHandle ProcessHandle, uint DesiredAccess, out SafeProcessHandle TokenHandle);
 
@@ -85,24 +104,6 @@ internal static partial class Interop
 
     [DllImport("shell32.dll")]
     internal static extern int SHChangeNotify(int eventId, int flags, IntPtr item1, IntPtr item2);
-
-    internal static void NetUserAdd(string username, string password)
-    {
-        USER_INFO_1 userInfo = new USER_INFO_1();
-        userInfo.usri1_name = username;
-        userInfo.usri1_password = password;
-        userInfo.usri1_priv = 1;
-
-        uint parm_err;
-        uint result = NetUserAdd(null, 1, ref userInfo, out parm_err);
-
-        if (result != ExitCodes.NERR_Success)
-        {
-            // most likely result == ERROR_ACCESS_DENIED
-            // due to running without elevated privileges
-            throw new Win32Exception((int)result);
-        }
-    }
 
     internal static bool ProcessTokenToSid(SafeProcessHandle token, out SecurityIdentifier sid)
     {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -126,11 +127,8 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(uint));
 
-            unchecked
-            {
-                byte* ptr = Pointer + offset;
-                return (uint)(ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24));
-            }
+            uint result = Unsafe.ReadUnaligned<uint>(Pointer + offset);
+            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
         }
 
         /// <summary>
@@ -187,11 +185,8 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(ushort));
 
-            unchecked
-            {
-                byte* ptr = Pointer + offset;
-                return (ushort)(ptr[0] | (ptr[1] << 8));
-            }
+            ushort result = Unsafe.ReadUnaligned<ushort>(Pointer + offset);
+            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
         }
 
         // When reference has tag bits.
@@ -250,7 +245,7 @@ namespace System.Reflection.Internal
             byte* ptr = Pointer + offset;
             if (BitConverter.IsLittleEndian)
             {
-                return *(Guid*)ptr;
+                return Unsafe.ReadUnaligned<Guid>(ptr);
             }
             else
             {
@@ -288,11 +283,11 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// Read UTF8 at the given offset up to the given terminator, null terminator, or end-of-block.
+        /// Read UTF-8 at the given offset up to the given terminator, null terminator, or end-of-block.
         /// </summary>
-        /// <param name="offset">Offset in to the block where the UTF8 bytes start.</param>
-        /// <param name="prefix">UTF8 encoded prefix to prepend to the bytes at the offset before decoding.</param>
-        /// <param name="utf8Decoder">The UTF8 decoder to use that allows user to adjust fallback and/or reuse existing strings without allocating a new one.</param>
+        /// <param name="offset">Offset in to the block where the UTF-8 bytes start.</param>
+        /// <param name="prefix">UTF-8 encoded prefix to prepend to the bytes at the offset before decoding.</param>
+        /// <param name="utf8Decoder">The UTF-8 decoder to use that allows user to adjust fallback and/or reuse existing strings without allocating a new one.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
         /// <param name="terminator">A character in the ASCII range that marks the end of the string.
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
@@ -309,7 +304,7 @@ namespace System.Reflection.Internal
         /// Get number of bytes from offset to given terminator, null terminator, or end-of-block (whichever comes first).
         /// Returned length does not include the terminator, but numberOfBytesRead out parameter does.
         /// </summary>
-        /// <param name="offset">Offset in to the block where the UTF8 bytes start.</param>
+        /// <param name="offset">Offset in to the block where the UTF-8 bytes start.</param>
         /// <param name="terminator">A character in the ASCII range that marks the end of the string.
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
@@ -512,7 +507,7 @@ namespace System.Reflection.Internal
         internal byte[] PeekBytes(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
-            return BlobUtilities.ReadBytes(Pointer + offset, byteCount);
+            return new ReadOnlySpan<byte>(Pointer + offset, byteCount).ToArray();
         }
 
         internal int IndexOf(byte b, int start)

@@ -360,6 +360,12 @@ StubLinker::StubLinker()
     m_cbStackFrame      = 0;
     m_fPushArgRegs      = FALSE;
 #endif
+#ifdef TARGET_RISCV64
+    m_fProlog           = FALSE;
+    m_cIntRegArgs       = 0;
+    m_cFpRegArgs        = 0;
+    m_cbStackSpace      = 0;
+#endif
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 #ifdef _DEBUG
     m_pUnwindInfoCheckLabel = NULL;
@@ -1891,8 +1897,30 @@ UINT StubLinker::GetStackFrameSize()
     return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
 }
 
+#elif defined(TARGET_RISCV64)
+void StubLinker::DescribeProlog(UINT cIntRegArgs, UINT cFpRegArgs, UINT cbStackSpace)
+{
+    m_fProlog               = TRUE;
+    m_cIntRegArgs           = cIntRegArgs;
+    m_cFpRegArgs            = cFpRegArgs;
+    m_cbStackSpace          = cbStackSpace;
+}
 
-#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
+UINT StubLinker::GetSavedRegArgsOffset()
+{
+    _ASSERTE(m_fProlog);
+    // This is the offset from SP
+    // We're assuming that the stublinker will push the arg registers to the bottom of the stack frame
+    return m_cbStackSpace + 2 * sizeof(void*); // 2 is for FP and LR
+}
+
+UINT StubLinker::GetStackFrameSize()
+{
+    _ASSERTE(m_fProlog);
+    return m_cbStackSpace + (2 + m_cIntRegArgs + m_cFpRegArgs) * sizeof(void*);
+}
+
+#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64), elif defined(TARGET_RISCV64)
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -2232,6 +2260,8 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
             m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
         if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
             m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
+        if ((flags & NEWSTUB_FL_THUNK) != 0)
+            m_numCodeBytesAndFlags |= THUNK_BIT;
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2465,15 +2495,15 @@ VOID ArgBasedStubCache::Dump()
     CONTRACTL_END;
 
     printf("--------------------------------------------------------------\n");
-    printf("ArgBasedStubCache dump (%lu fixed entries):\n", m_numFixedSlots);
+    printf("ArgBasedStubCache dump (%u fixed entries):\n", m_numFixedSlots);
     for (UINT32 i = 0; i < m_numFixedSlots; i++) {
 
-        printf("  Fixed slot %lu: ", (ULONG)i);
+        printf("  Fixed slot %u: ", (ULONG)i);
         Stub *pStub = m_aStub[i];
         if (!pStub) {
             printf("empty\n");
         } else {
-            printf("%zxh   - refcount is %lu\n",
+            printf("%zxh   - refcount is %u\n",
                    (size_t)(pStub->GetEntryPoint()),
                    (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
         }
@@ -2483,9 +2513,9 @@ VOID ArgBasedStubCache::Dump()
          pSlotEntry != NULL;
          pSlotEntry = pSlotEntry->m_pNext) {
 
-        printf("  Dyna. slot %lu: ", (ULONG)(pSlotEntry->m_key));
+        printf("  Dyna. slot %u: ", (ULONG)(pSlotEntry->m_key));
         Stub *pStub = pSlotEntry->m_pStub;
-        printf("%zxh   - refcount is %lu\n",
+        printf("%zxh   - refcount is %u\n",
                (size_t)(pStub->GetEntryPoint()),
                (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
 

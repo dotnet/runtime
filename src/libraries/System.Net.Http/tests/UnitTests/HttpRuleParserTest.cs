@@ -41,16 +41,20 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [MemberData(nameof(ValidTokenCharsArguments))]
-        public void IsTokenChar_ValidTokenChars_ConsideredValid(char token)
+        public void IsToken_ValidTokenChars_ConsideredValid(char token)
         {
-            Assert.True(HttpRuleParser.IsTokenChar(token));
+            Assert.True(HttpRuleParser.IsToken(stackalloc[] { token }));
+            var byteToken = (byte)token;
+            Assert.True(HttpRuleParser.IsToken(new ReadOnlySpan<byte>(in byteToken)));
         }
 
         [Theory]
         [MemberData(nameof(InvalidTokenCharsArguments))]
-        public void IsTokenChar_InvalidTokenChars_ConsideredInvalid(char token)
+        public void IsToken_InvalidTokenChars_ConsideredInvalid(char token)
         {
-            Assert.False(HttpRuleParser.IsTokenChar(token));
+            Assert.False(HttpRuleParser.IsToken(stackalloc[] { token }));
+            var byteToken = (byte)token;
+            Assert.False(HttpRuleParser.IsToken(new ReadOnlySpan<byte>(in byteToken)));
         }
 
         [Fact]

@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
-using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
 using System.Reflection;
-using System.Collections;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -108,7 +109,7 @@ namespace System.Net.Sockets
             SocketError errorCode = ReplaceHandle();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int) errorCode);
+                throw new SocketException((int)errorCode);
             }
 
             _handle.LastConnectFailed = false;
@@ -137,12 +138,20 @@ namespace System.Net.Sockets
 
             // Then replace the handle with a new one
             SafeSocketHandle oldHandle = _handle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out _handle);
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
+            Volatile.Write(ref _handle, newHandle);
             oldHandle.TransferTrackedState(_handle);
             oldHandle.Dispose();
+
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
+            }
+
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                _handle.Dispose();
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
@@ -167,7 +176,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-#pragma warning disable CA1822
+#pragma warning disable IDE0060, CA1822
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
             if (acceptSocket != null)
@@ -186,7 +195,7 @@ namespace System.Net.Sockets
             handle = null;
             return acceptSocket;
         }
-#pragma warning restore CA1822
+#pragma warning restore IDE0060, CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {
@@ -274,9 +283,17 @@ namespace System.Net.Sockets
             // Try to detect if a property gets added that we're not copying correctly.
             foreach (PropertyInfo pi in typeof(Socket).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                object? origValue = pi.GetValue(source);
-                object? cloneValue = pi.GetValue(this);
-                Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                try
+                {
+                    object? origValue = pi.GetValue(source);
+                    object? cloneValue = pi.GetValue(this);
+
+                    Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.OperationNotSupported)
+                {
+                    // macOS fails to retrieve DontFragment and MulticastLoopback at the moment
+                }
             }
 #endif
             return this;

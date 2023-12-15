@@ -87,7 +87,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     {
         if (defaultValue != nullptr)
         {
-            dwRetVal  = (DWORD)wcslen(defaultValue) + 1; // add one for null terminator
+            dwRetVal  = (DWORD)u16_strlen(defaultValue) + 1; // add one for null terminator
             retString = new WCHAR[dwRetVal];
             memcpy_s(retString, dwRetVal * sizeof(WCHAR), defaultValue, dwRetVal * sizeof(WCHAR));
         }
@@ -138,7 +138,7 @@ bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
             LogError("LoadRealJitLib - No real jit path");
             return false;
         }
-        jitLib = ::LoadLibraryW(jitLibPath);
+        jitLib = ::LoadLibraryExW(jitLibPath, NULL, 0);
         if (jitLib == NULL)
         {
             LogError("LoadRealJitLib - LoadLibrary failed to load '%ws' (0x%08x)", jitLibPath, ::GetLastError());
@@ -152,13 +152,11 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
 {
     WCHAR* quote = nullptr;
 
-    // If there are any quotes in the file name convert them to spaces.
-    while ((quote = wcsstr(fileName, W("\""))) != nullptr)
-    {
-        *quote = W(' ');
-    }
-
-    // Convert non-ASCII to ASCII for simplicity.
+    // Perform the following transforms:
+    //  - Convert non-ASCII to ASCII for simplicity
+    //  - Remove any illegal or annoying characters from the file name by
+    // converting them to underscores.
+    //  - Replace any quotes in the file name with spaces.
     for (quote = fileName; *quote != '\0'; quote++)
     {
         WCHAR ch = *quote;
@@ -166,20 +164,31 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
         {
             *quote = W('_');
         }
-    }
-
-    // Remove any illegal or annoying characters from the file name by converting them to underscores.
-    while ((quote = wcspbrk(fileName, W("()=<>:\"/\\|?! *.,"))) != nullptr)
-    {
-        *quote = W('_');
+        else
+        {
+            switch (ch)
+            {
+                case W('('): case W(')'): case W('='): case W('<'):
+                case W('>'): case W(':'): case W('/'): case W('\\'):
+                case W('|'): case W('?'): case W('!'): case W('*'):
+                case W('.'): case W(','):
+                    *quote = W('_');
+                    break;
+                case W('"'):
+                    *quote = W(' ');
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
 
 // All lengths in this function exclude the terminal NULL.
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
-    const size_t extensionLength    = wcslen(extension);
-    const size_t fileNameLength     = wcslen(fileName);
+    const size_t extensionLength    = u16_strlen(extension);
+    const size_t fileNameLength     = u16_strlen(fileName);
     const size_t randomStringLength = 8;
     const size_t maxPathLength      = MAX_PATH - 50;
 
@@ -253,6 +262,8 @@ static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTUR
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
 #elif defined(TARGET_LOONGARCH64)
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_RISCV64;
 #else
 #error Unsupported architecture
 #endif
@@ -377,4 +388,50 @@ bool GetArm64MovkConstant(UINT32* p, unsigned* pReg, unsigned* pCon, unsigned* p
 void PutArm64MovkConstant(UINT32* p, unsigned con)
 {
     *p = (*p & ~(0xffff << 5)) | ((con & 0xffff) << 5);
+}
+
+template<typename TPrint>
+static std::string getFromPrinter(TPrint print)
+{
+    char buffer[256];
+
+    size_t requiredBufferSize;
+    print(buffer, sizeof(buffer), &requiredBufferSize);
+
+    if (requiredBufferSize <= sizeof(buffer))
+    {
+        return std::string(buffer);
+    }
+    else
+    {
+        std::vector<char> vec(requiredBufferSize);
+        size_t printed = print(vec.data(), requiredBufferSize, nullptr);
+        assert(printed == requiredBufferSize - 1);
+        return std::string(vec.data());
+    }
+}
+
+std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd)
+{
+    return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return mc->repPrintMethodName(methHnd, buffer, bufferSize, requiredBufferSize);
+        });
+}
+
+std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
+{
+    return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return mc->repPrintClassName(clsHnd, buffer, bufferSize, requiredBufferSize);
+        });
+}
+
+std::string ConvertToUtf8(const WCHAR* str)
+{
+    unsigned len = WszWideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return{};
+
+    std::vector<char> buf(len + 1);
+    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    return std::string{ buf.data() };
 }

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject, WasmRoot } from "../types";
+import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject, WasmRoot, PromiseController } from "../types/internal";
 import { mono_bind_method, _create_primitive_converters } from "./method-binding";
 import { mono_wasm_new_root } from "../roots";
-import { Module, runtimeHelpers } from "../imports";
+import { Module, runtimeHelpers } from "../globals";
 import cwraps from "../cwraps";
-import { PromiseController } from "../promise-controller";
-import { legacyHelpers, wasm_type_symbol } from "./imports";
+import { legacyHelpers, wasm_type_symbol } from "./globals";
 import { find_corlib_class } from "../class-loader";
 type SigLine = [lazy: boolean, jsname: string, csname: string, signature: string/*ArgsMarshalString*/];
 const fn_signatures: SigLine[] = [
@@ -88,7 +87,7 @@ export function init_legacy_exports(): void {
     legacyHelpers.runtime_legacy_exports_classname = "LegacyExports";
     legacyHelpers.runtime_legacy_exports_class = cwraps.mono_wasm_assembly_find_class(runtimeHelpers.runtime_interop_module, runtimeHelpers.runtime_interop_namespace, legacyHelpers.runtime_legacy_exports_classname);
     if (!legacyHelpers.runtime_legacy_exports_class)
-        throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
+        throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + legacyHelpers.runtime_legacy_exports_classname + " class";
 
     for (const sig of fn_signatures) {
         const wf: any = legacyManagedExports;

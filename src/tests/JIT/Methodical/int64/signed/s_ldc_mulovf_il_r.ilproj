@@ -5,6 +5,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="s_ldc_mulovf_r.il" />
     <Compile Include="s_ldc_mulovf.il" />
   </ItemGroup>
 </Project>

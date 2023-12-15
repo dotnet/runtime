@@ -306,10 +306,12 @@ namespace System.Security.Cryptography
                 ValidateParameters(ref parameters);
                 ThrowIfDisposed();
 
-                if (parameters.Exponent == null || parameters.Modulus == null)
+                if (parameters.Exponent == null || !parameters.Modulus.AsSpan().ContainsAnyExcept((byte)0))
                 {
                     throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                 }
+
+                Debug.Assert(parameters.Modulus is not null);
 
                 // Check that either all parameters are not null or all are null, if a subset were set, then the parameters are invalid.
                 // If the parameters are all not null, verify the integrity of their lengths.
@@ -526,10 +528,7 @@ namespace System.Security.Cryptography
             [MemberNotNull(nameof(_key))]
             private void ThrowIfDisposed()
             {
-                if (_key == null)
-                {
-                    throw new ObjectDisposedException(nameof(RSA));
-                }
+                ObjectDisposedException.ThrowIf(_key is null, this);
             }
 
             private SafeRsaHandle GetKey()
@@ -793,7 +792,7 @@ namespace System.Security.Cryptography
                 return _key.Value.DuplicateHandle();
             }
 
-            private static Exception PaddingModeNotSupported() =>
+            private static CryptographicException PaddingModeNotSupported() =>
                 new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }
     }

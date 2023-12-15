@@ -195,14 +195,14 @@ namespace Internal.NativeFormat
         // This is the price we have to pay for using UTF8. Thing like High Surrogate Start Char - '\ud800'
         // can be expressed in UTF-16 (which is the format used to store ECMA metadata), but don't have
         // a representation in UTF-8.
-        private static Encoding _stringEncoding = new UTF8Encoding(false, false);
+        private static readonly UTF8Encoding s_stringEncoding = new UTF8Encoding(false, false);
 
         public void WriteString(string s)
         {
             // The actual bytes are only necessary for the final version during the growing phase
             if (IsGrowing())
             {
-                byte[] bytes = _stringEncoding.GetBytes(s);
+                byte[] bytes = s_stringEncoding.GetBytes(s);
 
                 _encoder.WriteUnsigned((uint)bytes.Length);
                 for (int i = 0; i < bytes.Length; i++)
@@ -210,7 +210,7 @@ namespace Internal.NativeFormat
             }
             else
             {
-                int byteCount = _stringEncoding.GetByteCount(s);
+                int byteCount = s_stringEncoding.GetByteCount(s);
                 _encoder.WriteUnsigned((uint)byteCount);
                 WritePad(byteCount);
             }
@@ -519,9 +519,9 @@ namespace Internal.NativeFormat
             return Unify(sig);
         }
 
-        public Vertex GetCallingConventionConverterSignature(uint flags, Vertex signature)
+        public Vertex GetFunctionPointerTypeSignature(Vertex methodSignature)
         {
-            CallingConventionConverterSignature sig = new CallingConventionConverterSignature(flags, GetRelativeOffsetSignature(signature));
+            FunctionPointerTypeSignature sig = new FunctionPointerTypeSignature(methodSignature);
             return Unify(sig);
         }
     }
@@ -627,7 +627,12 @@ namespace Internal.NativeFormat
 #endif
     class VertexBag : Vertex
     {
-        private enum EntryType { Vertex, Unsigned, Signed }
+        private enum EntryType
+        {
+            Vertex,
+            Unsigned,
+            Signed
+        }
 
         private struct Entry
         {
@@ -1473,41 +1478,29 @@ namespace Internal.NativeFormat
 #else
     internal
 #endif
-    class CallingConventionConverterSignature : Vertex
+    class FunctionPointerTypeSignature : Vertex
     {
-        private uint _flags;
-        private Vertex _signature;
+        private Vertex _methodSignature;
 
-        public CallingConventionConverterSignature(uint flags, Vertex signature)
+        public FunctionPointerTypeSignature(Vertex methodSignature)
         {
-            _flags = flags;
-            _signature = signature;
+            _methodSignature = methodSignature;
         }
 
         internal override void Save(NativeWriter writer)
         {
-            writer.WriteUnsigned(_flags);
-            _signature.Save(writer);
+            writer.WriteUnsigned((uint)TypeSignatureKind.FunctionPointer);
+            _methodSignature.Save(writer);
         }
 
         public override int GetHashCode()
         {
-            return 509 * 197 + ((int)_flags) * 23 + 647 * _signature.GetHashCode();
+            return _methodSignature.GetHashCode();
         }
 
         public override bool Equals(object obj)
         {
-            CallingConventionConverterSignature other = obj as CallingConventionConverterSignature;
-            if (other == null)
-                return false;
-
-            if (_flags != other._flags)
-                return false;
-
-            if (!_signature.Equals(other._signature))
-                return false;
-
-            return true;
+            return obj is FunctionPointerTypeSignature fnptrSig && _methodSignature.Equals(fnptrSig._methodSignature);
         }
     }
 

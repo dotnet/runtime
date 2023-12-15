@@ -51,7 +51,7 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Manifest
     {
-        // NetcoreApp3CompatMode flag is set on a .net5 app,
+        // NetcoreApp3CompatMode flag is set on a .net5+ app,
         // which chooses to build single-file apps in .netcore3.x compat mode,
         // by constructing the bundler with BundleAllContent option.
         // This mode is expected to be deprecated in future versions of .NET.
@@ -75,7 +75,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public const uint BundleMinorVersion = 0;
         private FileEntry DepsJsonEntry;
         private FileEntry RuntimeConfigJsonEntry;
-        private HeaderFlags Flags;
+        private readonly HeaderFlags Flags;
         public List<FileEntry> Files;
         public string BundleVersion => $"{BundleMajorVersion}.{BundleMinorVersion}";
 

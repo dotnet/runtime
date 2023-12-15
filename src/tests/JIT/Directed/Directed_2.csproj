@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="cmov/**/*.??proj" />
+    <MergedWrapperProjectReference Include="perffix/**/*.??proj" />
+    <MergedWrapperProjectReference Include="PREFIX/**/*.??proj" />
+    <MergedWrapperProjectReference Include="shift/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

@@ -243,6 +243,13 @@ class Dataflow
             private static void RemovedMethod() { }
         }
 
+        class Type4WithPublicKept
+        {
+            public static void KeptMethod() { }
+            public static void AlsoKeptMethod() { }
+            private static void RemovedMethod() { }
+        }
+
         struct Struct1WithPublicKept
         {
             public static void KeptMethod() { }
@@ -276,6 +283,21 @@ class Dataflow
             }
         }
 
+        static IKeepPublicThroughGvm s_keepPublicThroughGvm = new KeepPublicThroughGvm();
+
+        interface IKeepPublicThroughGvm
+        {
+            void Keep<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>();
+        }
+
+        class KeepPublicThroughGvm : IKeepPublicThroughGvm
+        {
+            public void Keep<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                Assert.NotNull(typeof(T).GetMethod("KeptMethod", BindingFlags.Public | BindingFlags.Static));
+            }
+        }
+
         public static void Run()
         {
             new KeepsNonPublic();
@@ -293,6 +315,10 @@ class Dataflow
             KeepsPublic<Type3WithPublicKept>.Keep<object>();
             Assert.Equal(2, typeof(Type3WithPublicKept).CountMethods());
             Assert.Equal(2, typeof(Type3WithPublicKept).CountPublicMethods());
+
+            s_keepPublicThroughGvm.Keep<Type4WithPublicKept>();
+            Assert.Equal(2, typeof(Type4WithPublicKept).CountMethods());
+            Assert.Equal(2, typeof(Type4WithPublicKept).CountPublicMethods());
         }
     }
 

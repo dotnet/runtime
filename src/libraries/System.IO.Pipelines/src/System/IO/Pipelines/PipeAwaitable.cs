@@ -8,7 +8,7 @@ using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
-    [DebuggerDisplay("CanceledState: {_awaitableState}, IsCompleted: {IsCompleted}")]
+    [DebuggerDisplay("CanceledState = {_awaitableState}, IsCompleted = {IsCompleted}")]
     internal struct PipeAwaitable
     {
         private AwaitableState _awaitableState;
@@ -45,8 +45,6 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginOperation(CancellationToken cancellationToken, Action<object?> callback, object? state)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {

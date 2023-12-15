@@ -59,8 +59,10 @@ namespace Microsoft.Extensions.Logging.Generators
                     // make sure the order of the templates matches the order of the logging method parameter
                     for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
-                        string t = lm.TemplateList[i];
-                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase))
+                        ReadOnlySpan<char> template = RemoveSpecialSymbol(lm.TemplateList[i].AsSpan());
+                        ReadOnlySpan<char> parameter = RemoveSpecialSymbol(lm.TemplateParameters[i].CodeName.AsSpan());
+
+                        if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -198,7 +200,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} _{p.Name};");
+                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {NormalizeSpecialSymbol(p.CodeName)};");
                 }
             }
 
@@ -206,7 +208,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this._{p.Name} = {p.CodeName};");
+                    _builder.AppendLine($"                {nestedIndentation}this.{NormalizeSpecialSymbol(p.CodeName)} = {p.CodeName};");
                 }
             }
 
@@ -217,7 +219,9 @@ namespace {lc.Namespace}
                     int index = 0;
                     foreach (LoggerParameter p in lm.TemplateParameters)
                     {
-                        if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+                        ReadOnlySpan<char> template = RemoveSpecialSymbol(t.Key.AsSpan());
+                        ReadOnlySpan<char> parameter = RemoveSpecialSymbol(p.Name.AsSpan());
+                        if (template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
                         }
@@ -231,13 +235,13 @@ namespace {lc.Namespace}
                         if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                {nestedIndentation}var {t.Key} = "
-                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this._{lm.TemplateParameters[index].Name});");
+                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName)});");
 
                             _needEnumerationHelper = true;
                         }
                         else
                         {
-                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this._{lm.TemplateParameters[index].Name};");
+                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName)};");
                         }
                     }
                 }
@@ -248,14 +252,15 @@ namespace {lc.Namespace}
                 int index = 0;
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    string name = p.Name;
-                    if (lm.TemplateMap.ContainsKey(name))
+                    // this is related to https://github.com/serilog/serilog-extensions-logging/issues/197
+                    string name = p.CodeName;
+                    if (lm.TemplateMap.TryGetValue(name, out string value))
                     {
                         // take the letter casing from the template
-                        name = lm.TemplateMap[name];
+                        name = value;
                     }
 
-                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this._{p.Name}),");
+                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{NormalizeSpecialSymbol(p.CodeName)}),");
                 }
 
                 _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
@@ -603,5 +608,30 @@ internal static class __LoggerMessageGenerator
 
             return sb.ToString();
         }
+        /// <summary>
+        /// Checks if variableOrTemplateName contains a special symbol ('@') as starting char
+        /// </summary>
+        /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
+        /// <returns>true if contains special symbol, false otherwise.</returns>
+        private static bool ContainsSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
+            => variableOrTemplateName.Length > 0 && variableOrTemplateName[0] == '@';
+
+        /// <summary>
+        /// prefix the symbol name with _ if the symbol don't start with @, allowing local variables to be declared when creating code.
+        /// </summary>
+        /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
+        /// <returns>current variableName value if variableOrTemplateName if it does not starts with symbol ('@'), otherwise returns a new string with its first char '@' replaced by '_'.</returns>
+        /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
+        private static string NormalizeSpecialSymbol(string variableOrTemplateName) =>
+            ContainsSpecialSymbol(variableOrTemplateName.AsSpan()) ? variableOrTemplateName : $"_{variableOrTemplateName}";
+
+        /// <summary>
+        /// Remove leading symbol from variableOrTemplateName.
+        /// </summary>
+        /// <param name="variableOrTemplateName">String that might contains special symbol.</param>
+        /// <returns>current variableOrTemplateName value if it does not contains starting '@' symbol, otherwise returns a new string with first char '@' removed.</returns>
+        /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
+        private static ReadOnlySpan<char> RemoveSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
+            => ContainsSpecialSymbol(variableOrTemplateName) ? variableOrTemplateName.Slice(1) : variableOrTemplateName;
     }
 }

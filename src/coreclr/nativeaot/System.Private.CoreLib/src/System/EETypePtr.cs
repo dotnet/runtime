@@ -10,17 +10,17 @@
 **
 ===========================================================*/
 
-using System.Runtime;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
 
-using MethodTable = Internal.Runtime.MethodTable;
-using EETypeElementType = Internal.Runtime.EETypeElementType;
-using EETypeRef = Internal.Runtime.EETypeRef;
 using CorElementType = System.Reflection.CorElementType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
+using MethodTable = Internal.Runtime.MethodTable;
+using MethodTableList = Internal.Runtime.MethodTableList;
 
 namespace System
 {
@@ -60,12 +60,7 @@ namespace System
 
         public static bool operator ==(EETypePtr value1, EETypePtr value2)
         {
-            if (value1.IsNull)
-                return value2.IsNull;
-            else if (value2.IsNull)
-                return false;
-            else
-                return RuntimeImports.AreTypesEquivalent(value1, value2);
+            return value1._value == value2._value;
         }
 
         public static bool operator !=(EETypePtr value1, EETypePtr value2)
@@ -77,20 +72,6 @@ namespace System
         public override int GetHashCode()
         {
             return (int)_value->HashCode;
-        }
-
-        //
-        // Faster version of Equals for use on EETypes that are known not to be null and where the "match" case is the hot path.
-        //
-        public bool FastEquals(EETypePtr other)
-        {
-            Debug.Assert(!this.IsNull);
-            Debug.Assert(!other.IsNull);
-
-            // Fast check for raw equality before making call to helper.
-            if (this.RawValue == other.RawValue)
-                return true;
-            return RuntimeImports.AreTypesEquivalent(this, other);
         }
 
         // Caution: You cannot safely compare RawValue's as RH does NOT unify EETypes. Use the == or Equals() methods exposed by EETypePtr itself.
@@ -130,7 +111,15 @@ namespace System
         {
             get
             {
-                return _value->IsPointerType;
+                return _value->IsPointer;
+            }
+        }
+
+        internal bool IsFunctionPointer
+        {
+            get
+            {
+                return _value->IsFunctionPointer;
             }
         }
 
@@ -138,7 +127,7 @@ namespace System
         {
             get
             {
-                return _value->IsByRefType;
+                return _value->IsByRef;
             }
         }
 
@@ -167,20 +156,11 @@ namespace System
             }
         }
 
-        // WARNING: Never call unless the MethodTable came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum)
-        // and this helper has undefined behavior when passed such as a enum.
         internal bool IsEnum
         {
             get
             {
-                // Q: When is an enum type a constructed generic type?
-                // A: When it's nested inside a generic type.
-                if (!(IsDefType))
-                    return false;
-
-                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
-                // Otherwise check the base type.
-                return (IsGenericTypeDefinition && IsPrimitive) || this.BaseType == EETypePtr.EETypePtrOf<Enum>();
+                return _value->IsEnum;
             }
         }
 
@@ -219,13 +199,25 @@ namespace System
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is an class, a struct, an enum, or an interface,
+        /// that is not generic type definition
+        /// </summary>
+        internal bool IsCanonical
+        {
+            get
+            {
+                return _value->IsCanonical;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
         /// </summary>
         internal bool IsDefType
         {
             get
             {
-                return !_value->IsParameterizedType;
+                return _value->IsDefType;
             }
         }
 
@@ -242,14 +234,6 @@ namespace System
             get
             {
                 return _value->IsInterface;
-            }
-        }
-
-        internal bool IsAbstract
-        {
-            get
-            {
-                return _value->IsAbstract;
             }
         }
 
@@ -274,6 +258,14 @@ namespace System
             get
             {
                 return _value->HasCctor;
+            }
+        }
+
+        internal bool IsTrackedReferenceWithFinalizer
+        {
+            get
+            {
+                return _value->IsTrackedReferenceWithFinalizer;
             }
         }
 
@@ -316,27 +308,11 @@ namespace System
                 if (IsArray)
                     return EETypePtr.EETypePtrOf<Array>();
 
-                if (IsPointer || IsByRef)
+                if (IsPointer || IsByRef || IsFunctionPointer)
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
                 return baseEEType;
-            }
-        }
-
-        internal ushort ComponentSize
-        {
-            get
-            {
-                return _value->ComponentSize;
-            }
-        }
-
-        internal uint BaseSize
-        {
-            get
-            {
-                return _value->BaseSize;
             }
         }
 
@@ -348,12 +324,12 @@ namespace System
             }
         }
 
-        // Has internal gc pointers.
-        internal bool HasPointers
+        // Instance contains pointers to managed objects.
+        internal bool ContainsGCPointers
         {
             get
             {
-                return _value->HasGCPointers;
+                return _value->ContainsGCPointers;
             }
         }
 
@@ -369,34 +345,47 @@ namespace System
         {
             get
             {
-                Debug.Assert((int)CorElementType.ELEMENT_TYPE_BOOLEAN == (int)EETypeElementType.Boolean);
-                Debug.Assert((int)CorElementType.ELEMENT_TYPE_I1 == (int)EETypeElementType.SByte);
-                Debug.Assert((int)CorElementType.ELEMENT_TYPE_I8 == (int)EETypeElementType.Int64);
-                EETypeElementType elementType = ElementType;
+                ReadOnlySpan<byte> map =
+                [
+                    default,
+                    (byte)CorElementType.ELEMENT_TYPE_VOID,      // EETypeElementType.Void
+                    (byte)CorElementType.ELEMENT_TYPE_BOOLEAN,   // EETypeElementType.Boolean
+                    (byte)CorElementType.ELEMENT_TYPE_CHAR,      // EETypeElementType.Char
+                    (byte)CorElementType.ELEMENT_TYPE_I1,        // EETypeElementType.SByte
+                    (byte)CorElementType.ELEMENT_TYPE_U1,        // EETypeElementType.Byte
+                    (byte)CorElementType.ELEMENT_TYPE_I2,        // EETypeElementType.Int16
+                    (byte)CorElementType.ELEMENT_TYPE_U2,        // EETypeElementType.UInt16
+                    (byte)CorElementType.ELEMENT_TYPE_I4,        // EETypeElementType.Int32
+                    (byte)CorElementType.ELEMENT_TYPE_U4,        // EETypeElementType.UInt32
+                    (byte)CorElementType.ELEMENT_TYPE_I8,        // EETypeElementType.Int64
+                    (byte)CorElementType.ELEMENT_TYPE_U8,        // EETypeElementType.UInt64
+                    (byte)CorElementType.ELEMENT_TYPE_I,         // EETypeElementType.IntPtr
+                    (byte)CorElementType.ELEMENT_TYPE_U,         // EETypeElementType.UIntPtr
+                    (byte)CorElementType.ELEMENT_TYPE_R4,        // EETypeElementType.Single
+                    (byte)CorElementType.ELEMENT_TYPE_R8,        // EETypeElementType.Double
 
-                if (elementType <= EETypeElementType.UInt64)
-                    return (CorElementType)elementType;
-                else if (elementType == EETypeElementType.Single)
-                    return CorElementType.ELEMENT_TYPE_R4;
-                else if (elementType == EETypeElementType.Double)
-                    return CorElementType.ELEMENT_TYPE_R8;
-                else if (elementType == EETypeElementType.IntPtr)
-                    return CorElementType.ELEMENT_TYPE_I;
-                else if (elementType == EETypeElementType.UIntPtr)
-                    return CorElementType.ELEMENT_TYPE_U;
-                else if (IsValueType)
-                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
-                else if (IsByRef)
-                    return CorElementType.ELEMENT_TYPE_BYREF;
-                else if (IsPointer)
-                    return CorElementType.ELEMENT_TYPE_PTR;
-                else if (IsSzArray)
-                    return CorElementType.ELEMENT_TYPE_SZARRAY;
-                else if (IsArray)
-                    return CorElementType.ELEMENT_TYPE_ARRAY;
-                else
-                    return CorElementType.ELEMENT_TYPE_CLASS;
+                    (byte)CorElementType.ELEMENT_TYPE_VALUETYPE, // EETypeElementType.ValueType
+                    (byte)CorElementType.ELEMENT_TYPE_VALUETYPE,
+                    (byte)CorElementType.ELEMENT_TYPE_VALUETYPE, // EETypeElementType.Nullable
+                    (byte)CorElementType.ELEMENT_TYPE_VALUETYPE,
+                    (byte)CorElementType.ELEMENT_TYPE_CLASS,     // EETypeElementType.Class
+                    (byte)CorElementType.ELEMENT_TYPE_CLASS,     // EETypeElementType.Interface
+                    (byte)CorElementType.ELEMENT_TYPE_CLASS,     // EETypeElementType.SystemArray
+                    (byte)CorElementType.ELEMENT_TYPE_ARRAY,     // EETypeElementType.Array
+                    (byte)CorElementType.ELEMENT_TYPE_SZARRAY,   // EETypeElementType.SzArray
+                    (byte)CorElementType.ELEMENT_TYPE_BYREF,     // EETypeElementType.ByRef
+                    (byte)CorElementType.ELEMENT_TYPE_PTR,       // EETypeElementType.Pointer
+                    (byte)CorElementType.ELEMENT_TYPE_FNPTR,     // EETypeElementType.FunctionPointer
+                    default, // Pad the map to 32 elements to enable range check elimination
+                    default,
+                    default,
+                    default
+                ];
 
+                // Verify last element of the map
+                Debug.Assert((byte)CorElementType.ELEMENT_TYPE_FNPTR == map[(int)EETypeElementType.FunctionPointer]);
+
+                return (CorElementType)map[(int)ElementType];
             }
         }
 
@@ -414,12 +403,6 @@ namespace System
             {
                 return RuntimeImports.GetRhCorElementTypeInfo(CorElementType);
             }
-        }
-
-        internal ref T GetWritableData<T>() where T : unmanaged
-        {
-            Debug.Assert(Internal.Runtime.WritableData.GetSize(IntPtr.Size) == sizeof(T));
-            return ref Unsafe.AsRef<T>((void*)_value->WritableData);
         }
 
         [Intrinsic]
@@ -453,17 +436,17 @@ namespace System
                 {
                     Debug.Assert((uint)index < _value->NumInterfaces);
 
-                    return new EETypePtr(_value->InterfaceMap[index].InterfaceType);
+                    return new EETypePtr(_value->InterfaceMap[index]);
                 }
             }
         }
 
         public struct GenericArgumentCollection
         {
-            private EETypeRef* _arguments;
+            private MethodTableList _arguments;
             private uint _argumentCount;
 
-            internal GenericArgumentCollection(uint argumentCount, EETypeRef* arguments)
+            internal GenericArgumentCollection(uint argumentCount, MethodTableList arguments)
             {
                 _argumentCount = argumentCount;
                 _arguments = arguments;
@@ -482,7 +465,7 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr(_arguments[index].Value);
+                    return new EETypePtr(_arguments[index]);
                 }
             }
         }

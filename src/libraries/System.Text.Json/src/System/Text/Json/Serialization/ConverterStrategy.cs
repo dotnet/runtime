@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Serialization;
+
 namespace System.Text.Json
 {
     /// <summary>
@@ -13,7 +15,7 @@ namespace System.Text.Json
     internal enum ConverterStrategy : byte
     {
         /// <summary>
-        /// Default value; not used by any converter.
+        /// Default value; only used by <see cref="JsonConverterFactory"/>.
         /// </summary>
         None = 0x0,
         /// <summary>

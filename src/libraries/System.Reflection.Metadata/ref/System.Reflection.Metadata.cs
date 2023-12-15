@@ -2689,6 +2689,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void OpCode(System.Reflection.Metadata.ILOpCode code) { }
         public void StoreArgument(int argumentIndex) { }
         public void StoreLocal(int slotIndex) { }
+        public System.Reflection.Metadata.Ecma335.SwitchInstructionEncoder Switch(int branchCount) { throw null; }
         public void Token(int token) { }
         public void Token(System.Reflection.Metadata.EntityHandle handle) { }
     }
@@ -3063,11 +3064,16 @@ namespace System.Reflection.Metadata.Ecma335
         public void String() { }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder SZArray() { throw null; }
         public void Type(System.Reflection.Metadata.EntityHandle type, bool isValueType) { }
+        public void TypedReference() { }
         public void UInt16() { }
         public void UInt32() { }
         public void UInt64() { }
         public void UIntPtr() { }
         public void VoidPointer() { }
+    }
+    public readonly struct SwitchInstructionEncoder
+    {
+        public void Branch(System.Reflection.Metadata.Ecma335.LabelHandle label) { }
     }
     public enum TableIndex : byte
     {
@@ -3248,12 +3254,14 @@ namespace System.Reflection.PortableExecutable
         ThreadTerm = (ushort)8,
         HighEntropyVirtualAddressSpace = (ushort)32,
         DynamicBase = (ushort)64,
+        ForceIntegrity = (ushort)128,
         NxCompatible = (ushort)256,
         NoIsolation = (ushort)512,
         NoSeh = (ushort)1024,
         NoBind = (ushort)2048,
         AppContainer = (ushort)4096,
         WdmDriver = (ushort)8192,
+        ControlFlowGuard = (ushort)16384,
         TerminalServerAware = (ushort)32768,
     }
     public enum Machine : ushort
@@ -3285,6 +3293,9 @@ namespace System.Reflection.PortableExecutable
         Arm64 = (ushort)43620,
         LoongArch32 = (ushort)25138,
         LoongArch64 = (ushort)25188,
+        RiscV32 = (ushort)20530,
+        RiscV64 = (ushort)20580,
+        RiscV128 = (ushort)20776,
     }
     public partial class ManagedPEBuilder : System.Reflection.PortableExecutable.PEBuilder
     {

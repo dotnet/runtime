@@ -2,21 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { isThenable } from "../cancelable-promise";
-import cwraps from "../cwraps";
+import { legacy_c_functions as cwraps } from "../cwraps";
 import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module } from "../imports";
-import { wrap_error_root } from "../invoke-js";
-import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
+import { Module } from "../globals";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { setI32_unchecked, setU32_unchecked, setF64, setB32, localHeapViewU8 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
-import { MonoObject, is_nullish, MonoClass, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types";
+import { stringToMonoStringRoot, stringToInternedMonoStringRoot } from "../strings";
+import { MonoObject, is_nullish, MonoClass, MonoArray, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types/internal";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref } from "./cs-to-js";
-import { legacyHelpers, wasm_type_symbol } from "./imports";
+import { legacyHelpers, wasm_type_symbol } from "./globals";
+import { assert_legacy_interop } from "./method-binding";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     switch (true) {
         case js_obj === null:
@@ -37,8 +37,8 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
 /**
  * @deprecated Not GC or thread safe. For blazor use only
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj(js_obj: any): MonoObject {
+    assert_legacy_interop();
     const temp = mono_wasm_new_root<MonoObject>();
     try {
         js_to_mono_obj_root(js_obj, temp, false);
@@ -51,7 +51,6 @@ export function js_to_mono_obj(js_obj: any): MonoObject {
 /**
  * @deprecated Not GC or thread safe
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
@@ -62,8 +61,9 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
+    assert_legacy_interop();
+
     if (is_nullish(result))
         throw new Error("Expected (value, WasmRoot, boolean)");
 
@@ -89,10 +89,10 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             return;
         }
         case typeof js_obj === "string":
-            js_string_to_mono_string_root(js_obj, <any>result);
+            stringToMonoStringRoot(js_obj, <any>result);
             return;
         case typeof js_obj === "symbol":
-            js_string_to_mono_string_interned_root(js_obj, <any>result);
+            stringToInternedMonoStringRoot(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
             setB32(legacyHelpers._box_buffer, js_obj);
@@ -150,14 +150,16 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 
 // https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
 function js_typedarray_to_heap(typedArray: TypedArray) {
+    assert_legacy_interop();
     const numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
     const ptr = Module._malloc(numBytes);
-    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>ptr, numBytes);
+    const heapU8 = localHeapViewU8();
+    const heapBytes = new Uint8Array(heapU8.buffer, <any>ptr, numBytes);
     heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
+    // WARNING: returned memory view will get stale when linear memory grows on another thread. This is legacy interop so we don't try to fix it. The view will be fine when used in synchronous calls.
     return heapBytes;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -181,7 +183,6 @@ export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoA
 /**
  * @deprecated Not GC or thread safe
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_typed_array_to_array(js_obj: any): MonoArray {
     const temp = mono_wasm_new_root<MonoArray>();
     try {
@@ -192,8 +193,7 @@ export function js_typed_array_to_array(js_obj: any): MonoArray {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/explicit-module-boundary-types
-export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number): number {
+export function js_to_mono_enum(js_obj: any): number {
     if (typeof (js_obj) !== "number")
         throw new Error(`Expected numeric value for enum argument, got '${js_obj}'`);
 
@@ -274,6 +274,7 @@ export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_excep
 
         // returns pointer to C# array
         js_typed_array_to_array_root(js_obj, resultRoot);
+        wrap_no_error_root(is_exception);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {

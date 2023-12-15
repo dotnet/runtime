@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -13,11 +13,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class EventPolicies : MemberPolicies<EventInfo>
     {
+        public static readonly EventPolicies Instance = new EventPolicies();
+
+        public EventPolicies() : base(MemberTypeIndex.Event) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
-        public sealed override IEnumerable<EventInfo> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<EventInfo> GetDeclaredMembers(Type type)
         {
-            return typeInfo.DeclaredEvents;
+            return type.GetEvents(DeclaredOnlyLookup);
         }
 
         public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
@@ -67,7 +71,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
             MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
+            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         public sealed override bool OkToIgnoreAmbiguity(EventInfo m1, EventInfo m2)

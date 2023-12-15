@@ -4,16 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Core
 {
     // Auto StructLayout used to suppress warning that order of fields is not guaranteed in partial structs
     [StructLayout(LayoutKind.Auto)]
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct AssemblyBindResult
     {
@@ -28,12 +28,9 @@ namespace Internal.Reflection.Core
     //
     // If the binder cannot locate an assembly, it must return null and set "exception" to an exception object.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class AssemblyBinder
     {
-        public const string DefaultAssemblyNameForGetType = "System.Private.CoreLib";
-
         public abstract bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception);
 
         public abstract bool Bind(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> rawSymbolStore, out AssemblyBindResult result, out Exception exception);

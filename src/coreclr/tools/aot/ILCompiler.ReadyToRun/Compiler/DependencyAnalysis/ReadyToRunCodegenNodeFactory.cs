@@ -44,9 +44,20 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public enum TypeValidationRule
+    {
+        Automatic,
+        AutomaticWithLogging,
+        AlwaysValidate,
+        SkipTypeValidation
+    }
+
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
+        public TypeValidationRule TypeValidation;
+        public int DeterminismStress;
+        public bool PrintReproArgs;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -76,6 +87,16 @@ namespace ILCompiler.DependencyAnalysis
         List<ILBodyFixupSignature> _markedILBodyFixupSignatures = new List<ILBodyFixupSignature>();
 
         public bool MarkingComplete => _markingComplete;
+
+        public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
+        {
+            if (HotColdMap == null)
+            {
+                HotColdMap = new HotColdMapNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap, HotColdMap);
+                dependencyGraph.AddRoot(HotColdMap, "HotColdMap is generated because there is cold code");
+            }
+        }
 
         public void SetMarkingComplete()
         {
@@ -176,7 +197,10 @@ namespace ILCompiler.DependencyAnalysis
             ResourceData win32Resources,
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
-            ulong imageBase)
+            ulong imageBase,
+            EcmaModule associatedModule,
+            int genericCycleDepthCutoff,
+            int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -188,7 +212,8 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
-            Header = new GlobalHeaderNode(Target, flags);
+
+            Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
@@ -204,6 +229,13 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             CreateNodeCaches();
+
+            if (genericCycleBreadthCutoff >= 0 || genericCycleDepthCutoff >= 0)
+            {
+                _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(
+                    depthCutoff: genericCycleDepthCutoff,
+                    breadthCutoff: genericCycleBreadthCutoff);
+            }
         }
 
         private void CreateNodeCaches()
@@ -338,6 +370,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
+        public HotColdMapNode HotColdMap;
+
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
         public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
@@ -374,6 +408,8 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode ILBodyPrecodeImports;
 
         private NodeCache<ReadyToRunHelper, Import> _constructedHelpers;
+
+        private LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
 
         public Import GetReadyToRunHelperCell(ReadyToRunHelper helperId)
         {
@@ -681,7 +717,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.IsCompositeBuildMode)
             {
-                assemblyTable = new AssemblyTableNode(Target);
+                assemblyTable = new AssemblyTableNode();
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
             }
 
@@ -693,20 +729,20 @@ namespace ILCompiler.DependencyAnalysis
                 HeaderNode tableHeader = Header;
                 if (assemblyTable != null)
                 {
-                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(Target, ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
+                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
                     assemblyTable.Add(perAssemblyHeader);
                     tableHeader = perAssemblyHeader;
                 }
 
-                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule, Target);
+                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
 
-                TypesTableNode typesTable = new TypesTableNode(Target, inputModule);
+                TypesTableNode typesTable = new TypesTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
 
                 if (CompilationModuleGroup.IsCompositeBuildMode)
                 {
-                    InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule, InliningInfoNode.InfoType.InliningInfo2);
+                    InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
                 }
 
@@ -719,9 +755,27 @@ namespace ILCompiler.DependencyAnalysis
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
                 }
+
+                if (EnclosingTypeMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new EnclosingTypeMapNode(inputModule);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node, node);
+                }
+
+                if (TypeGenericInfoMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new TypeGenericInfoMapNode(inputModule);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node, node);
+                }
+
+                if (MethodIsGenericMapNode.IsSupported(inputModule.MetadataReader))
+                {
+                    var node = new MethodIsGenericMapNode(inputModule);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
+                }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(Target, null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
@@ -730,9 +784,9 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
 
-            DebugInfoTable = new DebugInfoTableNode(Target);
+            DebugInfoTable = new DebugInfoTableNode();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
 
             EagerImports = new ImportSectionNode(
@@ -767,22 +821,26 @@ namespace ILCompiler.DependencyAnalysis
             if ((ProfileDataManager != null) && (ProfileDataManager.EmbedPgoDataInR2RImage))
             {
                 // Profile instrumentation data attaches here
-                HashSet<MethodDesc> methodsToInsertInstrumentationDataFor = new HashSet<MethodDesc>();
-                foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
+
+                bool HasAnyProfileDataForInput()
                 {
-                    foreach (MethodDesc method in ProfileDataManager.GetMethodsForModuleDesc(inputModule))
+                    foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
                     {
-                        if (ProfileDataManager[method].SchemaData != null)
+                        foreach (MethodDesc method in ProfileDataManager.GetInputProfileDataMethodsForModule(inputModule))
                         {
-                            methodsToInsertInstrumentationDataFor.Add(method);
+                            if (ProfileDataManager[method].SchemaData != null)
+                            {
+                                return true;
+                            }
                         }
                     }
+
+                    return false;
                 }
-                if (methodsToInsertInstrumentationDataFor.Count != 0)
+
+                if (ProfileDataManager.SynthesizeRandomPgoData || HasAnyProfileDataForInput())
                 {
-                    MethodDesc[] methodsToInsert = methodsToInsertInstrumentationDataFor.ToArray();
-                    methodsToInsert.MergeSort(TypeSystemComparer.Instance.Compare);
-                    InstrumentationDataTable = new InstrumentationDataTableNode(this, methodsToInsert, ProfileDataManager);
+                    InstrumentationDataTable = new InstrumentationDataTableNode(this, ProfileDataManager);
                     Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
                 }
             }
@@ -991,6 +1049,11 @@ namespace ILCompiler.DependencyAnalysis
         public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
         {
             return _copiedManagedResources.GetOrAdd(module);
+        }
+
+        public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
+        {
+            _genericCycleDetector?.DetectCycle(caller, callee);
         }
     }
 }

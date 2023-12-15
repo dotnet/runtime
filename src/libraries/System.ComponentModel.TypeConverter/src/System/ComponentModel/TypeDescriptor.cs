@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -395,7 +396,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(objectType);
 
@@ -664,7 +665,7 @@ namespace System.ComponentModel
                     if (extDesc != null)
                     {
                         ICollection extResults = extDesc.GetAttributes();
-                        results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, component, null);
+                        results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, null);
                     }
                 }
                 else
@@ -682,7 +683,7 @@ namespace System.ComponentModel
                 if (extDesc != null)
                 {
                     ICollection extResults = extDesc.GetAttributes();
-                    results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, component, cache);
+                    results = PipelineMerge(PIPELINE_ATTRIBUTES, results, extResults, cache);
                 }
 
                 results = PipelineFilter(PIPELINE_ATTRIBUTES, results, component, cache);
@@ -1077,13 +1078,13 @@ namespace System.ComponentModel
                     if (extDesc != null)
                     {
                         ICollection extResults = extDesc.GetEvents(attributes);
-                        results = PipelineMerge(PIPELINE_EVENTS, results, extResults, component, null);
+                        results = PipelineMerge(PIPELINE_EVENTS, results, extResults, null);
                     }
                 }
                 else
                 {
                     results = PipelineFilter(PIPELINE_EVENTS, results, component, null);
-                    results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, component, null);
+                    results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, null);
                 }
             }
             else
@@ -1095,11 +1096,11 @@ namespace System.ComponentModel
                 if (extDesc != null)
                 {
                     ICollection extResults = extDesc.GetEvents(attributes);
-                    results = PipelineMerge(PIPELINE_EVENTS, results, extResults, component, cache);
+                    results = PipelineMerge(PIPELINE_EVENTS, results, extResults, cache);
                 }
 
                 results = PipelineFilter(PIPELINE_EVENTS, results, component, cache);
-                results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, component, cache);
+                results = PipelineAttributeFilter(PIPELINE_EVENTS, results, attributes, cache);
             }
 
             if (!(results is EventDescriptorCollection evts))
@@ -1136,7 +1137,7 @@ namespace System.ComponentModel
                     name = component.Site.Name;
                 }
 
-                if (name == null || name.Length == 0)
+                if (string.IsNullOrEmpty(name))
                 {
                     int ci = System.Threading.Interlocked.Increment(ref s_collisionIndex) - 1;
                     name = ci.ToString(CultureInfo.InvariantCulture);
@@ -1317,13 +1318,13 @@ namespace System.ComponentModel
                     if (extDesc != null)
                     {
                         ICollection extResults = noAttributes ? extDesc.GetProperties() : extDesc.GetProperties(attributes);
-                        results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, component, null);
+                        results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, null);
                     }
                 }
                 else
                 {
                     results = PipelineFilter(PIPELINE_PROPERTIES, results, component, null);
-                    results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, component, null);
+                    results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, null);
                 }
             }
             else
@@ -1335,11 +1336,11 @@ namespace System.ComponentModel
                 if (extDesc != null)
                 {
                     ICollection extResults = noAttributes ? extDesc.GetProperties() : extDesc.GetProperties(attributes);
-                    results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, component, cache);
+                    results = PipelineMerge(PIPELINE_PROPERTIES, results, extResults, cache);
                 }
 
                 results = PipelineFilter(PIPELINE_PROPERTIES, results, component, cache);
-                results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, component, cache);
+                results = PipelineAttributeFilter(PIPELINE_PROPERTIES, results, attributes, cache);
             }
 
             if (!(results is PropertyDescriptorCollection props))
@@ -1541,6 +1542,17 @@ namespace System.ComponentModel
                 {
                     type = ComObjectType;
                 }
+                else if (OperatingSystem.IsWindows()
+                    && ComWrappers.TryGetComInstance(instance, out nint unknown))
+                {
+                    // ComObjectType uses the Windows Forms provided ComNativeDescriptor. It currently has hard Win32
+                    // API dependencies. Even though ComWrappers work with other platforms, restricting to Windows until
+                    // such time that the ComNativeDescriptor can handle basic COM types on other platforms.
+                    //
+                    // Tracked with https://github.com/dotnet/winforms/issues/9291
+                    Marshal.Release(unknown);
+                    type = ComObjectType;
+                }
 
                 if (createDelegator)
                 {
@@ -1648,7 +1660,7 @@ namespace System.ComponentModel
         /// user-defined filter.
         /// </summary>
         [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[]? filter, object instance, IDictionary? cache)
+        private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[]? filter, IDictionary? cache)
         {
             Debug.Assert(pipelineType != PIPELINE_ATTRIBUTES, "PipelineAttributeFilter is not supported for attributes");
 
@@ -1958,7 +1970,7 @@ namespace System.ComponentModel
         /// merges extended metdata with primary metadata, and stores it in
         /// the cache if it is available.
         /// </summary>
-        private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, object instance, IDictionary? cache)
+        private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, IDictionary? cache)
         {
             // If there is no secondary collection, there is nothing to merge.
             if (secondary == null || secondary.Count == 0)
@@ -2423,8 +2435,7 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(primary);
 
-            Hashtable assocTable = AssociationTable;
-            assocTable?.Remove(primary);
+            AssociationTable?.Remove(primary);
         }
 
         /// <summary>
@@ -3015,7 +3026,7 @@ namespace System.ComponentModel
                 IServiceProvider? provider,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
                 Type[]? argTypes,
-                object[]? args)
+                object?[]? args)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
 
@@ -3160,7 +3171,7 @@ namespace System.ComponentModel
                     TypeDescriptionProvider p = _node.Provider;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedAttributes(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedAttributes();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3269,7 +3280,7 @@ namespace System.ComponentModel
                     TypeDescriptionProvider p = _node.Provider;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedDefaultProperty(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedDefaultProperty();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3311,7 +3322,7 @@ namespace System.ComponentModel
                     TypeDescriptionProvider p = _node.Provider;
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedEvents(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedEvents();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3337,7 +3348,7 @@ namespace System.ComponentModel
                         // are accessed through our pipeline code, which always filters before
                         // returning. So any filter we do here is redundant. Note that we do
                         // pass a valid filter to a custom descriptor so it can optimize if it wants.
-                        EventDescriptorCollection events = ReflectTypeDescriptionProvider.GetExtendedEvents(_instance);
+                        EventDescriptorCollection events = ReflectTypeDescriptionProvider.GetExtendedEvents();
                         return events;
                     }
 
@@ -3411,7 +3422,7 @@ namespace System.ComponentModel
 
                     if (p is ReflectTypeDescriptionProvider)
                     {
-                        return ReflectTypeDescriptionProvider.GetExtendedPropertyOwner(_instance, pd);
+                        return ReflectTypeDescriptionProvider.GetExtendedPropertyOwner(_instance);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3753,7 +3764,7 @@ namespace System.ComponentModel
                 object? owner;
                 if (p is ReflectTypeDescriptionProvider)
                 {
-                    owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!, pd);
+                    owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!);
                 }
                 else
                 {

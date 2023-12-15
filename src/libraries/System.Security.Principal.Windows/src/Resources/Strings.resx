@@ -81,9 +81,6 @@
   <data name="ArgumentOutOfRange_ArrayTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the required data. Check array length and offset.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="IdentityReference_AccountNameTooLong" xml:space="preserve">
     <value>Account name is too long.</value>
   </data>

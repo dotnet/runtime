@@ -30,7 +30,11 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
-                dictionarySlot = factory.GenericDictionaryLayout(_dictionaryOwner).GetSlotForEntry(lookup);
+                if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
+                {
+                    encoder.EmitMOV(result, (ushort)0);
+                    return;
+                }
             }
 
             // Load the generic dictionary cell
@@ -45,24 +49,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 encoder.EmitCMP(result, 0);
                 encoder.EmitJE(GetBadSlotHelper(factory));
-            }
-
-            switch (lookup.LookupResultReferenceType(factory))
-            {
-                case GenericLookupResultReferenceType.Indirect:
-                    // Do another indirection
-                    encoder.EmitLDR(result, result);
-                    break;
-
-                case GenericLookupResultReferenceType.ConditionalIndirect:
-                    // Test result, 0x1
-                    // JEQ L1
-                    // mov result, [result-1]
-                    // L1:
-                    throw new NotImplementedException();
-
-                default:
-                    break;
             }
         }
 
@@ -81,8 +67,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
 
-                        MetadataType target = (MetadataType)_target;
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -90,8 +75,8 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitSUB(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, (short)factory.Target.PointerSize);
-                            encoder.EmitCMP(encoder.TargetRegister.Arg2, 1);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg2, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -111,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLDR(encoder.TargetRegister.Result, encoder.TargetRegister.Result);
 
                         MetadataType target = (MetadataType)_target;
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -122,8 +107,8 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
 
                             encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, (short)factory.Target.PointerSize);
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -144,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
 
                         ISymbolNode helperEntrypoint;
-                        if (factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (TriggersLazyStaticConstructor(factory))
                         {
                             // There is a lazy class constructor. We need the non-GC static base because that's where the
                             // class constructor context lives.

@@ -149,7 +149,7 @@ BOOL PELoader::open(HMODULE hMod)
             }
             fileAlignment = VAL32(m_pNT32->OptionalHeader.FileAlignment)-1;
         }
-        else //For now assume not i386 is IA64
+        else
         {
             if ((m_pNT64->Signature != VAL32(IMAGE_NT_SIGNATURE)) ||
                 (m_pNT64->FileHeader.SizeOfOptionalHeader != VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))))

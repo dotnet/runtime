@@ -173,30 +173,7 @@ namespace System.DirectoryServices.Protocols
 
         internal void Init()
         {
-            string hostname = null;
-            string[] servers = ((LdapDirectoryIdentifier)_directoryIdentifier)?.Servers;
-            if (servers != null && servers.Length != 0)
-            {
-                var temp = new StringBuilder(200);
-                for (int i = 0; i < servers.Length; i++)
-                {
-                    if (servers[i] != null)
-                    {
-                        temp.Append(servers[i]);
-                        if (i < servers.Length - 1)
-                        {
-                            temp.Append(' ');
-                        }
-                    }
-                }
-
-                if (temp.Length != 0)
-                {
-                    hostname = temp.ToString();
-                }
-            }
-
-            InternalInitConnectionHandle(hostname);
+            InternalInitConnectionHandle();
 
             // Create a WeakReference object with the target of ldapHandle and put it into our handle table.
             lock (s_objectLock)
@@ -1037,7 +1014,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // Throw if user wants to do anonymous bind but specifies credentials.
-            if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || string.IsNullOrEmpty(newCredential.UserName))))
+            if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || !string.IsNullOrEmpty(newCredential.UserName))))
             {
                 throw new InvalidOperationException(SR.InvalidAuthCredential);
             }
@@ -1086,7 +1063,7 @@ namespace System.DirectoryServices.Protocols
             else if (AuthType == AuthType.Basic)
             {
                 var tempDomainName = new StringBuilder(100);
-                if (domainName != null && domainName.Length != 0)
+                if (!string.IsNullOrEmpty(domainName))
                 {
                     tempDomainName.Append(domainName);
                     tempDomainName.Append('\\');

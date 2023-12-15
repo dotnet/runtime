@@ -161,7 +161,8 @@ stub_debugger_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoCo
 static void
 stub_debugger_user_break (void)
 {
-	G_BREAKPOINT ();
+	if (get_mini_debug_options ()->native_debugger_break)
+		G_BREAKPOINT ();
 }
 
 static void

@@ -22,6 +22,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData(typeof(ClassWithCustomNamedInitOnlyProperty))]
+        [InlineData(typeof(StructWithCustomNamedInitOnlyProperty))]
+        public virtual async Task CustomNamedInitOnlyProperties(Type type)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/82730
+
+            // Init-only property included by default.
+            object obj = await Serializer.DeserializeWrapper(@"{""CustomMyInt"":1}", type);
+            Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
+
+            // Init-only properties can be serialized.
+            Assert.Equal(@"{""CustomMyInt"":1}", await Serializer.SerializeWrapper(obj));
+        }
+
+        [Theory]
         [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter))]
         [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter))]
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter))]
@@ -49,6 +64,20 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
         }
 
+        [Fact]
+        public async Task NullableStructWithInitOnlyProperty()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/86483
+
+            StructWithInitOnlyProperty? value = new StructWithInitOnlyProperty { MyInt = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+
+            Assert.Equal("""{"MyInt":42}""", json);
+
+            StructWithInitOnlyProperty? deserializedValue = await Serializer.DeserializeWrapper<StructWithInitOnlyProperty?>(json);
+            Assert.Equal(deserializedValue, value);
+        }
+
         public class ClassWithInitOnlyProperty
         {
             public int MyInt { get; init; }
@@ -56,6 +85,18 @@ namespace System.Text.Json.Serialization.Tests
 
         public struct StructWithInitOnlyProperty
         {
+            public int MyInt { get; init; }
+        }
+
+        public class ClassWithCustomNamedInitOnlyProperty
+        {
+            [JsonPropertyName("CustomMyInt")]
+            public int MyInt { get; init; }
+        }
+
+        public struct StructWithCustomNamedInitOnlyProperty
+        {
+            [JsonPropertyName("CustomMyInt")]
             public int MyInt { get; init; }
         }
 

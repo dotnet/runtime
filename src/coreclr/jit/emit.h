@@ -38,6 +38,12 @@
 #define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
 #endif
 
+#ifdef TARGET_XARCH
+#define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+#else
+#define EMIT_BACKWARDS_NAVIGATION 0
+#endif
+
 /*****************************************************************************/
 
 #ifdef DEBUG
@@ -131,6 +137,16 @@ public:
     {
     }
 
+    emitLocation(insGroup* _ig, unsigned _codePos)
+    {
+        SetLocation(_ig, _codePos);
+    }
+
+    emitLocation(emitter* emit)
+    {
+        CaptureLocation(emit);
+    }
+
     emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0)
     {
     }
@@ -142,6 +158,8 @@ public:
     }
 
     void CaptureLocation(emitter* emit);
+    void SetLocation(insGroup* _ig, unsigned _codePos);
+    void SetLocation(emitLocation newLocation);
 
     bool IsCurrentLocation(emitter* emit) const;
 
@@ -160,6 +178,7 @@ public:
     }
 
     int GetInsNum() const;
+    int GetInsOffset() const;
 
     bool operator!=(const emitLocation& other) const
     {
@@ -239,6 +258,10 @@ struct insGroup
 {
     insGroup* igNext;
 
+#if EMIT_BACKWARDS_NAVIGATION
+    insGroup* igPrev;
+#endif
+
 #ifdef DEBUG
     insGroup* igSelf; // for consistency checking
 #endif
@@ -250,6 +273,7 @@ struct insGroup
 #ifdef DEBUG
     BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
     jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+    size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
@@ -262,24 +286,24 @@ struct insGroup
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS 0x0001    // new set of live GC ref variables
-#define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FINALLY_TARGET 0x0004 // this group is the start of a basic block that is returned to after a finally.
-#endif                            // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FUNCLET_PROLOG 0x0008 // this group belongs to a funclet prolog
-#define IGF_FUNCLET_EPILOG 0x0010 // this group belongs to a funclet epilog.
-#define IGF_EPILOG 0x0020         // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT 0x0040  // this IG is in a no-interrupt region (prolog, epilog, etc.)
-#define IGF_UPD_ISZ 0x0080        // some instruction sizes updated
-#define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
-#define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
+#define IGF_GC_VARS 0x0001        // new set of live GC ref variables
+#define IGF_BYREF_REGS 0x0002     // new set of live by-ref registers
+#define IGF_FUNCLET_PROLOG 0x0004 // this group belongs to a funclet prolog
+#define IGF_FUNCLET_EPILOG 0x0008 // this group belongs to a funclet epilog.
+#define IGF_EPILOG 0x0010         // this group belongs to a main function epilog
+#define IGF_NOGCINTERRUPT 0x0020  // this IG is in a no-interrupt region (prolog, epilog, etc.)
+#define IGF_UPD_ISZ 0x0040        // some instruction sizes updated
+#define IGF_PLACEHOLDER 0x0080    // this is a placeholder group, to be filled in later
+#define IGF_EXTEND 0x0100         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
+#define IGF_HAS_ALIGN 0x0200      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
+#define IGF_REMOVED_ALIGN 0x0400  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
-#define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
+#define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
+#ifdef TARGET_ARM64
+#define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
+#endif
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -296,35 +320,31 @@ struct insGroup
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
     CLANG_FORMAT_COMMENT_ANCHOR;
-#if REGMASK_BITS <= 32
 
-    union {
-        BYTE*                    igData;   // addr of instruction descriptors
-        insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
-    };
-
-#if EMIT_TRACK_STACK_DEPTH
-    unsigned igStkLvl; // stack level on entry
-#endif
-    regMaskSmall  igGCregs; // set of registers with live GC refs
-    unsigned char igInsCnt; // # of instructions  in this group
-
-#else // REGMASK_BITS
-
+#if !(REGMASK_BITS <= 32)
     regMaskSmall igGCregs; // set of registers with live GC refs
+#endif                     // !(REGMASK_BITS <= 32)
 
     union {
         BYTE*                    igData;   // addr of instruction descriptors
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
 
+#if EMIT_BACKWARDS_NAVIGATION
+    // Last instruction in group, if any (nullptr if none); used for backwards navigation.
+    // (Should be type emitter::instrDesc*).
+    void* igLastIns;
+#endif // EMIT_BACKWARDS_NAVIGATION
+
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
-#endif
+#endif                 // EMIT_TRACK_STACK_DEPTH
+
+#if REGMASK_BITS <= 32
+    regMaskSmall igGCregs; // set of registers with live GC refs
+#endif                     // REGMASK_BITS <= 32
 
     unsigned char igInsCnt; // # of instructions  in this group
-
-#endif // REGMASK_BITS
 
     VARSET_VALRET_TP igGCvars() const
     {
@@ -445,6 +465,7 @@ public:
 
 #ifdef TARGET_XARCH
         SetUseVEXEncoding(false);
+        SetUseEvexEncoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;
@@ -471,24 +492,33 @@ protected:
 
     enum opSize : unsigned
     {
-        OPSZ1      = 0,
-        OPSZ2      = 1,
-        OPSZ4      = 2,
-        OPSZ8      = 3,
-        OPSZ16     = 4,
+        OPSZ1  = 0,
+        OPSZ2  = 1,
+        OPSZ4  = 2,
+        OPSZ8  = 3,
+        OPSZ16 = 4,
+
+#if defined(TARGET_XARCH)
         OPSZ32     = 5,
-        OPSZ_COUNT = 6,
+        OPSZ64     = 6,
+        OPSZ_COUNT = 7,
+#elif defined(TARGET_ARM64)
+        OPSZ_SCALABLE = 5,
+        OPSZ_COUNT    = 6,
+#else
+        OPSZ_COUNT = 5,
+#endif
+
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP = OPSZ4,
+        OPSZP         = OPSZ4,
 #endif
     };
 
 #define OPSIZE_INVALID ((opSize)0xffff)
 
-    static const emitter::opSize emitSizeEncode[];
-    static const emitAttr        emitSizeDecode[];
+    static const emitAttr emitSizeDecode[];
 
     static emitter::opSize emitEncodeSize(emitAttr size);
     static emitAttr emitDecodeSize(emitter::opSize ensz);
@@ -518,11 +548,6 @@ protected:
 
 #endif // FEATURE_EH_FUNCLETS
 
-    // If "ig" corresponds to the start of a basic block that is the
-    // target of a funclet return, generate GC information for it's start
-    // address "cp", as if it were the return address of a call.
-    void emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp);
-
     void emitRecomputeIGoffsets();
 
     void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
@@ -535,7 +560,10 @@ protected:
     {
 #define IF_DEF(en, op1, op2) IF_##en,
 #include "emitfmts.h"
-
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) IF_##en,
+#include "emitfmtsarm64sve.h"
+#endif
         IF_COUNT
     };
 
@@ -556,14 +584,13 @@ protected:
 
 #endif // TARGET_XARCH
 
-    struct instrDesc;
-
     struct instrDescDebugInfo
     {
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        size_t            idMemCookie;   // for display of method name  (also used by switch table)
+        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
@@ -599,8 +626,8 @@ protected:
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 512);
-        instruction _idIns : 9;
+        static_assert_no_msg(INS_count <= 2048);
+        instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
@@ -616,6 +643,11 @@ protected:
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_RISCV64)
+        unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_ARM64)
+        static_assert_no_msg(IF_COUNT <= 1024);
+        insFormat _idInsFmt : 10;
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -651,6 +683,16 @@ protected:
         void idInsFmt(insFormat insFmt)
         {
         }
+#elif defined(TARGET_RISCV64)
+        insFormat   idInsFmt() const
+        {
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+            return (insFormat)0;
+        }
+        void idInsFmt(insFormat insFmt)
+        {
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+        }
 #else
         insFormat   idInsFmt() const
         {
@@ -666,19 +708,14 @@ protected:
         }
 #endif
 
-        void idSetRelocFlags(emitAttr attr)
-        {
-            _idCnsReloc = (EA_IS_CNS_RELOC(attr) ? 1 : 0);
-            _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
-        }
-
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   17 bits
-        // amd64: 17 bits
-        // arm:   16 bits
-        // arm64: 17 bits
+        // x86:         17 bits
+        // amd64:       17 bits
+        // arm:         16 bits
+        // arm64:       21 bits
         // loongarch64: 14 bits
+        // risc-v:      14 bits
 
     private:
 #if defined(TARGET_XARCH)
@@ -686,11 +723,14 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64)
+        opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6; // options for instructions
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
         opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
-#endif // ARM || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
         // On System V a call could return a struct in 2 registers. The instrDescCGCA struct below has  member that
@@ -711,39 +751,51 @@ protected:
         // the live gcrefReg mask for the call instructions on x86/x64
         //
         regNumber _idReg1 : REGNUM_BITS; // register num
-
         regNumber _idReg2 : REGNUM_BITS;
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   38 bits
-        // amd64: 38 bits
-        // arm:   32 bits
-        // arm64: 31 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
+        // x86:         38 bits
+        // amd64:       38 bits
+        // arm:         32 bits
+        // arm64:       44 bits
+        // loongarch64: 28 bits
+        // risc-v:      28 bits
 
         unsigned _idSmallDsc : 1;  // is this a "small" descriptor?
         unsigned _idLargeCns : 1;  // does a large constant     follow?
         unsigned _idLargeDsp : 1;  // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
-        unsigned _idBound : 1;      // jump target / frame offset bound
+        unsigned _idBound : 1; // jump target / frame offset bound
+#ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
-        unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
+#endif
+        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
+        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
+#if defined(TARGET_XARCH)
+        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
+#endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
-        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6; // options for instructions
-        unsigned _idLclVar : 1; // access a local on stack
+
+        unsigned _idLclVar : 1;    // access a local on stack
+        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
-        // TODO-LoongArch64: maybe delete on future.
-        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
-                                // accessing a local on stack.
-        unsigned _idLclVar : 1; // access a local on stack.
+            // TODO-LoongArch64: maybe delete on future.
+            opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                  // accessing a local on stack.
+        unsigned _idLclVar : 1;   // access a local on stack.
+#endif
+
+#ifdef TARGET_RISCV64
+        // TODO-RISCV64: maybe delete on future
+        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts  _idInsOpt : 6; // options for instructions
+        unsigned _idLclVar : 1; // access a local on stack
 #endif
 
 #ifdef TARGET_ARM
@@ -752,63 +804,116 @@ protected:
         unsigned _idLclVar : 1;    // access a local on stack
         unsigned _idLclFPBase : 1; // access a local on stack - SP based offset
         insOpts  _idInsOpt : 3;    // options for Load/Store instructions
-
-// For arm we have used 16 bits
-#define ID_EXTRA_BITFIELD_BITS (16)
-
-#elif defined(TARGET_ARM64)
-// For Arm64, we have used 17 bits from the second DWORD.
-#define ID_EXTRA_BITFIELD_BITS (17)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
-                                 // For xarch and LoongArch64, we have used 14 bits from the second DWORD.
-#define ID_EXTRA_BITFIELD_BITS (14)
-#else
-#error Unsupported or unset target architecture
 #endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   46 bits
-        // amd64: 46 bits
-        // arm:   48 bits
-        // arm64: 49 bits
+        // x86:         47 bits
+        // amd64:       47 bits
+        // arm:         48 bits
+        // arm64:       53 bits
         // loongarch64: 46 bits
+        // risc-v:      46 bits
+
+        //
+        // How many bits have been used beyond the first 32?
+        // Define ID_EXTRA_BITFIELD_BITS to that number.
+        //
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_ARM)
+#define ID_EXTRA_BITFIELD_BITS (16)
+#elif defined(TARGET_ARM64)
+#define ID_EXTRA_BITFIELD_BITS (21)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#define ID_EXTRA_BITFIELD_BITS (14)
+#elif defined(TARGET_XARCH)
+#define ID_EXTRA_BITFIELD_BITS (15)
+#else
+#error Unsupported or unset target architecture
+#endif
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
 
 #define ID_EXTRA_RELOC_BITS (2)
 
-        ////////////////////////////////////////////////////////////////////////
-        // Space taken up to here:
-        // x86:   48 bits
-        // amd64: 48 bits
-        // arm:   50 bits
-        // arm64: 51 bits
-        // loongarch64: 48 bits
+#if EMIT_BACKWARDS_NAVIGATION
+
+        // "Pointer" to previous instrDesc in this group. If zero, there is
+        // no previous instrDesc. If non-zero, then _idScaledPrevOffset * 4
+        // is the size in bytes of the previous instrDesc; subtract that from
+        // the current instrDesc* to reach the previous one.
+        // All instrDesc types are <= 56 bytes, but we also need m_debugInfoSize,
+        // which is pointer sized, so 5 bits are required on 64-bit and 4 bits
+        // on 32-bit.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS)
+#ifdef HOST_64BIT
+        unsigned _idScaledPrevOffset : 5;
+#define ID_EXTRA_PREV_OFFSET_BITS (5)
+#else
+        unsigned _idScaledPrevOffset : 4;
+#define ID_EXTRA_PREV_OFFSET_BITS (4)
+#endif
+
+#else // !EMIT_BACKWARDS_NAVIGATION
+#define ID_EXTRA_PREV_OFFSET_BITS (0)
+#endif // !EMIT_BACKWARDS_NAVIGATION
+
+        ////////////////////////////////////////////////////////////////////////
+        // Space taken up to here (with/without prev offset, assuming host==target):
+        // x86:         53/49 bits
+        // amd64:       54/49 bits
+        // arm:         54/50 bits
+        // arm64:       60/55 bits
+        // loongarch64: 53/48 bits
+        // risc-v:      53/48 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
 /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
-#define ID_MIN_SMALL_CNS 0
-#define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
+        C_ASSERT(ID_BIT_SMALL_CNS > 0);
 
         ////////////////////////////////////////////////////////////////////////
-        // Small constant size:
-        // x86:   16 bits
-        // amd64: 16 bits
-        // arm:   14 bits
-        // arm64: 13 bits
+        // Small constant size (with/without prev offset, assuming host==target):
+        // x86:         11/15 bits
+        // amd64:       10/15 bits
+        // arm:         10/14 bits
+        // arm64:        4/9 bits
+        // loongarch64: 11/16 bits
+        // risc-v:      11/16 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
-        unsigned _idSmallCns : ID_BIT_SMALL_CNS;
+#define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
+#define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
+
+#define ID_MIN_SMALL_CNS (int)(0 - ID_ADJ_SMALL_CNS)
+#define ID_MAX_SMALL_CNS (int)(ID_CNT_SMALL_CNS - ID_ADJ_SMALL_CNS - 1)
+
+        // We encounter many constants, but there is a disproportionate amount that are in the range [-1, +4]
+        // and otherwise powers of 2. We therefore allow the tracked range here to include negative values.
+        signed _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here: 64 bits, all architectures, by design.
         ////////////////////////////////////////////////////////////////////////
+
+        //
+        // This is the end of the 'small' instrDesc which is the same on all platforms
+        //
+        // If you add lots more fields that need to be cleared (such
+        // as various flags), you might need to update the body of
+        // emitter::emitAllocInstr() to clear them.
+        //
+        // SMALL_IDSC_SIZE is this size, in bytes.
+        //
         CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define SMALL_IDSC_SIZE 8
 
     public:
         instrDescDebugInfo* idDebugOnlyInfo() const
@@ -825,28 +930,13 @@ protected:
     private:
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-//
-// This is the end of the 'small' instrDesc which is the same on all platforms
-// Sizes (includes one pointer):
-//   x86:   2 DWORDs, 96 bits
-//   amd64: 4 DWORDs, 128 bits
-//   arm:   3 DWORDs, 96 bits
-//   arm64: 4 DWORDs, 128 bits
-// There should no padding or alignment issues on any platform or configuration.
-//
-// If you add lots more fields that need to be cleared (such
-// as various flags), you might need to update the body of
-// emitter::emitAllocInstr() to clear them.
-
-#define SMALL_IDSC_SIZE 8
-
         void checkSizes();
 
         union idAddrUnion {
 // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
 // about reading what we think is here, to avoid unexpected corruption issues.
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock* iiaBBlabel;
@@ -900,7 +990,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
@@ -931,7 +1021,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#endif // defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         } _idAddrUnion;
 
@@ -1033,7 +1123,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned    idCodeSize() const
+        unsigned  idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1044,9 +1134,21 @@ protected:
             assert(sz <= 16);
             _idCodeSize = sz;
         }
-#endif // TARGET_LOONGARCH64
+#elif defined(TARGET_RISCV64)
+        unsigned  idCodeSize() const
+        {
+            return _idCodeSize;
+        }
+        void idCodeSize(unsigned sz)
+        {
+            // RISCV64's instrDesc is not always meaning only one instruction.
+            // e.g. the `emitter::emitLoadImmediate` for emitting the immediates.
+            assert(sz <= 32);
+            _idCodeSize = sz;
+        }
+#endif
 
-        emitAttr idOpSize()
+        emitAttr idOpSize() const
         {
             return emitDecodeSize(_idOpSize);
         }
@@ -1109,6 +1211,7 @@ protected:
             idAddr()->_idReg3 = reg;
             assert(reg == idAddr()->_idReg3);
         }
+
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
@@ -1119,6 +1222,131 @@ protected:
             assert(!idIsSmallDsc());
             idAddr()->_idReg4 = reg;
             assert(reg == idAddr()->_idReg4);
+        }
+
+        bool idHasReg1() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RD | IS_R1_RW | IS_R1_WR)) != 0;
+        }
+        bool idIsReg1Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RD | IS_R1_RW)) != 0;
+        }
+        bool idIsReg1Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RW | IS_R1_WR)) != 0;
+        }
+
+        bool idHasReg2() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RD | IS_R2_RW | IS_R2_WR)) != 0;
+        }
+        bool idIsReg2Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RD | IS_R2_RW)) != 0;
+        }
+        bool idIsReg2Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RW | IS_R2_WR)) != 0;
+        }
+
+        bool idHasReg3() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RD | IS_R3_RW | IS_R3_WR)) != 0;
+        }
+        bool idIsReg3Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RD | IS_R3_RW)) != 0;
+        }
+        bool idIsReg3Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RW | IS_R3_WR)) != 0;
+        }
+
+        bool idHasReg4() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RD | IS_R4_RW | IS_R4_WR)) != 0;
+        }
+        bool idIsReg4Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RD | IS_R4_RW)) != 0;
+        }
+        bool idIsReg4Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RW | IS_R4_WR)) != 0;
+        }
+
+        bool idHasMemGen() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RD | IS_GM_RW | IS_GM_WR)) != 0;
+        }
+        bool idHasMemGenRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RD | IS_GM_RW)) != 0;
+        }
+        bool idHasMemGenWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RW | IS_GM_WR)) != 0;
+        }
+
+        bool idHasMemStk() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR)) != 0;
+        }
+        bool idHasMemStkRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RD | IS_SF_RW)) != 0;
+        }
+        bool idHasMemStkWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RW | IS_SF_WR)) != 0;
+        }
+
+        bool idHasMemAdr() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RD | IS_AM_RW | IS_AM_WR)) != 0;
+        }
+        bool idHasMemAdrRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RD | IS_AM_RW)) != 0;
+        }
+        bool idHasMemAdrWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RW | IS_AM_WR)) != 0;
+        }
+
+        bool idHasMem() const
+        {
+            return idHasMemGen() || idHasMemStk() || idHasMemAdr();
+        }
+        bool idHasMemRead() const
+        {
+            return idHasMemGenRead() || idHasMemStkRead() || idHasMemAdrRead();
+        }
+        bool idHasMemWrite() const
+        {
+            return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
         }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
@@ -1205,7 +1433,43 @@ protected:
 
 #endif // TARGET_LOONGARCH64
 
-        inline static bool fitsInSmallCns(ssize_t val)
+#ifdef TARGET_RISCV64
+        insOpts idInsOpt() const
+        {
+            return (insOpts)_idInsOpt;
+        }
+        void idInsOpt(insOpts opt)
+        {
+            _idInsOpt = opt;
+            assert(opt == _idInsOpt);
+        }
+
+        regNumber idReg3() const
+        {
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg3;
+        }
+        void idReg3(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg3 = reg;
+            assert(reg == idAddr()->_idReg3);
+        }
+        regNumber idReg4() const
+        {
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg4;
+        }
+        void idReg4(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg4 = reg;
+            assert(reg == idAddr()->_idReg4);
+        }
+
+#endif // TARGET_RISCV64
+
+        inline static bool fitsInSmallCns(cnsval_ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
         }
@@ -1250,6 +1514,7 @@ protected:
             _idBound = 1;
         }
 
+#ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
             return _idCallRegPtr != 0;
@@ -1258,6 +1523,7 @@ protected:
         {
             _idCallRegPtr = 1;
         }
+#endif
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
@@ -1271,6 +1537,19 @@ protected:
             _idNoGC = val;
         }
 
+#ifdef TARGET_XARCH
+        bool idIsEvexbContext() const
+        {
+            return _idEvexbContext != 0;
+        }
+        void idSetEvexbContext()
+        {
+            assert(_idEvexbContext == 0);
+            _idEvexbContext = 1;
+            assert(_idEvexbContext == 1);
+        }
+#endif
+
 #ifdef TARGET_ARMARCH
         bool idIsLclVar() const
         {
@@ -1280,6 +1559,16 @@ protected:
         {
             _idLclVar = 1;
         }
+#ifdef TARGET_ARM64
+        bool idIsLclVarPair() const
+        {
+            return _idLclVarPair != 0;
+        }
+        void idSetIsLclVarPair()
+        {
+            _idLclVarPair = 1;
+        }
+#endif // TARGET_ARM64
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_ARM)
@@ -1304,6 +1593,17 @@ protected:
         }
 #endif // TARGET_LOONGARCH64
 
+#ifdef TARGET_RISCV64
+        bool idIsLclVar() const
+        {
+            return _idLclVar != 0;
+        }
+        void idSetIsLclVar()
+        {
+            _idLclVar = 1;
+        }
+#endif // TARGET_RISCV64
+
         bool idIsCnsReloc() const
         {
             return _idCnsReloc != 0;
@@ -1321,19 +1621,43 @@ protected:
         {
             _idDspReloc = val;
         }
-        bool idIsReloc()
+        bool idIsReloc() const
         {
             return idIsDspReloc() || idIsCnsReloc();
         }
 
-        unsigned idSmallCns() const
+        void idSetRelocFlags(emitAttr attr)
+        {
+            _idCnsReloc = (EA_IS_CNS_RELOC(attr) ? 1 : 0);
+            _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
+        }
+
+#if EMIT_BACKWARDS_NAVIGATION
+
+        // Return the stored size of the previous instrDesc in bytes, or zero if there
+        // is no previous instrDesc in this group.
+        unsigned idPrevSize()
+        {
+            return _idScaledPrevOffset * 4;
+        }
+        void idSetPrevSize(unsigned prevInstrDescSizeInBytes)
+        {
+            assert(prevInstrDescSizeInBytes % 4 == 0);
+            _idScaledPrevOffset = prevInstrDescSizeInBytes / 4;
+            assert(idPrevSize() == prevInstrDescSizeInBytes);
+        }
+
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+        signed idSmallCns() const
         {
             return _idSmallCns;
         }
-        void idSmallCns(size_t value)
+        void idSmallCns(cnsval_ssize_t value)
         {
             assert(fitsInSmallCns(value));
             _idSmallCns = value;
+            assert(value == idSmallCns());
         }
 
         inline const idAddrUnion* idAddr() const
@@ -1350,7 +1674,8 @@ protected:
     }; // End of  struct instrDesc
 
 #if defined(TARGET_XARCH)
-    insFormat getMemoryOperation(instrDesc* id);
+    insFormat getMemoryOperation(instrDesc* id) const;
+    insFormat ExtractMemoryFormat(insFormat insFmt) const;
 #elif defined(TARGET_ARM64)
     void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
 #endif
@@ -1378,7 +1703,10 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C 14.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_16C 16.0f   // slower - 13 cycles
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
@@ -1403,6 +1731,7 @@ protected:
 #define PERFSCORE_LATENCY_11C 11.0f
 #define PERFSCORE_LATENCY_12C 12.0f
 #define PERFSCORE_LATENCY_13C 13.0f
+#define PERFSCORE_LATENCY_14C 14.0f
 #define PERFSCORE_LATENCY_15C 15.0f
 #define PERFSCORE_LATENCY_16C 16.0f
 #define PERFSCORE_LATENCY_18C 18.0f
@@ -1472,6 +1801,23 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
 
+#elif defined(TARGET_RISCV64)
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+
 #endif // TARGET_XXX
 
 // Make this an enum:
@@ -1525,10 +1871,16 @@ protected:
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
         unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
-        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+#if defined(TARGET_AMD64)
+            28;
+        // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+        // Indicates the jump follows a call instruction and precedes an OS epilog.
+        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
+        unsigned idjIsAfterCallBeforeEpilog : 1;
+#elif defined(TARGET_X86)
+            29;
         unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;
@@ -1616,6 +1968,22 @@ protected:
 
 #endif // TARGET_XARCH
 
+#ifdef TARGET_ARM64
+    struct instrDescLclVarPair : instrDesc // contains 2 gc vars to be tracked
+    {
+        instrDescLclVarPair() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+
+    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
+    {
+        instrDescLclVarPairCns() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+#endif
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -1692,7 +2060,6 @@ protected:
 #endif
 
     size_t emitGetInstrDescSize(const instrDesc* id);
-    size_t emitGetInstrDescSizeSC(const instrDesc* id);
 
 #ifdef TARGET_XARCH
 
@@ -1703,11 +2070,13 @@ protected:
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
-    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+    inline emitAttr emitGetMemOpSize(instrDesc* id) const;
+    inline emitAttr emitGetBaseMemOpSize(instrDesc*) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
 
+    static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(instrDesc* id);
@@ -1725,11 +2094,8 @@ protected:
 #define emitVarRefOffs 0
 #endif // !DEBUG
 
-    const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
+    const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true) const;
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
-
-    const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
-    const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
 
     // GC Info changes are not readily available at each instruction.
     // We use debug-only sets to track the per-instruction state, and to remember
@@ -1747,15 +2113,19 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
-    void emitDispIGlist(bool verbose = false);
+    void emitDispIG(insGroup* ig,
+                    bool      displayFunc         = false,
+                    bool      displayInstructions = false,
+                    bool      displayLocation     = true);
+    void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
-    void emitDispInsAddr(BYTE* code);
+    void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
+    void emitDispEmbBroadcastCount(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -1852,7 +2222,7 @@ public:
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
 
-    UNATIVE_OFFSET emitCurCodeOffs(BYTE* dst)
+    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst)
     {
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
@@ -1923,9 +2293,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData);
     void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
@@ -1937,8 +2307,6 @@ public:
 #ifdef PSEUDORANDOM_NOP_INSERTION
     bool emitInInstrumentation;
 #endif // PSEUDORANDOM_NOP_INSERTION
-
-    unsigned emitMaxTmpSize;
 
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
@@ -1953,10 +2321,33 @@ public:
     CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types elemType);
 
 private:
+#if defined(TARGET_AMD64)
+    regMaskTP rbmFltCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    regMaskTP rbmMskCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
+#endif // TARGET_AMD64
+
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
+#if defined(FEATURE_SIMD)
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
+#if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
@@ -1967,11 +2358,19 @@ private:
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
 
+#ifdef TARGET_XARCH
+    bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+    bool emitDoesInsModifyFlags(instruction ins);
+#endif // TARGET_XARCH
+
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */
     /************************************************************************/
 
-    // SC_IG_BUFFER_SIZE defines the size, in bytes, of the single, global instruction group buffer.
+    // The IG buffer size is the size, in bytes, of the single, global instruction group buffer.
+    // It is computed dynamically based on SC_IG_BUFFER_NUM_SMALL_DESCS, SC_IG_BUFFER_NUM_LARGE_DESCS,
+    // and whether a debug info pointer is being saved.
+    //
     // When a label is reached, or the buffer is filled, the precise amount of the buffer that was
     // used is copied to a newly allocated, precisely sized buffer, and the global buffer is reset
     // for use with the next set of instructions (see emitSavIG). If the buffer was filled before
@@ -1997,9 +2396,9 @@ private:
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-// ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
-// a function uses all the incoming integer and single-precision floating-point arguments,
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+// ARM32/64, LoongArch and RISC-V can require a bigger prolog instruction group. One scenario
+// is where a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
 // ugly code like:
 //     movw r10, 0x488
@@ -2016,7 +2415,7 @@ private:
 #else
 #define SC_IG_BUFFER_NUM_SMALL_DESCS 14
 #define SC_IG_BUFFER_NUM_LARGE_DESCS 50
-#endif // !(TARGET_ARMARCH || TARGET_LOONGARCH64)
+#endif // !(TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64)
 
     size_t emitIGbuffSize;
 
@@ -2045,12 +2444,16 @@ private:
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup* igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
+                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
 
     void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
@@ -2172,30 +2575,137 @@ private:
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool extend = false);
 
+#ifdef TARGET_ARM64
+    void emitRemoveLastInstruction();
+#endif
+
     bool emitCurIGnonEmpty()
     {
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
+#define EMIT_MAX_IG_INS_COUNT 256
+
+#if EMIT_BACKWARDS_NAVIGATION
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 32 // The max number of previous instructions to navigate through for peepholes.
+#endif                                 // EMIT_BACKWARDS_NAVIGATION
+
     instrDesc* emitLastIns;
+    insGroup*  emitLastInsIG;
+
+#if EMIT_BACKWARDS_NAVIGATION
+    unsigned emitLastInsFullSize;
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+    // Check to see if the last instruction is available.
+    inline bool emitHasLastIns() const
+    {
+        return (emitLastIns != nullptr);
+    }
+
+    // Checks to see if we can cross between the two given IG boundaries.
+    //
+    // We have the following checks:
+    // 1. Looking backwards across an IG boundary can only be done if we're in an extension IG.
+    // 2. The IG of the previous instruction must have the same GC interrupt status as the current IG.
+    inline bool isInsIGSafeForPeepholeOptimization(insGroup* prevInsIG, insGroup* curInsIG) const
+    {
+        if (prevInsIG == curInsIG)
+        {
+            return true;
+        }
+        else
+        {
+            return (curInsIG->igFlags & IGF_EXTEND) &&
+                   ((prevInsIG->igFlags & IGF_NOGCINTERRUPT) == (curInsIG->igFlags & IGF_NOGCINTERRUPT));
+        }
+    }
+
+    // Check if a peephole optimization involving emitLastIns is safe.
+    //
+    // We have the following checks:
+    // 1. There must be a non-null emitLastIns to consult (thus, we have a known "last" instruction).
+    // 2. `emitForceNewIG` is not set: this prevents peepholes from crossing nogc boundaries where
+    //    the next instruction is forced to create a new IG.
+    bool emitCanPeepholeLastIns() const
+    {
+        assert(emitHasLastIns() == (emitLastInsIG != nullptr));
+
+        return emitHasLastIns() && // there is an emitLastInstr
+               !emitForceNewIG &&  // and we're not about to start a new IG.
+               isInsIGSafeForPeepholeOptimization(emitLastInsIG, emitCurIG);
+    }
+
+    enum emitPeepholeResult
+    {
+        PEEPHOLE_CONTINUE,
+        PEEPHOLE_ABORT
+    };
+
+    // Visits the last emitted instructions.
+    // Must be safe to do - use emitCanPeepholeLastIns for checking.
+    // Action is a function type: instrDesc* -> emitPeepholeResult
+    template <typename Action>
+    void emitPeepholeIterateLastInstrs(Action action)
+    {
+        assert(emitCanPeepholeLastIns());
+
+#if EMIT_BACKWARDS_NAVIGATION
+        insGroup*  curInsIG;
+        instrDesc* id;
+
+        if (!emitGetLastIns(&curInsIG, &id))
+            return;
+
+        for (unsigned i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
+        {
+            assert(id != nullptr);
+
+            switch (action(id))
+            {
+                case PEEPHOLE_ABORT:
+                    return;
+                case PEEPHOLE_CONTINUE:
+                {
+                    insGroup* savedInsIG = curInsIG;
+                    if (emitPrevID(curInsIG, id))
+                    {
+                        if (isInsIGSafeForPeepholeOptimization(curInsIG, savedInsIG))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    return;
+                }
+
+                default:
+                    unreached();
+            }
+        }
+#else  // EMIT_BACKWARDS_NAVIGATION
+        action(emitLastIns);
+#endif // !EMIT_BACKWARDS_NAVIGATION
+    }
 
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;
 #endif
 
 #ifdef DEBUG
-    void emitCheckIGoffsets();
+    void emitCheckIGList();
 #endif
 
     // Terminates any in-progress instruction group, making the current IG a new empty one.
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
-    // and registers.  The "isFinallyTarget" parameter indicates that the current location is
-    // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
+    // and registers.
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
-                       regMaskTP        byrefRegs,
-                       bool             isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
+                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
@@ -2205,7 +2715,7 @@ private:
     void emitPrintLabel(insGroup* ig);
     const char* emitLabelString(insGroup* ig);
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
 
@@ -2221,9 +2731,18 @@ private:
 
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
+#if EMIT_BACKWARDS_NAVIGATION
+    bool emitPrevID(insGroup*& ig, instrDesc*& id);
+    bool emitGetLastIns(insGroup** pig, instrDesc** pid);
+#endif // EMIT_BACKWARDS_NAVIGATION
+
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
 #endif
+
+#if defined(FEATURE_SIMD)
+    void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
+#endif // FEATURE_SIMD
 
     int emitNextRandomNop();
 
@@ -2260,7 +2779,32 @@ private:
 #endif // EMITTER_STATS
         return (instrDescLbl*)emitAllocAnyInstr(sizeof(instrDescLbl), EA_4BYTE);
     }
-#endif // !TARGET_ARM64
+#endif // TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+    instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
+    {
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnt++;
+#endif // EMITTER_STATS
+        instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
+        result->idSetIsLclVarPair();
+        return result;
+    }
+
+    instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
+    {
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnsCnt++;
+#endif // EMITTER_STATS
+        instrDescLclVarPairCns* result =
+            (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
+        result->idSetIsLargeCns();
+        result->idSetIsLclVarPair();
+        result->idcCnsVal = cns;
+        return result;
+    }
+#endif // TARGET_ARM64
 
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
@@ -2326,7 +2870,7 @@ private:
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
-        emitTotalDescAlignCnt++;
+        emitTotalIDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
     }
@@ -2346,6 +2890,8 @@ private:
 
 #if !defined(TARGET_ARM64)
     instrDescLbl* emitNewInstrLbl();
+#else
+    instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
     static const BYTE emitFmtToOps[];
@@ -2354,9 +2900,9 @@ private:
     static const unsigned emitFmtCount;
 #endif
 
-    bool emitIsScnsInsDsc(instrDesc* id);
+    bool emitIsSmallInsDsc(instrDesc* id) const;
 
-    size_t emitSizeOfInsDsc(instrDesc* id);
+    size_t emitSizeOfInsDsc(instrDesc* id) const;
 
     /************************************************************************/
     /*        The following keeps track of stack-based GC values            */
@@ -2420,6 +2966,9 @@ public:
 #elif defined(TARGET_LOONGARCH64)
     bool emitInsMayWriteToGCReg(instruction ins);
     bool emitInsWritesToLclVarStackLoc(instrDesc* id);
+#elif defined(TARGET_RISCV64)
+    bool emitInsMayWriteToGCReg(instruction ins);
+    bool emitInsWritesToLclVarStackLoc(instrDesc* id);
 #endif // TARGET_LOONGARCH64
 
     /************************************************************************/
@@ -2454,8 +3003,8 @@ public:
     union {
         struct // if emitSimpleStkUsed==true
         {
-#define BITS_IN_BYTE (8)
-#define MAX_SIMPLE_STK_DEPTH (BITS_IN_BYTE * sizeof(unsigned))
+
+#define MAX_SIMPLE_STK_DEPTH (BITS_PER_BYTE * sizeof(unsigned))
 
             unsigned emitSimpleStkMask;      // bit per pushed dword (if it fits. Lowest bit <==> last pushed arg)
             unsigned emitSimpleByrefStkMask; // byref qualifier for emitSimpleStkMask
@@ -2533,11 +3082,11 @@ public:
 
     struct dataSection
     {
-        // Note to use alignments greater than 32 requires modification in the VM
+        // Note to use alignments greater than 64 requires modification in the VM
         // to support larger alignments (see ICorJitInfo::allocMem)
         //
         const static unsigned MIN_DATA_ALIGN = 4;
-        const static unsigned MAX_DATA_ALIGN = 32;
+        const static unsigned MAX_DATA_ALIGN = 64;
 
         enum sectionType
         {
@@ -2662,35 +3211,114 @@ public:
 
     static unsigned emitTotalIDescSmallCnt;
     static unsigned emitTotalIDescCnt;
-    static unsigned emitTotalIDescJmpCnt;
-#if !defined(TARGET_ARM64)
-    static unsigned emitTotalIDescLblCnt;
-#endif // !defined(TARGET_ARM64)
     static unsigned emitTotalIDescCnsCnt;
     static unsigned emitTotalIDescDspCnt;
-    static unsigned emitTotalIDescCnsDspCnt;
+#ifdef TARGET_ARM64
+    static unsigned emitTotalIDescLclVarPairCnt;
+    static unsigned emitTotalIDescLclVarPairCnsCnt;
+#endif // TARGET_ARM64
+#ifdef TARGET_ARM
+    static unsigned emitTotalIDescRelocCnt;
+#endif // TARGET_ARM
 #ifdef TARGET_XARCH
     static unsigned emitTotalIDescAmdCnt;
     static unsigned emitTotalIDescCnsAmdCnt;
 #endif // TARGET_XARCH
+    static unsigned emitTotalIDescCnsDspCnt;
+#if FEATURE_LOOP_ALIGN
+    static unsigned emitTotalIDescAlignCnt;
+#endif // FEATURE_LOOP_ALIGN
+    static unsigned emitTotalIDescJmpCnt;
+#if !defined(TARGET_ARM64)
+    static unsigned emitTotalIDescLblCnt;
+#endif // !defined(TARGET_ARM64)
     static unsigned emitTotalIDescCGCACnt;
-#ifdef TARGET_ARM
-    static unsigned emitTotalIDescRelocCnt;
-#endif // TARGET_ARM
 
     static size_t emitTotMemAlloc;
 
     static unsigned emitSmallDspCnt;
     static unsigned emitLargeDspCnt;
 
-    static unsigned emitSmallCnsCnt;
 #define SMALL_CNS_TSZ 256
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
+    static unsigned emitSmallCnsCnt;
     static unsigned emitLargeCnsCnt;
-    static unsigned emitTotalDescAlignCnt;
+    static unsigned emitInt8CnsCnt;
+    static unsigned emitInt16CnsCnt;
+    static unsigned emitInt32CnsCnt;
+    static unsigned emitNegCnsCnt;
+    static unsigned emitPow2CnsCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 
+    void TrackCns(cnsval_ssize_t value)
+    {
+        if (value < 0)
+        {
+            emitNegCnsCnt++;
+
+            if (value >= INT8_MIN)
+            {
+                emitInt8CnsCnt++;
+            }
+            else if (value >= INT16_MIN)
+            {
+                emitInt16CnsCnt++;
+            }
+            else if (value >= INT32_MIN)
+            {
+                emitInt32CnsCnt++;
+            }
+        }
+        else if (value <= INT8_MAX)
+        {
+            emitInt8CnsCnt++;
+        }
+        else if (value <= INT16_MAX)
+        {
+            emitInt16CnsCnt++;
+        }
+        else if (value <= INT32_MAX)
+        {
+            emitInt32CnsCnt++;
+        }
+
+        if (isPow2(value))
+        {
+            emitPow2CnsCnt++;
+        }
+    }
+
+    void TrackSmallCns(cnsval_ssize_t value)
+    {
+        // We only track a subset of the allowed small constants and
+        // so we'll split the tracked range between positive/negative
+        // aggregating those outside the tracked range into the min/max
+        // instead.
+
+        assert(fitsInSmallCns(value));
+        uint32_t index = 0;
+
+        if (value >= ((SMALL_CNS_TSZ / 2) - 1))
+        {
+            index = static_cast<uint32_t>(SMALL_CNS_TSZ - 1);
+        }
+        else if (value >= (0 - SMALL_CNS_TSZ / 2))
+        {
+            index = static_cast<uint32_t>(value + (SMALL_CNS_TSZ / 2));
+        }
+
+        emitSmallCnsCnt++;
+        emitSmallCns[index]++;
+
+        TrackCns(value);
+    }
+
+    void TrackLargeCns(cnsval_ssize_t value)
+    {
+        emitLargeCnsCnt++;
+        TrackCns(value);
+    }
 #endif // EMITTER_STATS
 
 /*************************************************************************
@@ -2736,7 +3364,7 @@ inline void emitter::instrDesc::checkSizes()
  *  fields allocated).
  */
 
-inline bool emitter::emitIsScnsInsDsc(instrDesc* id)
+inline bool emitter::emitIsSmallInsDsc(instrDesc* id) const
 {
     return id->idIsSmallDsc();
 }
@@ -2806,12 +3434,15 @@ inline unsigned emitGetInsOfsFromCodePos(unsigned codePos)
 
 inline unsigned emitter::emitCurOffset()
 {
-    unsigned codePos = emitCurIGinsCnt + (emitCurIGsize << 16);
+    return emitSpecifiedOffset(emitCurIGinsCnt, emitCurIGsize);
+}
 
-    assert(emitGetInsOfsFromCodePos(codePos) == emitCurIGsize);
-    assert(emitGetInsNumFromCodePos(codePos) == emitCurIGinsCnt);
+inline unsigned emitter::emitSpecifiedOffset(unsigned insCount, unsigned igSize)
+{
+    unsigned codePos = insCount + (igSize << 16);
 
-    // printf("[IG=%02u;ID=%03u;OF=%04X] => %08X\n", emitCurIG->igNum, emitCurIGinsCnt, emitCurIGsize, codePos);
+    assert(emitGetInsOfsFromCodePos(codePos) == igSize);
+    assert(emitGetInsNumFromCodePos(codePos) == insCount);
 
     return codePos;
 }
@@ -2844,16 +3475,13 @@ inline emitAttr emitActualTypeSize(T type)
 
 /* static */ inline emitter::opSize emitter::emitEncodeSize(emitAttr size)
 {
-    assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
-           size == EA_32BYTE);
-
-    return emitSizeEncode[((int)size) - 1];
+    assert((size != EA_UNKNOWN) && ((size & EA_SIZE_MASK) == size));
+    return static_cast<emitter::opSize>(genLog2(size));
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)
 {
-    assert(((unsigned)ensz) < OPSZ_COUNT);
-
+    assert(static_cast<unsigned>(ensz) < OPSZ_COUNT);
     return emitSizeDecode[ensz];
 }
 
@@ -2906,6 +3534,36 @@ inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
 {
     return emitAllocInstrLbl();
 }
+#else
+inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
+{
+#if EMITTER_STATS
+    emitTotalIDescCnt++;
+    emitTotalIDescCnsCnt++;
+#endif // EMITTER_STATS
+
+    if (instrDesc::fitsInSmallCns(cns))
+    {
+        instrDescLclVarPair* id = emitAllocInstrLclVarPair(attr);
+        id->idSmallCns(cns);
+
+#if EMITTER_STATS
+        TrackSmallCns(cns);
+#endif
+
+        return id;
+    }
+    else
+    {
+        instrDescLclVarPairCns* id = emitAllocInstrLclVarPairCns(attr, cns);
+
+#if EMITTER_STATS
+        TrackLargeCns(cns);
+#endif
+
+        return id;
+    }
+}
 #endif // !TARGET_ARM64
 
 inline emitter::instrDesc* emitter::emitNewInstrDsp(emitAttr attr, target_ssize_t dsp)
@@ -2951,11 +3609,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        TrackSmallCns(cns);
 #endif
 
         return id;
@@ -2965,7 +3619,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
         instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
 
         return id;
@@ -2984,13 +3638,26 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     {
         return SMALL_IDSC_SIZE;
     }
-
-    if (id->idIsLargeCns())
+    else if (id->idIsLargeCns())
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPairCns);
+        }
+#endif
         return sizeof(instrDescCns);
     }
-
-    return sizeof(instrDesc);
+    else
+    {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPair);
+        }
+#endif
+        return sizeof(instrDesc);
+    }
 }
 
 /*****************************************************************************
@@ -3010,11 +3677,7 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
-        emitSmallCnsCnt++;
-        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
-            emitSmallCns[SMALL_CNS_TSZ - 1]++;
-        else
-            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+        TrackSmallCns(cns);
 #endif
 
         return id;
@@ -3024,31 +3687,10 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
-        emitLargeCnsCnt++;
+        TrackLargeCns(cns);
 #endif
 
         return id;
-    }
-}
-
-/*****************************************************************************
- *
- *  Get the instrDesc size for something that contains a constant
- */
-
-inline size_t emitter::emitGetInstrDescSizeSC(const instrDesc* id)
-{
-    if (id->idIsSmallDsc())
-    {
-        return SMALL_IDSC_SIZE;
-    }
-    else if (id->idIsLargeCns())
-    {
-        return sizeof(instrDescCns);
-    }
-    else
-    {
-        return sizeof(instrDesc);
     }
 }
 
@@ -3123,20 +3765,57 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //-----------------------------------------------------------------------------
 // emitGetMemOpSize: Get the memory operand size of instrDesc.
 //
+//  Note: there are cases when embedded broadcast is enabled, so the memory operand
+//  size is different from the intrinsic simd size, we will check here if emitter is
+//  emiting a embedded broadcast enabled instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
+{
+    if (id->idIsEvexbContext())
+    {
+        // should have the assumption that Evex.b now stands for the embedded broadcast context.
+        // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
+        ssize_t inputSize = GetInputSizeInBytes(id);
+        switch (inputSize)
+        {
+            case 4:
+                return EA_4BYTE;
+            case 8:
+                return EA_8BYTE;
+
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        return emitGetBaseMemOpSize(id);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
 // Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
 // vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
 // and a 128-bit input (register or memory).
+// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
 // This method is mainly used for such instructions to return the appropriate memory operand
 // size, otherwise returns the regular operand size of the instruction.
 
 //  Arguments:
 //       id - Instruction descriptor
 //
-/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
 {
-    emitAttr defaultSize = id->idOpSize();
 
-    switch (id->idIns())
+    emitAttr    defaultSize = id->idOpSize();
+    instruction ins         = id->idIns();
+
+    switch (ins)
     {
         case INS_pextrb:
         case INS_pinsrb:
@@ -3247,7 +3926,11 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         case INS_cvtdq2pd:
         case INS_cvtps2pd:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_32BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_16BYTE;
             }
@@ -3256,6 +3939,70 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
                 assert(defaultSize == 16);
                 return EA_8BYTE;
             }
+        }
+
+        case INS_psrlw:
+        case INS_psrld:
+        case INS_psrlq:
+        case INS_psraw:
+        case INS_psrad:
+        case INS_psllw:
+        case INS_pslld:
+        case INS_psllq:
+        {
+            // These always have 16-byte memory loads
+            return EA_16BYTE;
+        }
+
+        case INS_vpmovdb:
+        case INS_vpmovdw:
+        case INS_vpmovqb:
+        case INS_vpmovqd:
+        case INS_vpmovqw:
+        case INS_vpmovwb:
+        case INS_vpmovsdb:
+        case INS_vpmovsdw:
+        case INS_vpmovsqb:
+        case INS_vpmovsqd:
+        case INS_vpmovsqw:
+        case INS_vpmovswb:
+        case INS_vpmovusdb:
+        case INS_vpmovusdw:
+        case INS_vpmovusqb:
+        case INS_vpmovusqd:
+        case INS_vpmovusqw:
+        case INS_vpmovuswb:
+        {
+            insTupleType tupleType = insTupleTypeInfo(ins);
+            unsigned     memSize   = 0;
+
+            switch (tupleType)
+            {
+                case INS_TT_HALF_MEM:
+                {
+                    memSize = defaultSize / 2;
+                    break;
+                }
+
+                case INS_TT_QUARTER_MEM:
+                {
+                    memSize = defaultSize / 4;
+                    break;
+                }
+
+                case INS_TT_EIGHTH_MEM:
+                {
+                    memSize = defaultSize / 8;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            return EA_ATTR(memSize);
         }
 
         case INS_vbroadcastf128:
@@ -3268,9 +4015,25 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
             return EA_16BYTE;
         }
 
+        case INS_vextractf32x8:
+        case INS_vextracti32x8:
+        case INS_vextractf64x4:
+        case INS_vextracti64x4:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
+        {
+            return EA_32BYTE;
+        }
+
         case INS_movddup:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_64BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_32BYTE;
             }
@@ -3343,20 +4106,6 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
     assert(!callInstrSizeSafe.IsOverflow());
     *instrSize = callInstrSizeSafe.Value();
     return newCodePointer;
-}
-
-/*****************************************************************************
- *
- *  Add a new IG to the current list, and get it ready to receive code.
- */
-
-inline void emitter::emitNewIG()
-{
-    insGroup* ig = emitAllocAndLinkIG();
-
-    /* It's linked in. Now, set it up to accept code */
-
-    emitGenIG(ig);
 }
 
 /*****************************************************************************/

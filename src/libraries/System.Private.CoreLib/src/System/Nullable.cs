@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 #pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
@@ -9,12 +10,14 @@ using System.Runtime.Versioning;
 namespace System
 {
     // Because we have special type system support that says a boxed Nullable<T>
-    // can be used where a boxed<T> is use, Nullable<T> can not implement any interfaces
-    // at all (since T may not).   Do NOT add any interfaces to Nullable!
+    // can be used where a boxed T is used, Nullable<T> can not implement any interfaces
+    // at all (since T may not).
     //
+    // Do NOT add any interfaces to Nullable!
+
     [Serializable]
     [NonVersionable] // This only applies to field layout
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Nullable<T> where T : struct
     {
         private readonly bool hasValue; // Do not rename (binary serialization)
@@ -64,16 +67,16 @@ namespace System
         public override string? ToString() => hasValue ? value.ToString() : "";
 
         [NonVersionable]
-        public static implicit operator Nullable<T>(T value) =>
-            new Nullable<T>(value);
+        public static implicit operator T?(T value) =>
+            new T?(value);
 
         [NonVersionable]
-        public static explicit operator T(Nullable<T> value) => value!.Value;
+        public static explicit operator T(T? value) => value!.Value;
     }
 
     public static class Nullable
     {
-        public static int Compare<T>(Nullable<T> n1, Nullable<T> n2) where T : struct
+        public static int Compare<T>(T? n1, T? n2) where T : struct
         {
             if (n1.HasValue)
             {
@@ -84,7 +87,7 @@ namespace System
             return 0;
         }
 
-        public static bool Equals<T>(Nullable<T> n1, Nullable<T> n2) where T : struct
+        public static bool Equals<T>(T? n1, T? n2) where T : struct
         {
             if (n1.HasValue)
             {
@@ -96,31 +99,16 @@ namespace System
         }
 
         // If the type provided is not a Nullable Type, return null.
-        // Otherwise, returns the underlying type of the Nullable type
+        // Otherwise, return the underlying type of the Nullable type
         public static Type? GetUnderlyingType(Type nullableType)
         {
             ArgumentNullException.ThrowIfNull(nullableType);
 
-#if NATIVEAOT
-            // This is necessary to handle types without reflection metadata
-            if (nullableType.TryGetEEType(out EETypePtr nullableEEType))
-            {
-                if (nullableEEType.IsGeneric)
-                {
-                    if (nullableEEType.IsNullable)
-                    {
-                        return Type.GetTypeFromEETypePtr(nullableEEType.NullableType);
-                    }
-                }
-                return null;
-            }
-#endif
-
             if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {
-                // instantiated generic type only
+                // Instantiated generic type only
                 Type genericType = nullableType.GetGenericTypeDefinition();
-                if (object.ReferenceEquals(genericType, typeof(Nullable<>)))
+                if (ReferenceEquals(genericType, typeof(Nullable<>)))
                 {
                     return nullableType.GetGenericArguments()[0];
                 }
@@ -139,7 +127,7 @@ namespace System
         /// called when the input reference points to a value with an actual location and not an "rvalue" (an expression that may appear on the right side but not left side of an assignment). That is, if this API is called and the input reference
         /// points to a value that is produced by the compiler as a defensive copy or a temporary copy, the behavior might not match the desired one.
         /// </remarks>
-        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable)
+        public static ref readonly T GetValueRefOrDefaultRef<T>(ref readonly T? nullable)
             where T : struct
         {
             return ref nullable.value;

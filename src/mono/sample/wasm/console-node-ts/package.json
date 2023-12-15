@@ -5,11 +5,11 @@
   "description": "TypeScript sample for dotnet in WASM",
   "type": "module",
   "scripts": {
-    "build": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
+    "build": "dotnet build /p:TargetOS=browser /p:TargetArchitecture=wasm -c Debug",
     "tsc": "tsc -p ."
   },
   "devDependencies": {
-    "@types/node": "16.11.10",
-    "typescript": "4.5.2"
+    "@types/node": "20.4.2",
+    "typescript": "5.1.6"
   }
 }

@@ -71,6 +71,9 @@ GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
 
 GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 
+GPTR_IMPL(MethodTable,      g_pWeakReferenceClass);
+GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
+
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
@@ -102,6 +105,14 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
+
+MethodTable* g_pCastHelpers;
+#ifdef FEATURE_EH_FUNCLETS
+GPTR_IMPL(MethodTable,      g_pEHClass);
+GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
+#endif
+
+GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 
@@ -173,7 +184,7 @@ bool g_fEEInit = false;
 // code:IsAtProcessExit to read this.
 GVAL_IMPL(bool, g_fProcessDetach);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
 #endif
 

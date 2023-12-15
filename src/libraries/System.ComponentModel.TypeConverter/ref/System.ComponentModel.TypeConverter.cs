@@ -694,16 +694,16 @@ namespace System.ComponentModel
     }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {
-        System.ComponentModel.IContainer Container { get; }
-        object Instance { get; }
-        System.ComponentModel.PropertyDescriptor PropertyDescriptor { get; }
+        System.ComponentModel.IContainer? Container { get; }
+        object? Instance { get; }
+        System.ComponentModel.PropertyDescriptor? PropertyDescriptor { get; }
         void OnComponentChanged();
         bool OnComponentChanging();
     }
     public partial interface ITypedList
     {
-        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors);
-        string GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors);
+        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors);
+        string GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors);
     }
     public abstract partial class License : System.IDisposable
     {
@@ -721,12 +721,16 @@ namespace System.ComponentModel
     }
     public partial class LicenseException : System.SystemException
     {
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected LicenseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public LicenseException(System.Type? type) { }
         public LicenseException(System.Type? type, object? instance) { }
         public LicenseException(System.Type? type, object? instance, string? message) { }
         public LicenseException(System.Type? type, object? instance, string? message, System.Exception? innerException) { }
         public System.Type? LicensedType { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class LicenseManager
@@ -1160,7 +1164,7 @@ namespace System.ComponentModel
         public System.Type[] TabClasses { get { throw null; } }
         protected string[]? TabClassNames { get { throw null; } }
         public System.ComponentModel.PropertyTabScope[] TabScopes { get { throw null; } }
-        public bool Equals(System.ComponentModel.PropertyTabAttribute other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.ComponentModel.PropertyTabAttribute? other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other) { throw null; }
         public override int GetHashCode() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Types referenced by tabClassNames may be trimmed.")]
@@ -1382,7 +1386,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
-        public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object[]? args) { throw null; }
+        public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
@@ -1434,7 +1438,7 @@ namespace System.ComponentModel
         public static System.ComponentModel.Design.IDesigner? CreateDesigner(System.ComponentModel.IComponent component, System.Type designerBaseType) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
-        public static object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object[]? args) { throw null; }
+        public static object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptor CreateProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -1581,6 +1585,8 @@ namespace System.ComponentModel
     public partial class WarningException : System.SystemException
     {
         public WarningException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WarningException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public WarningException(string? message) { }
         public WarningException(string? message, System.Exception? innerException) { }
@@ -1588,6 +1594,8 @@ namespace System.ComponentModel
         public WarningException(string? message, string? helpUrl, string? helpTopic) { }
         public string? HelpTopic { get { throw null; } }
         public string? HelpUrl { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
@@ -1604,6 +1612,8 @@ namespace System.ComponentModel.Design
     {
         public static readonly System.ComponentModel.Design.CheckoutException Canceled;
         public CheckoutException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CheckoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CheckoutException(string? message) { }
         public CheckoutException(string? message, System.Exception? innerException) { }
@@ -1943,7 +1953,7 @@ namespace System.ComponentModel.Design
     }
     public partial interface ISelectionService
     {
-        object PrimarySelection { get; }
+        object? PrimarySelection { get; }
         int SelectionCount { get; }
         event System.EventHandler SelectionChanged;
         event System.EventHandler SelectionChanging;
@@ -2192,18 +2202,18 @@ namespace System.ComponentModel.Design.Serialization
         event System.ComponentModel.Design.Serialization.ResolveNameEventHandler ResolveName;
         event System.EventHandler SerializationComplete;
         void AddSerializationProvider(System.ComponentModel.Design.Serialization.IDesignerSerializationProvider provider);
-        object CreateInstance(System.Type type, System.Collections.ICollection arguments, string name, bool addToContainer);
-        object GetInstance(string name);
-        string GetName(object value);
-        object GetSerializer(System.Type objectType, System.Type serializerType);
-        System.Type GetType(string typeName);
+        object CreateInstance(System.Type type, System.Collections.ICollection? arguments, string? name, bool addToContainer);
+        object? GetInstance(string name);
+        string? GetName(object value);
+        object? GetSerializer(System.Type? objectType, System.Type serializerType);
+        System.Type? GetType(string typeName);
         void RemoveSerializationProvider(System.ComponentModel.Design.Serialization.IDesignerSerializationProvider provider);
         void ReportError(object errorInformation);
         void SetName(object instance, string name);
     }
     public partial interface IDesignerSerializationProvider
     {
-        object? GetSerializer(System.ComponentModel.Design.Serialization.IDesignerSerializationManager manager, object currentSerializer, System.Type objectType, System.Type serializerType);
+        object? GetSerializer(System.ComponentModel.Design.Serialization.IDesignerSerializationManager manager, object? currentSerializer, System.Type? objectType, System.Type serializerType);
     }
     public partial interface IDesignerSerializationService
     {
@@ -2356,9 +2366,9 @@ namespace System.Security.Authentication.ExtendedProtection
 }
 namespace System.Timers
 {
-    public partial class ElapsedEventArgs : System.EventArgs
+    public sealed partial class ElapsedEventArgs : System.EventArgs
     {
-        internal ElapsedEventArgs() { }
+        public ElapsedEventArgs(System.DateTime signalTime) { }
         public System.DateTime SignalTime { get { throw null; } }
     }
     public delegate void ElapsedEventHandler(object? sender, System.Timers.ElapsedEventArgs e);

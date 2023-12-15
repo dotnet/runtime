@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System\Linq\CachedReflection.cs" />
     <Compile Include="System\Linq\EnumerableExecutor.cs" />
     <Compile Include="System\Linq\EnumerableQuery.cs" />
     <Compile Include="System\Linq\EnumerableRewriter.cs" />
@@ -13,10 +14,12 @@
     <Compile Include="System\Linq\Strings.cs" />
     <Compile Include="System\Linq\TypeHelper.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
+
 </Project>

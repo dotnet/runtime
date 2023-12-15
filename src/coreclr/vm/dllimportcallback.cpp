@@ -436,8 +436,6 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
     }
     CONTRACTL_END;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     void** retESP = ((void**) &thunk) + 4;
 
     MethodDesc* method = thunk->GetMethod();
@@ -448,9 +446,6 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
             method->m_pszDebugMethodName,
             method->m_pszDebugMethodSignature, retESP, *retESP));
     }
-
-    END_ENTRYPOINT_VOIDRET;
-
-    }
+}
 #endif // _DEBUG
 

@@ -7,8 +7,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification.Fakes
 {
     public class ClassWithNestedReferencesToProvider : IDisposable
     {
-        private IServiceProvider _serviceProvider;
-        private ClassWithNestedReferencesToProvider _nested;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ClassWithNestedReferencesToProvider _nested;
 
         public ClassWithNestedReferencesToProvider(IServiceProvider serviceProvider)
         {

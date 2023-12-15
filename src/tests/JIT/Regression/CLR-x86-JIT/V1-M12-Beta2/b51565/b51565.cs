@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /*
-set COMPlus_JITStress=1
+set DOTNET_JITStress=1
 */
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
-        public static void Method1()
+        internal static void Method1()
         {
             uint L = 0;
 #pragma warning disable 1718
@@ -29,7 +30,8 @@ namespace Test
                 }
             }
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

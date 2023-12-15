@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -15,6 +16,9 @@ namespace System.Security.Cryptography.X509Certificates
         private const string UseCommaSeparators = ",";
         private const string UseNewlineSeparators = "\r\n";
         private const string DefaultSeparators = ",;";
+
+        private static readonly SearchValues<char> s_needsQuotingChars =
+            SearchValues.Create(",+=\"\n<>#;"); // \r is NOT in this list, because it isn't in Windows.
 
         internal static string X500DistinguishedNameDecode(
             byte[] encodedName,
@@ -117,18 +121,11 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static bool NeedsQuoting(ReadOnlySpan<char> rdnValue)
-        {
-            if (rdnValue.IsEmpty ||
-                IsQuotableWhitespace(rdnValue[0]) ||
-                IsQuotableWhitespace(rdnValue[^1]))
-            {
-                return true;
-            }
-
-            const string QuoteNeedingChars = ",+=\"\n<>#;"; // \r is NOT in this list, because it isn't in Windows.
-            return rdnValue.IndexOfAny(QuoteNeedingChars) >= 0;
-        }
+        private static bool NeedsQuoting(ReadOnlySpan<char> rdnValue) =>
+            rdnValue.IsEmpty ||
+            IsQuotableWhitespace(rdnValue[0]) ||
+            IsQuotableWhitespace(rdnValue[^1]) ||
+            rdnValue.ContainsAny(s_needsQuotingChars);
 
         private static bool IsQuotableWhitespace(char c)
         {

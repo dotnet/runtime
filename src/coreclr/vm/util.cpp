@@ -175,50 +175,6 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
 
 }
 
-static
-void PrintToHandleA(HANDLE Handle, const char *pszString)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    size_t len = strlen(pszString);
-    NPrintToHandleA(Handle, pszString, len);
-}
-
-void PrintToStdOutA(const char *pszString) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    PrintToHandleA(Handle, pszString);
-}
-
-
-void PrintToStdOutW(const WCHAR *pwzString)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
-
-    PrintToStdOutA(pStr);
-}
-
 void PrintToStdErrA(const char *pszString) {
     CONTRACTL
     {
@@ -229,9 +185,10 @@ void PrintToStdErrA(const char *pszString) {
     CONTRACTL_END
 
     HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-    PrintToHandleA(Handle, pszString);
-}
 
+    size_t len = strlen(pszString);
+    NPrintToHandleA(Handle, pszString, len);
+}
 
 void PrintToStdErrW(const WCHAR *pwzString)
 {
@@ -246,69 +203,6 @@ void PrintToStdErrW(const WCHAR *pwzString)
     MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
 
     PrintToStdErrA(pStr);
-}
-
-
-
-void NPrintToStdOutA(const char *pszString, size_t nbytes) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    NPrintToHandleA(Handle, pszString, nbytes);
-}
-
-
-void NPrintToStdOutW(const WCHAR *pwzString, size_t nchars)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LPSTR pStr;
-    MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(pStr, pwzString, (int)nchars, nbytes, GetConsoleOutputCP());
-
-    NPrintToStdOutA(pStr, nbytes);
-}
-
-void NPrintToStdErrA(const char *pszString, size_t nbytes) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-    NPrintToHandleA(Handle, pszString, nbytes);
-}
-
-
-void NPrintToStdErrW(const WCHAR *pwzString, size_t nchars)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LPSTR pStr;
-
-    MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(pStr, pwzString, (int)nchars, nbytes, GetConsoleOutputCP());
-
-    NPrintToStdErrA(pStr, nbytes);
 }
 //----------------------------------------------------------------------------
 
@@ -1018,13 +912,12 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -1055,13 +948,12 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
-        hMod = WszLoadLibraryEx(lpLibFileName, hFile, dwFlags);
+        hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -2046,13 +1938,13 @@ HRESULT GetFileVersion(                     // S_OK or error
 
 Volatile<double> NormalizedTimer::s_frequency = -1.0;
 
-void FillStubCodePage(BYTE* pageBase, const void* code, int codeSize, int pageSize)
+void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T pageSize)
 {
-    int totalCodeSize = (pageSize / codeSize) * codeSize;
+    SIZE_T totalCodeSize = (pageSize / codeSize) * codeSize;
 
     memcpy(pageBase, code, codeSize);
 
-    int i;
+    SIZE_T i;
     for (i = codeSize; i < pageSize / 2; i *= 2)
     {
         memcpy(pageBase + i, pageBase, i);

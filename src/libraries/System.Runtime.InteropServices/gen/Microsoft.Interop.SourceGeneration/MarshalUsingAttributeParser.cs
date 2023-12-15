@@ -15,9 +15,9 @@ namespace Microsoft.Interop
     public sealed class MarshalUsingAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
 
-        public MarshalUsingAttributeParser(Compilation compilation, IGeneratorDiagnostics diagnostics)
+        public MarshalUsingAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;
@@ -64,12 +64,12 @@ namespace Microsoft.Interop
         UseSiteAttributeData IUseSiteAttributeParser.ParseAttribute(AttributeData attributeData, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             ImmutableDictionary<string, TypedConstant> namedArgs = ImmutableDictionary.CreateRange(attributeData.NamedArguments);
-            CountInfo countInfo = ParseCountInfo(attributeData, namedArgs, elementInfoProvider, marshallingInfoCallback);
+            CountInfo countInfo = ParseCountInfo(attributeData, elementInfoProvider, marshallingInfoCallback);
             int elementIndirectionDepth = namedArgs.TryGetValue(ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth, out TypedConstant value) ? (int)value.Value! : 0;
             return new UseSiteAttributeData(elementIndirectionDepth, countInfo, attributeData);
         }
 
-        private CountInfo ParseCountInfo(AttributeData attributeData, ImmutableDictionary<string, TypedConstant> namedArguments, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)
+        private CountInfo ParseCountInfo(AttributeData attributeData, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             int? constSize = null;
             string? elementName = null;

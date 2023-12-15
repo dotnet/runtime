@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -24,14 +24,22 @@ namespace System.Runtime.Loader
         [DynamicDependency(nameof(_nativeAssemblyLoadContext))]
         private IntPtr InitializeAssemblyLoadContext(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible)
         {
-            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(Name))
+            if (isCollectible)
+                KeepLoaderAllocator();
+            using (SafeStringMarshal handle = new SafeStringMarshal(Name))
             {
                 return InternalInitializeNativeALC(thisHandlePtr, handle.Value, representsTPALoadContext, isCollectible);
             }
         }
 
-        [MethodImplAttribute (MethodImplOptions.InternalCall)]
-        private static extern void PrepareForAssemblyLoadContextRelease (IntPtr nativeAssemblyLoadContext, IntPtr assemblyLoadContextStrong);
+        // Keep the type alive since instances are created by the runtime
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LoaderAllocator))]
+        private static void KeepLoaderAllocator()
+        {
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void PrepareForAssemblyLoadContextRelease(IntPtr nativeAssemblyLoadContext, IntPtr assemblyLoadContextStrong);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod

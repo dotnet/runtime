@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
@@ -109,7 +109,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ArgumentNullException.ThrowIfNull(obj);
 
             IntPtr refCountHandle = CreateReferenceTrackingHandleInternal(
+#if NATIVEAOT
+                obj,
+#else
                 ObjectHandleOnStack.Create(ref obj),
+#endif
                 out int memInSizeT,
                 out IntPtr mem);
 

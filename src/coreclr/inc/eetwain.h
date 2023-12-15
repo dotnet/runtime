@@ -211,9 +211,9 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
 virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
                       DWORD           dwRelOffset) = 0;
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 /*
@@ -254,7 +254,7 @@ virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
                               EECodeInfo*     pCodeInfo) = 0;
 
 /*
-    Returns the extra argument passed to to shared generic code if it is still alive.
+    Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
@@ -332,7 +332,7 @@ virtual void            LeaveCatch(GCInfoToken gcInfoToken,
                                    PCONTEXT pCtx)=0;
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 
 /*
     Last chance for the runtime support to do fixups in the context
@@ -347,7 +347,7 @@ virtual HRESULT FixContextForEnC(PCONTEXT        pCtx,
                const ICorDebugInfo::NativeVarInfo * newMethodVars,
                                     SIZE_T          newMethodVarsCount) = 0;
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -455,10 +455,10 @@ virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 /*
@@ -503,7 +503,7 @@ OBJECTREF GetInstance(
                 EECodeInfo *    pCodeInfo);
 
 /*
-    Returns the extra argument passed to to shared generic code if it is still alive.
+    Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual
@@ -597,7 +597,7 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
                          PCONTEXT pCtx);
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 /*
     Last chance for the runtime support to do fixups in the context
     before execution continues inside an EnC updated function.
@@ -610,7 +610,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
                             EECodeInfo    * pNewCodeInfo,
        const ICorDebugInfo::NativeVarInfo * newMethodVars,
                             SIZE_T          newMethodVarsCount);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
 

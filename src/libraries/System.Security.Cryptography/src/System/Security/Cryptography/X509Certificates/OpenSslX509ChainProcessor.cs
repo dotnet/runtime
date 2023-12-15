@@ -11,10 +11,11 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
-
+using Microsoft.Win32.SafeHandles;
 using X509VerifyStatusCodeUniversal = Interop.Crypto.X509VerifyStatusCodeUniversal;
+
+#pragma warning disable 8500 // taking address of managed type
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -647,11 +648,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 using (var storeCtx = new SafeX509StoreCtxHandle(ctx, ownsHandle: false))
                 {
-                    void* appData = Interop.Crypto.X509StoreCtxGetAppData(storeCtx);
-
-                    ref WorkingChain workingChain = ref Unsafe.As<byte, WorkingChain>(ref *(byte*)appData);
-
-                    return workingChain.VerifyCallback(storeCtx);
+                    return ((WorkingChain*)Interop.Crypto.X509StoreCtxGetAppData(storeCtx))->VerifyCallback(storeCtx);
                 }
             }
             catch
@@ -672,7 +669,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             Interop.Crypto.X509StoreCtxReset(_storeCtx);
 
-            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
+            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, &workingChain);
 
             bool verify = Interop.Crypto.X509VerifyCert(_storeCtx);
 
@@ -685,7 +682,7 @@ namespace System.Security.Cryptography.X509Certificates
                 extraDispose = workingChain;
                 workingChain = new WorkingChain(abortOnSignatureError: false);
 
-                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
+                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, &workingChain);
 
                 verify = Interop.Crypto.X509VerifyCert(_storeCtx);
             }

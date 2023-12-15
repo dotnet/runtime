@@ -50,6 +50,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             return logLevel != LogLevel.None && logLevel >= Level;
         }
 
+        /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel))
@@ -193,7 +194,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <summary>
         /// Converts an ILogger state object into a set of key-value pairs (That can be send to a EventSource)
         /// </summary>
-        private static IReadOnlyList<KeyValuePair<string, string?>> GetProperties(object? state)
+        private static KeyValuePair<string, string?>[] GetProperties(object? state)
         {
             if (state is IReadOnlyList<KeyValuePair<string, object?>> keyValuePairs)
             {

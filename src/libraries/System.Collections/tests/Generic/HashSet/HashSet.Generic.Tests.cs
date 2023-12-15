@@ -15,6 +15,8 @@ namespace System.Collections.Tests
     public abstract class HashSet_Generic_Tests<T> : ISet_Generic_Tests<T>
     {
         #region ISet<T> Helper Methods
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
 
         protected override bool ResetImplemented => true;
 
@@ -124,6 +126,33 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(enumerable));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void HashSet_CreateWithCapacity_CapacityAtLeastPassedValue(int capacity)
+        {
+            var hashSet = new HashSet<T>(capacity);
+            Assert.True(capacity <= hashSet.Capacity);
+        }
+
+        #endregion
+
+        #region Properties
+
+        [Fact]
+        public void HashSetResized_CapacityChanged()
+        {
+            var hashSet = (HashSet<T>)GenericISetFactory(3);
+            int initialCapacity = hashSet.Capacity;
+
+            int seed = 85877;
+            hashSet.Add(CreateT(seed++));
+
+            int afterCapacity = hashSet.Capacity;
+
+            Assert.True(afterCapacity > initialCapacity);
+        }
+
         #endregion
 
         #region RemoveWhere
@@ -172,6 +201,24 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void HashSet_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            HashSet<T> hashSet = (HashSet<T>)GenericISetFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
+        }
+
+        [Fact]
+        public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
+        {
+            var set = new HashSet<T>(20);
+            set.TrimExcess(7);
+            Assert.Equal(7, set.Capacity);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -438,7 +485,9 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)value, (object)actualValue);
+#pragma warning restore xUnit2005
             }
         }
 
@@ -453,7 +502,9 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)value, (object)actualValue);
+#pragma warning restore xUnit2005
             }
         }
 

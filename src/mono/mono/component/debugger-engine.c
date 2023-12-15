@@ -35,6 +35,7 @@ static DebuggerEngineCallbacks rt_callbacks;
 static int log_level;
 static FILE *log_file;
 
+static bool using_icordbg = FALSE;
 
 /*
  * Locking
@@ -154,6 +155,19 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
 				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
 				it.seq_point.il_offset + 1 == bp->il_offset) {
+				it_has_sp = TRUE;
+				break;
+			}
+		}
+	}
+
+	if (!it_has_sp && using_icordbg)
+	{
+		mono_seq_point_iterator_init (&it, seq_points);
+		while (mono_seq_point_iterator_next (&it)) {
+			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
+				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
+				it.seq_point.il_offset > bp->il_offset) {
 				it_has_sp = TRUE;
 				break;
 			}
@@ -581,10 +595,10 @@ ss_req_cleanup (void)
 void
 mono_de_start_single_stepping (void)
 {
-	int val = mono_atomic_inc_i32 (&ss_count);
+		int val = mono_atomic_inc_i32 (&ss_count);
 
 	if (val == 1) {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_start_single_stepping ();
 #endif
 		mini_get_interp_callbacks_api ()->start_single_stepping ();
@@ -594,10 +608,10 @@ mono_de_start_single_stepping (void)
 void
 mono_de_stop_single_stepping (void)
 {
-	int val = mono_atomic_dec_i32 (&ss_count);
+		int val = mono_atomic_dec_i32 (&ss_count);
 
 	if (val == 0) {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_stop_single_stepping ();
 #endif
 		mini_get_interp_callbacks_api ()->stop_single_stepping ();
@@ -922,8 +936,8 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		PRINT_DEBUG_MSG (1, "[%p] Breakpoint hit during async step-out at %s hit, continuing stepping out.\n", (gpointer)(gsize)mono_native_thread_id_get (), method->name);
 		return FALSE;
 	}
-
-	if (req->depth == STEP_DEPTH_OVER && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && !(sp->flags & MONO_SEQ_POINT_FLAG_NESTED_CALL)) {
+	//if we are paused in the end of a method "}" the next step should be in the line which is calling this method
+	if (req->depth == STEP_DEPTH_OVER && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && !(sp->flags & MONO_SEQ_POINT_FLAG_NESTED_CALL) && req->start_method == method) {
 		/*
 		 * These seq points are inserted by the JIT after calls, step over needs to skip them.
 		 */
@@ -966,7 +980,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		mono_debug_free_method_async_debug_info (async_method);
 	}
 
-	if (req->size != STEP_SIZE_LINE)
+	if (req->size != STEP_SIZE_LINE_COLUMN)
 		return TRUE;
 
 	/* Have to check whenever a different source line was reached */
@@ -975,11 +989,13 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 	if (minfo)
 		loc = mono_debug_method_lookup_location (minfo, sp->il_offset);
 
-	if (!loc) {
-		PRINT_DEBUG_MSG (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
+	if (!loc) { //we should not continue single stepping because the client side can have symbols loaded dynamically
+		PRINT_DEBUG_MSG (1, "[%p] No line number info for il offset %x, don't know if it's in the same line single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 		req->last_method = method;
-		hit = FALSE;
-	} else if (loc && method == req->last_method && loc->row == req->last_line) {
+		req->last_line = -1;
+		req->last_column = -1;
+		return hit;
+	} else if (loc && method == req->last_method && loc->row == req->last_line && loc->column == req->last_column) {
 		int nframes;
 		rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 		if (nframes == req->nframes) { // If the frame has changed we're clearly not on the same source line.
@@ -991,6 +1007,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 	if (loc) {
 		req->last_method = method;
 		req->last_line = loc->row;
+		req->last_column = loc->column;
 		mono_debug_free_source_location (loc);
 	}
 
@@ -1529,6 +1546,12 @@ mono_de_set_log_level (int level, FILE *file)
 {
 	log_level = level;
 	log_file = file;
+}
+
+void
+mono_de_set_using_icordbg (void)
+{
+	using_icordbg = TRUE;
 }
 
 /*

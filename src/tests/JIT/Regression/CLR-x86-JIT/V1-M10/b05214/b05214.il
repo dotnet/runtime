@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -15,7 +16,7 @@
 // -- bug --
 // 0xABBA is the errorlevel on success
 // ----------------------------------
-.class bug {
+.class public bug {
 
 .method static int32 jumpee(){
 .maxstack	20
@@ -28,7 +29,10 @@
 	jmp int32 bug::jumpee()
 }
 
-.method static int32 main(class System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 20
 	call int32 bug::jumper()

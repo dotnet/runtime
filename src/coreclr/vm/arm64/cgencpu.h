@@ -166,6 +166,33 @@ struct FloatArgumentRegisters {
 #define NUM_FLOAT_ARGUMENT_REGISTERS 8
 
 //**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE (NUM_FLOAT_ARGUMENT_REGISTERS * sizeof(double))
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    void*                  x8;
+    ArgumentRegisters      argumentRegisters;
+    FunctionID             functionId;
+    FloatArgumentRegisters floatArgumentRegisters;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    UINT32                 flags;
+    UINT32                 unused;
+    BYTE                   buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
+
+
+//**********************************************************************
 // Exception handling
 //**********************************************************************
 
@@ -315,24 +342,6 @@ inline PCODE decodeJump(PCODE pCode)
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
-}
-
-//------------------------------------------------------------------------
-inline BOOL isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    TADDR pInstr = PCODEToPINSTR(pCode);
-
-    return *dac_cast<PTR_DWORD>(pInstr) == 0x58000050;
-}
-
-//------------------------------------------------------------------------
-inline BOOL isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
 }
 
 //------------------------------------------------------------------------

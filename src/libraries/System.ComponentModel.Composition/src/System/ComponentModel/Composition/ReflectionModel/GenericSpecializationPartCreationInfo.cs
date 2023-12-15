@@ -4,12 +4,12 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -455,7 +455,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private IDictionary<string, object?> TranslateExportMetadata(ReflectionMemberExportDefinition originalExport)
+        private Dictionary<string, object?> TranslateExportMetadata(ReflectionMemberExportDefinition originalExport)
         {
             Dictionary<string, object?> metadata = new Dictionary<string, object?>(originalExport.Metadata, StringComparers.MetadataKeyNames);
 

@@ -156,6 +156,8 @@ namespace Internal.IL
                     sb.Append("\\\"");
                 else if (s[i] == '\n')
                     sb.Append("\\n");
+                else if (s[i] == '\r')
+                    sb.Append("\\r");
                 else
                     sb.Append(s[i]);
             }

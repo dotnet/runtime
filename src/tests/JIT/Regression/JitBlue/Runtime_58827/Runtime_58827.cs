@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
-class B
+public class B
 {
     public B z() => this;
     public bool T() => true;
@@ -24,7 +25,7 @@ class B
     public bool K(B b, int x) => J(b, x);
 }
 
-class X : B
+public class X : B
 {
     static int y = 0;
 
@@ -35,7 +36,8 @@ class X : B
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var x = new X();
 

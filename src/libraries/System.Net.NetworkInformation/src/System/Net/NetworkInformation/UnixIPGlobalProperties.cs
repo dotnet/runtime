@@ -8,6 +8,8 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable 8500 // taking address of managed types
+
 namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
@@ -41,12 +43,12 @@ namespace System.Net.NetworkInformation
         public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state)
         {
             Task<UnicastIPAddressInformationCollection> t = GetUnicastAddressesAsync();
-            return TaskToApm.Begin(t, callback, state);
+            return TaskToAsyncResult.Begin(t, callback, state);
         }
 
         public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
         {
-            return TaskToApm.End<UnicastIPAddressInformationCollection>(asyncResult);
+            return TaskToAsyncResult.End<UnicastIPAddressInformationCollection>(asyncResult);
         }
 
         public sealed override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
@@ -70,36 +72,36 @@ namespace System.Net.NetworkInformation
         [UnmanagedCallersOnly]
         private static unsafe void ProcessIpv4Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr)
         {
-            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+            Context* context = (Context*)pContext;
             try
             {
                 IPAddress ipAddress = IPAddressUtil.GetIPAddressFromNativeInfo(ipAddr);
                 if (!IPAddressUtil.IsMulticast(ipAddress))
                 {
-                    context._collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, ipAddr->PrefixLength));
+                    context->_collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, ipAddr->PrefixLength));
                 }
             }
             catch (Exception e)
             {
-                context.AddException(e);
+                context->AddException(e);
             }
         }
 
         [UnmanagedCallersOnly]
         private static unsafe void ProcessIpv6Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr, uint* scopeId)
         {
-            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+            Context* context = (Context*)pContext;
             try
             {
                 IPAddress ipAddress = IPAddressUtil.GetIPAddressFromNativeInfo(ipAddr);
                 if (!IPAddressUtil.IsMulticast(ipAddress))
                 {
-                    context._collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, ipAddr->PrefixLength));
+                    context->_collection.InternalAdd(new UnixUnicastIPAddressInformation(ipAddress, ipAddr->PrefixLength));
                 }
             }
             catch (Exception e)
             {
-                context.AddException(e);
+                context->AddException(e);
             }
         }
 
@@ -110,7 +112,7 @@ namespace System.Net.NetworkInformation
             context._exceptions = null;
 
             // Ignore link-layer addresses that are discovered; don't create a callback.
-            Interop.Sys.EnumerateInterfaceAddresses(Unsafe.AsPointer(ref context), &ProcessIpv4Address, &ProcessIpv6Address, null);
+            Interop.Sys.EnumerateInterfaceAddresses(&context, &ProcessIpv4Address, &ProcessIpv6Address, null);
 
             if (context._exceptions != null)
                 throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(context._exceptions));

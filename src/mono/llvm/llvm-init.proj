@@ -4,47 +4,92 @@
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">linux</MonoLLVMHostOS>
     <MonoLLVMHostOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">osx</MonoLLVMHostOS>
     <MonoLLVMHostOS Condition="'$(OS)' == 'Windows_NT'">win</MonoLLVMHostOS>
+    <MonoLLVMHostOS Condition="Exists('$(ROOTFS_DIR)/lib/ld-musl-aarch64.so.1') or Exists('$(ROOTFS_DIR)/lib/ld-musl-x86_64.so.1')">linux-musl</MonoLLVMHostOS>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
+    <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMSDKVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)</MonoLLVMSDKVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux'">$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
+    <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
   </PropertyGroup>
 
-  <!-- On Linux, we need to treat the target arch as the host arch, i.e. treat arm64 Linux as a desktop platform -->
-  <PropertyGroup>
-    <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' == 'linux' and '$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</MonoLLVMTargetArchitecture>
-    <MonoLLVMTargetArchitecture Condition="'$(MonoLLVMHostOS)' != 'linux' or '$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</MonoLLVMTargetArchitecture>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
-                      Version="$(MonoLLVMSDKVersion)"
-                      Condition="'$(MonoLLVMTargetArchitecture)' != 'x86' and '$(MonoLLVMTargetArchitecture)' != '$(BuildArchitecture)'" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
                       Version="$(MonoLLVMToolsVersion)"
-                      Condition="'$(MonoLLVMTargetArchitecture)' != 'x86' and '$(MonoLLVMTargetArchitecture)' != '$(BuildArchitecture)'" />
-
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(MonoLLVMSDKVersion)"/>
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(MonoLLVMToolsVersion)"/>
+                      PackageArch="$(TargetArchitecture)"
+                      Condition="'$(TargetArchitecture)' != ''" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                      Version="$(MonoLLVMToolsVersion)"
+                      PackageArch="$(AotHostArchitecture)"
+                      Condition="'$(AotHostArchitecture)' != ''" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                      Version="$(MonoLLVMToolsVersion)"
+                      PackageArch="$(BuildArchitecture)"
+                      Condition="'$(BuildArchitecture)' != ''" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                      Version="$(MonoLLVMSDKVersion)"
+                      PackageArch="$(TargetArchitecture)"
+                      Condition="'$(TargetArchitecture)' != ''" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                      Version="$(MonoLLVMSDKVersion)"
+                      PackageArch="$(AotHostArchitecture)"
+                      Condition="'$(AotHostArchitecture)' != ''" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                      Version="$(MonoLLVMSDKVersion)"
+                      PackageArch="$(BuildArchitecture)"
+                      Condition="'$(BuildArchitecture)' != ''" />
+    <_PackageReferenceDeduplicated Include="@(PackageReference->Distinct())" />
+  </ItemGroup>
+  <!-- Exchange packages where needed -->
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-arm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-arm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                                   Version="$(MonoLLVMToolsVersion)"
+                                   PackageArch="$(BuildArchitecture)"/>
+  </ItemGroup>
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-arm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-arm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                                   Version="$(MonoLLVMSDKVersion)"
+                                   PackageArch="$(BuildArchitecture)"/>
+   </ItemGroup>
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-x86.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-x86.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                                   Version="$(MonoLLVMToolsVersion)"
+                                   PackageArch="$(BuildArchitecture)"/>
+  </ItemGroup>
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-x86.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-x86.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                                   Version="$(MonoLLVMSDKVersion)"
+                                   PackageArch="$(BuildArchitecture)"/>
+   </ItemGroup>
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                                   Version="$(MonoLLVMToolsVersion)"
+                                   PackageArch="$(BuildArchitecture)"/>
+  </ItemGroup>
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                                   Version="$(MonoLLVMSDKVersion)"
+                                   PackageArch="$(BuildArchitecture)"/>
+   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Remove="@(PackageReference)" />
+    <PackageReference Include="@(_PackageReferenceDeduplicated->Distinct())" />
   </ItemGroup>
 
   <Target Name="CopyLLVMToTree" AfterTargets="Build">
     <ItemGroup>
-      <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).microsoft.netcore.runtime.mono.llvm.sdk\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture)\**" />
-      <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture)\**" />
+      <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
+                 FileArch="%(PackageReference.PackageArch)" />
     </ItemGroup>
-    <ItemGroup>
-      <AOTLLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.mono.llvm.sdk\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(BuildArchitecture)\**" />
-      <AOTLLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(BuildArchitecture)\**" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(RecursiveDir)" Condition="'$(_MonoUseLLVMPackage)' == 'true'">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
-    </Copy>
-
-    <Copy SourceFiles="@(AOTLLVMFiles)" DestinationFolder="$(MonoAOTLLVMDir)\%(RecursiveDir)" Condition="'$(_MonoUseAOTLLVMPackage)' == 'true'">
+    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>

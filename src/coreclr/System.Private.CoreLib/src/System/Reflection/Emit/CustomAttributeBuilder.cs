@@ -21,9 +21,13 @@ namespace System.Reflection.Emit
 {
     public class CustomAttributeBuilder
     {
-        internal ConstructorInfo m_con;
-        private object?[] m_constructorArgs;
-        private byte[] m_blob;
+        private readonly ConstructorInfo m_con;
+        private readonly object?[] m_constructorArgs;
+        private readonly byte[] m_blob;
+
+        internal ConstructorInfo Ctor => m_con;
+
+        internal byte[] Data => m_blob;
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
@@ -56,6 +60,8 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(propertyValues);
             ArgumentNullException.ThrowIfNull(namedFields);
             ArgumentNullException.ThrowIfNull(fieldValues);
+
+            AssemblyBuilder.EnsureDynamicCodeSupported();
 
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
             if (namedProperties.Length != propertyValues.Length)
@@ -150,14 +156,14 @@ namespace System.Reflection.Emit
                     // Might have failed check because one type is a XXXBuilder
                     // and the other is not. Deal with these special cases
                     // separately.
-                    if (!TypeBuilder.IsTypeEqual(property.DeclaringType, con.DeclaringType))
+                    if (!RuntimeTypeBuilder.IsTypeEqual(property.DeclaringType, con.DeclaringType))
                     {
                         // IsSubclassOf is overloaded to do the right thing if
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the property's declaring
                         // type is one.
                         if (!(property.DeclaringType is TypeBuilder) ||
-                            !con.DeclaringType.IsSubclassOf(((TypeBuilder)property.DeclaringType).BakedRuntimeType))
+                            !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)property.DeclaringType).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadPropertyForConstructorBuilder);
                     }
                 }
@@ -204,14 +210,14 @@ namespace System.Reflection.Emit
                     // Might have failed check because one type is a XXXBuilder
                     // and the other is not. Deal with these special cases
                     // separately.
-                    if (!TypeBuilder.IsTypeEqual(namedField.DeclaringType, con.DeclaringType))
+                    if (!RuntimeTypeBuilder.IsTypeEqual(namedField.DeclaringType, con.DeclaringType))
                     {
                         // IsSubclassOf is overloaded to do the right thing if
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the field's declaring
                         // type is one.
                         if (!(namedField.DeclaringType is TypeBuilder) ||
-                            !con.DeclaringType.IsSubclassOf(((TypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
+                            !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadFieldForConstructorBuilder);
                     }
                 }
@@ -237,7 +243,7 @@ namespace System.Reflection.Emit
         }
 
         // Check that a type is suitable for use in a custom attribute.
-        private bool ValidateType(Type t)
+        private static bool ValidateType(Type t)
         {
             if (t.IsPrimitive)
             {
@@ -515,9 +521,9 @@ namespace System.Reflection.Emit
         }
 
         // return the byte interpretation of the custom attribute
-        internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
+        internal void CreateCustomAttribute(RuntimeModuleBuilder mod, int tkOwner)
         {
-            TypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), m_blob);
+            RuntimeTypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetMethodMetadataToken(m_con), m_blob);
         }
     }
 }

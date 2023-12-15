@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 
@@ -17,16 +18,17 @@ namespace System.Net.Mime
         // characters allowed in domain literals
         internal static readonly bool[] Dtext = CreateCharactersAllowedInDomainLiterals();
 
-        // characters allowed in header names
-        internal static readonly bool[] Ftext = CreateCharactersAllowedInHeaderNames();
-
-        // characters allowed in tokens
-        internal static readonly bool[] Ttext = CreateCharactersAllowedInTokens();
-
         // characters allowed inside of comments
         internal static readonly bool[] Ctext = CreateCharactersAllowedInComments();
 
-        internal const int Ascii7bitMaxValue = 127;
+        private static readonly SearchValues<char> s_charactersAllowedInHeaderNames =
+            // ftext = %d33-57 / %d59-126
+            SearchValues.Create("!\"#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+
+        private static readonly SearchValues<char> s_charactersAllowedInTokens =
+            // ttext = %d33-126 except '()<>@,;:\"/[]?='
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~");
+
         internal const char Quote = '\"';
         internal const char Space = ' ';
         internal const char Tab = '\t';
@@ -102,38 +104,6 @@ namespace System.Net.Mime
             return dtext;
         }
 
-        private static bool[] CreateCharactersAllowedInHeaderNames()
-        {
-            // ftext = %d33-57 / %d59-126
-            var ftext = new bool[128];
-            for (int i = 33; i <= 57; i++) { ftext[i] = true; }
-            for (int i = 59; i <= 126; i++) { ftext[i] = true; }
-            return ftext;
-        }
-
-        private static bool[] CreateCharactersAllowedInTokens()
-        {
-            // ttext = %d33-126 except '()<>@,;:\"/[]?='
-            var ttext = new bool[128];
-            for (int i = 33; i <= 126; i++) { ttext[i] = true; }
-            ttext['('] = false;
-            ttext[')'] = false;
-            ttext['<'] = false;
-            ttext['>'] = false;
-            ttext['@'] = false;
-            ttext[','] = false;
-            ttext[';'] = false;
-            ttext[':'] = false;
-            ttext['\\'] = false;
-            ttext['"'] = false;
-            ttext['/'] = false;
-            ttext['['] = false;
-            ttext[']'] = false;
-            ttext['?'] = false;
-            ttext['='] = false;
-            return ttext;
-        }
-
         private static bool[] CreateCharactersAllowedInComments()
         {
             // ctext- %d1-8 / %d11 / %d12 / %d14-31 / %33-39 / %42-91 / %93-127
@@ -176,14 +146,10 @@ namespace System.Net.Mime
 
         internal static void ValidateHeaderName(string data)
         {
-            int offset = 0;
-            for (; offset < data.Length; offset++)
+            if (data.Length == 0 || data.AsSpan().ContainsAnyExcept(s_charactersAllowedInHeaderNames))
             {
-                if (data[offset] > Ftext.Length || !Ftext[data[offset]])
-                    throw new FormatException(SR.InvalidHeaderName);
-            }
-            if (offset == 0)
                 throw new FormatException(SR.InvalidHeaderName);
+            }
         }
 
         internal static string? ReadQuotedString(string data, ref int offset, StringBuilder? builder)
@@ -226,11 +192,11 @@ namespace System.Net.Mime
                 {
                     //if data contains Unicode and Unicode is permitted, then
                     //it is valid in a quoted string in a header.
-                    if (data[offset] <= Ascii7bitMaxValue && !Qtext[data[offset]])
+                    if (Ascii.IsValid(data[offset]) && !Qtext[data[offset]])
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
                 //not permitting Unicode, in which case Unicode is a formatting error
-                else if (data[offset] > Ascii7bitMaxValue || !Qtext[data[offset]])
+                else if (!Ascii.IsValid(data[offset]) || !Qtext[data[offset]])
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -243,35 +209,39 @@ namespace System.Net.Mime
             throw new FormatException(SR.MailHeaderFieldMalformedHeader);
         }
 
-        internal static string? ReadParameterAttribute(string data, ref int offset, StringBuilder? builder)
+        internal static string? ReadParameterAttribute(string data, ref int offset)
         {
             if (!SkipCFWS(data, ref offset))
                 return null; //
 
-            return ReadToken(data, ref offset, null);
+            return ReadToken(data, ref offset);
         }
 
-        internal static string ReadToken(string data, ref int offset, StringBuilder? builder)
+        internal static string ReadToken(string data, ref int offset)
         {
             int start = offset;
-            for (; offset < data.Length; offset++)
+
+            if (start >= data.Length)
             {
-                if (data[offset] > Ascii7bitMaxValue)
-                {
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
-                }
-                else if (!Ttext[data[offset]])
-                {
-                    break;
-                }
+                return string.Empty;
             }
 
-            if (start == offset && offset < data.Length)
+            ReadOnlySpan<char> span = data.AsSpan(start);
+            int i = span.IndexOfAnyExcept(s_charactersAllowedInTokens);
+            if (i >= 0)
             {
-                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
+                if (i == 0 || !Ascii.IsValid(span[i]))
+                {
+                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, span[i]));
+                }
+            }
+            else
+            {
+                i = span.Length;
             }
 
-            return data.Substring(start, offset - start);
+            offset += i;
+            return data.Substring(start, i);
         }
 
         private static readonly string?[] s_months = new string?[] { null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
@@ -329,7 +299,7 @@ namespace System.Net.Mime
                     continue;
                 }
 
-                if (!Ttext[data[offset]] || data[offset] == ' ')
+                if (!s_charactersAllowedInTokens.Contains(data[offset]) || data[offset] == ' ')
                 {
                     builder.Append('"');
                     for (; offset < data.Length; offset++)
@@ -367,7 +337,7 @@ namespace System.Net.Mime
 
         private static bool CheckForUnicode(char ch, bool allowUnicode)
         {
-            if (ch < Ascii7bitMaxValue)
+            if (Ascii.IsValid(ch))
             {
                 return false;
             }
@@ -384,7 +354,7 @@ namespace System.Net.Mime
             c == Tab || c == Space || c == CR || c == LF;
 
         internal static bool HasCROrLF(string data) =>
-            data.AsSpan().IndexOfAny(CR, LF) >= 0;
+            data.AsSpan().ContainsAny(CR, LF);
 
         // Is there a FWS ("\r\n " or "\r\n\t") starting at the given index?
         internal static bool IsFWSAt(string data, int index)

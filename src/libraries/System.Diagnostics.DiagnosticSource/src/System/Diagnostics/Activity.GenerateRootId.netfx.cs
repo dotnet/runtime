@@ -12,7 +12,7 @@ namespace System.Diagnostics
             // It is important that the part that changes frequently be first, because
             // some sampling functions don't sample from the high entropy part of their hash function.
             // This makes sampling based on this produce poor samples.
-            return '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_uniqSuffix;
+            return $"|{Interlocked.Increment(ref s_currentRootId):x}{s_uniqSuffix}";
         }
     }
 }

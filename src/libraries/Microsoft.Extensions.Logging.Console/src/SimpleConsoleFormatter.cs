@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.Logging.Console
 {
@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging.Console
 #else
         private static bool IsAndroidOrAppleMobile => false;
 #endif
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Simple)

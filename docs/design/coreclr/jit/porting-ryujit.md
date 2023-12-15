@@ -43,7 +43,7 @@ There are several steps to follow to port the JIT (some of which can be be done 
 * Create the new platform-specific files
 * Create the platform-specific build instructions (in CMakeLists.txt). This probably will require
   new platform-specific build instructions at the root level, as well as the JIT level of the source tree.
-* Focus on MinOpts; disable the optimization phases, or always test with `COMPlus_JITMinOpts=1`.
+* Focus on MinOpts; disable the optimization phases, or always test with `DOTNET_JITMinOpts=1`.
 * Disable optional features, such as:
   * `FEATURE_EH` -- if 0, all exception handling blocks are removed. Of course, tests with exception handling
     that depend on exceptions being thrown and caught won't run correctly.
@@ -52,18 +52,21 @@ There are several steps to follow to port the JIT (some of which can be be done 
   * `FEATURE_TAILCALL_OPT`
   * `FEATURE_SIMD`
 * Build the new JIT as an altjit. In this mode, a "base" JIT is invoked to compile all functions except
-  the one(s) specified by the `COMPlus_AltJit` variable. For example, setting `COMPlus_AltJit=Add` and running
+  the one(s) specified by the `DOTNET_AltJit` variable. For example, setting `DOTNET_AltJit=Add` and running
   a test will use the "base" JIT (say, the Windows x64 targeting JIT) to compile all functions *except*
   `Add`, which will be first compiled by the new altjit, and if it fails, fall back to the "base" JIT. In this
   way, only very limited JIT functionality need to work, as the "base" JIT takes care of most functions.
 * Implement the basic instruction encodings. Test them using a method like `CodeGen::genArm64EmitterUnitTests()`.
 * Implement the bare minimum to get the compiler building and generating code for very simple operations, like addition.
 * Focus on the CodeGenBringUpTests (src\tests\JIT\CodeGenBringUpTests), starting with the simple ones.
-  These are designed such that for a test `XXX.cs`, there is a single interesting function named `XXX` to compile
-  (that is, the name of the source file is the same as the name of the interesting function. This was done to make
-  the scripts to invoke these tests very simple.). Set `COMPlus_AltJit=XXX` so the new JIT only attempts to
-  compile that one function.
-* Use `COMPlus_JitDisasm` to see the generated code for functions, even if the code isn't run.
+  * These are designed such that for a test `XXX.cs`, there is a single interesting function named `XXX` to compile
+    (that is, the name of the source file is the same as the name of the interesting function. This was done to make
+    the scripts to invoke these tests very simple.). Set `DOTNET_AltJit=XXX` so the new JIT only attempts to
+    compile that one function.
+  * Merged test groups interfere with the simplicity of these tests by removing the entry point from each individual
+    test and creating a single wrapper that calls all of the tests in a single process. To restore the
+    old behavior, build the tests with the environment variable `BuildAsStandalone` set to `true`.
+* Use `DOTNET_JitDisasm` to see the generated code for functions, even if the code isn't run.
 
 ## Expand test coverage
 
@@ -77,15 +80,15 @@ There are several steps to follow to port the JIT (some of which can be be done 
 
 ## Bring the optimizer phases on-line
 
-* Run tests with and without `COMPlus_JITMinOpts=1`.
-* It probably makes sense to set `COMPlus_TieredCompilation=0` (or disable it for the platform entirely) until much later.
+* Run tests with and without `DOTNET_JITMinOpts=1`.
+* It probably makes sense to set `DOTNET_TieredCompilation=0` (or disable it for the platform entirely) until much later.
 
 ## Improve quality
 
 * When the tests pass with the basic modes, start running with `JitStress` and `JitStressRegs` stress modes.
 * Bring `GCStress` on-line. This also requires VM work.
-* Work on `COMPlus_GCStress=4` quality. When crossgen/ngen is brought on-line, test with `COMPlus_GCStress=8`
-  and `COMPlus_GCStress=C` as well.
+* Work on `DOTNET_GCStress=4` quality. When crossgen/ngen is brought on-line, test with `DOTNET_GCStress=8`
+  and `DOTNET_GCStress=C` as well.
 
 ## Work on performance
 

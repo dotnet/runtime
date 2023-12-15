@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <memory>
+#include <dn-u16.h>
 #include "corhlpr.h"
 
 #ifdef HOST_WINDOWS
@@ -29,7 +30,7 @@ namespace
         DWORD* directoryRVA)
     {
         // Fun code ahead... below is a hand written PE decoder with some of the file offsets hardcoded.
-        // It supports no more than what we absolutely have to to get to the PE directory we need. Any of the
+        // It supports no more than what we absolutely have to get to the PE directory we need. Any of the
         // magic numbers used below can be determined by using the public documentation on the web.
         //
         // Yes utilcode has a PE decoder, no it does not support reading its data through a datatarget
@@ -328,7 +329,7 @@ HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     DWORD* pNextLevelRva)
 {
     HRESULT hr = S_OK;
-    DWORD nameLength = (DWORD)wcslen(pwzName);
+    DWORD nameLength = (DWORD)u16_strlen(pwzName);
     WCHAR entryName[50];
     assert(nameLength < 50);     // this implementation won't support matching a name longer
     // than 50 characters. We only look up the hard coded name

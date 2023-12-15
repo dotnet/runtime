@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -34,7 +35,7 @@ namespace System.Net.Http.Headers
             get { return _dispositionType; }
             set
             {
-                CheckDispositionTypeFormat(value, nameof(value));
+                CheckDispositionTypeFormat(value);
                 _dispositionType = value;
             }
         }
@@ -104,18 +105,18 @@ namespace System.Net.Http.Headers
                         _parameters!.Remove(sizeParameter);
                     }
                 }
-                else if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-                else if (sizeParameter != null)
-                {
-                    sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
-                }
                 else
                 {
-                    string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
-                    Parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    ArgumentOutOfRangeException.ThrowIfNegative(value.GetValueOrDefault());
+                    if (sizeParameter != null)
+                    {
+                        sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
+                        Parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    }
                 }
             }
         }
@@ -139,7 +140,7 @@ namespace System.Net.Http.Headers
 
         public ContentDispositionHeaderValue(string dispositionType)
         {
-            CheckDispositionTypeFormat(dispositionType, nameof(dispositionType));
+            CheckDispositionTypeFormat(dispositionType);
             _dispositionType = dispositionType;
         }
 
@@ -184,7 +185,7 @@ namespace System.Net.Http.Headers
 
         #region Parsing
 
-        public static ContentDispositionHeaderValue Parse(string? input)
+        public static ContentDispositionHeaderValue Parse(string input)
         {
             int index = 0;
             return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input,
@@ -270,12 +271,9 @@ namespace System.Net.Http.Headers
             return typeLength;
         }
 
-        private static void CheckDispositionTypeFormat(string dispositionType, string parameterName)
+        private static void CheckDispositionTypeFormat(string dispositionType, [CallerArgumentExpression(nameof(dispositionType))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(dispositionType))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(dispositionType, parameterName);
 
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out string? tempDispositionType);
@@ -422,7 +420,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, input));
             }
-            else if (HeaderUtilities.ContainsNonAscii(result))
+            else if (!Ascii.IsValid(result))
             {
                 needsQuotes = true; // Encoded data must always be quoted, the equals signs are invalid in tokens.
                 result = EncodeMime(result); // =?utf-8?B?asdfasdfaesdf?=
@@ -470,9 +468,13 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            string[] parts = processedInput.Split('?');
+            Span<Range> parts = stackalloc Range[6];
+            ReadOnlySpan<char> processedInputSpan = processedInput;
             // "=, encodingName, encodingType, encodedData, ="
-            if (parts.Length != 5 || parts[0] != "\"=" || parts[4] != "=\"" || parts[2].ToLowerInvariant() != "b")
+            if (processedInputSpan.Split(parts, '?') != 5 ||
+                processedInputSpan[parts[0]] is not "\"=" ||
+                processedInputSpan[parts[4]] is not "=\"" ||
+                !processedInputSpan[parts[2]].Equals("b", StringComparison.OrdinalIgnoreCase))
             {
                 // Not encoded.
                 // This does not support multi-line encoding.
@@ -482,8 +484,8 @@ namespace System.Net.Http.Headers
 
             try
             {
-                Encoding encoding = Encoding.GetEncoding(parts[1]);
-                byte[] bytes = Convert.FromBase64String(parts[3]);
+                Encoding encoding = Encoding.GetEncoding(processedInput[parts[1]]);
+                byte[] bytes = Convert.FromBase64String(processedInput[parts[3]]);
                 output = encoding.GetString(bytes, 0, bytes.Length);
                 return true;
             }

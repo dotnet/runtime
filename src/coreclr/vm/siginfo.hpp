@@ -213,6 +213,12 @@ public:
         TypeHandle GetTypeHandleNT(Module* pModule,
                                    const SigTypeContext *pTypeContext) const;
 
+        struct HandleRecursiveGenericsForFieldLayoutLoad
+        {
+            Module* pModuleWithTokenToAvoidIfPossible;
+            mdToken tkTypeDefToAvoidIfPossible;
+        };
+
         // pTypeContext indicates how to instantiate any generic type parameters we come
         // However, first we implicitly apply the substitution pSubst to the metadata if pSubst is supplied.
         // That is, if the metadata contains a type variable "!0" then we first look up
@@ -240,7 +246,9 @@ public:
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
                                          const ZapSig::Context *pZapSigContext = NULL,
-                                         MethodTable *pMTInterfaceMapOwner = NULL) const;
+                                         MethodTable *pMTInterfaceMapOwner = NULL,
+                                         HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
+                                         ) const;
 
 public:
         //------------------------------------------------------------------------
@@ -424,9 +432,10 @@ public:
 // infinite recursion when types refer to each other in a cycle, e.g. a delegate that takes itself as
 // a parameter or a struct that declares a field of itself (illegal but we don't know at this point).
 //
-class TokenPairList
+class TokenPairList final
 {
 public:
+
     // Chain using this constructor when comparing two typedefs for equivalence.
     TokenPairList(mdToken token1, ModuleBase *pModule1, mdToken token2, ModuleBase *pModule2, TokenPairList *pNext)
         : m_token1(token1), m_token2(token2),
@@ -462,7 +471,6 @@ public:
     static TokenPairList AdjustForTypeSpec(TokenPairList *pTemplate, ModuleBase *pTypeSpecModule, PCCOR_SIGNATURE pTypeSpecSig, DWORD cbTypeSpecSig);
     static TokenPairList AdjustForTypeEquivalenceForbiddenScope(TokenPairList *pTemplate);
 
-private:
     TokenPairList(TokenPairList *pTemplate)
         : m_token1(pTemplate ? pTemplate->m_token1 : mdTokenNil),
           m_token2(pTemplate ? pTemplate->m_token2 : mdTokenNil),
@@ -472,6 +480,7 @@ private:
           m_pNext(pTemplate ? pTemplate->m_pNext : NULL)
     { LIMITED_METHOD_CONTRACT; }
 
+private:
     mdToken m_token1, m_token2;
     ModuleBase *m_pModule1, *m_pModule2;
     BOOL m_bInTypeEquivalenceForbiddenScope;
@@ -594,7 +603,7 @@ class MetaSig
 
         //------------------------------------------------------------------------
         // Returns # of arguments. Does not count the return value.
-        // Does not count the "this" argument (which is not reflected om the
+        // Does not count the "this" argument (which is not reflected on the
         // sig.) 64-bit arguments are counted as one argument.
         //------------------------------------------------------------------------
         UINT NumFixedArgs()
@@ -751,8 +760,8 @@ class MetaSig
         }
 
         //------------------------------------------------------------------
-        // Like NextArg, but return only normalized type (enums flattned to
-        // underlying type ...
+        // Like NextArg, but return only normalized type (enums flattened to
+        // the underlying type ...
         //------------------------------------------------------------------
         CorElementType
         NextArgNormalized(TypeHandle * pthValueType = NULL)
@@ -936,6 +945,26 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        // Struct used to capture in/out state during the comparison
+        // of element types.
+        struct CompareState
+        {
+            // List of tokens that are currently being compared.
+            // See TokenPairList for more use details.
+            TokenPairList*  Visited;
+
+            // Boolean indicating if custom modifiers should
+            // be compared.
+            bool IgnoreCustomModifiers;
+
+            CompareState() = default;
+
+            CompareState(TokenPairList* list)
+                : Visited{ list }
+                , IgnoreCustomModifiers{ false }
+            { }
+        };
+
         //------------------------------------------------------------------
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
@@ -950,7 +979,7 @@ class MetaSig
             ModuleBase *         pModule2,
             const Substitution * pSubst1,
             const Substitution * pSubst2,
-            TokenPairList *      pVisited = NULL);
+            CompareState *       state = NULL);
 
 
 
@@ -978,24 +1007,6 @@ class MetaSig
             const Substitution* pSubst2,
             BOOL                skipReturnTypeSig,
             TokenPairList*      pVisited = NULL
-        );
-
-        // Nonthrowing version of CompareMethodSigs
-        //
-        //   Return S_OK if they match
-        //          S_FALSE if they don't match
-        //          FAILED  if OOM or some other blocking error
-        //
-        static HRESULT CompareMethodSigsNT(
-            PCCOR_SIGNATURE pSig1,
-            DWORD       cSig1,
-            Module*     pModule1,
-            const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2,
-            DWORD       cSig2,
-            Module*     pModule2,
-            const Substitution* pSubst2,
-            TokenPairList *pVisited = NULL
         );
 
         static BOOL CompareFieldSigs(

@@ -12,5 +12,8 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class UnreachableException : Exception
     {
+        public UnreachableException() { }
+
+        public UnreachableException(string message) : base(message) { }
     }
 }

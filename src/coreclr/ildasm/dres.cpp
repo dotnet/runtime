@@ -104,8 +104,8 @@ struct ResourceNode
         {
             //fwrite(&(g_prResNodePtr[i]->ResHdr),g_prResNodePtr[i]->ResHdr.dwHeaderSize,1,pF);
             ResHdr.dwHeaderSize = sizeof(ResourceHeader);
-            if(wzType) ResHdr.dwHeaderSize += (DWORD)((wcslen(wzType) + 1)*sizeof(WCHAR) - sizeof(DWORD));
-            if(wzName) ResHdr.dwHeaderSize += (DWORD)((wcslen(wzName) + 1)*sizeof(WCHAR) - sizeof(DWORD));
+            if(wzType) ResHdr.dwHeaderSize += (DWORD)((u16_strlen(wzType) + 1)*sizeof(WCHAR) - sizeof(DWORD));
+            if(wzName) ResHdr.dwHeaderSize += (DWORD)((u16_strlen(wzName) + 1)*sizeof(WCHAR) - sizeof(DWORD));
 
             //---- Constant part of the header: DWORD,DWORD
             fwrite(&ResHdr.dwDataSize, sizeof(DWORD),1,pF);
@@ -113,15 +113,15 @@ struct ResourceNode
             //--- Variable part of header: type and name
             if(wzType)
             {
-                fwrite(wzType,(wcslen(wzType) + 1)*sizeof(WCHAR), 1, pF);
-                dwFiller += (DWORD)wcslen(wzType) + 1;
+                fwrite(wzType,(u16_strlen(wzType) + 1)*sizeof(WCHAR), 1, pF);
+                dwFiller += (DWORD)u16_strlen(wzType) + 1;
             }
             else
                 fwrite(&ResHdr.dwTypeID,sizeof(DWORD),1,pF);
             if(wzName)
             {
-                fwrite(wzName,(wcslen(wzName) + 1)*sizeof(WCHAR), 1, pF);
-                dwFiller += (DWORD)wcslen(wzName) + 1;
+                fwrite(wzName,(u16_strlen(wzName) + 1)*sizeof(WCHAR), 1, pF);
+                dwFiller += (DWORD)u16_strlen(wzName) + 1;
             }
             else
                 fwrite(&ResHdr.dwNameID,sizeof(DWORD),1,pF);

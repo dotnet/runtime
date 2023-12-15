@@ -7,7 +7,7 @@ using System.Transactions.Oletx;
 // This files contains non-Windows stubs for Windows-only functionality, so that Sys.Tx can build. The APIs below
 // are only ever called when a distributed transaction is needed, and throw PlatformNotSupportedException.
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
 
 namespace System.Transactions.Oletx
 {
@@ -58,7 +58,7 @@ namespace System.Transactions.Oletx
     /// clones have the same capabilities as the original transaction, except for the ability to commit
     /// the transaction.
     /// </summary>
-    internal class OletxTransaction : ISerializable, IObjectReference
+    internal class OletxTransaction : ISerializable
     {
         internal OletxTransaction()
         {
@@ -108,16 +108,13 @@ namespace System.Transactions.Oletx
         internal static byte[] GetExportCookie(byte[] whereaboutsCopy)
             => throw NotSupported();
 
-        public object GetRealObject(StreamingContext context)
-            => throw NotSupported();
-
         internal static byte[] GetTransmitterPropagationToken()
             => throw NotSupported();
 
         internal static IDtcTransaction GetDtcTransaction()
             => throw NotSupported();
 
-        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
+        public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
             //if (serializationInfo == null)
             //{

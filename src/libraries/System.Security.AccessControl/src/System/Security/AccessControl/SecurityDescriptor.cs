@@ -8,7 +8,6 @@
 **
 ===========================================================*/
 
-using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -16,6 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using Microsoft.Win32;
 
 namespace System.Security.AccessControl
 {
@@ -261,11 +261,7 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (binaryForm.Length - offset < BinaryLength)
             {
@@ -472,15 +468,7 @@ namespace System.Security.AccessControl
             // The array passed in must be valid
             //
 
-            if (offset < 0)
-            {
-                //
-                // Offset must not be negative
-                //
-
-                throw new ArgumentOutOfRangeException(nameof(offset),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             //
             // At least make sure the header is in place

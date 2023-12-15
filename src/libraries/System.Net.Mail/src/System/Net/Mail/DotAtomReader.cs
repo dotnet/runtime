@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
@@ -43,7 +44,7 @@ namespace System.Net.Mail
             // Scan for the first invalid chars (including whitespace)
             for (; 0 <= index; index--)
             {
-                if (data[index] <= MailBnfHelper.Ascii7bitMaxValue // Any Unicode allowed
+                if (Ascii.IsValid(data[index]) // Any ASCII allowed
                  && (data[index] != MailBnfHelper.Dot && !MailBnfHelper.Atext[data[index]])) // Invalid char
                 {
                     break;

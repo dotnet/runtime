@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class AA
 {
@@ -22,10 +23,10 @@ public class AA
         }
     }
 
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Main1();
-        return 100;
     }
 
     static void Main1()

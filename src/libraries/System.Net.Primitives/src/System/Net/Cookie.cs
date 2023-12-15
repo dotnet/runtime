@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,7 +42,10 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal const string ReservedToName = "\t\r\n=;,";
+        private static readonly SearchValues<char> s_reservedToNameChars = SearchValues.Create("\t\r\n=;,");
+
+        private static readonly SearchValues<char> s_domainChars =
+            SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -238,7 +242,7 @@ namespace System.Net
                 || value.StartsWith('$')
                 || value.StartsWith(' ')
                 || value.EndsWith(' ')
-                || value.AsSpan().IndexOfAny(ReservedToName) >= 0)
+                || value.AsSpan().ContainsAny(s_reservedToNameChars))
             {
                 m_name = string.Empty;
                 return false;
@@ -346,7 +350,7 @@ namespace System.Net
                 m_name.StartsWith('$') ||
                 m_name.StartsWith(' ') ||
                 m_name.EndsWith(' ') ||
-                m_name.AsSpan().IndexOfAny(ReservedToName) >= 0)
+                m_name.AsSpan().ContainsAny(s_reservedToNameChars))
             {
                 if (shouldThrow)
                 {
@@ -357,7 +361,7 @@ namespace System.Net
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().IndexOfAny(';', ',') >= 0))
+                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().ContainsAny(';', ',')))
             {
                 if (shouldThrow)
                 {
@@ -368,7 +372,7 @@ namespace System.Net
 
             // Check Comment syntax
             if (Comment != null && !(Comment.Length > 2 && Comment.StartsWith('\"') && Comment.EndsWith('\"'))
-                && (Comment.AsSpan().IndexOfAny(';', ',') >= 0))
+                && (Comment.AsSpan().ContainsAny(';', ',')))
             {
                 if (shouldThrow)
                 {
@@ -379,7 +383,7 @@ namespace System.Net
 
             // Check Path syntax
             if (Path != null && !(Path.Length > 2 && Path.StartsWith('\"') && Path.EndsWith('\"'))
-                && (Path.AsSpan().IndexOfAny(';', ',') != -1))
+                && (Path.AsSpan().ContainsAny(';', ',')))
             {
                 if (shouldThrow)
                 {
@@ -559,22 +563,9 @@ namespace System.Net
 
         // Very primitive test to make sure that the name does not have illegal characters
         // as per RFC 952 (relaxed on first char could be a digit and string can have '_').
-        private static bool DomainCharsTest(string name)
-        {
-            if (name == null || name.Length == 0)
-            {
-                return false;
-            }
-            for (int i = 0; i < name.Length; ++i)
-            {
-                char ch = name[i];
-                if (!(char.IsAsciiLetterOrDigit(ch) || ch == '.' || ch == '-' || ch == '_'))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        private static bool DomainCharsTest(string name) =>
+            !string.IsNullOrEmpty(name) &&
+            !name.AsSpan().ContainsAnyExcept(s_domainChars);
 
         [AllowNull]
         public string Port
@@ -585,14 +576,17 @@ namespace System.Net
             }
             set
             {
-                m_port_implicit = false;
                 if (string.IsNullOrEmpty(value))
                 {
                     // "Port" is present but has no value.
+                    // Therefore; the effective port value is implicit.
+                    m_port_implicit = true;
                     m_port = string.Empty;
                 }
                 else
                 {
+                    // "Port" value is present, so we use the provided value rather than an implicit one.
+                    m_port_implicit = false;
                     // Parse port list
                     if (!value.StartsWith('\"') || !value.EndsWith('\"'))
                     {
@@ -694,10 +688,7 @@ namespace System.Net
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 m_version = value;
                 if (value > 0 && m_cookieVariant < CookieVariant.Rfc2109)
                 {
@@ -708,9 +699,7 @@ namespace System.Net
 
         public override bool Equals([NotNullWhen(true)] object? comparand)
         {
-            Cookie? other = comparand as Cookie;
-
-            return other != null
+            return comparand is Cookie other
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
@@ -720,7 +709,12 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            return (Name + "=" + Value + ";" + Path + "; " + Domain + "; " + Version).GetHashCode();
+            return HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Name),
+                StringComparer.Ordinal.GetHashCode(Value),
+                StringComparer.Ordinal.GetHashCode(Path),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Domain),
+                Version);
         }
 
         public override string ToString()

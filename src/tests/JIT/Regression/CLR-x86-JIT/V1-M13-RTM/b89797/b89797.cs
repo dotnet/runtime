@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class testout1
+using Xunit;
+public unsafe class testout1
 {
     public struct VT_1
     {
@@ -25,7 +26,8 @@ internal unsafe class testout1
         return retval_1;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         CL cl = new CL();
 
@@ -41,6 +43,5 @@ internal unsafe class testout1
             Console.WriteLine("Func: > false");
 
         ulong retval = Convert.ToUInt64(Convert.ToUInt64(cl.a0 - val_1));
-        return 100;
     }
 }

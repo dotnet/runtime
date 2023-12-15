@@ -156,9 +156,6 @@
   <data name="ArgumentOutOfRange_InvalidUserDefinedAceType" xml:space="preserve">
     <value>User-defined ACEs must not have a well-known ACE type.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="InvalidOperation_ModificationOfNonCanonicalAcl" xml:space="preserve">
     <value>This access control list is not in canonical form and therefore cannot be modified.</value>
   </data>

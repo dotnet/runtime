@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Text;
-using System.Xml.Schema;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Versioning;
-
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -176,7 +175,7 @@ namespace System.Xml
             Debug.Assert(_parserContext != null);
             Debug.Assert(_coreReaderImpl.DtdInfo == null);
 
-            if (_parserContext.DocTypeName == null || _parserContext.DocTypeName.Length == 0)
+            if (string.IsNullOrEmpty(_parserContext.DocTypeName))
             {
                 return;
             }

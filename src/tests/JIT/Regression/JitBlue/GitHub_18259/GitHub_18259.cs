@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test case for https://github.com/dotnet/coreclr/issues/18259
 //
@@ -26,7 +27,8 @@ struct S2
 public class Program
 {
     static S2[] s_11 = new S2[]{new S2(new S1(1234u))};   // Assigns 1234 to F1.F0
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ref S1 vr7 = ref s_11[0].F1;
         vr7.F0 = vr7.F0;

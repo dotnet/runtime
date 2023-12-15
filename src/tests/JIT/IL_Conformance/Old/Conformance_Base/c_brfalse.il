@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
-.class _brfalse {
-.method public static  int32 main(class [mscorlib]System.String[]) {
+.namespace c_brfalse
+{
+.class public _brfalse {
+.method public static  int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack               20
 .locals (int32,int32)
@@ -140,3 +146,4 @@ FAIL:
 }
 }
 .assembly c_brfalse {}
+}

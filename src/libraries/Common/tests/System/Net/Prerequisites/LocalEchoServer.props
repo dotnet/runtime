@@ -1,5 +1,8 @@
 <Project>
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <_TargetFrameworkForXHarness>$(AspNetCoreAppCurrent)</_TargetFrameworkForXHarness>
+    <HelixTargetsFile>$(MSBuildThisFileDirectory)LocalEchoServer.helix.targets</HelixTargetsFile>
+
     <!-- handle different path to middleware in Helix -->
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/TestEchoMiddleware</_TestEchoMiddleware>
@@ -15,6 +18,25 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-middleware=$(_RemoteLoopMiddleware)/RemoteLoopServer.dll,RemoteLoopServer.GenericHandler</WasmXHarnessArgs>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-middleware=$(_TestEchoMiddleware)/NetCoreServer.dll,NetCoreServer.GenericHandler</WasmXHarnessArgs>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- The middleware doesn't need to be built for browser-wasm, so remove the relevant properties.
+         Also, due to https://github.com/dotnet/runtime/issues/77707 RunAOTCompilation needs to be removed
+         as a workaround. -->
+    <ProjectReference
+              Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj"
+              GlobalPropertiesToRemove="TargetOS;TargetArchitecture;RuntimeIdentifier;RunAOTCompilation"
+              AdditionalProperties="_TargetFrameworkForXHarness=$(_TargetFrameworkForXHarness);NewtonsoftJsonVersion=$(NewtonsoftJsonVersion)"
+              ReferenceOutputAssembly="false"/>
+    <ProjectReference
+              Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj"
+              GlobalPropertiesToRemove="TargetOS;TargetArchitecture;RuntimeIdentifier;RunAOTCompilation"
+              AdditionalProperties="_TargetFrameworkForXHarness=$(_TargetFrameworkForXHarness)"
+              ReferenceOutputAssembly="false"/>
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
+             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
+  </ItemGroup>
+
   
   <!-- Tests use self-signed certificates that are refused by NodeJS -->
   <Target Name="AcceptUnauthorizedOnNodeJS" BeforeTargets="GenerateRunScript">

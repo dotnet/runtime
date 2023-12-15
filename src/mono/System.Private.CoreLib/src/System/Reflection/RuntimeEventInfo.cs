@@ -219,10 +219,10 @@ namespace System.Reflection
         internal static EventInfo GetEventFromHandle(Mono.RuntimeEventHandle handle, RuntimeTypeHandle reflectedType)
         {
             if (handle.Value == IntPtr.Zero)
-                throw new ArgumentException("The handle is invalid.");
+                throw new ArgumentException(SR.Argument_InvalidHandle);
             EventInfo ei = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (ei == null)
-                throw new ArgumentException("The event handle and the type handle are incompatible.");
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return ei;
         }
     }

@@ -3,11 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace GitHub_19910
 
 {
-    class Program
+    public class Program
     {
         public struct Bgr { public byte B; public byte G; public byte R; }
 
@@ -43,7 +44,8 @@ namespace GitHub_19910
 
         public class BasicReadWriteBenchmarkBgr : BasicReadWriteBenchmark<Bgr> { }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -9,14 +9,14 @@ namespace GCTest_gcarr_cs
     public class Test
     {
         private int _magic = 0x12345678;
-        public virtual void CheckValid()
+        internal virtual void CheckValid()
         {
             if (_magic != 0x12345678)
                 throw new Exception();
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Test[] arr = new Test[97];
             for (int i = 0; i < 97; i++)
@@ -31,7 +31,6 @@ namespace GCTest_gcarr_cs
             GC.WaitForPendingFinalizers();
             GC.Collect();
             Console.WriteLine("Test passed.");
-            return 100;
         }
     }
 }

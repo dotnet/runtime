@@ -14,13 +14,10 @@
 #include "eventtrace.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"
-#include "dlwrap.h"
 #include "invokeutil.h"
 #include "strongnameinternal.h"
 
 #include "../binder/inc/applicationcontext.hpp"
-
-#include "assemblybinderutil.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
@@ -671,9 +668,9 @@ PEAssembly::PEAssembly(
     }
     CONTRACTL_END;
 
-#if _DEBUG
+#ifdef LOGGING
     m_pDebugName = NULL;
-#endif
+#endif // LOGGING
     m_PEImage = NULL;
     m_MDImportIsRW_Debugger_Use_Only = FALSE;
     m_pMDImport = NULL;
@@ -734,11 +731,10 @@ PEAssembly::PEAssembly(
         m_pHostAssembly = pBindResultInfo;
     }
 
-#if _DEBUG
+#ifdef LOGGING
     GetPathOrCodeBase(m_debugName);
-    m_debugName.Normalize();
-    m_pDebugName = m_debugName;
-#endif
+    m_pDebugName = m_debugName.GetUTF8();
+#endif // LOGGING
 }
 #endif // !DACCESS_COMPILE
 
@@ -929,7 +925,7 @@ void PEAssembly::PathToUrl(SString &string)
     }
 #else
     // Unix doesn't have a distinction between a network or a local path
-    _ASSERTE( i[0] == W('\\') || i[0] == W('/'));
+    _ASSERTE(i[0] == W('/'));
     SString sss(SString::Literal, W("file://"));
     string.Insert(i, sss);
     string.Skip(i, sss);
@@ -962,33 +958,19 @@ void PEAssembly::UrlToPath(SString &string)
     if (string.MatchCaseInsensitive(i, sss2))
         string.Delete(i, 7);
 
+#if !defined(TARGET_UNIX)
     while (string.Find(i, W('/')))
     {
         string.Replace(i, W('\\'));
     }
+#endif
 
     RETURN;
 }
 
 BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 {
-#ifdef TARGET_UNIX
-    SString::Iterator slash = i;
-    SString::Iterator backSlash = i;
-    BOOL foundSlash = path.FindBack(slash, '/');
-    BOOL foundBackSlash = path.FindBack(backSlash, '\\');
-    if (!foundSlash && !foundBackSlash)
-        return FALSE;
-    else if (foundSlash && !foundBackSlash)
-        i = slash;
-    else if (!foundSlash && foundBackSlash)
-        i = backSlash;
-    else
-        i = (backSlash > slash) ? backSlash : slash;
-    return TRUE;
-#else
-    return path.FindBack(i, '\\');
-#endif //TARGET_UNIX
+    return path.FindBack(i, DIRECTORY_SEPARATOR_CHAR_A);
 }
 
 // ------------------------------------------------------------
@@ -1040,10 +1022,10 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
 
-#ifdef _DEBUG
+#ifdef LOGGING
     // Not a big deal if it's NULL or fails.
     m_debugName.EnumMemoryRegions(flags);
-#endif
+#endif // LOGGING
 
     if (m_PEImage.IsValid())
     {
@@ -1114,10 +1096,10 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 
     PTR_AssemblyBinder pBinder = NULL;
 
-    BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+    PTR_BINDER_SPACE_Assembly pHostAssembly = GetHostAssembly();
     if (pHostAssembly)
     {
-        pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+        pBinder = pHostAssembly->GetBinder();
     }
     else
     {

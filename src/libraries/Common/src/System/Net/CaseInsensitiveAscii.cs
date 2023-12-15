@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
+using System.Text;
 
 namespace System.Net
 {
@@ -9,7 +11,8 @@ namespace System.Net
     {
         // ASCII char ToLower table
         internal static readonly CaseInsensitiveAscii StaticInstance = new CaseInsensitiveAscii();
-        internal static ReadOnlySpan<byte> AsciiToLower => new byte[] {
+        internal static ReadOnlySpan<byte> AsciiToLower =>
+        [
               0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
              10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
              20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
@@ -36,7 +39,7 @@ namespace System.Net
             230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
             240, 241, 242, 243, 244, 245, 246, 247, 248, 249,
             250, 251, 252, 253, 254, 255
-        };
+        ];
 
         // ASCII string case insensitive hash function
         public int GetHashCode(object myObject)
@@ -106,22 +109,9 @@ namespace System.Net
             }
             if (secondString != null)
             {
-                int index = firstString.Length;
-                if (index == secondString.Length)
-                {
-                    if (FastGetHashCode(firstString) == FastGetHashCode(secondString))
-                    {
-                        while (index > 0)
-                        {
-                            index--;
-                            if (AsciiToLower[firstString[index]] != AsciiToLower[secondString[index]])
-                            {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                }
+                Debug.Assert(Ascii.IsValid(firstString) || Ascii.IsValid(secondString), "Expected at least one of the inputs to be valid ASCII");
+
+                return Ascii.EqualsIgnoreCase(firstString, secondString);
             }
             return false;
         }

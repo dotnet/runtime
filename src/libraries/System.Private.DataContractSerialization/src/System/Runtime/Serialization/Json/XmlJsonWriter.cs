@@ -63,8 +63,6 @@ namespace System.Runtime.Serialization.Json
             "\\u001f"
         };
 
-        private static BinHexEncoding? s_binHexEncoding;
-
         private string? _attributeText;
         private JsonDataType _dataType;
         private int _depth;
@@ -165,9 +163,6 @@ namespace System.Runtime.Serialization.Json
         {
             get { return XmlSpace.None; }
         }
-
-        private static BinHexEncoding BinHexEncoding =>
-            s_binHexEncoding ??= new BinHexEncoding();
 
         private bool HasOpenAttribute => (_isWritingDataTypeAttribute || _isWritingServerTypeAttribute || IsWritingNameAttribute || _isWritingXmlnsAttribute);
 
@@ -363,15 +358,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
@@ -386,22 +374,15 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
             }
 
             StartText();
-            WriteEscapedJsonString(BinHexEncoding.GetString(buffer, index, count));
+            WriteEscapedJsonString(DataContractSerializer.BinHexEncoding.GetString(buffer, index, count));
         }
 
         public override void WriteCData(string? text)
@@ -419,15 +400,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
@@ -457,7 +431,7 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.JsonNoMatchingStartAttribute);
             }
 
-            Fx.Assert(!(_isWritingDataTypeAttribute && _isWritingServerTypeAttribute),
+            Debug.Assert(!(_isWritingDataTypeAttribute && _isWritingServerTypeAttribute),
                 "Can not write type attribute and __type attribute at the same time.");
 
             if (_isWritingDataTypeAttribute)
@@ -626,7 +600,7 @@ namespace System.Runtime.Serialization.Json
             {
                 // Assert on only StandaloneText and EndElement because preceding if
                 //    conditions take care of checking for QuotedText and Element.
-                Fx.Assert((_nodeType == JsonNodeType.StandaloneText) || (_nodeType == JsonNodeType.EndElement),
+                Debug.Assert((_nodeType == JsonNodeType.StandaloneText) || (_nodeType == JsonNodeType.EndElement),
                     "nodeType has invalid value " + _nodeType + ". Expected it to be QuotedText, Element, StandaloneText, or EndElement.");
             }
             if (_depth != 0)
@@ -715,15 +689,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
@@ -987,7 +954,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            WriteString(new string(stackalloc char[2] { highChar, lowChar }));
+            WriteString(new string([highChar, lowChar]));
         }
 
         public override void WriteValue(bool value)

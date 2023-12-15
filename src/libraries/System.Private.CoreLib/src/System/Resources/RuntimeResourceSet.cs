@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
@@ -153,12 +154,7 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     //
-#if NATIVEAOT
-    public  // On NativeAOT, this must be public to prevent it from getting reflection blocked.
-#else
-    internal
-#endif
-    sealed class RuntimeResourceSet : ResourceSet, IEnumerable
+    internal sealed class RuntimeResourceSet : ResourceSet, IEnumerable
     {
         // Cache for resources.  Key is the resource name, which can be cached
         // for arbitrarily long times, since the object is usually a string
@@ -270,10 +266,14 @@ namespace System.Resources
 
         private object? GetObject(string key, bool ignoreCase, bool isString)
         {
+#if RESOURCES_EXTENSIONS
             if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+#else
+            ArgumentNullException.ThrowIfNull(key);
+#endif
 
             ResourceReader? reader = _defaultReader;
             Dictionary<string, ResourceLocator>? cache = _resCache;
@@ -283,6 +283,9 @@ namespace System.Resources
             object? value;
             ResourceLocator resEntry;
 
+            // Lock the cache first, then the reader (reader locks implicitly through its methods).
+            // Lock order MUST match ResourceReader.ResourceEnumerator.Entry to avoid deadlock.
+            Debug.Assert(!Monitor.IsEntered(reader));
             lock (cache)
             {
                 // Find the offset within the data section
@@ -295,7 +298,7 @@ namespace System.Resources
 
                     // When data type cannot be cached
                     dataPos = resEntry.DataPosition;
-                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos, out _);
+                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos);
                 }
 
                 dataPos = reader.FindPosForResource(key);
@@ -353,14 +356,11 @@ namespace System.Resources
             return value;
         }
 
-        private static object? ReadValue (ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
+        private static object? ReadValue(ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
         {
             object? value;
             ResourceTypeCode typeCode;
 
-            // Normally calling LoadString or LoadObject requires
-            // taking a lock.  Note that in this case, we took a
-            // lock before calling this method.
             if (isString)
             {
                 value = reader.LoadString(dataPos);

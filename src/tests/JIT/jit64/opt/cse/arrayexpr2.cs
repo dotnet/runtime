@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //((((((a[6]*((a[0]+(a[1]*a[2]))-(a[2]*a[3])))-((a[2]+(a[4]*a[5]))-(a[6]*a[7])))+(a[4]+((a[8]+(a[10]*a[4]))-(a[2]*a[3]))))-(a[6]+((a[5]+(a[4]*a[5]))-(a[6]*a[7]))))+((a[0]+((a[7]+(a[5]+a[6]))-(a[15]*a[20])))*(((a[0]+a[1])+a[6])-((a[2]+a[1])*a[10]))))-(((a[1]*a[1])+a[6])-((a[2]+a[1])*a[10])))
 
 //permutations for  ((((((a[6]*((a[0]+(a[1]*a[2]))-(a[2]*a[3])))-((a[2]+(a[4]*a[5]))-(a[6]*a[7])))+(a[4]+((a[8]+(a[10]*a[4]))-(a[2]*a[3]))))-(a[6]+((a[5]+(a[4]*a[5]))-(a[6]*a[7]))))+((a[0]+((a[7]+(a[5]+a[6]))-(a[15]*a[20])))*(((a[0]+a[1])+a[6])-((a[2]+a[1])*a[10]))))-(((a[1]*a[1])+a[6])-((a[2]+a[1])*a[10])))
@@ -359,7 +360,8 @@ namespace CseTest
     public class Test_Main
     {
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             int[] a = new int[50];

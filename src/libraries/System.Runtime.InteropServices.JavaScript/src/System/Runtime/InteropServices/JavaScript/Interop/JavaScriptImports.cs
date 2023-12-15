@@ -7,12 +7,11 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static void MarshalPromise(Span<JSMarshalerArgument> arguments)
+        public static void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
         {
             fixed (JSMarshalerArgument* ptr = arguments)
             {
-                Interop.Runtime.MarshalPromise(ptr);
+                Interop.Runtime.ResolveOrRejectPromise(ptr);
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
@@ -21,22 +20,21 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+#if !DISABLE_LEGACY_JS_INTEROP
         #region legacy
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object GetGlobalObject(string? str = null)
         {
             int exception;
             Interop.Runtime.GetGlobalObjectRef(str, out exception, out object jsObj);
 
             if (exception != 0)
-                throw new JSException($"Error obtaining a handle to global {str}");
+                throw new JSException(SR.Format(SR.ErrorResolvingFromGlobalThis, str));
 
-            JSHostImplementation.ReleaseInFlight(jsObj);
+            LegacyHostImplementation.ReleaseInFlight(jsObj);
             return jsObj;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr CreateCSOwnedObject(string typeName, object[] parms)
         {
             Interop.Runtime.CreateCSOwnedObjectRef(typeName, parms, out int exception, out object res);
@@ -47,5 +45,6 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         #endregion
+#endif
     }
 }

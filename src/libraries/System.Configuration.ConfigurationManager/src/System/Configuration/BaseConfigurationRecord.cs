@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -18,6 +19,12 @@ namespace System.Configuration
     [DebuggerDisplay("ConfigPath = {ConfigPath}")]
     internal abstract class BaseConfigurationRecord : IInternalConfigRecord
     {
+#if NET8_0_OR_GREATER
+        private static readonly SearchValues<char> s_invalidSubPathChars = SearchValues.Create(InvalidSubPathCharactersString);
+#else
+        private static ReadOnlySpan<char> s_invalidSubPathChars => InvalidSubPathCharactersString.AsSpan();
+#endif
+
         protected const string NewLine = "\r\n";
 
         internal const string KeywordTrue = "true";
@@ -128,7 +135,6 @@ namespace System.Configuration
 
         // Comparer used in sorting IndirectInputs.
         private static readonly IComparer<SectionInput> s_indirectInputsComparer = new IndirectLocationInputComparer();
-        private static readonly char[] s_invalidSubPathCharactersArray = InvalidSubPathCharactersString.ToCharArray();
         protected Hashtable _children; // configName -> record
 
         private object _configContext; // Context for config level
@@ -1421,7 +1427,7 @@ namespace System.Configuration
             return section;
         }
 
-        private ConfigXmlReader FindSectionRecursive(string[] keys, int iKey, XmlUtil xmlUtil, ref int lineNumber)
+        private static ConfigXmlReader FindSectionRecursive(string[] keys, int iKey, XmlUtil xmlUtil, ref int lineNumber)
         {
             string name = keys[iKey];
             ConfigXmlReader section = null;
@@ -1936,7 +1942,7 @@ namespace System.Configuration
                                     case SectionAllowDefinitionAttribute:
                                         try
                                         {
-                                            allowDefinition = AllowDefinitionToEnum(xmlUtil.Reader.Value, xmlUtil);
+                                            allowDefinition = AllowDefinitionToEnum(xmlUtil);
                                         }
                                         catch (ConfigurationException ce)
                                         {
@@ -2114,7 +2120,7 @@ namespace System.Configuration
                         xmlUtil),
             };
 
-        internal static ConfigurationAllowDefinition AllowDefinitionToEnum(string allowDefinition, XmlUtil xmlUtil) =>
+        internal static ConfigurationAllowDefinition AllowDefinitionToEnum(XmlUtil xmlUtil) =>
             xmlUtil.Reader.Value switch
             {
                 AllowDefinitionEverywhere => ConfigurationAllowDefinition.Everywhere,
@@ -2450,7 +2456,7 @@ namespace System.Configuration
                     string rawXml = null;
                     string configSource = null;
                     string configSourceStreamName = null;
-                    object configSourceStreamVersion = null;
+                    object configSourceStreamVersion;
                     string protectionProviderName = null;
                     OverrideMode sectionLockMode = OverrideMode.Inherit;
                     OverrideMode sectionChildLockMode = OverrideMode.Inherit;
@@ -2662,7 +2668,7 @@ namespace System.Configuration
                         SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                             configKey, _configPath, targetConfigPath, locationSubPath,
                             fileName, lineNumber, ConfigStreamInfo.StreamVersion, rawXml,
-                            configSource, configSourceStreamName, configSourceStreamVersion,
+                            configSource, configSourceStreamName,
                             protectionProviderName, overrideMode, skipInChildApps);
 
                         if (locationSubPath == null)
@@ -3090,7 +3096,7 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_last_character, errorInfo);
 
             // combination of URI reserved characters and OS invalid filename characters, minus / (allowed reserved character)
-            if (subPath.IndexOfAny(s_invalidSubPathCharactersArray) != -1)
+            if (subPath.AsSpan().IndexOfAny(s_invalidSubPathChars) >= 0)
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_character, errorInfo);
 
             return subPath;
@@ -3313,11 +3319,11 @@ namespace System.Configuration
                 }
             }
 
-            ValidateUniqueChildConfigSource(configKey, configSourceStreamName, configSourceArg, errorInfo);
+            ValidateUniqueChildConfigSource(configSourceStreamName, configSourceArg, errorInfo);
         }
 
         protected void ValidateUniqueChildConfigSource(
-            string configKey, string configSourceStreamName, string configSourceArg, IConfigErrorInfo errorInfo)
+            string configSourceStreamName, string configSourceArg, IConfigErrorInfo errorInfo)
         {
             // Detect if a parent config file is using the same config source stream.
             BaseConfigurationRecord current = IsLocationConfig ? _parent._parent : _parent;
@@ -3379,7 +3385,7 @@ namespace System.Configuration
                         SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                             configKey, _configPath, _configPath, null,
                             ConfigStreamInfo.StreamName, 0, null, null,
-                            null, null, null,
+                            null, null,
                             null, OverrideModeSetting.s_locationDefault, false);
 
                         SectionInput fileInput = new SectionInput(sectionXmlInfo, null);

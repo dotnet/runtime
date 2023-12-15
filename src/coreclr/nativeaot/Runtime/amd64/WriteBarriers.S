@@ -255,21 +255,25 @@ LEAF_END RhpCheckedXchg, _TEXT
 // On entry:
 //      rdi: address of ref-field (assigned to)
 //      rsi: address of the data (source)
-//      rcx: be trashed
 //
 // On exit:
 //      rdi, rsi are incremented by 8,
-//      rcx: trashed
+//      rcx, r10, r11: trashed
 //
+// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
+// - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     mov     [rdi], rcx
 
     // Check whether the writes were even into the heap. If not there's no card update required.
     cmp     rdi, [C_VAR(g_lowest_address)]
-    jb      LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+    jb      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
     cmp     rdi, [C_VAR(g_highest_address)]
-    jae     LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+    jae     LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
 
     // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     // we're in a debug build and write barrier checking has been enabled).
@@ -293,9 +297,9 @@ LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable):
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
     cmp     rcx, [C_VAR(g_ephemeral_low)]
-    jb      LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+    jb      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
     cmp     rcx, [C_VAR(g_ephemeral_high)]
-    jae     LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+    jae     LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
 
     // move current rdi value into rcx, we need to keep rdi and eventually increment by 8
     mov     rcx, rdi
@@ -307,7 +311,7 @@ LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable):
     shr     rcx, 0x0B
     mov     r10, [C_VAR(g_card_table)]
     cmp     byte ptr [rcx + r10], 0x0FF
-    je      LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+    je      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
 
 // We get here if it's necessary to update the card table.
     mov     byte ptr [rcx + r10], 0xFF
@@ -317,12 +321,12 @@ LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable):
     shr     rcx, 0x0A
     add     rcx, [C_VAR(g_card_bundle_table)]
     cmp     byte ptr [rcx], 0xFF
-    je      LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
+    je      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
 
     mov     byte ptr [rcx], 0xFF
 #endif
 
-LOCAL_LABEL(RhpByRefAssignRef_NotInHeap):
+LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
     // Increment the pointers before leaving
     add     rdi, 0x8
     add     rsi, 0x8

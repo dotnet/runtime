@@ -12,6 +12,7 @@
     <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
     <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <!-- Arcade -->
@@ -45,6 +46,10 @@
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="wasm-experimental" Title=".NET WebAssembly Experimental Tools"
+                          Description=".NET WebAssembly experimental tooling"/>
+      <_ComponentResources Include="wasi-experimental" Title=".NET Wasi Experimental"
+                          Description=".NET Experimental SDK and tooling for WASI"/>
       <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
                           Description="Build tools for Android compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
@@ -124,7 +129,7 @@
       <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.net">
         <Replacement>Mono.</Replacement>
       </ShortNames>
-      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.">
+      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.Current.">
         <Replacement>Mono.</Replacement>
       </ShortNames>
       <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
@@ -136,13 +141,16 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-*.nupkg" MsiVersion="$(MsiVersion)"/>
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg"
+                        MsiVersion="$(MsiVersion)"
+                        SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>
 
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
                                 AllowMissingPacks="True"
                                 BaseOutputPath="$(WorkloadOutputPath)"
-                                ComponentResources="$(ComponentResources)"
+                                EnableSideBySideManifests="true"
+                                ComponentResources="@(ComponentResources)"
                                 PackageSource="$(PackageSource)"
                                 ShortNames="@(ShortNames)"
                                 WorkloadManifestPackageFiles="@(ManifestPackages)"
@@ -152,17 +160,37 @@
       <Output TaskParameter="Msis" ItemName="Msis" />
     </CreateVisualStudioWorkload>
 
-    <!-- Build all the SWIX projects. This requires full framework MSBuild-->
-    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VSTemp)%(SwixProjects.SdkFeatureBand)" />
+    <!-- Split SWIX projects for packs and components/manifests and build them into separate folders. This allows us to consume pack-only drops
+         across multiple VS builds to support multi-targeting. -->
+    <ItemGroup>
+      <SwixWorkloadPackProjects Include="@(SwixProjects)" Condition="'%(PackageType)' == 'msi-pack'"
+                                ManifestOutputPath="$(VStemp)\p\%(SwixProjects.SdkFeatureBand)"
+                                ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand).packs.zip"/>
+      <SwixComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'manifest-package-group') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'false')"
+                                  ManifestOutputPath="$(VStemp)\c\%(SwixProjects.SdkFeatureBand)"
+                                  ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand).components.zip"/>
+      <SwixPreviewComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'true')"
+                                         ManifestOutputPath="$(VStemp)\c\%(SwixProjects.SdkFeatureBand).pre"
+                                         ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand)-pre.components.zip"/>
+      <PartitionedSwixProjects Include="@(SwixWorkloadPackProjects);@(SwixComponentsAndManifests);@(SwixPreviewComponentsAndManifests)" />
+    </ItemGroup>
 
-    <!-- Create payload package for VSDROP creation -->
+    <!-- Can't build in parallel to the same output folder because of a shared file from the SWIX compiler. -->
+    <MSBuild Projects="@(PartitionedSwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=%(ManifestOutputPath)"/>
+
+    <!-- Create the zip files used for VSDROP creation. -->
     <ItemGroup>
       <SdkFeatureBand Include="%(SwixProjects.SdkFeatureBand)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <VSDrop Include="%(PartitionedSwixProjects.ZipFile)" SourceDirectory="%(ManifestOutputPath)" />
+    </ItemGroup>
+
     <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
     <MakeDir Directories="$(VisualStudioSetupInsertionPath)" />
-    <ZipDirectory Overwrite="true" DestinationFile="$(VisualStudioSetupInsertionPath)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VSTemp)%(SdkFeatureBand.Identity)"/>
+    <ZipDirectory Overwrite="true" SourceDirectory="%(SourceDirectory)"
+                  DestinationFile="$(VisualStudioSetupInsertionPath)%(VSDrop.Identity)" />
 
     <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
@@ -172,7 +200,8 @@
       <MsiPackageProjects Include="%(Msis.PackageProject)" />
     </ItemGroup>
 
-    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir)" Targets="restore;pack" />
+    <!-- We disable PackageValidation which runs because these projects import the repo's Directory.Build.props and Directory.Build.targets file. -->
+    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir);IncludeSymbols=false;EnablePackageValidation=false" Targets="restore;pack" />
   </Target>
 
   <!-- Target to create a single wixpack for signing -->

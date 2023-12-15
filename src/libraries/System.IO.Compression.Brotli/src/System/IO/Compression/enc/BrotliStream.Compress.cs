@@ -94,13 +94,13 @@ namespace System.IO.Compression
         /// <exception cref="System.NotSupportedException">The current <see cref="System.IO.Compression.BrotliStream" /> implementation does not support the write operation.</exception>
         /// <exception cref="System.InvalidOperationException">The write operation cannot be performed because the stream is closed.</exception>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         /// <summary>Handles the end of an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="asyncResult">The object that represents the asynchronous call.</param>
         /// <exception cref="System.InvalidOperationException">The underlying stream is closed or <see langword="null" />.</exception>
         public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         /// <summary>Asynchronously writes compressed bytes to the underlying Brotli stream from the specified byte array.</summary>
         /// <param name="buffer">The buffer that contains the data to compress.</param>

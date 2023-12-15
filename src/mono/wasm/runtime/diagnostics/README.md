@@ -5,10 +5,11 @@ What's in here:
 - `index.ts` toplevel APIs
 - `browser/` APIs for the main thread. The main thread has 2 responsibilities:
   - control the overall diagnostic server `browser/controller.ts`
-- `server_pthread/` A long-running worker that owns the WebSocket connections out of the browser to th ehost and that receives the session payloads from the streaming threads.  The server receives streaming EventPipe data from
-EventPipe streaming threads (that are just ordinary C pthreads) through a shared memory queue and forwards the data to the WebSocket.  The server uses the [DS binary IPC protocol](https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md) which repeatedly opens WebSockets to the host.
+- `server_pthread/` A long-running worker that owns the WebSocket connections out of the browser to the host and that receives the session payloads from the streaming threads.
+  The server receives streaming EventPipe data from EventPipe streaming threads (that are just ordinary C pthreads) through a shared memory queue and forwards the data to the WebSocket.
+  The server uses the [DS binary IPC protocol](https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md) which repeatedly opens WebSockets to the host.
 - `shared/` type definitions to be shared between the worker and browser main thread
-- `mock/` a utility to fake WebSocket connectings by playing back a script.  Used for prototyping the diagnostic server without hooking up to a real WebSocket.
+- `mock/` a utility to fake WebSocket connections by playing back a script.  Used for prototyping the diagnostic server without hooking up to a real WebSocket.
 
 ## Mocking diagnostics clients
 
@@ -67,30 +68,4 @@ The connection object (of type `MockScriptConnection` defined in [./mock/index.t
 
 ### Mock example
 
-```js
-function script (env) {
-    const sessionStarted = env.createPromiseController(); /* coordinate between the connections */
-    return [
-        async (conn) => {
-            /* first connection.  Expect an ADVR packet */
-            await conn.waitForSend(isAdvertisePacket);
-            conn.reply(makeEventPipeStartCollecting2 ({ "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" }));
-            /* wait for an "OK" reply with 4 extra bytes of payload, which is the sessionID */
-            const sessionID = await conn.waitForSend(isReplyOK(4), extractSessionID);
-            sessionStarted.promise_control.resolve(sessionID);
-            /* connection kept open. the runtime will send EventPipe data here */
-        },
-        async (conn) => {
-            /* second connection.  Expect an ADVR packet and the sessionStarted sessionID */
-            await Promise.all([conn.waitForSend (isAdvertisePacket); sessionStarted.promise]);
-            /* collect a trace for 5 seconds */
-            await new Promise((resolve) => await new Promise((resolve) => { setTimeout(resolve, 1000); });
-            const sessionID = await sessionStarted.promise;
-            conn.reply(makeEventPipeStopCollecting({sessionID}));
-            /* wait for an "OK" with no payload */
-            await conn.waitForSend(isReplyOK());
-        }
-        /* any further calls to "open" will be an error */
-    ]
-}
-```
+See [browser-eventpipe](../../../sample/wasm/browser-eventpipe/)

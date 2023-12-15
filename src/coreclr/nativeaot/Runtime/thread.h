@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#include "forward_declarations.h"
+
+#ifndef __thread_h__
+#define __thread_h__
+
+#include "StackFrameIterator.h"
+#include "slist.h" // DefaultSListTraits
 
 struct gc_alloc_context;
 class RuntimeInstance;
 class ThreadStore;
 class CLREventStatic;
 class Thread;
+class TypeManager;
 
 #ifdef TARGET_UNIX
 #include "UnixContext.h"
@@ -37,18 +43,10 @@ class Thread;
 // can be retrieved via GetInterruptedContext()
 #define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
-enum SyncRequestResult
-{
-    TryAgain,
-    SuccessUnmanaged,
-    SuccessManaged,
-};
-
 typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
-
 
 // Also defined in ExceptionHandling.cs, layouts must match.
 // When adding new fields to this struct, ensure they get properly initialized in the exception handling
@@ -75,6 +73,16 @@ struct GCFrameRegistration
     int m_MaybeInterior;
 };
 
+struct InlinedThreadStaticRoot
+{
+    // The reference to the memory block that stores variables for the current {thread, typeManager} combination
+    Object* m_threadStaticsBase;
+    // The next root in the list. All roots in the list belong to the same thread, but to different typeManagers.
+    InlinedThreadStaticRoot* m_next;
+    // m_typeManager is used by NativeAOT.natvis when debugging
+    TypeManager* m_typeManager;
+};
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
@@ -89,14 +97,12 @@ struct ThreadBuffer
     uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-    PTR_PTR_VOID            m_pThreadLocalModuleStatics;
-    uint32_t                m_numThreadLocalModuleStatics;
+    Object*                 m_pThreadLocalStatics;
+    InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
-    PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
-    uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
-    EEThreadId              m_threadId;
+    EEThreadId              m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -106,7 +112,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
 };
 
 struct ReversePInvokeFrame
@@ -142,6 +147,14 @@ public:
                                                     // suspend once resumed.
                                                     // If we see this flag, we skip hijacking as an optimization.
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+        TSF_ActivationPending   = 0x00000100,       // An APC with QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC can interrupt another APC.
+                                                    // For suspension APCs it is mostly harmless, but wasteful and in extreme
+                                                    // cases may force the target thread into stack oveflow.
+                                                    // We use this flag to avoid sending another APC when one is still going through.
+                                                    // 
+                                                    // On Unix this is an optimization to not queue up more signals when one is
+                                                    // still being processed.
     };
 private:
 
@@ -183,16 +196,19 @@ private:
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
 public:
-
-    void Detach(); // First phase of thread destructor, executed with thread store lock taken
-    void Destroy(); // Second phase of thread destructor, executed without thread store lock taken
+    // First phase of thread destructor, disposes stuff related to GC.
+    // Executed with thread store lock taken so GC cannot happen.
+    void Detach();
+    // Second phase of thread destructor.
+    // Executed without thread store lock taken.
+    void Destroy();
 
     bool                IsInitialized();
 
-    gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *  GetAllocContext();
 
 #ifndef DACCESS_COMPILE
-    uint64_t              GetPalThreadIdForLogging();
+    uint64_t            GetPalThreadIdForLogging();
     bool                IsCurrentThread();
 
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);
@@ -204,6 +220,7 @@ public:
     void                Hijack();
     void                Unhijack();
     bool                IsHijacked();
+    void*               GetHijackedReturnAddress();
 
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -213,11 +230,7 @@ public:
     void                SetSuppressGcStress();
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
-
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
-
-    PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
-
     void                PushExInfo(ExInfo * pExInfo);
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();
@@ -260,6 +273,10 @@ public:
     // Do not use anywhere else.
     void                DeferTransitionFrame();
 
+    // Setup the m_pDeferredTransitionFrame field for GC helpers entered from native helper thread
+    // code (e.g. ETW or EventPipe threads). Do not use anywhere else.
+    void                SetDeferredTransitionFrameForNativeHelperThread();
+
     //
     // GC support APIs - do not use except from GC itself
     //
@@ -280,11 +297,13 @@ public:
     void InlinePInvoke(PInvokeTransitionFrame * pFrame);
     void InlinePInvokeReturn(PInvokeTransitionFrame * pFrame);
 
-    Object * GetThreadAbortException();
+    Object* GetThreadAbortException();
     void SetThreadAbortException(Object *exception);
 
-    Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
-    bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
+    Object** GetThreadStaticStorage();
+
+    InlinedThreadStaticRoot* GetInlinedThreadStaticList();
+    void RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot, TypeManager* typeManager);
 
     NATIVE_CONTEXT* GetInterruptedContext();
 
@@ -294,6 +313,9 @@ public:
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+    bool                IsActivationPending();
+    void                SetActivationPending(bool isPending);
 };
 
 #ifndef __GCENV_BASE_INCLUDED__
@@ -325,11 +347,11 @@ typedef DacScanCallbackData EnumGcRefScanContext;
 typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, uint32_t flags);
 
 #else // DACCESS_COMPILE
-#ifndef __GCENV_BASE_INCLUDED__
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-#endif // !__GCENV_BASE_INCLUDED__
 typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 
 #endif // DACCESS_COMPILE
+
+#endif // __thread_h__

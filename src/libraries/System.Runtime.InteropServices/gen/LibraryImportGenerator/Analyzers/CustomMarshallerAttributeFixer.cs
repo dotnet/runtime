@@ -6,19 +6,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.Simplification;
-using Microsoft.CodeAnalysis.Text;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
 
 namespace Microsoft.Interop.Analyzers
@@ -156,6 +150,7 @@ namespace Microsoft.Interop.Analyzers
         {
         }
 
+#pragma warning disable IDE0060
         private static async Task<Solution> AddMissingMembers(Document doc, SyntaxNode node, HashSet<string> missingMemberNames, CancellationToken ct)
         {
             var model = await doc.GetSemanticModelAsync(ct).ConfigureAwait(false);
@@ -575,5 +570,6 @@ namespace Microsoft.Interop.Analyzers
                 generator.TypeExpression(
                     compilation.GetTypeByMetadataName("System.NotImplementedException"))));
         }
+#pragma warning disable IDE0060
     }
 }

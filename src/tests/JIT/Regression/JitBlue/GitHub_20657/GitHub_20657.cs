@@ -3,14 +3,16 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 // GitHub 20657: 
 
 namespace GitHub_20657
 {
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             var v1 = new Vector4();
             var v2 = Oops(v1);

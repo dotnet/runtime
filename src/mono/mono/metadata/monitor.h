@@ -122,9 +122,6 @@ ICALL_EXPORT
 guint32
 mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken);
 
-MonoGCHandle
-mono_monitor_get_object_monitor_gchandle (MonoObject *object);
-
 void
 mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);
 #define MONO_THREADS_SYNC_MEMBER_OFFSET(o)	((o)>>8)
@@ -132,7 +129,7 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);
 
 ICALL_EXPORT
 gint64
-ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void);
+ves_icall_System_Threading_Monitor_Monitor_get_lock_contention_count (void);
 
 #ifdef HOST_WASM
 void

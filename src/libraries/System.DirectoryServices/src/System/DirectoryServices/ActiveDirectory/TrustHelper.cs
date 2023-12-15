@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -310,7 +309,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
-                        uint  win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
@@ -947,14 +946,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string CreateTrustPassword()
         {
-#if NETCOREAPP3_0_OR_GREATER
-            return string.Create<object?>(PASSWORD_LENGTH, null, static (destination, _) =>
-            {
-                for (int i = 0; i < destination.Length; i++)
-                {
-                    destination[i] = PasswordCharacterSet[RandomNumberGenerator.GetInt32(PasswordCharacterSet.Length)];
-                }
-            });
+#if NET8_0_OR_GREATER
+            return RandomNumberGenerator.GetString(PasswordCharacterSet, PASSWORD_LENGTH);
 #else
             char[] cBuf = new char[PASSWORD_LENGTH];
             byte[] randomBuffer = new byte[1];

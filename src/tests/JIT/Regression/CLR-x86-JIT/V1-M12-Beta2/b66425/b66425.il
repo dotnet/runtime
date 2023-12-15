@@ -10,7 +10,7 @@
 .assembly 'b66425' {}
 .assembly extern xunit.core {}
 
-.class TestClass{
+.class public TestClass{
 
 //+desc: leave from inner try{} to outside
 .method public static void test_21_try(){
@@ -55,7 +55,7 @@ lbl_21_exitSEH:
 
 
 
-.method public static int32 Main(class ['mscorlib']System.String[] arg)
+.method public static int32 Main()
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

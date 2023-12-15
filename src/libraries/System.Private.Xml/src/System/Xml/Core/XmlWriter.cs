@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Text;
-using System.Xml.XPath;
-using System.Xml.Schema;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml
 {
@@ -212,10 +212,7 @@ namespace System.Xml
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
         public virtual void WriteNmToken(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
             WriteString(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException));
         }
 
@@ -277,7 +274,7 @@ namespace System.Xml
             // Under Win8P, WriteValue(DateTime) will invoke this overload, but custom writers
             // might not have implemented it. This base implementation should call WriteValue(DateTime).
             // The following conversion results in the same string as calling ToString with DateTimeOffset.
-            WriteValue(value.Offset != TimeSpan.Zero ? value.LocalDateTime : value.UtcDateTime);
+            WriteValue(value.TotalOffsetMinutes != 0 ? value.LocalDateTime : value.UtcDateTime);
         }
 
         // Writes out the specified value.

@@ -4,7 +4,7 @@
 /*
 * Regression test for Dev11 243742 [Triton]
 * precommands:
-* set COMPLUS_ZAPREQUIRE=2
+* set DOTNET_ZAPREQUIRE=2
 * set CORECLR_PREJITType=MDIL
 * del /q nitype.signal
 *
@@ -23,6 +23,7 @@
 */
 
 using System;
+using Xunit;
 
 namespace BadOverride1
 {
@@ -52,16 +53,16 @@ namespace BadOverride1
         }
     }
 
-    static class App
+    public static class App
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Dll.Apis.RunDllCode();
             Console.Write("\r\n");
             var derivedType = new DerivedType();
             derivedType.RunGenericMethod<int, string>(22);
             Console.Write("Call completed successfully.\r\n");
-            return 100;
         }
     }
 }

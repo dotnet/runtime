@@ -3,12 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // TreeNodeInfoInitCmp attempts to eliminate the cast from cmp(cast<ubyte>(x), icon)
 // by narrowing the compare to ubyte. This should only happen if the constant fits in
 // a byte so it can be narrowed too, otherwise codegen produces an int sized compare.
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int GetValue() => 301;
@@ -17,7 +18,8 @@ class Program
     {
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if ((byte)GetValue() > 300)
         {

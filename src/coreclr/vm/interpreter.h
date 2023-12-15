@@ -418,7 +418,8 @@ struct CORINFO_SIG_INFO_SMALL
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + hasThis()); }
+    bool                hasImplicitThis()   { return ((callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS); }
+    unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 
@@ -723,14 +724,6 @@ class InterpreterCEEInfo: public CEEInfo
     CEEJitInfo m_jitInfo;
 public:
     InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { }
-
-    // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
-    // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
-    // CEEJitInfo m_jitInfo.
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODULE_HANDLE moduleTo)
-    {
-        m_jitInfo.addActiveDependency(moduleFrom, moduleTo);
-    }
 };
 
 extern INT64 F_CALL_CONV InterpretMethod(InterpreterMethodInfo* methInfo, BYTE* ilArgs, void* stubContext);
@@ -1003,6 +996,8 @@ private:
         static const int MaxNumFPRegArgSlots = 4;
 #endif
 #elif defined(HOST_LOONGARCH64)
+        static const int MaxNumFPRegArgSlots = 8;
+#elif defined(HOST_RISCV64)
         static const int MaxNumFPRegArgSlots = 8;
 #endif
 
@@ -2063,6 +2058,8 @@ unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #elif defined(HOST_LOONGARCH64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_RISCV64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

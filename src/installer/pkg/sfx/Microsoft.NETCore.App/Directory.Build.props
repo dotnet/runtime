@@ -77,6 +77,7 @@
     <PlatformManifestFileEntry Include="System.Private.Xml.dll" />
     <PlatformManifestFileEntry Include="System.Private.Xml.Linq.dll" />
     <!-- Native libraries -->
+    <PlatformManifestFileEntry Include="libSystem.Globalization.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.IO.Compression.Native.a" IsNative="true" />
@@ -95,6 +96,8 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.dex" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.jar" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
@@ -118,51 +121,9 @@
     <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscorrc.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-console-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-console-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-datetime-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-debug-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-errorhandling-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-fibers-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-file-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-file-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-file-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-handle-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-heap-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-interlocked-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-libraryloader-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-localization-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-memory-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-namedpipe-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-processenvironment-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-processthreads-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-processthreads-l1-1-1.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-profile-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-rtlsupport-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-string-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-synch-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-synch-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-sysinfo-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-timezone-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-core-util-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-conio-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-convert-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-environment-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-filesystem-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-heap-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-locale-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-math-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-multibyte-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-private-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-process-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-runtime-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-stdio-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-string-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-time-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="api-ms-win-crt-utility-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
-    <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
+    <PlatformManifestFileEntry Include="libmsquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" Condition="'$(Configuration)' == 'Debug' or '$(LibrariesConfiguration)' == 'Debug'"/>
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -171,6 +132,22 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.amd64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
+    <!-- NativeAOT specific files -->
+    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" /> <!-- The bootstrapper lib used to be a static library, now it's an object file. -->
+    <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapper.o" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapperdll.o" IsNative="true" />
+    <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libstandalonegc-disabled.a " IsNative="true" />
+    <PlatformManifestFileEntry Include="libstandalonegc-enabled.a " IsNative="true" />
+    <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
+    <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
+    <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
+    <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />
     <!-- Mono-specific files -->
     <PlatformManifestFileEntry Include="monosgen-2.0.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />
@@ -180,9 +157,9 @@
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
-    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
+    <!-- libc++ for C++17 support on older distributions -->
+    <PlatformManifestFileEntry Include="libc++.so.1" IsNative="true" />
+    <PlatformManifestFileEntry Include="libc++abi.so.1" IsNative="true" />
     <!-- Mono components specific files -->
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />
@@ -205,34 +182,47 @@
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-simd.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_EFIGS.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_hybrid.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
-    <PlatformManifestFileEntry Include="pal_random.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="runtime.es6.iffe.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
@@ -240,7 +230,18 @@
     <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
-    <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-props.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasi-default.rsp" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasi-link.rsp" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.LegacyJsInterop.xml" IsNative="true" />
+    <!-- wasi specific -->
+    <PlatformManifestFileEntry Include="main.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
@@ -280,7 +281,4 @@
     <_hostArch>amd64</_hostArch>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
-  </PropertyGroup>
 </Project>

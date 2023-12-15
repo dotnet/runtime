@@ -1,26 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+#pragma warning disable 8500 // taking address of managed type
 
 namespace System.Globalization
 {
     internal sealed partial class CalendarData
     {
-        // Get native two digit year max
-        internal static int NlsGetTwoDigitYearMax(CalendarId calendarId)
-        {
-            Debug.Assert(GlobalizationMode.UseNls);
-
-            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
-                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
-                        twoDigitYearMax :
-                        -1;
-        }
-
         private static bool NlsSystemSupportsTaiwaneseCalendar()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -34,7 +25,6 @@ namespace System.Globalization
 
         private const uint CAL_RETURN_NUMBER = 0x20000000;
         private const uint CAL_SCALNAME = 0x00000002;
-        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
         private static bool CallGetCalendarInfoEx(string? localeName, CalendarId calendar, uint calType, out int data)
         {
@@ -73,16 +63,16 @@ namespace System.Globalization
         [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
-            ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
+            EnumData* context = (EnumData*)lParam;
             try
             {
                 string calendarInfo = new string(lpCalendarInfoString);
 
                 // If we had a user override, check to make sure this differs
-                if (context.userOverride != calendarInfo)
+                if (context->userOverride != calendarInfo)
                 {
-                    Debug.Assert(context.strings != null);
-                    context.strings.Add(calendarInfo);
+                    Debug.Assert(context->strings != null);
+                    context->strings!.Add(calendarInfo); // TODO https://github.com/dotnet/roslyn/issues/65634: Remove ! when no longer needed
                 }
 
                 return Interop.BOOL.TRUE;
@@ -105,12 +95,12 @@ namespace System.Globalization
         [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
-            ref NlsEnumCalendarsData context = ref Unsafe.As<byte, NlsEnumCalendarsData>(ref *(byte*)lParam);
+            NlsEnumCalendarsData* context = (NlsEnumCalendarsData*)lParam;
             try
             {
                 // If we had a user override, check to make sure this differs
-                if (context.userOverride != calendar)
-                    context.calendars.Add((int)calendar);
+                if (context->userOverride != calendar)
+                    context->calendars.Add((int)calendar);
 
                 return Interop.BOOL.TRUE;
             }

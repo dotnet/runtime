@@ -23,7 +23,7 @@ namespace System.ComponentModel
         private static object? s_convertFromInvariantString;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
@@ -97,7 +97,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a Unicode character.
         /// </summary>
         public DefaultValueAttribute(char value)
@@ -106,7 +106,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using an 8-bit unsigned integer.
         /// </summary>
         public DefaultValueAttribute(byte value)
@@ -115,7 +115,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a 16-bit signed integer.
         /// </summary>
         public DefaultValueAttribute(short value)
@@ -124,7 +124,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a 32-bit signed integer.
         /// </summary>
         public DefaultValueAttribute(int value)
@@ -133,7 +133,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a 64-bit signed integer.
         /// </summary>
         public DefaultValueAttribute(long value)
@@ -142,7 +142,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a single-precision floating point number.
         /// </summary>
         public DefaultValueAttribute(float value)
@@ -151,7 +151,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a double-precision floating point number.
         /// </summary>
         public DefaultValueAttribute(double value)
@@ -160,7 +160,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a <see cref='bool'/> value.
         /// </summary>
         public DefaultValueAttribute(bool value)
@@ -169,7 +169,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a <see cref='string'/>.
         /// </summary>
         public DefaultValueAttribute(string? value)
@@ -178,7 +178,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class.
         /// </summary>
         public DefaultValueAttribute(object? value)
@@ -187,7 +187,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a <see cref='sbyte'/> value.
         /// </summary>
         [CLSCompliant(false)]
@@ -197,7 +197,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a <see cref='ushort'/> value.
         /// </summary>
         [CLSCompliant(false)]
@@ -207,7 +207,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a <see cref='uint'/> value.
         /// </summary>
         [CLSCompliant(false)]
@@ -217,7 +217,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultValueAttribute'/>
+        /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class using a <see cref='ulong'/> value.
         /// </summary>
         [CLSCompliant(false)]

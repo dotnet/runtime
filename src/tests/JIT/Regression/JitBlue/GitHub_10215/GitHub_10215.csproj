@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Explicitly don't reference the generator here as the source here blows the stack whenever a SyntaxVisitor traverses it (which happens as part of the generator execution). -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>

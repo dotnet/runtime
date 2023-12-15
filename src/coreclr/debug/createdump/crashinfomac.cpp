@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+extern uint8_t g_debugHeaderCookie[4];
+
 int g_readProcessMemoryResult = KERN_SUCCESS;
 
 bool
@@ -148,18 +150,23 @@ CrashInfo::EnumerateMemoryRegions()
         }
     }
 
-    // Now find all the modules and add them to the module list
-    for (const MemoryRegion& region : m_allMemoryRegions)
+    // Get the dylinker info and enumerate all the modules
+    struct task_dyld_info dyld_info;
+    mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+    kern_return_t result = ::task_info(Task(), TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+    if (result != KERN_SUCCESS)
     {
-        bool found;
-        if (!TryFindDyLinker(region.StartAddress(), region.Size(), &found)) {
-            return false;
-        }
-        if (found) {
-            break;
-        }
+        TRACE("EnumerateMemoryRegions: task_info(TASK_DYLD_INFO) FAILED %x %s\n", result, mach_error_string(result));
+        return false;
     }
-    TRACE("AllMemoryRegions %06llx native ModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
+
+    // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
+    if (!EnumerateModules(dyld_info.all_image_info_addr))
+    {
+        return false;
+    }
+
+    TRACE("EnumerateMemoryRegions: cbAllMemoryRegions %06llx native cbModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
     return true;
 }
 
@@ -216,46 +223,6 @@ CrashInfo::InitializeOtherMappings()
     TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
 }
 
-bool
-CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found)
-{
-    bool result = true;
-    *found = false;
-
-    if (size > sizeof(mach_header_64))
-    {
-        mach_header_64 header;
-        size_t read = 0;
-        if (ReadProcessMemory((void*)address, &header, sizeof(mach_header_64), &read))
-        { 
-            if (header.magic == MH_MAGIC_64)
-            {
-                TRACE("TryFindDyLinker: found module header at %016llx %08llx ncmds %d sizeofcmds %08x type %02x\n",
-                    address,
-                    size,
-                    header.ncmds,
-                    header.sizeofcmds,
-                    header.filetype);
-
-                if (header.filetype == MH_DYLINKER)
-                {
-                    TRACE("TryFindDyLinker: found dylinker\n");
-                    *found = true;
-
-                    // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
-                    result = EnumerateModules(address, &header);
-                }
-            }
-        }
-        else 
-        {
-            TRACE("TryFindDyLinker: ReadProcessMemory header at %p %d FAILED\n", address, read);
-        }
-    }
-
-    return result;
-}
-
 void CrashInfo::VisitModule(MachOModule& module)
 {
     AddModuleInfo(false, module.BaseAddress(), nullptr, module.Name());
@@ -280,7 +247,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
         }
-        else if (g_checkForSingleFile)
+        else if (m_appModel == AppModelType::SingleFile)
         {
             uint64_t symbolOffset;
             if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
@@ -294,6 +261,24 @@ void CrashInfo::VisitModule(MachOModule& module)
                     if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                     {
                         TRACE("Found valid single-file runtime info\n");
+                    }
+                }
+            }
+        }
+        else if (m_appModel == AppModelType::NativeAOT)
+        {
+            uint64_t symbolOffset;
+            if (module.TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+            {
+                m_coreclrPath = GetDirectory(module.Name());
+                m_runtimeBaseAddress = module.BaseAddress();
+
+                uint8_t cookie[sizeof(g_debugHeaderCookie)];
+                if (ReadMemory((void*)(module.BaseAddress() + symbolOffset), cookie, sizeof(cookie)))
+                {
+                    if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
+                    {
+                        TRACE("Found valid NativeAOT runtime module\n");
                     }
                 }
             }
@@ -323,11 +308,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
 
             // Round to page boundary
             start = start & PAGE_MASK;
-            _ASSERTE(start > 0);
+            assert(start > 0);
 
             // Round up to page boundary
             end = (end + (PAGE_SIZE - 1)) & PAGE_MASK;
-            _ASSERTE(end > 0);
+            assert(end > 0);
 
             // Add module memory region if not already on the list
             MemoryRegion newModule(regionFlags, start, end, offset, module.Name());

@@ -36,7 +36,7 @@ namespace System.Net
 {
     internal sealed class ListenerPrefix
     {
-        private string _original;
+        private readonly string _original;
         private string? _host;
         private ushort _port;
         private string? _path;

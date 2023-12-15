@@ -34,7 +34,7 @@ namespace Internal.Runtime
 
                 // Would be surprising to get these here though.
                 Debug.Assert(elementType != EETypeElementType.SystemArray);
-                Debug.Assert(elementType <= EETypeElementType.Pointer);
+                Debug.Assert(elementType <= EETypeElementType.FunctionPointer);
 
                 return elementType;
 
@@ -43,8 +43,13 @@ namespace Internal.Runtime
 
         public static uint ComputeFlags(TypeDesc type)
         {
-            uint flags = type.IsParameterizedType ?
-                (uint)EETypeKind.ParameterizedEEType : (uint)EETypeKind.CanonicalEEType;
+            uint flags;
+            if (type.IsParameterizedType)
+                flags = (uint)EETypeKind.ParameterizedEEType;
+            else if (type.IsFunctionPointer)
+                flags = (uint)EETypeKind.FunctionPointerEEType;
+            else
+                flags = (uint)EETypeKind.CanonicalEEType;
 
             // 5 bits near the top of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             EETypeElementType elementType = ComputeEETypeElementType(type);
@@ -53,6 +58,11 @@ namespace Internal.Runtime
             if (type.IsArray || type.IsString)
             {
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
+            }
+
+            if (type.HasVariance)
+            {
+                flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
             if (type.IsGenericDefinition)
@@ -86,11 +96,6 @@ namespace Internal.Runtime
             if (type.HasInstantiation)
             {
                 flags |= (uint)EETypeFlags.IsGenericFlag;
-
-                if (type.HasVariance)
-                {
-                    flags |= (uint)EETypeFlags.GenericVarianceFlag;
-                }
             }
 
             return flags;
@@ -113,6 +118,16 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
 
+            if (type.Context.Target.IsOSXLike && IsTrackedReferenceWithFinalizer(type))
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
+            }
+
+            if (type.IsIDynamicInterfaceCastable)
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag;
+            }
+
             return flagsEx;
         }
 
@@ -127,6 +142,23 @@ namespace Internal.Runtime
                             mdType.Module == mdType.Context.SystemModule &&
                             mdType.Name == "CriticalFinalizerObject" &&
                             mdType.Namespace == "System.Runtime.ConstrainedExecution")
+                    return true;
+
+                type = type.BaseType;
+            }
+            while (type != null);
+
+            return false;
+        }
+
+        private static bool IsTrackedReferenceWithFinalizer(TypeDesc type)
+        {
+            do
+            {
+                if (!type.HasFinalizer)
+                    return false;
+
+                if (((MetadataType)type).HasCustomAttribute("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCTrackedTypeAttribute"))
                     return true;
 
                 type = type.BaseType;

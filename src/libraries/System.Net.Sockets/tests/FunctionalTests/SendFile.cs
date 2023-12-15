@@ -62,7 +62,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task UdpConnection_ThrowsException(bool usePreAndPostbufferOverload)
         {
             // Create file to send
@@ -77,16 +76,14 @@ namespace System.Net.Sockets.Tests
 
             client.Connect(listener.LocalEndPoint);
 
-            SocketException ex;
             if (usePreAndPostbufferOverload)
             {
-                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+                await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
             }
             else
             {
-                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
+                await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(client, tempFile.Path));
             }
-            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
         }
 
         public static IEnumerable<object[]> SendFile_MemberData()
@@ -239,6 +236,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80169", typeof(PlatformDetection), nameof(PlatformDetection.IsOSXLike))]
         public async Task SendFileGetsCanceledByDispose(bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.
@@ -250,7 +248,6 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
-            int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
@@ -270,9 +267,10 @@ namespace System.Net.Sockets.Tests
                         await SendFileAsync(socket1, tempFile.Path);
                     });
 
-                    // Wait a little so the operation is started.
-                    await Task.Delay(msDelay);
-                    msDelay *= 2;
+                    // read one byte to make sure SendFileAsync started
+                    byte[] buffer = new byte[1];
+                    socket2.Receive(buffer);
+
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
                     await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));

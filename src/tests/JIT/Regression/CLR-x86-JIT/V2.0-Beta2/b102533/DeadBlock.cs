@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public struct AA
 {
     public static void f()
@@ -34,9 +35,10 @@ public struct AA
 
 }
 
-class App
+public class App
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -47,7 +49,6 @@ class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
     public static bool flag = true;
 }

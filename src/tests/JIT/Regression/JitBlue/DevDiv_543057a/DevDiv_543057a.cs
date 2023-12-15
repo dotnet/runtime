@@ -3,7 +3,7 @@
 //
 
 // The bug captured by this test was a case where:
-// - We have COMPlus_JitStressRegs=3, so we're limiting the available registers.
+// - We have DOTNET_JitStressRegs=3, so we're limiting the available registers.
 // - We have a DIV with two double operands that are casts from int lclVars, and it is passed to a call.
 // - We have 4 float lclVars in registers:
 //   - One is active in a caller-save register (that will be x in our case)
@@ -16,6 +16,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class DevDiv_543057
 
@@ -65,7 +66,8 @@ public class DevDiv_543057
         Console.WriteLine("Result: " + result);
         return Pass;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return test(5, 6);
     }

@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Diagnostics;
 
 namespace System.ServiceModel.Syndication
 {
@@ -96,7 +96,7 @@ namespace System.ServiceModel.Syndication
         public XmlReader GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReader reader = extensionsBuffer.GetReader(0);
+            XmlDictionaryReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
         }
@@ -205,7 +205,7 @@ namespace System.ServiceModel.Syndication
             }
 
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
-            using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
+            using (XmlDictionaryWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
                 for (int i = 0; i < Count; ++i)

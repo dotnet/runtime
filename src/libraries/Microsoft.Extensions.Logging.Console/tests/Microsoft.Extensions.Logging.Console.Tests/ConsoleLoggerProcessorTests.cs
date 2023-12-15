@@ -36,6 +36,32 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(2, sink.Writes.Count);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void LogsFlushedAfterDispose()
+        {
+            // Arrange
+            var sink = new ConsoleSink();
+            var console = new TestConsole(sink);
+            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
+
+            var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor,
+                new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions())),
+                null, new ConsoleLoggerOptions());
+            Assert.Null(logger.Options.FormatterName);
+            UpdateFormatterOptions(logger.Formatter, logger.Options);
+
+            // Act
+            const int repetitions = 1000;
+            for (int i = 0; i < repetitions; i++)
+            {
+                logger.LogInformation("Message #{i}", i);
+            }
+            processor.Dispose();
+
+            // Assert
+            Assert.Equal(2*repetitions, sink.Writes.Count); // 2 writes per message (category and msg)
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
@@ -120,7 +146,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71242")]
         public void ThrowDuringProcessLog_ShutsDownGracefully()
         {
             var console = new TimesWriteCalledConsole();
@@ -147,8 +172,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
             while (console.TimesWriteCalled != 2); // wait until the logs are processed
             Assert.Equal(2, console.TimesWriteCalled);
             logger.LogError("Causing exception to throw in {ClassName} using {DesiredConsole}", nameof(ConsoleLoggerProcessor), nameof(WriteThrowingConsole));
-            logger.LogInformation("After the write logic threw exception, {ClassName} stopped gracefully, no longer processing next logs", nameof(ConsoleLoggerProcessor));
-            Assert.Equal(2, console.TimesWriteCalled);
+            logger.LogInformation("After the write logic threw exception, {ClassName} stopped gracefully, finish processing queued logs", nameof(ConsoleLoggerProcessor));
+            // disposing makes sure that all queued messages are flushed
+            processor.Dispose();
+            Assert.Equal(3, console.TimesWriteCalled);
         }
 
         private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)

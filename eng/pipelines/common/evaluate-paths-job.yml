@@ -41,6 +41,8 @@ jobs:
           parameters:
             subsetName: ${{ path.subset }}
             arguments:
+            - ${{ if eq(path.combined, true) }}:
+              - --combined
             # The commit that we're building is always a merge commit that is merging into the target branch.
             # So the first parent of the commit is on the target branch and the second parent is on the source branch.
             - --difftarget HEAD^1

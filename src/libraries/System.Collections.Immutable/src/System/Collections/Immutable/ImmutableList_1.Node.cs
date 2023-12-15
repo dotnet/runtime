@@ -279,6 +279,25 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Creates a node tree that contains the contents of a span.
+            /// </summary>
+            /// <param name="items">A span with the contents that the new node tree should contain.</param>
+            /// <returns>The root of the created node tree.</returns>
+            internal static Node NodeTreeFromList(ReadOnlySpan<T> items)
+            {
+                if (items.IsEmpty)
+                {
+                    return EmptyNode;
+                }
+
+                int rightCount = (items.Length - 1) / 2;
+                int leftCount = (items.Length - 1) - rightCount;
+                Node left = NodeTreeFromList(items.Slice(0, leftCount));
+                Node right = NodeTreeFromList(items.Slice(leftCount + 1));
+                return new Node(items[leftCount], left, right, frozen: true);
+            }
+
+            /// <summary>
             /// Adds the specified key to the tree.
             /// </summary>
             /// <param name="key">The key.</param>
@@ -336,6 +355,23 @@ namespace System.Collections.Immutable
                 if (this.IsEmpty)
                 {
                     return CreateRange(keys);
+                }
+
+                Node newRight = _right!.AddRange(keys);
+                Node result = this.MutateRight(newRight);
+                return result.BalanceMany();
+            }
+
+            /// <summary>
+            /// Adds the specified keys to this tree.
+            /// </summary>
+            /// <param name="keys">The keys.</param>
+            /// <returns>The new tree.</returns>
+            internal Node AddRange(ReadOnlySpan<T> keys)
+            {
+                if (this.IsEmpty)
+                {
+                    return NodeTreeFromList(keys);
                 }
 
                 Node newRight = _right!.AddRange(keys);
@@ -406,24 +442,24 @@ namespace System.Collections.Immutable
                     {
                         // We have two children. Remove the next-highest node and replace
                         // this node with it.
-                        var successor = _right;
+                        ImmutableList<T>.Node successor = _right;
                         while (!successor._left!.IsEmpty)
                         {
                             successor = successor._left;
                         }
 
-                        var newRight = _right.RemoveAt(0);
+                        ImmutableList<T>.Node newRight = _right.RemoveAt(0);
                         result = successor.MutateBoth(left: _left, right: newRight);
                     }
                 }
                 else if (index < _left._count)
                 {
-                    var newLeft = _left.RemoveAt(index);
+                    ImmutableList<T>.Node newLeft = _left.RemoveAt(index);
                     result = this.MutateLeft(newLeft);
                 }
                 else
                 {
-                    var newRight = _right.RemoveAt(index - _left._count - 1);
+                    ImmutableList<T>.Node newRight = _right.RemoveAt(index - _left._count - 1);
                     result = this.MutateRight(newRight);
                 }
 
@@ -445,11 +481,11 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(match, nameof(match));
 
-                var result = this;
+                ImmutableList<T>.Node result = this;
                 var enumerator = new Enumerator(result);
                 try
                 {
-                    var startIndex = 0;
+                    int startIndex = 0;
                     while (enumerator.MoveNext())
                     {
                         if (match(enumerator.Current))
@@ -492,12 +528,12 @@ namespace System.Collections.Immutable
                 }
                 else if (index < _left._count)
                 {
-                    var newLeft = _left.ReplaceAt(index, value);
+                    ImmutableList<T>.Node newLeft = _left.ReplaceAt(index, value);
                     result = this.MutateLeft(newLeft);
                 }
                 else
                 {
-                    var newRight = _right!.ReplaceAt(index - _left._count - 1, value);
+                    ImmutableList<T>.Node newRight = _right!.ReplaceAt(index - _left._count - 1, value);
                     result = this.MutateRight(newRight);
                 }
 
@@ -821,7 +857,7 @@ namespace System.Collections.Immutable
                 Requires.Range(array.Length >= this.Count, nameof(array));
 
                 int index = 0;
-                foreach (var element in this)
+                foreach (T element in this)
                 {
                     array[index++] = element;
                 }
@@ -845,7 +881,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
                 Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
-                foreach (var element in this)
+                foreach (T element in this)
                 {
                     array[arrayIndex++] = element;
                 }
@@ -896,7 +932,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
                 Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
-                foreach (var element in this)
+                foreach (T element in this)
                 {
                     array.SetValue(element, arrayIndex++);
                 }
@@ -918,7 +954,7 @@ namespace System.Collections.Immutable
             /// </returns>
             internal ImmutableList<TOutput>.Node ConvertAll<TOutput>(Func<T, TOutput> converter)
             {
-                var root = ImmutableList<TOutput>.Node.EmptyNode;
+                ImmutableList<TOutput>.Node root = ImmutableList<TOutput>.Node.EmptyNode;
 
                 if (this.IsEmpty)
                 {
@@ -945,7 +981,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(match, nameof(match));
 
-                foreach (var item in this)
+                foreach (T item in this)
                 {
                     if (!match(item))
                     {
@@ -1000,7 +1036,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(match, nameof(match));
 
-                foreach (var item in this)
+                foreach (T item in this)
                 {
                     if (match(item))
                     {
@@ -1034,7 +1070,7 @@ namespace System.Collections.Immutable
                 }
 
                 List<T>? list = null;
-                foreach (var item in this)
+                foreach (T item in this)
                 {
                     if (match(item))
                     {
@@ -1542,7 +1578,7 @@ namespace System.Collections.Immutable
                     return other._root;
                 }
 
-                var list = keys.AsOrderedCollection();
+                IOrderedCollection<T> list = keys.AsOrderedCollection();
                 return NodeTreeFromList(list, 0, list.Count);
             }
 

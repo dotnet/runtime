@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace DefaultNamespace
 {
 
     using System;
+    using System.Runtime.CompilerServices;
+    using Xunit;
 
-    internal class cb6054ToByte_all
+    public class cb6054ToByte_all
     {
 #pragma warning disable 0414
         public static readonly String s_strActiveBugNums = "None.";
@@ -33,7 +36,7 @@ namespace DefaultNamespace
               ,"Method_Covered:  Convert.ToByte( Object )"           //System/Object
               ,"Method_Covered:  Convert.ToByte( String, Int32 )"     //System/String, int
           };
-        public static void printoutCoveredMethods()
+        internal static void printoutCoveredMethods()
         {
             Console.Error.WriteLine("");
             Console.Error.WriteLine("Method_Count==12 (" + s_strMethodsCovered.Length + "==confirm) !!");
@@ -927,11 +930,15 @@ namespace DefaultNamespace
             }
         }
 
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint() => Run(false);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Run(bool verbose)
         {
             bool bResult = false; // Assume FAiL
             cb6054ToByte_all cbX = new cb6054ToByte_all();
-            try { if (args[0].Equals("-v")) cbX.verbose = true; } catch (Exception) { }
+            if (verbose) cbX.verbose = true;
 
             try
             {

@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class PInvokeTest
 {
@@ -13,10 +14,10 @@ public class PInvokeTest
     static String foo = "foo";
     static String bar = "bar";
 
-    public static int Main(String[] args)
+    [Fact]
+    public static void TestEntryPoint()
     {
         if (foo == bar)
             foo = "foo";
-        return 100;
     }
 }

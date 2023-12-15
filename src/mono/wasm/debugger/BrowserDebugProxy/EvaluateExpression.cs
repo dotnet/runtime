@@ -24,7 +24,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal static class ExpressionEvaluator
+    internal sealed record VariableDefinition(
+        string IdName,
+        JObject Obj,
+        string Definition);
+
+    internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
             "",
@@ -33,9 +38,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private sealed class ExpressionSyntaxReplacer : CSharpSyntaxWalker
+        private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
-            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+            [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
+            private static partial Regex RegexForReplaceVarName();
+
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -45,7 +52,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            internal List<string> variableDefinitions = new List<string>();
+            public bool hasStringExpressionStatement;
+            internal List<VariableDefinition> variableDefinitions = new ();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -58,7 +66,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (visitCount == 0)
                 {
                     if (node is MemberAccessExpressionSyntax maes
-                        && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
+                        && node.IsKind(SyntaxKind.SimpleMemberAccessExpression)
                         && !(node.Parent is MemberAccessExpressionSyntax)
                         && !(node.Parent is InvocationExpressionSyntax)
                         && !(node.Parent is ElementAccessExpressionSyntax))
@@ -90,6 +98,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     hasElementAccesses = true;
                 }
 
+                if (node is BinaryExpressionSyntax)
+                {
+                    var binaryExpression = node as BinaryExpressionSyntax;
+                    if (binaryExpression.Left.Kind() == SyntaxKind.StringLiteralExpression || binaryExpression.Right.Kind() == SyntaxKind.StringLiteralExpression)
+                        hasStringExpressionStatement = true;
+                }
+
                 if (node is AssignmentExpressionSyntax)
                     throw new Exception("Assignment is not implemented yet");
                 base.Visit(node);
@@ -111,7 +126,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(ma_str, "_");
+                        string prefix = RegexForReplaceVarName().Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -128,7 +143,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(iesStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -144,7 +159,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(eaStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
@@ -186,7 +201,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string node_str = ies.ToString();
                         if (!methodCallToParamName.TryGetValue(node_str, out string id_name))
                         {
-                            throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                            throw new Exception($"BUG: Expected to find an id name for the invokation expression string: {node_str}");
                         }
                         AddLocalVariableWithValue(id_name, value);
                     }
@@ -212,7 +227,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
+                    variableDefinitions.Add(new (idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
                 }
             }
         }
@@ -300,7 +315,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static async Task<IList<JObject>> Resolve<T>(IList<T> collectionToResolve, MemberReferenceResolver resolver,
                                 Func<T, MemberReferenceResolver, CancellationToken, Task<JObject>> resolutionFunc, CancellationToken token)
         {
-            IList<JObject> values = new List<JObject>();
+            var values = new List<JObject>();
             foreach (T element in collectionToResolve)
                 values.Add(await resolutionFunc(element, resolver, token));
             return values;
@@ -372,12 +387,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var values = new List<JObject>();
             JObject index = null;
+            List<JObject> nestedIndexers = new();
             IEnumerable<ElementAccessExpressionSyntax> elementAccesses = replacer.elementAccess;
             foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, index, replacer.variableDefinitions, token);
+                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, nestedIndexers, replacer.variableDefinitions, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
+                nestedIndexers.Add(index);
             }
             values.Add(index);
             return values;
@@ -393,7 +410,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
-            SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
+            CompilationUnitSyntax expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
             ExpressionSyntaxReplacer replacer = new ExpressionSyntaxReplacer();
@@ -401,7 +418,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
-            if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
+            if (expressionTree.IsKind(SyntaxKind.IdentifierName) || expressionTree.IsKind(SyntaxKind.ThisExpression))
             {
                 string varName = expressionTree.ToString();
                 JObject value = await resolver.Resolve(varName, token);
@@ -416,7 +433,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             syntaxTree = replacer.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
 
             // eg. "this.dateTime", "  dateTime.TimeOfDay"
-            if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && replacer.memberAccesses.Count == 1)
+            if (expressionTree.IsKind(SyntaxKind.SimpleMemberAccessExpression) && replacer.memberAccesses.Count == 1)
             {
                 return memberAccessValues[0];
             }
@@ -443,12 +460,49 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 syntaxTree = replacer.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
-
             expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
+            var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, invokeToStringInObject: replacer.hasStringExpressionStatement, token);
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, variableDef, logger, token);
+        }
 
-            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+        internal static async Task<List<string>> GetVariableDefinitions(MemberReferenceResolver resolver, List<VariableDefinition> variableDefinitions, bool invokeToStringInObject, CancellationToken token)
+        {
+            var variableDefStrings = new List<string>();
+            foreach (var definition in variableDefinitions)
+            {
+                if (!invokeToStringInObject || definition.Obj?["type"]?.Value<string>() != "object")
+                {
+                    variableDefStrings.Add(definition.Definition);
+                    continue;
+                }
+
+                if (definition.Obj["subtype"]?.Value<string>()?.Equals("null") == true)
+                {
+                    variableDefStrings.Add($"string {definition.IdName} = \"\";");
+                    continue;
+                }
+
+                if (DotnetObjectId.TryParse(definition.Obj?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                {
+                    if (objectId.IsValueType)
+                    {
+                        variableDefStrings.Add($"string {definition.IdName} = \"{definition.Obj["description"].Value<string>()}\";");
+                    }
+                    else
+                    {
+                        var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
+                        var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeToStringInObject: true, token);
+                        variableDefStrings.Add($"string {definition.IdName} = \"{toString}\";");
+                    }
+                }
+                else
+                {
+                    variableDefStrings.Add(definition.Definition);
+                }
+            }
+            return variableDefStrings;
         }
 
         internal static async Task<JObject> EvaluateSimpleExpression(
@@ -480,7 +534,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             get
             {
-                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
                 return _error;
             }
             set { }
@@ -504,8 +557,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result,
-                        stackTrace = StackTrace
+                        exception = result
                     }
                 }));
         }

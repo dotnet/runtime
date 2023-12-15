@@ -3,9 +3,11 @@
 //
 
 using System;
-class foo
+using Xunit;
+public class foo
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         byte[,] Param = new byte[2, 2];
         Param[0, 0] = 1;
@@ -14,6 +16,5 @@ class foo
         byte[,] Stuff = new byte[3, 3];
         Stuff[Param[0, 0], Param[1, 1]] = 1;
         Console.WriteLine(Stuff[1, 2]);
-        return 100;
     }
 }

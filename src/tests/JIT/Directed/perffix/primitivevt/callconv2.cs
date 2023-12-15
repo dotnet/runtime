@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace PrimitiveVT
 {
-    internal unsafe class CallConv2
+    public unsafe class CallConv2
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -35,7 +36,8 @@ namespace PrimitiveVT
         private uint f10(params VT2B[] args) { uint sum = 0; for (uint i = 0; i < args.Length; sum += args[i], i++) { }; return sum; }
 
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             uint a = (uint)s_rand.Next();
 

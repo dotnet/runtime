@@ -15,15 +15,27 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
+    <RunAnalyzers>false</RunAnalyzers>
+    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
+    </PackageReference>
   </ItemGroup>
 
+  <Import Project="..\..\Common\Compiler\GenericCycleDetection\GenericCycleDetection.projitems" />
+
   <ItemGroup>
+    <Compile Include="..\..\Common\Compiler\ImpliedRepeatedFieldDesc.cs" Link="Compiler\ImpliedRepeatedFieldDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFields.cs" Link="Compiler\TypeWithRepeatedFields.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" Link="Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
@@ -38,10 +50,8 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ComparerIntrinsics.cs" Link="IL\Stubs\ComparerIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs" Link="IL\Stubs\MemoryMarshalIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs" Link="IL\Stubs\VolatileIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs" Link="Interop\IL\MarshallerKind.cs" />
@@ -54,6 +64,13 @@
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\EcmaExtensions.cs" Link="Compiler\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\GenericParameterProxy.cs" Link="Compiler\Dataflow\GenericParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\MethodProxy.cs" Link="Compiler\Dataflow\MethodProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\ParameterProxy.cs" Link="Compiler\Dataflow\ParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeProxy.cs" Link="Compiler\Dataflow\TypeProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeExtensions.cs" Link="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
@@ -63,7 +80,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" Link="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNode.cs" Link="Compiler\DependencyAnalysis\ObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNodeSection.cs" Link="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
@@ -93,6 +109,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\DisplayNameHelpers.cs" Link="Compiler\DisplayNameHelpers.cs" />
+    <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
@@ -100,22 +117,49 @@
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\ProcessLinkerXmlBase.cs" Link="Compiler\ProcessLinkerXmlBase.cs" />
+    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\EventPseudoDesc.cs" Link="Compiler\EventPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\PseudoDescExtensions.cs" Link="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
     <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs" Link="JitInterface\LoongArch64PassStructInRegister.cs" />
+    <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs" Link="JitInterface\RISCV64PassStructInRegister.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TrimAnalysis\ReferenceKind.cs" Link="ILLink.Shared\TrimAnalysis\ReferenceKind.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" Link="ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\MethodProxy.cs" Link="ILLink.Shared\TypeSystemProxy\MethodProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeGenericInfoMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodIsGenericMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestAssemblyMvidHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodCallThunkNodeRange.cs" />
     <Compile Include="Compiler\CallChainProfile.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeValidationChecker.cs" />
     <Compile Include="Compiler\Logger.cs" />
+    <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
@@ -162,6 +206,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestMetadataTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodColdCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodEntryPointTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs" />
@@ -176,6 +221,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\HotColdMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Signature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureBuilder.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SignatureContext.cs" />
@@ -217,6 +263,7 @@
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunStandaloneMethodMetadata.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
+    <Compile Include="Compiler\ReadyToRunXmlRootProvider.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
@@ -225,11 +272,7 @@
     <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
-    <Compile Include="Win32Resources\ResourceData.cs" />
-    <Compile Include="Win32Resources\ResourceData.Reader.cs" />
-    <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
-    <Compile Include="Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
-    <Compile Include="Win32Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="ObjectWriter\TypeString.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NoMethodsCompilationModuleGroup.cs" />
@@ -262,11 +305,11 @@
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\TypeString.cs">
-      <Link>JitInterface\TypeString.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\JitTypeNameFormatter.cs">
+      <Link>JitInterface\JitTypeNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\CorInfoBase.cs">
-      <Link>JitInterface\CorInfoBase.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\CorInfoImpl_generated.cs">
+      <Link>JitInterface\CorInfoImpl_generated.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>

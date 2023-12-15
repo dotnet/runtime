@@ -4,9 +4,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+
+#pragma warning disable 8500 // taking address of managed type
 
 namespace System.Globalization
 {
@@ -88,7 +90,7 @@ namespace System.Globalization
         internal static bool NlsIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(GlobalizationMode.UseNls);
-            return CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
+            return GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
         }
 
         private string? NlsGetTimeFormatString()
@@ -123,7 +125,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(&EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(&EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, &context, IntPtr.Zero);
             }
 
             if (context.cultureName != null)
@@ -347,14 +349,14 @@ namespace System.Globalization
         [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
-            ref EnumLocaleData context = ref Unsafe.As<byte, EnumLocaleData>(ref *(byte*)contextHandle);
+            EnumLocaleData* context = (EnumLocaleData*)contextHandle;
             try
             {
                 string cultureName = new string(lpLocaleString);
                 string? regionName = GetLocaleInfoEx(cultureName, Interop.Kernel32.LOCALE_SISO3166CTRYNAME);
-                if (regionName != null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
+                if (regionName != null && regionName.Equals(context->regionName, StringComparison.OrdinalIgnoreCase))
                 {
-                    context.cultureName = cultureName;
+                    context->cultureName = cultureName;
                     return Interop.BOOL.FALSE; // we found a match, then stop the enumeration
                 }
 
@@ -370,10 +372,9 @@ namespace System.Globalization
         [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumAllSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
-            ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)contextHandle);
             try
             {
-                context.strings.Add(new string(lpLocaleString));
+                ((EnumData*)contextHandle)->strings.Add(new string(lpLocaleString));
                 return Interop.BOOL.TRUE;
             }
             catch (Exception)
@@ -392,10 +393,9 @@ namespace System.Globalization
         [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumTimeCallback(char* lpTimeFormatString, void* lParam)
         {
-            ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
             try
             {
-                context.strings.Add(new string(lpTimeFormatString));
+                ((EnumData*)lParam)->strings.Add(new string(lpTimeFormatString));
                 return Interop.BOOL.TRUE;
             }
             catch (Exception)
@@ -410,7 +410,7 @@ namespace System.Globalization
             data.strings = new List<string>();
 
             // Now call the enumeration API. Work is done by our callback function
-            Interop.Kernel32.EnumTimeFormatsEx(&EnumTimeCallback, localeName, dwFlags, Unsafe.AsPointer(ref data));
+            Interop.Kernel32.EnumTimeFormatsEx(&EnumTimeCallback, localeName, dwFlags, &data);
 
             if (data.strings.Count > 0)
             {
@@ -496,7 +496,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, flags, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, flags, &context, IntPtr.Zero);
             }
 
             CultureInfo[] cultures = new CultureInfo[context.strings.Count];
@@ -524,7 +524,7 @@ namespace System.Globalization
 
                 unsafe
                 {
-                    Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                    Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, &context, IntPtr.Zero);
                 }
 
                 for (int i = 0; i < context.strings.Count; i++)

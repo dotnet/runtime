@@ -88,7 +88,8 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 //------------------------------------------------------------------------
 // Returns the ID of the type if found. If not found, assigns the ID and
 // returns the new ID.
-UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
+// If useFatPointerDispatch = true, return the next Fat ID of the type.
+UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT, bool useFatPointerDispatch)
 {
     CONTRACTL {
         THROWS;
@@ -110,7 +111,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         {
             return id;
         }
-        id = GetNextID();
+        id = GetNextID(useFatPointerDispatch);
 
         CONSISTENCY_CHECK(id <= TypeIDProvider::MAX_TYPE_ID);
         // Insert the pair, with lookups in both directions

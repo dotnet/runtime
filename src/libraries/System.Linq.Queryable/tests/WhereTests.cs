@@ -30,42 +30,42 @@ namespace System.Linq.Tests
         [Fact]
         public void ReturnsExpectedValues_True()
         {
-            int[] source = new[] { 1, 2, 3, 4, 5 };
+            int[] source = { 1, 2, 3, 4, 5 };
             Assert.Equal(source, source.AsQueryable().Where(i => true));
         }
 
         [Fact]
         public void ReturnsExpectedValues_False()
         {
-            int[] source = new[] { 1, 2, 3, 4, 5 };
+            int[] source = { 1, 2, 3, 4, 5 };
             Assert.Empty(source.AsQueryable().Where(i => false));
         }
 
         [Fact]
         public void ReturnsExpectedValuesIndexed_True()
         {
-            int[] source = new[] { 1, 2, 3, 4, 5 };
+            int[] source = { 1, 2, 3, 4, 5 };
             Assert.Equal(source, source.AsQueryable().Where((e, i) => true));
         }
 
         [Fact]
         public void ReturnsExpectedValuesIndexed_False()
         {
-            int[] source = new[] { 1, 2, 3, 4, 5 };
+            int[] source = { 1, 2, 3, 4, 5 };
             Assert.Empty(source.AsQueryable().Where((e, i) => false));
         }
 
         [Fact]
         public void Where1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().Where(n => n > 1).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().Where(n => n > 1).Count();
             Assert.Equal(1, count);
         }
 
         [Fact]
         public void Where2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().Where((n, i) => n > 1 || i == 0).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().Where((n, i) => n > 1 || i == 0).Count();
             Assert.Equal(2, count);
         }
     }

@@ -5,14 +5,16 @@
 
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
+    <ImportTargetingPacksTargetsInWasmAppTargets>false</ImportTargetingPacksTargetsInWasmAppTargets>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existent</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$(MicrosoftNetCoreAppRuntimePackRidDir)\native</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
-    <IsWasmProject>true</IsWasmProject>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
@@ -32,6 +34,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\index.html" />
+      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\test-main.js" />
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>

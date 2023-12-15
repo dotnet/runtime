@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
 
-    class AA
+    public class AA
     {
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             bool[] loc1 = new bool[7];
             loc1[2] = false;
@@ -26,7 +28,6 @@ namespace DefaultNamespace
                     }
                 }
             }
-            return 100;
         }
     }
 }

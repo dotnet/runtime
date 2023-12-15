@@ -47,19 +47,21 @@ namespace Internal.JitInterface
            which is the right helper to use to allocate an object of a given type. */
 
         CORINFO_HELP_NEWFAST,
+        CORINFO_HELP_NEWFAST_MAYBEFROZEN, // allocator for objects that *might* allocate them on a frozen segment
         CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
         CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
         CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
         CORINFO_HELP_NEWSFAST_ALIGN8_VC, // allocator for small, value class, 8 byte aligned
         CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-        CORINFO_HELP_NEW_MDARR, // multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+        CORINFO_HELP_NEW_MDARR, // multi-dim array helper for arrays Rank != 1 (with or without lower bounds - dimensions passed in as unmanaged array)
+        CORINFO_HELP_NEW_MDARR_RARE, // rare multi-dim array helper (Rank == 1)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
+        CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
         CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
         CORINFO_HELP_STRCNS,            // create a new string literal
-        CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
         /* Object model */
 
         CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -161,7 +163,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_SETFIELDDOUBLE,
 
         CORINFO_HELP_GETFIELDADDR,
-
+        CORINFO_HELP_GETSTATICFIELDADDR,
         CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
         // There are a variety of specialized helpers for accessing static fields. The JIT should use
@@ -185,7 +187,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
 
@@ -224,8 +228,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
 
-        CORINFO_HELP_ARE_TYPES_EQUIVALENT, // Check whether two TypeHandles (native structure pointers) are equivalent
-
         CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
 
         // Not a real helpers. Instead of taking handle arguments, these helpers point to a small stub that loads the handle argument and calls the static helper.
@@ -233,7 +235,10 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_NEWARR_1,
         CORINFO_HELP_READYTORUN_ISINSTANCEOF,
         CORINFO_HELP_READYTORUN_CHKCAST,
-        CORINFO_HELP_READYTORUN_STATIC_BASE,
+        CORINFO_HELP_READYTORUN_GCSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
         CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
         CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
@@ -270,6 +275,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
         CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
         CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
+        CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION, // throw EntryPointNotFoundException for failed static virtual method resolution
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -292,6 +298,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
         CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
         CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
+        CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
+        CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer

@@ -1,16 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { GCHandle, MarshalerToCs, MarshalerToJs, MonoMethod, mono_assert } from "./types";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
-import { Module, runtimeHelpers, ENVIRONMENT_IS_PTHREAD } from "./imports";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
+import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
+import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
-import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
+import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
+import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js } from "./marshal-to-js";
+import { do_not_force_dispose } from "./gc-handles";
 
 export function init_managed_exports(): void {
-    const anyModule = Module as any;
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
     runtimeHelpers.runtime_interop_module = cwraps.mono_wasm_assembly_load(exports_fqn_asm);
     if (!runtimeHelpers.runtime_interop_module)
@@ -22,24 +24,28 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const install_sync_context = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, "InstallSynchronizationContext", -1);
-    // mono_assert(install_sync_context, "Can't find InstallSynchronizationContext method");
+    const install_sync_context = MonoWasmThreads ? get_method("InstallSynchronizationContext") : undefined;
+    mono_assert(!MonoWasmThreads || install_sync_context, "Can't find InstallSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
     mono_assert(release_js_owned_object_by_gc_handle_method, "Can't find ReleaseJSOwnedObjectByGCHandle method");
-    const create_task_callback_method = get_method("CreateTaskCallback");
-    mono_assert(create_task_callback_method, "Can't find CreateTaskCallback method");
     const complete_task_method = get_method("CompleteTask");
     mono_assert(complete_task_method, "Can't find CompleteTask method");
     const call_delegate_method = get_method("CallDelegate");
     mono_assert(call_delegate_method, "Can't find CallDelegate method");
     const get_managed_stack_trace_method = get_method("GetManagedStackTrace");
     mono_assert(get_managed_stack_trace_method, "Can't find GetManagedStackTrace method");
+    const load_satellite_assembly_method = get_method("LoadSatelliteAssembly");
+    mono_assert(load_satellite_assembly_method, "Can't find LoadSatelliteAssembly method");
+    const load_lazy_assembly_method = get_method("LoadLazyAssembly");
+    mono_assert(load_lazy_assembly_method, "Can't find LoadLazyAssembly method");
 
-    runtimeHelpers.javaScriptExports.call_entry_point = (entry_point: MonoMethod, program_args?: string[]) => {
-        const sp = anyModule.stackSave();
+    runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
+        loaderHelpers.assert_runtime_running();
+        const sp = Module.stackSave();
         try {
+            Module.runtimeKeepalivePush();
             const args = alloc_stack_frame(4);
             const res = get_arg(args, 1);
             const arg1 = get_arg(args, 2);
@@ -49,19 +55,56 @@ export function init_managed_exports(): void {
                 program_args = undefined;
             }
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
+
+            // because this is async, we could pre-allocate the promise
+            let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
+
             invoke_method_and_handle_exception(call_entry_point, args);
-            const promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
-            if (!promise) {
-                return Promise.resolve(0);
+
+            // in case the C# side returned synchronously
+            promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
+
+            if (promise === null || promise === undefined) {
+                promise = Promise.resolve(0);
             }
-            return promise;
+            (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
+            return await promise;
         } finally {
-            anyModule.stackRestore(sp);
+            Module.runtimeKeepalivePop();// after await promise !
+            Module.stackRestore(sp);
+        }
+    };
+    runtimeHelpers.javaScriptExports.load_satellite_assembly = (dll: Uint8Array): void => {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(3);
+            const arg1 = get_arg(args, 2);
+            set_arg_type(arg1, MarshalerType.Array);
+            marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
+            invoke_method_and_handle_exception(load_satellite_assembly_method, args);
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
+    runtimeHelpers.javaScriptExports.load_lazy_assembly = (dll: Uint8Array, pdb: Uint8Array | null): void => {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(4);
+            const arg1 = get_arg(args, 2);
+            const arg2 = get_arg(args, 3);
+            set_arg_type(arg1, MarshalerType.Array);
+            set_arg_type(arg2, MarshalerType.Array);
+            marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
+            marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
+            invoke_method_and_handle_exception(load_lazy_assembly_method, args);
+        } finally {
+            Module.stackRestore(sp);
         }
     };
     runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle = (gc_handle: GCHandle) => {
         mono_assert(gc_handle, "Must be valid gc_handle");
-        const sp = anyModule.stackSave();
+        loaderHelpers.assert_runtime_running();
+        const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
             const arg1 = get_arg(args, 2);
@@ -69,22 +112,12 @@ export function init_managed_exports(): void {
             set_gc_handle(arg1, gc_handle);
             invoke_method_and_handle_exception(release_js_owned_object_by_gc_handle_method, args);
         } finally {
-            anyModule.stackRestore(sp);
-        }
-    };
-    runtimeHelpers.javaScriptExports.create_task_callback = () => {
-        const sp = anyModule.stackSave();
-        try {
-            const args = alloc_stack_frame(2);
-            invoke_method_and_handle_exception(create_task_callback_method, args);
-            const res = get_arg(args, 1);
-            return get_arg_gc_handle(res);
-        } finally {
-            anyModule.stackRestore(sp);
+            Module.stackRestore(sp);
         }
     };
     runtimeHelpers.javaScriptExports.complete_task = (holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
-        const sp = anyModule.stackSave();
+        loaderHelpers.assert_runtime_running();
+        const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(5);
             const arg1 = get_arg(args, 2);
@@ -101,11 +134,12 @@ export function init_managed_exports(): void {
             }
             invoke_method_and_handle_exception(complete_task_method, args);
         } finally {
-            anyModule.stackRestore(sp);
+            Module.stackRestore(sp);
         }
     };
     runtimeHelpers.javaScriptExports.call_delegate = (callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => {
-        const sp = anyModule.stackSave();
+        loaderHelpers.assert_runtime_running();
+        const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(6);
 
@@ -134,11 +168,12 @@ export function init_managed_exports(): void {
                 return res_converter(res);
             }
         } finally {
-            anyModule.stackRestore(sp);
+            Module.stackRestore(sp);
         }
     };
     runtimeHelpers.javaScriptExports.get_managed_stack_trace = (exception_gc_handle: GCHandle) => {
-        const sp = anyModule.stackSave();
+        loaderHelpers.assert_runtime_running();
+        const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
 
@@ -150,24 +185,20 @@ export function init_managed_exports(): void {
             const res = get_arg(args, 1);
             return marshal_string_to_js(res);
         } finally {
-            anyModule.stackRestore(sp);
+            Module.stackRestore(sp);
         }
     };
 
-    if (install_sync_context) {
+    if (MonoWasmThreads && install_sync_context) {
         runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
-            const sp = anyModule.stackSave();
+            const sp = Module.stackSave();
             try {
                 const args = alloc_stack_frame(2);
                 invoke_method_and_handle_exception(install_sync_context, args);
             } finally {
-                anyModule.stackRestore(sp);
+                Module.stackRestore(sp);
             }
         };
-
-        if (!ENVIRONMENT_IS_PTHREAD)
-            // Install our sync context so that async continuations will migrate back to this thread (the main thread) automatically
-            runtimeHelpers.javaScriptExports.install_synchronization_context();
     }
 }
 

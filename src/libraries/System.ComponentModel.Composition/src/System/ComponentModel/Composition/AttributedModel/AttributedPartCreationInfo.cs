@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition.ReflectionModel;
+using System.Composition.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -20,8 +20,8 @@ namespace System.ComponentModel.Composition.AttributedModel
         private readonly ICompositionElement? _origin;
         private PartCreationPolicyAttribute? _partCreationPolicy;
         private ConstructorInfo? _constructor;
-        private IEnumerable<ExportDefinition>? _exports;
-        private IEnumerable<ImportDefinition>? _imports;
+        private List<ExportDefinition>? _exports;
+        private List<ImportDefinition>? _imports;
         private HashSet<string>? _contractNamesOnNonInterfaces;
 
         public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
@@ -252,7 +252,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             _imports = GetImportDefinitions();
         }
 
-        private IEnumerable<ExportDefinition> GetExportDefinitions()
+        private List<ExportDefinition> GetExportDefinitions()
         {
             List<ExportDefinition> exports = new List<ExportDefinition>();
 
@@ -414,7 +414,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return attributedProvider.IsAttributeDefined<InheritedExportAttribute>(false);
         }
 
-        private IEnumerable<ImportDefinition> GetImportDefinitions()
+        private List<ImportDefinition> GetImportDefinitions()
         {
             List<ImportDefinition> imports = new List<ImportDefinition>();
 

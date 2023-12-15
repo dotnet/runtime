@@ -53,7 +53,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("ApplyUpdateReferencedAssembly")]
-        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPathㄨ")]
+        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPath\u3128")]
         public async Task DebugHotReloadMethodAddBreakpoint(string assembly_name)
         {
             int line = 30;
@@ -221,7 +221,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("ApplyUpdateReferencedAssembly")]
-        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPathㄨ")]
+        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPath\u3128")]
         public async Task DebugHotReloadMethodAddBreakpointUsingSDB(string assembly_name)
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, $"{assembly_name}.dll");
@@ -561,5 +561,170 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly2.dll/MethodBody2.cs", 12, 12, scripts, pause_location["callFrames"]?[0]["location"]);
             await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", $"dotnet://ApplyUpdateReferencedAssembly2.dll/MethodBody2.cs", 18, 12, "ApplyUpdateReferencedAssembly.AddMethod.StaticMethod2");
         }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReload_NewInstanceFields()
+        {
+            string asm_name = "ApplyUpdateReferencedAssembly3";
+            string asm_file = Path.Combine (DebuggerTestAppPath, asm_name + ".dll");
+            string pdb_file = Path.Combine (DebuggerTestAppPath, asm_name + ".pdb");
+            string asm_file_hot_reload = Path.Combine (DebuggerTestAppPath, "..", "wasm", asm_name+ ".dll");
+            var pause_location = await LoadAssemblyAndTestHotReload(asm_file, pdb_file, asm_file_hot_reload, "AddInstanceFields", "StaticMethod1",
+                                                                    expectBpResolvedEvent: false, sourcesToWait: new string [] { "MethodBody2.cs" });
+            var frame = pause_location["callFrames"][0];
+            var locals = await GetProperties(frame["callFrameId"].Value<string>());
+            await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+            await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
+                                       locals_fn: async (locals) => {
+                                           await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+                                           var c = await GetObjectOnLocals(locals, "c");
+                                           await CheckProps (c, new {
+                                                           Field1 = TNumber(123),
+                                                   }, "c", num_fields: 1);
+                                           var cObj = GetAndAssertObjectWithName (locals, "c");
+                                           await SetValueOnObject (cObj, "Field1", "456.5");
+
+                                           c = await GetObjectOnLocals(locals, "c");
+                                           await CheckProps (c, new {
+                                                           Field1 = TNumber("456.5", isDecimal: true),
+                                                   }, "c", num_fields: 1);
+                                       });
+            await SendCommandAndCheck (JObject.FromObject(new { }), "Debugger.resume", script_loc: null, line: -1, column: -1, function_name: null,
+                                       locals_fn: async (locals) => {
+                                           await CheckObject(locals, "c", "ApplyUpdateReferencedAssembly.AddInstanceFields.C");
+                                           var c = await GetObjectOnLocals(locals, "c");
+                                           await CheckProps (c, new {
+                                                           Field1 = TNumber(123),
+                                                           Field2 = TString("spqr"),
+                                                           Field3Unused = TString(null),
+                                                   }, "c", num_fields: 3);
+                                       });
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewClassUsingDebugAttribute()
+        {
+            await SetJustMyCode(true);
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1", expectBpResolvedEvent: true, sourcesToWait: new string [] { "MethodBody0.cs", "MethodBody1.cs" });
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            await SetBreakpoint(".*/MethodBody1.cs$", 118, 12, use_regex: true);            
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody10", "StaticMethod1", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody10.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 118, 12, scripts, top_frame["location"]);
+
+            await StepAndCheck(StepKind.Into, $"dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 119, 12, "ApplyUpdateReferencedAssembly.MethodBody10.StaticMethod1");
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewMethodAndThrowException()
+        {
+            //await SetPauseOnException("all");
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 129, 12, use_regex: true);
+            var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 133, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody11", "StaticMethod1", expectBpResolvedEvent: true, sourcesToWait: new string [] { "MethodBody0.cs", "MethodBody1.cs" });
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 129, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody11", "NewMethodStaticWithThrow", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody11.NewMethodStaticWithThrow", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 133, 12, scripts, top_frame["location"]);
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 134, 12, "ApplyUpdateReferencedAssembly.MethodBody11.NewMethodStaticWithThrow",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "i", 20);
+                    await Task.CompletedTask;
+                }
+            );
+
+            await SetPauseOnException("all");
+
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "System.Exception",
+                uncaught = false
+            }), "exception0.data");
+
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+            try
+            {
+                pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+            }
+            catch (System.Exception ae)
+            {
+                System.Console.WriteLine(ae);
+                var eo = JObject.Parse(ae.Message);
+
+                AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
+
+                await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
+                {
+                    type = "object",
+                    subtype = "error",
+                    className = "Error"
+                }), "exception");
+            }
+        }
+        // Enable this test when https://github.com/dotnet/hotreload-utils/pull/264 flows into dotnet/runtime repo
+        // [ConditionalFact(nameof(RunningOnChrome))]
+        // public async Task DebugHotReloadMethod_ChangeParameterName()
+        // {
+        //     string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+        //     string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+        //     string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+        //     var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 89, 12, use_regex: true);
+        //     // var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 59, 12, use_regex: true);
+
+        //     var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+        //             asm_file, pdb_file, "MethodBody9", "test", expectBpResolvedEvent: true, sourcesToWait: new string [] { "MethodBody0.cs", "MethodBody1.cs" });
+
+        //     CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 89, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+        //     await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 90, 12, "ApplyUpdateReferencedAssembly.MethodBody9.M1",
+        //     locals_fn: async (locals) =>
+        //         {
+        //             CheckNumber(locals, "a", 1);
+        //             await Task.CompletedTask;
+        //         }
+        //     );
+        //     //apply first update
+        //     pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+        //             asm_file_hot_reload, "MethodBody9", "test", 1);
+
+        //     JToken top_frame = pause_location["callFrames"]?[0];
+        //     AssertEqual("ApplyUpdateReferencedAssembly.MethodBody9.M1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+        //     CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 89, 12, scripts, top_frame["location"]);
+        //     await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 90, 12, "ApplyUpdateReferencedAssembly.MethodBody9.M1",
+        //     locals_fn: async (locals) =>
+        //         {
+        //             CheckNumber(locals, "x", 1);
+        //             await Task.CompletedTask;
+        //         }
+        //     );
+        // }
     }
 }

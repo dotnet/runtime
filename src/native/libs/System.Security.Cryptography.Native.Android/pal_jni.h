@@ -95,6 +95,15 @@ extern jmethodID g_SSLParametersGetProtocols;
 extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
 
+// com/android/org/conscrypt/OpenSSLEngineImpl
+extern jclass    g_ConscryptOpenSSLEngineImplClass;
+extern jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
+extern jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
+
+// com/android/org/conscrypt/SSLParametersImpl
+extern jclass    g_ConscryptSSLParametersImplClass;
+extern jmethodID g_ConscryptSSLParametersImplSetUseSni;
+
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
 extern jmethodID g_sslCtxGetDefaultMethod;
@@ -432,6 +441,7 @@ extern jclass    g_SSLEngine;
 extern jmethodID g_SSLEngineBeginHandshake;
 extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
+extern jmethodID g_SSLEngineGetHandshakeSession;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
 extern jmethodID g_SSLEngineGetSession;
 extern jmethodID g_SSLEngineGetSSLParameters;
@@ -462,12 +472,13 @@ extern jmethodID g_SSLContextGetDefault;
 extern jmethodID g_SSLContextGetInstanceMethod;
 extern jmethodID g_SSLContextInitMethod;
 extern jmethodID g_SSLContextCreateSSLEngineMethod;
-extern jmethodID g_SSLContextCreateSSLEngineWithPeer;
+extern jmethodID g_SSLContextCreateSSLEngineMethodWithHostAndPort;
 
 // javax/net/ssl/SSLSession
 extern jclass    g_SSLSession;
 extern jmethodID g_SSLSessionGetApplicationBufferSize;
 extern jmethodID g_SSLSessionGetCipherSuite;
+extern jmethodID g_SSLSessionGetLocalCertificates;
 extern jmethodID g_SSLSessionGetPacketBufferSize;
 extern jmethodID g_SSLSessionGetPeerCertificates;
 extern jmethodID g_SSLSessionGetProtocol;
@@ -476,6 +487,7 @@ extern jmethodID g_SSLSessionGetProtocol;
 extern jclass    g_SSLEngineResult;
 extern jmethodID g_SSLEngineResultGetStatus;
 extern jmethodID g_SSLEngineResultGetHandshakeStatus;
+extern bool      g_SSLEngineResultStatusLegacyOrder;
 
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;
@@ -483,6 +495,13 @@ extern jmethodID g_KeyAgreementGetInstance;
 extern jmethodID g_KeyAgreementInit;
 extern jmethodID g_KeyAgreementDoPhase;
 extern jmethodID g_KeyAgreementGenerateSecret;
+
+// javax/net/ssl/TrustManager
+extern jclass g_TrustManager;
+
+// net/dot/android/crypto/DotnetProxyTrustManager
+extern jclass    g_DotnetProxyTrustManager;
+extern jmethodID g_DotnetProxyTrustManagerCtor;
 
 // Compatibility macros
 #if !defined (__mallocfunc)
@@ -572,6 +591,7 @@ bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException) ARGS_N
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
+jfieldID GetOptionalField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 JNIEnv* GetJNIEnv(void);
 
 int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;

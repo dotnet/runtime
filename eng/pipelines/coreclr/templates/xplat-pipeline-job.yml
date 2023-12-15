@@ -9,7 +9,6 @@ parameters:
   testGroup: ''
   crossBuild: false
   liveLibrariesBuildConfig: ''
-  stagedBuild: false
   strategy: ''
   pool: ''
 
@@ -22,6 +21,7 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  disableComponentGovernance: false
 
   variables: {} ## any extra variables to add to the defaults defined below
 
@@ -36,10 +36,8 @@ jobs:
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
-    pgoType: ${{ parameters.pgoType }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -50,6 +48,7 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:
@@ -65,38 +64,20 @@ jobs:
 
     # Build product defines what we are trying to build, either coreclr or mono
     - name: buildProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
-    - name: buildCrossDacArtifactName
-      value: CoreCLRCrossDacArtifacts
-
-    - name: crossDacArtifactPath
-      value: $(Build.SourcesDirectory)/artifacts/$(buildCrossDacArtifactName)
-
-    - name: buildMuslDacRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.$(archType).$(buildConfigUpper)'
-
-    - name: buildMuslDacStagingPath
-      value: '$(crossDacArtifactPath)/Linux_musl.$(archType).$(buildConfigUpper)'
-
-    - name: buildLinuxDacRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.$(archType).$(buildConfigUpper)'
-
-    - name: buildLinuxDacStagingPath
-      value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
-
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: coreClrProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: corelibProductArtifactName
-      value: 'CoreLib_${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreLib_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: managedGenericTestArtifactName
       value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
@@ -127,7 +108,7 @@ jobs:
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
-          value: '-priority=1'
+          value: '-priority 1'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''
@@ -144,8 +125,8 @@ jobs:
     - name: osArg
       value: ''
 
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    - ${{ if eq(parameters.osGroup, 'freebsd') }}:
       - name: osArg
-        value: -os FreeBSD
+        value: -os freebsd
 
     steps: ${{ parameters.steps }}

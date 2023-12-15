@@ -65,7 +65,7 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                     pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry = NULL;
                 }
             }
-            delete pThreadLocalModule->m_pDynamicClassTable;
+            delete[] pThreadLocalModule->m_pDynamicClassTable;
             pThreadLocalModule->m_pDynamicClassTable = NULL;
         }
 
@@ -110,9 +110,6 @@ void ThreadLocalBlock::FreeTable()
         delete m_pThreadStaticHandleTable;
         m_pThreadStaticHandleTable = NULL;
     }
-
-    // Free any pinning handles we may have created
-    FreePinningHandles();
 }
 
 void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
@@ -160,7 +157,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
     }
 
     if (pOldModuleSlots != NULL)
-        delete pOldModuleSlots;
+        delete[] pOldModuleSlots;
 }
 
 #endif
@@ -278,37 +275,6 @@ void ThreadLocalModule::SetClassFlags(MethodTable* pMT, DWORD dwFlags)
     }
 }
 
-void ThreadLocalBlock::AddPinningHandleToList(OBJECTHANDLE oh)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    ObjectHandleList::NodeType* pNewNode = new ObjectHandleList::NodeType(oh);
-    m_PinningHandleList.LinkHead(pNewNode);
-}
-
-void ThreadLocalBlock::FreePinningHandles()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    // Destroy all pinning handles in the list, and free the nodes
-    ObjectHandleList::NodeType* pHandleNode;
-    while ((pHandleNode = m_PinningHandleList.UnlinkHead()) != NULL)
-    {
-        DestroyPinningHandle(pHandleNode->data);
-        delete pHandleNode;
-    }
-}
-
 void ThreadLocalBlock::AllocateThreadStaticHandles(Module * pModule, PTR_ThreadLocalModule pThreadLocalModule)
 {
     CONTRACTL
@@ -412,21 +378,12 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
             TypeHandle  th = pField->GetFieldTypeHandleThrowing();
             MethodTable* pFieldMT = th.GetMethodTable();
 
-            // AllocateStaticBox will pin this object if this class is FixedAddressVTStatics.
-            // We save this pinning handle in a list attached to the ThreadLocalBlock. When
-            // the thread dies, we release all the pinning handles in the list.
-
-            OBJECTHANDLE handle;
-            OBJECTREF obj = MethodTable::AllocateStaticBox(pFieldMT, pMT->HasFixedAddressVTStatics(), &handle);
+            OBJECTREF obj = MethodTable::AllocateStaticBox(pFieldMT, pMT->HasFixedAddressVTStatics());
 
             PTR_BYTE pStaticBase = pMT->GetGCThreadStaticsBasePointer();
             _ASSERTE(pStaticBase != NULL);
 
             SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj );
-
-            // If we created a pinning handle, save it to the list
-            if (handle != NULL)
-                AddPinningHandleToList(handle);
         }
 
         pField++;
@@ -525,32 +482,22 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
     {
         if (pDynamicStatics == NULL)
         {
-            SIZE_T dynamicEntrySize;
+            // If these allocations fail, we will throw
             if (pMT->Collectible())
             {
-                dynamicEntrySize = sizeof(CollectibleDynamicEntry);
+                pDynamicStatics = new CollectibleDynamicEntry(pMT->GetLoaderAllocator());
             }
             else
             {
-                dynamicEntrySize = DynamicEntry::GetOffsetOfDataBlob() + dwStaticBytes;
+                pDynamicStatics = new({dwStaticBytes}) NormalDynamicEntry();
             }
 
-            // If this allocation fails, we will throw
-            pDynamicStatics = (DynamicEntry*)new BYTE[dynamicEntrySize];
 
 #ifdef FEATURE_64BIT_ALIGNMENT
             // The memory block has be aligned at MAX_PRIMITIVE_FIELD_SIZE to guarantee alignment of statics
             static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
             _ASSERTE(IS_ALIGNED(pDynamicStatics, MAX_PRIMITIVE_FIELD_SIZE));
 #endif
-
-            // Zero out the new DynamicEntry
-            memset((BYTE*)pDynamicStatics, 0, dynamicEntrySize);
-
-            if (pMT->Collectible())
-            {
-                ((CollectibleDynamicEntry*)pDynamicStatics)->m_pLoaderAllocator = pMT->GetLoaderAllocator();
-            }
 
             // Save the DynamicEntry in the DynamicClassTable
             m_pDynamicClassTable[dwID].m_pDynamicEntry = pDynamicStatics;

@@ -356,13 +356,13 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
@@ -393,7 +393,11 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_I4:
 		return OP_LOADI4_MEMBASE;
 	case MONO_TYPE_U4:
+#ifdef TARGET_RISCV64
+		return OP_LOADI4_MEMBASE;
+#else
 		return OP_LOADU4_MEMBASE;
+#endif
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
@@ -413,12 +417,12 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_R8:
 		return OP_LOADR8_MEMBASE;
 	case MONO_TYPE_VALUETYPE:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
 		if (mono_type_generic_inst_is_valuetype (type))
 			return OP_LOADV_MEMBASE;
@@ -656,7 +660,9 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	inst->backend.is_pinvoke = 0;
 	inst->dreg = vreg;
 
-	if (mono_class_has_failure (inst->klass))
+	// In AOT, we do not set the exception so that the compilation can succeed. To indicate
+	// the error, an exception is thrown in run-time.
+	if (!cfg->compile_aot && mono_class_has_failure (inst->klass))
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 	if (cfg->compute_gc_maps) {
@@ -1042,7 +1048,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			size = mini_type_stack_size (t, &ialign);
 			align = ialign;
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (t)))
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
 				align = 16;
 		}
 
@@ -1347,10 +1353,13 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			size = mini_type_stack_size (t, &ialign);
 			align = ialign;
 
-			if (mono_class_has_failure (mono_class_from_mono_type_internal (t)))
+			// In AOT, we do not set the exception but allow the compilation to succeed. The error will be
+			// indicated in runtime by throwing an exception when an operation with the invalid object is
+			// attempted.
+			if (!cfg->compile_aot && mono_class_has_failure (mono_class_from_mono_type_internal (t)))
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (t)))
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
 				align = 16;
 		}
 
@@ -1502,18 +1511,15 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 				 * Align the size too so the code generated for passing vtypes in
 				 * registers doesn't overwrite random locals.
 				 */
-				size = (size + (align - 1)) & ~(align -1);
+				size = ALIGN_TO (size, align);
 			}
 
 			if (backward) {
-				offset += size;
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset + size, align);
 				slot = offset;
 			}
 			else {
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset, align);
 				slot = offset;
 				offset += size;
 			}
@@ -2358,7 +2364,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (cfg->method->dynamic)
 		jinfo = (MonoJitInfo *)g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
 	else
-		jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (cfg->mem_manager, mono_jit_info_size (flags, num_clauses, num_holes));
+		jinfo = mini_alloc_jinfo (cfg->jit_mm, mono_jit_info_size (flags, num_clauses, num_holes));
 	jinfo_try_holes_size += num_holes * sizeof (MonoTryBlockHoleJitInfo);
 
 	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
@@ -3015,11 +3021,8 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_EXPLICIT_NULL_CHECKS
 	backend->explicit_null_checks = 1;
 #endif
-#ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
-	backend->optimized_div = 1;
-#endif
-#ifdef MONO_ARCH_FORCE_FLOAT32
-	backend->force_float32 = 1;
+#ifdef MONO_ARCH_HAVE_INIT_MRGCTX
+	backend->have_init_mrgctx = 1;
 #endif
 }
 
@@ -3054,7 +3057,10 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
-	return MONO_RGCTX_ACCESS_THIS;
+	if (mono_opt_experimental_gshared_mrgctx)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+	else
+		return MONO_RGCTX_ACCESS_THIS;
 }
 
 /*
@@ -3136,12 +3142,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	try_llvm = mono_use_llvm || llvm;
 #endif
 
-#ifndef MONO_ARCH_FLOAT32_SUPPORTED
+#ifdef MONO_ARCH_FLOAT32_SUPPORTED
+	/* Force float32 mode on platforms where its supported */
+	opts |= MONO_OPT_FLOAT32;
+#else
 	opts &= ~MONO_OPT_FLOAT32;
+#ifdef ENABLE_LLVM
+	g_assert (!llvm);
 #endif
-	if (current_backend->force_float32)
-		/* Force float32 mode on newer platforms */
-		opts |= MONO_OPT_FLOAT32;
+#endif
 
  restart_compile:
 	if (method_is_gshared) {
@@ -3178,8 +3187,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->jit_mm = jit_mm_for_method (cfg->method);
 	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
-		/* We can't have seq points inside gc critical regions */
+	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/* We can't have seq points inside gc critical regions or native-to-managed wrapper */
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
 	}
@@ -3217,10 +3226,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->explicit_null_checks = FALSE;
 	}
 
-	/*
-	if (!mono_debug_count ())
-		cfg->opt &= ~MONO_OPT_FLOAT32;
-	*/
 	if (!is_simd_supported (cfg))
 		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
@@ -3303,9 +3308,31 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
-		cfg->deopt = TRUE;
-		/* Can't reconstruct inlined state */
-		cfg->disable_inline = TRUE;
+		gboolean can_deopt = TRUE;
+		/*
+		 * Can't handle catch clauses inside finally clauses right now.
+		 * When the ENDFINALLY opcode of the outer clause is encountered
+		 * while executing the inner catch clause from run_with_il_state (),
+		 * it will assert since it doesn't know where to continue execution.
+		 */
+		for (guint i = 0; i < cfg->header->num_clauses; ++i) {
+			for (guint j = 0; j < cfg->header->num_clauses; ++j) {
+				MonoExceptionClause *clause1 = &cfg->header->clauses [i];
+				MonoExceptionClause *clause2 = &cfg->header->clauses [j];
+
+				if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
+					if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+						can_deopt = FALSE;
+						break;
+					}
+				}
+			}
+		}
+		if (can_deopt) {
+			cfg->deopt = TRUE;
+			/* Can't reconstruct inlined state */
+			cfg->disable_inline = TRUE;
+		}
 	}
 
 #ifdef ENABLE_LLVM
@@ -3521,7 +3548,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
 
-		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
@@ -4254,6 +4280,51 @@ mini_get_underlying_type (MonoType *type)
 	return mini_type_get_underlying_type (type);
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
+static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
+
+// Provide more specific type information about the return value of a special
+// call, so that we can devirtualize future calls on this object.
+MonoClass*
+mini_handle_call_res_devirt (MonoMethod *cmethod)
+{
+	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
+			!strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
+			!strcmp (cmethod->name, "get_Default")) {
+		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
+		MonoClass *inst;
+		MonoGenericContext ctx;
+		ERROR_DECL (error);
+
+		memset (&ctx, 0, sizeof (ctx));
+
+		MonoType *args [ ] = { param_type };
+		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
+		mono_error_assert_ok (error);
+
+		// EqualityComparer<T>.Default returns specific types depending on T
+		// FIXME: Special case more types: byte, string, nullable, enum ?
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_STRING) {
+			MonoClass *gcomparer_inst;
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			args [0] = param_type;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
+			g_assert (gcomparer);
+			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
+			if (is_ok (error))
+				return gcomparer_inst;
+		}
+	}
+
+	return NULL;
+}
+
 void
 mini_jit_init (void)
 {
@@ -4434,9 +4505,11 @@ mini_get_cpu_features (MonoCompile* cfg)
 #if !defined(MONO_CROSS_COMPILE)
 	if (!cfg->compile_aot || cfg->use_current_cpu) {
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
-#if defined(ENABLE_LLVM)
-		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(ENABLE_LLVM) && !(defined(TARGET_ARM64) && defined(TARGET_OSX))
+		// llvm has a nice built-in API to detect features
+		// it is not implemented on some platforms like apple arm64
+		features = mono_llvm_get_cpu_features ();
+#elif defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}
@@ -4452,6 +4525,66 @@ mini_get_cpu_features (MonoCompile* cfg)
 	features |= MONO_CPU_ARM64_NEON;
 #endif
 
+#if defined(TARGET_WASM)
+	// All wasm VMs have this set
+	features |= MONO_CPU_WASM_BASE;
+#endif
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
+}
+
+int
+mini_primitive_type_size (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return 1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return 2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return 4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		return 8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TARGET_SIZEOF_VOID_P == 8 ? 8 : 4;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+/*
+ * mini_get_simd_type_info:
+ *
+ *   Return the element type of a SIMD type. Set NELEMS to the number of elements.
+ */
+MonoTypeEnum
+mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
+{
+	*nelems = 0;
+
+	const char *klass_name = m_class_get_name (klass);
+	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
+		*nelems = 4;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector2")) {
+		*nelems = 2;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
+		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		int size = mono_class_value_size (klass, NULL);
+		*nelems = size / mini_primitive_type_size (etype->type);
+		return etype->type;
+	} else {
+		printf ("%s\n", klass_name);
+		NOT_IMPLEMENTED;
+		return MONO_TYPE_VOID;
+	}
 }

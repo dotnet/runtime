@@ -14,8 +14,10 @@ namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
+    private new TimeSpan TestTimeout => base.TestTimeout * 5;
     internal FirefoxInspectorClient _client;
-    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html"):base(testOutput, driver)
+    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale = "en-US")
+        : base(testOutput, driver, locale)
     {
         if (insp.Client is not FirefoxInspectorClient)
             throw new Exception($"Bug: client should be {nameof(FirefoxInspectorClient)} for use with {nameof(DebuggerTestFirefox)}");
@@ -37,7 +39,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             };
 
         await Ready();
-        await insp.OpenSessionAsync(fn, TestTimeout);
+        await insp.OpenSessionAsync(fn, "", TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)
@@ -179,6 +181,8 @@ public class DebuggerTestFirefox : DebuggerTestBase
                     reason = "other"
                 });
     }
+
+    internal override Task SetJustMyCode(bool enabled) => Task.CompletedTask;
 
     internal override async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)

@@ -22,9 +22,9 @@ namespace System.Globalization
 
         private GregorianCalendarTypes _type;
 
-        private static readonly int[] DaysToMonth365 = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+        internal static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
 
-        private static readonly int[] DaysToMonth366 = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+        internal static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
         private static volatile Calendar? s_defaultInstance;
 
@@ -96,7 +96,7 @@ namespace System.Globalization
         {
             if (year >= 1 && year <= MaxYear && month >= 1 && month <= 12)
             {
-                int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+                ReadOnlySpan<int> days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
                 if (day >= 1 && (day <= days[month] - days[month - 1]))
                 {
                     int y = year - 1;
@@ -157,7 +157,7 @@ namespace System.Globalization
                 y += (i - 11) / 12;
             }
 
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
             int days = (daysArray[m] - daysArray[m - 1]);
 
             if (d > days)
@@ -165,7 +165,7 @@ namespace System.Globalization
                 d = days;
             }
             long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
 
             return new DateTime(ticks);
         }
@@ -278,7 +278,7 @@ namespace System.Globalization
                 return false;
             }
 
-            int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
             return day <= (days[month] - days[month - 1]);
         }
 
@@ -406,7 +406,7 @@ namespace System.Globalization
             return DateTime.TryCreate(year, month, day, hour, minute, second, millisecond, out result);
         }
 
-        private const int DefaultTwoDigitYearMax = 2029;
+        private const int DefaultTwoDigitYearMax = 2049;
 
         public override int TwoDigitYearMax
         {
@@ -435,17 +435,8 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(year, MaxYear);
 
             return base.ToFourDigitYear(year);
         }

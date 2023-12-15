@@ -4,8 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Runtime_1104
+public class Runtime_1104
 {
     static int TestOutOfBoundProxy(Func<int> actualTest)
     {
@@ -45,7 +46,8 @@ class Runtime_1104
         return sum;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -336,14 +337,26 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                 yield return (@".*?", "abc", lineOption, 2, 1, true, "");
 
+                yield return (@"a.*?[b\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[b\n]", "xyza12345c6789", lineOption, 0, 14, false, "");
+
                 yield return (@"a.*?[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
                 yield return (@"a.*?[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
+
+                yield return (@"a.*?[bc\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[bc\n]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a.*?[bc\n]", "xyza12345d6789", lineOption, 0, 14, false, "");
 
                 yield return (@"a.*?[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
                 yield return (@"a.*?[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
                 yield return (@"a.*?[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
+
+                yield return (@"a.*?[bcd\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[bcd\n]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a.*?[bcd\n]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                yield return (@"a.*?[bcd\n]", "xyza12345e6789", lineOption, 0, 14, false, "");
 
                 yield return (@"a.*?[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
@@ -351,17 +364,42 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a.*?[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
                 yield return (@"a.*?[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
 
+                yield return (@"a.*?[bcde\n]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a.*?[bcde\n]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a.*?[bcde\n]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                yield return (@"a.*?[bcde\n]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                yield return (@"a.*?[bcde\n]", "xyza12345f6789", lineOption, 0, 14, false, "");
+
                 yield return (@"a.*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
                 yield return (@"a.*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
                 yield return (@"a.*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
                 yield return (@"a.*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
                 yield return (@"a.*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
                 yield return (@"a.*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
+                yield return (@"a[^b]*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                yield return (@"a[^c]*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                yield return (@"a[^b]*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                yield return (@"a[^c]*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                yield return (@"a[^b]*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
+                yield return (@"a[^c]*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
+                yield return ("a[^b]*?[cdefgz]", "xyza123bc4", lineOption, 0, 10, false, "");
+                yield return ("a[^b]*?[bdefgz]", "xyza123bc4", lineOption, 0, 10, true, "a123b");
             }
 
             // Nested loops
             yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
             yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
+
+            // Sequences of loops
+            yield return (@"(ver\.? |[_ ]+)?\d+(\.\d+){2,3}$", " Ver 2.0", RegexOptions.IgnoreCase, 0, 8, false, "");
+            yield return (@"(?:|a)?(?:\b\d){2,}", " a 0", RegexOptions.None, 0, 4, false, "");
+            yield return (@"(?:|a)?(\d){2,}", " a00a", RegexOptions.None, 0, 5, true, "a00");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", " 12345678901234567", RegexOptions.None, 0, 18, false, "");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", " 123456789012345678", RegexOptions.None, 0, 19, true, " 123456789012345678");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", "  123456789012345678", RegexOptions.None, 0, 20, true, "  123456789012345678");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", "   123456789012345678", RegexOptions.None, 0, 21, false, "");
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
@@ -879,6 +917,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString());
             }
 
+            // [:XX:] inside a range has no special treatment; the [:XX: is literal, the ] closes the range
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return (@"[[::]]", "x", RegexOptions.None, 0, 1, false, "");
+                yield return (@"[[:a:]]", "a]", RegexOptions.None, 0, 2, true, "a]");
+                yield return (@"[c[:ab:]", "c", RegexOptions.None, 0, 1, true, "c");
+                yield return (@"[c[:ab:]{3}d]", "abcd]", RegexOptions.None, 0, 5, true, "abcd]");
+            }
+
             // Long inputs
             string longCharacterRange = string.Concat(Enumerable.Range(1, 0x2000).Select(c => (char)c));
             foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
@@ -920,6 +967,18 @@ namespace System.Text.RegularExpressions.Tests
                 //mixed lazy and eager counting
                 yield return ("z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa");
             }
+
+            yield return (@"a{2}|a{3}", "aaa", RegexOptions.None, 0, 3, true, "aa");
+            yield return (@"a{3}|a{2}", "aaa", RegexOptions.None, 0, 3, true, "aaa");
+
+            // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
+            yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
+
+            // Tests for bugs in NonBacktracking, which didn't properly handle some combinations of loops and anchors
+            yield return (@"(a|\b){2}", "ac", RegexOptions.None, 0, 2, true, "a");
+            yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -1051,7 +1110,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [OuterLoop("Takes several seconds")]
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
@@ -1079,6 +1138,11 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
+                if (!RemoteExecutor.IsSupported)
+                {
+                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                }
+
                 RemoteExecutor.Invoke(func, engine.ToString()).Dispose();
             }
             else
@@ -1105,7 +1169,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async void Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -1188,7 +1252,7 @@ namespace System.Text.RegularExpressions.Tests
                         // Loop around a single-char loop
                         yield return new object[] { engine, @$"(a+{lazyInner})+{lazyOuter}$", $"{a50}b" };
                         yield return new object[] { engine, @$"([^a]+{lazyInner})+{lazyOuter}$", $"{b50}a" };
-                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a50}!" };
+                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a100}!" };
 
                         // Loop around a loop (w/ and w/out inner capture)
                         yield return new object[] { engine, @$"((?:aa)+{lazyInner})+{lazyOuter}$", $"{a100}b" };
@@ -1215,28 +1279,58 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", RuntimeTestModes.JitMinOpts)]
         public void Match_InstanceMethods_DefaultTimeout_Throws(RegexEngine engine)
         {
-            if (RegexHelpers.IsNonBacktracking(engine))
+            if (RegexHelpers.IsNonBacktracking(engine) ||
+                engine == RegexEngine.SourceGenerated)
             {
-                // Test relies on backtracking triggering timeout checks
+                // Disabled for non-backtracking: the test relies on backtracking triggering timeout checks due to runaway backtracking.
+                // Disabled for source-generated: the default timeout can't be set before invoking Roslyn because Roslyn itself
+                // uses regexes that would then be subject to the timeout, and the default can't be set after invoking Roslyn because
+                // the regexes used by Roslyn will have baked the read default value in such that changes to it via SetData won't be
+                // observed. It's covered by the Match_InstanceMethods_DefaultTimeout_SourceGenerated_Throws test below.
                 return;
             }
 
             RemoteExecutor.Invoke(async engineString =>
             {
+                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+
                 RegexEngine engine = (RegexEngine)int.Parse(engineString, CultureInfo.InvariantCulture);
 
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
+                Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
                 string input = new string('a', 50) + "@a.a";
 
-                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
-
-                Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.IsMatch(input));
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Matches(input).Count);
 
             }, ((int)engine).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
+
+#if NET7_0_OR_GREATER
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Match_InstanceMethods_DefaultTimeout_SourceGenerated_Throws()
+        {
+            // Version of Match_InstanceMethods_DefaultTimeout_Throws that uses the source generator at
+            // compile time rather than at run time.  As such, this will be using a version of the source
+            // generator that's not live with the rest of the src but rather is part of the SDK being
+            // used to build the test.
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
+
+                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+                string input = new string('a', 50) + "@a.a";
+
+                Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => r.IsMatch(input));
+                Assert.Throws<RegexMatchTimeoutException>(() => r.Matches(input).Count);
+            }).Dispose();
+        }
+
+        [GeneratedRegex(@"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$")]
+        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+#endif
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
@@ -2037,7 +2131,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over a minute")]
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
@@ -2071,6 +2165,11 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
+                if (!RemoteExecutor.IsSupported)
+                {
+                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                }
+
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
             else
@@ -2083,13 +2182,17 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                if (engine != RegexEngine.NonBacktracking) // Hangs, or effectively hangs. https://github.com/dotnet/runtime/issues/84188
+                {
+                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                }
+
                 yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
                 yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
             }
         }
 
-        [OuterLoop("Can take over 10 seconds")]
+        [OuterLoop("Can take a few seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)
@@ -2124,6 +2227,11 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
+                if (!RemoteExecutor.IsSupported)
+                {
+                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                }
+
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
             else

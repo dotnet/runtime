@@ -140,6 +140,64 @@ do_backtrace (void)
 }
 
 void
+do_backtrace_with_context(void *context)
+{
+  unw_word_t ip;
+  int ret = -UNW_ENOINFO;
+  int depth = 0;
+  int i, m;
+
+  if (verbose)
+    printf ("\tnormal trace:\n");
+
+  if (unw_init_local2 (&cursor, (unw_context_t*)context, UNW_INIT_SIGNAL_FRAME) < 0)
+    panic ("unw_init_local2 failed!\n");
+
+  do
+    {
+      unw_get_reg (&cursor, UNW_REG_IP, &ip);
+      addresses[0][depth] = (void *) ip;
+    }
+  while ((ret = unw_step (&cursor)) > 0 && ++depth < 128);
+
+  if (ret < 0)
+    {
+      unw_get_reg (&cursor, UNW_REG_IP, &ip);
+      printf ("FAILURE: unw_step() returned %d for ip=%lx\n", ret, (long) ip);
+      ++num_errors;
+    }
+
+  if (verbose)
+    for (i = 0; i < depth; ++i)
+      printf ("\t #%-3d ip=%p\n", i, addresses[0][i]);
+
+  if (verbose)
+    printf ("\n\tvia unw_backtrace2():\n");
+
+  m = unw_backtrace2 (addresses[1], 128, (unw_context_t*)context, UNW_INIT_SIGNAL_FRAME);
+
+  if (verbose)
+    for (i = 0; i < m; ++i)
+	printf ("\t #%-3d ip=%p\n", i, addresses[1][i]);
+
+  if (m != depth+1)
+    {
+      printf ("FAILURE: unw_step() loop and unw_backtrace2() depths differ: %d vs. %d\n", depth, m);
+      ++num_errors;
+    }
+
+  if (m == depth + 1)
+    for (i = 0; i < depth; ++i)
+      /* Allow one in difference in comparison, trace returns adjusted addresses. */
+      if (labs((unw_word_t) addresses[0][i] - (unw_word_t) addresses[1][i]) > 1)
+	{
+          printf ("FAILURE: unw_step() loop and uwn_backtrace2() addresses differ at %d: %p vs. %p\n",
+                  i, addresses[0][i], addresses[1][i]);
+          ++num_errors;
+	}
+}
+
+void
 foo (long val UNUSED)
 {
   do_backtrace ();
@@ -222,13 +280,16 @@ sighandler (int signal, void *siginfo UNUSED, void *context)
       printf ("\n");
     }
   do_backtrace();
+  do_backtrace_with_context(context);
 }
 
 int
 main (int argc, char **argv UNUSED)
 {
   struct sigaction act;
+#ifdef HAVE_SIGALTSTACK
   stack_t stk;
+#endif /* HAVE_SIGALTSTACK */
 
   verbose = (argc > 1);
 
@@ -247,6 +308,7 @@ main (int argc, char **argv UNUSED)
     printf ("\nBacktrace across signal handler:\n");
   kill (getpid (), SIGTERM);
 
+#ifdef HAVE_SIGALTSTACK
   if (verbose)
     printf ("\nBacktrace across signal handler on alternate stack:\n");
   stk.ss_sp = malloc (SIG_STACK_SIZE);
@@ -263,6 +325,7 @@ main (int argc, char **argv UNUSED)
   if (sigaction (SIGTERM, &act, NULL) < 0)
     panic ("sigaction: %s\n", strerror (errno));
   kill (getpid (), SIGTERM);
+#endif /* HAVE_SIGALTSTACK */
 
   if (num_errors > 0)
     {
@@ -274,9 +337,11 @@ main (int argc, char **argv UNUSED)
     printf ("SUCCESS.\n");
 
   signal (SIGTERM, SIG_DFL);
+#ifdef HAVE_SIGALTSTACK
   stk.ss_flags = SS_DISABLE;
   sigaltstack (&stk, NULL);
   free (stk.ss_sp);
+#endif /* HAVE_SIGALTSTACK */
 
   return 0;
 }

@@ -1,0 +1,185 @@
+
+# This pipeline includes the Native AOT tests that we don't have resources to
+# run on every PR but that we want to still have test coverage, we run this
+# pipeline on a schedule and also developers can run it via /azp run command on
+# PRs. This pipeline permits us to have the main runtime pipeline run the same
+# platforms in PRs and Scheduled builds.
+
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+schedules:
+  - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
+    displayName: Nativeaot-outerloop main schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      #
+      # CoreCLR NativeAOT release build and libraries tests
+      # Only when CoreCLR or library is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          - windows_arm64
+          - osx_x64
+          - osx_arm64
+          - linux_x64
+          - linux_arm64
+          - linux_musl_x64
+          jobParameters:
+            testGroup: innerloop
+            isSingleFile: true
+            nameSuffix: NativeAOT_Libs
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
+            timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+
+      #
+      # CoreCLR NativeAOT release build (checked runtime) and libraries tests
+      # Only when CoreCLR or library is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          - linux_arm64
+          jobParameters:
+            testGroup: innerloop
+            isSingleFile: true
+            nameSuffix: NativeAOT_Checked_Libs
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
+            timeoutInMinutes: 360
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
+
+      #
+      # CoreCLR NativeAOT release build (checked runtime) - SizeOpt and libraries tests
+      # Only when CoreCLR or library is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          - linux_x64
+          jobParameters:
+            testGroup: innerloop
+            isSingleFile: true
+            nameSuffix: NativeAOT_Checked_Libs_SizeOpt
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false
+            timeoutInMinutes: 240
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
+
+      #
+      # CoreCLR NativeAOT release build (checked runtime) - SpeedOpt and libraries tests
+      # Only when CoreCLR or library is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          - linux_x64
+          jobParameters:
+            testGroup: innerloop
+            isSingleFile: true
+            nameSuffix: NativeAOT_Checked_Libs_SpeedOpt
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false
+            timeoutInMinutes: 240
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
+
+      #
+      # CoreCLR NativeAOT checked build and Pri0 tests
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
+          platforms:
+          - windows_x64
+          - linux_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            timeoutInMinutes: 240
+            nameSuffix: NativeAOT_Pri0
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
+                  liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_Pri0_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release

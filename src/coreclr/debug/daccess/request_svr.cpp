@@ -45,7 +45,9 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->used = (CLRDATA_ADDRESS)(ULONG_PTR) pHeapSegment->used;
     pSegment->mem = (CLRDATA_ADDRESS)(ULONG_PTR) (pHeapSegment->mem);
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
+    pSegment->flags = pHeapSegment->flags;
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
+    pSegment->background_allocated = (CLRDATA_ADDRESS)(ULONG_PTR)pHeapSegment->background_allocated;
 
     TADDR heapAddress = TO_TADDR(pSegment->gc_heap);
     dac_gc_heap heap = LoadGcHeapData(heapAddress);
@@ -133,18 +135,28 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
 
     detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
     detailsData->highest_address = PTR_CDADDR(g_highest_address);
-    detailsData->current_c_gc_state = c_gc_state_free;
-    if (g_gcDacGlobals->current_c_gc_state != NULL)
+    if (IsBackgroundGCEnabled())
     {
         detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
+        detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
+        detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
+        detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)pHeap->background_saved_lowest_address;
+        detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;
     }
+    else
+    {
+        detailsData->current_c_gc_state = 0;
+        detailsData->mark_array = -1;
+        detailsData->next_sweep_obj = 0;
+        detailsData->background_saved_lowest_address = 0;
+        detailsData->background_saved_highest_address = 0;
+    }
+
     // now get information specific to this heap (server mode gives us several heaps; we're getting
     // information about only one of them.
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)pHeap->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->ephemeral_heap_segment);
     detailsData->card_table = (CLRDATA_ADDRESS)pHeap->card_table;
-    detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
-    detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
     if (IsRegionGCEnabled())
     {
         // with regions, we don't have these variables anymore
@@ -154,11 +166,17 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     }
     else
     {
-        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+        if (IsBackgroundGCEnabled())
+        {
+            detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
+            detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+        }
+        else
+        {
+            detailsData->saved_sweep_ephemeral_seg = 0;
+            detailsData->saved_sweep_ephemeral_start = 0;
+        }
     }
-    detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)pHeap->background_saved_lowest_address;
-    detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;
 
     // get bounds for the different generations
     for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
@@ -359,7 +377,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
             seg = gen2.start_segment;
             for (; seg && (j < count); ++j)
             {
-                pHeaps[i].Segments[j].Generation = 2;
+                pHeaps[i].Segments[j].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;;
                 pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
                 pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -368,7 +386,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
             seg = gen1.start_segment;
             for (; seg && (j < count); ++j)
             {
-                pHeaps[i].Segments[j].Generation = 1;
+                pHeaps[i].Segments[j].Generation = CorDebug_Gen1;
                 pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
                 pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -382,12 +400,12 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)pHeap->alloc_allocated;
                     pHeaps[i].EphemeralSegment = j;
-                    pHeaps[i].Segments[j].Generation = 0;
+                    pHeaps[i].Segments[j].Generation = CorDebug_Gen0;
                 }
                 else
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
-                    pHeaps[i].Segments[j].Generation = 2;
+                    pHeaps[i].Segments[j].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;;
                 }
 
                 seg = seg->next;
@@ -403,12 +421,12 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)pHeap->alloc_allocated;
                     pHeaps[i].EphemeralSegment = j;
-                    pHeaps[i].Segments[j].Generation = 1;
+                    pHeaps[i].Segments[j].Generation = CorDebug_Gen1;
                 }
                 else
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
-                    pHeaps[i].Segments[j].Generation = 2;
+                    pHeaps[i].Segments[j].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;;
                 }
 
                 seg = seg->next;
@@ -419,7 +437,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
         seg = loh.start_segment;
         for (; seg && (j < count); ++j)
         {
-            pHeaps[i].Segments[j].Generation = 3;
+            pHeaps[i].Segments[j].Generation = CorDebug_LOH;
             pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -430,7 +448,7 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
         seg = poh.start_segment;
         for (; seg && (j < count); ++j)
         {
-            pHeaps[i].Segments[j].Generation = 4;
+            pHeaps[i].Segments[j].Generation = CorDebug_POH;
             pHeaps[i].Segments[j].Start = (CORDB_ADDRESS)seg->mem;
             pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
 
@@ -439,6 +457,28 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
         _ASSERTE(count == j);
     }
     return S_OK;
+}
+
+void DacFreeRegionEnumerator::AddServerRegions()
+{
+    // Cap the number of free regions we will walk at a sensible number.  This is to protect against
+    // memory corruption, un-initialized data, or just a bug.
+    int count_free_region_kinds = g_gcDacGlobals->count_free_region_kinds;
+    count_free_region_kinds = min(count_free_region_kinds, 16);
+
+    for (int i = 0; i < GCHeapCount(); i++)
+    {
+        TADDR heapAddress = (TADDR)HeapTableIndex(g_gcDacGlobals->g_heaps, i);
+        if (heapAddress == 0)
+            continue;
+        
+        dac_gc_heap heap = LoadGcHeapData(heapAddress);
+        for (int i = 0; i < count_free_region_kinds; i++)
+            AddSegmentList(heap.free_regions[i].head_free_region, FreeRegionKind::FreeRegion, i);
+        
+        AddSegmentList(heap.freeable_soh_segment, FreeRegionKind::FreeSohSegment, i);
+        AddSegmentList(heap.freeable_uoh_segment, FreeRegionKind::FreeUohSegment, i);
+    }
 }
 
 #endif // defined(FEATURE_SVR_GC)

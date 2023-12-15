@@ -173,4 +173,10 @@ public:
 #include "etmdummy.h"
 #define ETW_EVENT_ENABLED(e,f) false
 
+class ThreadStressLog
+{
+public:
+    #include "../../inc/gcmsg.inl"
+};
+
 #endif // __GCENV_H__

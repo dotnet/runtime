@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Collections;
+using System.ComponentModel;
 using System.Globalization;
 
 namespace System.DirectoryServices.Design
@@ -38,7 +38,7 @@ namespace System.DirectoryServices.Design
                     {
                         newEntry = new DirectoryEntry(text);
                         s_componentsCreated[text] = newEntry;
-                        context?.Container.Add(newEntry);
+                        context?.Container?.Add(newEntry);
 
                         return newEntry;
                     }

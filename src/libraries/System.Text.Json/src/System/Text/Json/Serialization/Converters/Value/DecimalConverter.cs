@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class DecimalConverter : JsonConverter<decimal>
+    internal sealed class DecimalConverter : JsonPrimitiveConverter<decimal>
     {
         public DecimalConverter()
         {
@@ -22,6 +24,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override decimal ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
             return reader.GetDecimalWithQuotes();
         }
 

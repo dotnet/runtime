@@ -31,7 +31,6 @@
 
 #include "appdomainnative.hpp"
 #include "customattribute.h"
-#include "winnls.h"
 
 #include "caparser.h"
 #include "../md/compiler/custattr.h"
@@ -53,6 +52,7 @@
 //#define STRICT_JITLOCK_ENTRY_LEAK_DETECTION
 //#define STRICT_CLSINITLOCK_ENTRY_LEAK_DETECTION
 
+LPCWSTR s_wszDiagnosticStartupHookPaths = nullptr;
 
 #ifndef DACCESS_COMPILE
 
@@ -193,7 +193,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         // manifest modules of dynamic assemblies are always transient
         m_pModule = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-        m_pModule = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
+        m_pModule = Module::Create(this, pPEAssembly, pamTracker);
 
     InterlockedIncrement((LONG*)&g_cAssemblies);
 
@@ -223,7 +223,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         FAULT_FORBID();
         //Cannot fail after this point.
 
-        PublishModuleIntoAssembly(m_pModule);
+        InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
     }
@@ -397,14 +397,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     if (pAssemblyNameParts->_pName == NULL || pAssemblyNameParts->_pName[0] == '\0')
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
-    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0])
-        || wcschr(pAssemblyNameParts->_pName, '\\') != NULL
-        || wcschr(pAssemblyNameParts->_pName, ':') != NULL
-        || wcschr(pAssemblyNameParts->_pName, '/') != NULL)
-    {
-        COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
-    }
-
     // Set up the assembly manifest metadata
     // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
     // to store temporary runtime assembly information. This is to preserve the invariant that
@@ -466,7 +458,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
             AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
-            pCollectibleLoaderAllocator->SetCollectible();
             pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
@@ -637,34 +628,6 @@ void Assembly::SetParent(BaseDomain* pParent)
 }
 
 #endif // !DACCCESS_COMPILE
-
-mdFile Assembly::GetManifestFileToken(LPCSTR name)
-{
-
-    return mdFileNil;
-}
-
-mdFile Assembly::GetManifestFileToken(IMDInternalImport *pImport, mdFile kFile)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    LPCSTR name;
-    if ((TypeFromToken(kFile) != mdtFile) ||
-        !pImport->IsValidToken(kFile))
-    {
-        BAD_FORMAT_NOTHROW_ASSERT(!"Invalid File token");
-        return mdTokenNil;
-    }
-
-    if (FAILED(pImport->GetFileProps(kFile, &name, NULL, NULL, NULL)))
-    {
-        BAD_FORMAT_NOTHROW_ASSERT(!"Invalid File token");
-        return mdTokenNil;
-    }
-
-    return GetManifestFileToken(name);
-}
 
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                                            Loader::LoadFlag loadFlag,
@@ -989,48 +952,9 @@ Module * Assembly::FindModuleByTypeRef(
 
 #ifndef DACCESS_COMPILE
 
-Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
-{
-    CONTRACT(Module *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    SString moduleName(SString::Utf8, pszModuleName);
-    moduleName.LowerCase();
-
-    pszModuleName = moduleName.GetUTF8();
-
-    mdFile kFile = GetManifestFileToken(pszModuleName);
-    if (kFile == mdTokenNil)
-        ThrowHR(COR_E_UNAUTHORIZEDACCESS);
-
-    if (this == SystemDomain::SystemAssembly())
-        RETURN m_pModule->GetModuleIfLoaded(kFile);
-    else
-        RETURN m_pModule->LoadModule(kFile)->GetModule();
-}
-
 void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
 {
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    // Prejitted assemblies are expected to have their table prebuilt.
-    // If not, we do it here at load time (as if we would jit the assembly).
-
-    if (m_pModule->IsPersistedObject(m_pModule->m_pAvailableClasses))
-        RETURN;
+    STANDARD_VM_CONTRACT;
 
     mdToken mdExportedType;
 
@@ -1044,24 +968,13 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
         m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
                                                 mdExportedType,
                                                 pamTracker);
-
-    RETURN;
 }
 
-//<TODO>@TODO: if module is not signed it needs to acquire the
-//permissions from the assembly.</TODO>
 void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(module));
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    if (module->m_pAvailableClasses != NULL && !module->IsPersistedObject(module->m_pAvailableClasses))
+    if (module->m_pAvailableClasses != NULL)
     {
         // ! We intentionally do not take the AvailableClass lock here. It creates problems at
         // startup and we haven't yet published the module yet so nobody should be searching it.
@@ -1078,28 +991,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
          module->GetPEAssembly()->GetSimpleName(),
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
-
-    m_pModule->EnsureFileCanBeStored(module->GetModuleRef());
 }
-
-// This is the final step of publishing a Module into an Assembly. This step cannot fail.
-void Assembly::PublishModuleIntoAssembly(Module *module)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    GetModule()->EnsuredStoreFile(module->GetModuleRef(), module);
-    InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
-}
-
-
-
-
 
 //*****************************************************************************
 // Set up the list of names of any friend assemblies
@@ -1223,7 +1115,47 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
 
+void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
+{
+    LPCWSTR wszDiagnosticStartupHookPathsLocal = s_wszDiagnosticStartupHookPaths;
 
+    size_t cchPath = u16_strlen(wszPath);
+    size_t cchDiagnosticStartupHookPathsNew = cchPath;
+    size_t cchDiagnosticStartupHookPathsLocal = 0;
+    if (nullptr != wszDiagnosticStartupHookPathsLocal)
+    {
+        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal);
+        // Add 1 for the path separator
+        cchDiagnosticStartupHookPathsNew += cchDiagnosticStartupHookPathsLocal + 1;
+    }
+
+    size_t currentSize = cchDiagnosticStartupHookPathsNew + 1;
+    LPWSTR wszDiagnosticStartupHookPathsNew = new WCHAR[currentSize];
+    LPWSTR wszCurrent = wszDiagnosticStartupHookPathsNew;
+
+    u16_strcpy_s(wszCurrent, currentSize, wszPath);
+    wszCurrent += cchPath;
+    currentSize -= cchPath;
+
+    if (cchDiagnosticStartupHookPathsLocal > 0)
+    {
+        u16_strcpy_s(wszCurrent, currentSize, PATH_SEPARATOR_STR_W);
+        wszCurrent += 1;
+        currentSize -= 1;
+
+        u16_strcpy_s(wszCurrent, currentSize, wszDiagnosticStartupHookPathsLocal);
+        wszCurrent += cchDiagnosticStartupHookPathsLocal;
+        currentSize -= cchDiagnosticStartupHookPathsLocal;
+    }
+
+    // Expect null terminating character
+    _ASSERTE(currentSize == 1);
+    _ASSERTE(wszCurrent[0] == W('\0'));
+
+    s_wszDiagnosticStartupHookPaths = wszDiagnosticStartupHookPathsNew;
+
+    delete [] wszDiagnosticStartupHookPathsLocal;
+}
 
 enum CorEntryPointType
 {
@@ -1477,7 +1409,7 @@ static void RunMainPost()
     }
 }
 
-static void RunStartupHooks()
+void RunManagedStartup()
 {
     CONTRACTL
     {
@@ -1488,8 +1420,12 @@ static void RunStartupHooks()
     }
     CONTRACTL_END;
 
-    MethodDescCallSite processStartupHooks(METHOD__STARTUP_HOOK_PROVIDER__PROCESS_STARTUP_HOOKS);
-    processStartupHooks.Call(NULL);
+    MethodDescCallSite managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
+
+    ARG_SLOT args[1];
+    args[0] = PtrToArgSlot(s_wszDiagnosticStartupHookPaths);
+
+    managedStartup.Call(args);
 }
 
 INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
@@ -1510,8 +1446,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
     HRESULT hr = S_OK;
     INT32   iRetVal = 0;
-
-    BEGIN_ENTRYPOINT_THROWS;
 
     Thread *pThread = GetThread();
     MethodDesc *pMeth;
@@ -1557,7 +1491,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             // Main thread wasn't started by the runtime.
             Thread::InitializationForManagedThreadInNative(pThread);
 
-            RunStartupHooks();
+            RunManagedStartup();
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
@@ -1581,7 +1515,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
     IfFailThrow(hr);
 
-    END_ENTRYPOINT_THROWS;
     return iRetVal;
 }
 
@@ -1693,11 +1626,14 @@ OBJECTREF Assembly::GetExposedObject()
 BOOL Assembly::FileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
-    return IsHRESULTForExceptionKind(hr, kFileNotFoundException) ||
+    if (IsHRESULTForExceptionKind(hr, kFileNotFoundException))
+        return TRUE;
+
 #ifdef FEATURE_COMINTEROP
-           (hr == RO_E_METADATA_NAME_NOT_FOUND) ||
+    return hr == RO_E_METADATA_NAME_NOT_FOUND;
+#else
+    return FALSE;
 #endif //FEATURE_COMINTEROP
-           (hr == CLR_E_BIND_TYPE_NOT_FOUND);
 }
 
 
@@ -1806,7 +1742,7 @@ BOOL Assembly::IsInstrumentedHelper()
     do
     {
         _ASSERTE(pCur[0] != W('\0'));
-        const WCHAR * pNextSpace = wcschr(pCur, W(' '));
+        const WCHAR * pNextSpace = u16_strchr(pCur, W(' '));
         _ASSERTE(pNextSpace == NULL || pNextSpace[0] == W(' '));
 
         if (pCur != pNextSpace)

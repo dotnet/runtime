@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Logging.Testing
             // Buffer the message into a single string in order to avoid shearing the message when running across multiple threads.
             var messageBuilder = new StringBuilder();
 
-            var timestamp = _logStart.HasValue ? $"{(DateTimeOffset.UtcNow - _logStart.Value).TotalSeconds.ToString("N3")}s" : DateTimeOffset.UtcNow.ToString("s");
+            var timestamp = _logStart.HasValue ? $"{(DateTimeOffset.UtcNow - _logStart.Value).TotalSeconds:N3}s" : DateTimeOffset.UtcNow.ToString("s");
 
             var firstLinePrefix = $"| [{timestamp}] {_category} {logLevel}: ";
             var lines = formatter(state, exception).Split(NewLineChars, StringSplitOptions.RemoveEmptyEntries);

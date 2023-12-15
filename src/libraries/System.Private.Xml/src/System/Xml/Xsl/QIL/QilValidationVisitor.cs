@@ -40,9 +40,9 @@ namespace System.Xml.Xsl.Qil
         private QilValidationVisitor() { }
 
 #if DEBUG
-        private Hashtable allNodes = new ObjectHashtable();
-        private Hashtable parents = new ObjectHashtable();
-        private Hashtable scope = new ObjectHashtable();
+        private readonly ObjectHashtable allNodes = new ObjectHashtable();
+        private readonly ObjectHashtable parents = new ObjectHashtable();
+        private readonly ObjectHashtable scope = new ObjectHashtable();
 
 
         //-----------------------------------------------
@@ -175,7 +175,7 @@ namespace System.Xml.Xsl.Qil
             message = SR.Format(SR.Qil_Validation, message);
 
 #if QIL_TRACE_NODE_CREATION
-            message += " ["+ n.NodeId + " (" + n.NodeType.ToString("G") + ")]";
+            message = "{message} [{n.NodeId} ({n.NodeType:G})]";
 #endif
             if (n.Annotation is string s)
             {

@@ -9,7 +9,7 @@ namespace System.Speech.Internal.SrgsCompiler
     {
         #region Constructors
 
-        internal Item(Backend backend, Rule rule, int minRepeat, int maxRepeat, float repeatProbability, float weigth)
+        internal Item(Backend backend, Rule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
             : base(backend, rule)
         {
             // Validated by the caller

@@ -27,16 +27,12 @@ set(GC_SOURCES
   handletablecache.cpp)
 
 if(CLR_CMAKE_HOST_UNIX)
+  add_subdirectory(unix)
   include(unix/configure.cmake)
-  set (GC_SOURCES
-    ${GC_SOURCES}
-    unix/gcenv.unix.cpp
-    unix/events.cpp
-    unix/cgroup.cpp)
 else()
+  add_subdirectory(windows)
   set (GC_SOURCES
     ${GC_SOURCES}
-    windows/gcenv.windows.cpp
     windows/Native.rc)
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -100,33 +96,40 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
     advapi32.lib)
-else()
-  set (GC_LINK_LIBRARIES)
 endif(CLR_CMAKE_HOST_WIN32)
+
+set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
 
 list(APPEND GC_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
+# clrgcexp is build with standalone+regions
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  add_library_clr(clrgcexp SHARED ${GC_SOURCES})
+  add_dependencies(clrgcexp eventing_headers)
+  target_link_libraries(clrgcexp PRIVATE ${GC_LINK_LIBRARIES})
+  target_compile_definitions(clrgcexp PRIVATE -DUSE_REGIONS)
+  install_clr(TARGETS clrgcexp DESTINATIONS . COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+# clrgc is build with standalone+segments
 add_library_clr(clrgc SHARED ${GC_SOURCES})
 add_dependencies(clrgc eventing_headers)
-target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
+target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
-if(CLR_CMAKE_HOST_UNIX)
-  # dprintf causes many warnings (https://github.com/dotnet/runtime/issues/8737)
-  add_compile_options(-Wno-format)
-endif(CLR_CMAKE_HOST_UNIX)
-
 add_definitions(-DBUILD_AS_STANDALONE)
+add_definitions(-DFEATURE_CONSERVATIVE_GC)
+
 add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
 add_definitions(-DVERIFY_HEAP)
-if(CLR_CMAKE_HOST_OSX)
-  # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
+if(CLR_CMAKE_HOST_APPLE)
+  # The implementation of GCToOSInterface on Apple platforms makes use of non-POSIX
   # pthreads APIs, which by default are not included in the pthreads header
   # unless we define this macro.
   add_definitions(-D_DARWIN_C_SOURCE)
-endif(CLR_CMAKE_HOST_OSX)
+endif(CLR_CMAKE_HOST_APPLE)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)

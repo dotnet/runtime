@@ -10,7 +10,7 @@
 
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-publib.h>
 
 #define HAZARD_POINTER_COUNT 3

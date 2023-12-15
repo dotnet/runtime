@@ -164,6 +164,9 @@ namespace Microsoft.Interop.JavaScript
                     }
                     return new JSFunctionTypeInfo(false, signatureTypes);
                 default:
+                    // JS Interop generator does not support the marshalling of structs
+                    // In case structs were to be allowed for marshalling in the future,
+                    // disallow marshalling of structs with the InlineArrayAttribute
                     return new JSInvalidTypeInfo();
             }
         }

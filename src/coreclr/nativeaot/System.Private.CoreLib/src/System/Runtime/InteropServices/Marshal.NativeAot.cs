@@ -15,12 +15,9 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-        internal static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        internal static int SizeOfHelper(RuntimeType t, bool throwIfNotMarshalable)
         {
             Debug.Assert(throwIfNotMarshalable);
-
-            if (t is not RuntimeType)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             if (t.IsPointer /* or IsFunctionPointer */)
                 return IntPtr.Size;
@@ -34,8 +31,7 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
-            if (t == null)
-                throw new ArgumentNullException(nameof(t));
+            ArgumentNullException.ThrowIfNull(t);
 
             if (string.IsNullOrEmpty(fieldName))
                 throw new ArgumentNullException(nameof(fieldName));
@@ -55,12 +51,6 @@ namespace System.Runtime.InteropServices
 
         private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
         {
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-
-            if (structure == null)
-                throw new ArgumentNullException(nameof(structure));
-
             if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
             {
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
@@ -109,22 +99,19 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-
-            if (structuretype == null)
-                throw new ArgumentNullException("structureType");
+            ArgumentNullException.ThrowIfNull(ptr);
+            ArgumentNullException.ThrowIfNull(structuretype, nameof(structuretype));
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
-            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "structure");
+            if (structureTypeHandle.IsGenericType())
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
             if (structureTypeHandle.IsEnum() ||
                 structureTypeHandle.IsInterface() ||
                 InteropExtensions.AreTypesAssignable(typeof(Delegate).TypeHandle, structureTypeHandle))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
+                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
 
             if (structureTypeHandle.IsBlittable())
@@ -135,7 +122,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
             if (hasInvalidLayout)
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
+                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
             if (destroyStructureStub != IntPtr.Zero)
             {
@@ -147,20 +134,12 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld)
         {
-            if (structure == null)
-                throw new ArgumentNullException(nameof(structure));
-
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-
-            if (fDeleteOld)
-            {
-                DestroyStructure(ptr, structure.GetType());
-            }
+            ArgumentNullException.ThrowIfNull(structure);
+            ArgumentNullException.ThrowIfNull(ptr);
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
-            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
+            if (structureTypeHandle.IsGenericType())
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
             }
@@ -176,6 +155,11 @@ namespace System.Runtime.InteropServices
             else
             {
                 marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
+            }
+
+            if (fDeleteOld)
+            {
+                DestroyStructure(ptr, structure.GetType());
             }
 
             if (marshalStub != IntPtr.Zero)
@@ -197,12 +181,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static void PrelinkCore(MethodInfo m)
-        {
-            // This method is effectively a no-op for NativeAOT, everything pre-generated.
-        }
+        // This method is effectively a no-op for NativeAOT, everything pre-generated.
+        static partial void PrelinkCore(MethodInfo m);
 
-        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
         {
             return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, t.TypeHandle);
         }
@@ -224,7 +206,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object o)
         {
-            return (o == null) || !o.GetEETypePtr().HasPointers;
+            return (o == null) || !o.GetEETypePtr().ContainsGCPointers;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -307,8 +289,9 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
-                throw new ArgumentOutOfRangeException(nameof(ofs));
+#pragma warning disable 8500 // sizeof of managed types
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
+#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);
@@ -386,8 +369,9 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
-                throw new ArgumentOutOfRangeException(nameof(ofs));
+#pragma warning disable 8500 // sizeof of managed types
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
+#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);

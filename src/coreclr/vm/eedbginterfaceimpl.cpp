@@ -630,7 +630,6 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
     return pFD->GetNativeCode();
 }
 
@@ -1089,7 +1088,7 @@ void EEDbgInterfaceImpl::MarkDebuggerUnattached(void)
 }
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 // Apply an EnC edit to the specified module
 HRESULT EEDbgInterfaceImpl::EnCApplyChanges(EditAndContinueModule *pModule,
@@ -1132,7 +1131,7 @@ void EEDbgInterfaceImpl::ResumeInUpdatedFunction(EditAndContinueModule *pModule,
                                      pContext);
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 bool EEDbgInterfaceImpl::CrawlFrameIsGcSafe(CrawlFrame *pCF)
 {
@@ -1230,7 +1229,7 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
         FAULT_NOT_FATAL();
         SString buffer;
-        StubManager::DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+        StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
     else
     {
@@ -1276,7 +1275,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         // Should never be on helper thread
         FAULT_NOT_FATAL();
         SString buffer;
-        StubManager::DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+        StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
     else
     {
@@ -1572,5 +1571,4 @@ BOOL EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger(CONTEXT* context)
     return AdjustContextForJITHelpers(nullptr, context);
 }
 #endif
-
 #endif // DEBUGGING_SUPPORTED

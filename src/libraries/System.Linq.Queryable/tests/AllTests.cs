@@ -32,7 +32,7 @@ namespace System.Linq.Tests
         [Fact]
         public void All()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().All(n => n > 1);
+            var val = new[] { 0, 2, 1 }.AsQueryable().All(n => n > 1);
             Assert.False(val);
         }
     }

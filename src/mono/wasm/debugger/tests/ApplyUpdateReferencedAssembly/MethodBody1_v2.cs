@@ -38,12 +38,12 @@ namespace ApplyUpdateReferencedAssembly
         public static void StaticMethod4 () {
         }
     }
-
-
-
-
-
-
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
     public class MethodBody5 {
         public static void StaticMethod1 () {
             Console.WriteLine("beforeoriginal");
@@ -101,6 +101,41 @@ namespace ApplyUpdateReferencedAssembly
             attr1 = 15;
             attr2 = "20";
             Console.WriteLine($"add a breakpoint the instance method of the new class");
+        }
+    }
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+    public class MethodBody10 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a method in a new class");
+            StaticMethod2();
+            Console.WriteLine("do not step into StaticMethod2");
+        }
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void StaticMethod2 () {
+            Console.WriteLine($"do not step into here");
+        }
+    }
+
+    public class MethodBody11 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a line that will not be changed");
+            Console.WriteLine("original");
+        }
+        public static void NewMethodStaticWithThrow () {
+            int i = 20;
+            Console.WriteLine($"add a breakpoint in the new static method, look at locals {i}");
+            throw new Exception("my exception");
+            /*var newvar = new MethodBody6();
+            newvar.NewMethodInstance (10);*/
         }
     }
 }

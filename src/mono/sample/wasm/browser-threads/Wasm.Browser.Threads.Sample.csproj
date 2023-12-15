@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Threads.Sample.csproj</_SampleProject>
+    <WasmEnableThreads>true</WasmEnableThreads>
   </PropertyGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
 
-  <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
-    <Warning Condition="'$(WasmEnableThreads)' != 'true'" Text="This sample requires threading" />
-  </Target>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
 
   <!-- set the condition to false and you will get a CA1416 error about the call to Thread.Start from a browser-wasm project -->
   <ItemGroup Condition="true">

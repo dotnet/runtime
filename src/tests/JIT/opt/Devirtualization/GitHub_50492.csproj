@@ -1,22 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- This test requires tiered compilation and PGO -->
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set DOTNET_TieredCompilation=1
-set DOTNET_TieredPGO=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export DOTNET_TieredCompilation=1
-export DOTNET_TieredPGO=1
-]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GitHub_50492.cs" />
+
+    <!-- This test requires tiered compilation and PGO -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
   </ItemGroup>
 </Project>

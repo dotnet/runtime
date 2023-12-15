@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class ChainPal
     {
+#pragma warning disable IDE0060
         internal static partial IChainPal FromHandle(IntPtr chainContext)
         {
             throw new PlatformNotSupportedException();
@@ -50,6 +51,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return chainPal;
+#pragma warning restore IDE0060
         }
 
         private sealed class AndroidCertPath : IChainPal
@@ -340,12 +342,13 @@ namespace System.Security.Cryptography.X509Certificates
                     X509ChainStatus chainStatus = ValidationErrorToChainStatus(error);
                     Marshal.FreeHGlobal(error.Message);
 
-                    if (!statusByIndex.ContainsKey(error.Index))
+                    if (!statusByIndex.TryGetValue(error.Index, out List<X509ChainStatus>? value))
                     {
-                        statusByIndex.Add(error.Index, new List<X509ChainStatus>());
+                        value = new List<X509ChainStatus>();
+                        statusByIndex.Add(error.Index, value);
                     }
 
-                    statusByIndex[error.Index].Add(chainStatus);
+                    value.Add(chainStatus);
                 }
 
                 return statusByIndex;

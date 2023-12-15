@@ -30,29 +30,15 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
-                dictionarySlot = factory.GenericDictionaryLayout(_dictionaryOwner).GetSlotForEntry(lookup);
+                if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
+                {
+                    encoder.EmitMOV(result, (ushort)0);
+                    return;
+                }
             }
 
             // Load the generic dictionary cell
             encoder.EmitLD(result, context, dictionarySlot * factory.Target.PointerSize);
-
-            switch (lookup.LookupResultReferenceType(factory))
-            {
-                case GenericLookupResultReferenceType.Indirect:
-                    // Do another indirection
-                    encoder.EmitLD(result, result, 0);
-                    break;
-
-                case GenericLookupResultReferenceType.ConditionalIndirect:
-                    // andi temp, result, 0x1
-                    // BEQZ temp L1
-                    // addi.d result, result,-1
-                    // L1:
-                    throw new NotImplementedException();
-
-                default:
-                    break;
-            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref LoongArch64Emitter encoder, bool relocsOnly)
@@ -70,8 +56,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
 
-                        MetadataType target = (MetadataType)_target;
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -79,8 +64,8 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, factory.Target.PointerSize);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 1);
+                            encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
+                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 0);
                             encoder.EmitRETIfEqual(Register.R21);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -100,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLD(encoder.TargetRegister.Result, encoder.TargetRegister.Result, 0);
 
                         MetadataType target = (MetadataType)_target;
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -133,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
 
                         ISymbolNode helperEntrypoint;
-                        if (factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (TriggersLazyStaticConstructor(factory))
                         {
                             // There is a lazy class constructor. We need the non-GC static base because that's where the
                             // class constructor context lives.

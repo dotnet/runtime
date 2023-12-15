@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
         private SafeEvpCipherCtxHandle _ctxHandle;
 
         public static bool IsSupported => true;
+        public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
 
         [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
@@ -172,10 +173,10 @@ namespace System.Security.Cryptography
         {
             return keySizeInBits switch
             {
-                 128 => Interop.Crypto.EvpAes128Gcm(),
-                 192 => Interop.Crypto.EvpAes192Gcm(),
-                 256 => Interop.Crypto.EvpAes256Gcm(),
-                 _ => IntPtr.Zero
+                128 => Interop.Crypto.EvpAes128Gcm(),
+                192 => Interop.Crypto.EvpAes192Gcm(),
+                256 => Interop.Crypto.EvpAes256Gcm(),
+                _ => IntPtr.Zero
             };
         }
 

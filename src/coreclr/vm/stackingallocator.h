@@ -227,7 +227,7 @@ private :
   Thread *pThread__ACQUIRE_STACKING_ALLOCATOR = GetThread(); \
   StackingAllocator *stackingAllocatorName = pThread__ACQUIRE_STACKING_ALLOCATOR->m_stackLocalAllocator; \
   bool allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = false; \
-  NewHolder<StackingAllocator> heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \
+  NewArrayHolder<char> heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \
 \
   if (stackingAllocatorName == NULL) \
   { \
@@ -237,10 +237,11 @@ private :
       } \
       else \
       {\
-          stackingAllocatorName = new (nothrow) StackingAllocator; \
-          if (stackingAllocatorName == NULL) \
+          char *pBuffer__ACQUIRE_STACKING_ALLOCATOR = new (nothrow) char[sizeof(StackingAllocator)]; \
+          if (pBuffer__ACQUIRE_STACKING_ALLOCATOR == NULL) \
               ThrowOutOfMemory(); \
-          heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR = stackingAllocatorName; \
+          heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR = pBuffer__ACQUIRE_STACKING_ALLOCATOR; \
+          stackingAllocatorName = new (pBuffer__ACQUIRE_STACKING_ALLOCATOR) StackingAllocator; \
       }\
       allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = true; \
   } \

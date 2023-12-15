@@ -49,6 +49,7 @@ struct _MonoClass {
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
 	guint is_byreflike    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.IsByRefLikeAttribute */
+	guint is_inlinearray    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute */
 
 	/* next byte */
 	guint8 min_align;
@@ -82,6 +83,7 @@ struct _MonoClass {
 	guint has_weak_fields : 1; /* class has weak reference fields */
 	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
 	guint any_field_has_auto_layout : 1; /* a field in this type's layout uses auto-layout */
+	guint has_deferred_failure : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -101,6 +103,8 @@ struct _MonoClass {
 	MonoClass **interfaces_packed;
 	guint16    *interface_offsets_packed;
 	guint8     *interface_bitmap;
+
+	gint32 inlinearray_value; /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
 
 	MonoClass **interfaces;
 

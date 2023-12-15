@@ -40,7 +40,7 @@ namespace Internal.NativeFormat
         ImplementedInterfaces       = 0x02,
 
         DictionaryLayout            = 0x40,
-        TypeFlags                   = 0x41,
+        // unused                   = 0x41,
         NonGcStaticData             = 0x42,
         GcStaticData                = 0x43,
         NonGcStaticDataSize         = 0x44,
@@ -51,12 +51,12 @@ namespace Internal.NativeFormat
         ThreadStaticIndex           = 0x49,
         ThreadStaticOffset          = 0x4a,
         FieldLayout                 = 0x4b,
-        VTableMethodSignatures      = 0x4c,
-        SealedVTableEntries         = 0x4d,
+        // unused                   = 0x4c,
+        // unused                   = 0x4d,
         ClassConstructorPointer     = 0x4e,
-        BaseTypeSize                = 0x4f,
-        GenericVarianceInfo         = 0x50,
-        DelegateInvokeSignature     = 0x51,
+        // unused                   = 0x4f,
+        // unused                   = 0x50,
+        // unused                   = 0x51,
 
         // Add new custom bag elements that don't match to something you'd find in the ECMA metadata here.
     }
@@ -86,19 +86,19 @@ namespace Internal.NativeFormat
         ThreadStaticIndex           = 0x0b,
         // unused                   = 0x0c,
         Method                      = 0x0d,
-        IsInst                      = 0x0e,
-        CastClass                   = 0x0f,
-        AllocateArray               = 0x10,
+        // unused                   = 0x0e,
+        // unused                   = 0x0f,
+        // unused                   = 0x10,
         // unused                   = 0x11,
-        TypeSize                    = 0x12,
-        FieldOffset                 = 0x13,
-        CallingConventionConverter  = 0x14,
-        VTableOffset                = 0x15,
-        NonGenericConstrainedMethod = 0x16,
-        GenericConstrainedMethod    = 0x17,
-        NonGenericDirectConstrainedMethod = 0x18,
-        PointerToOtherSlot          = 0x19,
-        IntValue                    = 0x20,
+        // unused                   = 0x12,
+        // unused                   = 0x13,
+        // unused                   = 0x14,
+        // unused                   = 0x15,
+        // unused                   = 0x16,
+        // unused                   = 0x17,
+        // unused                   = 0x18,
+        // unused                   = 0x19,
+        // unused                   = 0x20,
         NonGenericStaticConstrainedMethod = 0x21,
         GenericStaticConstrainedMethod = 0x22,
 
@@ -185,18 +185,6 @@ namespace Internal.NativeFormat
 #else
     internal
 #endif
-    enum TypeFlags : uint
-    {
-        HasClassConstructor             = 0x1,
-        HasInstantiationDeterminedSize  = 0x2,
-    };
-
-    [Flags]
-#if NATIVEFORMAT_PUBLICWRITER
-    public
-#else
-    internal
-#endif
     enum MethodFlags : uint
     {
         HasInstantiation            = 0x1,
@@ -215,6 +203,7 @@ namespace Internal.NativeFormat
     {
         Generic                     = 0x1,
         Static                      = 0x2,
+        Unmanaged                   = 0x4,
     };
 
 #if NATIVEFORMAT_PUBLICWRITER

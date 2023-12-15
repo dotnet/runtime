@@ -3,8 +3,9 @@
 //
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class NintIndexOutOfRangeTest
+public class NintIndexOutOfRangeTest
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Stelem_Ref(object[] arr, nint i, Object value)
@@ -20,7 +21,8 @@ class NintIndexOutOfRangeTest
         LdElemATestHelper(ref arr[i]);
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         long longIndex = ((long)1) << 32;
         nint index = (nint)longIndex;

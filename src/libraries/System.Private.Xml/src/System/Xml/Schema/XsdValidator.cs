@@ -3,13 +3,13 @@
 
 using System.Collections;
 using System.Collections.Specialized;
-using System.Text;
-using System.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Runtime.Versioning;
+using System.Text;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Schema
 {
@@ -569,7 +569,7 @@ namespace System.Xml.Schema
 
         private void LoadSchemaFromLocation(string uri, string url)
         {
-            XmlReader? reader = null;
+            XmlTextReader? reader = null;
             SchemaInfo? schemaInfo = null;
 
             try

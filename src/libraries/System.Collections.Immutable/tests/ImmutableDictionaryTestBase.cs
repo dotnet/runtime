@@ -30,7 +30,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void SetItemTest()
         {
-            var map = this.Empty<string, int>()
+            IImmutableDictionary<string, int> map = this.Empty<string, int>()
                 .SetItem("Microsoft", 100)
                 .SetItem("Corporation", 50);
             Assert.Equal(2, map.Count);
@@ -40,7 +40,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(200, map["Microsoft"]);
 
             // Set it to the same thing again and make sure it's all good.
-            var sameMap = map.SetItem("Microsoft", 200);
+            IImmutableDictionary<string, int> sameMap = map.SetItem("Microsoft", 200);
             Assert.Same(map, sameMap);
         }
 
@@ -52,7 +52,7 @@ namespace System.Collections.Immutable.Tests
                 { "Microsoft", 100 },
                 { "Corporation", 50 },
             };
-            var map = this.Empty<string, int>().SetItems(template);
+            IImmutableDictionary<string, int> map = this.Empty<string, int>().SetItems(template);
             Assert.Equal(2, map.Count);
 
             var changes = new Dictionary<string, int>
@@ -100,7 +100,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IndexGetTest()
         {
-            var map = this.Empty<int, int>().Add(3, 5);
+            IImmutableDictionary<int, int> map = this.Empty<int, int>().Add(3, 5);
             Assert.Equal(5, map[3]);
         }
 
@@ -110,7 +110,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void GetHashCodeTest()
         {
-            var dictionary = Empty<string, int>();
+            IImmutableDictionary<string, int> dictionary = Empty<string, int>();
             Assert.Equal(EqualityComparer<object>.Default.GetHashCode(dictionary), dictionary.GetHashCode());
         }
 
@@ -173,7 +173,7 @@ namespace System.Collections.Immutable.Tests
         public void IDictionaryEnumerator()
         {
             var dictionary = (IDictionary)Empty<string, int>().Add("a", 1);
-            var enumerator = dictionary.GetEnumerator();
+            IDictionaryEnumerator enumerator = dictionary.GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.Throws<InvalidOperationException>(() => enumerator.Key);
             Assert.Throws<InvalidOperationException>(() => enumerator.Value);
@@ -212,7 +212,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryGetKey()
         {
-            var dictionary = Empty<int>(StringComparer.OrdinalIgnoreCase)
+            IImmutableDictionary<string, int> dictionary = Empty<int>(StringComparer.OrdinalIgnoreCase)
                 .Add("a", 1);
             string actualKey;
             Assert.True(dictionary.TryGetKey("a", out actualKey));
@@ -272,8 +272,8 @@ namespace System.Collections.Immutable.Tests
             Assert.NotNull(key);
             Assert.False(GetValueComparer(map).Equals(value1, value2));
 
-            var map1 = map.Add(key, value1);
-            var map2 = map.Add(key, value2);
+            IImmutableDictionary<TKey, TValue> map1 = map.Add(key, value1);
+            IImmutableDictionary<TKey, TValue> map2 = map.Add(key, value2);
             AssertExtensions.Throws<ArgumentException>(null, () => map1.Add(key, value2));
             AssertExtensions.Throws<ArgumentException>(null, () => map2.Add(key, value1));
         }
@@ -299,8 +299,8 @@ namespace System.Collections.Immutable.Tests
             Assert.Same(map, map.RemoveRange(Enumerable.Empty<TKey>()));
 
             // substantial remove
-            var addedMap = map.Add(key, default(TValue));
-            var removedMap = addedMap.Remove(key);
+            IImmutableDictionary<TKey, TValue> addedMap = map.Add(key, default(TValue));
+            IImmutableDictionary<TKey, TValue> removedMap = addedMap.Remove(key);
             Assert.NotSame(addedMap, removedMap);
             Assert.False(removedMap.ContainsKey(key));
         }

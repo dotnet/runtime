@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 
 namespace hello
 {
-    class Class1
+    public class Class1
     {
-        static public int Main(string[] args)
+        [Fact]
+        static public void TestEntryPoint()
         {
             int i = 123;
             Console.WriteLine(i);
@@ -36,8 +38,6 @@ namespace hello
             incatch:
                 Console.WriteLine("end outer catch " + s);
             }
-
-            return 100;
         }
     }
 }

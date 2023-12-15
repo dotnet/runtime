@@ -11,8 +11,8 @@
 .assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
-.assembly legacy library stfldstatic1 { }
-.class private auto ansi beforefieldinit stfldstatic1
+.assembly legacy library ASSEMBLY_NAME { }
+.class public auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 fld

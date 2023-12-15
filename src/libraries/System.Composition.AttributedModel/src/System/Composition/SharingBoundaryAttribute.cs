@@ -35,6 +35,6 @@ namespace System.Composition
         /// <summary>
         /// Boundaries implemented by the created ExportLifetimeContext{T}s.
         /// </summary>
-        public ReadOnlyCollection<string> SharingBoundaryNames => new ReadOnlyCollection<string>(_sharingBoundaryNames);
+        public ReadOnlyCollection<string> SharingBoundaryNames => Array.AsReadOnly(_sharingBoundaryNames);
     }
 }

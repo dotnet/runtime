@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -23,7 +23,7 @@ namespace System.Data.SqlTypes
         private float _value;
         // constructor
         // construct a Null
-        private SqlSingle(bool fNull)
+        private SqlSingle(bool _)
         {
             _fNotNull = false;
             _value = (float)0.0;

@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class Program
+public class Program
 {
     static ushort SkillLevel;
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         SkillLevel = 0x2121;
         SkillLevel = (ushort)((byte)SkillLevel ^ 0x21);

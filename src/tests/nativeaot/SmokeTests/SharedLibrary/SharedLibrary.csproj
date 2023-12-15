@@ -5,20 +5,24 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeLib>Shared</NativeLib>
+    <!-- Unable to compile a project with the Library output type for apple mobile devices -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 mkdir native 2>nul
+copy /y clang_rt.* native\
 copy /y SharedLibraryDriver.exe native\SharedLibrary.exe
 ]]></CLRTestBatchPreCommands>
 
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 mkdir -p native
+cp libclang_rt.* native/
 cp SharedLibraryDriver native/SharedLibrary
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 
   <ItemGroup>

@@ -97,7 +97,7 @@
 //             pRS=pRS->pright;
 //         else
 //         {
-//             return pRS->pjit;
+//             return pRS->_pjit;
 //         }
 //     }
 //
@@ -108,7 +108,7 @@
 // In the assignment statement the compiler will automatically use
 // the implicit conversion from PTR_RangeSection to RangeSection*,
 // causing a host instance to be created.  Finally, if an appropriate
-// section is found the use of pRS->pjit will cause an implicit
+// section is found the use of pRS->_pjit will cause an implicit
 // conversion from PTR_IJitManager to IJitManager.  The VPTR code
 // will look at target memory to determine the actual derived class
 // for the JitManager and instantiate the right class in the host so
@@ -574,6 +574,8 @@
 #include "crosscomp.h"
 #endif
 
+#include <dn-u16.h>
+
 // Information stored in the DAC table of interest to the DAC implementation
 // Note that this information is shared between all instantiations of ClrDataAccess, so initialize
 // it just once in code:ClrDataAccess.GetDacGlobals (rather than use fields in ClrDataAccess);
@@ -1027,6 +1029,12 @@ public:
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
+#if defined(HOST_UNIX) && defined(HOST_64BIT)
+    DPtrType operator+(unsigned long long val)
+    {
+        return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
+    }
+#endif // HOST_UNIX && HOST_BIT64
     DPtrType operator+(short val)
     {
         return DPtrType(m_addr + val * sizeof(type));
@@ -1487,10 +1495,10 @@ public:
     }
     void EnumMem(void) const
     {
-        char* str = DacInstantiateStringW(m_addr, maxChars, false);
+        WCHAR* str = DacInstantiateStringW(m_addr, maxChars, false);
         if (str)
         {
-            DacEnumMemoryRegion(m_addr, strlen(str) + 1);
+            DacEnumMemoryRegion(m_addr, u16_strlen(str) + 1);
         }
     }
 };

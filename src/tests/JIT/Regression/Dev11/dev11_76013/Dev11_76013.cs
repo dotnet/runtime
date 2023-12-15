@@ -3,6 +3,7 @@
 
 using System;
 using System.Net;
+using Xunit;
 
 namespace Test
 {
@@ -16,9 +17,10 @@ namespace Test
         }
     }
 
-    internal class Program
+    public class Program
     {
-        private static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool flag = false;
             try

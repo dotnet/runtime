@@ -59,6 +59,28 @@ namespace host_context_test
         const pal::char_t *argv[],
         bool launch_as_if_dotnet, // Imitate running the application as if it were launched with 'dotnet <appPath>'
         pal::stringstream_t &test_output);
+    bool component_load_assembly(
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
+    bool app_load_assembly(
+        const pal::string_t &hostfxr_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
+    bool component_load_assembly_bytes(
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
+    bool app_load_assembly_bytes(
+        const pal::string_t &hostfxr_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
     bool component_load_assembly_and_get_function_pointer(
         const pal::string_t &hostfxr_path,
         const pal::char_t *config_path,
@@ -80,5 +102,9 @@ namespace host_context_test
         const pal::string_t &hostfxr_path,
         int argc,
         const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
+    bool get_runtime_delegate_for_active_context(
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *config_path,
         pal::stringstream_t &test_output);
 }

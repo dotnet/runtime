@@ -5,8 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -21,6 +21,13 @@ namespace System.Security.Cryptography
         {
             return new HmacHashProvider(hashAlgorithmId, key);
         }
+
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            return Interop.Crypto.HashAlgorithmSupported(hashAlgorithmId);
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
 
         internal static class OneShotHashProvider
         {
@@ -44,6 +51,21 @@ namespace System.Security.Cryptography
                 int written = Interop.Crypto.HmacOneShot(evpType, key, source, destination);
                 Debug.Assert(written == hashSize);
                 return written;
+            }
+
+            public static unsafe void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                IntPtr evpType = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
+                Debug.Assert(evpType != IntPtr.Zero);
+
+                const int Success = 1;
+                int ret = Interop.Crypto.EvpDigestXOFOneShot(evpType, source, destination);
+
+                if (ret != Success)
+                {
+                    Debug.Assert(ret == 0);
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
             }
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)

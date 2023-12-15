@@ -29,6 +29,7 @@
 #include "typectxt.h"
 #include "virtualcallstub.h"
 #include "sigbuilder.h"
+#include "dllimport.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -599,6 +600,70 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
     RETURN pDictionary;
 }
 
+struct StaticVirtualDispatchHashBlob : public ILStubHashBlobBase
+{
+    MethodDesc *pExactInterfaceMethod;
+    MethodTable *pTargetMT;
+};
+
+PCODE CreateStubForStaticVirtualDispatch(MethodTable* pTargetMT, MethodTable* pInterfaceMT, MethodDesc *pInterfaceMD)
+{
+    GCX_PREEMP();
+
+    Module* pLoaderModule = ClassLoader::ComputeLoaderModule(pTargetMT, 0, pInterfaceMD->GetMethodInstantiation());
+
+    MethodDesc *pExactMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pInterfaceMD,
+            pInterfaceMT,
+            FALSE,              // forceBoxedEntryPoint
+            pInterfaceMD->GetMethodInstantiation(),    // methodInst
+            FALSE,              // allowInstParam
+            TRUE);              // forceRemotableMethod
+
+    StaticVirtualDispatchHashBlob hashBlob;
+    memset(&hashBlob, 0, sizeof(hashBlob));
+    hashBlob.pExactInterfaceMethod = pExactMD;
+    hashBlob.pTargetMT = pTargetMT;
+    hashBlob.m_cbSizeOfBlob = sizeof(hashBlob);
+    ILStubHashBlob *pHashBlob = (ILStubHashBlob*)&hashBlob;
+
+    MethodDesc *pStubMD = pLoaderModule->GetILStubCache()->LookupStubMethodDesc(pHashBlob);
+    if (pStubMD == NULL)
+    {
+        SigTypeContext context(pExactMD);
+        ILStubLinker sl(pExactMD->GetModule(), pExactMD->GetSignature(), &context, pExactMD, ILSTUB_LINKER_FLAG_NONE);
+        MetaSig sig(pInterfaceMD);
+
+        ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+        UINT paramCount = 0;
+        BOOL fReturnVal = !sig.IsReturnTypeVoid();
+        while(paramCount < sig.NumFixedArgs())
+            pCode->EmitLDARG(paramCount++);
+
+        pCode->EmitCONSTRAINED(pCode->GetToken(pTargetMT));
+        pCode->EmitCALL(pCode->GetToken(pInterfaceMD), sig.NumFixedArgs(), fReturnVal);
+        pCode->EmitRET();
+
+        PCCOR_SIGNATURE pSig;
+        DWORD cbSig;
+
+        pInterfaceMD->GetSig(&pSig,&cbSig);
+
+        pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pLoaderModule->GetLoaderAllocator(),
+                                                            pLoaderModule->GetILStubCache()->GetOrCreateStubMethodTable(pLoaderModule),
+                                                            ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB,
+                                                            pInterfaceMD->GetModule(),
+                                                            pSig, cbSig,
+                                                            &context,
+                                                            &sl);
+
+        pStubMD = pLoaderModule->GetILStubCache()->InsertStubMethodDesc(pStubMD, pHashBlob);
+    }
+
+    return JitILStub(pStubMD);
+}
+
 //---------------------------------------------------------------------------------------
 //
 DictionaryEntry
@@ -690,10 +755,7 @@ Dictionary::PopulateEntry(
         ptr = SigPointer((PCCOR_SIGNATURE)signature);
         IfFailThrow(ptr.GetData(&kind));
 
-        Module * pContainingZapModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(signature));
-
-        zapSigContext = ZapSig::Context(CoreLibBinder::GetModule(), (void *)pContainingZapModule, ZapSig::NormalTokens);
-        pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
+        pZapSigContext = NULL;
     }
 
     ModuleBase * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
@@ -1071,11 +1133,40 @@ Dictionary::PopulateEntry(
                 }
                 _ASSERTE(!constraintType.IsNull());
 
-                MethodDesc *pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);
+                MethodDesc *pResolvedMD;
 
-                // All such calls should be resolvable.  If not then for now just throw an error.
-                _ASSERTE(pResolvedMD);
-                INDEBUG(if (!pResolvedMD) constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);)
+                if (pMethod->IsStatic())
+                {
+                    // Virtual Static Method resolution
+                    _ASSERTE(!ownerType.IsTypeDesc());
+                    _ASSERTE(ownerType.IsInterface());
+                    BOOL uniqueResolution;
+                    pResolvedMD = constraintType.GetMethodTable()->ResolveVirtualStaticMethod(
+                        ownerType.GetMethodTable(),
+                        pMethod,
+                        ResolveVirtualStaticMethodFlags::AllowNullResult |
+                        ResolveVirtualStaticMethodFlags::AllowVariantMatches |
+                        ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc,
+                        &uniqueResolution);
+
+                    // If we couldn't get an exact result, fall back to using a stub to make the exact function call
+                    // This will trigger the logic in the JIT which can handle AmbiguousImplementationException and
+                    // EntryPointNotFoundException at exactly the right time
+                    if (!uniqueResolution || pResolvedMD == NULL || pResolvedMD->IsAbstract())
+                    {
+                        _ASSERTE(pResolvedMD == NULL || pResolvedMD->IsStatic());
+                        result = (CORINFO_GENERIC_HANDLE)CreateStubForStaticVirtualDispatch(constraintType.GetMethodTable(), ownerType.GetMethodTable(), pMethod);
+                        break;
+                    }
+                }
+                else
+                {
+                    pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);
+
+                    // All such calls should be resolvable.  If not then for now just throw an error.
+                    _ASSERTE(pResolvedMD);
+                    INDEBUG(if (!pResolvedMD) constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);)
+                }
                 if (!pResolvedMD)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
@@ -1164,6 +1255,7 @@ Dictionary::PopulateEntry(
                 }
                 IfFailThrow(ptr.SkipExactlyOne());
 
+                // Computed by MethodTable::GetIndexForFieldDesc().
                 uint32_t fieldIndex;
                 IfFailThrow(ptr.GetData(&fieldIndex));
 

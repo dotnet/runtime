@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace System.Formats.Tar
 {
@@ -26,7 +25,7 @@ namespace System.Formats.Tar
         /// <param name="globalExtendedAttributes">An enumeration of string key-value pairs that represents the metadata to include as Global Extended Attributes.</param>
         /// <exception cref="ArgumentNullException"><paramref name="globalExtendedAttributes"/> is <see langword="null"/>.</exception>
         public PaxGlobalExtendedAttributesTarEntry(IEnumerable<KeyValuePair<string, string>> globalExtendedAttributes)
-            : base(TarEntryType.GlobalExtendedAttributes, TarHeader.GlobalHeadFormatPrefix, TarEntryFormat.Pax, isGea: true)
+            : base(TarEntryType.GlobalExtendedAttributes, nameof(PaxGlobalExtendedAttributesTarEntry), TarEntryFormat.Pax, isGea: true) // Name == name of type for lack of a better temporary name until the entry is written
         {
             ArgumentNullException.ThrowIfNull(globalExtendedAttributes);
             _header.InitializeExtendedAttributesWithExisting(globalExtendedAttributes);

@@ -22,7 +22,6 @@ namespace System.Security.Cryptography
         public static partial ECDsa Create(ECCurve curve)
         {
             return new ECDsaWrapper(new ECDsaCng(curve));
-
         }
 
         /// <summary>
@@ -33,7 +32,7 @@ namespace System.Security.Cryptography
         /// </param>
         public static partial ECDsa Create(ECParameters parameters)
         {
-            ECDsa ec = new ECDsaCng();
+            var ec = new ECDsaCng();
             ec.ImportParameters(parameters);
             return new ECDsaWrapper(ec);
         }

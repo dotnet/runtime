@@ -3,27 +3,26 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Interop
 {
-    /// <summary>
-    /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
-    /// </summary>
-    public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
-
     /// <summary>
     /// This class supports generating marshalling info for SafeHandle-derived types.
     /// </summary>
     public sealed class SafeHandleMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;
+        private readonly INamedTypeSymbol _safeHandleMarshallerType;
         private readonly ITypeSymbol _containingScope;
 
         public SafeHandleMarshallingInfoProvider(Compilation compilation, ITypeSymbol containingScope)
         {
             _compilation = compilation;
+            _safeHandleMarshallerType = compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata);
             _containingScope = containingScope;
         }
 
@@ -47,19 +46,50 @@ namespace Microsoft.Interop
 
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
-            bool hasAccessibleDefaultConstructor = false;
+            bool hasDefaultConstructor = false;
             if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
             {
                 foreach (IMethodSymbol ctor in named.InstanceConstructors)
                 {
                     if (ctor.Parameters.Length == 0)
                     {
-                        hasAccessibleDefaultConstructor = _compilation.IsSymbolAccessibleWithin(ctor, _containingScope);
+                        hasDefaultConstructor = ctor.DeclaredAccessibility == Accessibility.Public;
                         break;
                     }
                 }
             }
-            return new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
+
+            // If we don't have the SafeHandleMarshaller<T> type, then we'll return a MissingSupportMarshallingInfo
+            // indicating that we don't support marshalling SafeHandles with source-generated marshalling.
+            if (_safeHandleMarshallerType is null)
+            {
+                return new MissingSupportMarshallingInfo();
+            }
+
+            INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);
+            if (!ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(
+                entryPointType,
+                type,
+                _compilation,
+                out CustomTypeMarshallers? marshallers))
+            {
+                return NoMarshallingInfo.Instance;
+            }
+
+            // If the SafeHandle-derived type doesn't have a default constructor or is abstract,
+            // we only support managed-to-unmanaged marshalling
+            if (!hasDefaultConstructor || type.IsAbstract)
+            {
+                marshallers = marshallers.Value with
+                {
+                    Modes = ImmutableDictionary<MarshalMode, CustomTypeMarshallerData>.Empty
+                        .Add(
+                            MarshalMode.ManagedToUnmanagedIn,
+                            marshallers.Value.GetModeOrDefault(MarshalMode.ManagedToUnmanagedIn))
+                };
+            }
+
+            return new NativeMarshallingAttributeInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType), marshallers.Value);
         }
     }
 }

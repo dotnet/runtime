@@ -19,17 +19,16 @@ Below is a list of all the various options we pivot the project builds on:
 
 - **Target Frameworks:** .NETFramework, .NETStandard, .NETCoreApp
 - **Platform Runtimes:** .NETFramework (aka CLR/Desktop), CoreCLR, Mono
-- **OS:** windows, Linux, OSX, FreeBSD, AnyOS
+- **OS:** windows, linux, osx, freebsd, AnyOS
 - **Flavor:** Debug, Release
 
 ## Individual build properties
 The following are the properties associated with each build pivot
 
 - `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net8.0`
-- `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
-- `$(Configuration) -> Release | [defaults to Debug when empty]`
+- `$(TargetOS) -> windows | linux | osx | freebsd | ... | [defaults to running OS when empty]`
+- `$(Configuration) -> Debug | Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
-- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/main/src/libraries/Microsoft.NETCore.Platforms) for more info.
 
 ## Aggregate build properties
 Each project will define a set of supported TargetFrameworks
@@ -51,7 +50,7 @@ Non cross-targeting project that targets .NETStandard:
 A cross-targeting project which targets specific platform with `$(NetCoreAppCurrent)` and one .NETFramework tfm:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkMinimum)</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetFrameworkMinimum)</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -62,8 +61,6 @@ A full or individual project build is centered around BuildTargetFramework, Targ
 1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
 2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net8.0-[TargetOS Running On]-Debug-x64`.
 3. When building an individual project (either from the CLI or an IDE), all target frameworks are built.
-
-We also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
@@ -103,17 +100,17 @@ Example:
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)</TargetFrameworks>
 </PropertyGroup>
 <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">...</ItemGroup>
-<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">...</ItemGroup>
 ```
 Important: In contrast to the old `Targets*` checks, `TargetPlatformIdentifier` conditions apply to a single tfm only, inheritance between target frameworks can't be expressed. See the example below for Unix:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-windows</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-windows</TargetFrameworks>
 </PropertyGroup>
-<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'android'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'android'">...</ItemGroup>
 <!-- Negations make such conditions easier to write and read. -->
 <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">...</ItemGroup>
 ```
@@ -188,7 +185,9 @@ All test outputs should be under
 
 ## gen
 In the gen directory any source generator related to the assembly should exist. This does not mean the source generator is only used for that assembly only that it is conceptually apart of that assembly. For example, the assembly may provide attributes or low-level types the source generator uses.
-To consume a source generator, simply add an `<AnalyzerReference Include="..." />` item to the project, usually next to the `References` and `ProjectReferences` items.
+To consume a source generator that isn't provided via a targeting pack, simply add a `<ProjectReference Include="..." ReferenceOutputAssembly="false" OutputItemType="Analyzer" />` item to the project, usually next to the `Reference` and `ProjectReference` items.
+
+A source generator must target `netstandard2.0` as such assemblies are loaded into the compiler's process which might run on either .NET Framework or modern .NET depending on the tooling being used (CLI vs Visual Studio). While that's true, a source project can still multi-target and include `$(NetCoreAppToolCurrent)` (which is the latest non live-built .NETCoreApp tfm that is supported by the SDK) to benefit from the ehancanced nullable reference type warnings emitted by the compiler. For an example see [System.Text.Json's roslyn4.4 source generator](/src/libraries/System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.4.csproj). While the repository's infrastructure makes sure that only the source generator's `netstandard2.0` build output is included in packages, to consume such a multi-targeting source generator via a `ProjectReference` (as described above), you need to add the `SetTargetFramework="TargetFramework=netstandard2.0"` metadata to the ProjectReference item to guarantee that the netstandard2.0 asset is chosen.
 
 ## Facades
 Facade are unique in that they don't have any code and instead are generated by finding a contract reference assembly with the matching identity and generating type forwards for all the types to where they live in the implementation assemblies (aka facade seeds). There are also partial facades which contain some type forwards as well as some code definitions. All the various build configurations should be contained in the one csproj file per library.

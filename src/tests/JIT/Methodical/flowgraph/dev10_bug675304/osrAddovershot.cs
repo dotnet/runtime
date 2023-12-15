@@ -20,7 +20,7 @@
 // 
 // Fix: Stop OSR from rewriting IV's when the ADD is greater than pointer size. Need to further beat down OSR to have it stop rewriting IVs when they would be offset more than pointer-sized past the end of an array or object. 
 // 
-// PLEASE NOTE: You have to set complus_GCSTRESS=4 to see the AV.
+// PLEASE NOTE: You have to set DOTNET_GCSTRESS=4 to see the AV.
 
 using System;
 using Xunit;

@@ -4,24 +4,14 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+[assembly:Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+namespace JIT.HardwareIntrinsics.X86._Pclmulqdq
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
-                ["CarrylessMultiply.UInt64.0"] = CarrylessMultiplyUInt640,
-                ["CarrylessMultiply.UInt64.1"] = CarrylessMultiplyUInt641,
-                ["CarrylessMultiply.UInt64.16"] = CarrylessMultiplyUInt6416,
-                ["CarrylessMultiply.UInt64.17"] = CarrylessMultiplyUInt6417,
-                ["CarrylessMultiply.UInt64.129"] = CarrylessMultiplyUInt64129,
-                ["CarrylessMultiply.Int64.0"] = CarrylessMultiplyInt640,
-                ["CarrylessMultiply.Int64.1"] = CarrylessMultiplyInt641,
-                ["CarrylessMultiply.Int64.16"] = CarrylessMultiplyInt6416,
-                ["CarrylessMultiply.Int64.17"] = CarrylessMultiplyInt6417,
-                ["CarrylessMultiply.Int64.129"] = CarrylessMultiplyInt64129,
-            };
+
         }
     }
 }

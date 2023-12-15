@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using System.Xml.Schema;
-
+using System.Xml.Serialization;
 using CultureInfo = System.Globalization.CultureInfo;
 using IEnumerable = System.Collections.IEnumerable;
-using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using StringBuilder = System.Text.StringBuilder;
-using System.Diagnostics;
+using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 
 namespace System.Xml.Linq
 {
@@ -144,7 +143,7 @@ namespace System.Xml.Linq
         {
         }
 
-        private XElement(AsyncConstructionSentry s)
+        private XElement(AsyncConstructionSentry _)
         {
             // Dummy ctor used to avoid public default ctor.  This is used
             // by async methods meant to perform the same operations as

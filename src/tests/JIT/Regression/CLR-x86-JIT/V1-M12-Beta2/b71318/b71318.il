@@ -3,14 +3,19 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly EH1 {}
+.assembly 'b71318' {}
+.class public auto ansi Test_b71318 extends [mscorlib] System.Object {
 .method public static int32 f1() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 1
 
@@ -51,4 +56,5 @@
 	catch [mscorlib]System.Exception handler start_handler2 to end_handler2
 	.try start_try3 to end_try3 fault handler start_fault3 to end_fault3
 	
+}
 }

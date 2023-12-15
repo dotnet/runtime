@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
@@ -96,20 +97,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets a value indicating whether this type has any generic virtual methods.
-        /// </summary>
-        public static bool HasGenericVirtualMethods(this TypeDesc type)
-        {
-            foreach (var method in type.GetAllMethods())
-            {
-                if (method.IsVirtual && method.HasInstantiation)
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Wrapper helper function around the IsCanonicalDefinitionType API on the TypeSystemContext
         /// </summary>
         public static bool IsCanonicalDefinitionType(this TypeDesc type, CanonicalFormKind kind)
@@ -144,30 +131,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// What is the maximum number of steps that need to be taken from this type to its most contained generic type.
-        /// i.e.
-        /// System.Int32 => 0
-        /// List&lt;System.Int32&gt; => 1
-        /// Dictionary&lt;System.Int32,System.Int32&gt; => 1
-        /// Dictionary&lt;List&lt;System.Int32&gt;,&lt;System.Int32&gt; => 2
-        /// </summary>
-        public static int GetGenericDepth(this TypeDesc type)
-        {
-            if (type.HasInstantiation)
-            {
-                int maxGenericDepthInInstantiation = 0;
-                foreach (TypeDesc instantiationType in type.Instantiation)
-                {
-                    maxGenericDepthInInstantiation = Math.Max(instantiationType.GetGenericDepth(), maxGenericDepthInInstantiation);
-                }
-
-                return maxGenericDepthInInstantiation + 1;
-            }
-
-            return 0;
-        }
-
-        /// <summary>
         /// Determine if a type has a generic depth greater than a given value
         /// </summary>
         public static bool IsGenericDepthGreaterThan(this TypeDesc type, int depth)
@@ -182,23 +145,6 @@ namespace ILCompiler
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// What is the maximum number of steps that need to be taken from this type to its most contained generic type.
-        /// i.e.
-        /// SomeGenericType&lt;System.Int32&gt;.Method&lt;System.Int32&gt; => 1
-        /// SomeType.Method&lt;System.Int32&gt; => 0
-        /// SomeType.Method&lt;List&lt;System.Int32&gt;&gt; => 1
-        /// </summary>
-        public static int GetGenericDepth(this MethodDesc method)
-        {
-            int genericDepth = method.OwningType.GetGenericDepth();
-            foreach (TypeDesc type in method.Instantiation)
-            {
-                genericDepth = Math.Max(genericDepth, type.GetGenericDepth());
-            }
-            return genericDepth;
         }
 
         /// <summary>
@@ -232,6 +178,47 @@ namespace ILCompiler
             var arrayType = (ArrayType)type;
             TypeDesc elementType = arrayType.ElementType;
             return type.IsMdArray || elementType.IsPointer || elementType.IsFunctionPointer;
+        }
+
+        public static bool? CompareTypesForEquality(TypeDesc type1, TypeDesc type2)
+        {
+            bool? result = null;
+
+            // If neither type is a canonical subtype, type handle comparison suffices
+            if (!type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                result = type1 == type2;
+            }
+            // If either or both types are canonical subtypes, we can sometimes prove inequality.
+            else
+            {
+                // If either is a value type then the types cannot
+                // be equal unless the type defs are the same.
+                if (type1.IsValueType || type2.IsValueType)
+                {
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                    {
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = false;
+                        }
+                    }
+                }
+                // If we have two ref types that are not __Canon, then the
+                // types cannot be equal unless the type defs are the same.
+                else
+                {
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = false;
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         public static TypeDesc MergeTypesToCommonParent(TypeDesc ta, TypeDesc tb)
@@ -336,7 +323,7 @@ namespace ILCompiler
                 bDepth--;
             }
 
-            while (ta != tb)
+            while (!ta.IsEquivalentTo(tb))
             {
                 ta = ta.BaseType;
                 tb = tb.BaseType;
@@ -364,7 +351,11 @@ namespace ILCompiler
             Debug.Assert(taElem != tbElem);
 
             TypeDesc mergeElem;
-            if (taElem.IsArray && tbElem.IsArray)
+            if (taElem.IsEquivalentTo(tbElem))
+            {
+                mergeElem = taElem;
+            }
+            else if (taElem.IsArray && tbElem.IsArray)
             {
                 mergeElem = MergeArrayTypesToCommonParent((ArrayType)taElem, (ArrayType)tbElem);
             }
@@ -762,6 +753,59 @@ namespace ILCompiler
         {
             Debug.Assert(interfaceType.IsInterface);
             return interfaceType.HasCustomAttribute("System.Runtime.InteropServices", "DynamicInterfaceCastableImplementationAttribute");
+        }
+
+        public static bool HasImpliedRepeatedFields(this MetadataType mdType)
+        {
+            if (mdType.IsInlineArray)
+            {
+                return true;
+            }
+
+            // If the type is not an [InlineArray] type, do a best-effort detection of whether the type is a fixed buffer type
+            // as emitted by the C# compiler.
+
+            if (!mdType.IsSequentialLayout)
+            {
+                return false;
+            }
+
+            if (mdType.GetClassLayout().Size == 0)
+            {
+                // Unsafe fixed buffers have a specified size in the class layout information.
+                return false;
+            }
+
+            FieldDesc firstField = null;
+            foreach (FieldDesc field in mdType.GetFields())
+            {
+                if (!field.IsStatic)
+                {
+                    // A type is only an unsafe fixed buffer type if it has exactly one field.
+                    if (firstField is not null)
+                    {
+                        return false;
+                    }
+                    firstField = field;
+                }
+            }
+
+            if (firstField is null)
+            {
+                return false;
+            }
+            TypeDesc firstFieldElementType = firstField.FieldType;
+
+            // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+            // and whose size is an exact multiple of the size of the field.
+            // It is possible that we catch a false positive with this check, but that chance is extremely slim
+            // and the user can always change their structure to something more descriptive of what they want
+            // instead of adding additional padding at the end of a one-field structure.
+            // We do this check here to save looking up the FixedBufferAttribute when loading the field
+            // from metadata.
+            return firstFieldElementType.IsValueType
+                    && firstField.Offset.AsInt == 0
+                    && ((mdType.GetElementSize().AsInt % firstFieldElementType.GetElementSize().AsInt) == 0);
         }
     }
 }

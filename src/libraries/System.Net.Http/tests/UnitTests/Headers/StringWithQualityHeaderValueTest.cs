@@ -16,7 +16,7 @@ namespace System.Net.Http.Tests
             Assert.Equal("token", value.Value);
             Assert.Null(value.Quality);
 
-            AssertExtensions.Throws<ArgumentException>("value", () => { new StringWithQualityHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { new StringWithQualityHeaderValue(null); });
             AssertExtensions.Throws<ArgumentException>("value", () => { new StringWithQualityHeaderValue(""); });
             Assert.Throws<FormatException>(() => { new StringWithQualityHeaderValue("in valid"); });
         }
@@ -28,7 +28,7 @@ namespace System.Net.Http.Tests
             Assert.Equal("token", value.Value);
             Assert.Equal(0.5, value.Quality);
 
-            AssertExtensions.Throws<ArgumentException>("value", () => { new StringWithQualityHeaderValue(null, 0.1); });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { new StringWithQualityHeaderValue(null, 0.1); });
             AssertExtensions.Throws<ArgumentException>("value", () => { new StringWithQualityHeaderValue("", 0.1); });
             Assert.Throws<FormatException>(() => { new StringWithQualityHeaderValue("in valid", 0.1); });
 

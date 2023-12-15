@@ -10,7 +10,7 @@
 {
 }
 .assembly extern xunit.core {}
-.class private auto ansi b1904 extends ['mscorlib']System.Object
+.class public auto ansi b1904 extends ['mscorlib']System.Object
 {
   .field private static int32 Count
   .method public static void RunTest() il managed forwardref

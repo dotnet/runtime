@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup Condition="'$(HWITestsArm64Only)' == 'true'">
+    <!-- Various platforms will always throw, so we don't want to spend cycles running tests unnecessarily -->
+    <!-- We don't need to worry about coverage as we have a number of stress tests that can disable intrinsics per ISA and run on the normally supported platforms -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HWITestsXarchOnly)' == 'true'">
+    <!-- Various platforms will always throw, so we don't want to spend cycles running tests unnecessarily -->
+    <!-- We don't need to worry about coverage as we have a number of stress tests that can disable intrinsics per ISA and run on the normally supported platforms -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' AND '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true' AND $(MSBuildProjectName.StartsWith('Avx512'))">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
+</Project>

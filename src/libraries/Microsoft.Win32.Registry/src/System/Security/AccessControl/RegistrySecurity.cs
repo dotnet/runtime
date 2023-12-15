@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.AccessControl
 {
@@ -89,14 +90,34 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal RegistrySecurity(SafeRegistryHandle hKey, string name, AccessControlSections includeSections)
+        internal RegistrySecurity(SafeRegistryHandle hKey, AccessControlSections includeSections)
             : base(true, ResourceType.RegistryKey, hKey, includeSections, _HandleErrorCode, null)
         {
         }
 
         private static Exception? _HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
-            return _HandleErrorCodeCore(errorCode, name, handle, context);
+            Exception? exception = null;
+
+            switch (errorCode)
+            {
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
+                    exception = new IOException(SR.Format(SR.Arg_RegKeyNotFound, errorCode));
+                    break;
+
+                case Interop.Errors.ERROR_INVALID_NAME:
+                    exception = new ArgumentException(SR.Arg_RegInvalidKeyName, nameof(name));
+                    break;
+
+                case Interop.Errors.ERROR_INVALID_HANDLE:
+                    exception = new ArgumentException(SR.AccessControl_InvalidHandle);
+                    break;
+
+                default:
+                    break;
+            }
+
+            return exception;
         }
 
         public override AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type)
@@ -135,7 +156,7 @@ namespace System.Security.AccessControl
             return persistRules;
         }
 
-        internal void Persist(SafeRegistryHandle hKey, string keyName)
+        internal void Persist(SafeRegistryHandle hKey)
         {
             WriteLock();
 

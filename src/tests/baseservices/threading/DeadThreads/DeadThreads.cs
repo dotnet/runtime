@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class DeadThreads
 {
@@ -12,10 +13,11 @@ public class DeadThreads
     /// elapsed since a previous GC. See https://github.com/dotnet/coreclr/pull/10413.
     /// 
     /// This test suite runs with the following environment variables relevant to this test (see .csproj):
-    ///     set COMPlus_Thread_DeadThreadCountThresholdForGCTrigger=8
-    ///     set COMPlus_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8 // 1000
+    ///     set DOTNET_Thread_DeadThreadCountThresholdForGCTrigger=8
+    ///     set DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8 // 1000
     /// </summary>
-    private static void GCTriggerSanityTest()
+    [Fact]
+    public static void GCTriggerSanityTest()
     {
         var testDuration = TimeSpan.FromSeconds(8);
         var startTime = DateTime.UtcNow;
@@ -32,11 +34,5 @@ public class DeadThreads
         var t = new Thread(() => { });
         t.IsBackground = true;
         t.Start();
-    }
-
-    public static int Main()
-    {
-        GCTriggerSanityTest();
-        return 100;
     }
 }

@@ -15,11 +15,17 @@
 #include <ifaddrs.h>
 #endif
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
+#if HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include "pal_ifaddrs.h" // fallback for Android API 21-23
 #endif
+#if HAVE_NET_IF_H
 #include <net/if.h>
+#endif
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -50,6 +56,7 @@
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
+#elif defined(TARGET_WASI)
 #else
 #error System must have AF_PACKET or AF_LINK.
 #endif
@@ -66,6 +73,7 @@
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
 // Code bellow counts consecutive number of 1 bits.
+#if !defined(TARGET_WASI)
 static inline uint8_t mask2prefix(uint8_t* mask, int length)
 {
     uint8_t len = 0;
@@ -101,6 +109,7 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+#endif /* TARGET_WASI */
 
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
 // This workaround is necessary as long as we support Android API 21-23 and it can be removed once

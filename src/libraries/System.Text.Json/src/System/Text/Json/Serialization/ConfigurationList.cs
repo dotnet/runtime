@@ -3,24 +3,27 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// A list of configuration items that can be locked for modification
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [DebuggerTypeProxy(typeof(ConfigurationList<>.ConfigurationListDebugView))]
     internal abstract class ConfigurationList<TItem> : IList<TItem>
     {
         protected readonly List<TItem> _list;
 
-        public ConfigurationList(IList<TItem>? source = null)
+        public ConfigurationList(IEnumerable<TItem>? source = null)
         {
             _list = source is null ? new List<TItem>() : new List<TItem>(source);
         }
 
-        protected abstract bool IsImmutable { get; }
-        protected abstract void VerifyMutable();
-        protected virtual void OnAddingElement(TItem item) { }
+        public abstract bool IsReadOnly { get; }
+        protected abstract void OnCollectionModifying();
+        protected virtual void ValidateAddedValue(TItem item) { }
 
         public TItem this[int index]
         {
@@ -30,20 +33,18 @@ namespace System.Text.Json.Serialization
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
                 }
 
-                VerifyMutable();
-                OnAddingElement(value);
+                ValidateAddedValue(value);
+                OnCollectionModifying();
                 _list[index] = value;
             }
         }
 
         public int Count => _list.Count;
-
-        public bool IsReadOnly => IsImmutable;
 
         public void Add(TItem item)
         {
@@ -52,14 +53,14 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            VerifyMutable();
-            OnAddingElement(item);
+            ValidateAddedValue(item);
+            OnCollectionModifying();
             _list.Add(item);
         }
 
         public void Clear()
         {
-            VerifyMutable();
+            OnCollectionModifying();
             _list.Clear();
         }
 
@@ -73,7 +74,7 @@ namespace System.Text.Json.Serialization
             _list.CopyTo(array, arrayIndex);
         }
 
-        public IEnumerator<TItem> GetEnumerator()
+        public List<TItem>.Enumerator GetEnumerator()
         {
             return _list.GetEnumerator();
         }
@@ -90,26 +91,40 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            VerifyMutable();
-            OnAddingElement(item);
+            ValidateAddedValue(item);
+            OnCollectionModifying();
             _list.Insert(index, item);
         }
 
         public bool Remove(TItem item)
         {
-            VerifyMutable();
+            OnCollectionModifying();
             return _list.Remove(item);
         }
 
         public void RemoveAt(int index)
         {
-            VerifyMutable();
+            OnCollectionModifying();
             _list.RemoveAt(index);
+        }
+
+        IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator()
+        {
+            return _list.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _list.GetEnumerator();
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Count = {Count}, IsReadOnly = {IsReadOnly}";
+
+        private sealed class ConfigurationListDebugView(ConfigurationList<TItem> collection)
+        {
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public TItem[] Items => collection._list.ToArray();
         }
     }
 }

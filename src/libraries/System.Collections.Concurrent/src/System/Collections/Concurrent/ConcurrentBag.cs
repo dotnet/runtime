@@ -277,11 +277,7 @@ namespace System.Collections.Concurrent
         public void CopyTo(T[] array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             // Short path if the bag is empty
             if (_workStealingQueues == null)
@@ -442,7 +438,7 @@ namespace System.Collections.Concurrent
                 for (WorkStealingQueue? queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
                 {
                     T? ignored;
-                    while (queue.TrySteal(out ignored, take: true));
+                    while (queue.TrySteal(out ignored, take: true)) ;
                 }
             }
             finally

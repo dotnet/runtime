@@ -383,36 +383,6 @@ inline DWORD PEDecoder::GetCheckSum() const
     return VAL32(FindNTHeaders()->OptionalHeader.CheckSum);
 }
 
-inline DWORD PEDecoder::GetFileAlignment() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //even though some data in OptionalHeader is different for 32 and 64,  this field is the same
-    return VAL32(FindNTHeaders()->OptionalHeader.FileAlignment);
-}
-
-inline DWORD PEDecoder::GetSectionAlignment() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //even though some data in OptionalHeader is different for 32 and 64,  this field is the same
-    return VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment);
-}
-
 inline WORD PEDecoder::GetMachine() const
 {
     CONTRACTL

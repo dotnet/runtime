@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -13,11 +13,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class ConstructorPolicies : MemberPolicies<ConstructorInfo>
     {
+        public static readonly ConstructorPolicies Instance = new ConstructorPolicies();
+
+        public ConstructorPolicies() : base(MemberTypeIndex.Constructor) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
-        public sealed override IEnumerable<ConstructorInfo> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<ConstructorInfo> GetDeclaredMembers(Type type)
         {
-            return typeInfo.DeclaredConstructors;
+            return type.GetConstructors(DeclaredOnlyLookup);
         }
 
         public sealed override IEnumerable<ConstructorInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)

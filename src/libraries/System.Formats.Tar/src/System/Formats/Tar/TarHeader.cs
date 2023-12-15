@@ -39,11 +39,6 @@ namespace System.Formats.Tar
         private const string PaxEaDevMajor = "devmajor";
         private const string PaxEaDevMinor = "devminor";
 
-        // Global Extended Attribute entries have a special format in the Name field:
-        // "{tmpFolder}/GlobalHead.{processId}.{GEAEntryNumber}"
-        // Excludes ".{GEAEntryNumber}" because the number gets added on write.
-        internal const string GlobalHeadFormatPrefix = "{0}/GlobalHead.{1}";
-
         internal Stream? _dataStream;
 
         // Position in the stream where the data ends in this header.
@@ -118,7 +113,27 @@ namespace System.Formats.Tar
         internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
         {
             Debug.Assert(_ea == null);
-            _ea = new Dictionary<string, string>(existing);
+            Debug.Assert(existing != null);
+
+            using IEnumerator<KeyValuePair<string, string>> enumerator = existing.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                KeyValuePair<string, string> kvp = enumerator.Current;
+
+                int index = kvp.Key.AsSpan().IndexOfAny('=', '\n');
+                if (index >= 0)
+                {
+                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));
+                }
+                if (kvp.Value.Contains('\n'))
+                {
+                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
+                }
+
+                _ea ??= new Dictionary<string, string>();
+
+                _ea.Add(kvp.Key, kvp.Value);
+            }
         }
 
         private static string GetMagicForFormat(TarEntryFormat format) => format switch

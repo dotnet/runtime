@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -565,27 +566,39 @@ namespace System
         /// Removes all leading and trailing white-space characters from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span)
         {
-            int start = 0;
-            for (; start < span.Length; start++)
+            // Assume that in most cases input doesn't need trimming
+            if (span.Length == 0 ||
+                (!char.IsWhiteSpace(span[0]) && !char.IsWhiteSpace(span[^1])))
             {
-                if (!char.IsWhiteSpace(span[start]))
-                {
-                    break;
-                }
+                return span;
             }
+            return TrimFallback(span);
 
-            int end = span.Length - 1;
-            for (; end > start; end--)
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static ReadOnlySpan<char> TrimFallback(ReadOnlySpan<char> span)
             {
-                if (!char.IsWhiteSpace(span[end]))
+                int start = 0;
+                for (; start < span.Length; start++)
                 {
-                    break;
+                    if (!char.IsWhiteSpace(span[start]))
+                    {
+                        break;
+                    }
                 }
-            }
 
-            return span.Slice(start, end - start + 1);
+                int end = span.Length - 1;
+                for (; end > start; end--)
+                {
+                    if (!char.IsWhiteSpace(span[end]))
+                    {
+                        break;
+                    }
+                }
+                return span.Slice(start, end - start + 1);
+            }
         }
 
         /// <summary>
@@ -770,11 +783,39 @@ namespace System
         /// Removes all leading and trailing white-space characters from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<char> Trim(this Span<char> span)
         {
-            int start = ClampStart(span);
-            int length = ClampEnd(span, start);
-            return span.Slice(start, length);
+            // Assume that in most cases input doesn't need trimming
+            if (span.Length == 0 ||
+                (!char.IsWhiteSpace(span[0]) && !char.IsWhiteSpace(span[^1])))
+            {
+                return span;
+            }
+            return TrimFallback(span);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Span<char> TrimFallback(Span<char> span)
+            {
+                int start = 0;
+                for (; start < span.Length; start++)
+                {
+                    if (!char.IsWhiteSpace(span[start]))
+                    {
+                        break;
+                    }
+                }
+
+                int end = span.Length - 1;
+                for (; end > start; end--)
+                {
+                    if (!char.IsWhiteSpace(span[end]))
+                    {
+                        break;
+                    }
+                }
+                return span.Slice(start, end - start + 1);
+            }
         }
 
         /// <summary>

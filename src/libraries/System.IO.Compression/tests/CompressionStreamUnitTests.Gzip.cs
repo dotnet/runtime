@@ -6,7 +6,9 @@ using System.IO.Compression.Tests;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Compression
 {
@@ -71,6 +73,10 @@ namespace System.IO.Compression
             // payload being 0 length before it reads the final buffer-full.
             int minCompressedSize = 3 * actualBufferSize;
 
+            // A single empty chunk in a GZIP header/footer. This is writing the bytes directly
+            // as the implementation now avoids writing 0-length chunks.
+            byte[] payload = [31, 139, 8, 0, 0, 0, 0, 0, 2, 10, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
             using (Stream compressedStream = new DerivedMemoryStream())
             {
                 using (var gz = new GZipStream(compressedStream, CompressionLevel.NoCompression, leaveOpen: true))
@@ -81,10 +87,7 @@ namespace System.IO.Compression
 
                 while (compressedStream.Length < minCompressedSize)
                 {
-                    using (var gz = new GZipStream(compressedStream, CompressionLevel.NoCompression, leaveOpen: true))
-                    {
-                        gz.Write(Array.Empty<byte>());
-                    }
+                    compressedStream.Write(payload);
                 }
 
                 compressedStream.Seek(0, SeekOrigin.Begin);
@@ -275,7 +278,6 @@ namespace System.IO.Compression
         }
 
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Fact]
         public void StreamCorruption_IsDetected()
         {
@@ -320,6 +322,92 @@ namespace System.IO.Compression
                 // restore the data
                 compressedData[byteToCorrupt]--;
             }
+        }
+
+        [InlineData(TestScenario.ReadAsync)]
+        [InlineData(TestScenario.Read)]
+        [InlineData(TestScenario.Copy)]
+        [InlineData(TestScenario.CopyAsync)]
+        [InlineData(TestScenario.ReadByte)]
+        [InlineData(TestScenario.ReadByteAsync)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StreamTruncation_IsDetected(TestScenario testScenario)
+        {
+            RemoteExecutor.Invoke(async (testScenario) =>
+            {
+                TestScenario scenario = Enum.Parse<TestScenario>(testScenario);
+
+                AppContext.SetSwitch("System.IO.Compression.UseStrictValidation", true);
+
+                var buffer = new byte[16];
+                byte[] source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+                byte[] compressedData;
+                using (var compressed = new MemoryStream())
+                using (Stream compressor = CreateStream(compressed, CompressionMode.Compress))
+                {
+                    foreach (byte b in source)
+                    {
+                        compressor.WriteByte(b);
+                    }
+
+                    compressor.Dispose();
+                    compressedData = compressed.ToArray();
+                }
+
+                for (var i = 1; i <= compressedData.Length; i += 1)
+                {
+                    bool expectException = i < compressedData.Length;
+                    using (var compressedStream = new MemoryStream(compressedData.Take(i).ToArray()))
+                    {
+                        using (Stream decompressor = CreateStream(compressedStream, CompressionMode.Decompress))
+                        {
+                            var decompressedStream = new MemoryStream();
+
+                            try
+                            {
+                                switch (scenario)
+                                {
+                                    case TestScenario.Copy:
+                                        decompressor.CopyTo(decompressedStream);
+                                        break;
+
+                                    case TestScenario.CopyAsync:
+                                        await decompressor.CopyToAsync(decompressedStream);
+                                        break;
+
+                                    case TestScenario.Read:
+                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        break;
+
+                                    case TestScenario.ReadAsync:
+                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        break;
+
+                                    case TestScenario.ReadByte:
+                                        while (decompressor.ReadByte() != -1) { }
+                                        break;
+
+                                    case TestScenario.ReadByteAsync:
+                                        while (await decompressor.ReadByteAsync() != -1) { }
+                                        break;
+                                }
+                            }
+                            catch (InvalidDataException e)
+                            {
+                                if (expectException)
+                                    continue;
+
+                                throw new XunitException($"An unexpected error occurred while decompressing data:{e}");
+                            }
+
+                            if (expectException)
+                            {
+                                throw new XunitException($"Truncated stream was decompressed successfully but exception was expected: length={i}/{compressedData.Length}");
+                            }
+                        }
+                    }
+                }
+            }, testScenario.ToString()).Dispose();
         }
 
         private sealed class DerivedGZipStream : GZipStream

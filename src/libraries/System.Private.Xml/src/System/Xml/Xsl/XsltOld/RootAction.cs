@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.Security;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl.Runtime;
 using MS.Internal.Xml.XPath;
-using System.Security;
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
         }
     }
 
-    internal struct DocumentKeyList
+    internal readonly struct DocumentKeyList
     {
         private readonly XPathNavigator _rootNav;
         private readonly Hashtable _keyTable;

@@ -10,24 +10,18 @@
 #include "perfinfo.h"
 #include "pal.h"
 
-PerfInfo::PerfInfo(int pid)
+PerfInfo::PerfInfo(int pid, const char* basePath)
   : m_Stream(nullptr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    SString tempPath;
-    if (!WszGetTempPath(tempPath))
-    {
-        return;
-    }
-
     SString path;
-    path.Printf("%Sperfinfo-%d.map", tempPath.GetUnicode(), pid);
+    path.Printf("%s/perfinfo-%d.map", basePath, pid);
     OpenFile(path);
 }
 
 // Logs image loads into the process' perfinfo-%d.map file
-void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
+void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
 {
     CONTRACTL
     {
@@ -38,8 +32,8 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
         PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
-    SString value;
-    const SString& path = pPEAssembly->GetPath();
+    // Nothing to log if the assembly path isn't present.
+    SString path{ pPEAssembly->GetPath() };
     if (path.IsEmpty())
     {
         return;
@@ -55,12 +49,11 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
         }
     }
 
-    value.Printf("%S%c%S%c%p", path.GetUnicode(), sDelimiter, guid, sDelimiter, baseAddr);
+    SString value;
+    value.Printf("%s%c%s%c%p", path.GetUTF8(), sDelimiter, guid, sDelimiter, baseAddr);
 
-    SString command;
-    command.Printf("%s", "ImageLoad");
+    SString command{ SString::Literal, "ImageLoad" };
     WriteLine(command, value);
-
 }
 
 // Writes a command line, with "type" being the type of command, with "value" as the command's corresponding instructions/values. This is to be used to log specific information, e.g. LogImage
@@ -80,8 +73,8 @@ void PerfInfo::WriteLine(SString& type, SString& value)
     }
 
     SString line;
-    line.Printf("%S%c%S%c\n",
-            type.GetUnicode(), sDelimiter, value.GetUnicode(), sDelimiter);
+    line.Printf("%s%c%s%c\n",
+            type.GetUTF8(), sDelimiter, value.GetUTF8(), sDelimiter);
 
     EX_TRY
     {

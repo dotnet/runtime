@@ -23,7 +23,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [MemberData(nameof(GetFormatsAndSpecialFiles))]
         public void Extract_SpecialFiles(TarEntryFormat format, TarEntryType entryType)
         {
@@ -36,7 +36,7 @@ namespace System.Formats.Tar.Tests
             Verify_Extract_SpecialFiles(destination, entry, entryType);
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [MemberData(nameof(GetFormatsAndSpecialFiles))]
         public async Task Extract_SpecialFiles_Async(TarEntryFormat format, TarEntryType entryType)
         {

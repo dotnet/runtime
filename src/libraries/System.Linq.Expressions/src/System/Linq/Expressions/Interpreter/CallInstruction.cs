@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Dynamic.Utils;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic.Utils;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public abstract int ArgumentCount { get; }
 
-        private static bool CanCreateArbitraryDelegates => true;
+        private static bool CanCreateArbitraryDelegates => RuntimeFeature.IsDynamicCodeSupported;
 
         #region Construction
 
@@ -50,6 +50,8 @@ namespace System.Linq.Expressions.Interpreter
             if (!CanCreateArbitraryDelegates)
                 return new MethodInfoCallInstruction(info, argumentCount);
 
+            // This code should be unreachable in AOT. The analyzer currently doesn't understand feature switches
+#pragma warning disable IL3050
             if (!info.IsStatic && info.DeclaringType!.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
@@ -72,12 +74,9 @@ namespace System.Linq.Expressions.Interpreter
 
             // see if we've created one w/ a delegate
             CallInstruction? res;
-            if (ShouldCache(info))
+            if (s_cache.TryGetValue(info, out res))
             {
-                if (s_cache.TryGetValue(info, out res))
-                {
-                    return res;
-                }
+                return res;
             }
 
             // create it
@@ -112,13 +111,11 @@ namespace System.Linq.Expressions.Interpreter
                 res = new MethodInfoCallInstruction(info, argumentCount);
             }
 
-            // cache it for future users if it's a reasonable method to cache
-            if (ShouldCache(info))
-            {
-                s_cache[info] = res;
-            }
+            // cache it for future users
+            s_cache[info] = res;
 
             return res;
+#pragma warning restore IL3050
         }
 
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
@@ -171,11 +168,6 @@ namespace System.Linq.Expressions.Interpreter
             array.SetValue(value, index0, index1, index2);
         }
 
-        private static bool ShouldCache(MethodInfo info)
-        {
-            return true;
-        }
-
 #if FEATURE_FAST_CREATE
         /// <summary>
         /// Gets the next type or null if no more types are available.
@@ -216,6 +208,7 @@ namespace System.Linq.Expressions.Interpreter
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static CallInstruction SlowCreate(MethodInfo info, ParameterInfo[] pis)
         {
             List<Type> types = new List<Type>();

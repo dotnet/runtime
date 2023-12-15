@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /*
  QFE regression TC for AV while optimizing away basic blocks that 
  are not used which contain switch statements.
 */
 
-class TEST
+public class TEST
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         int SSS;
         try
@@ -43,7 +45,6 @@ class TEST
         System.Console.WriteLine("END");
 
         System.Console.WriteLine("!!!!!!!!!!!!! PASSED !!!!!!!!!!!!!");
-        return 100;
     }
 }
 

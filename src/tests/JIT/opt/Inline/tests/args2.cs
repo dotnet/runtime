@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
-    internal class Args2
+    public class Args2
     {
-        static public void FillArray(out int[] myArray)
+        static internal void FillArray(out int[] myArray)
         {
             myArray = new int[5] { 1, 2, 3, 4, 5 };
         }
 
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             int retval = 85;
             int[] myArray;

@@ -11,7 +11,7 @@ export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
         const scriptURL = mockURL.substring(mockPrefix.length);
         return import(scriptURL).then((mockModule) => {
             const script = mockModule.default;
-            return mock(script, { trace: true });
+            return mock(script);
         });
     } else {
         return Promise.resolve(undefined as unknown as Mock);

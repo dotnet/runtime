@@ -18,7 +18,9 @@ namespace System
     public readonly struct UInt128
         : IBinaryInteger<UInt128>,
           IMinMaxValue<UInt128>,
-          IUnsignedNumber<UInt128>
+          IUnsignedNumber<UInt128>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<UInt128>
     {
         internal const int Size = 16;
 
@@ -119,75 +121,56 @@ namespace System
             return Number.TryFormatUInt128(this, format, provider, destination, out charsWritten);
         }
 
-        public static UInt128 Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseUInt128(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatUInt128(this, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static UInt128 Parse(string s, NumberStyles style)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt128(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static UInt128 Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static UInt128 Parse(string s, IFormatProvider? provider)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseUInt128(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static UInt128 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
+
+        public static UInt128 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
         public static UInt128 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            ArgumentNullException.ThrowIfNull(s);
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static UInt128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out UInt128 result)
-        {
-            if (s is not null)
-            {
-                return Number.TryParseUInt128IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-            }
-            else
-            {
-                result = default;
-                return false;
-            }
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out UInt128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out UInt128 result)
-        {
-            return Number.TryParseUInt128IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out UInt128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its 128-bit unsigned integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the 128-bit unsigned integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out UInt128 result) => TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out UInt128 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s is not null)
+            if (s is null)
             {
-                return Number.TryParseUInt128(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
-            }
-            else
-            {
-                result = default;
+                result = 0;
                 return false;
             }
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out UInt128 result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseUInt128(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -240,7 +223,7 @@ namespace System
             if (value._upper > uint.MaxValue)
             {
                 // The default behavior of decimal conversions is to always throw on overflow
-                Number.ThrowOverflowException(TypeCode.Decimal);
+                Number.ThrowOverflowException(SR.Overflow_Decimal);
             }
 
             uint hi32 = (uint)(value._upper);
@@ -819,12 +802,17 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static UInt128 LeadingZeroCount(UInt128 value)
+            => (uint)LeadingZeroCountAsInt32(value);
+
+        /// <summary>Computes the number of leading zero bits in this value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LeadingZeroCountAsInt32(UInt128 value)
         {
             if (value._upper == 0)
             {
-                return 64 + ulong.LeadingZeroCount(value._lower);
+                return 64 + BitOperations.LeadingZeroCount(value._lower);
             }
-            return ulong.LeadingZeroCount(value._upper);
+            return BitOperations.LeadingZeroCount(value._upper);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -865,7 +853,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > Size) && (source[..^Size].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > Size) && (source[..^Size].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -922,7 +910,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > Size) && (source[Size..].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > Size) && (source[Size..].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -967,8 +955,7 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<UInt128>.GetShortestBitLength()
         {
-            UInt128 value = this;
-            return (Size * 8) - BitOperations.LeadingZeroCount(value);
+            return (Size * 8) - LeadingZeroCountAsInt32(this);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
@@ -1104,10 +1091,18 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static UInt128 operator /(UInt128 left, UInt128 right)
         {
-            if ((right._upper == 0) && (left._upper == 0))
+            if (right._upper == 0)
             {
-                // left and right are both uint64
-                return left._lower / right._lower;
+                if (right._lower == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+
+                if (left._upper == 0)
+                {
+                    // left and right are both uint64
+                    return left._lower / right._lower;
+                }
             }
 
             if (right >= left)
@@ -1175,7 +1170,7 @@ namespace System
                 Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 2), (uint)(quotient._upper >> 00));
                 Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 3), (uint)(quotient._upper >> 32));
 
-                Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(quotient) / 32));
+                Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (LeadingZeroCountAsInt32(quotient) / 32));
 
                 // Repeat the same operation with the divisor
 
@@ -1187,7 +1182,7 @@ namespace System
                 Unsafe.WriteUnaligned(ref *(byte*)(pRight + 2), (uint)(divisor._upper >> 00));
                 Unsafe.WriteUnaligned(ref *(byte*)(pRight + 3), (uint)(divisor._upper >> 32));
 
-                Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(divisor) / 32));
+                Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (LeadingZeroCountAsInt32(divisor) / 32));
 
                 Span<uint> rawBits = stackalloc uint[Size / sizeof(uint)];
                 rawBits.Clear();
@@ -2155,5 +2150,49 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static UInt128 operator +(UInt128 value) => value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static UInt128 Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseBinaryInteger<byte, UInt128>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out UInt128 result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static UInt128 Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out UInt128 result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsSigned => false;
+
+        static int IBinaryIntegerParseAndFormatInfo<UInt128>.MaxDigitCount => 39; // 340_282_366_920_938_463_463_374_607_431_768_211_455
+
+        static int IBinaryIntegerParseAndFormatInfo<UInt128>.MaxHexDigitCount => 32; // 0xFFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF
+
+        static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MaxValueDiv10 => new UInt128(0x1999_9999_9999_9999, 0x9999_9999_9999_9999);
+
+        static string IBinaryIntegerParseAndFormatInfo<UInt128>.OverflowMessage => SR.Overflow_UInt128;
+
+        static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsGreaterThanAsUnsigned(UInt128 left, UInt128 right) => left > right;
+
+        static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MultiplyBy10(UInt128 value) => value * 10;
+
+        static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MultiplyBy16(UInt128 value) => value * 16;
     }
 }

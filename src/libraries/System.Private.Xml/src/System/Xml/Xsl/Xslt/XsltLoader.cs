@@ -7,15 +7,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Text;
-using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using ContextInfo = System.Xml.Xsl.Xslt.XsltInput.ContextInfo;
 using F = System.Xml.Xsl.Xslt.AstFactory;
-using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 using QName = System.Xml.Xsl.Xslt.XsltInput.DelayedQName;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
 using XsltAttribute = System.Xml.Xsl.Xslt.XsltInput.XsltAttribute;
 
 namespace System.Xml.Xsl.Xslt
@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.Xslt
                     // for reads beyond the initial stylesheet read) will use a throwing resolver as its
                     // default, as shown at the very top of this method.
 
-                    origResolver ??= new XmlUrlResolver();
+                    origResolver ??= XmlReaderSettings.GetDefaultPermissiveResolver();
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)
                     {
@@ -417,11 +417,11 @@ namespace System.Xml.Xsl.Xslt
                                 }
                                 else if (_input.IsKeyword(_atoms.Variable))
                                 {
-                                    LoadGlobalVariableOrParameter(ctxInfo.nsList, XslNodeType.Variable);
+                                    LoadGlobalVariableOrParameter(ctxInfo.nsList);
                                 }
                                 else if (_input.IsKeyword(_atoms.Param))
                                 {
-                                    LoadGlobalVariableOrParameter(ctxInfo.nsList, XslNodeType.Param);
+                                    LoadGlobalVariableOrParameter(ctxInfo.nsList);
                                 }
                                 else if (_input.IsKeyword(_atoms.Template))
                                 {
@@ -953,7 +953,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             char[] DefaultValues = DecimalFormatDecl.Default.Characters;
-            char[] characters = new char[NumCharAttrs];
+            Span<char> characters = stackalloc char[NumCharAttrs];
             Debug.Assert(NumCharAttrs == DefaultValues.Length);
 
             for (int idx = 0; idx < NumCharAttrs; idx++)
@@ -1118,7 +1118,7 @@ namespace System.Xml.Xsl.Xslt
             set.AddContent(SetInfo(F.List(), LoadEndTag(content), ctxInfo));
         }
 
-        private void LoadGlobalVariableOrParameter(NsDecl? stylesheetNsList, XslNodeType nodeType)
+        private void LoadGlobalVariableOrParameter(NsDecl? stylesheetNsList)
         {
             Debug.Assert(_curTemplate == null);
             Debug.Assert(_input.CanHaveApplyImports == false);
@@ -2824,7 +2824,7 @@ namespace System.Xml.Xsl.Xslt
         // Does not suppress errors
         private void ParseWhitespaceRules(string elements, bool preserveSpace)
         {
-            if (elements != null && elements.Length != 0)
+            if (!string.IsNullOrEmpty(elements))
             {
                 string[] tokens = XmlConvert.SplitString(elements);
                 for (int i = 0; i < tokens.Length; i++)
@@ -2834,7 +2834,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         namespaceName = _compiler.CreatePhantomNamespace();
                     }
-                    else if (prefix == null || prefix.Length == 0)
+                    else if (string.IsNullOrEmpty(prefix))
                     {
                         namespaceName = prefix;
                     }

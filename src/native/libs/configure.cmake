@@ -9,11 +9,6 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
-if(POLICY CMP0075)
-    cmake_policy(SET CMP0075 NEW)
-endif()
-
 if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
@@ -132,6 +127,11 @@ check_symbol_exists(
     HAVE_F_DUPFD_CLOEXEC)
 
 check_symbol_exists(
+    F_DUPFD
+    fcntl.h
+    HAVE_F_DUPFD)
+
+check_symbol_exists(
     F_FULLFSYNC
     fcntl.h
     HAVE_F_FULLFSYNC)
@@ -174,6 +174,11 @@ check_symbol_exists(
     vfork
     unistd.h
     HAVE_VFORK)
+
+check_symbol_exists(
+    pipe
+    unistd.h
+    HAVE_PIPE)
 
 check_symbol_exists(
     pipe2
@@ -245,14 +250,14 @@ check_include_files(
     HAVE_GNU_LIBNAMES_H)
 
 check_symbol_exists(
-    arc4random_buf
-    "stdlib.h"
-    HAVE_ARC4RANDOM_BUF)
-
-check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
     HAVE_TIOCGWINSZ)
+
+check_symbol_exists(
+    TIOCSWINSZ
+    "sys/ioctl.h"
+    HAVE_TIOCSWINSZ)
 
 check_symbol_exists(
     tcgetattr
@@ -348,6 +353,18 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
 
+check_struct_has_member(
+    "struct statvfs"
+    f_basetype
+    "sys/statvfs.h"
+    HAVE_STATVFS_BASETYPE)
+
+set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
+check_type_size(
+    "((struct dirent*)0)->d_name"
+    DIRENT_NAME_SIZE)
+set(CMAKE_EXTRA_INCLUDE_FILES)
+
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
     set (STATFS_INCLUDES sys/mount.h)
@@ -361,6 +378,16 @@ check_symbol_exists(
     "statfs"
     ${STATFS_INCLUDES}
     HAVE_STATFS)
+
+check_symbol_exists(
+    "getrlimit"
+    "sys/resource.h"
+    HAVE_GETRLIMIT)
+
+check_symbol_exists(
+    "setrlimit"
+    "sys/resource.h"
+    HAVE_SETRLIMIT)
 
 check_type_size(
     "struct statfs"
@@ -483,10 +510,16 @@ check_symbol_exists(
     sys/socket.h
     HAVE_ACCEPT4)
 
+set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if(CLR_CMAKE_TARGET_HAIKU)
+    set(CMAKE_REQUIRED_LIBRARIES "bsd")
+endif()
+
 check_symbol_exists(
     kqueue
     "sys/types.h;sys/event.h"
     HAVE_KQUEUE)
+set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 check_symbol_exists(
     disconnectx
@@ -548,23 +581,22 @@ if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    # TODO: test to see if these all actually hold true on Mac Catalyst
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
@@ -572,17 +604,13 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
-elseif(CLR_CMAKE_TARGET_BROWSER)
+elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
 else()
-    if(CLR_CMAKE_TARGET_OSX)
-        unset(HAVE_ALIGNED_ALLOC) # only exists on OSX 10.15+
-    else()
-        check_symbol_exists(
-            aligned_alloc
-            stdlib.h
-            HAVE_ALIGNED_ALLOC)
-    endif()
+    check_symbol_exists(
+        aligned_alloc
+        stdlib.h
+        HAVE_ALIGNED_ALLOC)
 
     check_c_source_runs(
         "
@@ -656,7 +684,9 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (NOT CLR_CMAKE_TARGET_WASI)
+    check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif()
 
 check_symbol_exists(
     futimes
@@ -667,6 +697,16 @@ check_symbol_exists(
     futimens
     sys/stat.h
     HAVE_FUTIMENS)
+
+check_symbol_exists(
+    fchmod
+    sys/stat.h
+    HAVE_FCHMOD)
+
+check_symbol_exists(
+    chmod
+    sys/stat.h
+    HAVE_CHMOD)
 
 check_symbol_exists(
     utimensat
@@ -753,6 +793,13 @@ check_prototype_definition(
     ${STATFS_INCLUDES}
     HAVE_NON_LEGACY_STATFS)
 
+check_prototype_definition(
+    ioctl
+    "int ioctl(int fd, int request, ...)"
+    0
+    "sys/ioctl.h"
+    HAVE_IOCTL_WITH_INT_REQUEST)
+
 check_c_source_compiles(
     "
     #include <stdlib.h>
@@ -779,7 +826,7 @@ check_c_source_compiles(
     "
     HAVE_MKSTEMP)
 
-if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
+if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP AND NOT CLR_CMAKE_TARGET_WASI)
     message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
@@ -867,6 +914,34 @@ check_symbol_exists(
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
 
+check_include_files(
+    "syslog.h"
+    HAVE_SYSLOG_H)
+
+check_include_files(
+    "termios.h"
+    HAVE_TERMIOS_H)
+
+check_include_files(
+    "dlfcn.h"
+    HAVE_DLFCN_H)
+
+check_include_files(
+    "sys/statvfs.h"
+    HAVE_SYS_STATVFS_H)
+
+check_include_files(
+    "net/if.h"
+    HAVE_NET_IF_H)
+
+check_include_files(
+    "pthread.h"
+    HAVE_PTHREAD_H)
+
+check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
@@ -927,6 +1002,10 @@ check_include_files(
 check_include_files(
     "sys/mntent.h"
     HAVE_SYS_MNTENT_H)
+
+check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"
@@ -1002,7 +1081,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER)
+elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 
@@ -1087,7 +1166,7 @@ check_symbol_exists(
     sys/sysmacros.h
     HAVE_MAKEDEV_SYSMACROSH)
 
-if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_HAIKU)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
 
@@ -1095,6 +1174,19 @@ check_symbol_exists(
     getgrgid_r
     grp.h
     HAVE_GETGRGID_R)
+
+check_c_source_compiles(
+    "
+    #include <asm/termbits.h>
+    #include <sys/ioctl.h>
+
+    int main(void)
+    {
+        struct termios2 t;
+        return 0;
+    }
+    "
+    HAVE_TERMIOS2)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

@@ -148,7 +148,7 @@ public partial class Math
 
     public static void PrimitiveTypesTest()
     {
-        char c0 = '€';
+        char c0 = '\u20AC';
         char c1 = 'A';
         // TODO: other types!
         // just trying to ensure vars don't get optimized out
@@ -1357,6 +1357,49 @@ public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : Debu
 }
 public class ReadOnlySpanTest
 {
+    struct S1 {
+        internal double d1, d2;
+    }
+
+    ref struct R1 {
+        internal ref double d1; // 8
+        internal ref object o1; // += sizeof(MonoObject*)
+        internal object o2;  // skip
+        internal ref S1 s1; //+= instance_size(S1)
+        internal S1 s2; // skip
+        public R1(ref double d1, ref object o1, ref S1 s1) {
+            this.d1 = ref d1;
+            this.o1 = ref o1;
+            this.s1 = ref s1;
+        }
+        internal double Run()
+        {
+            return s1.d1;
+        }
+    }
+
+    ref struct R1Sample2 {
+        public ref double d1;
+        public R1Sample2(ref double d1) {
+            this.d1 = ref d1;
+        }
+    }
+
+    ref struct R2Sample2 {
+        R1Sample2 r1;
+        public R2Sample2 (ref double d1) {
+            r1 = new R1Sample2 (ref d1);
+        }
+
+        public void Modify(double newDouble) {
+            r1.d1 = newDouble;
+        }
+
+        public double Run() {
+            return r1.d1;
+        }
+    }
+
     public static void Run()
     {
         Invoke(new string[] {"TEST"});
@@ -1369,6 +1412,19 @@ public class ReadOnlySpanTest
     }
     public static void CheckArguments(ReadOnlySpan<object> parameters)
     {
+        double d1 = 123.0;
+        object o1 = new String("hi");
+        var s1 = new S1();
+        s1.d1 = 10;
+        s1.d2 = 20;
+        R1 myR1 = new R1(ref d1, ref o1, ref s1);
+        myR1.o2 = new String("hi");
+        myR1.s2 = new S1();
+        myR1.s2.d1 = 30;
+        myR1.s2.d2 = 40;
+        double xyz = 123.0;
+        R2Sample2 r2 = new R2Sample2(ref xyz);
+        xyz = 456.0;
         System.Diagnostics.Debugger.Break();
     }
 }
@@ -1505,4 +1561,98 @@ public class ToStringOverriden
         var n = new ToStringOverridenN();
         System.Diagnostics.Debugger.Break();
     }
+}
+public class TestLoadSymbols
+{
+    public static void Run()
+    {
+        var array = new Newtonsoft.Json.Linq.JArray();
+        var text = new Newtonsoft.Json.Linq.JValue("Manual text");
+        var date = new Newtonsoft.Json.Linq.JValue(new DateTime(2000, 5, 23));
+
+        System.Diagnostics.Debugger.Break();
+
+        array.Add(text);
+        array.Add(date);
+    }
+}
+
+public class MultiThreadedTest
+{
+    public static void Run()
+    {
+        System.Collections.Generic.List<System.Threading.Thread> myThreads = new();
+        for (int i = 0 ; i < 3; i++)
+        {
+            var t = new System.Threading.Thread (() => Write("y"));
+            myThreads.Add(t);
+            t.Start();
+        }
+        foreach (System.Threading.Thread curThread in myThreads)
+        {
+            curThread.Join();
+        }
+    }
+    static void Write(string input)
+    {
+        var currentThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        Console.WriteLine($"Thread:{currentThread} - {input}");
+    }
+}
+
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class CustomAttribute<TInterface> : Attribute
+{
+}
+
+[Custom<GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols>]
+public class GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
+{
+    public static void Run()
+    {
+        var myVar = new GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+    public int myField2;
+    public int myField;
+}
+
+[Custom<GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass>]
+public class GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
+{
+    public static void Run()
+    {
+        var myVar = new GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField2;
+    public int myField;
+}
+
+[Custom<GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass>]
+public class GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
+{
+    public static void Run()
+    {
+        var myVar = new GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField;
 }

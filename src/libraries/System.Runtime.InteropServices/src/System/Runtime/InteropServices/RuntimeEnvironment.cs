@@ -23,7 +23,9 @@ namespace System.Runtime.InteropServices
             {
                 runtimeDirectory = AppDomain.CurrentDomain.BaseDirectory;
             }
-            return Path.GetDirectoryName(runtimeDirectory) + Path.DirectorySeparatorChar;
+
+            char sep = Path.DirectorySeparatorChar;
+            return string.Concat(Path.GetDirectoryName(runtimeDirectory), new ReadOnlySpan<char>(in sep));
         }
 
         [Obsolete(Obsoletions.RuntimeEnvironmentMessage, DiagnosticId = Obsoletions.RuntimeEnvironmentDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -32,6 +34,6 @@ namespace System.Runtime.InteropServices
         [Obsolete(Obsoletions.RuntimeEnvironmentMessage, DiagnosticId = Obsoletions.RuntimeEnvironmentDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static object GetRuntimeInterfaceAsObject(Guid clsid, Guid riid) => throw new PlatformNotSupportedException();
 
-        public static string GetSystemVersion() => typeof(object).Assembly.ImageRuntimeVersion;
+        public static string GetSystemVersion() => $"v{Environment.Version}";
     }
 }

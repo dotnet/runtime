@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class DateOnlyConverter : JsonConverter<DateOnly>
+    internal sealed class DateOnlyConverter : JsonPrimitiveConverter<DateOnly>
     {
         public const int FormatLength = 10; // YYYY-MM-DD
         public const int MaxEscapedFormatLength = FormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
@@ -24,10 +24,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override DateOnly ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
             return ReadCore(ref reader);
         }
 
-        private DateOnly ReadCore(ref Utf8JsonReader reader)
+        private static DateOnly ReadCore(ref Utf8JsonReader reader)
         {
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, FormatLength, MaxEscapedFormatLength))
             {
@@ -56,7 +57,11 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
         {
+#if NET8_0_OR_GREATER
+            Span<byte> buffer = stackalloc byte[FormatLength];
+#else
             Span<char> buffer = stackalloc char[FormatLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WriteStringValue(buffer);
@@ -64,7 +69,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+#if NET8_0_OR_GREATER
+            Span<byte> buffer = stackalloc byte[FormatLength];
+#else
             Span<char> buffer = stackalloc char[FormatLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WritePropertyName(buffer);

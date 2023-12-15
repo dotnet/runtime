@@ -8,6 +8,7 @@
 // Debug: Outputs 0
 // Release: Outputs 1
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -16,7 +17,8 @@ public class Program
     static uint s_9 = 1;
     static long s_13;
     static uint s_15;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_5 = s_5; // Make sure we get no static helpers in function below
         M49();

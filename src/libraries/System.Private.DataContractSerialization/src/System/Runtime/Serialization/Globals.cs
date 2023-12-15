@@ -107,9 +107,11 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfIDeserializationCallback =>
             s_typeOfIDeserializationCallback ??= typeof(IDeserializationCallback);
 
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
         private static Type? s_typeOfIObjectReference;
         internal static Type TypeOfIObjectReference =>
             s_typeOfIObjectReference ??= typeof(IObjectReference);
+#pragma warning restore SYSLIB0050
 
         private static Type? s_typeOfXmlFormatClassWriterDelegate;
         internal static Type TypeOfXmlFormatClassWriterDelegate =>

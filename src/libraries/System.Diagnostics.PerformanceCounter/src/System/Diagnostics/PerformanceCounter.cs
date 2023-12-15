@@ -69,14 +69,8 @@ namespace System.Diagnostics
         ///     Creates the Performance Counter Object
         /// </summary>
         public PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName)
+            : this(categoryName, counterName, instanceName, machineName, skipInit: false)
         {
-            MachineName = machineName;
-            CategoryName = categoryName;
-            CounterName = counterName;
-            InstanceName = instanceName;
-            _isReadOnly = true;
-            Initialize();
-            GC.SuppressFinalize(this);
         }
 
         internal PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName, bool skipInit)
@@ -86,7 +80,11 @@ namespace System.Diagnostics
             CounterName = counterName;
             InstanceName = instanceName;
             _isReadOnly = true;
-            _initialized = true;
+            if (skipInit)
+                _initialized = true;
+            else
+                Initialize();
+
             GC.SuppressFinalize(this);
         }
 
@@ -550,14 +548,14 @@ namespace System.Diagnostics
                 _counterType = counterSample._counterType;
                 if (!categorySample._isMultiInstance)
                 {
-                    if (_instanceName != null && _instanceName.Length != 0)
+                    if (!string.IsNullOrEmpty(_instanceName))
                         throw new InvalidOperationException(SR.Format(SR.InstanceNameProhibited, _instanceName));
 
                     return counterSample.GetSingleValue();
                 }
                 else
                 {
-                    if (_instanceName == null || _instanceName.Length == 0)
+                    if (string.IsNullOrEmpty(_instanceName))
                         throw new InvalidOperationException(SR.InstanceNameRequired);
 
                     return counterSample.GetInstanceValue(_instanceName);

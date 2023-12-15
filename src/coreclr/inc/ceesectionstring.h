@@ -39,10 +39,6 @@ class CeeSectionString : public CeeSection {
 	StringTableEntry *findStringInsert(
 				StringTableEntry *&entry, _In_z_ LPWSTR targetValue, ULONG hashId);
 	void deleteEntries(StringTableEntry *e);
-#ifdef RDATA_STATS
-	int dumpEntries(StringTableEntry *e);
-	void dumpTable();
-#endif
 
   public:
 	~CeeSectionString();

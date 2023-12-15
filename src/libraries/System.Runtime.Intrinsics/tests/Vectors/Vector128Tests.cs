@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -10,6 +12,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
     public sealed class Vector128Tests
     {
         [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Vector128))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
         public unsafe void Vector128IsHardwareAcceleratedTest()
         {
             MethodInfo methodInfo = typeof(Vector128).GetMethod("get_IsHardwareAccelerated");
@@ -4514,6 +4518,33 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector128SingleCopyToTest()
+        {
+            float[] array = new float[4];
+            Vector128.Create(2.0f).CopyTo(array);
+            Assert.True(array.AsSpan().SequenceEqual([2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector128SingleCopyToOffsetTest()
+        {
+            float[] array = new float[5];
+            Vector128.Create(2.0f).CopyTo(array, 1);
+            Assert.True(array.AsSpan().SequenceEqual([0.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector128SByteAbs_MinValue()
+        {
+            Vector128<sbyte> vector = Vector128.Create(sbyte.MinValue);
+            Vector128<sbyte> abs = Vector128.Abs(vector);
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal(sbyte.MinValue, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
@@ -4580,6 +4611,51 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             MethodInfo methodInfo = typeof(Vector128<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.False((bool)methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
+        public void GetOneByte() => TestGetOne<byte>();
+
+        [Fact]
+        public void GetOneDouble() => TestGetOne<double>();
+
+        [Fact]
+        public void GetOneInt16() => TestGetOne<short>();
+
+        [Fact]
+        public void GetOneInt32() => TestGetOne<int>();
+
+        [Fact]
+        public void GetOneInt64() => TestGetOne<long>();
+
+        [Fact]
+        public void GetOneIntPtr() => TestGetOne<nint>();
+
+        [Fact]
+        public void GetOneSByte() => TestGetOne<sbyte>();
+
+        [Fact]
+        public void GetOneSingle() => TestGetOne<float>();
+
+        [Fact]
+        public void GetOneUInt16() => TestGetOne<ushort>();
+
+        [Fact]
+        public void GetOneUInt32() => TestGetOne<uint>();
+
+        [Fact]
+        public void GetOneUInt64() => TestGetOne<ulong>();
+
+        [Fact]
+        public void GetOneUIntPtr() => TestGetOne<nuint>();
+
+        private static void TestGetOne<T>()
+            where T : struct, INumber<T>
+        {
+            Assert.Equal(Vector128<T>.One, Vector128.Create(T.One));
+
+            MethodInfo methodInfo = typeof(Vector128<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.Equal((Vector128<T>)methodInfo.Invoke(null, null), Vector128.Create(T.One));
         }
     }
 }

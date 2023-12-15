@@ -1,45 +1,70 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ArrayOfFrozenObjectsNode<TEmbedded> : ArrayOfEmbeddedDataNode<TEmbedded>
-        where TEmbedded : EmbeddedObjectNode
+    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        public ArrayOfFrozenObjectsNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter) : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
-        {
-        }
+        private int? _size;
+        int INodeWithSize.Size => _size.Value;
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart");
+
+        public int Offset => 0;
 
         private static void AlignNextObject(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             builder.EmitZeros(AlignmentHelper.AlignUp(builder.CountBytes, factory.Target.PointerSize) - builder.CountBytes);
         }
 
-        protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
-            foreach (EmbeddedObjectNode node in NodesList)
+            // This is a summary node
+            if (relocsOnly)
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
+
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.AddSymbol(this);
+            foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {
                 AlignNextObject(ref builder, factory);
 
-                if (!relocsOnly)
-                    node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+                node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
 
+                int initialOffset = builder.CountBytes;
                 node.EncodeData(ref builder, factory, relocsOnly);
-                if (node is ISymbolDefinitionNode)
+                int objectSize = builder.CountBytes - initialOffset;
+                int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
+                if (objectSize < minimumObjectSize)
                 {
-                    builder.AddSymbol((ISymbolDefinitionNode)node);
+                    builder.EmitZeros(minimumObjectSize - objectSize);
                 }
+
+                builder.AddSymbol(node);
             }
 
             // Terminate with a null pointer as expected by the GC
             AlignNextObject(ref builder, factory);
             builder.EmitZeroPointer();
+
+            _size = builder.CountBytes;
+
+            return builder.ToObjectData();
         }
 
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory) => ObjectNodeSection.DataSection;
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
         public override int ClassCode => -1771336339;
+
+        public override bool IsShareable => false;
+
+        public override bool StaticDependenciesAreComputed => true;
     }
 }

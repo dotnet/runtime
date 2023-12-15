@@ -21,8 +21,10 @@ namespace HelloFrozenSegment
 
         public void Release()
         {
-            GCHelpers.UnregisterFrozenSegment(this.underlyingSegment);
-            Marshal.FreeHGlobal(this.underlyingBuffer);
+            // Workaround for GitHub 85863
+            // We are not aware of anyone calling this API so it's low priority to fix
+            // GCHelpers.UnregisterFrozenSegment(this.underlyingSegment);
+            // Marshal.FreeHGlobal(this.underlyingBuffer);
         }
     }
 
@@ -134,8 +136,15 @@ namespace HelloFrozenSegment
 
     internal static class Program
     {
-        private static unsafe int Main(string[] args)
+        private static unsafe int Main()
         {
+            // Regression testing for dotnet/runtime #83027
+            Node[] firstArray = new Node[30000000]; 
+            for (int index = 0; index < firstArray.Length; index++)
+            {
+                firstArray[index] = new Node();
+            }
+
             IntPtr methodTable = typeof(Node).TypeHandle.Value;
 
             FrozenSegmentBuilder frozenSegmentBuilder = new FrozenSegmentBuilder(1000);

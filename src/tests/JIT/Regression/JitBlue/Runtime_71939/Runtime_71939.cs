@@ -11,10 +11,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_71939
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int v3 = 1;
         return Check(0, -v3, Mutate(ref v3));

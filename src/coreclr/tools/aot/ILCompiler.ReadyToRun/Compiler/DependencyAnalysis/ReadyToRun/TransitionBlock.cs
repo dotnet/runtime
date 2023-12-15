@@ -651,8 +651,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int NumCalleeSavedRegisters => 12;
             // Callee-saves, argument registers
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
-            public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
-            public override int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
+            public override int OffsetOfFirstGCRefMapSlot => SizeOfCalleeSavedRegisters;
+            public override int OffsetOfArgumentRegisters => OffsetOfFirstGCRefMapSlot;
 
             // F0..F7
             public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double);
@@ -671,19 +671,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    int numIntroducedFields = 0;
-                    foreach (FieldDesc field in th.GetRuntimeTypeHandle().GetFields())
-                    {
-                        if (!field.IsStatic)
-                        {
-                            numIntroducedFields++;
-                        }
-                    }
-                    return ((numIntroducedFields == 0) || (numIntroducedFields > 2));
+                    return false;
                 }
             }
 
-            public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters;
+            public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfFirstGCRefMapSlot + (hasThis ? 8 : 0);
 
             public override int StackElemSize(int parmSize, bool isValueType = false, bool isFloatHfa = false)
             {

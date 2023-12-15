@@ -25,9 +25,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (jsonTypeInfo.CreateObject != null)
+            if (!jsonTypeInfo.UsesParameterizedConstructor || state.Current.IsPopulating)
             {
-                // Contract customization: fall back to default object converter if user has set a default constructor delegate.
+                // Fall back to default object converter in following cases:
+                // - if user configuration has invalidated the parameterized constructor
+                // - we're continuing populating an object.
                 return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
             }
 
@@ -40,7 +42,15 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
+                }
+
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                {
+                    object populatedObject = state.Current.ReturnValue!;
+                    PopulatePropertiesFastPath(populatedObject, jsonTypeInfo, options, ref reader, ref state);
+                    value = (T)populatedObject;
+                    return true;
                 }
 
                 ReadOnlySpan<byte> originalSpan = reader.OriginalSpan;
@@ -107,7 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (reader.TokenType != JsonTokenType.StartObject)
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
@@ -132,15 +142,29 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
-                    ResolvePolymorphicConverter(jsonTypeInfo, options, ref state) is JsonConverter polymorphicConverter)
+                    ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.Type!, options, ref state, out object? objectResult);
                     value = (T)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
+                }
+
+                // We need to populate before we started reading constructor arguments.
+                // Metadata is disallowed with Populate option and therefore ordering here is irrelevant.
+                // Since state.Current.IsPopulating is being checked early on in this method the continuation
+                // will be handled there.
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                {
+                    object populatedObject = state.Current.ReturnValue!;
+
+                    jsonTypeInfo.OnDeserializing?.Invoke(populatedObject);
+                    state.Current.ObjectState = StackFrameObjectState.CreatedObject;
+                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+                    return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 }
 
                 // Handle metadata post polymorphic dispatch
@@ -148,7 +172,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (state.Current.CanContainMetadata)
                     {
-                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                        JsonSerializer.ValidateMetadataForObjectConverter(ref state);
                     }
 
                     if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
@@ -157,7 +181,7 @@ namespace System.Text.Json.Serialization.Converters
                         return true;
                     }
 
-                    BeginRead(ref state, ref reader, options);
+                    BeginRead(ref state, options);
 
                     state.Current.ObjectState = StackFrameObjectState.ConstructorArguments;
                 }
@@ -170,7 +194,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 obj = (T)CreateObject(ref state.Current);
 
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                 {
                     Debug.Assert(state.ReferenceId != null);
                     Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
@@ -258,7 +282,7 @@ namespace System.Text.Json.Serialization.Converters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ReadConstructorArguments(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            BeginRead(ref state, ref reader, options);
+            BeginRead(ref state, options);
 
             while (true)
             {
@@ -282,7 +306,15 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (!(jsonParameterInfo!.ShouldDeserialize))
                     {
-                        reader.Skip();
+                        // The Utf8JsonReader.Skip() method will fail fast if it detects that we're reading
+                        // from a partially read buffer, regardless of whether the next value is available.
+                        // This can result in erroneous failures in cases where a custom converter is calling
+                        // into a built-in converter (cf. https://github.com/dotnet/runtime/issues/74108).
+                        // For this reason we need to call the TrySkip() method instead -- the serializer
+                        // should guarantee sufficient read-ahead has been performed for the current object.
+                        bool success = reader.TrySkip();
+                        Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
+
                         state.Current.EndConstructorParameter();
                         continue;
                     }
@@ -294,7 +326,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj: null!,
                         unescapedPropertyName,
@@ -335,7 +367,8 @@ namespace System.Text.Json.Serialization.Converters
                             state.Current.JsonPropertyNameAsString);
                     }
 
-                    reader.Skip();
+                    bool success = reader.TrySkip();
+                    Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
 
                     state.Current.EndProperty();
                 }
@@ -386,7 +419,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
                             unescapedPropertyName,
@@ -445,7 +478,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Returning false below will cause the read-ahead functionality to finish the read.
                 state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.RequiresReadAhead, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonParameterInfo.EffectiveConverter.RequiresReadAhead, ref reader, ref state))
                 {
                     return false;
                 }
@@ -537,15 +570,15 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void BeginRead(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private void BeginRead(scoped ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            jsonTypeInfo.ValidateCanBeUsedForMetadataSerialization();
+            jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
 
             if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache!.Count)
             {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type);
             }
 
             state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
@@ -569,7 +602,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(state.Current.JsonTypeInfo.Kind == JsonTypeInfoKind.Object);
 
-            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
 
             jsonParameterInfo = state.Current.JsonTypeInfo.GetParameter(
                 unescapedPropertyName,

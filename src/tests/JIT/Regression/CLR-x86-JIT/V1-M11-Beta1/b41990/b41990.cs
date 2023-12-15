@@ -3,11 +3,12 @@
 
 
 using System;
+using Xunit;
 
 
 namespace Test
 {
-    internal class AA
+    public class AA
     {
         private static void Main1()
         {
@@ -25,7 +26,8 @@ namespace Test
             }
             catch (NullReferenceException) { }
         }
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

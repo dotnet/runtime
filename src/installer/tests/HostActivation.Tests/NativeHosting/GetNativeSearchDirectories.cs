@@ -25,25 +25,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState = sharedTestState;
         }
 
-        [Fact]
-        public void BasicApp()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BasicApp(bool hasDepsJson)
         {
+            // Original app will dispose of its copies
+            var app = hasDepsJson ? sharedState.App : sharedState.App.Copy();
+
             string[] args =
             {
                 GetNativeSearchDirectoriesArg,
                 Scenario.GetForCommandLine,
                 sharedState.HostFxrPath,
                 sharedState.DotNet.DotnetExecutablePath,
-                sharedState.AppPath
+                app.AppDll
             };
+
+            if (!hasDepsJson)
+                File.Delete(app.DepsJson);
 
             CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
                 .Execute();
 
-            string pathSuffix = Path.DirectorySeparatorChar.ToString();
-            string expectedSearchDirectories =
-                Path.GetDirectoryName(sharedState.AppPath) + pathSuffix + Path.PathSeparator +
-                Path.Combine(sharedState.DotNet.BinPath, "shared", "Microsoft.NETCore.App", SharedTestState.NetCoreAppVersion) + pathSuffix + Path.PathSeparator;
+            // App directory is always added to native search directories if there is no deps.json.
+            // Otherwise, only directories with native assets are added.
+            string expectedSearchDirectories = hasDepsJson
+                ? string.Empty
+                : $"{app.Location}{Path.DirectorySeparatorChar}{Path.PathSeparator}";
+
+            // Microsoft.NETCore.App framework directory
+            expectedSearchDirectories += $"{Path.Combine(sharedState.DotNet.SharedFxPath, SharedTestState.NetCoreAppVersion)}{Path.DirectorySeparatorChar}{Path.PathSeparator}";
+
             result.Should().Pass()
                 .And.HaveStdOutContaining($"Native search directories: '{expectedSearchDirectories}'");
         }
@@ -93,33 +106,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void WithInvalidDepsJson()
         {
+            var app = sharedState.App.Copy();
             string[] args =
             {
                 GetNativeSearchDirectoriesArg,
                 Scenario.GetForCommandLine,
                 sharedState.HostFxrPath,
                 sharedState.DotNet.DotnetExecutablePath,
-                sharedState.AppPath
+                app.AppDll
             };
 
-            string depsJsonFile = Path.Combine(sharedState.AppDirectory, "App.deps.json");
-            try
-            {
-                File.WriteAllText(depsJsonFile, "{");
+            string depsJsonFile = app.DepsJson;
+            File.WriteAllText(depsJsonFile, "{");
 
-                sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
-                    .Execute()
-                    .Should().Fail()
-                    .And.HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.ResolverInitFailure:x} expected HostApiBufferTooSmall (0x80008098).")
-                    .And.HaveStdOutContaining("buffer_size: 0")
-                    .And.HaveStdOutContaining("hostfxr reported errors:")
-                    .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{depsJsonFile}], offset 1 (line 1, column 2): Missing a name for object member.")
-                    .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {depsJsonFile}");
-            }
-            finally
-            {
-                FileUtils.DeleteFileIfPossible(depsJsonFile);
-            }
+            sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.ResolverInitFailure:x} expected HostApiBufferTooSmall (0x80008098).")
+                .And.HaveStdOutContaining("buffer_size: 0")
+                .And.HaveStdOutContaining("hostfxr reported errors:")
+                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{depsJsonFile}], offset 1 (line 1, column 2): Missing a name for object member.")
+                .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {depsJsonFile}");
         }
 
         [Fact]
@@ -147,8 +154,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             public string HostFxrPath { get; }
             public DotNetCli DotNet { get; }
-            public string AppDirectory { get; }
-            public string AppPath { get; }
+            public TestApp App { get; }
 
             public const string NetCoreAppVersion = "2.2.0";
 
@@ -158,18 +164,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(NetCoreAppVersion)
                     .Build();
 
-                HostFxrPath = Path.Combine(
-                    DotNet.GreatestVersionHostFxrPath,
-                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
+                HostFxrPath = DotNet.GreatestVersionHostFxrFilePath;
 
-                AppDirectory = Path.Combine(BaseDirectory, "app");
-                Directory.CreateDirectory(AppDirectory);
-                AppPath = Path.Combine(AppDirectory, "App.dll");
-                File.WriteAllText(AppPath, string.Empty);
+                App = new TestApp(Path.Combine(BaseDirectory, "app"));
+                App.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, NetCoreAppVersion);
+            }
 
-                RuntimeConfig.FromFile(Path.Combine(AppDirectory, "App.runtimeconfig.json"))
-                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, NetCoreAppVersion))
-                    .Save();
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    if (App != null)
+                        App.Dispose();
+                }
+
+                base.Dispose(disposing);
             }
         }
     }

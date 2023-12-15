@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
             return FromBlobOrFile(ReadOnlySpan<byte>.Empty, fileName, password, keyStorageFlags);
         }
 
-        private static ICertificatePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static CertificatePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(!rawData.IsEmpty || fileName != null);
             Debug.Assert(password != null);
@@ -85,6 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
                         }
 
                         pCertContext?.Dispose();
+                        X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile: loadFromFile, password.PasswordProvided);
                         pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
 
                         // If PersistKeySet is set we don't delete the key, so that it persists.

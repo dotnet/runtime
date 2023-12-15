@@ -48,7 +48,7 @@ namespace LargeObjectTest
     {
         public static int ExitCode = 1;
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             int size = 1;
             int loop = 1;

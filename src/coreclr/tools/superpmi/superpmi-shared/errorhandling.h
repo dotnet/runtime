@@ -19,18 +19,22 @@
 #define EXCEPTIONCODE_LWM 0xe0423000
 #define EXCEPTIONCODE_CALLUTILS 0xe0426000
 #define EXCEPTIONCODE_TYPEUTILS 0xe0427000
+// Special exception code for rethrowing a recorded exception. This is NOT
+// considered an SPMI exception (see IsSuperPMIException), but it also does not
+// result in a replay failure (see JitInstance::CompileMethod).
+#define EXCEPTIONCODE_RECORDED_EXCEPTION 0xe0428000
 #define EXCEPTIONCODE_ASSERT 0xe0440000
 
 // RaiseException wrappers
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode);
-void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const char* message, ...);
+void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, const char* message, ...);
+void MSC_ONLY(__declspec(noreturn)) ThrowRecordedException(DWORD innerExceptionCode);
 
 // Assert stuff
 #define AssertCodeMsg(expr, exCode, msg, ...)                                                                          \
     do                                                                                                                 \
     {                                                                                                                  \
         if (!(expr))                                                                                                   \
-            LogException(exCode, "SuperPMI assertion '%s' failed (" #msg ")", #expr, ##__VA_ARGS__);                   \
+            LogException(exCode, "SuperPMI assertion '%s' failed (" msg ")", #expr, ##__VA_ARGS__);                    \
     } while (0)
 
 #define AssertCode(expr, exCode)                                                                                       \
@@ -47,21 +51,15 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const ch
             LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")" keymsg, ##__VA_ARGS__);  \
     } while (0)
 
-#define AssertKeyExists(map, key, keymsg, ...)                                                                         \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (map->GetIndex(key) == -1)                                                                                  \
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")" keymsg, ##__VA_ARGS__); \
-    } while (0)
-
-#define AssertMapAndKeyExist(map, key, keymsg, ...)                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (map == nullptr)                                                                                            \
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")" keymsg, ##__VA_ARGS__);  \
-        if (map->GetIndex(key) == -1)                                                                                  \
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")" keymsg, ##__VA_ARGS__); \
-    } while (0)
+#define LookupByKeyOrMiss(map, key, keymsg, ...)                                                                                        \
+    [&]() {                                                                                                                             \
+      if (map == nullptr)                                                                                                               \
+          LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")" keymsg, ##__VA_ARGS__);                     \
+      int index = map->GetIndex(key);                                                                                                   \
+      if (index == -1)                                                                                                                  \
+          LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")" keymsg, ##__VA_ARGS__); \
+      return map->GetItem(index);                                                                                                       \
+    }()
 
 // clang doesn't allow for an empty __VA_ARGS__, so we need to pass something non-empty to `LogException`, below.
 
@@ -72,21 +70,15 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const ch
             LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")", "");                    \
     } while (0)
 
-#define AssertKeyExistsNoMessage(map, key)                                                                             \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (map->GetIndex(key) == -1)                                                                                  \
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")", "");\
-    } while (0)
-
-#define AssertMapAndKeyExistNoMessage(map, key)                                                                        \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (map == nullptr)                                                                                            \
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")", "");                    \
-        if (map->GetIndex(key) == -1)                                                                                  \
-            LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")", "");\
-    } while (0)
+#define LookupByKeyOrMissNoMessage(map, key)                                                                          \
+    [&]() {                                                                                                           \
+      if (map == nullptr)                                                                                             \
+          LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing map " #map ")", "");                     \
+      int index = map->GetIndex(key);                                                                                 \
+      if (index == -1)                                                                                                \
+          LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing key \"" #key "\" in map " #map ")", ""); \
+      return map->GetItem(index);                                                                                     \
+    }()
 
 #define AssertMsg(expr, msg, ...) AssertCodeMsg(expr, EXCEPTIONCODE_ASSERT, msg, ##__VA_ARGS__)
 #define Assert(expr) AssertCode(expr, EXCEPTIONCODE_ASSERT)

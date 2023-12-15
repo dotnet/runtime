@@ -524,8 +524,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             get
             {
-                if (expandedName == null)
-                    throw new ArgumentNullException(nameof(expandedName));
+                ArgumentNullException.ThrowIfNull(expandedName);
                 if (name == null)
                 {
                     name = expandedName;
@@ -559,8 +558,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             get
             {
-                if (expandedName == null)
-                    throw new ArgumentNullException(nameof(expandedName));
+                ArgumentNullException.ThrowIfNull(expandedName);
                 if (name == null)
                 {
                     name = expandedName;

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
@@ -16,7 +16,7 @@ internal static partial class Interop
             AvailabilityChanged = 2
         }
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateNetworkChangeListenerSocket")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateNetworkChangeListenerSocket", SetLastError = true)]
         public static unsafe partial Error CreateNetworkChangeListenerSocket(IntPtr* socket);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadEvents")]

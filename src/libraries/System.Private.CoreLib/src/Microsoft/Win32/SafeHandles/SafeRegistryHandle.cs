@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
+using Microsoft.Win32.SafeHandles;
 
 #if REGISTRY_ASSEMBLY
 namespace Microsoft.Win32.SafeHandles
@@ -31,5 +31,9 @@ namespace Internal.Win32.SafeHandles
         {
             SetHandle(preexistingHandle);
         }
+
+        /// <inheritdoc/>
+        protected override bool ReleaseHandle() =>
+            Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
     }
 }

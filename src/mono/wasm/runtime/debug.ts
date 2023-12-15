@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import { INTERNAL, Module, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
+import { mono_log_warn } from "./logging";
+import { forceThreadMemoryViewRefresh, localHeapViewU8 } from "./memory";
+import { utf8ToString } from "./strings";
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
 let _call_function_res_cache: any = {};
@@ -27,19 +30,24 @@ export function mono_wasm_runtime_ready(): void {
     if ((<any>globalThis).dotnetDebugger)
         // eslint-disable-next-line no-debugger
         debugger;
-    else
-        console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
-
 }
 
-export function mono_wasm_fire_debugger_agent_message(): void {
+export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String: string): void {
+    //keep this console.assert, otherwise optimization will remove the assignments
+    // eslint-disable-next-line no-console
+    console.assert(true, `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
     // eslint-disable-next-line no-debugger
     debugger;
 }
 
+export function mono_wasm_fire_debugger_agent_message_with_data(data: number, len: number): void {
+    const base64String = toBase64StringImpl(new Uint8Array(localHeapViewU8().buffer, data, len));
+    mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
+}
+
 export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
-    const base64String = toBase64StringImpl(assembly_data);
+    const dbg_command = new Uint8Array(localHeapViewU8().buffer, buffer, buffer_len);
+    const base64String = toBase64StringImpl(dbg_command);
     const buffer_obj = {
         res_ok,
         res: {
@@ -48,7 +56,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
         }
     };
     if (commands_received.has(id))
-        console.warn(`MONO_WASM: Adding an id (${id}) that already exists in commands_received`);
+        mono_log_warn(`Adding an id (${id}) that already exists in commands_received`);
     commands_received.set(id, buffer_obj);
 }
 
@@ -60,12 +68,15 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
     }
     const byteCharacters = atob(command_parameters);
+    const heapU8 = localHeapViewU8();
     for (let i = 0; i < byteCharacters.length; i++) {
-        Module.HEAPU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
+        heapU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
     }
 }
 
 export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: number): CommandResponseResult {
+    forceThreadMemoryViewRefresh();
+
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
@@ -76,6 +87,8 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
 }
 
 export function mono_wasm_send_dbg_command(id: number, command_set: number, command: number, command_parameters: string): CommandResponseResult {
+    forceThreadMemoryViewRefresh();
+
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
@@ -96,14 +109,16 @@ export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
 }
 
 export function mono_wasm_debugger_resume(): void {
-    //nothing
+    forceThreadMemoryViewRefresh();
 }
 
 export function mono_wasm_detach_debugger(): void {
+    forceThreadMemoryViewRefresh();
     cwraps.mono_wasm_set_is_debugger_attached(false);
 }
 
 export function mono_wasm_change_debugger_log_level(level: number): void {
+    forceThreadMemoryViewRefresh();
     cwraps.mono_wasm_change_debugger_log_level(level);
 }
 
@@ -120,6 +135,7 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
     if (typeof args !== "object")
         throw new Error(`args must be an object, but got ${JSON.stringify(args)}`);
 
+    // eslint-disable-next-line no-console
     console.debug("mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae", JSON.stringify(event), JSON.stringify(args));
 }
 
@@ -138,17 +154,21 @@ export function mono_wasm_wait_for_debugger(): Promise<void> {
 export function mono_wasm_debugger_attached(): void {
     if (runtimeHelpers.waitForDebugger == -1)
         runtimeHelpers.waitForDebugger = 1;
+    forceThreadMemoryViewRefresh();
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
 export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
     //keep these assignments, these values are used by BrowserDebugProxy
-    _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    _assembly_name_str = utf8ToString(assembly_name).concat(".dll");
     _entrypoint_method_token = entrypoint_method_token;
     //keep this console.assert, otherwise optimization will remove the assignments
+    // eslint-disable-next-line no-console
     console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger
     debugger;
+
+    forceThreadMemoryViewRefresh();
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
@@ -199,6 +219,8 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
 }
 
 export function mono_wasm_call_function_on(request: CallRequest): CFOResponse {
+    forceThreadMemoryViewRefresh();
+
     if (request.arguments != undefined && !Array.isArray(request.arguments))
         throw new Error(`"arguments" should be an array, but was ${request.arguments}`);
 
@@ -318,6 +340,7 @@ type ValueAsJsonString = {
 }
 
 export function mono_wasm_get_details(objectId: string, args = {}): ValueAsJsonString {
+    forceThreadMemoryViewRefresh();
     return _get_cfo_res_details(`dotnet:cfo_res:${objectId}`, args);
 }
 
@@ -333,7 +356,8 @@ export function mono_wasm_release_object(objectId: string): void {
 }
 
 export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): void {
-    const message = Module.UTF8ToString(message_ptr);
+    forceThreadMemoryViewRefresh();
+    const message = utf8ToString(message_ptr);
 
     if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
         INTERNAL.logging.debugger(level, message);
@@ -341,7 +365,8 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
     }
 
     if (BuildConfiguration === "Debug") {
-        console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
+        // eslint-disable-next-line no-console
+        console.debug(`Debugger.Debug: ${message}`);
     }
 }
 

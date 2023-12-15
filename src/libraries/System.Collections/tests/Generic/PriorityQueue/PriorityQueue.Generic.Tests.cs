@@ -93,7 +93,7 @@ namespace System.Collections.Tests
 
         #endregion
 
-        #region Enqueue, Dequeue, Peek, EnqueueDequeue, DequeueEnqueue
+        #region Enqueue, Dequeue, Peek, EnqueueDequeue, DequeueEnqueue, Remove
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -180,6 +180,33 @@ namespace System.Collections.Tests
             AssertExtensions.CollectionEqual(itemsToEnqueue, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
         }
 
+        [Fact]
+        public void PriorityQueue_EnqueueRange_CollectionWithLargeCount_ThrowsOverflowException()
+        {
+            PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(1, 1, out List<(TElement element, TPriority priority)> generatedItems);
+
+            CollectionWithLargeCount<(TElement, TPriority)> pairCollection = new();
+            Assert.Throws<OverflowException>(() => queue.EnqueueRange(pairCollection));
+
+            (_, TPriority priority) = generatedItems[0];
+            CollectionWithLargeCount<TElement> elementCollection = new();
+            Assert.Throws<OverflowException>(() => queue.EnqueueRange(elementCollection, priority));
+        }
+
+        private class CollectionWithLargeCount<T> : ICollection<T>
+        {
+            public int Count => int.MaxValue;
+
+            public bool IsReadOnly => throw new NotImplementedException();
+            public void Add(T item) => throw new NotImplementedException();
+            public void Clear() => throw new NotImplementedException();
+            public bool Contains(T item) => throw new NotImplementedException();
+            public void CopyTo(T[] array, int arrayIndex) => throw new NotImplementedException();
+            public IEnumerator<T> GetEnumerator() => throw new NotImplementedException();
+            public bool Remove(T item) => throw new NotImplementedException();
+            IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+        }
+
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void PriorityQueue_EnqueueDequeue(int count)
@@ -217,6 +244,35 @@ namespace System.Collections.Tests
 
             IEnumerable<(TElement Element, TPriority Priority)> expectedItems = itemsToEnqueue.Where(item => !dequeuedItems.Contains(item, EqualityComparer<(TElement, TPriority)>.Default));
             AssertExtensions.CollectionEqual(expectedItems, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void PriorityQueue_Remove_AllElements(int count)
+        {
+            bool result;
+            TElement removedElement;
+            TPriority removedPriority;
+
+            PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(count, count, out List<(TElement element, TPriority priority)> generatedItems);
+
+            for (int i = count - 1; i >= 0; i--)
+            {
+                (TElement element, TPriority priority) = generatedItems[i];
+                
+                result = queue.Remove(element, out removedElement, out removedPriority);
+
+                Assert.True(result);
+                Assert.Equal(element, removedElement);
+                Assert.Equal(priority, removedPriority);
+                Assert.Equal(i, queue.Count);
+            }
+
+            result = queue.Remove(default, out removedElement, out removedPriority);
+
+            Assert.False(result);
+            Assert.Equal(default, removedElement);
+            Assert.Equal(default, removedPriority);
         }
 
         #endregion

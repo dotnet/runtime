@@ -727,7 +727,7 @@ namespace System.Xml.Xsl.Xslt
                     case XslNodeType.LiteralAttribute: result = CompileLiteralAttribute(node); break;
                     case XslNodeType.LiteralElement: result = CompileLiteralElement(node); break;
                     case XslNodeType.Message: result = CompileMessage(node); break;
-                    case XslNodeType.Nop: result = CompileNop(node); break;
+                    case XslNodeType.Nop: result = CompileNop(); break;
                     case XslNodeType.Number: result = CompileNumber((Number)node); break;
                     //              case XslNodeType.Otherwise:         wrapped by Choose
                     //              case XslNodeType.Param:             already compiled by CompileProtoTemplate()
@@ -781,7 +781,7 @@ namespace System.Xml.Xsl.Xslt
             return CompileInstructions(node.Content);
         }
 
-        private QilNode CompileNop(XslNode node)
+        private QilNode CompileNop()
         {
             return _f.Nop(_f.Sequence());
         }
@@ -1061,7 +1061,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 return null;
             }
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.String(avt);
             }
@@ -1071,7 +1071,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileTextAvt(string avt)
         {
             Debug.Assert(avt != null);
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.TextCtor(_f.String(avt));
             }
@@ -1516,7 +1516,7 @@ namespace System.Xml.Xsl.Xslt
 
         // REVIEW: Can we handle both sort's and with-param's in the document order?
         // CompileSorts() creates helper variables in varHelper
-        private QilNode? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
+        private QilList? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
         {
             QilList keyList = _f.BaseFactory.SortKeyList();
 
@@ -2061,7 +2061,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        private QilNode CompileGroupingSizeAttribute(string? attValue, bool fwdCompat)
+        private QilNode CompileGroupingSizeAttribute(string? attValue)
         {
             QilNode? result = CompileStringAvt(attValue);
 
@@ -2128,7 +2128,7 @@ namespace System.Xml.Xsl.Xslt
                 CompileLangAttributeToLcid(num.Lang, fwdCompat),
                 CompileLetterValueAttribute(num.LetterValue, fwdCompat),
                 CompileGroupingSeparatorAttribute(num.GroupingSeparator, fwdCompat),
-                CompileGroupingSizeAttribute(num.GroupingSize, fwdCompat)
+                CompileGroupingSizeAttribute(num.GroupingSize)
             ));
         }
 

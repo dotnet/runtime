@@ -6,14 +6,16 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
-using System.Net.Quic;
+using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +32,72 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+
+        [OuterLoop("Relies on finalization")]
+        [Fact]
+        public async Task ReadAheadTaskOnScavenge_ExceptionsAreObserved()
+        {
+            bool seenUnobservedExceptions = false;
+
+            EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+            {
+                if (e.Exception.InnerException?.Message == nameof(ReadAheadTaskOnScavenge_ExceptionsAreObserved))
+                {
+                    seenUnobservedExceptions = true;
+                }
+            };
+
+            TaskScheduler.UnobservedTaskException += eventHandler;
+            try
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    await MakeARequestWithoutDisposingTheHandlerAsync();
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    await Task.Delay(1000);
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
+
+            Assert.False(seenUnobservedExceptions);
+
+            static async Task MakeARequestWithoutDisposingTheHandlerAsync()
+            {
+                var cts = new CancellationTokenSource();
+                var requestCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                var handler = new SocketsHttpHandler();
+                handler.ConnectCallback = async (_, _) =>
+                {
+                    cts.Cancel();
+                    await requestCompleted.Task;
+
+                    Task completedWhenFinalized = new SetOnFinalized().CompletedWhenFinalized.Task;
+
+                    return new DelegateDelegatingStream(Stream.Null)
+                    {
+                        ReadAsyncMemoryFunc = async (_, _) =>
+                        {
+                            await completedWhenFinalized.WaitAsync(TestHelper.PassingTestTimeout);
+
+                            throw new Exception(nameof(ReadAheadTaskOnScavenge_ExceptionsAreObserved));
+                        }
+                    };
+                };
+
+                handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(1);
+
+                var client = new HttpClient(handler);
+
+                await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetStringAsync("http://foo", cts.Token));
+
+                requestCompleted.SetResult();
+            }
+        }
 
         [Fact]
         public async Task ExecutionContext_Suppressed_Success()
@@ -89,10 +157,9 @@ namespace System.Net.Http.Functional.Tests
         [MethodImpl(MethodImplOptions.NoInlining)] // avoid JIT extending lifetime of the finalizable object
         private static (Task completedOnFinalized, Task getRequest) MakeHttpRequestWithTcsSetOnFinalizationInAsyncLocal(HttpClient client, Uri uri)
         {
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
             // Put something in ExecutionContext, start the HTTP request, then undo the EC change.
-            var al = new AsyncLocal<object>() { Value = new SetOnFinalized() { _completedWhenFinalized = tcs } };
+            var al = new AsyncLocal<SetOnFinalized>() { Value = new SetOnFinalized() };
+            TaskCompletionSource tcs = al.Value.CompletedWhenFinalized;
             Task t = client.GetStringAsync(uri);
             al.Value = null;
 
@@ -106,8 +173,9 @@ namespace System.Net.Http.Functional.Tests
 
         private sealed class SetOnFinalized
         {
-            internal TaskCompletionSource _completedWhenFinalized;
-            ~SetOnFinalized() => _completedWhenFinalized.SetResult();
+            public readonly TaskCompletionSource CompletedWhenFinalized = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            ~SetOnFinalized() => CompletedWhenFinalized.SetResult();
         }
     }
 
@@ -320,7 +388,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxResponseDrainSize = 1;
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(1, handler.MaxResponseDrainSize);
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseDrainSize = 1);
             }
@@ -363,7 +431,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromSeconds(42), handler.ResponseDrainTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42));
             }
@@ -588,6 +656,45 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Proxy_Https_Succeeds(bool secureUri)
+        {
+            var releaseServer = new TaskCompletionSource();
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                bool validationCalled = false;
+                using SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+
+                handler.Proxy = new UseSpecifiedUriWebProxy(uri, new NetworkCredential("abc", "password"));
+                handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, error) =>
+                {
+                    validationCalled = true;
+                    return true;
+                };
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(secureUri ? "https://foo.bar/" : "http://foo.bar/");
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.True(validationCalled);
+
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                await connection.ReadRequestHeaderAndSendResponseAsync();
+                if (secureUri)
+                {
+                    // client will send CONNECT and if that succeeds it will negotiate TLS
+
+                    var sslConnection = await LoopbackServer.Connection.CreateAsync(null, connection.Stream, new LoopbackServer.Options { UseSsl = true });
+                    await sslConnection.ReadRequestHeaderAndSendResponseAsync();
+                }
+            }),
+            new LoopbackServer.Options { UseSsl = true });
+        }
     }
 
     public abstract class SocketsHttpHandler_TrailingHeaders_Test : HttpClientHandlerTestBase
@@ -1173,7 +1280,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1220,29 +1327,315 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
         }
     }
 
-    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11 : HttpClientHandler_MaxResponseHeadersLength_Test
+    public abstract class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength : HttpClientHandler_MaxResponseHeadersLength_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task ServerAdvertisedMaxHeaderListSize_IsHonoredByClient()
+        {
+            if (UseVersion.Major == 1)
+            {
+                // HTTP/1.X doesn't have a concept of SETTINGS_MAX_HEADER_LIST_SIZE.
+                return;
+            }
+
+            // On HTTP/3 there is no synchronization between regular requests and the acknowledgement of the SETTINGS frame.
+            // Retry the test with increasing delays to give the client connection a chance to observe the settings.
+            int retry = 0;
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                retry++;
+
+                const int Limit = 10_000;
+
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
+
+                // We want to test that the client remembered the setting it received from the previous connection.
+                // To do this, we trick the client into using the same HttpConnectionPool for both server connections.
+                // We only have control over the ConnectCallback on HTTP/2.
+                bool fakeRequestHost = UseVersion.Major == 2;
+                Uri lastServerUri = null;
+
+                GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, ct) =>
+                {
+                    Assert.Equal("foo", context.DnsEndPoint.Host);
+
+                    return await DefaultConnectCallback(new DnsEndPoint(lastServerUri.IdnHost, lastServerUri.Port), ct);
+                };
+
+                TaskCompletionSource waitingForLastRequest = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    if (fakeRequestHost)
+                    {
+                        lastServerUri = uri;
+                        uri = new UriBuilder(uri) { Host = "foo", Port = 42 }.Uri;
+                    }
+
+                    // Send a dummy request to ensure the SETTINGS frame has been received.
+                    Assert.Equal("Hello world", await client.GetStringAsync(uri));
+
+                    if (retry > 1)
+                    {
+                        // Give the client HTTP/3 connection a chance to observe the SETTINGS frame.
+                        await Task.Delay(100 * retry);
+                    }
+
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    request.Headers.Add("Foo", new string('a', Limit));
+
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                    Assert.Contains(Limit.ToString(), ex.Message);
+
+                    request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    for (int i = 0; i < Limit / 40; i++)
+                    {
+                        request.Headers.Add($"Foo-{i}", "");
+                    }
+
+                    ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                    Assert.Contains(Limit.ToString(), ex.Message);
+
+                    await waitingForLastRequest.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+                    // Ensure that the connection is still usable for requests that don't hit the limit.
+                    Assert.Equal("Hello world", await client.GetStringAsync(uri));
+                },
+                async server =>
+                {
+                    var setting = new SettingsEntry { SettingId = SettingId.MaxHeaderListSize, Value = Limit };
+
+                    await using GenericLoopbackConnection connection = UseVersion.Major == 2
+                        ? await ((Http2LoopbackServer)server).EstablishConnectionAsync(setting)
+                        : await ((Http3LoopbackServer)server).EstablishConnectionAsync(setting);
+
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(content: "Hello world");
+
+                    // On HTTP/3, the client will establish a request stream before buffering the headers.
+                    // Swallow two streams to account for the client creating and closing them before reporting the error.
+                    if (connection is Http3LoopbackConnection http3Connection)
+                    {
+                        await http3Connection.AcceptRequestStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                        await http3Connection.AcceptRequestStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                    }
+
+                    waitingForLastRequest.SetResult();
+
+                    // HandleRequestAsync will close the connection
+                    await connection.HandleRequestAsync(content: "Hello world");
+
+                    if (UseVersion.Major == 3)
+                    {
+                        await ((Http3LoopbackConnection)connection).ShutdownAsync();
+                    }
+                });
+
+                if (fakeRequestHost)
+                {
+                    await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                    {
+                        lastServerUri = uri;
+                        uri = new UriBuilder(uri) { Host = "foo", Port = 42 }.Uri;
+
+                        HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                        request.Headers.Add("Foo", new string('a', Limit));
+
+                        Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                        Assert.Contains(Limit.ToString(), ex.Message);
+
+                        // Ensure that the connection is still usable for requests that don't hit the limit.
+                        Assert.Equal("Hello world", await client.GetStringAsync(uri));
+                    },
+                    async server =>
+                    {
+                        await server.HandleRequestAsync(content: "Hello world");
+                    });
+                }
+            }, maxAttempts: UseVersion.Major == 3 ? 5 : 1);
+        }
     }
 
     [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2 : HttpClientHandler_MaxResponseHeadersLength_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
+    {
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http11(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(null, 63 * 1024)]
+        [InlineData(null, 65 * 1024)]
+        [InlineData(1, 100)]
+        [InlineData(1, 1024)]
+        public async Task LargeStatusLine_ThrowsException(int? maxResponseHeadersLength, int statusLineLengthEstimate)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+
+                if (maxResponseHeadersLength.HasValue)
+                {
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength.Value;
+                }
+
+                using HttpClient client = CreateHttpClient(handler);
+
+                if (statusLineLengthEstimate < handler.MaxResponseHeadersLength * 1024L)
+                {
+                    await client.GetAsync(uri);
+                }
+                else
+                {
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    if (!IsWinHttpHandler)
+                    {
+                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                    }
+                }
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK{new string('a', statusLineLengthEstimate)}\r\n\r\n");
+                }
+                catch { }
+            });
+        }
+
+        public static IEnumerable<object[]> TripleBoolValues() =>
+            from trailing in BoolValues
+            from async in BoolValues
+            from lineFolds in BoolValues
+            select new object[] { trailing, async, lineFolds };
+
+        private delegate int StreamReadSpanDelegate(Span<byte> buffer);
+
+        [Theory]
+        [MemberData(nameof(TripleBoolValues))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77474", TestPlatforms.Android)]
+        public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
+        {
+            Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
+                ? "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nLong-Header: "
+                : "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nLong-Header: ");
+
+            bool streamDisposed = false;
+            bool responseComplete = false;
+            int readCount = 0;
+            int fastFillLength = 64 * 1024 * 1024; // 64 MB
+
+            StreamReadSpanDelegate readFunc = buffer =>
+            {
+                if (streamDisposed)
+                {
+                    throw new ObjectDisposedException("Foo");
+                }
+
+                if (responseComplete)
+                {
+                    return 0;
+                }
+
+                if (!responsePrefix.IsEmpty)
+                {
+                    int toCopy = Math.Min(responsePrefix.Length, buffer.Length);
+                    responsePrefix.Span.Slice(0, toCopy).CopyTo(buffer);
+                    responsePrefix = responsePrefix.Slice(toCopy);
+                    return toCopy;
+                }
+
+                if (fastFillLength > 0)
+                {
+                    int toFill = Math.Min(fastFillLength, buffer.Length);
+                    buffer.Slice(0, toFill).Fill((byte)'a');
+                    fastFillLength -= toFill;
+                    if (lineFolds)
+                    {
+                        for (int i = 0; i < toFill / 10; i++)
+                        {
+                            buffer[i * 10 + 8] = (byte)'\n';
+                            buffer[i * 10 + 9] = (byte)' ';
+                        }
+                    }
+                    return toFill;
+                }
+
+                if (++readCount < 500_000)
+                {
+                    // Slowly trickle data over 500 thousand read calls.
+                    // If the implementation scans the whole buffer after every read, it will have to sift through 32 TB of data.
+                    // As that is not achievable on current hardware within the PassingTestTimeout window, the test would fail.
+                    if (lineFolds && readCount % 10 == 0)
+                    {
+                        buffer[0] = (byte)'\n';
+                        buffer[1] = (byte)' ';
+                        return 2;
+                    }
+                    else
+                    {
+                        buffer[0] = (byte)'a';
+                        return 1;
+                    }
+                }
+
+                responseComplete = true;
+
+                Debug.Assert(buffer.Length >= 4);
+                return Encoding.ASCII.GetBytes("\r\n\r\n", buffer);
+            };
+
+            var responseStream = new DelegateDelegatingStream(Stream.Null)
+            {
+                ReadAsyncMemoryFunc = (memory, _) => new ValueTask<int>(readFunc(memory.Span)),
+                ReadFunc = (array, offset, length) => readFunc(array.AsSpan(offset, length)),
+                ReadSpanFunc = buffer => readFunc(buffer),
+                DisposeFunc = _ => streamDisposed = true
+            };
+
+            using var client = new HttpClient(new SocketsHttpHandler
+            {
+                ConnectCallback = (_, _) => new ValueTask<Stream>(responseStream),
+                MaxResponseHeadersLength = 1024 * 1024 // 1 GB
+            })
+            {
+                Timeout = TestHelper.PassingTestTimeout
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://foo");
+
+            using HttpResponseMessage response = async
+                ? await client.SendAsync(request)
+                : client.Send(request);
+
+            response.EnsureSuccessStatusCode();
+
+            HttpHeaders headers = trailingHeaders
+                ? response.TrailingHeaders
+                : response.Headers;
+            Assert.True(headers.NonValidated.Contains("Long-Header"));
+        }
+    }
+
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/74896")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : HttpClientHandler_MaxResponseHeadersLength_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
@@ -2192,44 +2585,46 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41078")]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
             const int MaxConcurrentStreams = 2;
+
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
-            using (HttpClient client = CreateHttpClient(handler))
+            using HttpClient client = CreateHttpClient(handler);
+            server.AllowMultipleConnections = true;
+
+            List<Task<HttpResponseMessage>> sendTasks = new();
+            List<Http2LoopbackConnection> connections = new();
+            List<int> acceptedStreams = new();
+
+            for (int i = 0; i < 3; i++)
             {
-                server.AllowMultipleConnections = true;
-                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
-                List<Http2LoopbackConnection> connections = new List<Http2LoopbackConnection>();
-                List<int> acceptedStreams = new List<int>();
-                for (int i = 0; i < 3; i++)
-                {
-                    Http2LoopbackConnection connection = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                    connections.Add(connection);
-                    int prevAcceptedStreamCount = acceptedStreams.Count;
-                    acceptedStreams.AddRange(await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false));
-                    Assert.Equal(prevAcceptedStreamCount + MaxConcurrentStreams, acceptedStreams.Count);
-                }
+                Http2LoopbackConnection connection = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                connections.Add(connection);
 
-                int responseIndex = 0;
-                List<Task> responseTasks = new List<Task>();
-                foreach (Http2LoopbackConnection connection in connections)
-                {
-                    for (int i = 0; i < MaxConcurrentStreams; i++)
-                    {
-                        int streamId = acceptedStreams[responseIndex++];
-                        responseTasks.Add(connection.SendDefaultResponseAsync(streamId));
-                    }
-                }
+                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
-                await Task.WhenAll(responseTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-
-                await VerifySendTasks(sendTasks).ConfigureAwait(false);
+                acceptedStreams.AddRange(await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false));
             }
+
+            Assert.Equal(3 * MaxConcurrentStreams, acceptedStreams.Count);
+            Assert.Equal(sendTasks.Count, acceptedStreams.Count);
+
+            int responseIndex = 0;
+            List<Task> responseTasks = new();
+            foreach (Http2LoopbackConnection connection in connections)
+            {
+                for (int i = 0; i < MaxConcurrentStreams; i++)
+                {
+                    int streamId = acceptedStreams[responseIndex++];
+                    responseTasks.Add(connection.SendDefaultResponseAsync(streamId));
+                }
+            }
+
+            await TestHelper.WhenAllCompletedOrAnyFailed(responseTasks.ToArray()).ConfigureAwait(false);
+
+            await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
@@ -2250,79 +2645,54 @@ namespace System.Net.Http.Functional.Tests
             using SocketsHttpHandler handler = CreateHandler();
             using HttpClient client = CreateHttpClient(handler);
 
-            List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
-            for (int i = 0; i < RequestCount; i++)
-            {
-                var sendTask = client.GetAsync(server.Address);
-                sendTasks.Add(sendTask);
-            }
+            List<Task<HttpResponseMessage>> sendTasks = new();
 
-            List<(Http2LoopbackConnection connection, int streamId)> acceptedRequests = new List<(Http2LoopbackConnection connection, int streamId)>();
+            AcquireAllStreamSlots(server, client, sendTasks, RequestCount);
 
             await using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
-            for (int i = 0; i < MaxConcurrentStreams; i++)
-            {
-                (int streamId, _) = await c1.ReadAndParseRequestHeaderAsync();
-                acceptedRequests.Add((c1, streamId));
-            }
+            int[] streamIds1 = await AcceptRequests(c1, MaxConcurrentStreams);
 
             await using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
-            for (int i = 0; i < MaxConcurrentStreams; i++)
-            {
-                (int streamId, _) = await c2.ReadAndParseRequestHeaderAsync();
-                acceptedRequests.Add((c2, streamId));
-            }
+            int[] streamIds2 = await AcceptRequests(c2, MaxConcurrentStreams);
 
             await using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
-            acceptedRequests.Add((c3, finalStreamId));
 
-            foreach ((Http2LoopbackConnection connection, int streamId) request in acceptedRequests)
-            {
-                await request.connection.SendDefaultResponseAsync(request.streamId);
-            }
+            await SendResponses(c1, streamIds1);
+            await SendResponses(c2, streamIds2);
+            await c3.SendDefaultResponseAsync(finalStreamId);
 
-            foreach (Task<HttpResponseMessage> t in sendTasks)
-            {
-                HttpResponseMessage response = await t;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }
+            await VerifySendTasks(sendTasks);
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
+
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                server.AllowMultipleConnections = true;
-                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+            using HttpClient client = CreateHttpClient(handler);
+            server.AllowMultipleConnections = true;
 
-                // Block the first connection on infinite requests.
-                List<int> blockedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
-                Assert.Equal(MaxConcurrentStreams, blockedStreamIds.Count);
+            List<Task<HttpResponseMessage>> sendTasks = new();
 
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+            Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+            AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
-                int handledRequestCount = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
+            // Accept requests but don't send responses on connection 0
+            int[] blockedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
 
-                Assert.Equal(MaxConcurrentStreams, handledRequestCount);
+            Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+            AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
-                // Complete infinite requests.
-                handledRequestCount = await SendResponses(connection0, blockedStreamIds);
+            // Send responses on connection 1
+            await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
 
-                Assert.Equal(MaxConcurrentStreams, handledRequestCount);
+            // Send responses on connection 0
+            await SendResponses(connection0, blockedStreamIds);
 
-                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-
-                await VerifySendTasks(sendTasks).ConfigureAwait(false);
-            }
+            await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
@@ -2335,54 +2705,62 @@ namespace System.Net.Http.Functional.Tests
 
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            // Allow 5 connections through the ConnectCallback.
+            SemaphoreSlim connectCallbackSemaphore = new(initialCount: 5);
+
             using SocketsHttpHandler handler = CreateHandler();
+
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                await connectCallbackSemaphore.WaitAsync(ct);
+
+                return await DefaultConnectCallback(context.DnsEndPoint, ct);
+            };
+
             using (HttpClient client = CreateHttpClient(handler))
             {
-                server.AllowMultipleConnections = true;
-                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                List<Task<HttpResponseMessage>> sendTasks = new();
+
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+
                 Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                int[] streamIds1 = await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false);
+
                 Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                int[] streamIds2 = await AcceptRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false);
 
-                Task<(int Count, int LastStreamId)>[] handleRequestTasks = new[] {
-                    HandleAllPendingRequests(connection0, sendTasks.Count),
-                    HandleAllPendingRequests(connection1, sendTasks.Count),
-                    HandleAllPendingRequests(connection2, sendTasks.Count)
-                };
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                    SendResponses(connection0, streamIds0),
+                    SendResponses(connection1, streamIds1),
+                    SendResponses(connection2, streamIds2))
+                    .ConfigureAwait(false);
 
-                await Task.WhenAll(handleRequestTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+                await connection0.ShutdownIgnoringErrorsAsync(streamIds0[^1]).ConfigureAwait(false);
+                await connection2.ShutdownIgnoringErrorsAsync(streamIds2[^1]).ConfigureAwait(false);
 
-                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[0].Result.Count);
-                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[1].Result.Count);
-                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[2].Result.Count);
-
-                await connection0.ShutdownIgnoringErrorsAsync(handleRequestTasks[0].Result.LastStreamId).ConfigureAwait(false);
-                await connection2.ShutdownIgnoringErrorsAsync(handleRequestTasks[2].Result.LastStreamId).ConfigureAwait(false);
-
-                //Fill all connection1's stream slots
+                // Fill all connection1's stream slots
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                streamIds1 = await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false);
 
                 Http2LoopbackConnection connection3 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                int[] streamIds3 = await AcceptRequests(connection3, MaxConcurrentStreams).ConfigureAwait(false);
+
                 Http2LoopbackConnection connection4 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                int[] streamIds4 = await AcceptRequests(connection4, MaxConcurrentStreams).ConfigureAwait(false);
 
-                Task<(int Count, int LastStreamId)>[] finalHandleTasks = new[] {
-                    HandleAllPendingRequests(connection1, sendTasks.Count),
-                    HandleAllPendingRequests(connection3, sendTasks.Count),
-                    HandleAllPendingRequests(connection4, sendTasks.Count)
-                };
-
-                await Task.WhenAll(finalHandleTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-
-                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[0].Result.Count);
-                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[1].Result.Count);
-                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[2].Result.Count);
-
-                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+                await TestHelper.WhenAllCompletedOrAnyFailed(
+                   SendResponses(connection1, streamIds1),
+                   SendResponses(connection3, streamIds3),
+                   SendResponses(connection4, streamIds4))
+                   .ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
@@ -2394,28 +2772,36 @@ namespace System.Net.Http.Functional.Tests
         {
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            SemaphoreSlim connectCallbackSemaphore = new(initialCount: 2);
+
             using SocketsHttpHandler handler = CreateHandler();
             handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(20);
+
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                await connectCallbackSemaphore.WaitAsync(ct);
+
+                return await DefaultConnectCallback(context.DnsEndPoint, ct);
+            };
+
             using (HttpClient client = CreateHttpClient(handler))
             {
-                server.AllowMultipleConnections = true;
-                List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+                List<Task<HttpResponseMessage>> sendTasks0 = new();
+                List<Task<HttpResponseMessage>> sendTasks1 = new();
+                List<Task<HttpResponseMessage>> sendTasks2 = new();
+
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                List<int> acceptedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
-                Assert.Equal(MaxConcurrentStreams, acceptedStreamIds.Count);
+                AcquireAllStreamSlots(server, client, sendTasks0, MaxConcurrentStreams);
+                int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
 
-                List<Task<HttpResponseMessage>> connection1SendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 30).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, connection1SendTasks, MaxConcurrentStreams);
-                int handledRequests1 = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                AcquireAllStreamSlots(server, client, sendTasks1, MaxConcurrentStreams);
+                await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
 
-                Assert.Equal(MaxConcurrentStreams, handledRequests1);
-
-                // Complete all the requests.
-                await Task.WhenAll(connection1SendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-                await VerifySendTasks(connection1SendTasks).ConfigureAwait(false);
-                connection1SendTasks.ForEach(t => t.Result.Dispose());
+                // Complete all the requests on connection1.
+                await VerifySendTasks(sendTasks1).ConfigureAwait(false);
 
                 // Wait until the idle connection timeout expires.
                 await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
@@ -2423,28 +2809,30 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarmUpTasks: 2).ConfigureAwait(false);
+                // Due to a race condition in how a new Http2 connection is returned to the pool, we may have started a third connection attempt in the background.
+                // We were blocking such attempts from going through to the Socket layer until now to avoid having to deal with the extra connect when accepting connection2 below.
+                // Allow the third connection through the ConnectCallback now.
+                connectCallbackSemaphore.Release();
 
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                AcquireAllStreamSlots(server, client, sendTasks2, MaxConcurrentStreams);
+                await SendResponses(connection2, await AcceptRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false));
 
-                int handledRequests2 = (await HandleAllPendingRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false)).Count;
-                Assert.Equal(MaxConcurrentStreams, handledRequests2);
+                // Make sure connection0 is still alive.
+                await SendResponses(connection0, streamIds0).ConfigureAwait(false);
 
-                //Make sure connection0 is still alive.
-                int handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
-                Assert.Equal(MaxConcurrentStreams, handledRequests0);
-
-                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-
-                await VerifySendTasks(sendTasks).ConfigureAwait(false);
+                await VerifySendTasks(sendTasks0).ConfigureAwait(false);
+                await VerifySendTasks(sendTasks2).ConfigureAwait(false);
             }
         }
 
         private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
         {
+            await TestHelper.WhenAllCompletedOrAnyFailed(sendTasks.ToArray()).ConfigureAwait(false);
+
             foreach (Task<HttpResponseMessage> sendTask in sendTasks)
             {
-                HttpResponseMessage response = await sendTask.ConfigureAwait(false);
+                using HttpResponseMessage response = await sendTask.ConfigureAwait(false);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
@@ -2457,26 +2845,24 @@ namespace System.Net.Http.Functional.Tests
             SslOptions = { RemoteCertificateValidationCallback = delegate { return true; } }
         };
 
-        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarmUpTasks = 1)
+        private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams)
         {
+            Assert.True(maxConcurrentStreams > 0);
+
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
-            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
 
-            // Wait until the client confirms MaxConcurrentStreams setting took into effect.
-            Task settingAckReceived = connection.SettingAckWaiter;
-            while (true)
-            {
-                Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarmUpTasks);
-                await Task.WhenAll(warmUpTask, handleRequestTask).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
-                Assert.True(warmUpTask.Result.IsSuccessStatusCode);
-                warmUpTask.Result.Dispose();
-                if (settingAckReceived.IsCompleted)
-                {
-                    break;
-                }
+            var concurrentStreamsSetting = new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams };
 
-                warmUpTask = client.GetAsync(server.Address);
-            }
+            Http2LoopbackConnection connection = await server.EstablishConnectionAsync(timeout: null, ackTimeout: TimeSpan.FromSeconds(10), concurrentStreamsSetting)
+                .WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+
+            (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+            await connection.SendDefaultResponseAsync(streamId).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+
+            using HttpResponseMessage response = await warmUpTask.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+            Assert.True(response.IsSuccessStatusCode);
+
+            // SocketsHttpHandler.Http2Connection will always ACK the initial settings frame before responding to requests.
             return connection;
         }
 
@@ -2488,60 +2874,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task<Http2LoopbackConnection> GetConnection(Http2LoopbackServer server, uint maxConcurrentStreams, int readTimeout) =>
-            await server.EstablishConnectionAsync(TimeSpan.FromSeconds(readTimeout), TimeSpan.FromSeconds(10), new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = maxConcurrentStreams }).ConfigureAwait(false);
-
-        private async Task<(int Count, int LastStreamId)> HandleAllPendingRequests(Http2LoopbackConnection connection, int totalRequestCount)
+        private async Task<int[]> AcceptRequests(Http2LoopbackConnection connection, int requestCount)
         {
-            int lastStreamId = -1;
-            for (int i = 0; i < totalRequestCount; i++)
-            {
-                try
-                {
-                    // Exact number of requests sent over the given connection is unknown,
-                    // so we keep reading headers and sending response while there are available requests.
-                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
-                    await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
-                    lastStreamId = streamId;
-                }
-                catch (OperationCanceledException)
-                {
-                    return (i, lastStreamId);
-                }
-            }
+            int[] streamIds = new int[requestCount];
 
-            return (totalRequestCount, lastStreamId);
-        }
-
-        private async Task<List<int>> AcceptRequests(Http2LoopbackConnection connection, int maxRequests = int.MaxValue)
-        {
-            List<int> streamIds = new List<int>();
-            for (int i = 0; i < maxRequests; i++)
+            for (int i = 0; i < streamIds.Length; i++)
             {
-                try
-                {
-                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
-                    streamIds.Add(streamId);
-                }
-                catch (OperationCanceledException)
-                {
-                    return streamIds;
-                }
+                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+                streamIds[i] = streamId;
             }
 
             return streamIds;
         }
 
-        private async Task<int> SendResponses(Http2LoopbackConnection connection, IEnumerable<int> streamIds)
+        private async Task SendResponses(Http2LoopbackConnection connection, IEnumerable<int> streamIds)
         {
-            int count = 0;
             foreach (int streamId in streamIds)
             {
-                count++;
-                await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
+                await connection.SendDefaultResponseAsync(streamId).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
             }
-
-            return count;
         }
     }
 
@@ -2745,10 +3096,7 @@ namespace System.Net.Http.Functional.Tests
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = async (context, token) =>
             {
-                Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                await clientSocket.ConnectAsync(listenSocket.LocalEndPoint);
-
-                Stream clientStream = new NetworkStream(clientSocket, ownsSocket: true);
+                Stream clientStream = await DefaultConnectCallback(listenSocket.LocalEndPoint, token);
 
                 await clientStream.WriteAsync(RequestPrefix);
 
@@ -3079,7 +3427,97 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new[] { 1, 2, 3 }, requestsSeen);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
+        {
+            string guid = $"{Guid.NewGuid():N}";
+
+            Task clientTask = Task.Run(async () =>
+            {
+                await using NamedPipeClientStream clientStream = new(".", pipeName: guid, PipeDirection.InOut, PipeOptions.WriteThrough | PipeOptions.Asynchronous, TokenImpersonationLevel.Anonymous);
+                await clientStream.ConnectAsync(TestHelper.PassingTestTimeoutMilliseconds);
+
+                using HttpClientHandler handler = CreateHttpClientHandler(UseVersion);
+                using HttpClient client = CreateHttpClient(handler);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = (_, _) => new ValueTask<Stream>(clientStream);
+
+                string url = $"{(useSsl ? "https" : "http")}://{guid}/foo";
+                Assert.Equal("foo", await client.GetStringAsync(url).WaitAsync(TestHelper.PassingTestTimeoutMilliseconds));
+            });
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using NamedPipeServerStream serverStream = new(pipeName: guid, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous);
+                await serverStream.WaitForConnectionAsync().WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
+
+                // HTTP/1.1 doesn't work over named pipes when going through SslStream as it runs into a deadlock while performing the handshake.
+                // The client is trying to write the request headers while the server is trying to write the end of its handshake.
+                // As neither side is reading, the writes never complete.
+                // We workaround that in tests by always having a pending read on the connection.
+                await using Stream serverStreamWrapper = useSsl && UseVersion.Major == 1
+                    ? new ReadAheadStream(serverStream, _output)
+                    : serverStream;
+
+                var options = new GenericLoopbackOptions { UseSsl = useSsl };
+                await using GenericLoopbackConnection connection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStreamWrapper, options);
+                await connection.InitializeConnectionAsync();
+
+                HttpRequestData requestData = await connection.HandleRequestAsync(content: "foo").WaitAsync(TestHelper.PassingTestTimeoutMilliseconds);
+                Assert.Equal("/foo", requestData.Path);
+            });
+
+            await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(GenericLoopbackServer.LoopbackServerTimeoutMilliseconds, clientTask, serverTask);
+        }
+
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
+
+        private sealed class ReadAheadStream : DelegatingStream
+        {
+            private readonly ITestOutputHelper _output;
+            private readonly IO.Pipelines.Pipe _pipe;
+            private readonly Stream _pipeReaderStream;
+
+            public ReadAheadStream(Stream innerStream, ITestOutputHelper output) : base(innerStream)
+            {
+                _output = output;
+
+                _pipe = new IO.Pipelines.Pipe();
+                _pipeReaderStream = _pipe.Reader.AsStream();
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await IO.Pipelines.StreamPipeExtensions.CopyToAsync(innerStream, _pipe.Writer);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"ReadAheadStream ignored exception: {ex}");
+                    }
+                });
+            }
+
+            public override bool CanSeek => false;
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                _pipeReaderStream.ReadAsync(buffer, offset, count, cancellationToken);
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+                _pipeReaderStream.ReadAsync(buffer, cancellationToken);
+
+            public override int Read(byte[] buffer, int offset, int count) =>
+                _pipeReaderStream.Read(buffer, offset, count);
+
+            public override int Read(Span<byte> buffer) =>
+                _pipeReaderStream.Read(buffer);
+
+            public override int ReadByte() =>
+                _pipeReaderStream.ReadByte();
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
@@ -3093,49 +3531,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_ConnectCallback_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73772", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNativeAot))]
-        public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
-        {
-            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
-
-            string guid = $"{Guid.NewGuid():N}";
-            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
-            {
-                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                using (NamedPipeServerStream serverStream = new NamedPipeServerStream(pipeName: guid, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous))
-                using (NamedPipeClientStream clientStream = new NamedPipeClientStream(".", pipeName: guid, PipeDirection.InOut, PipeOptions.WriteThrough | PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous))
-                {
-                    await Task.WhenAll(serverStream.WaitForConnectionAsync(), clientStream.ConnectAsync());
-                    socketsHandler.ConnectCallback = (context, token) =>
-                    {
-                        return new ValueTask<Stream>(clientStream);
-                    };
-
-                    using (HttpClient client = CreateHttpClient(handler))
-                    {
-                        client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-                        Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
-                        await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options))
-                        {
-                            await loopbackConnection.InitializeConnectionAsync();
-
-                            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                            Assert.Equal("/foo", requestData.Path);
-
-                            await loopbackConnection.SendResponseAsync(content: "foo");
-
-                            string response = await clientTask;
-                            Assert.Equal("foo", response);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public abstract class SocketsHttpHandlerTest_PlaintextStreamFilter : HttpClientHandlerTestBase
@@ -3518,6 +3913,32 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        [InlineData("foo ", "bar ")]
+        [InlineData("foo", " bar")]
+        [InlineData("foo", "bar\t")]
+        [InlineData("foo", "\tbar")]
+        [InlineData("foo ", " bar ")]
+        [InlineData("foo", "\tbar\t")]
+        [InlineData("foo", "\t bar \t")]
+        [InlineData("foo  ", " \t bar  \r\n ")]
+        public async Task ResponseHeaders_ExtraWhitespace_Trimmed(string name, string value)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpResponseMessage response = await client.GetAsync(uri);
+
+                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues values));
+                Assert.Equal("bar", Assert.Single(values));
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData(name, value) });
+            });
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
@@ -3752,7 +4173,6 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_CustomTrust_Ok()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -3789,7 +4209,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_InvalidName_Throws()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -3820,7 +4239,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_CustomPolicy_IgnoresNameMismatch()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -3864,6 +4282,51 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version11;
+
+#if DEBUG
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpMessageHandler handler = useSocketHandler ? CreateSocketsHttpHandler(allowAllCertificates: true) : CreateHttpClientHandler();
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpRequestMessage request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    request.Headers.Add("Connection", "close");
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    SslStream ssl = (SslStream)connection.Stream;
+                    object connectionInfo = typeof(SslStream).GetField(
+                                     "_connectionInfo",
+                                     BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ssl);
+
+                    bool resumed = (bool)connectionInfo.GetType().GetProperty("TlsResumed").GetValue(connectionInfo);
+                    Assert.True(resumed);
+
+                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                });
+            },
+            new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 });
+        }
+#endif
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
@@ -3877,6 +4340,135 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_HttpRequestErrorTest : HttpClientHandlerTestBase
+    {
+        protected SocketsHttpHandler_HttpRequestErrorTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public async Task NameResolutionError()
+        {
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage message = new(HttpMethod.Get, new Uri("https://BadHost"))
+            {
+                Version = UseVersion,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+            Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
+            Assert.IsType<SocketException>(ex.InnerException);
+        }
+
+        [Fact]
+        public async Task ConnectionError()
+        {
+            if (UseVersion.Major == 3)
+            {
+                return;
+            }
+            using Socket notListening = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            notListening.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            int port = ((IPEndPoint)notListening.LocalEndPoint).Port;
+            Uri uri = new($"http://localhost:{port}");
+
+            using HttpClient client = CreateHttpClient();
+            using HttpRequestMessage message = new(HttpMethod.Get, uri)
+            {
+                Version = UseVersion,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+            Assert.Equal(HttpRequestError.ConnectionError, ex.HttpRequestError);
+        }
+
+        [Fact]
+        public async Task SecureConnectionError()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
+                GetUnderlyingSocketsHttpHandler(handler).SslOptions = new SslClientAuthenticationOptions()
+                {
+                    RemoteCertificateValidationCallback = delegate { return false; },
+                };
+                using HttpRequestMessage message = new(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+                Assert.Equal(HttpRequestError.SecureConnectionError, ex.HttpRequestError);
+            }, async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                }
+                catch
+                {
+                }
+            },
+            options: new GenericLoopbackOptions() { UseSsl = true });
+        }
+
+        
+    }
+
+    public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http11 : SocketsHttpHandler_HttpRequestErrorTest
+    {
+        public SocketsHttpHandler_HttpRequestErrorTest_Http11(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http20 : SocketsHttpHandler_HttpRequestErrorTest
+    {
+        public SocketsHttpHandler_HttpRequestErrorTest_Http20(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        [Fact]
+        public async Task VersionNegitioationError()
+        {
+            await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage message = new(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+                Assert.Equal(HttpRequestError.VersionNegotiationError, ex.HttpRequestError);
+            }, async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                }
+                catch
+                {
+                }
+            },
+            options: new GenericLoopbackOptions() { UseSsl = true });
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http30 : SocketsHttpHandler_HttpRequestErrorTest
+    {
+        public SocketsHttpHandler_HttpRequestErrorTest_Http30(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 

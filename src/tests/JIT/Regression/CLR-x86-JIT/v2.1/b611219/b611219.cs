@@ -10,13 +10,14 @@
 //Test returns 100 on success and 1 on failure.
 
 using System;
+using Xunit;
 
-abstract class Base<U>
+public abstract class Base<U>
 {
     public abstract int Foo<T>(T obj) where T : U;
 }
 
-class Derived : Base<string>
+public class Derived : Base<string>
 {
     public override int Foo<T>(T obj)
     {
@@ -26,7 +27,8 @@ class Derived : Base<string>
         return n;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret = 100;
         string s = "abc";

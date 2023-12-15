@@ -32,17 +32,17 @@ Given a project located in the current directory named pgotest, an example workf
 ```
 dotnet build -p:Configuration=Release
 
-set COMPLUS_TieredPGO=1
-set COMPLUS_TC_QuickJitForLoops=1
-set COMPLUS_TC_CallCountThreshold=10000
-set COMPLUS_ReadyToRun=0
+set DOTNET_TieredPGO=1
+set DOTNET_TC_QuickJitForLoops=1
+set DOTNET_TC_CallCountThreshold=10000
+set DOTNET_ReadyToRun=0
 
 dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net6.0\pgotest.exe
 
-set COMPLUS_TieredPGO=
-set COMPLUS_TC_QuickJitForLoops=
-set COMPLUS_TC_CallCountThreshold=
-set COMPLUS_ReadyToRun=
+set DOTNET_TieredPGO=
+set DOTNET_TC_QuickJitForLoops=
+set DOTNET_TC_CallCountThreshold=
+set DOTNET_ReadyToRun=
 
 dotnet-pgo create-mibc --trace trace.nettrace --output trace.mibc
 

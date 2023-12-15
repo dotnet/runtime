@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">Za mało cyfr szesnastkowych.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">Niewystarczające lub nieprawidłowe cyfry szesnastkowe.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">Niekompletny znak ucieczki \\p{X}.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">Niekompletny znak ucieczki \p{X}.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">Źle sformułowany znak \\k&lt;...&gt; nazwany odwołaniem wstecznym.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">Źle sformułowany znak \k&lt;...&gt; nazwany odwołaniem wstecznym.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">Źle sformułowany znak ucieczki \\p{X}.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">Źle sformułowany znak ucieczki \p{X}.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">Nie można wywołać wyniku błędnego dopasowania.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Zamiany wyrażeń regularnych z podstawieniami grup nie są obsługiwane w przypadku metody RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Kolekcja jest tylko do odczytu.</target>
@@ -193,7 +188,7 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
         <target state="translated">Upłynął limit czasu podczas próby dopasowania przez aparat wyrażeń regularnych wzorca do ciągu wejściowego. Mogło to być spowodowane wieloma przyczynami, w tym bardzo dużą ilością danych wejściowych, nadmiernym wykorzystaniem algorytmu wycofywania związanym z kwantyfikatorami zagnieżdżonymi, odwołaniami wstecznymi i innymi czynnikami.</target>
         <note />
       </trans-unit>
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">Nie można uwzględnić klasy \\{0} w zakresie znaków.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">Nie można uwzględnić klasy \{0} w zakresie znaków.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">Niedozwolony znak \\ na końcu wzorca.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">Niedozwolony znak \ na końcu wzorca.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">Nierozpoznana sekwencja ucieczki \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">Nierozpoznana sekwencja ucieczki \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

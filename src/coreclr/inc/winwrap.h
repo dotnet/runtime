@@ -71,9 +71,6 @@
 #undef OpenSemaphore
 #undef CreateWaitableTimer
 #undef CreateFileMapping
-#undef OpenFileMapping
-#undef LoadLibrary
-#undef LoadLibraryEx
 #undef GetModuleFileName
 #undef GetModuleHandle
 #undef GetModuleHandleEx
@@ -92,19 +89,16 @@
 #undef GetSystemDirectory
 #undef GetTempPath
 #undef GetTempFileName
-#undef GetCurrentDirectory
 #undef GetFullPathName
 #undef CreateFile
 #undef GetFileAttributes
 #undef GetFileAttributesEx
-#undef DeleteFile
 #undef FindFirstFileEx
 #undef FindFirstFile
 #undef FindNextFile
 #undef CopyFile
 #undef CopyFileEx
 #undef MoveFile
-#undef MoveFileEx
 #undef CreateHardLink
 #undef CreateNamedPipe
 #undef WaitNamedPipe
@@ -135,15 +129,12 @@
 
 // winbase.h
 #define WszFormatMessage   FormatMessageW
-#define Wszlstrcmp   lstrcmpW
-#define Wszlstrcmpi   lstrcmpiW
 #define WszCreateMutex CreateMutexW
 #define WszOpenMutex OpenMutexW
 #define WszCreateEvent CreateEventW
 #define WszOpenEvent OpenEventW
 #define WszCreateWaitableTimer CreateWaitableTimerW
 #define WszCreateFileMapping CreateFileMappingW
-#define WszOpenFileMapping OpenFileMappingW
 #define WszGetModuleHandle GetModuleHandleW
 #define WszGetModuleHandleEx GetModuleHandleExW
 #define WszGetCommandLine GetCommandLineW
@@ -196,18 +187,20 @@
 
 //File and Directory Functions which need special handling for LongFile Names
 //Note only the functions which are currently used are defined
+#ifdef HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExWrapper
-#define WszLoadLibraryEx       LoadLibraryExWrapper
 #define WszCreateFile          CreateFileWrapper
-#define WszGetFileAttributes   GetFileAttributesWrapper
 #define WszGetFileAttributesEx GetFileAttributesExWrapper
-#define WszDeleteFile          DeleteFileWrapper
+#else // HOST_WINDOWS
+#define WszLoadLibrary         LoadLibraryExW
+#define WszCreateFile          CreateFileW
+#define WszGetFileAttributesEx GetFileAttributesExW
+#endif // HOST_WINDOWS
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
 
 //Long Files will not work on these till redstone
-#define WszGetCurrentDirectory GetCurrentDirectoryWrapper
 #define WszGetTempPath         GetTempPathWrapper
 
 //APIS which have a buffer as an out parameter

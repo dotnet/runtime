@@ -3,15 +3,17 @@
 //
 
 using System;
+using Xunit;
 
-class X
+public class X
 {
     static short sh_8712 = 8712;
     static short sh_m973 = -973;
     static ushort us_8712 = 8712;
     static ushort us_973 = 973;
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         short sh3 = (short)(sh_8712 * sh_m973);
         ushort us3 = (ushort)(us_8712 * us_973);
@@ -25,6 +27,5 @@ class X
         Console.WriteLine(us_8712);
         Console.WriteLine(us_973);
         Console.WriteLine(us3);
-        return 100;
     }
 }

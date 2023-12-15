@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Buffers;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -120,13 +120,6 @@ namespace System.IO
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle) =>
             GetAttributeData(fileHandle).ftCreationTime.ToDateTimeOffset();
 
-        public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
-        {
-            return asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-        }
-
         public static DateTimeOffset GetLastAccessTime(string fullPath) =>
             GetAttributeData(fullPath).ftLastAccessTime.ToDateTimeOffset();
 
@@ -180,7 +173,7 @@ namespace System.IO
             data.nFileSizeLow = fileInformationData.nFileSizeLow;
         }
 
-        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool _ /*isCaseSensitiveRename*/)
         {
             // Source and destination must have the same root.
             ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);
@@ -471,10 +464,10 @@ namespace System.IO
         private static void SetFileTime(
             string fullPath,
             bool asDirectory,
-            long creationTime = -1,
-            long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
+            long creationTime = 0,
+            long lastAccessTime = 0,
+            long lastWriteTime = 0,
+            long changeTime = 0,
             uint fileAttributes = 0)
         {
             using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
@@ -484,10 +477,10 @@ namespace System.IO
         private static unsafe void SetFileTime(
             SafeFileHandle fileHandle,
             string? fullPath = null,
-            long creationTime = -1,
-            long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
+            long creationTime = 0,
+            long lastAccessTime = 0,
+            long lastWriteTime = 0,
+            long changeTime = 0,
             uint fileAttributes = 0)
         {
             var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO
@@ -772,7 +765,7 @@ namespace System.IO
                 path,
                 dwDesiredAccess: 0,
                 FileShare.ReadWrite | FileShare.Delete,
-                lpSecurityAttributes: (Interop.Kernel32.SECURITY_ATTRIBUTES*)IntPtr.Zero,
+                lpSecurityAttributes: null,
                 FileMode.Open,
                 dwFlagsAndAttributes: flags,
                 hTemplateFile: IntPtr.Zero);

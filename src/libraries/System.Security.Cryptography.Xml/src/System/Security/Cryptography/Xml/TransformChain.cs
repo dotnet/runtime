@@ -14,6 +14,7 @@
 // stream. (We only bother implementing that much now since every use of transform chains in XmlDsig ultimately yields something to hash).
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
@@ -58,7 +59,7 @@ namespace System.Security.Cryptography.Xml
 
         // The goal behind this method is to pump the input stream through the transforms and get back something that
         // can be hashed
-        internal Stream TransformToOctetStream(object? inputObject, Type inputType, XmlResolver? resolver, string? baseUri)
+        internal Stream TransformToOctetStream(object? inputObject, XmlResolver? resolver, string? baseUri)
         {
             object? currentInput = inputObject;
             foreach (Transform transform in _transforms)
@@ -150,16 +151,6 @@ namespace System.Security.Cryptography.Xml
             throw new CryptographicException(SR.Cryptography_Xml_TransformIncorrectInputType);
         }
 
-        internal Stream TransformToOctetStream(Stream? input, XmlResolver? resolver, string baseUri)
-        {
-            return TransformToOctetStream(input, typeof(Stream), resolver, baseUri);
-        }
-
-        internal Stream TransformToOctetStream(XmlDocument? document, XmlResolver? resolver, string? baseUri)
-        {
-            return TransformToOctetStream(document, typeof(XmlDocument), resolver, baseUri);
-        }
-
         internal XmlElement GetXml(XmlDocument document, string ns)
         {
             XmlElement transformsElement = document.CreateElement("Transforms", ns);
@@ -176,6 +167,8 @@ namespace System.Security.Cryptography.Xml
             return transformsElement;
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal void LoadXml(XmlElement value)
         {
             if (value is null)

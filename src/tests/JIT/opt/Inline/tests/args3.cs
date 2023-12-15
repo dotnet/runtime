@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
-    internal class Args3
+    public class Args3
     {
-        public static void FillArray(ref int[] arr)
+        internal static void FillArray(ref int[] arr)
         {
             if (arr == null)
                 arr = new int[10];
@@ -15,7 +16,8 @@ namespace JitInliningTest
             arr[4] = 1024;
         }
 
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             int retval = -1056;
             int[] myArray = { 1, 2, 3, 4, 5 };

@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [Fact]
         private void TestWindowApisUnix()
@@ -81,6 +81,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
             string fileToOpen = "dotnet";
@@ -110,6 +111,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_UseShellExecute_OnUnix_OpenMissingFile_DoesNotThrow()
         {
             if (OperatingSystem.IsLinux() &&
@@ -129,6 +131,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
         {
             string programToOpen = s_allowedProgramsToRun.FirstOrDefault(program => IsProgramInstalled(program));
@@ -456,7 +459,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestPriorityClassUnix()
         {
             CreateDefaultProcess();
@@ -478,11 +481,11 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex)
             {
-                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, $"Failed even though superuser {ex.ToString()}");
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestBasePriorityOnUnix()
         {
             CreateDefaultProcess();
@@ -499,7 +502,7 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex)
             {
-                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, $"Failed even though superuser {ex.ToString()}");
             }
         }
 
@@ -596,8 +599,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
-        [OuterLoop("Needs sudo access")]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
@@ -656,7 +658,7 @@ namespace System.Diagnostics.Tests
 
         private static string GetCurrentRealUserName()
         {
-            string realUserName = geteuid() == 0 ?
+            string realUserName = Environment.IsPrivilegedProcess ?
                 Environment.GetEnvironmentVariable("SUDO_USER") :
                 Environment.UserName;
 
@@ -743,7 +745,6 @@ namespace System.Diagnostics.Tests
         /// Tests the ProcessWaitState reference count drops to zero.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Test validates Unix implementation
         public async Task TestProcessWaitStateReferenceCount()
         {
             using (var exitedEventSemaphore = new SemaphoreSlim(0, 1))
@@ -833,7 +834,6 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("/dev/stdin",  O_RDONLY)]
         [InlineData("/dev/stdout", O_WRONLY)]
@@ -848,6 +848,39 @@ namespace System.Diagnostics.Tests
             {
                 int result = open(filename, int.Parse(flags, CultureInfo.InvariantCulture));
                 Assert.True(result >= 0, $"failed to open file with {result} and errno {Marshal.GetLastWin32Error()}.");
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public unsafe void TestTotalProcessorTimeMacOs()
+        {
+            var rUsage = Interop.libproc.proc_pid_rusage(Environment.ProcessId);
+            var timeBase = new Interop.libSystem.mach_timebase_info_data_t();
+            Interop.libSystem.mach_timebase_info(&timeBase);
+
+            var nativeUserUs = rUsage.ri_user_time / 1000 * timeBase.numer / timeBase.denom;
+            var nativeSystemUs = rUsage.ri_system_time / 1000 * timeBase.numer / timeBase.denom;
+            var nativeTotalUs = nativeSystemUs + nativeUserUs;
+
+            var nativeUserTime = TimeSpan.FromMicroseconds(nativeUserUs);
+            var nativeSystemTime = TimeSpan.FromMicroseconds(nativeSystemUs);
+            var nativeTotalTime = TimeSpan.FromMicroseconds(nativeTotalUs);
+
+            var process = Process.GetCurrentProcess();
+            var managedUserTime = process.UserProcessorTime;
+            var managedSystemTime = process.PrivilegedProcessorTime;
+            var managedTotalTime = process.TotalProcessorTime;
+
+            AssertTime(managedUserTime, nativeUserTime, "user");
+            AssertTime(managedSystemTime, nativeSystemTime, "system");
+            AssertTime(managedTotalTime, nativeTotalTime, "total");
+
+            void AssertTime(TimeSpan managed, TimeSpan native, string label)
+            {
+                Assert.True(
+                    managed >= native,
+                    $"Time '{label}' returned by managed API ({managed}) should be greated or equal to the time returned by native API ({native}).");
             }
         }
 
@@ -881,7 +914,7 @@ namespace System.Diagnostics.Tests
                         Console.WriteLine("{0} Failed to kill process {1} started at {2}", now, nonChildProcess.Id, start);
                         Helpers.DumpAllProcesses();
 
-                        Assert.True(false, "test timed out");
+                        Assert.Fail("test timed out");
                     }
                 }
 

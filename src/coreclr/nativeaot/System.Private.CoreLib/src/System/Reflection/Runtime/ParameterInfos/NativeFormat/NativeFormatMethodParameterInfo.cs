@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
-using System.Reflection.Runtime.CustomAttributes;
-
-using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 {
@@ -66,7 +65,8 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(Reader, _parameter.DefaultValue, ParameterType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(Reader, _parameter.DefaultValue, ParameterType, raw, out defaultValue)
+                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
         }
 
         private readonly MethodHandle _methodHandle;

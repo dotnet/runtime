@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 public class Base
 {
@@ -34,7 +35,8 @@ public class Test_fromcollection
     static Derived[] arrayOfDerived = new Derived[3];
     static List<Derived> listOfDerived = new List<Derived>();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 3; i++)
         {

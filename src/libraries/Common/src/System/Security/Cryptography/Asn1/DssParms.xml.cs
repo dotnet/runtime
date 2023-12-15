@@ -15,12 +15,12 @@ namespace System.Security.Cryptography.Asn1
         internal System.Numerics.BigInteger Q;
         internal System.Numerics.BigInteger G;
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, encoded, out DssParms decoded);
+                DecodeCore(ref reader, expectedTag, out DssParms decoded);
                 reader.ThrowIfNotEmpty();
                 return decoded;
             }
@@ -51,16 +51,16 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DssParms decoded)
+        internal static void Decode(ref AsnValueReader reader, out DssParms decoded)
         {
-            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DssParms decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out DssParms decoded)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+                DecodeCore(ref reader, expectedTag, out decoded);
             }
             catch (AsnContentException e)
             {
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DssParms decoded)
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out DssParms decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);

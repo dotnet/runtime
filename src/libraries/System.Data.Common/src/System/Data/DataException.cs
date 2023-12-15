@@ -12,6 +12,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DataException : SystemException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DataException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -33,6 +35,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ConstraintException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ConstraintException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -57,6 +61,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DeletedRowInaccessibleException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DeletedRowInaccessibleException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -87,6 +93,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DuplicateNameException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DuplicateNameException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -111,6 +119,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InRowChangingEventException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InRowChangingEventException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -135,6 +145,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InvalidConstraintException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InvalidConstraintException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -159,6 +171,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MissingPrimaryKeyException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MissingPrimaryKeyException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -183,6 +197,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NoNullAllowedException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NoNullAllowedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -207,6 +223,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ReadOnlyException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -231,6 +249,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class RowNotInTableException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected RowNotInTableException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -255,6 +275,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class VersionNotFoundException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected VersionNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -314,7 +336,6 @@ namespace System.Data
         }
 
         internal static Exception _Argument(string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
-        internal static Exception _Argument(string paramName, string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
         internal static Exception _Argument(string error, Exception? innerException) => TraceExceptionAsReturnValue(new ArgumentException(error, innerException));
         private static Exception _ArgumentNull(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentNullException(paramName, msg));
         internal static Exception _ArgumentOutOfRange(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentOutOfRangeException(paramName, msg));
@@ -349,7 +370,7 @@ namespace System.Data
         public static Exception ArgumentNull(string paramName) => _ArgumentNull(paramName, SR.Format(SR.Data_ArgumentNull, paramName));
         public static Exception ArgumentOutOfRange(string paramName) => _ArgumentOutOfRange(paramName, SR.Format(SR.Data_ArgumentOutOfRange, paramName));
         public static Exception BadObjectPropertyAccess(string error) => _InvalidOperation(SR.Format(SR.DataConstraint_BadObjectPropertyAccess, error));
-        public static Exception ArgumentContainsNull(string paramName) => _Argument(paramName, SR.Format(SR.Data_ArgumentContainsNull, paramName));
+        public static Exception ArgumentContainsNull(string paramName) => TraceExceptionAsReturnValue(new ArgumentException(SR.Data_ArgumentContainsNull, paramName));
         public static Exception TypeNotAllowed(Type type) => _InvalidOperation(SR.Format(SR.Data_TypeNotAllowed, type.AssemblyQualifiedName));
 
         //

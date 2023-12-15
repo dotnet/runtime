@@ -4,9 +4,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(GetAsyncEnumerableSources))]
-        public static async Task DeserializeAsyncEnumerable_ReadSourceAsync<TElement>(IEnumerable<TElement> source, int bufferSize, bool useJsonTypeInfoOverload)
+        public static async Task DeserializeAsyncEnumerable_ReadSourceAsync<TElement>(IEnumerable<TElement> source, int bufferSize, DeserializeAsyncEnumerableOverload overload)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -71,14 +71,14 @@ namespace System.Text.Json.Serialization.Tests
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(source);
 
             using var stream = new MemoryStream(data);
-            List<TElement> results = await DeserializeAsyncEnumerableWrapper<TElement>(stream, options, useJsonTypeInfoOverload: useJsonTypeInfoOverload).ToListAsync();
+            List<TElement> results = await DeserializeAsyncEnumerableWrapper<TElement>(stream, options, overload: overload).ToListAsync();
             Assert.Equal(source, results);
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static async Task DeserializeAsyncEnumerable_ShouldStreamPartialData(bool useJsonTypeInfoOverload)
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
+        public static async Task DeserializeAsyncEnumerable_ShouldStreamPartialData(DeserializeAsyncEnumerableOverload overload)
         {
             string json = JsonSerializer.Serialize(Enumerable.Range(0, 100));
 
@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
                 DefaultBufferSize = 1
             };
 
-            IAsyncEnumerable<int> asyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, useJsonTypeInfoOverload: useJsonTypeInfoOverload);
+            IAsyncEnumerable<int> asyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, overload: overload);
             await using IAsyncEnumerator<int> asyncEnumerator = asyncEnumerable.GetAsyncEnumerator();
 
             for (int i = 0; i < 20; i++)
@@ -100,9 +100,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static async Task DeserializeAsyncEnumerable_ShouldTolerateCustomQueueConverters(bool useJsonTypeInfoOverload)
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
+        public static async Task DeserializeAsyncEnumerable_ShouldTolerateCustomQueueConverters(DeserializeAsyncEnumerableOverload overload)
         {
             const int expectedCount = 20;
 
@@ -116,7 +116,7 @@ namespace System.Text.Json.Serialization.Tests
             using var stream = new MemoryStream(data);
 
             int callbackCount = 0;
-            await foreach (Queue<int> nestedQueue in DeserializeAsyncEnumerableWrapper<Queue<int>>(stream, options, useJsonTypeInfoOverload: useJsonTypeInfoOverload))
+            await foreach (Queue<int> nestedQueue in DeserializeAsyncEnumerableWrapper<Queue<int>>(stream, options, overload: overload))
             {
                 Assert.Equal(1, nestedQueue.Count);
                 Assert.Equal(0, nestedQueue.Peek());
@@ -174,16 +174,16 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                IAsyncEnumerable<int> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json, ResolveJsonTypeInfo<int>());
+                IAsyncEnumerable<int> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable(utf8Json, ResolveJsonTypeInfo<int>());
                 await using IAsyncEnumerator<int> enumerator = asyncEnumerable.GetAsyncEnumerator();
                 await Assert.ThrowsAsync<JsonException>(async () => await enumerator.MoveNextAsync());
             }
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static async Task DeserializeAsyncEnumerable_CancellationToken_ThrowsOnCancellation(bool useJsonTypeInfoOverload)
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
+        public static async Task DeserializeAsyncEnumerable_CancellationToken_ThrowsOnCancellation(DeserializeAsyncEnumerableOverload overload)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -194,7 +194,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var token = new CancellationToken(canceled: true);
             using var stream = new MemoryStream(data);
-            var cancellableAsyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, token, useJsonTypeInfoOverload);
+            var cancellableAsyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, token, overload);
 
             await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
@@ -205,9 +205,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static async Task DeserializeAsyncEnumerable_EnumeratorWithCancellationToken_ThrowsOnCancellation(bool useJsonTypeInfoOverload)
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonSerializerOptions)]
+        [InlineData(DeserializeAsyncEnumerableOverload.JsonTypeInfo)]
+        public static async Task DeserializeAsyncEnumerable_EnumeratorWithCancellationToken_ThrowsOnCancellation(DeserializeAsyncEnumerableOverload overload)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var token = new CancellationToken(canceled: true);
             using var stream = new MemoryStream(data);
-            var cancellableAsyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, useJsonTypeInfoOverload: useJsonTypeInfoOverload).WithCancellation(token);
+            var cancellableAsyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, overload: overload).WithCancellation(token);
 
             await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
@@ -230,31 +230,41 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<object[]> GetAsyncEnumerableSources()
         {
-            yield return WrapArgs(Enumerable.Empty<int>(), 1, false);
-            yield return WrapArgs(Enumerable.Empty<int>(), 1, true);
-            yield return WrapArgs(Enumerable.Range(0, 20), 1, false);
-            yield return WrapArgs(Enumerable.Range(0, 100), 20, false);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500, false);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500, true);
-            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, false);
-            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, false);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 500, false);
+            yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
+            yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.JsonTypeInfo);
+            yield return WrapArgs(Enumerable.Range(0, 20), 1, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
+            yield return WrapArgs(Enumerable.Range(0, 100), 20, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500, DeserializeAsyncEnumerableOverload.JsonTypeInfo);
+            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
+            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100, DeserializeAsyncEnumerableOverload.JsonTypeInfo);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 500, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
 
-            static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int bufferSize, bool useJsonTypeInfoOverload) => new object[] { source, bufferSize, useJsonTypeInfoOverload };
+            static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int bufferSize, DeserializeAsyncEnumerableOverload overload) => new object[] { source, bufferSize, overload };
         }
 
-        private static IAsyncEnumerable<T> DeserializeAsyncEnumerableWrapper<T>(Stream stream, JsonSerializerOptions options = null, CancellationToken cancellationToken = default, bool useJsonTypeInfoOverload = false)
+        public enum DeserializeAsyncEnumerableOverload { JsonSerializerOptions, JsonTypeInfo };
+
+        private static IAsyncEnumerable<T> DeserializeAsyncEnumerableWrapper<T>(Stream stream, JsonSerializerOptions options = null, CancellationToken cancellationToken = default, DeserializeAsyncEnumerableOverload overload = DeserializeAsyncEnumerableOverload.JsonSerializerOptions)
         {
-            return useJsonTypeInfoOverload
-                ? JsonSerializer.DeserializeAsyncEnumerable<T>(stream, ResolveJsonTypeInfo<T>(options), cancellationToken)
-                : JsonSerializer.DeserializeAsyncEnumerable<T>(stream, options, cancellationToken);
+            return overload switch
+            {
+                DeserializeAsyncEnumerableOverload.JsonTypeInfo => JsonSerializer.DeserializeAsyncEnumerable<T>(stream, ResolveJsonTypeInfo<T>(options), cancellationToken),
+                DeserializeAsyncEnumerableOverload.JsonSerializerOptions or _ => JsonSerializer.DeserializeAsyncEnumerable<T>(stream, options, cancellationToken),
+            };
         }
 
         private static JsonTypeInfo<T> ResolveJsonTypeInfo<T>(JsonSerializerOptions? options = null)
         {
+            return (JsonTypeInfo<T>)ResolveJsonTypeInfo(typeof(T), options);
+        }
+
+        private static JsonTypeInfo ResolveJsonTypeInfo(Type type, JsonSerializerOptions? options = null)
+        {
             options ??= JsonSerializerOptions.Default;
-            JsonSerializer.Serialize(42, options); // Lock the options instance before initializing metadata
-            return (JsonTypeInfo<T>)options.TypeInfoResolver.GetTypeInfo(typeof(T), options);
+            options.TypeInfoResolver ??= new DefaultJsonTypeInfoResolver();
+            options.MakeReadOnly(); // Lock the options instance before initializing metadata
+            return options.TypeInfoResolver.GetTypeInfo(type, options);
         }
 
         private static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> source)

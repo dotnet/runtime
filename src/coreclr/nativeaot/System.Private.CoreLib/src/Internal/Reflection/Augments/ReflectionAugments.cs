@@ -17,16 +17,16 @@
 //    Reflection.Core.dll
 
 using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
+using System.Reflection;
 
 using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 namespace Internal.Reflection.Augments
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class ReflectionAugments
     {
         //
@@ -35,19 +35,20 @@ namespace Internal.Reflection.Augments
         //
         public static void Initialize(ReflectionCoreCallbacks reflectionCoreCallbacks)
         {
+            Debug.Assert(s_reflectionCoreCallbacks == null);
             s_reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 
-        public static TypeCode GetRuntimeTypeCode(Type type)
+        internal static TypeCode GetRuntimeTypeCode(RuntimeType type)
         {
             Debug.Assert(type != null);
 
-            EETypePtr eeType;
-            if (!type.TryGetEEType(out eeType))
+            EETypePtr eeType = type.ToEETypePtrMayBeNull();
+            if (eeType.IsNull)
             {
                 // Type exists in metadata only. Aside from the enums, there is no chance a type with a TypeCode would not have an MethodTable,
                 // so if it's not an enum, return the default.
-                if (!type.IsEnum)
+                if (!type.IsActualEnum)
                     return TypeCode.Object;
                 Type underlyingType = Enum.GetUnderlyingType(type);
                 eeType = underlyingType.TypeHandle.ToEETypePtr();
@@ -89,11 +90,6 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
-        public static Type MakeGenericSignatureType(Type genericTypeDefinition, Type[] genericTypeArguments)
-        {
-            return new SignatureConstructedGenericType(genericTypeDefinition, genericTypeArguments);
-        }
-
         public static TypeLoadException CreateTypeLoadException(string message, string typeName)
         {
             return new TypeLoadException(message, typeName);
@@ -109,6 +105,14 @@ namespace Internal.Reflection.Augments
             }
         }
 
+        internal static bool IsInitialized
+        {
+            get
+            {
+                return s_reflectionCoreCallbacks != null;
+            }
+        }
+
         private static ReflectionCoreCallbacks s_reflectionCoreCallbacks;
     }
 
@@ -116,7 +120,6 @@ namespace Internal.Reflection.Augments
     // This class is implemented by Internal.Reflection.Core.dll and provides the actual implementation
     // of Type.GetTypeInfo() and Assembly.Load().
     //
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionCoreCallbacks
     {
         public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);
@@ -152,20 +155,22 @@ namespace Internal.Reflection.Augments
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public abstract Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure);
 
-#if FEATURE_COMINTEROP
-        public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
-#endif
-
         public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
-
-        public abstract void RunModuleConstructor(Module module);
 
         public abstract void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset);
 
         public abstract Assembly[] GetLoadedAssemblies();
 
-        public abstract EnumInfo GetEnumInfo(Type type);
+        public abstract EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create);
 
         public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
+
+        public abstract MethodInfo GetDelegateMethod(Delegate del);
+
+        public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+
+        public abstract Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle);
+
+        public abstract void RunClassConstructor(RuntimeTypeHandle typeHandle);
     }
 }

@@ -9,13 +9,13 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class EmptyJSGenerator : IJSMarshallingGenerator
     {
-        public TypeSyntax AsNativeType(TypePositionInfo info) => info.ManagedType.Syntax;
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
         public IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context) => Array.Empty<ExpressionSyntax>();
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.ManagedTypeAndAttributes;
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
-        public bool IsSupported(TargetFramework target, Version version) => false;
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
     }
 }

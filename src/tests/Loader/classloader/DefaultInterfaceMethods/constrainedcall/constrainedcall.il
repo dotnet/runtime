@@ -25,7 +25,7 @@
 .class interface IGen3`1<T> { }
 .class value Atom { }
 
-.class value Adder`1<T> implements class IAdder`1<class IGen1`1<!T>>, class IAdder`1<class IGen2`1<!T>>, class IAdder`1<class IGen3`1<!T>>, class IAdder`1<valuetype Atom>
+.class public value Adder`1<T> implements class IAdder`1<class IGen1`1<!T>>, class IAdder`1<class IGen2`1<!T>>, class IAdder`1<class IGen3`1<!T>>, class IAdder`1<valuetype Atom>
 {
   .field private int32 _field
 

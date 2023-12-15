@@ -102,7 +102,19 @@ namespace ILCompiler.IBC
                         using (var zipFile = new ZipArchive(fsMibcFile, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
                         {
                             disposeOnException = false;
-                            var mibcDataEntry = zipFile.GetEntry(Path.GetFileName(filename) + ".dll");
+                            ZipArchiveEntry mibcDataEntry = zipFile.GetEntry(Path.GetFileName(filename) + ".dll");
+
+                            if (mibcDataEntry == null)
+                            {
+                                // Input may have been renamed at some point; look for a single .dll inside the ZIP.
+                                mibcDataEntry = zipFile.Entries.Count == 1 ? zipFile.Entries[0] : null;
+
+                                if (mibcDataEntry == null || !mibcDataEntry.Name.EndsWith(".dll"))
+                                {
+                                    throw new InvalidDataException("Could not find input assembly in compressed MIBC file (expected archive to contain a single .dll file)");
+                                }
+                            }
+
                             using (var mibcDataStream = mibcDataEntry.Open())
                             {
                                 peData = new byte[mibcDataEntry.Length];
@@ -237,7 +249,7 @@ namespace ILCompiler.IBC
                             }
                         }
 
-                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup((EcmaMethod)ilBody.GetObject(token)));
                         break;
                     case ILOpcode.pop:
                         mibcGroupName = "";
@@ -341,7 +353,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        private static IEnumerable<MethodProfileData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
+        private static IEnumerable<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);

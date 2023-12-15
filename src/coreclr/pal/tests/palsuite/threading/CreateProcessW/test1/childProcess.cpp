@@ -9,7 +9,7 @@
 ** launches a child process, and examines a file written by the child.
 ** This code is the child code.
 **
-** Dependencies: GetCurrentDirectory
+** Dependencies: GetTempPath
 **               MultiByteToWideChar
 **               wcslen
 **               strlen
@@ -49,12 +49,12 @@ PALTEST(threading_CreateProcessW_test1_paltest_createprocessw_test1_child, "thre
         return ( FAIL );
     }
 
-    dwDirLength = GetCurrentDirectory( _MAX_PATH, szDirNameW );
+    dwDirLength = GetTempPath(_MAX_PATH, szDirNameW);
 
     if (0 == dwDirLength) 
     {
-	Fail ("GetCurrentDirectory call failed.  Could not get "
-		"current working directory\n.  Exiting.\n");
+	Fail ("GetTempPath call failed.  Could not get "
+		"temp directory\n.  Exiting.\n");
     }
 
     dwFileLength = wcslen( szCommonFileW );

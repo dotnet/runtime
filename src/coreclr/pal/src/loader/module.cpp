@@ -106,34 +106,6 @@ static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpRese
 
 /*++
 Function:
-  LoadLibraryA
-
-See MSDN doc.
---*/
-HMODULE
-PALAPI
-LoadLibraryA(
-    IN LPCSTR lpLibFileName)
-{
-    return LoadLibraryExA(lpLibFileName, nullptr, 0);
-}
-
-/*++
-Function:
-  LoadLibraryW
-
-See MSDN doc.
---*/
-HMODULE
-PALAPI
-LoadLibraryW(
-    IN LPCWSTR lpLibFileName)
-{
-    return LoadLibraryExW(lpLibFileName, nullptr, 0);
-}
-
-/*++
-Function:
 LoadLibraryExA
 
 See MSDN doc.
@@ -152,10 +124,9 @@ LoadLibraryExA(
         return nullptr;
     }
 
-    LPSTR lpstr = nullptr;
     HMODULE hModule = nullptr;
 
-    PERF_ENTRY(LoadLibraryA);
+    PERF_ENTRY(LoadLibraryExA);
     ENTRY("LoadLibraryExA (lpLibFileName=%p (%s)) \n",
           (lpLibFileName) ? lpLibFileName : "NULL",
           (lpLibFileName) ? lpLibFileName : "NULL");
@@ -166,23 +137,10 @@ LoadLibraryExA(
     }
 
     /* do the Dos/Unix conversion on our own copy of the name */
-    lpstr = strdup(lpLibFileName);
-    if (!lpstr)
-    {
-        ERROR("strdup failure!\n");
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto Done;
-    }
-    FILEDosToUnixPathA(lpstr);
-
-    hModule = LOADLoadLibrary(lpstr, TRUE);
+    hModule = LOADLoadLibrary(lpLibFileName, TRUE);
 
     /* let LOADLoadLibrary call SetLastError */
  Done:
-    if (lpstr != nullptr)
-    {
-        free(lpstr);
-    }
 
     LOGEXIT("LoadLibraryExA returns HMODULE %p\n", hModule);
     PERF_EXIT(LoadLibraryExA);
@@ -235,8 +193,6 @@ LoadLibraryExW(
         goto done;
     }
 
-    /* do the Dos/Unix conversion on our own copy of the name */
-    FILEDosToUnixPathA(lpstr);
     pathstr.CloseBuffer(name_length);
 
     /* let LOADLoadLibrary call SetLastError in case of failure */
@@ -396,28 +352,6 @@ FreeLibrary(
     LOGEXIT("FreeLibrary returns BOOL %d\n", retval);
     PERF_EXIT(FreeLibrary);
     return retval;
-}
-
-/*++
-Function:
-  FreeLibraryAndExitThread
-
-See MSDN doc.
-
---*/
-PALIMPORT
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode)
-{
-    PERF_ENTRY(FreeLibraryAndExitThread);
-    ENTRY("FreeLibraryAndExitThread()\n");
-    FreeLibrary(hLibModule);
-    ExitThread(dwExitCode);
-    LOGEXIT("FreeLibraryAndExitThread\n");
-    PERF_EXIT(FreeLibraryAndExitThread);
 }
 
 /*++
@@ -626,8 +560,6 @@ PAL_LoadLibraryDirect(
         goto done;
     }
 
-    /* do the Dos/Unix conversion on our own copy of the name */
-    FILEDosToUnixPathA(lpstr);
     pathstr.CloseBuffer(name_length);
     lpcstr = FixLibCName(lpstr);
 

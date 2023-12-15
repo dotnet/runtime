@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
+    /// <summary>
+    /// Options class for <see cref="MemoryCache"/>.
+    /// </summary>
     public class MemoryCacheOptions : IOptions<MemoryCacheOptions>
     {
         private long _sizeLimit = NotSet;
@@ -14,6 +18,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private const int NotSet = -1;
 
+        /// <summary>
+        /// Gets or sets the clock used by the cache for expiration.
+        /// </summary>
         public ISystemClock? Clock { get; set; }
 
         /// <summary>
@@ -41,6 +48,13 @@ namespace Microsoft.Extensions.Caching.Memory
                 _sizeLimit = value ?? NotSet;
             }
         }
+
+        /// <summary>
+        /// Enables ot disables the option to compact the cache when the maximum size is exceeded.
+        /// </summary>
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
+        [Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compact as needed.", error: true)]
+        public bool CompactOnMemoryPressure { get; set; }
 
         /// <summary>
         /// Gets or sets the amount to compact the cache by when the maximum size is exceeded.

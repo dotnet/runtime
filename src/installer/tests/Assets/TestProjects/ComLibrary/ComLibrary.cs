@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace ComLibrary
 {
@@ -25,6 +27,8 @@ namespace ComLibrary
     {
         public Server()
         {
+            Assembly asm = Assembly.GetExecutingAssembly();
+            Console.WriteLine($"{asm.GetName().Name}: AssemblyLoadContext = {AssemblyLoadContext.GetLoadContext(asm)}");
             Console.WriteLine($"New instance of {nameof(Server)} created");
         }
     }

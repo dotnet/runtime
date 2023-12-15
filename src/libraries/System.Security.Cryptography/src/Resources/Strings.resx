@@ -66,8 +66,8 @@
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
     <value>String cannot be empty or null.</value>
   </data>
-  <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
-    <value>The '{0}' string cannot be empty or null.</value>
+  <data name="Arg_EmptySpan" xml:space="preserve">
+    <value>Span may not be empty.</value>
   </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
@@ -89,6 +89,9 @@
   </data>
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
+  </data>
+  <data name="Argument_EmptyString" xml:space="preserve">
+    <value>The value cannot be an empty string.</value>
   </data>
   <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
     <value>The method cannot be called with an invalid or closed SafeHandle.</value>
@@ -156,11 +159,11 @@
   <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
+  <data name="ArgumentOutOfRange_KOut_Too_Large" xml:space="preserve">
+    <value>The number of bytes requested is too large. The number of bytes produced by SP800108HmacCounterKdf cannot exceed 536,870,911 bytes.</value>
+  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
   </data>
   <data name="Chain_EmptyCustomTrustNotSupported" xml:space="preserve">
     <value>An empty custom trust store is not supported on this platform.</value>
@@ -176,9 +179,6 @@
   </data>
   <data name="CryptoConfigNotSupported" xml:space="preserve">
     <value>Accessing a hash algorithm by manipulating the HashName property is not supported on this platform. Instead, you must instantiate one of the supplied subtypes (such as HMACSHA1.)</value>
-  </data>
-  <data name="Cryptography_AddNullOrEmptyName" xml:space="preserve">
-    <value>CryptoConfig cannot add a mapping for a null or empty name.</value>
   </data>
   <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
     <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
@@ -347,6 +347,9 @@
   </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
+  </data>
+  <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
+    <value>The size of the specified tag does not match the expected size of {0}.</value>
   </data>
   <data name="Cryptography_InvalidBlockSize" xml:space="preserve">
     <value>Specified block size is not valid for this algorithm.</value>
@@ -807,6 +810,9 @@
   <data name="PlatformNotSupported_CryptographyOpenSSL" xml:space="preserve">
     <value>OpenSSL is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSLNotFound" xml:space="preserve">
+    <value>OpenSSL is required for algorithm '{0}' but could not be found or loaded.</value>
+  </data>
   <data name="Security_AccessDenied" xml:space="preserve">
     <value>Access is denied.</value>
   </data>
@@ -821,5 +827,11 @@
   </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
+  </data>
+  <data name="Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded" xml:space="preserve">
+    <value>PKCS12 (PFX) without a supplied password has exceeded maximum allowed iterations. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
+  </data>
+  <data name="Cryptography_X509_PfxWithoutPassword_ProblemFound" xml:space="preserve">
+    <value>There was a problem with the PKCS12 (PFX) without a supplied password. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
   </data>
 </root>

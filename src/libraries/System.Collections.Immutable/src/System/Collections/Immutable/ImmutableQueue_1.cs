@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -12,6 +13,7 @@ namespace System.Collections.Immutable
     /// An immutable queue.
     /// </summary>
     /// <typeparam name="T">The type of elements stored in the queue.</typeparam>
+    [CollectionBuilder(typeof(ImmutableQueue), nameof(ImmutableQueue.Create))]
     [DebuggerDisplay("IsEmpty = {IsEmpty}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     public sealed partial class ImmutableQueue<T> : IImmutableQueue<T>

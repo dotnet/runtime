@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 public class Foo 
 {
         private static int n=0;
@@ -19,7 +20,8 @@ public class Foo
 		     }
 	  }
 	
-        public static int Main(String[] args) 
+        [Fact]
+        public static int TestEntryPoint() 
         {
 	  String s = "Done";
 	  Thread t = new Thread(new ThreadStart(Foo.Bar));

@@ -6,8 +6,9 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Runtime_40444
+public class Runtime_40444
 {
     public static int t2_result;
 
@@ -111,7 +112,8 @@ class Runtime_40444
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passes_test = false;
         bool test_result = false;

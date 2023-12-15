@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPAvg6
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_FPAvg6
        return z; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPAvg6(1f, 2f, 3f, 4f, 5f, 6f);
         Console.WriteLine(y);

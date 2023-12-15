@@ -1,13 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class VersionConverter : JsonConverter<Version>
+    internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
 #if NETCOREAPP
         private const int MinimumVersionLength = 3; // 0.0
@@ -17,17 +15,29 @@ namespace System.Text.Json.Serialization.Converters
         private const int MaximumEscapedVersionLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumVersionLength;
 #endif
 
-        public override Version Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType is JsonTokenType.Null)
+            {
+                return null;
+            }
+
             if (reader.TokenType != JsonTokenType.String)
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
+            return ReadCore(ref reader);
+        }
+
+        private static Version ReadCore(ref Utf8JsonReader reader)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
+
 #if NETCOREAPP
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
             {
-                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+                ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
             Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];
@@ -66,15 +76,51 @@ namespace System.Text.Json.Serialization.Converters
             return null;
         }
 
-        public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
         {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
 #if NETCOREAPP
+#if NET8_0_OR_GREATER
+            Span<byte> span = stackalloc byte[MaximumVersionLength];
+#else
             Span<char> span = stackalloc char[MaximumVersionLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WriteStringValue(span.Slice(0, charsWritten));
 #else
             writer.WriteStringValue(value.ToString());
+#endif
+        }
+
+        internal override Version ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return ReadCore(ref reader);
+        }
+
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
+#if NETCOREAPP
+#if NET8_0_OR_GREATER
+            Span<byte> span = stackalloc byte[MaximumVersionLength];
+#else
+            Span<char> span = stackalloc char[MaximumVersionLength];
+#endif
+            bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
+            Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
+            writer.WritePropertyName(span.Slice(0, charsWritten));
+#else
+            writer.WritePropertyName(value.ToString());
 #endif
         }
     }

@@ -32,7 +32,9 @@ namespace System
 
         public bool Contains(char value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) != -1;
+#pragma warning restore CA2249
         }
 
         // Returns the index of the first occurrence of a specified character in the current instance.
@@ -71,14 +73,16 @@ namespace System
         {
             if (!char.IsAscii(value))
             {
-                return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+                return Ordinal.IndexOfOrdinalIgnoreCase(this, new ReadOnlySpan<char>(in value));
             }
 
             if (char.IsAsciiLetter(value))
             {
                 char valueUc = (char)(value | 0x20);
                 char valueLc = (char)(value & ~0x20);
-                return SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
+                return PackedSpanHelpers.PackedIndexOfIsSupported
+                    ? PackedSpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length)
+                    : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
             }
 
             return SpanHelpers.IndexOfChar(ref _firstChar, value, Length);

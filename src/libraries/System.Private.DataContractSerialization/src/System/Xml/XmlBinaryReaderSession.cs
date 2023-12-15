@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using StringHandle = System.Int64;
-using System.Xml;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using System.Xml;
+using StringHandle = System.Int64;
 
 namespace System.Xml
 {
@@ -23,11 +23,11 @@ namespace System.Xml
         public XmlDictionaryString Add(int id, string value)
         {
             if (id < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID));
+                throw new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID);
             ArgumentNullException.ThrowIfNull(value);
             XmlDictionaryString? xmlString;
             if (TryLookup(id, out _))
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIDDefined));
+                throw new InvalidOperationException(SR.XmlIDDefined);
 
             xmlString = new XmlDictionaryString(this, value, id);
             if (id >= MaxArrayEntries)

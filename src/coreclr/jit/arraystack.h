@@ -10,7 +10,7 @@ class ArrayStack
     static const int builtinSize = 8;
 
 public:
-    ArrayStack(CompAllocator alloc, int initialCapacity = builtinSize) : m_alloc(alloc)
+    explicit ArrayStack(CompAllocator alloc, int initialCapacity = builtinSize) : m_alloc(alloc)
     {
         if (initialCapacity > builtinSize)
         {

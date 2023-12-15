@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class GitHubIssue12479
 {
@@ -75,7 +76,8 @@ public class GitHubIssue12479
         
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // We have 8 floating args on unix.
         int a = caller(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);

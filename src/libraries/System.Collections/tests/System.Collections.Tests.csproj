@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -45,8 +45,6 @@
              Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\ObjectCloner.cs"
              Link="Common\System\ObjectCloner.cs" />
-    <Compile Include="$(CommonTestPath)System\RandomExtensions.cs"
-             Link="Common\System\RandomExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <!-- Generic tests -->
@@ -108,6 +106,7 @@
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.Tests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.PropertyTests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.Dijkstra.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />
     <Compile Include="Generic\Queue\Queue.Tests.cs" />

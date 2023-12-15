@@ -25,13 +25,12 @@ namespace BasicEventSourceTests
     public partial class TestsManifestGeneration
     {
         // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
-        private static bool IsProcessElevated => s_isElevated.Value;
         private static bool IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+            PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48798")]
         public void Test_EventSource_EtwManifestGeneration()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
@@ -78,6 +77,7 @@ namespace BasicEventSourceTests
         }
 
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48798")]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
             RemoteExecutor.Invoke(() =>
@@ -145,9 +145,18 @@ namespace BasicEventSourceTests
 
             ETWTraceEventSource source = new ETWTraceEventSource(fileName);
 
+            Dictionary<string, int> providers = new Dictionary<string, int>();
+            int eventCount = 0;
             var sawManifestData = false;
             source.Dynamic.All += (eventData) =>
             {
+                eventCount++;
+                if (!providers.ContainsKey(eventData.ProviderName))
+                {
+                    providers[eventData.ProviderName] = 0;
+                }
+                providers[eventData.ProviderName]++;
+
                 if (eventData.ProviderName.Equals("SimpleEventSource") && eventData.EventName.Equals("ManifestData"))
                 {
                     sawManifestData = true;
@@ -155,6 +164,18 @@ namespace BasicEventSourceTests
             };
             source.Process();
             //File.Delete(fileName);
+
+            if (!sawManifestData)
+            {
+                Console.WriteLine("Did not see ManifestData event from SimpleEventSource, test will fail. Additional info:");
+                Console.WriteLine($"    file name {fileName}");
+                Console.WriteLine($"    total event count {eventCount}");
+                Console.WriteLine($"    total providers {providers.Count}");
+                foreach (var provider in providers.Keys)
+                {
+                    Console.WriteLine($"        Provider name {provider} event count {providers[provider]}");
+                }
+            }
             return sawManifestData;
         }
     }

@@ -12,7 +12,7 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerContext
     {
-        private HttpConnection _connection;
+        private readonly HttpConnection _connection;
 
         internal HttpListenerContext(HttpConnection connection)
         {
@@ -95,7 +95,7 @@ namespace System.Net
         {
             WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));
             HttpWebSocket.ValidateOptions(subProtocol, receiveBufferSize, HttpWebSocket.MinSendBufferSize, keepAliveInterval);
-            return HttpWebSocket.AcceptWebSocketAsyncCore(this, subProtocol, receiveBufferSize, keepAliveInterval, internalBuffer);
+            return HttpWebSocket.AcceptWebSocketAsyncCore(this, subProtocol, receiveBufferSize, keepAliveInterval);
         }
     }
 }

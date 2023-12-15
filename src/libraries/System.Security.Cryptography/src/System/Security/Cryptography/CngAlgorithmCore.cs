@@ -12,16 +12,16 @@ namespace System.Security.Cryptography
     //
     internal struct CngAlgorithmCore
     {
-        private readonly string _disposedName;
+        private readonly Type _disposedType;
 #pragma warning disable CS0649
         public CngAlgorithm? DefaultKeyType;
 #pragma warning restore CS0649
         private CngKey? _lazyKey;
         private bool _disposed;
 
-        public CngAlgorithmCore(string disposedName) : this()
+        public CngAlgorithmCore(Type disposedType) : this()
         {
-            _disposedName = disposedName;
+            _disposedType = disposedType;
         }
 
         public static CngKey Duplicate(CngKey key)
@@ -151,10 +151,7 @@ namespace System.Security.Cryptography
 
         internal void ThrowIfDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, _disposedType);
         }
     }
 }

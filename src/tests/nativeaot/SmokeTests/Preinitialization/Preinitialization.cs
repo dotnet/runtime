@@ -4,7 +4,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
@@ -13,6 +15,7 @@ internal class Program
     private static int Main()
     {
 #if !MULTIMODULE_BUILD
+        TestHardwareIntrinsics.Run();
         TestLdstr.Run();
         TestException.Run();
         TestThreadStaticNotInitialized.Run();
@@ -28,28 +31,72 @@ internal class Program
         TestCctorCycle.Run();
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
-        TestReferenceTypeWithReadonlyNullGCPointerAllocation.Run();
         TestRelationalOperators.Run();
         TestTryFinally.Run();
         TestTryCatch.Run();
         TestBadClass.Run();
         TestRefs.Run();
         TestDelegate.Run();
+        TestDelegateReflectionVisible.Run();
         TestInitFromOtherClass.Run();
         TestInitFromOtherClassDouble.Run();
         TestDelegateToOtherClass.Run();
         TestLotsOfBackwardsBranches.Run();
+        TestSwitch.Run();
         TestDrawCircle.Run();
         TestValueTypeDup.Run();
         TestFunctionPointers.Run();
         TestGCInteraction.Run();
         TestDuplicatedFields.Run();
         TestInstanceDelegate.Run();
+        TestStringFields.Run();
+        TestSharedCode.Run();
+        TestSpan.Run();
+        TestReadOnlySpan.Run();
+        TestStaticInterfaceMethod.Run();
+        TestConstrainedCall.Run();
+        TestTypeHandles.Run();
+        TestIsValueType.Run();
+        TestIndirectLoads.Run();
+        TestInitBlock.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
 
         return 100;
+    }
+}
+
+class TestHardwareIntrinsics
+{
+    class Simple1
+    {
+        public static bool IsSseSupported = Sse.IsSupported;
+    }
+
+    class Simple2
+    {
+        public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple1));
+        Assert.AreEqual(Sse.IsSupported, Simple1.IsSseSupported);
+
+        Assert.IsPreinitialized(typeof(Simple2));
+        Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
+
+        if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
+            Assert.IsLazyInitialized(typeof(Complex));
+        else
+            Assert.IsPreinitialized(typeof(Complex));
+        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
     }
 }
 
@@ -383,27 +430,6 @@ class TestReferenceTypeWithGCPointerAllocation
     }
 }
 
-class TestReferenceTypeWithReadonlyNullGCPointerAllocation
-{
-    class ReferenceType
-    {
-        public readonly string StringValue;
-
-        public ReferenceType(string stringvalue)
-        {
-            StringValue = stringvalue;
-        }
-    }
-
-    static ReferenceType s_referenceType = new ReferenceType(null);
-
-    public static void Run()
-    {
-        Assert.IsPreinitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
-        Assert.AreSame(null, s_referenceType.StringValue);
-    }
-}
-
 static class TestRelationalOperators
 {
     static int s_zeroInt = 0;
@@ -606,6 +632,19 @@ class TestDelegate
     }
 }
 
+class TestDelegateReflectionVisible
+{
+    static readonly Action s_a = DelegateTarget;
+
+    static void DelegateTarget() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDelegateReflectionVisible));
+        Assert.AreEqual(nameof(DelegateTarget), s_a.Method.Name);
+    }
+}
+
 class TestInitFromOtherClass
 {
     class OtherClass
@@ -618,6 +657,7 @@ class TestInitFromOtherClass
     static int s_intValue = OtherClass.IntValue;
     static string s_stringValue = OtherClass.StringValue;
     static object s_objectValue = OtherClass.ObjectValue;
+    static bool s_areStringsSame = Object.ReferenceEquals(OtherClass.StringValue, "Hello");
 
     public static void Run()
     {
@@ -625,6 +665,7 @@ class TestInitFromOtherClass
         Assert.AreEqual(OtherClass.IntValue, s_intValue);
         Assert.AreSame(OtherClass.StringValue, s_stringValue);
         Assert.AreSame(OtherClass.ObjectValue, s_objectValue);
+        Assert.True(s_areStringsSame);
     }
 }
 
@@ -744,6 +785,41 @@ class TestLotsOfBackwardsBranches
 
         Assert.IsPreinitialized(typeof(TypeWithSomeBackwardsBranches));
         Assert.AreEqual(4950, TypeWithSomeBackwardsBranches.Sum);
+    }
+}
+
+class TestSwitch
+{
+    class Switcher
+    {
+        public static int CaseMinus1 = Switch(-1);
+        public static int Case0 = Switch(0);
+        public static int Case6 = Switch(6);
+        public static int Case100 = Switch(100);
+
+        private static int Switch(int x)
+        {
+            switch (x)
+            {
+                case 0: return 100;
+                case 1: return 200;
+                case 2: return 300;
+                case 3: return 400;
+                case 4: return 500;
+                case 5: return 600;
+                case 6: return 700;
+                default: return 100000;
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Switcher));
+        Assert.AreEqual(Switcher.CaseMinus1, 100000);
+        Assert.AreEqual(Switcher.Case0, 100);
+        Assert.AreEqual(Switcher.Case6, 700);
+        Assert.AreEqual(Switcher.Case100, 100000);
     }
 }
 
@@ -913,6 +989,384 @@ class TestInstanceDelegate
     }
 }
 
+class TestStringFields
+{
+    class ClassAccessingLength
+    {
+        public static int Length = "Hello".Length;
+    }
+
+    class ClassAccessingNull
+    {
+        public static int Length;
+        static ClassAccessingNull()
+        {
+            string myNull = null;
+            try
+            {
+                Length = myNull.Length;
+            }
+            catch (Exception) { }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ClassAccessingLength));
+        Assert.AreEqual(5, ClassAccessingLength.Length);
+
+        Assert.IsLazyInitialized(typeof(ClassAccessingNull));
+        Assert.AreEqual(0, ClassAccessingNull.Length);
+    }
+}
+
+class TestSharedCode
+{
+    class ClassWithTemplate<T>
+    {
+        public static int Cookie = 42;
+        public static T[] Array = new T[0];
+    }
+
+    class C1 { }
+    class C2 { }
+    class C3 { }
+    class C4 { }
+    class C5 { }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int AccessCookie<T>()
+        => ClassWithTemplate<T>.Cookie;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static object AccessArray<T>()
+        => ClassWithTemplate<T>.Array;
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:MakeGeneric",
+        Justification = "MakeGeneric is over reference types")]
+    public static void Run()
+    {
+        {
+            int val = AccessCookie<C1>();
+            Assert.AreEqual(42, val);
+
+            val = (int)typeof(ClassWithTemplate<>).MakeGenericType(typeof(C2)).GetField("Cookie").GetValue(null);
+            Assert.AreEqual(42, val);
+
+            val = (int)typeof(TestSharedCode).GetMethod(nameof(AccessCookie)).MakeGenericMethod(typeof(C3)).Invoke(null, Array.Empty<object>());
+            Assert.AreEqual(42, val);
+        }
+
+        {
+            // Expecting this to be a frozen array, and reported as int.MaxValue by the GC
+            object val = AccessArray<C1>();
+            Assert.AreEqual(int.MaxValue, GC.GetGeneration(val));
+
+            val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
+            Assert.AreEqual(0, GC.GetGeneration(val));
+            Assert.AreEqual(nameof(C4), val.GetType().GetElementType().Name);
+
+            val = typeof(TestSharedCode).GetMethod(nameof(AccessArray)).MakeGenericMethod(typeof(C5)).Invoke(null, Array.Empty<object>());
+            Assert.AreEqual(0, GC.GetGeneration(val));
+            Assert.AreEqual(nameof(C5), val.GetType().GetElementType().Name);
+        }
+    }
+}
+
+class TestSpan
+{
+    class StackAlloc
+    {
+        public static byte FirstByte;
+        public static byte LastByte;
+        public static char FirstChar;
+        public static char LastChar;
+
+        static StackAlloc()
+        {
+            Span<byte> s1 = stackalloc byte[8];
+            s1.Slice(0, 1)[0] = 42;
+            s1.Slice(s1.Length - 1, 1)[0] = 100;
+            FirstByte = s1[0];
+            LastByte = s1[7];
+
+            Span<char> s2 = stackalloc char[8];
+            s2.Slice(0, 1)[0] = 'H';
+            s2.Slice(s2.Length - 1, 1)[0] = '!';
+            FirstChar = s2[0];
+            LastChar = s2[7];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(StackAlloc));
+        Assert.AreEqual(42, StackAlloc.FirstByte);
+        Assert.AreEqual(100, StackAlloc.LastByte);
+        Assert.AreEqual('H', StackAlloc.FirstChar);
+        Assert.AreEqual('!', StackAlloc.LastChar);
+    }
+}
+
+class TestReadOnlySpan
+{
+    class SimpleReadOnlySpanAccess
+    {
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        public /* not readonly on purpose */ static int Sum;
+
+        static SimpleReadOnlySpanAccess()
+        {
+            ReadOnlySpan<int> val = Ints;
+            Sum = val[0] + val[1] + val[2] + val[3];
+        }
+    }
+
+    class OutOfRangeAccess
+    {
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        public readonly static int Sum;
+
+        static OutOfRangeAccess()
+        {
+            ReadOnlySpan<int> val = Ints;
+            Sum = val[4];
+        }
+    }
+
+    class DefaultInstanceAccess
+    {
+        public readonly static int Sum;
+
+        static DefaultInstanceAccess()
+        {
+            ReadOnlySpan<int> val = default;
+            Sum = val[0];
+        }
+    }
+
+    class MoreOperations
+    {
+        public readonly static int IntsLength;
+        public readonly static int StringLength;
+        public readonly static char FirstChar;
+
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        private static ReadOnlySpan<char> GetString() => "Hello World!";
+
+        static MoreOperations()
+        {
+            IntsLength = Ints.Length;
+            StringLength = GetString().Length;
+            FirstChar = GetString()[0];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(SimpleReadOnlySpanAccess));
+        Assert.AreEqual(26, SimpleReadOnlySpanAccess.Sum);
+
+        Assert.IsLazyInitialized(typeof(OutOfRangeAccess));
+        if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
+            OutOfRangeAccess.Sum.ToString(); // make sure cctor is looked at
+
+        Assert.IsLazyInitialized(typeof(DefaultInstanceAccess));
+        if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
+            DefaultInstanceAccess.Sum.ToString(); // make sure cctor is looked at
+
+        Assert.IsPreinitialized(typeof(MoreOperations));
+        Assert.AreEqual(4, MoreOperations.IntsLength);
+        Assert.AreEqual(12, MoreOperations.StringLength);
+        Assert.AreEqual('H', MoreOperations.FirstChar);
+    }
+}
+
+class TestStaticInterfaceMethod
+{
+    interface IFoo
+    {
+        static virtual int GetCookie1() => 42;
+        static virtual int GetCookie2() => 0;
+    }
+
+    struct Foo : IFoo
+    {
+        static int IFoo.GetCookie2() => 100;
+    }
+
+    class SimpleStaticInterfaceMethodCall
+    {
+        public static readonly int s_value1 = Compute1<Foo>();
+        public static readonly int s_value2 = Compute2<Foo>();
+
+        static int Compute1<T>() where T : IFoo => T.GetCookie1();
+        static int Compute2<T>() where T : IFoo => T.GetCookie2();
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(SimpleStaticInterfaceMethodCall));
+        Assert.AreEqual(42, SimpleStaticInterfaceMethodCall.s_value1);
+        Assert.AreEqual(100, SimpleStaticInterfaceMethodCall.s_value2);
+    }
+}
+
+class TestConstrainedCall
+{
+    interface IFoo
+    {
+        int Frob();
+    }
+
+    struct Foo : IFoo
+    {
+        public int val;
+
+        int IFoo.Frob()
+        {
+            val = 42;
+            return 100;
+        }
+    }
+
+    static int Call<T>(ref T inst) where T : IFoo => inst.Frob();
+
+    class ConstrainedCall
+    {
+        public static Foo s_f;
+        public static int s_i;
+
+        static ConstrainedCall()
+        {
+            Foo f = default;
+            s_i = Call<Foo>(ref f);
+            s_f = f;
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ConstrainedCall));
+        Assert.AreEqual(100, ConstrainedCall.s_i);
+        Assert.AreEqual(42, ConstrainedCall.s_f.val);
+    }
+}
+
+class TestTypeHandles
+{
+    class Foo<T>
+    {
+        public static bool IsChar = typeof(T) == typeof(char);
+        public static bool IsBool = typeof(T) == typeof(bool);
+    }
+
+    class CharHolder
+    {
+        public static readonly Type Type = typeof(char);
+    }
+
+    class IsChar
+    {
+        public static bool Is = typeof(char) == CharHolder.Type;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Foo<char>));
+        Assert.True(Foo<char>.IsChar);
+        Assert.True(!Foo<char>.IsBool);
+
+        Assert.IsPreinitialized(typeof(Foo<bool>));
+        Assert.True(!Foo<bool>.IsChar);
+        Assert.True(Foo<bool>.IsBool);
+
+        Assert.IsPreinitialized(typeof(CharHolder));
+        Assert.IsPreinitialized(typeof(IsChar));
+        Assert.True(IsChar.Is);
+    }
+}
+
+class TestIsValueType
+{
+    class IsValueTypeTests
+    {
+        public static bool IntIsValueType = typeof(int).IsValueType;
+        public static bool CharStarIsValueType = typeof(char*).IsValueType;
+        public static bool ObjectIsValueType = typeof(object).IsValueType;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(IsValueTypeTests));
+        Assert.AreEqual(true, IsValueTypeTests.IntIsValueType);
+        Assert.AreEqual(false, IsValueTypeTests.CharStarIsValueType);
+        Assert.AreEqual(false, IsValueTypeTests.ObjectIsValueType);
+    }
+}
+
+class TestIndirectLoads
+{
+    static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged
+        => *(U*)&val;
+
+    class LdindTester
+    {
+        public static sbyte SByte = Read<byte, sbyte>(byte.MaxValue);
+        public static short Short = Read<ushort, short>(ushort.MaxValue);
+        public static int Int = Read<uint, int>(uint.MaxValue);
+        public static long Long = Read<ulong, long>(ulong.MaxValue);
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(LdindTester));
+        Assert.AreEqual(-1, LdindTester.SByte);
+        Assert.AreEqual(-1, LdindTester.Short);
+        Assert.AreEqual(-1, LdindTester.Int);
+        Assert.AreEqual(-1, LdindTester.Long);
+    }
+}
+
+class TestInitBlock
+{
+    class Simple
+    {
+        public static byte Value;
+
+        static Simple()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 1);
+        }
+    }
+
+    class Overrun
+    {
+        public static byte Value;
+        public static byte Pad;
+
+        static Overrun()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 2);
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple));
+        Assert.AreEqual(42, Simple.Value);
+
+        Assert.IsLazyInitialized(typeof(Overrun));
+        Assert.AreEqual(42, Overrun.Value);
+        Assert.AreEqual(42, Overrun.Pad);
+    }
+}
+
 static class Assert
 {
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -947,6 +1401,12 @@ static class Assert
     }
 
     public static unsafe void AreEqual(int v1, int v2)
+    {
+        if (v1 != v2)
+            throw new Exception();
+    }
+
+    public static void AreEqual(string v1, string v2)
     {
         if (v1 != v2)
             throw new Exception();

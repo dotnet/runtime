@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -26,7 +26,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlInt16(bool fNull)
+        private SqlInt16(bool _)
         {
             m_fNotNull = false;
             m_value = 0;

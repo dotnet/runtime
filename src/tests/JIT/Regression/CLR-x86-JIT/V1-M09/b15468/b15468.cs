@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames
     using System;
 
-    class unsignedNegative
+    public class unsignedNegative
     {
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             Int16 testUI = (-1);
 

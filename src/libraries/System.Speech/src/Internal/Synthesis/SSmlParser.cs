@@ -128,7 +128,7 @@ namespace System.Speech.Internal.Synthesis
                             {
                                 innerException = e;
                                 // Unknown Culture info, fall back to the base culture.
-                                int pos = reader.Value.IndexOf("-", StringComparison.Ordinal);
+                                int pos = reader.Value.IndexOf('-');
                                 if (pos > 0)
                                 {
                                     try

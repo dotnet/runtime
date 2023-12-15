@@ -1,0 +1,11 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.PreserveIndividualMembersOfNonRequiredType/Required" required="false">
+      <field name="Field1" />
+      <method name="Method1" />
+      <property name="Property1" />
+      <event name="Event1" />
+      <method name=".ctor" />
+    </type>
+  </assembly>
+</linker>

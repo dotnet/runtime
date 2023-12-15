@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -16,11 +17,11 @@ namespace Test
                 Array[] a = new Array[2];
             }
         }
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             byte b = 0;
             Method1(ref b);
-            return 100;
         }
     }
 }

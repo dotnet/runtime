@@ -61,8 +61,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await ConnectAsync(client, uri, cancellation.Token);
 
-                object webSocketHandle = client.GetType().GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client);
-                WebSocketDeflateOptions negotiatedDeflateOptions = (WebSocketDeflateOptions)webSocketHandle.GetType()
+                object webSocketHandle = typeof(ClientWebSocket).GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client);
+                WebSocketDeflateOptions negotiatedDeflateOptions = (WebSocketDeflateOptions)Type.GetType("System.Net.WebSockets.WebSocketHandle, System.Net.WebSockets.Client")
                     .GetField("_negotiatedDeflateOptions", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(webSocketHandle);
 
@@ -83,6 +83,91 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.NotNull(headers);
                 Assert.True(headers.TryGetValue("Sec-WebSocket-Extensions", out string extensions));
                 Assert.Equal(expected, extensions);
+            }), new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        public async Task ThrowsWhenContinuationHasDifferentCompressionFlags()
+        {
+            var deflateOpt = new WebSocketDeflateOptions
+            {
+                ClientMaxWindowBits = 14,
+                ClientContextTakeover = true,
+                ServerMaxWindowBits = 14,
+                ServerContextTakeover = true
+            };
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var cws = new ClientWebSocket();
+                using var cts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                cws.Options.DangerousDeflateOptions = deflateOpt;
+                await ConnectAsync(cws, uri, cts.Token);
+
+
+                await cws.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, default);
+                Assert.Throws<ArgumentException>("messageFlags", () =>
+                   cws.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Binary, WebSocketMessageFlags.EndOfMessage, default));
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
+                await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
+            }), new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        public async Task SendHelloWithDisableCompression()
+        {
+            byte[] bytes = "Hello"u8.ToArray();
+
+            int prefixLength = 2;
+            byte[] rawPrefix = new byte[] { 0x81, 0x85 }; // fin=1, rsv=0, opcode=text; mask=1, len=5
+            int rawRemainingBytes = 9; // mask bytes (4) + payload bytes (5)
+            byte[] compressedPrefix = new byte[] { 0xc1, 0x87 }; // fin=1, rsv=compressed, opcode=text; mask=1, len=7
+            int compressedRemainingBytes = 11; // mask bytes (4) + payload bytes (7)
+
+            var deflateOpt = new WebSocketDeflateOptions
+            {
+                ClientMaxWindowBits = 14,
+                ClientContextTakeover = true,
+                ServerMaxWindowBits = 14,
+                ServerContextTakeover = true
+            };
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var cws = new ClientWebSocket();
+                using var cts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                cws.Options.DangerousDeflateOptions = deflateOpt;
+                await ConnectAsync(cws, uri, cts.Token);
+
+                await cws.SendAsync(bytes, WebSocketMessageType.Text, true, cts.Token);
+
+                WebSocketMessageFlags flags = WebSocketMessageFlags.DisableCompression | WebSocketMessageFlags.EndOfMessage;
+                await cws.SendAsync(bytes, WebSocketMessageType.Text, flags, cts.Token);
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                var buffer = new byte[compressedRemainingBytes];
+                var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
+                await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
+
+                // first message is compressed
+                await ReadExactAsync(buffer, prefixLength);
+                Assert.Equal(compressedPrefix, buffer[..prefixLength]);
+                // read rest of the frame
+                await ReadExactAsync(buffer, compressedRemainingBytes);
+
+                // second message is not compressed
+                await ReadExactAsync(buffer, prefixLength);
+                Assert.Equal(rawPrefix, buffer[..prefixLength]);
+                // read rest of the frame
+                await ReadExactAsync(buffer, rawRemainingBytes);
+
+                async Task ReadExactAsync(byte[] buf, int n)
+                {
+                    await connection.Stream.ReadAtLeastAsync(buf.AsMemory(0, n), n);
+                }
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 

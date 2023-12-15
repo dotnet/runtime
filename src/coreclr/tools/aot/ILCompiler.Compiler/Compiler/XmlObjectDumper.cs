@@ -38,7 +38,7 @@ namespace ILCompiler
             _writer.WriteStartElement("ObjectNodes");
         }
 
-        protected override void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
+        protected override void DumpObjectNode(NodeFactory nodeFactory, ObjectNode node, ObjectData objectData)
         {
             string name = null;
 
@@ -48,7 +48,7 @@ namespace ILCompiler
             if (symbolNode != null)
             {
                 Utf8StringBuilder sb = new Utf8StringBuilder();
-                symbolNode.AppendMangledName(mangler, sb);
+                symbolNode.AppendMangledName(nodeFactory.NameMangler, sb);
                 name = sb.ToString();
                 _writer.WriteAttributeString("Name", name);
             }

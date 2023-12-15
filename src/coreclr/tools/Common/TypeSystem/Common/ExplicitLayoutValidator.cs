@@ -58,7 +58,7 @@ namespace Internal.TypeSystem
 
         private readonly MetadataType _typeBeingValidated;
 
-        private ExplicitLayoutValidator(MetadataType type, int typeSizeInBytes)
+        private ExplicitLayoutValidator(MetadataType type)
         {
             _typeBeingValidated = type;
             _pointerSize = type.Context.Target.PointerSize;
@@ -67,8 +67,7 @@ namespace Internal.TypeSystem
 
         public static void Validate(MetadataType type, ComputedInstanceFieldLayout layout)
         {
-            int typeSizeInBytes = layout.ByteCountUnaligned.AsInt;
-            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type, typeSizeInBytes);
+            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type);
 
             foreach (FieldAndOffset fieldAndOffset in layout.Offsets)
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Tracing
 {
@@ -22,10 +23,7 @@ namespace System.Diagnostics.Tracing
 
         internal TraceLoggingTypeInfo(Type dataType)
         {
-            if (dataType is null)
-            {
-                throw new ArgumentNullException(nameof(dataType));
-            }
+            ArgumentNullException.ThrowIfNull(dataType);
 
             this.name = dataType.Name;
             this.dataType = dataType;
@@ -40,14 +38,8 @@ namespace System.Diagnostics.Tracing
             EventKeywords keywords,
             EventTags tags)
         {
-            if (dataType is null)
-            {
-                throw new ArgumentNullException(nameof(dataType));
-            }
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(dataType);
+            ArgumentNullException.ThrowIfNull(name);
 
             Statics.CheckName(name);
 
@@ -145,7 +137,7 @@ namespace System.Diagnostics.Tracing
         [ThreadStatic] // per-thread cache to avoid synchronization
         private static Dictionary<Type, TraceLoggingTypeInfo>? threadCache;
 
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+        [RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public static TraceLoggingTypeInfo GetInstance(Type type, List<Type>? recursionCheck)
         {
             Dictionary<Type, TraceLoggingTypeInfo> cache = threadCache ??= new Dictionary<Type, TraceLoggingTypeInfo>();

@@ -2359,7 +2359,7 @@ public static partial class DataContractJsonSerializerTests
         }
         catch (Exception e)
         {
-            Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
+            Assert.Fail($"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline1}{Environment.NewLine}Actual: {actualOutput1}");
         }
 
 
@@ -2388,7 +2388,7 @@ public static partial class DataContractJsonSerializerTests
         }
         catch (Exception e)
         {
-            Assert.True(false, $"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
+            Assert.Fail($"Error occurred when comparing results: {Environment.NewLine}{e.Message}{Environment.NewLine}Expected: {baseline2}{Environment.NewLine}Actual: {actualOutput2}");
         }
     }
 
@@ -2599,7 +2599,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value, actual);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings()
     {
@@ -2660,12 +2660,12 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(actual6 == dateTime);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
     public static void DCJS_VerifyDateTimeForDateTimeFormat()
     {
         var jsonTypes = new JsonTypes();
         var dateTime = new DateTime(DateTime.Now.Year, 12, 1);
-        var expectedString = "\"" + dateTime.ToString("MMMM") + "\"";
+        var expectedString = $"\"{dateTime:MMMM}\"";
         var dcjsSettings = new DataContractJsonSerializerSettings()
         {
             DateTimeFormat = jsonTypes.DTF_MMMM,
@@ -2978,7 +2978,7 @@ public static partial class DataContractJsonSerializerTests
             try
             {
                 jsonReader.Dispose();
-                Assert.False(true);
+                Assert.Fail();
             }
             catch (Exception ex)
             {

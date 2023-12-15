@@ -16,7 +16,8 @@ namespace System.Xml.XPath
             (1 << (int)XmlNodeType.Element) |
             (1 << (int)XmlNodeType.ProcessingInstruction) |
             (1 << (int)XmlNodeType.Comment);
-        private static readonly int[] s_ElementContentMasks = {
+        private static ReadOnlySpan<int> ElementContentMasks =>
+        [
             0,                                              // Root
             (1 << (int)XmlNodeType.Element),                // Element
             0,                                              // Attribute
@@ -32,7 +33,7 @@ namespace System.Xml.XPath
             (1 << (int)XmlNodeType.Text) |
             (1 << (int)XmlNodeType.ProcessingInstruction) |
             (1 << (int)XmlNodeType.Comment)                 // All
-        };
+        ];
         private const int TextMask =
             (1 << (int)XmlNodeType.CDATA) |
             (1 << (int)XmlNodeType.Text);
@@ -735,9 +736,9 @@ namespace System.Xml.XPath
             return s;
         }
 
-        private static XmlNameTable CreateNameTable()
+        private static NameTable CreateNameTable()
         {
-            XmlNameTable nameTable = new NameTable();
+            var nameTable = new NameTable();
             nameTable.Add(string.Empty);
             nameTable.Add(xmlnsPrefixNamespace);
             nameTable.Add(xmlPrefixNamespace);
@@ -765,7 +766,7 @@ namespace System.Xml.XPath
 
         private static int GetElementContentMask(XPathNodeType type)
         {
-            return s_ElementContentMasks[(int)type];
+            return ElementContentMasks[(int)type];
         }
 
         private static XAttribute? GetFirstNamespaceDeclarationGlobal(XElement e)

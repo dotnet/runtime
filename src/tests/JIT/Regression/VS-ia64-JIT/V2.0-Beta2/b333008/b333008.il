@@ -35,7 +35,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit foo
+.class public auto ansi beforefieldinit foo
        extends [mscorlib]System.Object
 {
   .field public static int32 x

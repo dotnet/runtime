@@ -140,6 +140,8 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt_fast) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_index_out_of_range_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_invalid_cast_exception) \
 MONO_JIT_ICALL (mini_llvmonly_interp_entry_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_exception) \
 MONO_JIT_ICALL (mini_llvmonly_rethrow_exception) \
@@ -203,6 +205,7 @@ MONO_JIT_ICALL (mono_gc_wbarrier_generic_nostore_internal) \
 MONO_JIT_ICALL (mono_gc_wbarrier_range_copy) \
 MONO_JIT_ICALL (mono_gchandle_get_target_internal) \
 MONO_JIT_ICALL (mono_generic_class_init) \
+MONO_JIT_ICALL (mono_get_addr_compiled_method) \
 MONO_JIT_ICALL (mono_get_assembly_object) \
 MONO_JIT_ICALL (mono_get_method_object) \
 MONO_JIT_ICALL (mono_get_native_calli_wrapper) \
@@ -309,6 +312,7 @@ MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_throw_not_supported) \
 MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
+MONO_JIT_ICALL (mono_throw_type_load) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
@@ -338,6 +342,8 @@ MONO_JIT_ICALL (ves_icall_string_alloc) \
 MONO_JIT_ICALL (ves_icall_string_new_wrapper) \
 MONO_JIT_ICALL (ves_icall_thread_finish_async_abort) \
 MONO_JIT_ICALL (mono_marshal_lookup_pinvoke) \
+MONO_JIT_ICALL (mono_gsharedvt_constrained_call_fast) \
+MONO_JIT_ICALL (mono_dummy_runtime_init_callback) \
 	\
 MONO_JIT_ICALL (count) \
 
@@ -350,6 +356,7 @@ MONO_JIT_ICALLS
 #undef MONO_JIT_ICALL
 } MonoJitICallId;
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union MonoJitICallInfos {
 	struct {
 #define MONO_JIT_ICALL(x) MonoJitICallInfo x;
@@ -358,6 +365,7 @@ MONO_JIT_ICALLS
 	};
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
+MONO_RESTORE_WARNING
 
 extern MonoJitICallInfos mono_jit_icall_info;
 

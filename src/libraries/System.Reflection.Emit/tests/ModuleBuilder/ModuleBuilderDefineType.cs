@@ -112,15 +112,15 @@ namespace System.Reflection.Emit.Tests
         public void DefineType_NullName_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null));
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic));
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType)));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null, TypeAttributes.NotPublic));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType)));
 
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified));
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), 0));
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified, 0));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), 0));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), PackingSize.Unspecified, 0));
 
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), new Type[0]));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineType(null, TypeAttributes.NotPublic, typeof(ModuleBuilderDefineType), new Type[0]));
         }
 
         [Fact]

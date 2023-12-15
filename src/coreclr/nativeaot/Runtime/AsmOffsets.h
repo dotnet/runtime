@@ -34,6 +34,13 @@ ASM_CONST(     2,     2, STRING_COMPONENT_SIZE)
 ASM_CONST(     E,    16, STRING_BASE_SIZE)
 ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
+
+#if defined(HOST_ARM64)
+// Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
+// ARM64IntrinsicConstants_Atomics = 0x0080
+ASM_CONST(     7,     7, ARM64_ATOMICS_FEATURE_FLAG_BIT)
+#endif
+
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)
 ASM_OFFSET(    0,     0, MethodTable, m_uFlags)
 ASM_OFFSET(    4,     4, MethodTable, m_uBaseSize)
@@ -51,9 +58,6 @@ ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
 ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
-ASM_OFFSET(   50,    90, Thread, m_pThreadLocalModuleStatics)
-ASM_OFFSET(   54,    98, Thread, m_numThreadLocalModuleStatics)
-
 ASM_SIZEOF(   14,    20, EHEnum)
 
 ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)
@@ -61,21 +65,11 @@ ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
-#ifndef HOST_64BIT
+#ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
 ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
-#endif
-
-#ifdef FEATURE_DYNAMIC_CODE
-ASM_OFFSET(    0,     0, CallDescrData, pSrc)
-ASM_OFFSET(    4,     8, CallDescrData, numStackSlots)
-ASM_OFFSET(    8,     C, CallDescrData, fpReturnSize)
-ASM_OFFSET(    C,    10, CallDescrData, pArgumentRegisters)
-ASM_OFFSET(   10,    18, CallDescrData, pFloatArgumentRegisters)
-ASM_OFFSET(   14,    20, CallDescrData, pTarget)
-ASM_OFFSET(   18,    28, CallDescrData, pReturnBuffer)
 #endif
 
 // Undefine macros that are only used in this header for convenience.

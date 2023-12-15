@@ -10,6 +10,8 @@ namespace System.Collections.Tests
     public class Queue_ICollection_NonGeneric_Tests : ICollection_NonGeneric_Tests
     {
         #region ICollection Helper Methods
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
 

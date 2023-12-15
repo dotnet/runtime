@@ -13,13 +13,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace TestIntLimits
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckMulNeg()
+        [Fact]
+        public static int CheckMulNeg()
         {
             bool fail = false;
             if (MulNeg7(3) != -7 * 3)
@@ -41,10 +43,9 @@ namespace TestIntLimits
                 fail = true;
             }
 
-
             try
             {
-                CheckedMulNenIntMin(1);
+                CheckedMulNegIntMin(1);
                 fail = true;
             }
             catch
@@ -52,7 +53,7 @@ namespace TestIntLimits
 
             try
             {
-                CheckedMulNenIntMin(0);
+                CheckedMulNegIntMin(0);
 
             }
             catch
@@ -81,10 +82,13 @@ namespace TestIntLimits
             catch
             { }
 
+            if (MulNegCombined(3, 4) != -12)
+            {
+                fail = true;
+            }
 
             if (fail)
             {
-                Console.WriteLine("CheckMulNeg failed");
                 return 101;
             }
             return 100;
@@ -100,7 +104,7 @@ namespace TestIntLimits
         static int MulNegIntMin(int a) => -a * int.MinValue;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckedMulNenIntMin(int a)
+        static int CheckedMulNegIntMin(int a)
         {
             checked
             {
@@ -121,7 +125,8 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckNegMul()
+        [Fact]
+        public static int CheckNegMul()
         {
             bool fail = false;
             if (NegMul7(3) != -7 * 3)
@@ -159,14 +164,18 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckNegMul failed");
                 return 101;
             }
             return 100;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int NegMul7(int a) => -(a * 7);
+        static int NegMul7(int a)
+        {
+            //ARM64-FULL-LINE: movn {{w[0-9]+}}, #6
+            //ARM64-FULL-LINE-NEXT: mul {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return -(a * 7);
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int NegMulIntMinValue(int a) => -(a * int.MinValue);
@@ -181,7 +190,8 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckDivNeg()
+        [Fact]
+        public static int CheckDivNeg()
         {
             bool fail = false;
 
@@ -211,17 +221,35 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckDivNeg failed");
                 return 101;
             }
             return 100;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int DivNeg11(int a) => -a / 11;
+        static int MulNegCombined(int a, int b)
+        {
+            //ARM64-FULL-LINE: mneg {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a * b * -1;
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long LongDivNeg1000(long a) => -a / 1000;
+        static int DivNeg11(int a)
+        {
+            //ARM64-FULL-LINE: smull {{x[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE-NEXT: asr {{x[0-9]+}}, {{x[0-9]+}}, #32
+            //ARM64-FULL-LINE-NEXT: asr {{w[0-9]+}}, {{w[0-9]+}}, #1
+            return -a / 11;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long LongDivNeg1000(long a)
+        {
+            //ARM64-FULL-LINE: smulh {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}
+            //ARM64-FULL-LINE-NEXT: asr {{x[0-9]+}}, {{x[0-9]+}}, #7
+            //ARM64-FULL-LINE-NEXT: add {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, LSR #63
+            return -a / 1000;
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int DivNegIntMinValue(int a) => -a / int.MinValue;
@@ -236,7 +264,8 @@ namespace TestIntLimits
         static long LongDivNeg1(long a) => -a / 1;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckNegDiv()
+        [Fact]
+        public static int CheckNegDiv()
         {
             bool fail = false;
 
@@ -282,7 +311,6 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckNegDiv failed");
                 return 101;
             }
             return 100;
@@ -311,27 +339,5 @@ namespace TestIntLimits
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long LongNegDivMinus1(long a) => -(a / -1);
-
-        static int Main()
-        {
-            if (CheckMulNeg() != 100)
-            {
-                return 101;
-            }
-            if (CheckNegMul() != 100)
-            {
-                return 101;
-            }
-            if (CheckDivNeg() != 100)
-            {
-                return 101;
-            }
-            if (CheckNegDiv() != 100)
-            {
-                return 101;
-            }
-
-            return 100;
-        }
     }
 }

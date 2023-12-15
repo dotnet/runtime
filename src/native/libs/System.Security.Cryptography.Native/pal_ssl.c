@@ -487,7 +487,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     // TLS1.3 uses different API for renegotiation/delayed client cert request
     #ifndef TLS1_3_VERSION
     #define TLS1_3_VERSION 0x0304
@@ -1005,9 +1005,16 @@ void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
 }
 
+void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback cb)
+{
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
+    SSL_CTX_set_keylog_callback(ctx, cb);
+}
+
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 {
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     if (API_EXISTS(SSL_set_post_handshake_auth))
     {
         SSL_set_post_handshake_auth(ssl, val);
@@ -1051,7 +1058,7 @@ int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t 
     }
     else
 #else
-    (void)ctx;
+    (void)ssl;
     (void)protos;
     (void)protos_len;
 #endif

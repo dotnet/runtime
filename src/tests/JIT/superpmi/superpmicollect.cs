@@ -218,13 +218,11 @@ namespace SuperPMICollection
                 testName = testName.Replace(".cmd", ".sh");
                 testName = testName.Replace(".bat", ".sh");
 
-                // The way tests are run on Linux, we might need to do some setup. In particular,
-                // if the test scripts are copied from Windows, we need to convert line endings
-                // to Unix line endings, and make the script executable. We can always do this
-                // more than once. This same transformation is done in runtest.sh.
+                // The way tests are run on Linux, we might need to do some setup. It is assumed
+                // that the line endings of the tests wrapper scripts are correct.
+                // We need to make the wrapper script executable.
                 // Review: RunProgram doesn't seem to work if the program isn't a full path.
 
-                RunProgram("/usr/bin/perl", @"-pi -e 's/\r\n|\n|\r/\n/g' " + "\"" + testName + "\"");
                 RunProgram("/bin/chmod", "+x \"" + testName + "\"");
 
                 // Now, figure out how to run the test.
@@ -309,18 +307,18 @@ namespace SuperPMICollection
             Console.WriteLine("Setting environment variables:");
             Console.WriteLine("    SuperPMIShimLogPath=" + s_tempDir);
             Console.WriteLine("    SuperPMIShimPath=" + Global.JitPath);
-            Console.WriteLine("    COMPlus_JitName=" + Global.CollectorShimName);
+            Console.WriteLine("    DOTNET_JitName=" + Global.CollectorShimName);
 
             Environment.SetEnvironmentVariable("SuperPMIShimLogPath", s_tempDir);
             Environment.SetEnvironmentVariable("SuperPMIShimPath", Global.JitPath);
-            Environment.SetEnvironmentVariable("COMPlus_JitName", Global.CollectorShimName);
+            Environment.SetEnvironmentVariable("DOTNET_JitName", Global.CollectorShimName);
 
             RunProgramsWhileCollecting(runProgramPath, runProgramArguments);
 
             // Un-set environment variables
             Environment.SetEnvironmentVariable("SuperPMIShimLogPath", "");
             Environment.SetEnvironmentVariable("SuperPMIShimPath", "");
-            Environment.SetEnvironmentVariable("COMPlus_JitName", "");
+            Environment.SetEnvironmentVariable("DOTNET_JitName", "");
 
             // Did any .mc files get generated?
             string[] mcFiles = Directory.GetFiles(s_tempDir, "*.mc");
@@ -599,7 +597,7 @@ namespace SuperPMICollection
             Console.WriteLine("If -mch is not given, all generated files are deleted, and the result is simply the exit code");
             Console.WriteLine("indicating whether the collection succeeded. This is useful as a test.");
             Console.WriteLine("");
-            Console.WriteLine("If the COMPlus_JitName or COMPlus_JitPath variable is already set, it is assumed SuperPMI collection is already happening,");
+            Console.WriteLine("If the DOTNET_JitName or DOTNET_JitPath variable is already set, it is assumed SuperPMI collection is already happening,");
             Console.WriteLine("and the program exits with success.");
             Console.WriteLine("");
             Console.WriteLine("On success, the return code is 100.");

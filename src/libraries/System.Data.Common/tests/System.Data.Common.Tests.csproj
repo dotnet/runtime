@@ -121,6 +121,7 @@
   </ItemGroup>
   <!-- S.D.SqlClient isn't live built anymore. -->
   <ItemGroup>
+    <PackageReference Include="System.Data.Common.TestData" Version="$(SystemDataCommonTestDataVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
   </ItemGroup>
 </Project>

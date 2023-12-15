@@ -28,11 +28,11 @@ namespace System.Reflection.Metadata
     {
         /// <summary>Initializes the attribute.</summary>
         /// <param name="handlerType">A type that handles metadata updates and that should be notified when any occur.</param>
-        public MetadataUpdateHandlerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type handlerType) =>
+        public MetadataUpdateHandlerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type handlerType) =>
             HandlerType = handlerType;
 
         /// <summary>Gets the type that handles metadata updates and that should be notified when any occur.</summary>
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public Type HandlerType { get; }
     }
 }

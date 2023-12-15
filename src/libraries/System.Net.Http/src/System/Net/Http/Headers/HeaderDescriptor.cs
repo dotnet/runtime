@@ -143,7 +143,7 @@ namespace System.Net.Http.Headers
                 {
                     for (int i = 0; i < knownValues.Length; i++)
                     {
-                        if (ByteArrayHelpers.EqualsOrdinalAscii(knownValues[i], headerValue))
+                        if (Ascii.Equals(headerValue, knownValues[i]))
                         {
                             return knownValues[i];
                         }
@@ -161,7 +161,8 @@ namespace System.Net.Http.Headers
                 else if (knownHeader == KnownHeaders.Location)
                 {
                     // Normally Location should be in ISO-8859-1 but occasionally some servers respond with UTF-8.
-                    if (TryDecodeUtf8(headerValue, out string? decoded))
+                    // If the user set the ResponseHeaderEncodingSelector, we give that priority instead.
+                    if (valueEncoding is null && TryDecodeUtf8(headerValue, out string? decoded))
                     {
                         return decoded;
                     }
@@ -251,7 +252,7 @@ namespace System.Net.Http.Headers
 
             Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
 
-            return candidate != null && ByteArrayHelpers.EqualsOrdinalAscii(candidate, contentTypeValue) ?
+            return candidate != null && Ascii.Equals(contentTypeValue, candidate) ?
                 candidate :
                 null;
         }

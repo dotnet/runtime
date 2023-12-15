@@ -193,7 +193,7 @@ public:
     void dump();
     void dumpFancy();
 #endif // DEBUG
-    __forceinline int hashtable_size()
+    __forceinline int hashtable_size() const
     {
         return 1 << this->log2_hashSize;
     }
@@ -306,35 +306,47 @@ class hashBvGlobalData
     hashBv*     hbvFreeList;
 };
 
-// clang-format off
-#define FOREACH_HBV_BIT_SET(index, bv) \
-    { \
-        for (int hashNum=0; hashNum<(bv)->hashtable_size(); hashNum++) {\
-            hashBvNode *node = (bv)->nodeArr[hashNum];\
-            while (node) { \
-                indexType base = node->baseIndex; \
-                for (int el=0; el<node->numElements(); el++) {\
-                    elemType _i = 0; \
-                    elemType _e = node->elements[el]; \
-                    while (_e) { \
-                    int _result = BitScanForwardPtr((DWORD *) &_i, _e); \
-                        assert(_result); \
-                        (index) = base + (el*BITS_PER_ELEMENT) + _i; \
-                        _e ^= (elemType(1) << _i);
+enum class HbvWalk
+{
+    Continue,
+    Abort,
+};
 
-#define NEXT_HBV_BIT_SET \
-                    }\
-                }\
-                node = node->next; \
-            }\
-        }\
-    } \
-//clang-format on
+template <typename TFunctor>
+HbvWalk ForEachHbvBitSet(const hashBv& bv, TFunctor func)
+{
+    for (int hashNum = 0; hashNum < bv.hashtable_size(); hashNum++)
+    {
+        hashBvNode* node = bv.nodeArr[hashNum];
+        while (node)
+        {
+            indexType base = node->baseIndex;
+            for (int el = 0; el < node->numElements(); el++)
+            {
+                elemType e = node->elements[el];
+                while (e)
+                {
+                    unsigned  i     = BitOperations::BitScanForward(e);
+                    indexType index = base + (el * BITS_PER_ELEMENT) + i;
+                    e ^= (elemType(1) << i);
+
+                    if (func(index) == HbvWalk::Abort)
+                    {
+                        return HbvWalk::Abort;
+                    }
+                }
+            }
+            node = node->next;
+        }
+    }
+
+    return HbvWalk::Continue;
+}
 
 #ifdef DEBUG
-void SimpleDumpNode(hashBvNode *n);
-void DumpNode(hashBvNode *n);
-void SimpleDumpDualNode(hashBv *a, hashBv *b, hashBvNode *n, hashBvNode *m);
+void SimpleDumpNode(hashBvNode* n);
+void DumpNode(hashBvNode* n);
+void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m);
 #endif // DEBUG
 
 #endif

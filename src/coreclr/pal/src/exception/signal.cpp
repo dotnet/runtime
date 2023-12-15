@@ -294,22 +294,6 @@ void SEHCleanupSignals()
     }
 }
 
-/*++
-Function :
-    SEHCleanupAbort()
-
-    Restore default SIGABORT signal handlers
-
-    (no parameters, no return value)
---*/
-void SEHCleanupAbort()
-{
-    if (g_registered_signal_handlers)
-    {
-        restore_signal(SIGABRT, &g_previous_sigabrt);
-    }
-}
-
 /* internal function definitions **********************************************/
 
 /*++
@@ -396,7 +380,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         if (signalRestarts)
         {
             // This signal mustn't be ignored because it will be restarted.
-            PROCAbort(code);
+            PROCAbort(code, siginfo);
         }
         return;
     }
@@ -404,14 +388,21 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         if (signalRestarts)
         {
+            // Shutdown and create the core dump before we restore the signal to the default handler.
+            PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+
+            PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
+
+            return;
         }
         else
         {
             // We can't invoke the original handler because returning from the
             // handler doesn't restart the exception.
-            PROCAbort(code);
+            PROCAbort(code, siginfo);
         }
     }
     else if (IsSaSigInfo(action))
@@ -429,7 +420,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code);
+    PROCCreateCrashDumpIfEnabled(code, siginfo, true);
 }
 
 /*++
@@ -601,13 +592,13 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    PROCAbort(SIGSEGV);
+                    PROCAbort(SIGSEGV, siginfo);
                 }
             }
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV);
+                PROCAbort(SIGSEGV, siginfo);
             }
         }
 
@@ -762,7 +753,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCCreateCrashDumpIfEnabled(code);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, false);
         }
         // g_pSynchronizationManager shouldn't be null if PAL is initialized.
         _ASSERTE(g_pSynchronizationManager != nullptr);

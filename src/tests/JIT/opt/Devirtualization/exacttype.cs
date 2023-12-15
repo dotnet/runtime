@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Base 
 {
@@ -33,7 +34,8 @@ public class Test_exacttype
         return new Derived();
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         // Declared type of 'd' has final method Foo(), so calls to
         // Foo() will devirtualize.
@@ -60,8 +62,6 @@ public class Test_exacttype
         new Base().Bar();
         new Derived().Foo();
         new Derived().Bar();
-
-        return 100;
     }
 }
 

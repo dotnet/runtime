@@ -20,7 +20,7 @@ this command views the status
 SLAPD OPENLDAP SERVER
 =====================
 
-    docker run -p:390:389 -e LDAP_DOMAIN=example.com -e LDAP_ROOTPASS=password -d nickstenning/slapd
+    docker run -p 390:389 -e LDAP_DOMAIN=example.com -e LDAP_ROOTPASS=password -d nickstenning/slapd
 
 and to test and view status
 

@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Logging.EventLog
             set => _eventLog = value;
         }
 
-        private IEventLog CreateDefaultEventLog()
+        private WindowsEventLog CreateDefaultEventLog()
         {
             string logName = string.IsNullOrEmpty(LogName) ? "Application" : LogName;
             string machineName = string.IsNullOrEmpty(MachineName) ? "." : MachineName;

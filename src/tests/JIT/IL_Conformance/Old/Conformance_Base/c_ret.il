@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
-.class          _ret {
+.assembly extern xunit.core {}
+.namespace c_ret
+{
+.class public          _ret {
 
 
 
@@ -16,17 +19,20 @@
         ret
 }
 
-.method public static  int32 main(class [mscorlib]System.String[]) {
+.method public static  int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack               5
         ldc.i4  0xFEFE
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
         ldc.i4  0xFEFE
         ceq
         brfalse FAIL
@@ -46,3 +52,4 @@ END:
 
 .assembly c_ret {}
 
+}

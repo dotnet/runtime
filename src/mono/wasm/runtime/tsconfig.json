@@ -5,6 +5,6 @@
             "esnext",
             "dom"
         ],
-    "outDir": "bin",
+        "sourceMap": true,
     }
 }

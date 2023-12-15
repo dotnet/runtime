@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __StackFrameIterator_h__
+#define __StackFrameIterator_h__
+
+#include "CommonMacros.h"
 #include "ICodeManager.h"
+#include "PalRedhawk.h" // NATIVE_CONTEXT
+#include "regdisplay.h"
+
+#include "forward_declarations.h"
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
@@ -18,6 +27,7 @@ struct EHEnum
     EHEnumState m_state;
 };
 
+class StackFrameIterator;
 EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault);
 EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke);
 
@@ -75,10 +85,6 @@ private:
     // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
     void UnwindUniversalTransitionThunk();
 
-    // If our control PC indicates that we're in the call descr thunk that we use to call an arbitrary managed
-    // function with an arbitrary signature from a normal managed function handle the stack walk specially.
-    void UnwindCallDescrThunk();
-
     void EnterInitialInvalidState(Thread * pThreadToWalk);
 
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags); // GC stackwalk
@@ -110,7 +116,7 @@ private:
         InManagedCode,
         InThrowSiteThunk,
         InFuncletInvokeThunk,
-        InCallDescrThunk,
+        InFilterFuncletInvokeThunk,
         InUniversalTransitionThunk,
     };
 
@@ -143,7 +149,10 @@ private:
         // The thread was interrupted in the current frame at the current IP by a signal, SuspendThread or similar.
         ActiveStackFrame = 0x40,
 
-        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint),
+        // When encountering a reverse P/Invoke, unwind directly to the P/Invoke frame using the saved transition frame.
+        SkipNativeFrames = 0x80,
+
+        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint | SkipNativeFrames),
         EHStackWalkFlags = ApplyReturnAddressAdjustment,
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
@@ -205,7 +214,7 @@ protected:
     GCRefKind           m_HijackedReturnValueKind;
     PTR_UIntNative      m_pConservativeStackRangeLowerBound;
     PTR_UIntNative      m_pConservativeStackRangeUpperBound;
-    uint32_t              m_dwFlags;
+    uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
@@ -213,5 +222,7 @@ protected:
                                         // space.  However, the implementation simpler by doing it this way.
     bool                m_ShouldSkipRegularGcReporting;
     PTR_VOID            m_OriginalControlPC;
+    PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };
 
+#endif // __StackFrameIterator_h__

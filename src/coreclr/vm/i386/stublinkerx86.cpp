@@ -77,7 +77,11 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
 #endif // TARGET_AMD64
 
 #ifdef FEATURE_COMINTEROP
-Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
+// Use a type alias as MSVC has issues parsing the pointer, the calling convention, and the declspec
+// in the same signature.
+// Disable ASAN here as this method uses inline assembly and touches registers that ASAN uses.
+using ThreadPointer = Thread*;
+ThreadPointer DISABLE_ASAN __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
 #endif
 
 
@@ -3184,8 +3188,6 @@ GetModuleInformationProc *g_pfnGetModuleInformation = NULL;
 
 extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
 {
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     LOG((LF_STUBS, LL_INFO1000000, "checking stub unwind info:\n"));
 
     //
@@ -3300,8 +3302,6 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
         }
     }
 ErrExit:
-
-    END_ENTRYPOINT_VOIDRET;
     return;
 }
 
@@ -4545,29 +4545,42 @@ COPY_VALUE_CLASS:
                         total += cur->startoffset - elemOfs;
 
                         SSIZE_T cnt = (SSIZE_T) pArrayOpScript->m_gcDesc->GetNumSeries();
-                        // special array encoding
-                        _ASSERTE(cnt < 0);
 
-                        for (SSIZE_T __i = 0; __i > cnt; __i--)
+                        if (cnt == 1)
                         {
-                            HALF_SIZE_T skip =  cur->val_serie[__i].skip;
-                            HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
-                            total += nptrs*sizeof (DWORD*);
-                            do
+                            // all pointers
+                            for (size_t i = 0; i < size; i += sizeof(Object*))
                             {
-                                AMD64_ONLY(_ASSERTE(fNeedScratchArea));
-
-                                X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_ByRefWriteBarrier), 0);
-                            } while (--nptrs);
-                            if (skip > 0)
-                            {
-                                //check if we are at the end of the series
-                                if (__i == (cnt + 1))
-                                    skip = skip - (HALF_SIZE_T)(cur->startoffset - elemOfs);
-                                if (skip > 0)
-                                    generate_noref_copy (skip, this);
+                                X86EmitCall(NewExternalCodeLabel((LPVOID)JIT_ByRefWriteBarrier), 0);
+                                total += sizeof(Object*);
                             }
-                            total += skip;
+                        }
+                        else
+                        {
+                            // special array encoding
+                            _ASSERTE(cnt < 0);
+
+                            for (SSIZE_T __i = 0; __i > cnt; __i--)
+                            {
+                                HALF_SIZE_T skip =  (cur->val_serie + __i)->skip;
+                                HALF_SIZE_T nptrs = (cur->val_serie + __i)->nptrs;
+                                total += nptrs*sizeof (Object*);
+                                do
+                                {
+                                    AMD64_ONLY(_ASSERTE(fNeedScratchArea));
+
+                                    X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_ByRefWriteBarrier), 0);
+                                } while (--nptrs);
+                                if (skip > 0)
+                                {
+                                    //check if we are at the end of the series
+                                    if (__i == (cnt + 1))
+                                        skip = skip - (HALF_SIZE_T)(cur->startoffset - elemOfs);
+                                    if (skip > 0)
+                                        generate_noref_copy (skip, this);
+                                }
+                                total += skip;
+                            }
                         }
 
                         _ASSERTE (size == total);
@@ -4904,19 +4917,15 @@ VOID StubLinkerCPU::EmitDebugBreak()
                                  // global optimizations.
 #pragma warning (disable : 4731)
 #endif  // _MSC_VER
-Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
+ThreadPointer __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 {
 
     WRAPPER_NO_CONTRACT;
 
-    Thread *pThread = NULL;
-
     HRESULT hr = S_OK;
 
     // This means that a thread is FIRST coming in from outside the EE.
-    BEGIN_ENTRYPOINT_THROWS;
-    pThread = SetupThreadNoThrow(&hr);
-    END_ENTRYPOINT_THROWS;
+    Thread* pThread = SetupThreadNoThrow(&hr);
 
     if (pThread == NULL) {
         // Unwind stack, and return hr
@@ -4926,6 +4935,10 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
         UINT numArgStackBytes = pFrame->GetNumCallerStackBytes();
         unsigned frameSize = sizeof(Frame) + sizeof(LPVOID);
         LPBYTE iEsp = ((LPBYTE)pFrame) + ComMethodFrame::GetOffsetOfCalleeSavedRegisters();
+
+        // Let ASAN that we aren't going to return so it can do some cleanup
+        __asan_handle_no_return();
+
         __asm
         {
             mov eax, hr

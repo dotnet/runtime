@@ -9,7 +9,7 @@ using System.Linq;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Extension methods for configuration classes./>.
+    /// Extension methods for configuration classes.
     /// </summary>
     public static class ConfigurationExtensions
     {

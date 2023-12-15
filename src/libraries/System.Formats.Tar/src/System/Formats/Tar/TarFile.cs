@@ -40,7 +40,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -79,7 +79,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -109,7 +109,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
             }
 
             // Throws if the destination file exists
@@ -145,7 +145,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
             }
 
             return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, cancellationToken);
@@ -180,11 +180,12 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
             }
 
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             ExtractToDirectoryInternal(source, destinationDirectoryName, overwriteFiles, leaveOpen: true);
         }
@@ -224,11 +225,12 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
             }
 
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             return ExtractToDirectoryInternalAsync(source, destinationDirectoryName, overwriteFiles, leaveOpen: true, cancellationToken);
         }
@@ -257,15 +259,16 @@ namespace System.Formats.Tar
             // Rely on Path.GetFullPath for validation of paths
             sourceFileName = Path.GetFullPath(sourceFileName);
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             if (!File.Exists(sourceFileName))
             {
-                throw new FileNotFoundException(string.Format(SR.IO_FileNotFound_FileName, sourceFileName));
+                throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, sourceFileName));
             }
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
             }
 
             using FileStream archive = File.OpenRead(sourceFileName);
@@ -303,15 +306,16 @@ namespace System.Formats.Tar
             // Rely on Path.GetFullPath for validation of paths
             sourceFileName = Path.GetFullPath(sourceFileName);
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
+            destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
             if (!File.Exists(sourceFileName))
             {
-                return Task.FromException(new FileNotFoundException(string.Format(SR.IO_FileNotFound_FileName, sourceFileName)));
+                return Task.FromException(new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, sourceFileName)));
             }
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
             }
 
             return ExtractToDirectoryInternalAsync(sourceFileName, destinationDirectoryName, overwriteFiles, cancellationToken);
@@ -326,7 +330,6 @@ namespace System.Formats.Tar
             using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
-                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
                 bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
@@ -341,9 +344,10 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
+                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
+                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length))
                 {
-                    writer.WriteEntry(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length));
+                    writer.WriteEntry(fullpath, entryname);
                 }
             }
         }
@@ -381,7 +385,6 @@ namespace System.Formats.Tar
             await using (writer.ConfigureAwait(false))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
-                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
 
                 bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
@@ -396,41 +399,50 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
+                string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
+                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length))
                 {
-                    await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length), cancellationToken).ConfigureAwait(false);
+                    await writer.WriteEntryAsync(fullpath, entryname, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
         // Generates a recursive enumeration of the filesystem entries inside the specified source directory, while
         // making sure that directory symlinks do not get recursed.
-        private static IEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
+        private static IEnumerable<(string fullpath, string entryname)> GetFilesForCreation(string sourceDirectoryName, int basePathLength)
         {
-            return new FileSystemEnumerable<FileSystemInfo>(
-                directory: sourceDirectoryName,
-                transform: (ref FileSystemEntry entry) => entry.ToFileSystemInfo(),
-                options: new EnumerationOptions()
-                {
-                    RecurseSubdirectories = true
-                })
-            {
-                ShouldRecursePredicate = IsNotADirectorySymlink
-            };
+            // The default order to write a tar archive is to recurse into subdirectories first.
+            // This order is expected by 'tar' to restore directory timestamps properly without the user explicitly specifying `--delay-directory-restore`.
+            // FileSystemEnumerable RecurseSubdirectories will first write further entries before recursing, so we don't use it here.
 
-            static bool IsNotADirectorySymlink(ref FileSystemEntry entry) => entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0;
+            var fse = new FileSystemEnumerable<(string fullpath, string entryname, bool recurse)>(
+                directory: sourceDirectoryName,
+                transform: (ref FileSystemEntry entry) =>
+                {
+                    string fullPath = entry.ToFullPath();
+                    bool isRealDirectory = entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0; // not a symlink.
+                    string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePathLength), appendPathSeparator: isRealDirectory);
+                    return (fullPath, entryName, isRealDirectory);
+                });
+
+            foreach ((string fullpath, string entryname, bool recurse) in fse)
+            {
+                yield return (fullpath, entryname);
+
+                // Return entries for the subdirectory.
+                if (recurse)
+                {
+                    foreach (var inner in GetFilesForCreation(fullpath, basePathLength))
+                    {
+                        yield return inner;
+                    }
+                }
+            }
         }
 
         // Determines what should be the base path for all the entries when creating an archive.
         private static string GetBasePathForCreateFromDirectory(DirectoryInfo di, bool includeBaseDirectory) =>
             includeBaseDirectory && di.Parent != null ? di.Parent.FullName : di.FullName;
-
-        // Constructs the entry name used for a filesystem entry when creating an archive.
-        private static string GetEntryNameForFileSystemInfo(FileSystemInfo file, int basePathLength)
-        {
-            bool isDirectory = (file.Attributes & FileAttributes.Directory) != 0;
-            return ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePathLength), appendPathSeparator: isDirectory);
-        }
 
         private static string GetEntryNameForBaseDirectory(string name)
         {
@@ -439,29 +451,31 @@ namespace System.Formats.Tar
 
         // Extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen)
+        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryFullPath, bool overwriteFiles, bool leaveOpen)
         {
-            VerifyExtractToDirectoryArguments(source, destinationDirectoryPath);
+            VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
+            var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles, pendingModes);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
+            TarHelpers.SetPendingModificationTimes(directoryModificationTimes);
         }
 
         // Asynchronously extracts the contents of a tar file into the specified directory.
-        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken)
+        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryFullPath, bool overwriteFiles, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(sourceFileName));
-            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryName));
+            Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryFullPath));
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -474,18 +488,19 @@ namespace System.Formats.Tar
             FileStream archive = new(sourceFileName, options);
             await using (archive.ConfigureAwait(false))
             {
-                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryFullPath, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // Asynchronously extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
+        private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryFullPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
         {
-            VerifyExtractToDirectoryArguments(source, destinationDirectoryPath);
+            VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
             cancellationToken.ThrowIfCancellationRequested();
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
+            var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
             TarReader reader = new TarReader(source, leaveOpen);
             await using (reader.ConfigureAwait(false))
             {
@@ -494,11 +509,12 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, pendingModes, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
+            TarHelpers.SetPendingModificationTimes(directoryModificationTimes);
         }
 
         [Conditional("DEBUG")]

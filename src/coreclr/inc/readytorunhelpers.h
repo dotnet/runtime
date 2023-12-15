@@ -55,6 +55,8 @@ HELPER(READYTORUN_HELPER_GenericNonGcTlsBase,       CORINFO_HELP_GETGENERICS_NON
 
 HELPER(READYTORUN_HELPER_VirtualFuncPtr,            CORINFO_HELP_VIRTUAL_FUNC_PTR,                  )
 HELPER(READYTORUN_HELPER_IsInstanceOfException,     CORINFO_HELP_ISINSTANCEOF_EXCEPTION,            )
+HELPER(READYTORUN_HELPER_NewMaybeFrozenArray,       CORINFO_HELP_NEWARR_1_MAYBEFROZEN,              )
+HELPER(READYTORUN_HELPER_NewMaybeFrozenObject,      CORINFO_HELP_NEWFAST_MAYBEFROZEN,               )
 
 HELPER(READYTORUN_HELPER_LMul,                      CORINFO_HELP_LMUL,                              )
 HELPER(READYTORUN_HELPER_LMulOfv,                   CORINFO_HELP_LMUL_OVF,                          )

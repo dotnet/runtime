@@ -13,6 +13,8 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TCollection, object?>
         where TCollection : IList
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(in object? value, ref ReadStack state)
         {
             TCollection collection = (TCollection)state.Current.ReturnValue!;
@@ -30,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
             if (returnValue.IsReadOnly)
             {
                 state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
         }
 
@@ -77,9 +79,9 @@ namespace System.Text.Json.Serialization.Converters
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             // Deserialize as List<object?> for interface types that support it.
-            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(List<object?>)))
+            if (jsonTypeInfo.CreateObject is null && Type.IsAssignableFrom(typeof(List<object?>)))
             {
-                Debug.Assert(TypeToConvert.IsInterface);
+                Debug.Assert(Type.IsInterface);
                 jsonTypeInfo.CreateObject = () => new List<object?>();
             }
         }

@@ -16,7 +16,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'address'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

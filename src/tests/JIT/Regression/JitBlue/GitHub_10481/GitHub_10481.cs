@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Repro case for a bug where copies from one struct-typed field of a local
 // to another were being illegally elided.
@@ -88,9 +89,10 @@ namespace N
         }
     }
 
-    static class C
+    public static class C
     {
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Repro1.RunTest() != 100)
             {

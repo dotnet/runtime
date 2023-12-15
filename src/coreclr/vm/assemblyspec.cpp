@@ -20,7 +20,6 @@
 #include "assemblyspec.hpp"
 #include "eeconfig.h"
 #include "strongnameinternal.h"
-#include "strongnameholders.h"
 #include "eventtrace.h"
 #include "assemblynative.hpp"
 
@@ -149,14 +148,12 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent,
-                                  BOOL fAllowAllocation)
+                                  DomainAssembly *pStaticParent)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        if (fAllowAllocation) {GC_TRIGGERS;} else {GC_NOTRIGGER;};
-        if (fAllowAllocation) {INJECT_FAULT(COMPlusThrowOM());} else {FORBID_FAULT;};
+        GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
         PRECONDITION(pImport->IsValidToken(kAssemblyToken));
@@ -194,7 +191,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -333,16 +330,14 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
     else
     {
         // Ref has a token
-        StrongNameBufferHolder<BYTE> pbStrongNameToken;
-        DWORD cbStrongNameToken;
+        StrongNameToken strongNameToken;
 
         IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
             cbPublicKey,
-            &pbStrongNameToken,
-            &cbStrongNameToken));
+            &strongNameToken));
 
-        if ((m_cbPublicKeyOrToken != cbStrongNameToken) ||
-            memcmp(m_pbPublicKeyOrToken, pbStrongNameToken, cbStrongNameToken))
+        if ((m_cbPublicKeyOrToken != StrongNameToken::SIZEOF_TOKEN) ||
+            memcmp(m_pbPublicKeyOrToken, &strongNameToken, StrongNameToken::SIZEOF_TOKEN))
         {
             ThrowHR(FUSION_E_REF_DEF_MISMATCH);
         }
@@ -507,7 +502,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
 
     pILImage = PEImage::OpenImage(pFilePath,
         MDInternalImport_Default,
-        Bundle::ProbeAppBundle(pFilePath));
+        Bundle::ProbeAppBundle(SString{ SString::Literal, pFilePath }));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
@@ -578,15 +573,13 @@ HRESULT AssemblySpec::EmitToken(
         // If we've been asked to emit a public key token in the reference but we've
         // been given a public key then we need to generate the token now.
         if (m_cbPublicKeyOrToken && IsAfPublicKey(m_dwFlags)) {
-            StrongNameBufferHolder<BYTE> pbPublicKeyToken;
-            DWORD cbPublicKeyToken;
+            StrongNameToken strongNameToken;
             IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
                 m_cbPublicKeyOrToken,
-                &pbPublicKeyToken,
-                &cbPublicKeyToken));
+                &strongNameToken));
 
-            hr = pEmit->DefineAssemblyRef(pbPublicKeyToken,
-                                          cbPublicKeyToken,
+            hr = pEmit->DefineAssemblyRef(&strongNameToken,
+                                          StrongNameToken::SIZEOF_TOKEN,
                                           ssName.GetUnicode(),
                                           &AMD,
                                           NULL,

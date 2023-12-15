@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
@@ -12,6 +14,8 @@ namespace System
         private const string OSPlatformName =
 #if TARGET_BROWSER
         "BROWSER"
+#elif TARGET_WASI
+        "WASI"
 #elif TARGET_WINDOWS
         "WINDOWS"
 #elif TARGET_OSX
@@ -62,6 +66,8 @@ namespace System
             _servicePack = servicePack;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -113,6 +119,7 @@ namespace System
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsOSPlatform(string platform)
         {
             ArgumentNullException.ThrowIfNull(platform);
@@ -143,6 +150,17 @@ namespace System
         [NonVersionable]
         public static bool IsBrowser() =>
 #if TARGET_BROWSER
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running as WASI.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsWasi() =>
+#if TARGET_WASI
             true;
 #else
             false;

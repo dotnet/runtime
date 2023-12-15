@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-class T
+public class T
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         string s1 = "a";
         string s2 = "b";
@@ -21,10 +23,9 @@ class T
         string s11 = "k";
 
         foo(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11);
-        return 100;
     }
 
-    public static void foo(string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8, string s9, string s10, string s11)
+    internal static void foo(string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8, string s9, string s10, string s11)
     {
         Console.WriteLine(s8);
         Console.WriteLine(s9);

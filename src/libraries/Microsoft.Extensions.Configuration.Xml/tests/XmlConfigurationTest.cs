@@ -3,11 +3,13 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Tests;
 using System.Xml;
 using Microsoft.Extensions.Configuration.Test;
+using Microsoft.Extensions.FileProviders;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Xml.Test
@@ -689,6 +691,31 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        public void ThrowExceptionWhenDuplicateKeyOfElementContents()
+        {
+            var xml =
+                @"<settings>
+                    <Data>
+                        <DefaultConnection>
+                            <ConnectionString>TestConnectionString</ConnectionString>
+                            <Provider>SqlClient</Provider>
+                        </DefaultConnection>
+                    </Data>
+                    <data name='defaultconnection'>
+                        <ConnectionString>TestConnectionString1</ConnectionString>
+                        <provider>NewProvider</provider>
+                    </data>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+            var expectedMsg = SR.Format(SR.Error_KeyIsDuplicated, "data:defaultconnection:ConnectionString",
+                SR.Format(SR.Msg_LineInfo, 9, 43));
+
+            var exception = Assert.Throws<FormatException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
+
+            Assert.Equal(expectedMsg, exception.Message);
+        }
+
+        [Fact]
         public void XmlConfiguration_Throws_On_Missing_Configuration_File()
         {
             var ex = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: false).Build());
@@ -753,6 +780,65 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             Assert.Equal("SqlClient", xmlConfigSrc.Get("DATA.SETTING:DefaultConnection:Provider"));
             Assert.Equal("AnotherTestConnectionString", xmlConfigSrc.Get("data.setting:inventory:connectionstring"));
             Assert.Equal("MySql", xmlConfigSrc.Get("Data.setting:Inventory:Provider"));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AddXmlFile_FileProvider_Gets_Disposed_When_It_Was_Not_Created_By_The_User(bool disposeConfigRoot)
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddXmlFile_FileProvider_Gets_Disposed_When_It_Was_Not_Created_By_The_User)}.xml");
+            File.WriteAllText(filePath, @"<settings><My><Nice>Settings</Nice></My></settings>");
+
+            IConfigurationRoot config = new ConfigurationBuilder().AddXmlFile(filePath, optional: false).Build();
+            XmlConfigurationProvider xmlConfigurationProvider = config.Providers.OfType<XmlConfigurationProvider>().Single();
+
+            Assert.NotNull(xmlConfigurationProvider.Source.FileProvider);
+            PhysicalFileProvider fileProvider = (PhysicalFileProvider)xmlConfigurationProvider.Source.FileProvider;
+            Assert.False(GetIsDisposed(fileProvider));
+
+            if (disposeConfigRoot)
+            {
+                (config as IDisposable).Dispose(); // disposing ConfigurationRoot
+            }
+            else
+            {
+                xmlConfigurationProvider.Dispose(); // disposing XmlConfigurationProvider
+            }
+            
+            Assert.True(GetIsDisposed(fileProvider));
+        }
+
+        [Fact]
+        public void AddXmlFile_FileProvider_Is_Not_Disposed_When_It_Is_Owned_By_The_User()
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddXmlFile_FileProvider_Is_Not_Disposed_When_It_Is_Owned_By_The_User)}.xml");
+            File.WriteAllText(filePath, @"<settings><My><Nice>Settings</Nice></My></settings>");
+
+            PhysicalFileProvider fileProvider = new(Path.GetDirectoryName(filePath));
+            XmlConfigurationProvider configurationProvider = new(new XmlConfigurationSource()
+            {
+                Path = filePath,
+                FileProvider = fileProvider
+            });
+            IConfigurationRoot config = new ConfigurationBuilder().AddXmlFile(configurationProvider.Source.FileProvider, filePath, optional: true, reloadOnChange: false).Build();
+
+            Assert.False(GetIsDisposed(fileProvider));
+
+            (config as IDisposable).Dispose(); // disposing ConfigurationRoot that does not own the provider
+            Assert.False(GetIsDisposed(fileProvider));
+
+            configurationProvider.Dispose(); // disposing XmlConfigurationProvider
+            Assert.False(GetIsDisposed(fileProvider));
+
+            fileProvider.Dispose(); // disposing PhysicalFileProvider itself
+            Assert.True(GetIsDisposed(fileProvider));
+        }
+
+        private static bool GetIsDisposed(PhysicalFileProvider fileProvider)
+        {
+            System.Reflection.FieldInfo isDisposedField = typeof(PhysicalFileProvider).GetField("_disposed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            return (bool)isDisposedField.GetValue(fileProvider);
         }
     }
 }

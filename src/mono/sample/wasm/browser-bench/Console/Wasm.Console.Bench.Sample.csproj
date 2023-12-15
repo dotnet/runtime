@@ -9,8 +9,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Console.Bench.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasm.Console.Bench.Sample.dll</_SampleAssembly>
     <SignAssembly>False</SignAssembly>
   </PropertyGroup>
 

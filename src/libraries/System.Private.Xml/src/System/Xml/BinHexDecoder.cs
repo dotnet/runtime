@@ -41,18 +41,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (chars.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, chars.Length - startPos);
 
             if (len == 0)
             {
@@ -71,18 +62,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(str);
 
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (str.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, str.Length - startPos);
 
             if (len == 0)
             {

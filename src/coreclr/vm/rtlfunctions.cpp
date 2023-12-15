@@ -103,7 +103,7 @@ VOID InstallEEFunctionTable (
         }
         else
         {
-            NewArrayHolder<WCHAR> wzTempName(DuplicateStringThrowing(ssTempName.GetUnicode()));
+            NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
 
             // publish result
             if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
-using System.DirectoryServices.Protocols;
 using System.Diagnostics;
+using System.DirectoryServices.Protocols;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
@@ -194,6 +194,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_stringal")]
         private static partial int ber_get_stringal(SafeBerHandle berElement, ref IntPtr value);
 
+#pragma warning disable IDE0060
         public static int ber_printf_berarray(SafeBerHandle berElement, string format, IntPtr value, nuint tag)
         {
             Debug.Assert(format == "v" || format == "V");
@@ -207,5 +208,6 @@ internal static partial class Interop
             // V and v are not supported on Unix yet.
             return -1;
         }
+#pragma warning restore IDE0060
     }
 }

@@ -8,6 +8,7 @@
     <VSTestNoLogo>true</VSTestNoLogo>
     <ILLinkDescriptorsPath>$(MSBuildThisFileDirectory)ILLinkDescriptors\</ILLinkDescriptorsPath>
     <TestSingleFile Condition="'$(TestNativeAot)' == 'true'">true</TestSingleFile>
+    <TestSingleFile Condition="'$(TestReadyToRun)' == 'true'">true</TestSingleFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
@@ -16,7 +17,7 @@
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</AndroidTestRunnerDir>
     <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</WasmTestRunnerDir>
 
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 

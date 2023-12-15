@@ -166,11 +166,12 @@ void CompileResult::recAllocMemCapture()
 
     AllocMem->Add(0, value);
 }
+
 void CompileResult::dmpAllocMem(DWORD key, const Agnostic_AllocMemDetails& value)
 {
     printf("AllocMem key 0, value hotCodeSize-%u coldCodeSize-%u roDataSize-%u xcptnsCount-%u flag-%08X "
-           "hotCodeBlock_offset-%u coldCodeBlock_offset-%u roDataBlock_offset-%u hotCodeBlock-%016llX "
-           "coldCodeBlock-%016llX roDataBlock-%016llX",
+           "hotCodeBlock_offset-%u coldCodeBlock_offset-%u roDataBlock_offset-%u hotCodeBlock-%016" PRIX64 " "
+           "coldCodeBlock-%016" PRIX64 " roDataBlock-%016" PRIX64,
            value.hotCodeSize, value.coldCodeSize, value.roDataSize, value.xcptnsCount, value.flag,
            value.hotCodeBlock_offset, value.coldCodeBlock_offset, value.roDataBlock_offset, value.hotCodeBlock,
            value.coldCodeBlock, value.roDataBlock);
@@ -238,7 +239,7 @@ void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, IC
 void CompileResult::dmpSetBoundaries(DWORD key, const Agnostic_SetBoundaries& value)
 {
     ICorDebugInfo::OffsetMapping* om = (ICorDebugInfo::OffsetMapping*)SetBoundaries->GetBuffer(value.pMap_offset);
-    printf("SetBoundaries key 0, value ftn-%016llX cMap-%u %u{", value.ftn, value.cMap, value.pMap_offset);
+    printf("SetBoundaries key 0, value ftn-%016" PRIX64 " cMap-%u %u{", value.ftn, value.cMap, value.pMap_offset);
     for (unsigned int i = 0; i < value.cMap; i++)
     {
         if (i != 0)
@@ -286,7 +287,7 @@ void CompileResult::recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDeb
 void CompileResult::dmpSetVars(DWORD key, const Agnostic_SetVars& value)
 {
     ICorDebugInfo::NativeVarInfo* om = (ICorDebugInfo::NativeVarInfo*)SetVars->GetBuffer(value.vars_offset);
-    printf("SetVars key %u, value ftn-%016llX cVars-%u %u{", key, value.ftn, value.cVars, value.vars_offset);
+    printf("SetVars key %u, value ftn-%016" PRIX64 " cVars-%u %u{", key, value.ftn, value.cVars, value.vars_offset);
     for (unsigned int i = 0; i < value.cVars; i++)
     {
         if (i != 0)
@@ -371,7 +372,7 @@ void CompileResult::dmpAllocGCInfo(DWORD key, const Agnostic_AllocGCInfo& value)
 {
     const unsigned char* buff = AllocGCInfo->GetBuffer(value.retval_offset);
     printf("AllocGCInfo key 0, ");
-    printf("sz-%llu %p{ ", value.size, buff);
+    printf("sz-%" PRIu64 " %p{ ", value.size, buff);
     for (unsigned int i = 0; i < value.size; i++)
         printf("%02X ", *(buff + i));
     printf("}");
@@ -402,7 +403,7 @@ void CompileResult::recCompileMethod(uint8_t** nativeEntry, uint32_t* nativeSize
 }
 void CompileResult::dmpCompileMethod(DWORD key, const Agnostic_CompileMethodResults& value)
 {
-    printf("CompileMethod key %u, value nativeEntry-%016llX nativeSizeOfCode-%u CorJitResult-%u", key,
+    printf("CompileMethod key %u, value nativeEntry-%016" PRIX64 " nativeSizeOfCode-%u CorJitResult-%u", key,
            value.nativeEntry, value.nativeSizeOfCode, value.CorJitResult);
 }
 void CompileResult::repCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode, CorJitResult* result)
@@ -448,7 +449,7 @@ void CompileResult::recClassMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls
 }
 void CompileResult::dmpClassMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
 {
-    printf("ClassMustBeLoadedBeforeCodeIsRun key %u, value cls-%016llX", key, value);
+    printf("ClassMustBeLoadedBeforeCodeIsRun key %u, value cls-%016" PRIX64, key, value);
 }
 
 void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
@@ -475,7 +476,7 @@ void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
 void CompileResult::dmpReportInliningDecision(DWORD key, const Agnostic_ReportInliningDecision& value)
 {
     const char* reason = (const char*)ReportInliningDecision->GetBuffer(value.reason_offset);
-    printf("ReportInliningDecision key %u, value inliner-%016llX inlinee-%016llX res-%u reason-'%s'", key,
+    printf("ReportInliningDecision key %u, value inliner-%016" PRIX64 " inlinee-%016" PRIX64 " res-%u reason-'%s'", key,
            value.inlinerHnd, value.inlineeHnd, value.inlineResult, reason);
     ReportInliningDecision->Unlock();
 }
@@ -575,17 +576,31 @@ void CompileResult::recSetMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethod
     if (SetMethodAttribs == nullptr)
         SetMethodAttribs = new LightWeightMap<DWORDLONG, DWORD>();
 
-    SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
+    int index = SetMethodAttribs->GetIndex(CastHandle(ftn));
+    if (index == -1)
+    {
+        SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
+    }
+    else
+    {
+        DWORD existingAttribs = SetMethodAttribs->GetItem(index);
+        SetMethodAttribs->Update(index, existingAttribs | (DWORD)attribs);
+    }
 }
 void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 {
-    printf("SetMethodAttribs key ftn-%016llX, value attr-%08X", key, value);
+    printf("SetMethodAttribs key ftn-%016" PRIX64 ", value attr-%08X", key, value);
 }
 CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
-    if ((SetMethodAttribs == nullptr) || (SetMethodAttribs->GetIndex(CastHandle(ftn)) == -1))
+    if (SetMethodAttribs == nullptr)
         return (CorInfoMethodRuntimeFlags)0;
-    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->Get(CastHandle(ftn));
+
+    int index = SetMethodAttribs->GetIndex(CastHandle(ftn));
+    if (index == -1)
+        return (CorInfoMethodRuntimeFlags)0;
+
+    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->GetItem(index);
     return result;
 }
 
@@ -598,7 +613,7 @@ void CompileResult::recMethodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE m
 }
 void CompileResult::dmpMethodMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
 {
-    printf("MethodMustBeLoadedBeforeCodeIsRun key %u, value ftn-%016llX", key, value);
+    printf("MethodMustBeLoadedBeforeCodeIsRun key %u, value ftn-%016" PRIX64, key, value);
 }
 
 void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
@@ -627,7 +642,7 @@ void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
 void CompileResult::dmpReportTailCallDecision(DWORD key, const Agnostic_ReportTailCallDecision& value)
 {
     const char* reason = (const char*)ReportTailCallDecision->GetBuffer(value.reason_index);
-    printf("ReportTailCallDecision key-%u, value cr-%016llX ce-%016llX tail-%u call-%u -%s", key, value.callerHnd,
+    printf("ReportTailCallDecision key-%u, value cr-%016" PRIX64 " ce-%016" PRIX64 " tail-%u call-%u -%s", key, value.callerHnd,
            value.calleeHnd, value.tailCallResult, value.tailCallResult, reason);
     ReportTailCallDecision->Unlock();
 }
@@ -644,9 +659,9 @@ void CompileResult::dmpReportFatalError(DWORD key, DWORD value)
     printf("ReportFatalError key Count-%u, value result-%08X", key, value);
 }
 
-void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
 {
-    repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
 const char* relocationTypeToString(uint16_t fRelocType)
@@ -678,11 +693,11 @@ const char* relocationTypeToString(uint16_t fRelocType)
 }
 void CompileResult::dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value)
 {
-    printf("RecordRelocation key %u, value loc-%016llX tgt-%016llX fRelocType-%u(%s) slotNum-%u addlDelta:%d", key,
+    printf("RecordRelocation key %u, value loc-%016" PRIX64 " tgt-%016" PRIX64 " fRelocType-%u(%s) addlDelta:%d", key,
            value.location, value.target, value.fRelocType, relocationTypeToString((uint16_t)value.fRelocType),
-           value.slotNum, (int32_t)value.addlDelta);
+           (int32_t)value.addlDelta);
 }
-void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
 {
     if (RecordRelocation == nullptr)
         RecordRelocation = new DenseLightWeightMap<Agnostic_RecordRelocation>();
@@ -692,10 +707,7 @@ void CompileResult::repRecordRelocation(void* location, void* target, uint16_t f
     value.location   = CastPointer(location);
     value.target     = CastPointer(target);
     value.fRelocType = (DWORD)fRelocType;
-    value.slotNum    = (DWORD)slotNum;
     value.addlDelta  = (DWORD)addlDelta;
-
-    Assert(value.slotNum == 0);
 
     RecordRelocation->Append(value);
 }
@@ -759,7 +771,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("    fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
+                    LogDebug("    fixupLoc-%016" PRIX64 " (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
                         (DWORD)tmp.target);
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
@@ -871,13 +883,13 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
         {
             if (relocType == IMAGE_REL_BASED_DIR64)
             {
-                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+                DWORDLONG fixupLocation = tmp.location;
 
                 // Write 64-bits into location
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-                    LogDebug("    fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
+                    LogDebug("    fixupLoc-%016" PRIX64 " (@%p) %016" PRIX64 " => %016" PRIX64, fixupLocation, address,
                         *(DWORDLONG*)address, tmp.target);
                     *(DWORDLONG*)address = tmp.target;
                 }
@@ -892,7 +904,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
         // Now do all-platform relocations.
         if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
         {
-            DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+            DWORDLONG fixupLocation = tmp.location;
 
             size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
             if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
@@ -926,7 +938,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                             if (index == -1)
                             {
                                 // See if the original address is in the replay address map. This happens for
-                                // relocations on static field addresses found via getFieldAddress().
+                                // relocations on static field addresses found via getFieldInfo().
                                 void* origAddr = repAddressMap((void*)tmp.target);
                                 if ((origAddr != (void*)-1) && (origAddr != nullptr))
                                 {
@@ -934,7 +946,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                     index = rc->mc->GetRelocTypeHint->GetIndex(key);
                                     if (index != -1)
                                     {
-                                        LogDebug("    Using address map: target %016llX, original target %016llX",
+                                        LogDebug("    Using address map: target %016" PRIX64 ", original target %016" PRIX64,
                                             tmp.target, key);
                                     }
                                 }
@@ -1044,7 +1056,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
                         INT64 newdelta = (INT64)(target - baseAddr);
 
-                        LogDebug("    REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX",
+                        LogDebug("    REL32 overflow. Mapping target to %016" PRIX64 ". Mapping delta: %016" PRIX64 " => %016" PRIX64,
                                  target, delta, newdelta);
 
                         delta = newdelta;
@@ -1061,7 +1073,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 {
                     if (delta != (INT64)(int)delta)
                     {
-                        LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                        LogError("REL32 relocation overflows field! delta=0x%016" PRIX64, delta);
                     }
                 }
 
@@ -1078,7 +1090,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
 
                 // Write 32-bits into location
-                LogDebug("    fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address, delta);
+                LogDebug("    fixupLoc-%016" PRIX64 " (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address, delta);
                 *(DWORD*)address = (DWORD)delta;
             }
 
@@ -1135,7 +1147,7 @@ void CompileResult::recAddressMap(void* originalAddress, void* replayAddress, un
 }
 void CompileResult::dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value)
 {
-    printf("AddressMap key %016llX, value addr-%016llX, size-%u", key, value.Address, value.size);
+    printf("AddressMap key %016" PRIX64 ", value addr-%016" PRIX64 ", size-%u", key, value.Address, value.size);
 }
 void* CompileResult::repAddressMap(void* replayAddress)
 {
@@ -1210,7 +1222,7 @@ void CompileResult::recAllocUnwindInfo(BYTE*          pHotCode,
 }
 void CompileResult::dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo& value)
 {
-    printf("AllocUnwindInfo key %u, value pHot-%016llX pCold-%016llX startOff-%u endOff-%u unwindSz-%u blki-%u "
+    printf("AllocUnwindInfo key %u, value pHot-%016" PRIX64 " pCold-%016" PRIX64 " startOff-%u endOff-%u unwindSz-%u blki-%u "
            "funcKind-%u",
            key, value.pHotCode, value.pColdCode, value.startOffset, value.endOffset, value.unwindSize,
            value.pUnwindBlock_index, value.funcKind);
@@ -1223,7 +1235,7 @@ void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
 
 void CompileResult::dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const
 {
-    printf("RecordCallSite key %u, callSig-%s ftn-%016llX",
+    printf("RecordCallSite key %u, callSig-%s ftn-%016" PRIX64,
            key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap).c_str(),
            value.methodHandle);
@@ -1231,7 +1243,7 @@ void CompileResult::dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_Rec
 
 void CompileResult::dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const
 {
-    printf("RecordCallSite without call signature key %u, ftn-%016llX", key, methodHandle);
+    printf("RecordCallSite without call signature key %u, ftn-%016" PRIX64, key, methodHandle);
 }
 
 void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
@@ -1298,5 +1310,5 @@ bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_MET
 
 void CompileResult::dmpCrSigInstHandleMap(DWORD key, DWORDLONG value)
 {
-    printf("CrSigInstHandleMap key %u, value %016llX", key, value);
+    printf("CrSigInstHandleMap key %u, value %016" PRIX64, key, value);
 }

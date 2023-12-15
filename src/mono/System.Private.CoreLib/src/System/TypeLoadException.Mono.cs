@@ -24,7 +24,7 @@ namespace System
                 return;
             }
 
-            _message = SR.Format("Could not load type '{0}' from assembly '{1}'.", _className, _assemblyName ?? SR.IO_UnknownFileName);
+            _message = SR.Format(SR.ClassLoad_General, _className, _assemblyName ?? SR.IO_UnknownFileName);
         }
     }
 }

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics;
-using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Threading;
+using System.Xml;
 
 namespace System.IO.Packaging
 {
@@ -1441,10 +1441,10 @@ namespace System.IO.Packaging
         private string CompatibilityUri => _compatibilityUri ??= Reader.NameTable.Add(MarkupCompatibilityURI);
         #endregion Private Properties
         #region Nested Classes
-        private struct NamespaceElementPair
+        private readonly struct NamespaceElementPair
         {
-            public string namespaceName;
-            public string itemName;
+            public readonly string namespaceName;
+            public readonly string itemName;
 
             public NamespaceElementPair(string namespaceName, string itemName)
             {

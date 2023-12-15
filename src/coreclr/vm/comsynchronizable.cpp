@@ -475,28 +475,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    ClrSleepEx(0, false);
-
-    END_QCALL;
-}
-
-FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
-    if (th == NULL)
-        FCThrow(kNullReferenceException);
-
-    return th->GetManagedThreadId();
-}
-FCIMPLEND
-
 NOINLINE static Object* GetCurrentThreadHelper()
 {
     FCALL_CONTRACT;
@@ -1057,7 +1035,7 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 }
 FCIMPLEND
 
-FCIMPL1(void, ThreadNative::SpinWait, int iterations)
+extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 {
     FCALL_CONTRACT;
 
@@ -1066,29 +1044,8 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
         return;
     }
 
-    //
-    // If we're not going to spin for long, it's ok to remain in cooperative mode.
-    // The threshold is determined by the cost of entering preemptive mode; if we're
-    // spinning for less than that number of cycles, then switching to preemptive
-    // mode won't help a GC start any faster.
-    //
-    if (iterations <= 100000)
-    {
-        YieldProcessorNormalized(iterations);
-        return;
-    }
-
-    //
-    // Too many iterations; better switch to preemptive mode to avoid stalling a GC.
-    //
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-    GCX_PREEMP();
-
     YieldProcessorNormalized(iterations);
-
-    HELPER_METHOD_FRAME_END();
 }
-FCIMPLEND
 
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {
@@ -1127,17 +1084,3 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
 }
-
-FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
-{
-    FCALL_CONTRACT;
-
-#ifndef TARGET_UNIX
-    PROCESSOR_NUMBER proc_no_cpu_group;
-    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
-    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
-#else
-    return ::GetCurrentProcessorNumber();
-#endif //!TARGET_UNIX
-}
-FCIMPLEND;

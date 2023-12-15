@@ -5,12 +5,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Xml.Schema;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -215,7 +215,7 @@ namespace System.Xml.Serialization
                         string[] values = ((string)defaultValue!).Split(null);
                         for (int i = 0; i < values.Length; i++)
                         {
-                            if (values[i] == null || values[i].Length == 0)
+                            if (string.IsNullOrEmpty(values[i]))
                                 continue;
                             if (i > 0)
                                 enumDefaultValue += ", ";
@@ -332,7 +332,7 @@ namespace System.Xml.Serialization
             MethodInfo XmlSerializationWriter_WriteEndElement = typeof(XmlSerializationWriter).GetMethod(
                 "WriteEndElement",
                 CodeGenerator.InstanceBindingFlags,
-                new Type[] { typeof(object) }
+                s_objectType
                 )!;
             object oVar = ilg.GetVariable(source);
             ilg.Ldarg(0);
@@ -353,6 +353,11 @@ namespace System.Xml.Serialization
             WriteTag("WriteEmptyTag", name, ns);
         }
 
+        private static readonly string[] s_argNamesP = new string[] { "p" };
+        private static readonly string[] s_argNamesO = new string[] { "o" };
+        private static readonly Type[] s_objectArrayType = new Type[] { typeof(object[]) };
+        private static readonly Type[] s_objectType = new Type[] { typeof(object) };
+
         [RequiresUnreferencedCode("calls WriteMember")]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
@@ -365,8 +370,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(void),
                 methodName,
-                new Type[] { typeof(object[]) },
-                new string[] { "p" },
+                s_objectArrayType,
+                s_argNamesP,
                 CodeGenerator.PublicMethodAttributes
                 );
 
@@ -557,8 +562,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(void),
                 methodName,
-                new Type[] { typeof(object) },
-                new string[] { "o" },
+                s_objectType,
+                s_argNamesO,
                 CodeGenerator.PublicMethodAttributes
                 );
 
@@ -1004,7 +1009,7 @@ namespace System.Xml.Serialization
                 MethodInfo XmlSerializationWriter_CreateUnknownTypeException = typeof(XmlSerializationWriter).GetMethod(
                     "CreateUnknownTypeException",
                     CodeGenerator.InstanceBindingFlags,
-                    new Type[] { typeof(object) }
+                    s_objectType
                     )!;
                 ilg.Ldarg(0);
                 ilg.Ldarg(oArg);
@@ -1036,7 +1041,7 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping member = members[xmlnsMember];
                     CodeIdentifier.CheckValidIdentifier(member.Name);
-                    xmlnsSource = ReflectionAwareILGen.GetStringForMember("o", member.Name, mapping.TypeDesc);
+                    xmlnsSource = ReflectionAwareILGen.GetStringForMember("o", member.Name);
                 }
 
                 ilg.Ldarg(0);
@@ -1090,11 +1095,11 @@ namespace System.Xml.Serialization
                         }
                         if (m.CheckSpecified != SpecifiedAccessor.None)
                         {
-                            string memberGet = ReflectionAwareILGen.GetStringForMember("o", $"{m.Name}Specified", mapping.TypeDesc);
+                            string memberGet = ReflectionAwareILGen.GetStringForMember("o", $"{m.Name}Specified");
                             ILGenLoad(memberGet);
                             ilg.If();
                         }
-                        WriteMember(ReflectionAwareILGen.GetSourceForMember("o", m, mapping.TypeDesc, ilg), m.Attribute, m.TypeDesc!, "o");
+                        WriteMember(ReflectionAwareILGen.GetSourceForMember("o", m, ilg), m.Attribute, m.TypeDesc!, "o");
 
                         if (m.CheckSpecified != SpecifiedAccessor.None)
                         {
@@ -1123,7 +1128,7 @@ namespace System.Xml.Serialization
                     }
                     if (m.CheckSpecified != SpecifiedAccessor.None)
                     {
-                        string memberGet = ReflectionAwareILGen.GetStringForMember("o", $"{m.Name}Specified", mapping.TypeDesc);
+                        string memberGet = ReflectionAwareILGen.GetStringForMember("o", $"{m.Name}Specified");
                         ILGenLoad(memberGet);
                         ilg.If();
                     }
@@ -1132,10 +1137,10 @@ namespace System.Xml.Serialization
                     if (m.ChoiceIdentifier != null)
                     {
                         CodeIdentifier.CheckValidIdentifier(m.ChoiceIdentifier.MemberName);
-                        choiceSource = ReflectionAwareILGen.GetStringForMember("o", m.ChoiceIdentifier.MemberName, mapping.TypeDesc);
+                        choiceSource = ReflectionAwareILGen.GetStringForMember("o", m.ChoiceIdentifier.MemberName);
                     }
 
-                    WriteMember(ReflectionAwareILGen.GetSourceForMember("o", m, m.MemberInfo, mapping.TypeDesc, ilg), choiceSource, m.ElementsSortedByDerivation!, m.Text, m.ChoiceIdentifier, m.TypeDesc!, true);
+                    WriteMember(ReflectionAwareILGen.GetSourceForMember("o", m, m.MemberInfo, ilg), choiceSource, m.ElementsSortedByDerivation!, m.Text, m.ChoiceIdentifier, m.TypeDesc!, true);
 
                     if (m.CheckSpecified != SpecifiedAccessor.None)
                     {
@@ -1221,7 +1226,7 @@ namespace System.Xml.Serialization
                 {
                     LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), iVar);
                     ilg.For(localI, 0, ilg.GetLocal(aVar));
-                    WriteLocalDecl(aiVar, ReflectionAwareILGen.GetStringForArrayMember(aVar, iVar, memberTypeDesc), arrayElementTypeDesc.Type!);
+                    WriteLocalDecl(aiVar, ReflectionAwareILGen.GetStringForArrayMember(aVar, iVar), arrayElementTypeDesc.Type!);
                 }
                 if (attribute.IsList)
                 {
@@ -1562,16 +1567,16 @@ namespace System.Xml.Serialization
                 int count = elements.Length + (text == null ? 0 : 1);
                 if (count > 1)
                 {
-                    WriteLocalDecl(arrayNamePlusI, ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName, arrayTypeDesc), arrayElementTypeDesc.Type!);
+                    WriteLocalDecl(arrayNamePlusI, ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName), arrayElementTypeDesc.Type!);
                     if (choice != null)
                     {
-                        WriteLocalDecl($"{choiceName}i", ReflectionAwareILGen.GetStringForArrayMember(choiceName, iPlusArrayName, choice.Mapping!.TypeDesc!), choice.Mapping.TypeDesc!.Type!);
+                        WriteLocalDecl($"{choiceName}i", ReflectionAwareILGen.GetStringForArrayMember(choiceName, iPlusArrayName), choice.Mapping!.TypeDesc!.Type!);
                     }
                     WriteElements(new SourceInfo(arrayNamePlusI, null, null, arrayElementTypeDesc.Type, ilg), $"{choiceName}i", elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable);
                 }
                 else
                 {
-                    WriteElements(new SourceInfo(ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName, arrayTypeDesc), null, null, arrayElementTypeDesc.Type, ilg), null, elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable);
+                    WriteElements(new SourceInfo(ReflectionAwareILGen.GetStringForArrayMember(arrayName, iPlusArrayName), null, null, arrayElementTypeDesc.Type, ilg), null, elements, text, choice, arrayNamePlusA, true, arrayElementTypeDesc.IsNullable);
                 }
                 ilg.EndFor();
             }
@@ -1622,7 +1627,6 @@ namespace System.Xml.Serialization
                     }
                     else if (choice != null)
                     {
-                        string fullTypeName = element.Mapping!.TypeDesc!.CSharpName;
                         object? enumValue;
                         string enumFullName = $"{enumTypeName}.@{FindChoiceEnumValue(element, (EnumMapping)choice.Mapping!, out enumValue)}";
 
@@ -1646,9 +1650,9 @@ namespace System.Xml.Serialization
                         }
                         ilg.AndIf();
 
-                        WriteChoiceTypeCheck(source, fullTypeName, choice!, enumFullName, element.Mapping.TypeDesc);
+                        WriteChoiceTypeCheck(source, choice!, enumFullName, element.Mapping!.TypeDesc!);
 
-                        SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc);
+                        SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc!);
                         WriteElement(element.Any ? source : castedSource, element, arrayName, writeAccessors);
                     }
                     else
@@ -1850,7 +1854,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationWriter_CreateUnknownTypeException = typeof(XmlSerializationWriter).GetMethod(
                         "CreateUnknownTypeException",
                         CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(object) })!;
+                        s_objectType)!;
                     ilg.Ldarg(0);
                     source.Load(typeof(object));
                     ilg.Call(XmlSerializationWriter_CreateUnknownTypeException);
@@ -2065,7 +2069,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationWriter_CreateInvalidAnyTypeException = typeof(XmlSerializationWriter).GetMethod(
                         "CreateInvalidAnyTypeException",
                         CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(object) }
+                        s_objectType
                         )!;
                     ilg.Ldarg(0);
                     source.Load(null);
@@ -2171,7 +2175,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Load")]
-        private void WriteChoiceTypeCheck(SourceInfo source, string fullTypeName, ChoiceIdentifierAccessor choice, string enumName, TypeDesc typeDesc)
+        private void WriteChoiceTypeCheck(SourceInfo source, ChoiceIdentifierAccessor choice, string enumName, TypeDesc typeDesc)
         {
             Label labelFalse = ilg.DefineLabel();
             Label labelEnd = ilg.DefineLabel();
@@ -2297,7 +2301,7 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            if (enumValue == null || enumValue.Length == 0)
+            if (string.IsNullOrEmpty(enumValue))
             {
                 if (element.Any && element.Name.Length == 0)
                 {
@@ -2352,28 +2356,28 @@ namespace System.Xml.Serialization
         {
             return $"typeof({typeFullName})";
         }
-        internal static string GetStringForMember(string obj, string memberName, TypeDesc typeDesc)
+        internal static string GetStringForMember(string obj, string memberName)
         {
             return $"{obj}.@{memberName}";
         }
-        internal static SourceInfo GetSourceForMember(string obj, MemberMapping member, TypeDesc typeDesc, CodeGenerator ilg)
+        internal static SourceInfo GetSourceForMember(string obj, MemberMapping member, CodeGenerator ilg)
         {
-            return GetSourceForMember(obj, member, member.MemberInfo, typeDesc, ilg);
+            return GetSourceForMember(obj, member, member.MemberInfo, ilg);
         }
-        internal static SourceInfo GetSourceForMember(string obj, MemberMapping member, MemberInfo? memberInfo, TypeDesc typeDesc, CodeGenerator ilg)
+        internal static SourceInfo GetSourceForMember(string obj, MemberMapping member, MemberInfo? memberInfo, CodeGenerator ilg)
         {
-            return new SourceInfo(GetStringForMember(obj, member.Name, typeDesc), obj, memberInfo, member.TypeDesc!.Type, ilg);
+            return new SourceInfo(GetStringForMember(obj, member.Name), obj, memberInfo, member.TypeDesc!.Type, ilg);
         }
 
         internal static void ILGenForEnumMember(CodeGenerator ilg, Type type, string memberName)
         {
             ilg.Ldc(Enum.Parse(type, memberName, false));
         }
-        internal static string GetStringForArrayMember(string? arrayName, string subscript, TypeDesc arrayTypeDesc)
+        internal static string GetStringForArrayMember(string? arrayName, string subscript)
         {
             return $"{arrayName}[{subscript}]";
         }
-        internal static string GetStringForMethod(string obj, string typeFullName, string memberName)
+        internal static string GetStringForMethod(string obj, string memberName)
         {
             return $"{obj}.{memberName}(";
         }
@@ -2399,11 +2403,11 @@ namespace System.Xml.Serialization
                 }
                 return;
             }
-            ILGenForCreateInstance(ilg, type, cast ? type : null, ctorInaccessible);
+            ILGenForCreateInstance(ilg, type, cast ? type : null);
         }
 
         [RequiresUnreferencedCode("calls GetType")]
-        internal static void ILGenForCreateInstance(CodeGenerator ilg, Type type, Type? cast, bool nonPublic)
+        internal static void ILGenForCreateInstance(CodeGenerator ilg, Type type, Type? cast)
         {
             // Special case DBNull
             if (type == typeof(DBNull))
@@ -2577,11 +2581,8 @@ namespace System.Xml.Serialization
             Type localType = (typeName == arrayTypeDesc.CSharpName) ? arrayTypeDesc.Type! : arrayTypeDesc.Type!.MakeArrayType();
             // This may need reused variable to get code compat?
             LocalBuilder local = initValue.ILG.DeclareOrGetLocal(localType, variableName);
-            if (initValue != null)
-            {
-                initValue.Load(local.LocalType);
-                initValue.ILG.Stloc(local);
-            }
+            initValue.Load(local.LocalType);
+            initValue.ILG.Stloc(local);
         }
         internal static void WriteTypeCompare(string variable, Type type, CodeGenerator ilg)
         {

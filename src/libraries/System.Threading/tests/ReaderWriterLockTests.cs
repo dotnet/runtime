@@ -434,6 +434,25 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public static void MultipleNestedReadersMiscellaneousTest()
+        {
+            var trwl1 = new TestReaderWriterLock();
+            var trwl2 = new TestReaderWriterLock();
+
+            trwl1.AcquireReaderLock();
+
+            trwl2.AcquireReaderLock();
+            trwl2.ReleaseReaderLock();
+
+            trwl1.AcquireReaderLock();
+            trwl1.ReleaseReaderLock();
+            trwl1.ReleaseReaderLock();
+
+            trwl1.Dispose();
+            trwl2.Dispose();
+        }
+
+        [Fact]
         public static void DowngradeQuirks_ChangedInDotNetCore()
         {
             var trwl = new TestReaderWriterLock();

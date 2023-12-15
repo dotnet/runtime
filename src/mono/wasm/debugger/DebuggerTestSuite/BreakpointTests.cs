@@ -171,6 +171,18 @@ namespace DebuggerTests
             );
         }
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task CreateGoodBreakpointWithoutColumnAndHit()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, -1);
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "Math.IntAdd"
+            );
+        }
+
         public static TheoryData<string, string, string, bool> FalseConditions = new TheoryData<string, string, string, bool>
         {
             { "invoke_add()", "IntAdd", "0.0", false },
@@ -221,7 +233,6 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("c == 15", 79, 3, 79, 11)]
         [InlineData("c == 17", 79, 3, 80, 11)]
-        [InlineData("g == 17", 79, 3, 80, 11)]
         [InlineData("true", 79, 3, 79, 11)]
         [InlineData("\"false\"", 79, 3, 79, 11)]
         [InlineData("\"true\"", 79, 3, 79, 11)]
@@ -233,7 +244,7 @@ namespace DebuggerTests
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             await SetBreakpoint("/debugger-driver.html", 80, 11);
 
-            await EvaluateAndCheck(
+            var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",
                 "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
@@ -472,7 +483,6 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("load_non_wasm_page")]
-        [InlineData("load_non_wasm_page_forcing_runtime_ready")] //to simulate the same behavior that has when debugging from VS and OnDefaultContextCreated is called
         public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain(string func_name)
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -505,7 +515,7 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { " + func_name + "(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await Task.Delay(1000, token);
+            await WaitForEventAsync("Runtime.executionContextCreated");
 
             run_method = JObject.FromObject(new
             {
@@ -827,9 +837,9 @@ namespace DebuggerTests
         [Theory]
         [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1089, 1005, 1003, 1007)]
         [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1090, 1049, 1047, 1051)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1018, 1016, 1020)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "DefaultInterfaceMethod.EvaluateAsync", 1097, 1018, 1016, 1020)]
         [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", "DefaultInterfaceMethod.EvaluateStatic", 1126, 1024, 1022, 1026)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsyncStatic>d__5>", 37, 1033, 1031, 1035)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "DefaultInterfaceMethod.EvaluateAsyncStatic", 1131, 1033, 1031, 1035)]
         public async Task BreakInDefaultInterfaceMethod(
             string dimClassName, string dimName, string entryMethod,  string prevFrameInDim, int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine)
         {

@@ -1210,6 +1210,86 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
 
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+bool g_gcHeapHardLimitInfoSpecified = false;
+
+extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
+{
+    QCALL_CONTRACT;
+
+    int result = 0;
+
+    BEGIN_QCALL;
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    g_gcHeapHardLimitInfoSpecified = true;
+    result = GCInterface::RefreshMemoryLimit();
+    END_QCALL;
+
+    return result;
+}
+
+int GCInterface::RefreshMemoryLimit()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
+}
+
+extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    status = GCInterface::EnableNoGCRegionCallback(callback, totalSize);
+    END_QCALL;
+    return status;
+}
+
+enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
+}
+
+extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation)
+{
+    uint64_t result = 0;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    result = GCInterface::GetGenerationBudget(generation);
+    END_QCALL;
+
+    return result;
+}
+
+uint64_t GCInterface::GetGenerationBudget(int generation)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
+}
+
 #ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
 #else // HOST_64BIT
@@ -1279,7 +1359,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     UINT64 add = m_addPressure[0] + m_addPressure[1] + m_addPressure[2] + m_addPressure[3] - m_addPressure[p];
     UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
 
-    STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %I64u => added=%I64u total_added=%I64u total_removed=%I64u",
+    STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %llu => added=%llu total_added=%llu total_removed=%llu",
         bytesAllocated, newMemValue, add, rem);
 
     SendEtwAddMemoryPressureEvent(bytesAllocated);
@@ -1321,7 +1401,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
                 // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
                 if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
                 {
-                    STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%I64u ? budget=%I64u (total_added=%I64u, total_removed=%I64u, mng_heap=%I64u) pos=%d",
+                    STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%llu ? budget=%llu (total_added=%llu, total_removed=%llu, mng_heap=%llu) pos=%d",
                         newMemValue, budget, add, rem, heapOver3 * 3, m_iteration);
 
                     GarbageCollectModeAny(2);
@@ -1360,7 +1440,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
 
     InterlockedAdd(&m_remPressure[p], bytesAllocated);
 
-    STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %I64u => removed=%I64u",
+    STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu => removed=%llu",
         bytesAllocated, m_remPressure[p]);
 }
 
@@ -1468,59 +1548,6 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 }
 FCIMPLEND
 
-FCIMPL2_IV(float,COMInterlocked::ExchangeFloat, float *location, float value)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    LONG ret = InterlockedExchange((LONG *) location, *(LONG*)&value);
-    return *(float*)&ret;
-}
-FCIMPLEND
-
-FCIMPL2_IV(double,COMInterlocked::ExchangeDouble, double *location, double value)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-
-    INT64 ret = InterlockedExchange64((INT64 *) location, *(INT64*)&value);
-    return *(double*)&ret;
-}
-FCIMPLEND
-
-FCIMPL3_IVV(float,COMInterlocked::CompareExchangeFloat, float *location, float value, float comparand)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    LONG ret = (LONG)InterlockedCompareExchange((LONG*) location, *(LONG*)&value, *(LONG*)&comparand);
-    return *(float*)&ret;
-}
-FCIMPLEND
-
-FCIMPL3_IVV(double,COMInterlocked::CompareExchangeDouble, double *location, double value, double comparand)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    INT64 ret = (INT64)InterlockedCompareExchange64((INT64*) location, *(INT64*)&value, *(INT64*)&comparand);
-    return *(double*)&ret;
-}
-FCIMPLEND
-
 FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;
@@ -1579,24 +1606,6 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
     }
 
     return InterlockedExchangeAdd64((INT64 *) location, value);
-}
-FCIMPLEND
-
-FCIMPL0(void, COMInterlocked::FCMemoryBarrier)
-{
-    FCALL_CONTRACT;
-
-    MemoryBarrier();
-    FC_GC_POLL();
-}
-FCIMPLEND
-
-FCIMPL0(void, COMInterlocked::FCMemoryBarrierLoad)
-{
-    FCALL_CONTRACT;
-
-    VolatileLoadBarrier();
-    FC_GC_POLL();
 }
 FCIMPLEND
 

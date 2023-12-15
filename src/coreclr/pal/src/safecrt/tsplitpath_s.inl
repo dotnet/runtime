@@ -102,7 +102,7 @@ errno_t __cdecl _FUNC_NAME(
     tmp = _Path;
     for (; *tmp != 0; ++tmp)
     {
-        if (*tmp == _T('/') || *tmp == _T('\\'))
+        if (*tmp == '/')
         {
             /* point to one beyond for later copy */
             last_slash = tmp + 1;
@@ -125,16 +125,6 @@ errno_t __cdecl _FUNC_NAME(
                 goto error_erange;
             }
             _TCSNCPY_S(_Dir, _DirSize, _Path, length);
-
-            // Normalize the path separator
-            size_t iIndex;
-            for(iIndex = 0; iIndex < length; iIndex++)
-            {
-                if (_Dir[iIndex] == _T('\\'))
-                {
-                    _Dir[iIndex] = _T('/');
-                }
-            }
         }
         _Path = last_slash;
     }

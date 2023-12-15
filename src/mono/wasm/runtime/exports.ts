@@ -2,93 +2,86 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
-import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
+import type { RuntimeAPI } from "./types";
 
-import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_environment, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
-import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
-import { mono_bind_static_method } from "./net6-legacy/method-calls";
+import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { GlobalObjects, is_nullish } from "./types/internal";
+import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
-import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { export_internal } from "./exports-internal";
-import { export_linker } from "./exports-linker";
-import { init_polyfills } from "./polyfills";
-import { export_api, export_module } from "./export-api";
-import { set_legacy_exports } from "./net6-legacy/imports";
+import { export_api } from "./export-api";
+import { initializeReplacements } from "./polyfills";
 
-const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
-const __setEmscriptenEntrypoint: any = setEmscriptenEntrypoint; // don't want to export the type
-let __linker_exports: any = null;
+// legacy
+import { mono_bind_static_method } from "./net6-legacy/method-calls";
+import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
+import { initializeLegacyExports } from "./net6-legacy/globals";
+import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { instantiate_asset, instantiate_symbols_asset } from "./assets";
+import { jiterpreter_dump_stats } from "./jiterpreter";
+import { forceDisposeProxies } from "./gc-handles";
 
-
-// this is executed early during load of emscripten runtime
-// it exports methods to global objects MONO, BINDING and Module in backward compatible way
-// At runtime this will be referred to as 'createDotnetRuntime'
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-function initializeImportsAndExports(
-    imports: EarlyImports,
-    exports: EarlyExports,
-    replacements: EarlyReplacements,
-    callbackAPI: any
-): RuntimeAPI {
-    const module = exports.module as DotnetModule;
+function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
+    const module = Module;
+    const globals = globalObjects;
     const globalThisAny = globalThis as any;
 
-    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
-    set_imports_exports(imports, exports);
-    set_legacy_exports(exports);
-    init_polyfills(replacements);
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+        initializeLegacyExports(globals);
+    }
 
     // here we merge methods from the local objects into exported objects
-    Object.assign(exports.mono, export_mono_api());
-    Object.assign(exports.binding, export_binding_api());
-    Object.assign(exports.internal, export_internal());
-    Object.assign(exports.internal, export_internal());
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+        Object.assign(globals.mono, export_mono_api());
+        Object.assign(globals.binding, export_binding_api());
+        Object.assign(globals.internal, export_internal_api());
+    }
+    Object.assign(globals.internal, export_internal());
+    Object.assign(runtimeHelpers, {
+        stringify_as_error_with_stack: mono_wasm_stringify_as_error_with_stack,
+        instantiate_symbols_asset,
+        instantiate_asset,
+        jiterpreter_dump_stats,
+        forceDisposeProxies,
+    });
+
     const API = export_api();
-    __linker_exports = export_linker();
     Object.assign(exportedRuntimeAPI, {
-        MONO: exports.mono,
-        BINDING: exports.binding,
-        INTERNAL: exports.internal,
-        IMPORTS: exports.marshaled_imports,
+        INTERNAL: globals.internal,
         Module: module,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
-            gitHash: GitHash,
+            gitHash: runtimeHelpers.gitHash,
             buildConfiguration: BuildConfiguration
         },
         ...API,
     });
-    Object.assign(callbackAPI, API);
-    if (exports.module.__undefinedConfig) {
-        module.disableDotnet6Compatibility = true;
-        module.configSrc = "./mono-config.json";
-    }
-
-    if (!module.print) {
-        module.print = console.log.bind(console);
-    }
-    if (!module.printErr) {
-        module.printErr = console.error.bind(console);
+    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+        Object.assign(exportedRuntimeAPI, {
+            MONO: globals.mono,
+            BINDING: globals.binding,
+        });
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = true;
     }
     // here we expose objects global namespace for tests and backward compatibility
-    if (imports.isGlobal || !module.disableDotnet6Compatibility) {
+    if (!module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        // backward compatibility
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
-            return mono_bind_static_method(fqn, signature);
-        };
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+            // backward compatibility
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
+                mono_log_warn("Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
+                return mono_bind_static_method(fqn, signature);
+            };
+        }
 
         const warnWrap = (name: string, provider: () => any) => {
             if (typeof globalThisAny[name] !== "undefined") {
@@ -101,19 +94,19 @@ function initializeImportsAndExports(
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        console.warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        mono_log_warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;
                 }
             });
         };
-        globalThisAny.MONO = exports.mono;
-        globalThisAny.BINDING = exports.binding;
-        globalThisAny.INTERNAL = exports.internal;
-        if (!imports.isGlobal) {
-            globalThisAny.Module = module;
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+            globalThisAny.MONO = globals.mono;
+            globalThisAny.BINDING = globals.binding;
+            globalThisAny.INTERNAL = globals.internal;
         }
+        globalThisAny.Module = module;
 
         // Blazor back compat
         warnWrap("cwrap", () => module.cwrap);
@@ -132,27 +125,8 @@ function initializeImportsAndExports(
     }
     list.registerRuntime(exportedRuntimeAPI);
 
-    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        // eslint-disable-next-line no-inner-declarations
-        async function workerInit(): Promise<DotnetModule> {
-            await mono_wasm_pthread_worker_init();
-
-            // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
-            // until we have our own fix for dotnet.worker.js file
-            // we also skip all emscripten startup event and configuration of worker's JS state
-            // note that emscripten events are not firing either
-
-            return exportedRuntimeAPI.Module;
-        }
-        // Emscripten pthread worker.js is ok with a Promise here.
-        return <any>workerInit();
-    }
-
-    configure_emscripten_startup(module, exportedRuntimeAPI);
-
     return exportedRuntimeAPI;
 }
-
 
 class RuntimeList {
     private list: { [runtimeId: number]: WeakRef<RuntimeAPI> } = {};
@@ -169,11 +143,7 @@ class RuntimeList {
     }
 }
 
-function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType, env: any) {
-    set_environment(env);
-    Object.assign(moduleExports, export_module());
-    set_emscripten_entrypoint(emscriptenEntrypoint);
-}
-
-export { __initializeImportsAndExports, __setEmscriptenEntrypoint, __linker_exports, moduleExports };
-
+// export external API
+export {
+    passEmscriptenInternals, initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
+};

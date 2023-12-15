@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
+
+#pragma warning disable IDE0060
 
 namespace System
 {
     internal sealed unsafe class LogcatStream : CachedConsoleStream
     {
-        public LogcatStream(Encoding encoding) : base(encoding) {}
+        public LogcatStream(Encoding encoding) : base(encoding) { }
 
         protected override void Print(ReadOnlySpan<char> line)
         {

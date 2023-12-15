@@ -9,6 +9,7 @@ using System.IO;
 namespace System.Runtime.Serialization
 {
     [CLSCompliant(false)]
+    [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public abstract class Formatter : IFormatter
     {
         protected ObjectIDGenerator m_idGenerator;
@@ -20,7 +21,6 @@ namespace System.Runtime.Serialization
             m_idGenerator = new ObjectIDGenerator();
         }
 
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public abstract object Deserialize(Stream serializationStream);
@@ -62,7 +62,6 @@ namespace System.Runtime.Serialization
             return id;
         }
 
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public abstract void Serialize(Stream serializationStream, object graph);
 

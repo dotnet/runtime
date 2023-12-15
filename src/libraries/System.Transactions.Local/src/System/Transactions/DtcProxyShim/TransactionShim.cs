@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
 using System.Transactions.Oletx;
 
@@ -8,8 +10,8 @@ namespace System.Transactions.DtcProxyShim;
 
 internal sealed class TransactionShim
 {
-    private DtcProxyShimFactory _shimFactory;
-    private TransactionNotifyShim _transactionNotifyShim;
+    private readonly DtcProxyShimFactory _shimFactory;
+    private readonly TransactionNotifyShim _transactionNotifyShim;
 
     internal ITransaction Transaction { get; set; }
 
@@ -29,7 +31,7 @@ internal sealed class TransactionShim
     public void CreateVoter(OletxPhase1VolatileEnlistmentContainer managedIdentifier, out VoterBallotShim voterBallotShim)
     {
         var voterNotifyShim = new VoterNotifyShim(_shimFactory, managedIdentifier);
-        var voterShim = new VoterBallotShim(_shimFactory, voterNotifyShim);
+        var voterShim = new VoterBallotShim(voterNotifyShim);
         _shimFactory.VoterFactory.Create(Transaction, voterNotifyShim, out ITransactionVoterBallotAsync2 voterBallot);
         voterShim.VoterBallotAsync2 = voterBallot;
         voterBallotShim = voterShim;
@@ -52,12 +54,12 @@ internal sealed class TransactionShim
         cookieBuffer = buffer;
     }
 
-    public void GetITransactionNative(out IDtcTransaction transactionNative)
+    public void GetITransactionNative(out ITransaction transactionNative)
     {
         var cloner = (ITransactionCloner)Transaction;
         cloner.CloneWithCommitDisabled(out ITransaction returnTransaction);
 
-        transactionNative = (IDtcTransaction)returnTransaction;
+        transactionNative = returnTransaction;
     }
 
     public unsafe byte[] GetPropagationToken()

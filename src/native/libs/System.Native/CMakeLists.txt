@@ -1,85 +1,107 @@
 project(System.Native C)
 
-if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_WASI)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
-endif ()
-
-if (CLR_CMAKE_HOST_ALPINE_LINUX)
-    # Fix up the thread stack size for MUSL to more reasonable size.
-    # TODO: https://github.com/dotnet/runtimelab/issues/791
-    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif ()
 
 if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()
 
+set (MINIPAL_SOURCES "")
+set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
+
+include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
+list(APPEND MINIPAL_SOURCES
+    random.c
+)
+
+addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
+
 set(NATIVE_SOURCES
-    pal_dynamicload.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
-    pal_mount.c
-    pal_networking.c
     pal_networkstatistics.c
-    pal_process.c
     pal_random.c
     pal_runtimeinformation.c
-    pal_signal.c
     pal_string.c
     pal_tcpstate.c
-    pal_threading.c
     pal_time.c
-    pal_uid.c
     pal_datetime.c
     pal_sysctl.c
 )
 
-if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    list (APPEND NATIVE_SOURCES pal_autoreleasepool.m)
-    set_source_files_properties(pal_autoreleasepool.m PROPERTIES COMPILE_FLAGS -fno-objc-arc)
-else()
-    list (APPEND NATIVE_SOURCES pal_autoreleasepool.c)
-endif()
+list(APPEND NATIVE_SOURCES
+  ${MINIPAL_SOURCES}
+)
 
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    list (APPEND NATIVE_SOURCES pal_environment.m)
-else()
-    list (APPEND NATIVE_SOURCES pal_environment.c)
-endif()
-
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_datetime.m)
-endif()
-
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_log.m
-        pal_searchpath.m)
-elseif (CLR_CMAKE_TARGET_OSX)
+if (NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
+        pal_dynamicload.c
+        pal_mount.c
+        pal_networking.c
+        pal_process.c
+        pal_signal.c
+        pal_threading.c
+        pal_uid.c
+    )
+else()
+    list (APPEND NATIVE_SOURCES
+        pal_dynamicload_wasi.c
+        pal_mount_wasi.c
+        pal_networking_wasi.c
+        pal_process_wasi.c
+        pal_signal_wasi.c
+        pal_threading_wasi.c
+        pal_uid_wasi.c
+    )
+endif()
+
+if (CLR_CMAKE_TARGET_APPLE)
+    list (APPEND NATIVE_SOURCES_OBJC_NO_ARC
+        pal_autoreleasepool.m
+        pal_environment.m
         pal_searchpath.m
-        pal_console.c
-        pal_log.c)
-else ()
+        pal_datetime.m)
+
+    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+        list (APPEND NATIVE_SOURCES_OBJC_NO_ARC pal_log.m)
+
+        if (CLR_CMAKE_TARGET_MACCATALYST)
+            list (APPEND NATIVE_SOURCES_OBJC_NO_ARC pal_iossupportversion.m)
+        else()
+            list (APPEND NATIVE_SOURCES pal_iossupportversion.c)
+        endif ()
+    elseif (CLR_CMAKE_TARGET_OSX)
+        list (APPEND NATIVE_SOURCES
+            pal_console.c
+            pal_log.c
+            pal_iossupportversion.c)
+    else()
+        message(FATAL_ERROR "Unsupported Apple platform")
+    endif ()
+
+    set_source_files_properties(${NATIVE_SOURCES_OBJC_NO_ARC} PROPERTIES COMPILE_FLAGS "-fno-objc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
+    list (APPEND NATIVE_SOURCES ${NATIVE_SOURCES_OBJC_NO_ARC})
+else()
     list (APPEND NATIVE_SOURCES
+        pal_autoreleasepool.c
+        pal_environment.c
         pal_searchpath.c
-        pal_console.c
-        pal_log.c)
-endif ()
-
-if (CLR_CMAKE_TARGET_MACCATALYST)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_iossupportversion.m)
-else ()
-    list (APPEND NATIVE_SOURCES
+        pal_log.c
         pal_iossupportversion.c)
-endif ()
 
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+    if (CLR_CMAKE_TARGET_WASI)
+        list (APPEND NATIVE_SOURCES pal_console_wasi.c)
+    else()
+        list (APPEND NATIVE_SOURCES pal_console.c)
+    endif()
+endif()
+
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES pal_networkchange.c)
 endif ()
 
@@ -104,10 +126,11 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.Native
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
         add_custom_command(TARGET System.Native POST_BUILD
             COMMENT "Verifying System.Native entry points against entrypoints.c "
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
@@ -121,7 +144,7 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
-if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
 endif()
 

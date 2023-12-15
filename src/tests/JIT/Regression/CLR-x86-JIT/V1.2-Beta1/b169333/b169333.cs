@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 class A { }
 class B { }
 interface IFoo<T>
@@ -9,7 +10,7 @@ interface IFoo<T>
     void Foo(T t);
 }
 
-class C : IFoo<A>, IFoo<B>
+public class C : IFoo<A>, IFoo<B>
 {
     void IFoo<A>.Foo(A a)
     {
@@ -21,13 +22,13 @@ class C : IFoo<A>, IFoo<B>
         System.Console.WriteLine("B");
     }
 
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         C c = new C();
         IFoo<A> i = c;
         i.Foo(null);
         System.Console.WriteLine("PASSED");
-        return 100;
     }
 }
 

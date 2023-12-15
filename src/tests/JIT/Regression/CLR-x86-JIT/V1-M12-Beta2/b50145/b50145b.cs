@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
 public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float x = 1;
         x /= x * 2;

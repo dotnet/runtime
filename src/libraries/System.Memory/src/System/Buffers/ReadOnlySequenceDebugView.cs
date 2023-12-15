@@ -39,7 +39,7 @@ namespace System.Buffers
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public T[] Items => _array;
 
-        [DebuggerDisplay("Count: {Segments.Length}", Name = "Segments")]
+        [DebuggerDisplay("Count = {Segments.Length}", Name = "Segments")]
         public struct ReadOnlySequenceDebugViewSegments
         {
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

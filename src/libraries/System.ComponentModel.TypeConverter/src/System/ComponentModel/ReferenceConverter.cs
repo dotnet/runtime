@@ -15,7 +15,7 @@ namespace System.ComponentModel
     /// </summary>
     public class ReferenceConverter : TypeConverter
     {
-        private static readonly string s_none = SR.GetResourceString(nameof(SR.toStringNone), "(none)");
+        private static readonly string s_none = SR.UsingResourceKeys() ? "(none)" : SR.toStringNone;
         private readonly Type _type;
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace System.ComponentModel
                 else
                 {
                     // Now try IContainer.
-                    IContainer cont = context.Container;
+                    IContainer? cont = context.Container;
                     if (cont != null)
                     {
                         ComponentCollection objs = cont.Components;
@@ -188,7 +188,7 @@ namespace System.ComponentModel
         /// <summary>
         /// IComparer object used for sorting references
         /// </summary>
-        private struct ReferenceComparer : IComparer<object>
+        private readonly struct ReferenceComparer : IComparer<object>
         {
             private readonly ReferenceConverter _converter;
 

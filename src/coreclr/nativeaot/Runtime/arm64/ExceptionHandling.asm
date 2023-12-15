@@ -624,6 +624,4 @@ SetSuccess
 
     NESTED_END RhpCallFilterFunclet
 
-    INLINE_GETTHREAD_CONSTANT_POOL
-
     end

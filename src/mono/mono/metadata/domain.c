@@ -22,7 +22,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
@@ -45,7 +44,6 @@
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/coree.h>
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"
@@ -289,11 +287,6 @@ mono_init_internal (const char *root_domain_name)
 
 	mono_defaults.alc_class = mono_class_get_assembly_load_context_class ();
 	mono_defaults.appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
-
-	mono_defaults.weakreference_class = mono_class_try_load_from_name (
-	        mono_defaults.corlib, "System", "WeakReference");
-	mono_defaults.generic_weakreference_class = mono_class_try_load_from_name (
-	        mono_defaults.corlib, "System", "WeakReference`1");
 
 	// in the past we got a filename as the root_domain_name so try to get the basename
 	domain->friendly_name = g_path_get_basename (root_domain_name);

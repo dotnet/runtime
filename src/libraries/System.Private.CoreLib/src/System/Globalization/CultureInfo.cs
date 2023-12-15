@@ -203,10 +203,7 @@ namespace System.Globalization
         public CultureInfo(int culture, bool useUserOverride)
         {
             // We don't check for other invalid LCIDS here...
-            if (culture < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(culture);
 
             switch (culture)
             {
@@ -408,7 +405,7 @@ namespace System.Globalization
             {
                 ArgumentNullException.ThrowIfNull(value);
 
-                CultureInfo.VerifyCultureName(value, true);
+                VerifyCultureName(value, true);
 
                 if (s_asyncLocalCurrentUICulture == null)
                 {
@@ -446,7 +443,7 @@ namespace System.Globalization
 
                 if (value != null)
                 {
-                    CultureInfo.VerifyCultureName(value, true);
+                    VerifyCultureName(value, true);
                 }
 
                 s_DefaultThreadCurrentUICulture = value;
@@ -493,19 +490,19 @@ namespace System.Globalization
                             //      zh-SG -> zh-Hans -> zh -> Invariant
                             //      zh-TW -> zh-Hant -> zh -> Invariant
 
-                            if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
-                                (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                            if ((_name[3] == 'C' && _name[4] == 'N') || // zh-CN
+                                (_name[3] == 'S' && _name[4] == 'G'))   // zh-SG
                             {
                                 parentName = "zh-Hans";
                             }
-                            else if ((_name[3] == 'H' && _name[4] == 'K' ) ||   // zh-HK
-                                    (_name[3] == 'M' && _name[4] == 'O' ) ||    // zh-MO
-                                    (_name[3] == 'T' && _name[4] == 'W' ))      // zh-TW
+                            else if ((_name[3] == 'H' && _name[4] == 'K') ||   // zh-HK
+                                    (_name[3] == 'M' && _name[4] == 'O') ||    // zh-MO
+                                    (_name[3] == 'T' && _name[4] == 'W'))      // zh-TW
                             {
                                 parentName = "zh-Hant";
                             }
                         }
-                        else if (_name.Length > 8 && _name.AsSpan(2, 4).Equals("-Han", StringComparison.Ordinal) && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
+                        else if (_name.Length > 8 && _name.AsSpan(2, 4) is "-Han" && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
                         {
                             if (_name[6] == 't') // zh-Hant-*
                             {
@@ -650,7 +647,7 @@ namespace System.Globalization
 
         public override bool Equals([NotNullWhen(true)] object? value)
         {
-            if (object.ReferenceEquals(this, value))
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -1020,10 +1017,7 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo GetCultureInfo(int culture)
         {
-            if (culture <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(culture);
 
             Dictionary<int, CultureInfo> lcidTable = CachedCulturesByLcid;
             CultureInfo? result;
@@ -1138,7 +1132,7 @@ namespace System.Globalization
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))
+                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name) : !CultureData.IcuIsEnsurePredefinedLocaleName(name))
                 {
                     throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
                 }

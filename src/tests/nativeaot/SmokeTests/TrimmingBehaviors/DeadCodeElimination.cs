@@ -13,6 +13,7 @@ class DeadCodeElimination
     {
         SanityTest.Run();
         TestInstanceMethodOptimization.Run();
+        TestReflectionInvokeSignatures.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
@@ -20,6 +21,9 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestBranchesInGenericCodeRemoval.Run();
+        TestUnmodifiableStaticFieldOptimization.Run();
+        TestUnmodifiableInstanceFieldOptimization.Run();
 
         return 100;
     }
@@ -34,7 +38,7 @@ class DeadCodeElimination
         {
             typeof(PresentType).ToString();
 
-            if (!IsTypePresent(typeof(SanityTest), nameof(PresentType)))
+            if (GetTypeSecretly(typeof(SanityTest), nameof(PresentType)) == null)
                 throw new Exception();
 
             ThrowIfPresent(typeof(SanityTest), nameof(NotPresentType));
@@ -69,6 +73,32 @@ class DeadCodeElimination
 #endif
 
             ThrowIfPresent(typeof(TestInstanceMethodOptimization), nameof(UnreferencedType));
+        }
+    }
+
+    class TestReflectionInvokeSignatures
+    {
+        public class Never1 { }
+
+        public static void Invoke1(Never1 inst) { }
+
+        public struct Allocated1 { }
+
+        public static void Invoke2(out Allocated1 inst) { inst = default; }
+
+        public static void Run()
+        {
+            {
+                MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke1));
+                mi.Invoke(null, new object[1]);
+                ThrowIfPresentWithUsableMethodTable(typeof(TestReflectionInvokeSignatures), nameof(Never1));
+            }
+
+            {
+                MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
+                mi.Invoke(null, new object[1]);
+                ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+            }
         }
     }
 
@@ -115,9 +145,7 @@ class DeadCodeElimination
                 s_d.TrySomething();
             }
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
         }
     }
 
@@ -146,9 +174,7 @@ class DeadCodeElimination
             // and uses a virtual method implementation from Base.
             DoIt(null);
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -184,9 +210,7 @@ class DeadCodeElimination
 
             new Derived2().DoSomething();
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -330,21 +354,222 @@ class DeadCodeElimination
         }
     }
 
+    class TestBranchesInGenericCodeRemoval
+    {
+        class ClassWithUnusedVirtual
+        {
+            public virtual string MyUnusedVirtualMethod() => typeof(UnusedFromVirtual).ToString();
+            public virtual string MyUsedVirtualMethod() => typeof(UsedFromVirtual).ToString();
+        }
+
+        class UnusedFromVirtual { }
+        class UsedFromVirtual { }
+
+        struct Unused { public byte Val; }
+        struct Used { public byte Val; }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static T Cast<T>(byte o, ClassWithUnusedVirtual inst)
+        {
+            if (typeof(T) == typeof(Unused))
+            {
+                // Expect this not to be scanned. The virtual slot should not be created.
+                inst.MyUnusedVirtualMethod();
+
+                Unused result = new Unused { Val = o };
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(Used))
+            {
+                // This will introduce a virtual slot.
+                inst.MyUsedVirtualMethod();
+
+                Used result = new Used { Val = o };
+                return (T)(object)result;
+            }
+            return default;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing dead branches guarded by typeof in generic code removal");
+
+            Cast<Used>(12, new ClassWithUnusedVirtual());
+
+            // We only expect to be able to get rid of it when optimizing
+#if !DEBUG
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+#endif
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
+
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UnusedFromVirtual));
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
+        }
+    }
+
+    class TestUnmodifiableStaticFieldOptimization
+    {
+        static class ClassWithNotReadOnlyField
+        {
+            public static int SomeValue = 42;
+        }
+
+        class Canary
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public int GrabNotReadOnlyField() => ClassWithNotReadOnlyField.SomeValue;
+        }
+
+        class ClassThatShouldBePreinited
+        {
+            public static int Value = new Canary().GrabNotReadOnlyField();
+        }
+
+        public static void Run()
+        {
+            // This test is using a pretty roundabout way to test the following thing:
+            // * The compiler should be able to figure out ClassWithNotReadOnlyField.SomeValue
+            //   is effectively readonly (even though it wasn't annotated as such in source code).
+            // * Therefore, it should be able to preinitialize ClassThatShouldBePreinited.
+            // * Because ClassThatShouldBePreinited was preinitialized at compile time, we don't
+            //   actually have a MethodTable for it in the program.
+            // * It is therefore not reflection visible.
+            // We're testing the optimizations mentioned above work by inspecting the side effect
+            // (that is only visible to trim-unsafe code).
+            Console.WriteLine($"Testing we were able to make non-readonly field read-only: {ClassThatShouldBePreinited.Value}");
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableStaticFieldOptimization), nameof(Canary));
+#endif
+        }
+    }
+
+    class TestUnmodifiableInstanceFieldOptimization
+    {
+        class Canary1
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class Canary2
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class Canary3
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class Canary4
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class Canary5
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class CanBeMadeReadOnly
+        {
+            public object Field;
+            public static CanBeMadeReadOnly Instance = new CanBeMadeReadOnly();
+            static CanBeMadeReadOnly() => new Canary1().Make();
+        }
+
+        class IsReflectedOn
+        {
+            public object Field;
+            public static IsReflectedOn Instance = new IsReflectedOn();
+            static IsReflectedOn() => new Canary2().Make();
+        }
+
+        class IsModified
+        {
+            public object Field;
+            public static IsModified Instance = new IsModified();
+            static IsModified() => new Canary3().Make();
+        }
+
+        class CanBeMadeReadOnlyProperty
+        {
+            public object Field { get; }
+            public static CanBeMadeReadOnlyProperty Instance = new CanBeMadeReadOnlyProperty();
+            static CanBeMadeReadOnlyProperty() => new Canary4().Make();
+        }
+
+        class WithInitOnlyPropertyWrite
+        {
+            public object Field { get; init; }
+            public static WithInitOnlyPropertyWrite Instance = new WithInitOnlyPropertyWrite();
+            static WithInitOnlyPropertyWrite() => new Canary5().Make();
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(CanBeMadeReadOnly.Instance);
+            Console.WriteLine(IsReflectedOn.Instance);
+            Console.WriteLine(IsModified.Instance);
+            Console.WriteLine(CanBeMadeReadOnlyProperty.Instance);
+            Console.WriteLine(WithInitOnlyPropertyWrite.Instance);
+
+            IsModified.Instance.Field = new object();
+            typeof(IsReflectedOn).GetFields();
+            new WithInitOnlyPropertyWrite() { Field = new object() };
+
+            // Types that got preinitialized at compile time will not bring the canary class
+            // instance into the program.
+            // On the other hand types that should not have been preinitialized for correctness
+            // need the canary in the cctor.
+
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary1));
+#endif
+            ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary2));
+            ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary3));
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary4));
+#endif
+            ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary5));
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
-    private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
+    private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
 
     private static void ThrowIfPresent(Type testType, string typeName)
     {
-        if (IsTypePresent(testType, typeName))
+        if (GetTypeSecretly(testType, typeName) != null)
         {
             throw new Exception(typeName);
         }
     }
 
+    private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
+    {
+        Type t = GetTypeSecretly(testType, typeName);
+        if (t == null)
+            return;
+
+        try
+        {
+            RuntimeHelpers.GetUninitializedObject(t);
+
+            // Should have thrown NotSupported above.
+            throw new Exception();
+        }
+        catch (NotSupportedException) { }
+    }
+
     private static void ThrowIfNotPresent(Type testType, string typeName)
     {
-        if (!IsTypePresent(testType, typeName))
+        if (GetTypeSecretly(testType, typeName) == null)
         {
             throw new Exception(typeName);
         }

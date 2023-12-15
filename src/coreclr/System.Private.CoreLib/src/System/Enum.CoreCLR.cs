@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,6 +19,15 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe CorElementType InternalGetCorElementType(MethodTable* pMT);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
+        {
+            Debug.Assert(rt.IsActualEnum);
+            CorElementType elementType = InternalGetCorElementType((MethodTable*)rt.GetUnderlyingNativeHandle());
+            GC.KeepAlive(rt);
+            return elementType;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe CorElementType InternalGetCorElementType()
@@ -73,26 +82,36 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
+        private static EnumInfo<TStorage> GetEnumInfo<TStorage>(RuntimeType enumType, bool getNames = true)
+            where TStorage : struct, INumber<TStorage>
         {
-            return enumType.GenericCache is EnumInfo info && (!getNames || info.Names is not null) ?
+            Debug.Assert(
+                typeof(TStorage) == typeof(byte) || typeof(TStorage) == typeof(ushort) || typeof(TStorage) == typeof(uint) || typeof(TStorage) == typeof(ulong) ||
+                typeof(TStorage) == typeof(nuint) || typeof(TStorage) == typeof(float) || typeof(TStorage) == typeof(double) || typeof(TStorage) == typeof(char),
+                $"Unexpected {nameof(TStorage)} == {typeof(TStorage)}");
+
+            return enumType.GenericCache is EnumInfo<TStorage> info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static EnumInfo InitializeEnumInfo(RuntimeType enumType, bool getNames)
+            static EnumInfo<TStorage> InitializeEnumInfo(RuntimeType enumType, bool getNames)
             {
-                ulong[]? values = null;
+                TStorage[]? values = null;
                 string[]? names = null;
-                RuntimeTypeHandle enumTypeHandle = enumType.TypeHandle;
+
                 GetEnumValuesAndNames(
-                    new QCallTypeHandle(ref enumTypeHandle),
+                    new QCallTypeHandle(ref enumType),
                     ObjectHandleOnStack.Create(ref values),
                     ObjectHandleOnStack.Create(ref names),
                     getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+
+                Debug.Assert(values!.GetType() == typeof(TStorage[]));
+                Debug.Assert(!getNames || names!.GetType() == typeof(string[]));
+
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                var entry = new EnumInfo(hasFlagsAttribute, values!, names!);
+                var entry = new EnumInfo<TStorage>(hasFlagsAttribute, values, names!);
                 enumType.GenericCache = entry;
                 return entry;
             }

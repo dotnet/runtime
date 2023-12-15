@@ -42,7 +42,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public static void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
         {
             Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public static void ComparerImplementations_HashSet_WithWellKnownStringComparers()
         {
             Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -303,13 +303,13 @@ namespace System.Collections.Tests
                     uint hash1 = (5381 << 16) + 5381;
                     uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
 
-                    MemoryMarshal.Write(asBytes, ref seed);
-                    MemoryMarshal.Write(asBytes.Slice(4), ref hash2); // set hash2 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes, in seed);
+                    MemoryMarshal.Write(asBytes.Slice(4), in hash2); // set hash2 := 0 (for Ordinal)
 
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
 
-                    MemoryMarshal.Write(asBytes.Slice(8), ref hash1); // set hash1 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(8), in hash1); // set hash1 := 0 (for Ordinal)
                 });
             }
         }
@@ -343,7 +343,7 @@ namespace System.Collections.Tests
                 ("Hello", "hello"), // case-insensitive equal
                 ("Hello", "He\u200dllo"), // equal under linguistic comparer
                 ("Hello", "HE\u200dLLO"), // equal under case-insensitive linguistic comparer
-                ("абвгдеёжзийклмнопрстуфхцчшщьыъэюя", "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ"), // Cyrillic, case-insensitive equal
+                ("\u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044C\u044B\u044A\u044D\u044E\u044F", "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042B\u042A\u042D\u042E\u042F"), // Cyrillic, case-insensitive equal
             })
             {
                 bool arePairElementsExpectedEqual = publicComparer.Equals(pair.Item1, pair.Item2);

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
@@ -70,7 +71,7 @@ namespace System.Net.Mail
                     return true;
                 }
                 // Check for invalid characters
-                else if (data[index] > MailBnfHelper.Ascii7bitMaxValue || !MailBnfHelper.Dtext[data[index]])
+                else if (!Ascii.IsValid(data[index]) || !MailBnfHelper.Dtext[data[index]])
                 {
                     if (throwExceptionIfFail)
                     {

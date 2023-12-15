@@ -592,52 +592,6 @@ extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::Module
 }
 
 
-// GetType
-// Given a class name, this method will look for that class
-//  with in the module.
-extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(wszName));
-    }
-    CONTRACTL_END;
-
-    TypeHandle retTypeHandle;
-
-    BEGIN_QCALL;
-
-    DomainAssembly *pAssembly = pModule->GetDomainAssembly();
-    _ASSERTE(pAssembly);
-
-    BOOL prohibitAsmQualifiedName = TRUE;
-
-    // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, (OBJECTREF*)keepAlive.m_ppObject);
-
-    // Verify that it's in 'this' module
-    // But, if it's in a different assembly than expected, that's okay, because
-    // it just means that it's been type forwarded.
-    if (!retTypeHandle.IsNull())
-    {
-        if ( (retTypeHandle.GetModule() != pModule) &&
-             (retTypeHandle.GetModule()->GetAssembly() == pModule->GetAssembly()) )
-            retTypeHandle = TypeHandle();
-    }
-
-    if (!retTypeHandle.IsNull())
-    {
-        GCX_COOP();
-        retType.Set(retTypeHandle.GetManagedClassObject());
-    }
-
-    END_QCALL;
-
-    return;
-}
-
-
 // GetName
 // This routine will return the name of the module as a String
 extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString)
@@ -658,17 +612,6 @@ extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule
     END_QCALL;
 }
 
-static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (fileName.EndsWithCaseInsensitive(pwzOldSuffix))
-    {
-        COUNT_T oldSuffixLen = (COUNT_T)wcslen(pwzOldSuffix);
-        fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, pwzNewSuffix);
-    }
-}
-
 /*============================GetFullyQualifiedName=============================
 **Action:
 **Returns:
@@ -686,9 +629,12 @@ extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandl
     if (pModule->IsPEFile())
     {
         LPCWSTR fileName = pModule->GetPath();
-        if (*fileName != 0) {
-                retString.Set(fileName);
-        } else {
+        if (*fileName != W('\0'))
+        {
+            retString.Set(fileName);
+        }
+        else
+        {
             retString.Set(W("<Unknown>"));
         }
     }

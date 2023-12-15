@@ -170,12 +170,6 @@
 #include "stringarraylist.h"
 #include "stubhelpers.h"
 
-#ifdef FEATURE_STACK_SAMPLING
-#include "stacksampler.h"
-#endif
-
-#include <shlwapi.h>
-
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
@@ -230,13 +224,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 // g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
-// Note: that it can happen that the hostpolicy is embedded but coreclr isn't (on Windows singlefilehost is built that way)
 #ifdef CORECLR_EMBEDDED
 bool g_coreclr_embedded = true;
 bool g_hostpolicy_embedded = true; // We always embed hostpolicy if coreclr is also embedded
 #else
 bool g_coreclr_embedded = false;
-bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
+bool g_hostpolicy_embedded = false;
 #endif
 
 // Remember how the last startup of EE went.
@@ -286,8 +279,6 @@ HRESULT EnsureEEStarted()
     // which we will do further down.
     if (!g_fEEStarted)
     {
-        BEGIN_ENTRYPOINT_NOTHROW;
-
         // Initialize our configuration.
         CLRConfig::Initialize();
 
@@ -319,8 +310,6 @@ HRESULT EnsureEEStarted()
                 }
             }
         }
-
-        END_ENTRYPOINT_NOTHROW;
     }
     else
     {
@@ -624,12 +613,8 @@ void EEStartupHelper()
 
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
-#endif // HOST_WINDOWS
 
-        // Initialize Numa and CPU group information
-        // Need to do this as early as possible. Used by creating object handle
-        // table inside Ref_Initialization() before GC is initialized.
-        NumaNodeInfo::InitNumaNodeInfo();
+#endif // HOST_WINDOWS
 #ifndef TARGET_UNIX
         CPUGroupInfo::EnsureInitialized();
 #endif // !TARGET_UNIX
@@ -886,6 +871,11 @@ void EEStartupHelper()
         // requires write barriers to have been set up on x86, which happens as part
         // of InitJITHelpers1.
         hr = g_pGCHeap->Initialize();
+        if (FAILED(hr))
+        {
+            LogErrorToHost("GC heap initialization failed with error 0x%08X", hr);
+        }
+
         IfFailGo(hr);
 
 #ifdef FEATURE_PERFTRACING
@@ -937,13 +927,6 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
-#ifdef FEATURE_STACK_SAMPLING
-        StackSampler::Init();
-#endif
-
-        // Perform any once-only SafeHandle initialization.
-        SafeHandle::Init();
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
@@ -956,7 +939,6 @@ void EEStartupHelper()
         g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL,
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -978,9 +960,6 @@ void EEStartupHelper()
         {
             SystemDomain::SystemModule()->ExpandAll();
         }
-
-        // Perform CoreLib consistency check if requested
-        g_CoreLib.CheckExtended();
 #endif // _DEBUG
 
 
@@ -988,6 +967,7 @@ ErrExit: ;
     }
     EX_CATCH
     {
+        hr = GET_EXCEPTION()->GetHR();
     }
     EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
 
@@ -1253,7 +1233,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
-        PerfMap::Destroy();
+        PerfMap::Disable();
 #endif
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
@@ -1638,8 +1618,10 @@ void InitializeGarbageCollector()
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
     hr = GCHeapUtilities::LoadAndInitialize();
+
     if (hr != S_OK)
     {
+        LogErrorToHost("GC initialization failed with error 0x%08X", hr);
         ThrowHR(hr);
     }
 
@@ -1771,6 +1753,7 @@ struct TlsDestructionMonitor
                 thread->DetachThread(TRUE);
             }
 
+            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1783,6 +1766,30 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
+}
+
+#ifdef _MSC_VER
+__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+#else
+__thread ThreadStaticBlockInfo t_ThreadStatics;
+#endif // _MSC_VER
+
+// Delete the thread local memory only if we the current thread
+// is the one executing this code. If we do not guard it, it will
+// end up deleting the thread local memory of the calling thread.
+void DeleteThreadLocalMemory()
+{
+    t_NonGCThreadStaticBlocksSize = 0;
+    t_GCThreadStaticBlocksSize = 0;
+
+    t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
+    t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
+
+    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
+    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
+
+    delete[] t_ThreadStatics.GCThreadStaticBlocks;
+    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -2003,12 +2010,10 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             sParentCulture = sCulture;
 #endif // !TARGET_UNIX
         }
-        // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
-        // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
-        // Also, this is in the wrong order - put after the parent culture chain.
-        //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere((LPCWSTR)sParentCulture);
+        sCulture.Normalize();
+        sParentCulture.Normalize();
+        pCultureNames->AppendIfNotThere(sCulture);
+        pCultureNames->AppendIfNotThere(sParentCulture);
         pCultureNames->Append(SString::Empty());
     }
     EX_CATCH

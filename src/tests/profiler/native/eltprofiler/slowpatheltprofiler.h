@@ -146,6 +146,8 @@ public:
         _sawFuncEnter[L"Fp64x3StructDoubleFp64x3StructDoubleFunc"] = false;
         _sawFuncEnter[L"Fp64x4StructFunc"] = false;
         _sawFuncEnter[L"Fp64x4StructFp64x4StructFunc"] = false;
+        _sawFuncEnter[L"IntManyMixedStructFunc"] = false;
+        _sawFuncEnter[L"DoubleManyMixedStructFunc"] = false;
 
         _sawFuncLeave[L"SimpleArgsFunc"] = false;
         _sawFuncLeave[L"MixedStructFunc"] = false;
@@ -158,6 +160,7 @@ public:
         _sawFuncLeave[L"Fp64x3StructFunc"] = false;
         _sawFuncLeave[L"Fp64x4StructFunc"] = false;
         _sawFuncLeave[L"DoubleRetFunc"] = false;
+        _sawFuncLeave[L"FloatRetFunc"] = false;
         _sawFuncLeave[L"IntegerSseStructFunc"] = false;
         _sawFuncLeave[L"SseIntegerStructFunc"] = false;
         _sawFuncLeave[L"MixedSseStructFunc"] = false;

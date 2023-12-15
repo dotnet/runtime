@@ -26,6 +26,8 @@ namespace System.IO
     public partial class DriveNotFoundException : System.IO.IOException
     {
         public DriveNotFoundException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DriveNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DriveNotFoundException(string? message) { }
         public DriveNotFoundException(string? message, System.Exception? innerException) { }

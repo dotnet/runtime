@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="test">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestConditionalRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>remove1</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestConditionalRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument type="System.Int32">100</argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestConditionalRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>remove0</argument>
+        </argument>
+      </attribute>
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object[]">
+          <argument type="System.String">remove2</argument>
+          <argument type="System.String">remove3</argument>
+        </argument>
+      </attribute>
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object[]">
+          <argument type="System.Object">
+            <argument type="System.Int64">99</argument>
+          </argument>
+          <argument type="System.Object">
+            <argument type="System.String">remove3</argument>
+          </argument>
+        </argument>
+      </attribute>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestConditionalRemoveAttribute">
+        <attribute internal="RemoveAttributeInstances">
+            <argument type="System.Object[]">
+                <argument type="System.Object">
+                    <argument type="System.Int32">72</argument>
+                </argument>
+                <argument type="System.Object">
+                    <argument type="System.String[]">
+                        <argument type="System.String">a</argument>
+                        <argument type="System.String">b</argument>
+                        <argument type="System.String">c</argument>
+                        <argument type="System.String">d</argument>
+                        <argument type="System.String">e</argument>
+                    </argument>
+                </argument>
+            </argument>
+        </attribute>
+		<attribute internal="RemoveAttributeInstances">
+			<argument type="System.Object">
+				<argument type="System.Int32[]">
+					<argument type="System.Int32">1</argument>
+					<argument type="System.Int32">2</argument>
+					<argument type="System.Int32">3</argument>
+				</argument>
+			</argument>
+		</attribute>
+    </type>
+  </assembly>
+</linker>

@@ -4,7 +4,6 @@
 
 
 // Metadata version: v2.0.50727
-.module extern libc
 
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
@@ -13,11 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:2:1:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -60,7 +55,6 @@
     .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module TailcallVerifyWithPrefix.exe
 // MVID: {D1242658-CA16-4D11-A740-6635F112F4B5}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000
@@ -1412,7 +1406,7 @@
 
 } // end of class TailcallVerify.MyCompare
 
-.class private auto ansi beforefieldinit TailcallVerify.Program
+.class public auto ansi beforefieldinit TailcallVerify.Program
        extends [mscorlib]System.Object
 {
   .field private static int32 result
@@ -2250,7 +2244,7 @@
     IL_07ab:  ret
   } // end of method Program::Run
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -3187,8 +3181,9 @@
       IL_0029:  stsfld     int32 TailcallVerify.Condition10::Result
       IL_002e:  ldarg.0
       IL_002f:  ldc.i4.s   20
-      IL_0031:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
-      IL_0036:  ret
+                tail.
+      IL_0032:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
+      IL_0037:  ret
     } // end of method Foo1`2::Caller1Recursive
 
     .method private hidebysig instance void
@@ -3266,8 +3261,9 @@
       IL_0054:  ldarg.1
       IL_0055:  ldc.i4.1
       IL_0056:  sub
-      IL_0057:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
-      IL_005c:  ret
+                tail.
+      IL_0058:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
+      IL_005d:  ret
     } // end of method Foo1`2::Callee1Recursive
 
     .method public hidebysig specialname rtspecialname

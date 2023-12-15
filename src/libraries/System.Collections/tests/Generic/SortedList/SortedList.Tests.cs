@@ -9,7 +9,8 @@ namespace System.Collections.Tests
     public class SortedList_IDictionary_NonGeneric_Tests : IDictionary_NonGeneric_Tests
     {
         #region IDictionary Helper Methods
-
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override IDictionary NonGenericIDictionaryFactory()
         {
             return new SortedList<string, string>();

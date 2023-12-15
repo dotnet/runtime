@@ -23,9 +23,9 @@ Android SDK and NDK can be automatically installed via the following script:
 set -e
 
 NDK_VER=r23c
-SDK_VER=6200805_latest
-SDK_API_LEVEL=29
-SDK_BUILD_TOOLS=29.0.3
+SDK_VER=9123335_latest
+SDK_API_LEVEL=33
+SDK_BUILD_TOOLS=33.0.1
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     HOST_OS=darwin
@@ -47,8 +47,8 @@ unzip ~/andk.zip -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
 export ANDROID_SDK_ROOT=~/android-sdk
 curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-${SDK_VER}.zip -L --output ~/asdk.zip
 mkdir ${ANDROID_SDK_ROOT} && unzip ~/asdk.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools && rm -rf ~/asdk.zip
-yes | ${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
-${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
+yes | ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
+${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
 ```
 
 ### Using Android Studio
@@ -63,16 +63,16 @@ Android Studio offers a convenient UI:
 Before running a build you might want to set the Android SDK and NDK environment variables:
 ```
 export ANDROID_SDK_ROOT=<PATH-TO-ANDROID-SDK>
-export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>  
+export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>
 ```
 
 Now we're ready to build everything for Android:
 ```
-./build.sh mono+libs -os Android -arch x64
+./build.sh mono+libs -os android -arch x64
 ```
 and even run tests one by one for each library:
 ```
-./build.sh libs.tests -os Android -arch x64 -test
+./build.sh libs.tests -os android -arch x64 -test
 ```
 Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device is plugged in and unlocked.
 `AVD Manager` tool recommends to install `x86` images by default so if you follow that recommendation make sure `-arch x86` was used for the build script.
@@ -80,7 +80,7 @@ Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device 
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
+./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64
 ```
 
 ### Running the functional tests
@@ -89,7 +89,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=Android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
@@ -147,7 +147,7 @@ ${ANDROID_SDK_ROOT}/emulator/emulator -avd ${EMULATOR_NAME_X64} &
 The emulator can be launched with a variety of options. Run `emulator -help` to see the full list.
 
 ### Existing Limitations
-- `-os Android` is not supported for Windows yet (`WSL` can be used instead)
+- `-os android` is not supported for Windows yet (`WSL` can be used instead)
 - XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
 - AOT and Interpreter modes are not supported yet
 

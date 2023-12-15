@@ -24,10 +24,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.IO;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -64,9 +64,11 @@ namespace System.Reflection
 
         //
         // KEEP IN SYNC WITH _MonoReflectionAssembly in /mono/mono/metadata/object-internals.h
+        // and AssemblyBuilder.cs.
         //
         #region VM dependency
         private IntPtr _mono_assembly;
+        private LoaderAllocator? m_keepalive;
         #endregion
 
         internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
@@ -282,7 +284,7 @@ namespace System.Reflection
             return AssemblyName.Create(_mono_assembly, GetInfo(AssemblyInfoKind.CodeBase));
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -379,7 +381,7 @@ namespace System.Reflection
                         unsafe
                         {
                             Mono.MonoAssemblyName* nativeName = (Mono.MonoAssemblyName*)nativeNames[i];
-                            Mono.RuntimeMarshal.FreeAssemblyName(ref *nativeName, true);
+                            AssemblyName.FreeAssemblyName(ref *nativeName, true);
                         }
                     }
                 }
@@ -387,7 +389,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
-        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies(this);
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
@@ -428,7 +430,7 @@ namespace System.Reflection
             if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
-                throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
+                throw new FileNotFoundException(SR.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             return res;
         }
 

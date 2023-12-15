@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Xml;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Xml;
 
 namespace System.Xml.Schema
 {
@@ -326,7 +326,7 @@ namespace System.Xml.Schema
                     xs = parentSchema;
                     add = false;
                 }
-                else if (childURI != null && !_schemaSet!.Contains(childURI))
+                else if (!_schemaSet!.Contains(childURI))
                 {
                     /*if (parentSchema.AttributeFormDefault = XmlSchemaForm.Unqualified && childURI.Length == 0)
                 {
@@ -938,8 +938,7 @@ namespace System.Xml.Schema
                     }
                     else
                     {
-                        bool bParticleChanged = false;
-                        FindMatchingElement(bCreatingNewType || bCreatingNewSequence, _xtr, ct, ref lastUsedSeqItem, ref bParticleChanged, parentSchema, Maxoccursflag);
+                        FindMatchingElement(bCreatingNewType || bCreatingNewSequence, _xtr, ct, ref lastUsedSeqItem, parentSchema, Maxoccursflag);
                     }
                 }
                 else if (_xtr.NodeType == XmlNodeType.Text)
@@ -1025,10 +1024,9 @@ namespace System.Xml.Schema
         /// <param name="xtr">text reader positioned to the current element</param>
         /// <param name="ct">complex type with Sequence or Choice Particle</param>
         /// <param name="lastUsedSeqItem">ordinal number in the sequence to indicate current sequence position</param>
-        /// <param name="bParticleChanged">This indicates to the caller if Sequence was changed to Choice</param>
         /// <param name="parentSchema">The parent schema.</param>
         /// <param name="setMaxoccurs">Whether set max occurs.</param>
-        internal XmlSchemaElement FindMatchingElement(bool bCreatingNewType, XmlReader xtr, XmlSchemaComplexType ct, ref int lastUsedSeqItem, ref bool bParticleChanged, XmlSchema? parentSchema, bool setMaxoccurs)
+        internal XmlSchemaElement FindMatchingElement(bool bCreatingNewType, XmlReader xtr, XmlSchemaComplexType ct, ref int lastUsedSeqItem, XmlSchema? parentSchema, bool setMaxoccurs)
         {
             if (xtr.NamespaceURI == XmlSchema.Namespace)
             {
@@ -1770,7 +1768,7 @@ namespace System.Xml.Schema
                 //else
                 case 'I':       //try to match "INF"
                 INF:
-                    if (s.AsSpan(i).SequenceEqual("INF"))
+                    if (s.AsSpan(i) is "INF")
                         return TF_float | TF_double | TF_string;
                     else return TF_string;
                 case '.':       //try to match ".9999"  decimal/float/double

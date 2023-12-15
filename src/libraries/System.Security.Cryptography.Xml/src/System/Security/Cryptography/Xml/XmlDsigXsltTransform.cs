@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 using System.Xml.XPath;
@@ -8,6 +9,7 @@ using System.Xml.Xsl;
 
 namespace System.Security.Cryptography.Xml
 {
+    [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
     public class XmlDsigXsltTransform : Transform
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };

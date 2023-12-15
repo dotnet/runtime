@@ -3090,8 +3090,13 @@ namespace System.Reflection.Metadata.Tests
 
             if (PlatformDetection.HasAssemblyFiles)
             {
-                Assembly a = typeof(MetadataReaderTests).Assembly;
-                Assert.Equal(new AssemblyName(a.FullName).ToString(), MetadataReader.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+                Assembly a = typeof(MetadataReader).Assembly;
+                AssemblyName name = MetadataReader.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a));
+                Assert.Equal(new AssemblyName(a.FullName).ToString(), name.ToString());
+
+#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
+                Assert.Equal(ProcessorArchitecture.None, name.ProcessorArchitecture);
+#pragma warning restore SYSLIB0037
             }
         }
     }

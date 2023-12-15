@@ -43,6 +43,11 @@ namespace System.Net.Test.Common
             _transparentPingResponse = transparentPingResponse;
         }
 
+        public override string ToString()
+        {
+            return $"{this.GetType().Name} {_connectionSocket.LocalEndPoint} <-> {_connectionSocket.RemoteEndPoint}";
+        }
+
         public static Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions)
         {
             return CreateAsync(socket, stream, httpOptions, Http2LoopbackServer.Timeout);
@@ -91,7 +96,7 @@ namespace System.Net.Test.Common
                 throw new Exception("Connection stream closed while attempting to read connection preface.");
             }
 
-            if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
+            if (_prefix.AsSpan().IndexOf("HTTP/1.1"u8) >= 0)
             {
                 // Tests that use HttpAgnosticLoopbackServer will attempt to send an HTTP/1.1 request to an HTTP/2 server.
                 // This is invalid and we should terminate the connection.
@@ -402,7 +407,7 @@ namespace System.Net.Test.Common
             return (HeadersFrame)frame;
         }
 
-        public async Task<Frame> ReadDataFrameAsync()
+        public async Task<DataFrame> ReadDataFrameAsync()
         {
             // Receive DATA frame for request.
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -412,7 +417,7 @@ namespace System.Net.Test.Common
             }
 
             Assert.Equal(FrameType.Data, frame.Type);
-            return frame;
+            return Assert.IsType<DataFrame>(frame);
         }
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
@@ -663,7 +668,7 @@ namespace System.Net.Test.Common
                     default:
                         // Assert.Fail is already merged in xUnit but not released yet. Replace once available.
                         // https://github.com/xunit/xunit/issues/2105
-                        Assert.True(false, $"Unexpected frame type '{frame.Type}'");
+                        Assert.Fail($"Unexpected frame type '{frame.Type}'");
                         break;
                 }
             }

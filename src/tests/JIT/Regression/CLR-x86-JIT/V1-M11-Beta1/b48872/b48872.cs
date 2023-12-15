@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static uint m_u;
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             bool[] ab = new bool[4];
             uint uu;
             for (; ab[0]; uu = m_u & 1) { }
-            return 100;
         }
     }
 }

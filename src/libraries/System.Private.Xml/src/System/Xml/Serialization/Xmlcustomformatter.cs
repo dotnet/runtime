@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Globalization;
+using System.Collections;
 using System.ComponentModel;
+using System.Configuration;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
-using System.Collections;
-using System.Configuration;
+using System.Xml;
 using System.Xml.Serialization.Configuration;
 
 namespace System.Xml.Serialization
@@ -103,6 +103,17 @@ namespace System.Xml.Serialization
                 // for mode DateTimeSerializationMode.Roundtrip and DateTimeSerializationMode.Default
                 return XmlConvert.ToString(value, XmlDateTimeSerializationMode.RoundtripKind);
             }
+        }
+
+        internal static bool TryFormatDateTime(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            if (Mode == DateTimeSerializationSection.DateTimeSerializationMode.Local)
+            {
+                return XmlConvert.TryFormat(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz", destination, out charsWritten);
+            }
+
+            // for mode DateTimeSerializationMode.Roundtrip and DateTimeSerializationMode.Default
+            return XmlConvert.TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
         }
 
         internal static string FromChar(char value)

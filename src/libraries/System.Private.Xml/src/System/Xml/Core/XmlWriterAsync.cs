@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using System.Xml.XPath;
-using System.Xml.Schema;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml
 {
@@ -198,10 +198,7 @@ namespace System.Xml
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
         public virtual Task WriteNmTokenAsync(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
             return WriteStringAsync(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException));
         }
 

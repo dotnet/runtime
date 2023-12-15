@@ -21,13 +21,21 @@ namespace System.Timers
         /// </summary>
         public TimersDescriptionAttribute(string description) : base(description) { }
 
-        /// <summary>
-        /// Constructs a new localized sys description.
-        /// </summary>
-        internal TimersDescriptionAttribute(string description, string? unused) : base(SR.GetResourceString(description))
+        internal TimersDescriptionAttribute(TimersDescriptionStringId id) : base(GetResourceString(id)) { }
+
+        private static string GetResourceString(TimersDescriptionStringId id)
         {
-            // Needed for overload resolution
-            Debug.Assert(unused == null);
+            switch (id)
+            {
+                case TimersDescriptionStringId.TimerAutoReset: return SR.TimerAutoReset;
+                case TimersDescriptionStringId.TimerEnabled: return SR.TimerEnabled;
+                case TimersDescriptionStringId.TimerInterval: return SR.TimerInterval;
+                case TimersDescriptionStringId.TimerIntervalElapsed: return SR.TimerIntervalElapsed;
+                case TimersDescriptionStringId.TimerSynchronizingObject: return SR.TimerSynchronizingObject;
+                default:
+                    Debug.Fail($"Unexpected resource {id}");
+                    return "";
+            }
         }
 
         /// <summary>
@@ -48,5 +56,14 @@ namespace System.Timers
                 return base.Description;
             }
         }
+    }
+
+    internal enum TimersDescriptionStringId
+    {
+        TimerAutoReset,
+        TimerEnabled,
+        TimerInterval,
+        TimerIntervalElapsed,
+        TimerSynchronizingObject
     }
 }

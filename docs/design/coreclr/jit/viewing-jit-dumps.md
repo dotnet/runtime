@@ -20,7 +20,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
       <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       </PropertyGroup>
 
@@ -58,17 +58,17 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
     }
     ```
 
-* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/net5.0/<rid>/publish`.
+* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/<tfm>/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:
 
     ```shell
     # Windows
-    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Release <app root>\bin\Release\net5.0\<rid>\publish > NUL
-    copy /y <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Debug\clrjit.dll <app root>\bin\Release\net5.0\<rid>\publish > NUL
+    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Release <app root>\bin\Release\<tfm>\<rid>\publish > NUL
+    copy /y <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Debug\clrjit.dll <app root>\bin\Release\<tfm>\<rid>\publish > NUL
 
     # Unix
-    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/net5.0/<rid>/publish
-    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/net5.0/<rid>/publish
+    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/<tfm>/<rid>/publish
+    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/<tfm>/<rid>/publish
     ```
 
 * Set the configuration knobs you need (see below) and run your published app. The info you want should be dumped to stdout.
@@ -98,21 +98,21 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `DOTNET_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 
-* Setting the environment variable `COMPlus_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named `Main` will be dumped:
+* Setting the environment variable `DOTNET_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named `Main` will be dumped:
 
    ```shell
    # Windows
-   set COMPlus_JitDump=Main
+   set DOTNET_JitDump=Main
 
    # Powershell
-   $env:COMPlus_JitDump="Main"
+   $env:DOTNET_JitDump="Main"
 
    # Unix
-   export COMPlus_JitDump=Main
+   export DOTNET_JitDump=Main
    ```
 
 * *Windows-only:* Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
@@ -120,7 +120,7 @@ These can be set in one of three ways:
 
 ## Specifying method names
 
-Some environment variables such as `COMPlus_JitDump` take a set of patterns specifying method names. The matching works in the following way:
+Some environment variables such as `DOTNET_JitDump` take a set of patterns specifying method names. The matching works in the following way:
 * A method set string is a space-separated list of patterns. Patterns can arbitrarily contain both '*' (match any characters) and '?' (match any 1 character).
 * The string matched against depends on characters in the pattern:
   + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon
@@ -150,7 +150,7 @@ new C<sbyte, string>().M<int, object>(default, default, default, default); // co
 new C<int, int>().M<int, int>(default, default, default, default); // compilation 2
 ```
 
-The full names of these instantiations are the following, as printed by `COMPlus_JitDisasmSummary`:
+The full names of these instantiations are the following, as printed by `DOTNET_JitDisasmSummary`:
 
 ```
 MyNamespace.C`2[byte,System.__Canon]:M[int,System.__Canon](byte,System.__Canon,int,System.__Canon)
@@ -178,22 +178,16 @@ M(*Canon)
 
 Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
-* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
-* `COMPlus_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
-* `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
-* `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
-* `COMPlus_JitGCDump`={method-list} – dump the GC information.
-* `COMPlus_JitUnwindDump`={method-list} – dump the unwind tables.
-* `COMPlus_JitEHDump`={method-list} – dump the exception handling tables.
-* `COMPlus_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
-* `COMPlus_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
+* `DOTNET_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
+* `DOTNET_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
+* `DOTNET_JitDisasm`={method-list} – dump a disassembly listing of each method.
+* `DOTNET_JitDisasmDiffable` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
+* `DOTNET_JitGCDump`={method-list} – dump the GC information.
+* `DOTNET_JitUnwindDump`={method-list} – dump the unwind tables.
+* `DOTNET_JitEHDump`={method-list} – dump the exception handling tables.
+* `DOTNET_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
+* `DOTNET_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
 
 ## Dumping native images
 
-If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in mscorlib, which (by default) is compiled ahead-of-time to a native image via [crossgen](/docs/workflow/building/coreclr/crossgen.md). Telling crossgen to dump the info works slightly differently.
-
-* First, perform a debug build of the native parts of the repo: `build skipmscorlib skiptests`.
-  * This should produce the binaries for crossgen in `artifacts/Product/<OS>.<arch>.Debug`.
-* Next, set the appropriate configuration knob for the info you want to dump. Usually, this is just the same as the corresponding JIT knob, except prefixed with `Ngen`; for example, to show the disassembly listing of a particular method you would `set COMPlus_NgenDisasm=Foo`.
-* Run crossgen on the assembly you want to dump: `crossgen MyLibrary.dll`
-  * If you want to see the output of crossgen specifically for mscorlib, invoke `build skipnative skiptests` from the repo root. The dumps should be written to a file in `artifacts/Logs` that you can just view.
+If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like `Substring` didn't show up in the output. This is because `Substring` lives in System.Private.CoreLib.dll, which (by default) is compiled ahead-of-time via crossgen2. Telling crossgen2 to dump the info works slightly differently in that it has to be specified on the command line instead. For more information, see the [debugging-aot-compilers](/docs/workflow/debugging/coreclr/debugging-aot-compilers.md) document.

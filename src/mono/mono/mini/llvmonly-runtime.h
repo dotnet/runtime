@@ -27,12 +27,13 @@ G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_call (MonoVTable *
 G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *imt_method);
 G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_vcall_gsharedvt_fast (MonoObject *this_obj, int slot);
 G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info);
-G_EXTERN_C void mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
 /* Used for regular llvm as well */
 G_EXTERN_C void mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer method_info, MonoVTable *vtable);
 
 G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
+G_EXTERN_C void mini_llvmonly_throw_index_out_of_range_exception (void);
+G_EXTERN_C void mini_llvmonly_throw_invalid_cast_exception (void);
 
 G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 

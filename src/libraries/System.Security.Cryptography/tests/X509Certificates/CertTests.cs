@@ -26,6 +26,47 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RaceDisposeAndKeyAccess()
+        {
+            using RSA rsa = RSA.Create();
+            CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now);
+
+            for (int i = 0; i < 100; i++)
+            {
+                X509Certificate2 w = new X509Certificate2(cert.RawData.AsSpan());
+                X509Certificate2 y = w.CopyWithPrivateKey(rsa);
+                w.Dispose();
+
+                Thread t1 = new Thread(cert => {
+                    Thread.Sleep(Random.Shared.Next(0, 20));
+                    X509Certificate2 c = (X509Certificate2)cert!;
+                    c.Dispose();
+                    GC.Collect();
+                });
+
+                Thread t2 = new Thread(cert => {
+                    Thread.Sleep(Random.Shared.Next(0, 20));
+                    X509Certificate2 c = (X509Certificate2)cert!;
+
+                    try
+                    {
+                        c.GetRSAPrivateKey()!.ExportParameters(false);
+                    }
+                    catch
+                    {
+                        // don't care about managed exceptions.
+                    }
+                });
+
+                t1.Start(y);
+                t2.Start(y);
+                t1.Join();
+                t2.Join();
+            }
+        }
+
+        [Fact]
         public static void RaceUseAndDisposeDoesNotCrash()
         {
             X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile);
@@ -411,7 +452,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Read it back as a collection, there should be only one cert, and it should
                 // be equal to the one we started with.
-                using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                using (ImportedCollection ic = Cert.Import(pkcs12Bytes, (string?)null, X509KeyStorageFlags.DefaultKeySet))
                 {
                     X509Certificate2Collection fromPfx = ic.Collection;
 
@@ -527,6 +568,78 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(TestData.GostCertificate))
             {
                 Assert.Equal("1.2.643.2.2.3", cert.SignatureAlgorithm.Value);
+            }
+        }
+
+        [Fact]
+        public static void CertificateWithTrailingDataCanBeRead()
+        {
+            byte[] certData = new byte[TestData.MsCertificate.Length + 100];
+            TestData.MsCertificate.AsSpan().CopyTo(certData);
+            certData.AsSpan(TestData.MsCertificate.Length).Fill(0xFF);
+
+            using (X509Certificate2 cert = new X509Certificate2(certData))
+            {
+                Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
+                Assert.Equal("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Issuer);
+
+                Assert.Equal(TestData.MsCertificate, cert.RawData);
+            }
+        }
+
+        [Fact]
+        public static void CertificateSha3Signed()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.RsaSha3_256SignedCertificate))
+            {
+                Assert.Equal("CN=potato", cert.Subject);
+
+                using (RSA rsa = cert.PublicKey.GetRSAPublicKey())
+                {
+                    Assert.NotNull(rsa);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
+        {
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP256))
+            using (ECDsaCng ecdsa = new ECDsaCng(platformKey.Key))
+            {
+                CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow))
+                using (ECDsa certKey = cert.GetECDsaPrivateKey())
+                {
+                    Assert.NotNull(certKey);
+                    byte[] data = new byte[] { 12, 11, 02, 08, 25, 14, 11, 18, 16 };
+                    byte[] signature = certKey.SignData(data, HashAlgorithmName.SHA256);
+                    bool valid = ecdsa.VerifyData(data, signature, HashAlgorithmName.SHA256);
+                    Assert.True(valid, "valid signature");
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
+        {
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.Rsa))
+            using (RSACng rsa = new RSACng(platformKey.Key))
+            {
+                CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow))
+                using (RSA certKey = cert.GetRSAPrivateKey())
+                {
+                    Assert.NotNull(certKey);
+                    byte[] data = new byte[] { 12, 11, 02, 08, 25, 14, 11, 18, 16 };
+                    byte[] signature = certKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    bool valid = rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.True(valid, "valid signature");
+                }
             }
         }
 

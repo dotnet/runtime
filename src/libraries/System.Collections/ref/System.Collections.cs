@@ -26,6 +26,8 @@ namespace System.Collections
         public void CopyTo(System.Array array, int index) { }
         public bool Get(int index) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public bool HasAllSet() { throw null; }
+        public bool HasAnySet() { throw null; }
         public System.Collections.BitArray LeftShift(int count) { throw null; }
         public System.Collections.BitArray Not() { throw null; }
         public System.Collections.BitArray Or(System.Collections.BitArray value) { throw null; }
@@ -55,6 +57,8 @@ namespace System.Collections.Generic
     {
         public LinkedList() { }
         public LinkedList(System.Collections.Generic.IEnumerable<T> collection) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected LinkedList(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public int Count { get { throw null; } }
         public System.Collections.Generic.LinkedListNode<T>? First { get { throw null; } }
@@ -76,6 +80,8 @@ namespace System.Collections.Generic
         public System.Collections.Generic.LinkedListNode<T>? Find(T value) { throw null; }
         public System.Collections.Generic.LinkedListNode<T>? FindLast(T value) { throw null; }
         public System.Collections.Generic.LinkedList<T>.Enumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void OnDeserialization(object? sender) { }
         public void Remove(System.Collections.Generic.LinkedListNode<T> node) { }
@@ -120,6 +126,7 @@ namespace System.Collections.Generic
         public void EnqueueRange(System.Collections.Generic.IEnumerable<TElement> elements, TPriority priority) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public TElement Peek() { throw null; }
+        public bool Remove(TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement removedElement, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority, System.Collections.Generic.IEqualityComparer<TElement>? equalityComparer = null) { throw null; }
         public void TrimExcess() { }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
@@ -311,6 +318,8 @@ namespace System.Collections.Generic
         public SortedSet(System.Collections.Generic.IComparer<T>? comparer) { }
         public SortedSet(System.Collections.Generic.IEnumerable<T> collection) { }
         public SortedSet(System.Collections.Generic.IEnumerable<T> collection, System.Collections.Generic.IComparer<T>? comparer) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SortedSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IComparer<T> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
@@ -370,6 +379,7 @@ namespace System.Collections.Generic
         public Stack(System.Collections.Generic.IEnumerable<T> collection) { }
         public Stack(int capacity) { }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Clear() { }
@@ -385,6 +395,7 @@ namespace System.Collections.Generic
         public int EnsureCapacity(int capacity) { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public bool TryPop([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
@@ -433,9 +444,12 @@ namespace System.Collections.Generic
         public Dictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public Dictionary(int capacity) { }
         public Dictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected Dictionary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } set { } }
         public System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
@@ -457,6 +471,8 @@ namespace System.Collections.Generic
         public bool ContainsValue(TValue value) { throw null; }
         public int EnsureCapacity(int capacity) { throw null; }
         public System.Collections.Generic.Dictionary<TKey, TValue>.Enumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void OnDeserialization(object? sender) { }
         public bool Remove(TKey key) { throw null; }
@@ -564,9 +580,12 @@ namespace System.Collections.Generic
         public HashSet(System.Collections.Generic.IEqualityComparer<T>? comparer) { }
         public HashSet(int capacity) { }
         public HashSet(int capacity, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected HashSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IEqualityComparer<T> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
         public bool Add(T item) { throw null; }
         public void Clear() { }
@@ -578,6 +597,8 @@ namespace System.Collections.Generic
         public int EnsureCapacity(int capacity) { throw null; }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         public System.Collections.Generic.HashSet<T>.Enumerator GetEnumerator() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
         public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
@@ -594,6 +615,7 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
@@ -696,6 +718,7 @@ namespace System.Collections.Generic
         public Queue(System.Collections.Generic.IEnumerable<T> collection) { }
         public Queue(int capacity) { }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Clear() { }
@@ -710,6 +733,7 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }

@@ -1,0 +1,22 @@
+<Project TreeatAsLocalProperty="RuntimeConfiguration">
+    <PropertyGroup>
+    <_TopDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..', '..'))</_TopDir>
+    <_DotnetJsRelativePath>$([System.IO.Path]::Combine('runtimes', 'browser-wasm', 'native', 'dotnet.js'))</_DotnetJsRelativePath>
+    <_ReleaseConfigDetected Condition="Exists('$(_TopDir)artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm/native/dotnet.js')">true</_ReleaseConfigDetected>
+    <_DebugConfigDetected Condition="Exists('$(_TopDir)artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/native/dotnet.js')">true</_DebugConfigDetected>
+
+    <_OriginalRuntimeConfiguration>$(RuntimeConfiguration)</_OriginalRuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and '$(_ReleaseConfigDetected)' == 'true'">Release</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and '$(_DebugConfigDetected)' == 'true'">Debug</RuntimeConfiguration>
+
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Release</RuntimeConfiguration>
+  </PropertyGroup>
+
+  <Target Name="_CheckRuntimeConfigDetected" BeforeTargets="Build">
+    <Error Condition="'$(_OriginalRuntimeConfiguration)' == '' and '$(_ReleaseConfigDetected)' == 'true' and '$(_DebugConfigDetected)' == 'true'"
+           Text="Found both Debug, and Release config dotnet.js in artifacts.
+                Using %24(RuntimeConfiguration)=$(RuntimeConfiguration). Override this property to pick a specific one." />
+
+    <Message Text="** Using RuntimeConfiguration=$(RuntimeConfiguration) **" Importance="High" />
+  </Target>
+</Project>

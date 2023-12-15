@@ -637,7 +637,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ImportMultiplePrivateKeysPfx()
         {
-            using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx))
+            using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx, (string?)null, X509KeyStorageFlags.DefaultKeySet))
             {
                 X509Certificate2Collection collection = ic.Collection;
 
@@ -753,7 +753,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 byte[] exported = collection.Export(X509ContentType.Pkcs12);
 
-                using (ImportedCollection ic = Cert.Import(exported))
+                using (ImportedCollection ic = Cert.Import(exported, (string?)null, X509KeyStorageFlags.DefaultKeySet))
                 {
                     X509Certificate2Collection importedCollection = ic.Collection;
 
@@ -815,7 +815,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 byte[] exported = collection.Export(X509ContentType.Pkcs12);
 
-                using (ImportedCollection ic = Cert.Import(exported))
+                using (ImportedCollection ic = Cert.Import(exported, (string?)null, X509KeyStorageFlags.DefaultKeySet))
                 {
                     X509Certificate2Collection importedCollection = ic.Collection;
 
@@ -854,7 +854,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 byte[] buffer = col.Export(X509ContentType.Pfx);
 
-                using (ImportedCollection newCollection = Cert.Import(buffer))
+                using (ImportedCollection newCollection = Cert.Import(buffer, (string?)null, X509KeyStorageFlags.DefaultKeySet))
                 {
                     Assert.Equal(2, newCollection.Collection.Count);
                 }

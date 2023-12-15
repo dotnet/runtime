@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 // The test showed an incorrect optimization of (int)(long<<32+) when the const 32+ tree
 // had side effects.
 
@@ -27,7 +28,8 @@ public class Program
         return 0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int vr0 = (int)((ulong)M1() << 33) / s_1.F6;
         if (result == 100)

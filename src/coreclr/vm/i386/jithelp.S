@@ -109,7 +109,7 @@ PATCH_LABEL JIT_DebugWriteBarrier\rg
     mov     [edx], edx
     cmp     ecx, [edx]
     pop     edx
-    ja      LOCAL_LABEL(WriteBarrier_NoShadow_\rg)
+    jae     LOCAL_LABEL(WriteBarrier_NoShadow_\rg)
 
     // TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
     // mfence barriers on either side of these two writes to make sure that
@@ -281,7 +281,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
     mov     eax, [eax]
     cmp     edx, [eax]
     pop     eax
-    ja      LOCAL_LABEL(ByRefWriteBarrier_NoShadow)
+    jae     LOCAL_LABEL(ByRefWriteBarrier_NoShadow)
 
     // TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
     // mfence barriers on either side of these two writes to make sure that
@@ -679,7 +679,7 @@ NESTED_END JIT_StackProbe, _TEXT
 //  the compares just for EAX, which won't work for other registers.
 //
 //  READ THIS!!!!!!
-//  it is imperative that the addresses of of the values that we overwrite
+//  it is imperative that the addresses of the values that we overwrite
 //  (card table, ephemeral region ranges, etc) are naturally aligned since
 //  there are codepaths that will overwrite these values while the EE is running.
 //

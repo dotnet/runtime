@@ -1,66 +1,48 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
+using System.Reflection.Emit;
 
 namespace System.Reflection
 {
-    internal partial class MethodInvoker
+    public partial class MethodInvoker
     {
-        public MethodInvoker(MethodBase method)
+        private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
         {
-            _method = method;
-
-#if USE_NATIVE_INVOKE
-            // Always use the native invoke; useful for testing.
-            _strategyDetermined = true;
-#elif USE_EMIT_INVOKE
-            // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
-            _invoked = true;
-#endif
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe object? InterpretedInvoke(object? obj, Span<object?> args, BindingFlags invokeAttr)
+        private unsafe MethodInvoker(DynamicMethod method) : this(method.GetRuntimeMethodInfo(), method.ArgumentTypes)
         {
-            Exception? exc;
-            object? o;
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            // No _invocationFlags for DynamicMethod.
+        }
 
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                try
-                {
-                    o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-            }
+        private unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
+        {
+            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
+            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
+        }
+
+        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr *args)
+        {
+            object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out Exception? exc);
 
             if (exc != null)
                 throw exc;
 
             return o;
+        }
+
+        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr *args)
+        {
+            object? o = ((RuntimeConstructorInfo)_method).InternalInvoke(obj, args, out Exception? exc);
+
+            if (exc != null)
+                throw exc;
+
+            return obj == null ? o : null;
         }
     }
 }

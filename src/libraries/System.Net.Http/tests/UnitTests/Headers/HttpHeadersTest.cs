@@ -443,8 +443,17 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void Add_SingleUseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Add(headerName, "value"); });
+        }
+
+        [Theory]
         [InlineData("")]
-        public void Add_SingleUseEmptyHeaderName_Throw(string headerName)
+        [InlineData(" \t\r\n ")]
+        public void Add_SingleUseWhiteSpaceHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1064,8 +1073,17 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void Remove_UseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Remove(headerName); });
+        }
+
+        [Theory]
         [InlineData("")]
-        public void Remove_UseEmptyHeaderName_Throw(string headerName)
+        [InlineData(" \t\r\n ")]
+        public void Remove_UseWhiteSpaceHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1211,8 +1229,17 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void GetValues_UseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.GetValues(headerName); });
+        }
+
+        [Theory]
         [InlineData("")]
-        public void GetValues_UseEmptyHeaderName_Throw(string headerName)
+        [InlineData(" \t\r\n ")]
+        public void GetValues_UseWhiteSpaceHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1576,7 +1603,16 @@ namespace System.Net.Http.Tests
 
         [Theory]
         [InlineData(null)]
+        public void Contains_UseNullHeaderName_Throw(string headerName)
+        {
+            MockHeaders headers = new MockHeaders();
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Contains(headerName); });
+        }
+
+        [Theory]
         [InlineData("")]
+        [InlineData(" \t\r\n ")]
         public void Contains_UseEmptyHeaderName_Throw(string headerName)
         {
             MockHeaders headers = new MockHeaders();

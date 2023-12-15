@@ -962,7 +962,7 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
                     return;
                 }
 
-                pModule = pMethod->GetModule_NoLogging();
+                pModule = pMethod->GetModule();
             }
         }
 
@@ -1374,8 +1374,6 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
 
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MulticoreJitTrace(("StaticJITThreadProc starting"));
 
     // Mark the background thread via an ETW event for diagnostics.
@@ -1410,8 +1408,6 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
     }
 
     MulticoreJitTrace(("StaticJITThreadProc endding(%x)", hr));
-
-    END_ENTRYPOINT_NOTHROW;
 
     return (DWORD) hr;
 }

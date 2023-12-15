@@ -1708,7 +1708,7 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     // If this is a new object operation, then we should have a .ctor.
     if ((pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) && !pDE->m_md->IsCtor())
     {
-        COMPlusThrow(kArgumentException, W("Argument_MissingDefaultConstructor"));
+        COMPlusThrow(kArgumentException, W("Arg_NoDefCTorWithoutTypeName"));
     }
 
     pDE->m_md->EnsureActive();
@@ -3300,8 +3300,9 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     {
         ThrowHR(COR_E_OVERFLOW);
     }
-    FuncEvalArgInfo * pFEArgInfo = (FuncEvalArgInfo *)_alloca(cbAllocSize);
-    *pFEArgInfo = {};
+    void* memArgInfoArray = _alloca(cbAllocSize);
+    memset(memArgInfoArray, 0, cbAllocSize);
+    FuncEvalArgInfo* pFEArgInfo = (FuncEvalArgInfo*)memArgInfoArray;
 
     GatherFuncEvalArgInfo(pDE, mSig, argData, pFEArgInfo);
 
@@ -3482,8 +3483,9 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     {
         ThrowHR(COR_E_OVERFLOW);
     }
-    OBJECTREF * pObjectRefArray = (OBJECTREF*)_alloca(cbAllocSize);
-    *pObjectRefArray = {};
+    void* memObjRefArray = _alloca(cbAllocSize);
+    memset(memObjRefArray, 0, cbAllocSize);
+    OBJECTREF* pObjectRefArray = (OBJECTREF*)memObjRefArray ;
     GCPROTECT_ARRAY_BEGIN(*pObjectRefArray, pDE->m_argCount);
 
     //

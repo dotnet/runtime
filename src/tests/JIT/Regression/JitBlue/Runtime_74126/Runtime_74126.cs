@@ -5,10 +5,12 @@ using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_74126
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (GetVtor(GetVtor2()) != GetVtor2())
         {

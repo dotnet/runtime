@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
         public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, XmlDictionaryString[]? memberNames)
         {
             InvokeOnSerializing(obj, context, classContract);
-            obj = ResolveAdapterType(obj, classContract);
+            obj = ResolveAdapterType(obj);
             if (classContract.IsISerializable)
             {
                 context.WriteISerializable(xmlWriter, (ISerializable)obj);
@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        protected static bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object? value, XmlDictionaryString name, XmlDictionaryString? ns, PrimitiveDataContract? primitiveContract)
+        protected static bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, object? value, XmlDictionaryString name, XmlDictionaryString? ns, PrimitiveDataContract? primitiveContract)
         {
             if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
                 return false;
@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        private void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
+        private static void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnSerializing(obj, context, classContract.BaseClassContract);
@@ -138,7 +138,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
+        private static void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnSerialized(obj, context, classContract.BaseClassContract);
@@ -149,7 +149,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static object ResolveAdapterType(object obj, ClassDataContract classContract)
+        private static object ResolveAdapterType(object obj)
         {
             Type type = obj.GetType();
             if (type == Globals.TypeOfDateTimeOffset)

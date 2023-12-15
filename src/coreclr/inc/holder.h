@@ -946,7 +946,7 @@ FORCEINLINE void StubRelease(TYPE* value)
     if (value)
     {
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
         LOGGER::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
 #else
         LOGGER::LogUsage(__FILE__, __LINE__, __FUNCTION__);
@@ -1144,14 +1144,6 @@ typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidFindClose, (UINT_PTR) -1> FindHan
 
 typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 
-#ifdef WszDeleteFile
-// Deletes a file with the specified path.  Do not use if you care about failures
-// deleting the file, as failures are ignored by VoidDeleteFile.
-FORCEINLINE void VoidDeleteFile(LPCWSTR wszFilePath) { WszDeleteFile(wszFilePath); }
-typedef Wrapper<LPCWSTR, DoNothing<LPCWSTR>, VoidDeleteFile, NULL> DeleteFileHolder;
-#endif // WszDeleteFile
-
-
 //-----------------------------------------------------------------------------
 // Misc holders
 //-----------------------------------------------------------------------------
@@ -1195,13 +1187,24 @@ FORCEINLINE void RegKeyRelease(HKEY k) {RegCloseKey(k);};
 typedef Wrapper<HKEY,DoNothing,RegKeyRelease> RegKeyHolder;
 #endif // HOST_WINDOWS
 
-class ErrorModeHolder
+class ErrorModeHolder final
 {
-    UINT m_oldMode;
+#ifdef HOST_WINDOWS
+    BOOL m_revert;
+    DWORD m_oldMode;
 public:
-    ErrorModeHolder(UINT newMode){m_oldMode=SetErrorMode(newMode);};
-    ~ErrorModeHolder(){SetErrorMode(m_oldMode);};
-    UINT OldMode() {return m_oldMode;};
+    ErrorModeHolder()
+        : m_revert{ FALSE }
+    {
+        DWORD newMode = SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS;
+        m_revert = ::SetThreadErrorMode(newMode, &m_oldMode);
+    }
+    ~ErrorModeHolder() noexcept
+    {
+        if (m_revert != FALSE)
+            (void)::SetThreadErrorMode(m_oldMode, NULL);
+    }
+#endif // HOST_WINDOWS
 };
 
 #ifdef HOST_WINDOWS

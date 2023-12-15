@@ -55,15 +55,7 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifndef TARGET_UNIX
-// Windows uses 64kB as the null-reference area
-#define NULL_AREA_SIZE   (64 * 1024)
-#else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
-#endif // !TARGET_UNIX
-
-
-BOOL IsIPInEE(void *ip);
+#include "exinfo.h"
 
 //----------------------------------------------------------------------------
 //
@@ -2882,6 +2874,22 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
+#ifdef USE_CHECKED_OBJECTREFS
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+    RealCOMPlusThrow(throwable, FALSE);
+}
+#endif // USE_CHECKED_OBJECTREFS
+
 // this function finds the managed callback to get a resource
 // string from the then current local domain and calls it
 // this could be a lot of work
@@ -3051,8 +3059,10 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
+#ifdef FEATURE_COMINTEROP
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
+#endif // FEATURE_COMINTEROP
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
@@ -3364,7 +3374,11 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
         // following.
-        if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && pStackTraceElem->ip != 0)
+        if (pCf->IsIPadjusted())
+        {
+            pStackTraceElem->flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && pStackTraceElem->ip != 0)
         {
             pStackTraceElem->ip -= 1;
             pStackTraceElem->flags |= STEF_IP_ADJUSTED;
@@ -4040,11 +4054,12 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendASCII(DumpGeneratorName);
+    commandLine.AppendUTF8(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
-        commandLine.AppendPrintf(" --name %S", dumpName);
+        commandLine.AppendUTF8(" --name ");
+        commandLine.Append(dumpName);
     }
 
     const char* dumpTypeOption = nullptr;
@@ -5077,7 +5092,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
     GetExceptionMessage(throwable, result);
     UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
-    return result;
+    return SString{ result };
 }
 
 void STDMETHODCALLTYPE
@@ -5102,7 +5117,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
         if (!message.IsEmpty())
         {
-            NPrintToStdErrW(message, message.GetCount());
+            PrintToStdErrW(message);
         }
 
         PrintToStdErrA("\n");
@@ -5763,6 +5778,7 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
         case COR_E_BADIMAGEFORMAT:
         case COR_E_NEWER_RUNTIME:
         case COR_E_ASSEMBLYEXPECTED:
+        case CLR_E_BIND_ARCHITECTURE_MISMATCH:
             bNoGeekStuff = TRUE;
             break;
     }
@@ -6033,7 +6049,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
             ThreadPreventAsyncHolder preventAsync;
             ResetProcessorStateHolder procState;
 
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
             GCPROTECT_BEGIN(result)
 
@@ -6048,7 +6064,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
 
             GCPROTECT_END();
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
         EX_CATCH
         {
@@ -6171,8 +6187,7 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
             GCStress<cfg_instr>::IsEnabled() &&
             pExceptionRecord->ExceptionInformation[0] == 0 &&
             pExceptionRecord->ExceptionInformation[1] == ~0 &&
-            pThread->GetLastAVAddress() != (LPVOID)GetIP(pContext) &&
-            !IsIPInEE((LPVOID)GetIP(pContext)))
+            pThread->GetLastAVAddress() != (LPVOID)GetIP(pContext))
         {
             pThread->SetLastAVAddress((LPVOID)GetIP(pContext));
             return true;
@@ -6281,9 +6296,9 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 EXTERN_C void JIT_StackProbe_End();
-#endif // TARGET_ARM64
+#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifdef FEATURE_EH_FUNCLETS
 
@@ -6315,14 +6330,13 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk, FALSE /* usePredictStubKind */);
+    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         return TRUE;
     }
-    else if (sk == VirtualCallStubManager::SK_RESOLVE)
+    else if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         return TRUE;
     }
@@ -6348,9 +6362,9 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
-#endif // !TARGET_ARM64
+#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
 #ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
@@ -6472,7 +6486,7 @@ AdjustContextForJITHelpers(
 
         Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // We had an AV in the writebarrier that needs to be treated
         // as originating in managed code. At this point, the stack (growing
         // from left->right) looks like this:
@@ -6496,7 +6510,7 @@ AdjustContextForJITHelpers(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -6549,6 +6563,48 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     }
 
     return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+{
+    WRAPPER_NO_CONTRACT;
+
+    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+    FaultingExceptionFrame *frame = &frameWithCookie;
+#if defined(FEATURE_EH_FUNCLETS)
+    *frame->GetGSCookiePtr() = GetProcessGSCookie();
+#endif // FEATURE_EH_FUNCLETS
+    pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    frame->InitAndLink(pContext);
+
+    CONTEXT ctx = {};
+    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    REGDISPLAY rd;
+    Thread *pThread = GetThread();
+
+    ExInfo exInfo(pThread, &ctx, &rd, ExKind::HardwareFault);
+
+    DWORD exceptionCode = pExceptionRecord->ExceptionCode;
+    if (exceptionCode == STATUS_ACCESS_VIOLATION)
+    {
+        if (pExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
+        {
+            exceptionCode = 0; //STATUS_REDHAWK_NULL_REFERENCE;
+        }
+    }
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
+
+    //Ex.RhThrowHwEx(exceptionCode, &exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+
+    GCPROTECT_END();
 }
 
 void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
@@ -6820,6 +6876,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         //
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            EEPolicy::HandleStackOverflow();
+        }
+#endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
 
@@ -7143,13 +7205,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 }
 
 #endif // !TARGET_UNIX
-
-BOOL IsIPInEE(void *ip)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return FALSE;
-}
 
 #if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))
 
@@ -7506,22 +7561,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         }
     }
 
-
-    // Also check if the exception was in the EE or not
-    BOOL fExceptionInEE = FALSE;
-    if (!pThread)
-    {
-        // Check if the exception was in EE only if Thread object isnt available.
-        // This will save us from unnecessary checks
-        fExceptionInEE = IsIPInEE(pExceptionInfo->ExceptionRecord->ExceptionAddress);
-    }
-
     // We are going to process the exception only if one of the following conditions is true:
     //
     // 1) We have a valid Thread object (implies exception on managed thread)
-    // 2) Not a valid Thread object but the IP is in the execution engine (implies native thread within EE faulted)
     // 3) The exception occurred in a GC marked location when no thread exists (i.e. reverse P/Invoke with UnmanagedCallersOnlyAttribute).
-    if (pThread || fExceptionInEE)
+    if (pThread)
     {
         if (!bIsGCMarker)
         {
@@ -7533,7 +7577,14 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                if (g_isNewExceptionHandlingEnabled)
+                {
+                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                }
+                else
+                {
+                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                }
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7587,34 +7638,25 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 // If Frame chain is corrupted, we may get AV while accessing frames, and this function will be
                 // called recursively.  We use Frame chain to limit our search range.  It is not disaster if we
                 // can not use it.
-                if (!(dwCode == STATUS_ACCESS_VIOLATION &&
-                      IsIPInEE(pExceptionInfo->ExceptionRecord->ExceptionAddress)))
+                // Find the stop point (most jitted function)
+                Frame* pFrame = pThread->GetFrame();
+                for(;;)
                 {
-                    // Find the stop point (most jitted function)
-                    Frame* pFrame = pThread->GetFrame();
-                    for(;;)
-                    {
-                        // skip GC frames
-                        if (pFrame == 0 || pFrame == (Frame*) -1)
-                            break;
+                    // skip GC frames
+                    if (pFrame == 0 || pFrame == (Frame*) -1)
+                        break;
 
-                        Frame::ETransitionType type = pFrame->GetTransitionType();
-                        if (type == Frame::TT_M2U || type == Frame::TT_InternalCall)
-                        {
-                            stopPoint = pFrame;
-                            break;
-                        }
-                        pFrame = pFrame->Next();
+                    Frame::ETransitionType type = pFrame->GetTransitionType();
+                    if (type == Frame::TT_M2U || type == Frame::TT_InternalCall)
+                    {
+                        stopPoint = pFrame;
+                        break;
                     }
+                    pFrame = pFrame->Next();
                 }
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRVectoredExceptionHandlerShim: stack");
                 while (count < 20 && sp < stopPoint)
                 {
-                    if (IsIPInEE((BYTE*)*sp))
-                    {
-                        STRESS_LOG1(LF_EH, LL_INFO100, "%pK\n", *sp);
-                        count ++;
-                    }
                     sp += 1;
                 }
             }
@@ -7732,7 +7774,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
 //
-VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException)
+VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -7748,7 +7790,16 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 
     Exception::Delete(pException);
 
-    RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    {
+        DispatchManagedException(orThrowable);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+    }
 }
 
 thread_local DWORD t_dwCurrentExceptionCode;
@@ -9319,8 +9370,17 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     // being thrown, then get them.
     ThreadExceptionState *pExState = pThread->GetExceptionState();
 
+#ifdef FEATURE_EH_FUNCLETS
     // Ensure that the exception tracker exists
-    _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        _ASSERTE(pExState->GetCurrentExInfo() != NULL);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
+    }
 
     // Switch to COOP mode
     GCX_COOP();
@@ -9344,7 +9404,18 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     BOOL fIsPreallocatedException = CLRException::IsPreallocatedExceptionObject(gc.oCurrentThrowable);
 
     // Get the WatsonBucketTracker for the current exception
-    PTR_EHWatsonBucketTracker pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
+    PTR_EHWatsonBucketTracker pWatsonBucketTracker;
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        pWatsonBucketTracker = pExState->GetCurrentExInfo()->GetWatsonBucketTracker();
+
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
+    }
 
     // Get the innermost exception object (if any)
     gc.oInnerMostExceptionThrowable = ((EXCEPTIONREF)gc.oCurrentThrowable)->GetBaseException();
@@ -11052,7 +11123,7 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
     }
-    msgStr += resStr;
+    msgStr.Append(resStr);
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
@@ -11060,19 +11131,19 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
         if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
             SString suffixMsgStr;
-            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, imageName);
-            msgStr.AppendASCII(" ");
-            msgStr += suffixMsgStr;
+            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SString{ SString::Literal, imageName });
+            msgStr.Append(W(" "));
+            msgStr.Append(suffixMsgStr);
         }
     }
 
 #ifdef _DEBUG
     if (0 != strcmp(cond, "FALSE"))
     {
-        msgStr += W(" (Failed condition: "); // this is in DEBUG only - not going to localize it.
+        msgStr.Append(W(" (Failed condition: ")); // this is in DEBUG only - not going to localize it.
         SString condStr(SString::Ascii, cond);
-        msgStr += condStr;
-        msgStr += W(")");
+        msgStr.Append(condStr);
+        msgStr.Append(W(")"));
     }
 #endif
     ThrowHR(COR_E_BADIMAGEFORMAT, msgStr);
@@ -11317,6 +11388,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
 }
 
 
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 {
     CONTRACTL
@@ -11336,6 +11408,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
 }
+#endif // FEATURE_COMINTEROP
 
 
 
@@ -11639,7 +11712,8 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
-    if (pPEAssembly->GetPath().IsEmpty())
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    if (assemblyPath.IsEmpty())
     {
         detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
                                    sType.GetUTF8(),
@@ -11652,7 +11726,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
                                    sType.GetUTF8(),
                                    sAssemblyDisplayName.GetUTF8(),
                                    sAlcName.GetUTF8(),
-                                   pPEAssembly->GetPath().GetUTF8());
+                                   assemblyPath.GetUTF8());
     }
 
     sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());

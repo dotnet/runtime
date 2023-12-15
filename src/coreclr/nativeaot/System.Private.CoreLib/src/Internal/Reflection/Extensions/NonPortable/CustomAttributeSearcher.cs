@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 
 //==================================================================================================================
 // Dependency note:
@@ -33,14 +33,12 @@ namespace Internal.Reflection.Extensions.NonPortable
         {
             // Do all parameter validation here before we enter the iterator function (so that exceptions from validations
             // show up immediately rather than on the first MoveNext()).
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
+            ArgumentNullException.ThrowIfNull(element);
 
             bool typeFilterKnownToBeSealed = false;
             if (!skipTypeValidation)
             {
-                if (optionalAttributeTypeFilter == null)
-                    throw new ArgumentNullException("type");
+                ArgumentNullException.ThrowIfNull(optionalAttributeTypeFilter, "type");
                 if (!(optionalAttributeTypeFilter == typeof(Attribute) ||
                       optionalAttributeTypeFilter.IsSubclassOf(typeof(Attribute))))
                     throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);

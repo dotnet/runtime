@@ -73,7 +73,9 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="info"></param>
         ''' <param name="context"></param>
         ''' <remarks></remarks>
-        <EditorBrowsable(EditorBrowsableState.Advanced)>
+        ' [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        <Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId:="SYSLIB0051", UrlFormat:="https://aka.ms/dotnet-warnings/{0}")>
+        <EditorBrowsable(EditorBrowsableState.Never)>
         Protected Sub New(ByVal info As System.Runtime.Serialization.SerializationInfo, ByVal context As System.Runtime.Serialization.StreamingContext)
             MyBase.New(info, context)
 
@@ -105,7 +107,9 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="info"></param>
         ''' <param name="context"></param>
         ''' <remarks></remarks>
-        <EditorBrowsable(EditorBrowsableState.Advanced)>
+        ' [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        <Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId:="SYSLIB0051", UrlFormat:="https://aka.ms/dotnet-warnings/{0}")>
+        <EditorBrowsable(EditorBrowsableState.Never)>
         Public Overrides Sub GetObjectData(ByVal info As System.Runtime.Serialization.SerializationInfo, ByVal context As System.Runtime.Serialization.StreamingContext)
             If info IsNot Nothing Then ' Fix FxCop violation ValidateArgumentsOfPublicMethods.
                 info.AddValue(LINE_NUMBER_PROPERTY, m_LineNumber, GetType(Long))

@@ -28,116 +28,24 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-// array is GC protected by caller
-void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
-                           MethodTable* pArrayMT,
-                           MethodTable* pElemMT)
+extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd)
 {
-    STATIC_CONTRACT_MODE_COOPERATIVE;
+    QCALL_CONTRACT;
 
-    // Ensure that the array element type is fully loaded before executing its code
+    PCODE ctorEntrypoint = NULL;
+
+    BEGIN_QCALL;
+
+    TypeHandle th = pArrayTypeHnd.AsTypeHandle();
+    MethodTable* pElemMT = th.GetArrayElementTypeHandle().AsMethodTable();
+    ctorEntrypoint = pElemMT->GetDefaultConstructor()->GetMultiCallableAddrOfCode();
+
     pElemMT->EnsureInstanceActive();
 
-    //can not use contract here because of SEH
-    _ASSERTE(IsProtectedByGCFrame (arrayRef));
+    END_QCALL;
 
-    SIZE_T offset = ArrayBase::GetDataPtrOffset(pArrayMT);
-    SIZE_T size = pArrayMT->GetComponentSize();
-    SIZE_T cElements = (*arrayRef)->GetNumComponents();
-
-    MethodTable * pCanonMT = pElemMT->GetCanonicalMethodTable();
-    WORD slot = pCanonMT->GetDefaultConstructorSlot();
-
-    PCODE ctorFtn = pCanonMT->GetSlot(slot);
-
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
-    BEGIN_CALL_TO_MANAGED();
-
-
-    for (SIZE_T i = 0; i < cElements; i++)
-    {
-        // Since GetSlot() is not idempotent and may have returned
-        // a non-optimal entry-point the first time round.
-        if (i == 1)
-        {
-            ctorFtn = pCanonMT->GetSlot(slot);
-        }
-
-        BYTE* thisPtr = (((BYTE*) OBJECTREFToObject (*arrayRef)) + offset);
-
-#ifdef _DEBUG
-        __asm {
-            mov ECX, thisPtr
-            mov EDX, pElemMT // Instantiation argument if the type is generic
-            call    [ctorFtn]
-            nop                // Mark the fact that we can call managed code
-        }
-#else // _DEBUG
-        typedef void (__fastcall * CtorFtnType)(BYTE*, BYTE*);
-        (*(CtorFtnType)ctorFtn)(thisPtr, (BYTE*)pElemMT);
-#endif // _DEBUG
-
-        offset += size;
-    }
-
-    END_CALL_TO_MANAGED();
-#else // TARGET_X86 && !TARGET_UNIX
-    //
-    // This is quite a bit slower, but it is portable.
-    //
-
-    for (SIZE_T i =0; i < cElements; i++)
-    {
-        // Since GetSlot() is not idempotent and may have returned
-        // a non-optimal entry-point the first time round.
-        if (i == 1)
-        {
-            ctorFtn = pCanonMT->GetSlot(slot);
-        }
-
-        BYTE* thisPtr = (((BYTE*) OBJECTREFToObject (*arrayRef)) + offset);
-
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(ctorFtn);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(thisPtr);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(pElemMT); // Instantiation argument if the type is generic
-        CALL_MANAGED_METHOD_NORET(args);
-
-        offset += size;
-    }
-#endif // !TARGET_X86 || TARGET_UNIX
+    return ctorEntrypoint;
 }
-
-
-FCIMPL1(void, ArrayNative::Initialize, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    if (array == NULL)
-    {
-        FCThrowVoid(kNullReferenceException);
-    }
-
-
-    MethodTable* pArrayMT = array->GetMethodTable();
-
-    TypeHandle thElem = pArrayMT->GetArrayElementTypeHandle();
-    if (thElem.IsTypeDesc())
-        return;
-
-    MethodTable * pElemMT = thElem.AsMethodTable();
-    if (!pElemMT->HasDefaultConstructor() || !pElemMT->IsValueType())
-        return;
-
-    ARRAYBASEREF arrayRef (array);
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
-
-    ArrayInitializeWorker(&arrayRef, pArrayMT, pElemMT);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 
     // Returns whether you can directly copy an array of srcType into destType.
 FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst)
@@ -812,14 +720,8 @@ FCIMPLEND
 
 
 // Check we're allowed to create an array with the given element type.
-void ArrayNative::CheckElementType(TypeHandle elementType)
+static void CheckElementType(TypeHandle elementType)
 {
-    // Checks apply recursively for arrays of arrays etc.
-    while (elementType.IsArray())
-    {
-        elementType = elementType.GetArrayElementTypeHandle();
-    }
-
     // Check for simple types first.
     if (!elementType.IsTypeDesc())
     {
@@ -830,7 +732,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLikeArray"));
 
         // Check for open generic types.
-        if (pMT->IsGenericTypeDefinition() || pMT->ContainsGenericVariables())
+        if (pMT->ContainsGenericVariables())
             COMPlusThrow(kNotSupportedException, W("NotSupported_OpenType"));
 
         // Check for Void.
@@ -845,63 +747,68 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
     }
 }
 
-FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pLowerBounds)
+void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
 {
     CONTRACTL {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(rank > 0);
         PRECONDITION(CheckPointer(pLengths));
         PRECONDITION(CheckPointer(pLowerBounds, NULL_OK));
     } CONTRACTL_END;
 
-    OBJECTREF pRet = NULL;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF pElementType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pElementTypeUNSAFE);
+    TypeHandle typeHnd = pTypeHnd.AsTypeHandle();
 
-    // pLengths and pLowerBounds are pinned buffers. No need to protect them.
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(pElementType);
-
-    TypeHandle elementType(pElementType->GetType());
-
-    CheckElementType(elementType);
-
-    CorElementType CorType = elementType.GetSignatureCorElementType();
-
-    CorElementType kind = ELEMENT_TYPE_ARRAY;
-
-    // Is it ELEMENT_TYPE_SZARRAY array?
-    if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0)
-#ifdef FEATURE_64BIT_ALIGNMENT
-        // On platforms where 64-bit types require 64-bit alignment and don't obtain it naturally force us
-        // through the slow path where this will be handled.
-        && (CorType != ELEMENT_TYPE_I8)
-        && (CorType != ELEMENT_TYPE_U8)
-        && (CorType != ELEMENT_TYPE_R8)
-#endif
-        )
+    if (createFromArrayType)
     {
-        // Shortcut for common cases
-        if (CorTypeInfo::IsPrimitiveType(CorType))
+        _ASSERTE((INT32)typeHnd.GetRank() == rank);
+        _ASSERTE(typeHnd.IsArray());
+
+        if (typeHnd.GetArrayElementTypeHandle().ContainsGenericVariables())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_OpenType"));
+
+        if (!typeHnd.AsMethodTable()->IsMultiDimArray())
         {
-            pRet = AllocatePrimitiveArray(CorType,pLengths[0]);
+            _ASSERTE(pLowerBounds == NULL || pLowerBounds[0] == 0);
+
+            GCX_COOP();
+            retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
             goto Done;
         }
-        else
-        if (CorTypeInfo::IsObjRef(CorType))
+    }
+    else
+    {
+        CheckElementType(typeHnd);
+
+        // Is it ELEMENT_TYPE_SZARRAY array?
+        if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0))
         {
-            pRet = AllocateObjectArray(pLengths[0],elementType);
-            goto Done;
+            CorElementType corType = typeHnd.GetSignatureCorElementType();
+
+            // Shortcut for common cases
+            if (CorTypeInfo::IsPrimitiveType(corType))
+            {
+                GCX_COOP();
+                retArray.Set(AllocatePrimitiveArray(corType, pLengths[0]));
+                goto Done;
+            }
+
+            typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd);
+
+            {
+                GCX_COOP();
+                retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
+                goto Done;
+            }
         }
 
-        kind = ELEMENT_TYPE_SZARRAY;
-        pLowerBounds = NULL;
+        // Find the Array class...
+        typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd, ELEMENT_TYPE_ARRAY, rank);
     }
 
     {
-        // Find the Array class...
-        TypeHandle typeHnd = ClassLoader::LoadArrayTypeThrowing(elementType, kind, rank);
-
-        _ASSERTE(rank < MAX_RANK); // Ensures that the stack buffer size allocations below won't overlow
+        _ASSERTE(rank <= MAX_RANK); // Ensures that the stack buffer size allocations below won't overflow
 
         DWORD boundsSize = 0;
         INT32* bounds;
@@ -926,15 +833,15 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
                 bounds[i] = pLengths[i];
         }
 
-        pRet = AllocateArrayEx(typeHnd, bounds, boundsSize);
+        {
+            GCX_COOP();
+            retArray.Set(AllocateArrayEx(typeHnd, bounds, boundsSize));
+        }
     }
 
 Done: ;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {

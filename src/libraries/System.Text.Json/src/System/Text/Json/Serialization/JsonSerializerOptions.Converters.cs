@@ -20,7 +20,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
-        public IList<JsonConverter> Converters => _converters;
+        public IList<JsonConverter> Converters => _converters ??= new(this);
 
         /// <summary>
         /// Returns the converter for the specified type.
@@ -45,11 +45,14 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
             }
 
-            if (_typeInfoResolver is null)
+            if (JsonSerializer.IsReflectionEnabledByDefault)
             {
                 // Backward compatibility -- root & query the default reflection converters
                 // but do not populate the TypeInfoResolver setting.
-                return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
+                if (_typeInfoResolver is null)
+                {
+                    return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
+                }
             }
 
             return GetConverterInternal(typeToConvert);
@@ -66,11 +69,14 @@ namespace System.Text.Json
 
         internal JsonConverter? GetConverterFromList(Type typeToConvert)
         {
-            foreach (JsonConverter item in _converters)
+            if (_converters is { } converterList)
             {
-                if (item.CanConvert(typeToConvert))
+                foreach (JsonConverter item in converterList)
                 {
-                    return item;
+                    if (item.CanConvert(typeToConvert))
+                    {
+                        return item;
+                    }
                 }
             }
 
@@ -99,7 +105,7 @@ namespace System.Text.Json
             // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
             // which would cause an InvalidProgramException when the generated IL is invoked.
             if (propertyType.IsValueType && converter.IsValueType &&
-                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
+                (propertyType.IsNullableOfT() ^ converter.Type!.IsNullableOfT()))
             {
                 ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
             }

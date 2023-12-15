@@ -52,7 +52,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
         public static unsafe partial int EnumerateGatewayAddressesForInterface(void* context, uint interfaceIndex, delegate* unmanaged<void*, IpAddressInfo*, void> onGatewayFound);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces", SetLastError = true)]
         public static unsafe partial int GetNetworkInterfaces(int* count, NetworkInterfaceInfo** addrs, int* addressCount, IpAddressInfo** aa);
 
     }

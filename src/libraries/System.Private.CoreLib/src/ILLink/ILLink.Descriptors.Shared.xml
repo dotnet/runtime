@@ -15,6 +15,8 @@
     is enabled and only then we show the trimming warnings about possibly missing dependencies.
     -->
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <method name="LoadAssembly" />
+      <method name="LoadAssemblyBytes" />
       <method name="LoadAssemblyAndGetFunctionPointer" />
     </type>
   </assembly>

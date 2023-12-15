@@ -526,7 +526,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     locals.localsName = new NewArrayHolder<char>[locals.size];
     locals.localsScope = new LocalsInfo::Scope [locals.size];
 
-    for (ULONG32 i = 0; i < locals.size; i++)
+    for (int i = 0; i < locals.size; i++)
     {
         size_t sizeRequired = WideCharToMultiByte(CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, NULL, 0, NULL, NULL);
         locals.localsName[i] = new char[sizeRequired];
@@ -553,11 +553,11 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
         s.source = map[j].source;
         s.lineNumber = 0;
 
-        for (ULONG32 i = 0; i < methodDebugInfo.size; i++)
+        for (int i = 0; i < methodDebugInfo.size; i++)
         {
             const SequencePointInfo& sp = methodDebugInfo.points[i];
 
-            if (methodDebugInfo.points[i].ilOffset == map[j].ilOffset)
+            if ((ULONG)(methodDebugInfo.points[i].ilOffset) == map[j].ilOffset)
             {
                 s.fileIndex = 0;
                 int len = WideCharToMultiByte(CP_UTF8, 0, sp.fileName, -1, s.fileName, sizeof(s.fileName), NULL, NULL);
@@ -1333,7 +1333,7 @@ bool FunctionMember::GetBlockInNativeCode(int blockILOffset, int blockILLen, TAD
 
     bool inBlock = false;
 
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         TADDR nativeOffset = lines[i].nativeOffset + pCode;
 
@@ -1387,20 +1387,21 @@ void FunctionMember::DumpTryCatchBlock(char* ptr, int& offset, int ilOffset, int
     TADDR startOffset;
     TADDR endOffset;
 
-    if (!GetBlockInNativeCode(ilOffset, ilLen, &startOffset, &endOffset))
-        return;
-
-    if (ptr != nullptr)
+    if (GetBlockInNativeCode(ilOffset, ilLen, &startOffset, &endOffset))
     {
-        DebugInfoTryCatchSub subEntry;
+        if (ptr != nullptr)
+        {
+            DebugInfoTryCatchSub subEntry;
 
-        subEntry.m_sub_abbrev = abbrev;
-        subEntry.m_sub_low_pc = md->GetNativeCode() + startOffset;
-        subEntry.m_sub_high_pc = endOffset - startOffset;
+            subEntry.m_sub_abbrev = abbrev;
+            subEntry.m_sub_low_pc = md->GetNativeCode() + startOffset;
+            subEntry.m_sub_high_pc = endOffset - startOffset;
 
-        memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+            memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+        }
+
+        offset += sizeof(DebugInfoTryCatchSub);
     }
-    offset += sizeof(DebugInfoTryCatchSub);
 }
 
 void FunctionMember::DumpTryCatchDebugInfo(char* ptr, int& offset)
@@ -1693,7 +1694,7 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         {
             DebugInfoInheritance buf;
             buf.m_abbrev = 18;
-            if (RefTypeInfo *m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+            if (RefTypeInfo *m_p = (RefTypeInfo*)(m_parent))
                 buf.m_type = m_p->m_value_type->m_type_offset;
             else
                 buf.m_type = m_parent->m_type_offset;
@@ -1827,27 +1828,27 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     BOOL isUserDebug = FALSE;
 
     NewArrayHolder<WCHAR> wszModuleName = new WCHAR[g_cBytesNeeded];
-    LPWSTR pComma = wcsstr(g_wszModuleNames, W(","));
+    LPWSTR pComma = (LPWSTR)u16_strchr(g_wszModuleNames, W(','));
     LPWSTR tmp = g_wszModuleNames;
 
     while (pComma != NULL)
     {
-        wcsncpy(wszModuleName, tmp, pComma - tmp);
+        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, pComma - tmp);
         wszModuleName[pComma - tmp] = W('\0');
 
-        if (wcscmp(wszModuleName, wszModuleFile) == 0)
+        if (u16_strcmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;
             break;
         }
         tmp = pComma + 1;
-        pComma = wcsstr(tmp, W(","));
+        pComma = (LPWSTR)u16_strchr(tmp, W(','));
     }
     if (isUserDebug == FALSE)
     {
-        wcsncpy(wszModuleName, tmp, wcslen(tmp));
-        wszModuleName[wcslen(tmp)] = W('\0');
-        if (wcscmp(wszModuleName, wszModuleFile) == 0)
+        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, u16_strlen(tmp));
+        wszModuleName[u16_strlen(tmp)] = W('\0');
+        if (u16_strcmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;
         }
@@ -2561,15 +2562,15 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 #endif
 
     // remove '.ni.dll' or '.ni.exe' suffix from wszModuleFile
-    LPWSTR pNIExt = const_cast<LPWSTR>(wcsstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
+    LPWSTR pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
     if (!pNIExt)
     {
-      pNIExt = const_cast<LPWSTR>(wcsstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
+      pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
     }
 
     if (pNIExt)
     {
-      wcscpy(pNIExt, W(".dll"));
+      u16_strcpy_s(pNIExt, u16_strlen(pNIExt) + 1, W(".dll"));
     }
 
     if (isListedModule(wszModuleFile))
@@ -3116,12 +3117,12 @@ public:
         unsigned totalSize = 0;
 
         // Compute buffer size
-        for (unsigned i = 0; i < m_dirs_count; ++i)
+        for (int i = 0; i < m_dirs_count; ++i)
             totalSize += strlen(m_dirs[i]) + 1;
         totalSize += 1;
 
         char cnv_buf[16];
-        for (unsigned i = 0; i < m_files_count; ++i)
+        for (int i = 0; i < m_files_count; ++i)
         {
             int len = Leb128Encode(static_cast<uint32_t>(m_files[i].dir), cnv_buf, sizeof(cnv_buf));
             totalSize += strlen(m_files[i].name) + 1 + len + 2;
@@ -3134,7 +3135,7 @@ public:
 
         char *ptr = buf.MemPtr;
 
-        for (unsigned i = 0; i < m_dirs_count; ++i)
+        for (int i = 0; i < m_dirs_count; ++i)
         {
             strcpy(ptr, m_dirs[i]);
             ptr += strlen(m_dirs[i]) + 1;
@@ -3142,7 +3143,7 @@ public:
         // final zero byte for directory table
         *ptr++ = 0;
 
-        for (unsigned i = 0; i < m_files_count; ++i)
+        for (int i = 0; i < m_files_count; ++i)
         {
             strcpy(ptr, m_files[i].name);
             ptr += strlen(m_files[i].name) + 1;
@@ -3223,7 +3224,7 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
 {
     // Fix EPILOGUE line mapping
     int prevLine = 0;
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         if (lines[i].lineNumber == HiddenLine)
             continue;
@@ -3255,12 +3256,12 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
             prevLine = lines[i].lineNumber;
     }
     // Skip HiddenLines
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         if (lines[i].lineNumber == HiddenLine)
         {
             lines[i].lineNumber = 0;
-            if (i + 1 < nlines && lines[i + 1].ilOffset == ICorDebugInfo::NO_MAPPING)
+            if ((unsigned)(i + 1) < nlines && lines[i + 1].ilOffset == ICorDebugInfo::NO_MAPPING)
                 lines[i + 1].lineNumber = 0;
         }
     }
@@ -3290,7 +3291,7 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
 
     int prevLine = 1, prevFile = 0;
 
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         /* different source file */
         if (lines[i].fileIndex != prevFile)
@@ -3326,7 +3327,7 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
     int lastAddr = nlines > 0 ? lines[nlines - 1].nativeOffset : 0;
 
     // Advance PC to the end of function
-    if (lastAddr < codeSize) {
+    if ((TADDR)lastAddr < codeSize) {
         int len = Leb128Encode(static_cast<uint32_t>(codeSize - lastAddr), cnv_buf, sizeof(cnv_buf));
         IssueParamCommand(ptr, DW_LNS_advance_pc, cnv_buf, len);
     }
@@ -3610,7 +3611,7 @@ const char * NotifyGdb::SplitFilename(const char* path)
     const char *pSlash = nullptr;
     for (const char *p = path; *p != '\0'; p++)
     {
-        if (*p == '/' || *p == '\\')
+        if (*p == DIRECTORY_SEPARATOR_CHAR_A)
             pSlash = p;
     }
 

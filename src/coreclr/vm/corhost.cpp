@@ -36,11 +36,13 @@
 #include "dwreport.h"
 #endif // !TARGET_UNIX
 
+#include "nativelibrary.h"
+
 #ifndef DACCESS_COMPILE
 
+#include <corehost/host_runtime_contract.h>
+
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
-extern void PrintToStdOutA(const char *pszString);
-extern void PrintToStdOutW(const WCHAR *pwzString);
 
 //***************************************************************************
 
@@ -64,8 +66,6 @@ STDMETHODIMP CorHost2::Start()
     }CONTRACTL_END;
 
     HRESULT hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // Ensure that only one thread at a time gets in here
     DangerousNonHostedSpinLockHolder lockHolder(&lockOnlyOneToInvokeStart);
@@ -116,7 +116,6 @@ STDMETHODIMP CorHost2::Start()
         }
     }
 
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 }
 
@@ -136,7 +135,6 @@ HRESULT CorHost2::Stop()
         return E_UNEXPECTED;
     }
     HRESULT hr=S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     // Is this host eligible to invoke the Stop method?
     if ((!m_fStarted) && (!m_fFirstToLoadCLR))
@@ -176,8 +174,6 @@ HRESULT CorHost2::Stop()
             }
         }
     }
-    END_ENTRYPOINT_NOTHROW;
-
 
     return hr;
 }
@@ -199,30 +195,15 @@ HRESULT CorHost2::GetCurrentAppDomainId(DWORD *pdwAppDomainId)
         return HOST_E_CLRNOTAVAILABLE;
     }
 
-    HRESULT hr = S_OK;
+    if (pdwAppDomainId == NULL)
+        return E_POINTER;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
+    Thread *pThread = GetThreadNULLOk();
+    if (!pThread)
+        return E_UNEXPECTED;
 
-    if(pdwAppDomainId == NULL)
-    {
-        hr = E_POINTER;
-    }
-    else
-    {
-        Thread *pThread = GetThreadNULLOk();
-        if (!pThread)
-        {
-            hr = E_UNEXPECTED;
-        }
-        else
-        {
-            *pdwAppDomainId = DefaultADID;
-        }
-    }
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
+    *pdwAppDomainId = DefaultADID;
+    return S_OK;
 }
 
 HRESULT CorHost2::ExecuteApplication(LPCWSTR   pwzAppFullName,
@@ -329,6 +310,15 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     _ASSERTE (!pThread->PreemptiveGCDisabled());
 
+    if (g_EntryAssemblyPath == NULL)
+    {
+        // Store the entry assembly path for diagnostic purposes (for example, dumps)
+        size_t len = u16_strlen(pwzAssemblyPath) + 1;
+        NewArrayHolder<WCHAR> path { new WCHAR[len] };
+        wcscpy_s(path, len, pwzAssemblyPath);
+        g_EntryAssemblyPath = path.Extract();
+    }
+
     Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
 #if defined(FEATURE_MULTICOREJIT)
@@ -403,8 +393,6 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
 
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
@@ -469,9 +457,6 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 
@@ -513,7 +498,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
 
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
@@ -524,7 +508,6 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
         hr=ExecuteInAppDomainHelper (pCallback, cookie);
     }
     END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 }
@@ -574,8 +557,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     if ((wszAppDomainManagerAssemblyName != NULL) || (wszAppDomainManagerTypeName != NULL))
         return E_INVALIDARG;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
 
     AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
@@ -610,33 +591,33 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     for (int i = 0; i < nProperties; i++)
     {
-        if (wcscmp(pPropertyNames[i], W("NATIVE_DLL_SEARCH_DIRECTORIES")) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
         {
             pwzNativeDllSearchDirectories = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("TRUSTED_PLATFORM_ASSEMBLIES")) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
         {
             pwzTrustedPlatformAssemblies = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("PLATFORM_RESOURCE_ROOTS")) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS)) == 0)
         {
             pwzPlatformResourceRoots = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("APP_PATHS")) == 0)
+        if (u16_strcmp(pPropertyNames[i], _T(HOST_PROPERTY_APP_PATHS)) == 0)
         {
             pwzAppPaths = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
+        if (u16_strcmp(pPropertyNames[i], W("DEFAULT_STACK_SIZE")) == 0)
         {
             extern void ParseDefaultStackSize(LPCWSTR value);
             ParseDefaultStackSize(pPropertyValues[i]);
         }
         else
-        if (wcscmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
+        if (u16_strcmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
         {
             extern void ParseUseEntryPointFilter(LPCWSTR value);
             ParseUseEntryPointFilter(pPropertyValues[i]);
@@ -658,13 +639,32 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
+#if defined(TARGET_UNIX)
+    if (!g_coreclr_embedded)
+    {
+        // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
+        // into the single file host, so we need to check only when this code is in libcoreclr.so.
+        // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
+        EX_TRY
+        {
+            NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
+        }
+        EX_HOOK
+        {
+            Exception *ex = GET_EXCEPTION();
+            SString err;
+            ex->GetMessage(err);
+            LogErrorToHost("Error message: %s", err.GetUTF8());
+        }
+        EX_END_HOOK;
+    }
+#endif // TARGET_UNIX
+
     *pAppDomainID=DefaultADID;
 
     m_fAppDomainCreated = TRUE;
 
     END_EXTERNAL_ENTRYPOINT;
-
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 }
@@ -707,8 +707,6 @@ HRESULT CorHost2::CreateDelegate(
     // This is currently supported in default domain only
     if (appDomainID != DefaultADID)
         return HOST_E_INVALIDOPERATION;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
@@ -757,8 +755,6 @@ HRESULT CorHost2::CreateDelegate(
     }
 
     END_EXTERNAL_ENTRYPOINT;
-
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 }
@@ -859,7 +855,6 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
     }
 
     HRESULT hr=S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     if (!m_fFirstToLoadCLR)
     {
@@ -885,7 +880,6 @@ STDMETHODIMP CorHost2::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDone, i
             hr = S_FALSE;
         }
     }
-    END_ENTRYPOINT_NOTHROW;
 
     if (pLatchedExitCode)
     {
@@ -977,18 +971,11 @@ HRESULT CorHost2::GetBucketParametersForCurrentException(BucketParameters *pPara
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // To avoid confusion, clear the buckets.
     memset(pParams, 0, sizeof(BucketParameters));
 
     // Defer to Watson helper.
-    hr = ::GetBucketParametersForCurrentException(pParams);
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
+    return ::GetBucketParametersForCurrentException(pParams);
 }
 #endif // !TARGET_UNIX
 

@@ -18,8 +18,8 @@ namespace System.Security.Cryptography
     /// </summary>
     internal static partial class CapiHelper
     {
-        private static ReadOnlySpan<byte> RgbPubKey => new byte[]
-        {
+        private static ReadOnlySpan<byte> RgbPubKey =>
+        [
                 0x06, 0x02, 0x00, 0x00, 0x00, 0xa4, 0x00, 0x00,
                 0x52, 0x53, 0x41, 0x31, 0x00, 0x02, 0x00, 0x00,
                 0x01, 0x00, 0x00, 0x00, 0xab, 0xef, 0xfa, 0xc6,
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
                 0x4c, 0x75, 0x35, 0x1c, 0xa0, 0x74, 0x49, 0xe3,
                 0x20, 0x13, 0x71, 0x35, 0x65, 0xdf, 0x12, 0x20,
                 0xf5, 0xf5, 0xf5, 0xc1
-        };
+        ];
 
         /// <summary>
         /// Check to see if a better CSP than the one requested is available
@@ -1156,7 +1156,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Helper for RSACryptoServiceProvider.SignData/SignHash apis.
         /// </summary>
-        public static byte[] SignValue(SafeProvHandle hProv, SafeCapiKeyHandle hKey, int keyNumber, int calgKey, int calgHash, byte[] hash)
+        public static byte[] SignValue(SafeProvHandle hProv, int keyNumber, int calgKey, int calgHash, byte[] hash)
         {
             using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
             {

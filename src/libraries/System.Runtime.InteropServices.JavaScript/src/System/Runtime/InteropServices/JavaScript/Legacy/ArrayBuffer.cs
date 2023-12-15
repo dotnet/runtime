@@ -13,7 +13,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public ArrayBuffer(int length)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(ArrayBuffer), new object[] { length }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>

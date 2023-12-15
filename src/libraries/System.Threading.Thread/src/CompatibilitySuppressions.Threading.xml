@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Threading.Thread.Start:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Threading.Thread.Start(System.Object):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Threading.Thread.UnsafeStart:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Threading.Thread.UnsafeStart(System.Object):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+  </Suppression>
+</Suppressions>

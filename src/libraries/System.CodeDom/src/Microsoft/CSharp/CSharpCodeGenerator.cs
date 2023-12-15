@@ -86,7 +86,7 @@ namespace Microsoft.CSharp
 
         private static string NullToken => "null";
 
-        private TextWriter Output => _output;
+        private ExposedTabStringIndentedTextWriter Output => _output;
 
         private string QuoteSnippetStringCStyle(string value)
         {
@@ -181,8 +181,10 @@ namespace Microsoft.CSharp
             // If the string is short, use C style quoting (e.g "\r\n")
             // Also do it if it is too long to fit in one line
             // If the string contains '\0', verbatim style won't work.
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
             if (value.Length < 256 || value.Length > 1500 || (value.IndexOf('\0') != -1)) // string.Contains(char) is .NetCore2.1+ specific
                 return QuoteSnippetStringCStyle(value);
+#pragma warning restore CA2249
 
             // Otherwise, use 'verbatim' style quoting (e.g. @"foo")
             return QuoteSnippetStringVerbatimStyle(value);
@@ -238,7 +240,7 @@ namespace Microsoft.CSharp
             }
         }
 
-        private void GenerateBaseReferenceExpression(CodeBaseReferenceExpression e) => Output.Write("base");
+        private void GenerateBaseReferenceExpression() => Output.Write("base");
 
         private void GenerateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
@@ -344,8 +346,8 @@ namespace Microsoft.CSharp
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeMemberEvent imp = (CodeMemberEvent)current;
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
-                    GenerateEvent(imp, e);
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    GenerateEvent(imp);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -374,7 +376,7 @@ namespace Microsoft.CSharp
                     CodeMemberField imp = (CodeMemberField)current;
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
                     GenerateField(imp);
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -445,7 +447,7 @@ namespace Microsoft.CSharp
 
             if (e.LinePragma != null) GenerateLinePragmaStart(e.LinePragma);
             Output.WriteLine(e.Value);
-            if (e.LinePragma != null) GenerateLinePragmaEnd(e.LinePragma);
+            if (e.LinePragma != null) GenerateLinePragmaEnd();
 
             if (e.EndDirectives.Count > 0)
             {
@@ -605,7 +607,7 @@ namespace Microsoft.CSharp
 
             if (e.LinePragma != null)
             {
-                GenerateLinePragmaEnd(e.LinePragma);
+                GenerateLinePragmaEnd();
             }
             if (e.EndDirectives.Count > 0)
             {
@@ -627,7 +629,7 @@ namespace Microsoft.CSharp
             {
                 if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
                 GenerateNamespaceImport(imp);
-                if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                if (imp.LinePragma != null) GenerateLinePragmaEnd();
             }
         }
 
@@ -802,10 +804,10 @@ namespace Microsoft.CSharp
             }
         }
 
-        private void GeneratePropertySetValueReferenceExpression(CodePropertySetValueReferenceExpression e) =>
+        private void GeneratePropertySetValueReferenceExpression() =>
             Output.Write("value");
 
-        private void GenerateThisReferenceExpression(CodeThisReferenceExpression e) =>
+        private void GenerateThisReferenceExpression() =>
             Output.Write("this");
 
         private void GenerateExpressionStatement(CodeExpressionStatement e)
@@ -1086,14 +1088,14 @@ namespace Microsoft.CSharp
             Output.WriteLine();
         }
 
-        private void GenerateLinePragmaEnd(CodeLinePragma e)
+        private void GenerateLinePragmaEnd()
         {
             Output.WriteLine();
             Output.WriteLine("#line default");
             Output.WriteLine("#line hidden");
         }
 
-        private void GenerateEvent(CodeMemberEvent e, CodeTypeDeclaration c)
+        private void GenerateEvent(CodeMemberEvent e)
         {
             if (IsCurrentDelegate || IsCurrentEnum) return;
 
@@ -1124,7 +1126,7 @@ namespace Microsoft.CSharp
             }
             else if (e is CodeBaseReferenceExpression)
             {
-                GenerateBaseReferenceExpression((CodeBaseReferenceExpression)e);
+                GenerateBaseReferenceExpression();
             }
             else if (e is CodeBinaryOperatorExpression)
             {
@@ -1200,11 +1202,11 @@ namespace Microsoft.CSharp
             }
             else if (e is CodePropertySetValueReferenceExpression)
             {
-                GeneratePropertySetValueReferenceExpression((CodePropertySetValueReferenceExpression)e);
+                GeneratePropertySetValueReferenceExpression();
             }
             else if (e is CodeThisReferenceExpression)
             {
-                GenerateThisReferenceExpression((CodeThisReferenceExpression)e);
+                GenerateThisReferenceExpression();
             }
             else if (e is CodeTypeReferenceExpression)
             {
@@ -1284,7 +1286,7 @@ namespace Microsoft.CSharp
             OutputTypeNamePair(e.Type, e.Name);
         }
 
-        private void GenerateEntryPointMethod(CodeEntryPointMethod e, CodeTypeDeclaration c)
+        private void GenerateEntryPointMethod(CodeEntryPointMethod e)
         {
             if (e.CustomAttributes.Count > 0)
             {
@@ -1323,13 +1325,13 @@ namespace Microsoft.CSharp
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
                     if (current is CodeEntryPointMethod)
                     {
-                        GenerateEntryPointMethod((CodeEntryPointMethod)current, e);
+                        GenerateEntryPointMethod((CodeEntryPointMethod)current);
                     }
                     else
                     {
-                        GenerateMethod(imp, e);
+                        GenerateMethod(imp);
                     }
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -1338,7 +1340,7 @@ namespace Microsoft.CSharp
             }
         }
 
-        private void GenerateMethod(CodeMemberMethod e, CodeTypeDeclaration c)
+        private void GenerateMethod(CodeMemberMethod e)
         {
             if (!(IsCurrentClass || IsCurrentStruct || IsCurrentInterface)) return;
 
@@ -1418,8 +1420,8 @@ namespace Microsoft.CSharp
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeMemberProperty imp = (CodeMemberProperty)current;
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
-                    GenerateProperty(imp, e);
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    GenerateProperty(imp);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -1428,7 +1430,7 @@ namespace Microsoft.CSharp
             }
         }
 
-        private void GenerateProperty(CodeMemberProperty e, CodeTypeDeclaration c)
+        private void GenerateProperty(CodeMemberProperty e)
         {
             if (!(IsCurrentClass || IsCurrentStruct || IsCurrentInterface)) return;
 
@@ -1730,8 +1732,8 @@ namespace Microsoft.CSharp
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeConstructor imp = (CodeConstructor)current;
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
-                    GenerateConstructor(imp, e);
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    GenerateConstructor(imp);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -1740,7 +1742,7 @@ namespace Microsoft.CSharp
             }
         }
 
-        private void GenerateConstructor(CodeConstructor e, CodeTypeDeclaration c)
+        private void GenerateConstructor(CodeConstructor e)
         {
             if (!(IsCurrentClass || IsCurrentStruct)) return;
 
@@ -1860,8 +1862,8 @@ namespace Microsoft.CSharp
             // Nested types clobber the current class, so reset it.
             _currentClass = e;
 
-            GenerateTypeEnd(e);
-            if (e.LinePragma != null) GenerateLinePragmaEnd(e.LinePragma);
+            GenerateTypeEnd();
+            if (e.LinePragma != null) GenerateLinePragmaEnd();
 
             if (e.EndDirectives.Count > 0)
             {
@@ -1974,13 +1976,13 @@ namespace Microsoft.CSharp
             }
             else if (member is CodeMemberProperty)
             {
-                GenerateProperty((CodeMemberProperty)member, declaredType);
+                GenerateProperty((CodeMemberProperty)member);
             }
             else if (member is CodeMemberMethod)
             {
                 if (member is CodeConstructor)
                 {
-                    GenerateConstructor((CodeConstructor)member, declaredType);
+                    GenerateConstructor((CodeConstructor)member);
                 }
                 else if (member is CodeTypeConstructor)
                 {
@@ -1988,16 +1990,16 @@ namespace Microsoft.CSharp
                 }
                 else if (member is CodeEntryPointMethod)
                 {
-                    GenerateEntryPointMethod((CodeEntryPointMethod)member, declaredType);
+                    GenerateEntryPointMethod((CodeEntryPointMethod)member);
                 }
                 else
                 {
-                    GenerateMethod((CodeMemberMethod)member, declaredType);
+                    GenerateMethod((CodeMemberMethod)member);
                 }
             }
             else if (member is CodeMemberEvent)
             {
-                GenerateEvent((CodeMemberEvent)member, declaredType);
+                GenerateEvent((CodeMemberEvent)member);
             }
             else if (member is CodeSnippetTypeMember)
             {
@@ -2020,7 +2022,7 @@ namespace Microsoft.CSharp
 
             if (member.LinePragma != null)
             {
-                GenerateLinePragmaEnd(member.LinePragma);
+                GenerateLinePragmaEnd();
             }
 
             if (member.EndDirectives.Count > 0)
@@ -2049,7 +2051,7 @@ namespace Microsoft.CSharp
                     CodeTypeConstructor imp = (CodeTypeConstructor)current;
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
                     GenerateTypeConstructor(imp);
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -2091,7 +2093,7 @@ namespace Microsoft.CSharp
                     // Restore the indent
                     Indent = savedIndent;
 
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    if (imp.LinePragma != null) GenerateLinePragmaEnd();
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -2378,7 +2380,7 @@ namespace Microsoft.CSharp
             }
         }
 
-        private void GenerateTypeEnd(CodeTypeDeclaration e)
+        private void GenerateTypeEnd()
         {
             if (!IsCurrentDelegate)
             {
@@ -2549,10 +2551,10 @@ namespace Microsoft.CSharp
             Output.WriteLine(';');
         }
 
-        private void GenerateAttributeDeclarationsStart(CodeAttributeDeclarationCollection attributes) =>
+        private void GenerateAttributeDeclarationsStart() =>
             Output.Write('[');
 
-        private void GenerateAttributeDeclarationsEnd(CodeAttributeDeclarationCollection attributes) =>
+        private void GenerateAttributeDeclarationsEnd() =>
             Output.Write(']');
 
         private void GenerateAttributes(CodeAttributeDeclarationCollection attributes) =>
@@ -2581,7 +2583,7 @@ namespace Microsoft.CSharp
                     continue;
                 }
 
-                GenerateAttributeDeclarationsStart(attributes);
+                GenerateAttributeDeclarationsStart();
                 if (prefix != null)
                 {
                     Output.Write(prefix);
@@ -2609,7 +2611,7 @@ namespace Microsoft.CSharp
                 }
 
                 Output.Write(')');
-                GenerateAttributeDeclarationsEnd(attributes);
+                GenerateAttributeDeclarationsEnd();
                 if (inLine)
                 {
                     Output.Write(' ');

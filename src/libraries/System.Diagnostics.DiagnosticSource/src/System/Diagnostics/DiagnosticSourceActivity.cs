@@ -33,6 +33,12 @@ namespace System.Diagnostics
             return activity;
         }
 
+        /// <inheritdoc cref="StartActivity"/>
+        /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
+        public Activity StartActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(Activity activity, T args)
+            => StartActivity(activity, (object?)args);
+
         /// <summary>
         /// Stops given Activity: maintains global Current Activity and notifies consumers
         /// that Activity was stopped. Consumers could access <see cref="Activity.Current"/>
@@ -53,6 +59,12 @@ namespace System.Diagnostics
             Write(activity.OperationName + ".Stop", args);
             activity.Stop();    // Resets Activity.Current (we want this after the Write)
         }
+
+        /// <inheritdoc cref="StartActivity"/>
+        /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
+        public void StopActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(Activity activity, T args)
+            => StopActivity(activity, (object?)args);
 
         /// <summary>
         /// Optional: If an instrumentation site creating an new activity that was caused

@@ -12,14 +12,14 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Diagnostics;
-using System.Linq.Parallel;
-using System.Collections.Concurrent;
 using System.Collections;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Parallel;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Linq
 {
@@ -64,8 +64,12 @@ namespace System.Linq
 
         // When running in single partition mode, PLINQ operations will occur on a single partition and will not
         // be executed in parallel, but will retain PLINQ semantics (exceptions wrapped as aggregates, etc).
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.SupportedOSPlatformGuard("browser")]
         internal static bool SinglePartitionMode => OperatingSystem.IsBrowser();
+#else
+        internal static bool SinglePartitionMode => false;
+#endif
 
         //-----------------------------------------------------------------------------------
         // Converts any IEnumerable<TSource> into something that can be the target of parallel
@@ -148,7 +152,7 @@ namespace System.Linq
 
             if (!(source is ParallelEnumerableWrapper<TSource> || source is IParallelPartitionable<TSource>))
             {
-                if (source is PartitionerQueryOperator<TSource>  partitionerOp)
+                if (source is PartitionerQueryOperator<TSource> partitionerOp)
                 {
                     if (!partitionerOp.Orderable)
                     {
@@ -290,10 +294,8 @@ namespace System.Linq
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (degreeOfParallelism < 1 || degreeOfParallelism > Scheduling.MAX_SUPPORTED_DOP)
-            {
-                throw new ArgumentOutOfRangeException(nameof(degreeOfParallelism));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(degreeOfParallelism);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(degreeOfParallelism, Scheduling.MAX_SUPPORTED_DOP);
 
             QuerySettings settings = QuerySettings.Empty;
             settings.DegreeOfParallelism = degreeOfParallelism;
@@ -434,7 +436,7 @@ namespace System.Linq
         /// </exception>
         public static ParallelQuery<TResult> Repeat<TResult>(TResult element, int count)
         {
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             return new RepeatEnumerable<TResult>(element, count);
         }
@@ -5108,7 +5110,7 @@ namespace System.Linq
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(
-            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector) where TKey: notnull
+            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector) where TKey : notnull
         {
             return ToLookup(source, keySelector, EqualityComparer<TKey>.Default);
         }
@@ -5133,7 +5135,7 @@ namespace System.Linq
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(
-            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey: notnull
+            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);
@@ -5905,7 +5907,7 @@ namespace System.Linq
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             // @PERF: there are obvious optimization opportunities for indexable data sources,
             //          since we can just seek to the element requested.

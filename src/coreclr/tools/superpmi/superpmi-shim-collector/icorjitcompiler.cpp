@@ -29,6 +29,20 @@ void interceptor_ICJC::finalizeAndCommitCollection(MethodContext* mc, CorJitResu
     mc->saveToFile(hFile);
 }
 
+template<typename TPrinter>
+static void printInFull(TPrinter print)
+{
+    size_t requiredSize;
+    char buffer[256];
+    print(buffer, sizeof(buffer), &requiredSize);
+
+    if (requiredSize > sizeof(buffer))
+    {
+        std::vector<char> vec(requiredSize);
+        print(vec.data(), requiredSize, nullptr);
+    }
+}
+
 CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,     /* IN */
                                              struct CORINFO_METHOD_INFO* info,     /* IN */
                                              unsigned /* code:CorJitFlag */ flags, /* IN */
@@ -72,12 +86,11 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     // to build up a fat mc
     CORINFO_CLASS_HANDLE ourClass = our_ICorJitInfo.getMethodClass(info->ftn);
     our_ICorJitInfo.getClassAttribs(ourClass);
-    our_ICorJitInfo.getClassName(ourClass);
     our_ICorJitInfo.isValueClass(ourClass);
     our_ICorJitInfo.asCorInfoType(ourClass);
 
-    const char* className = nullptr;
-    our_ICorJitInfo.getMethodName(info->ftn, &className);
+    printInFull([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) { our_ICorJitInfo.printClassName(ourClass, buffer, bufferSize, requiredBufferSize); });
+    printInFull([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) { our_ICorJitInfo.printMethodName(info->ftn, buffer, bufferSize, requiredBufferSize); });
 #endif
 
     // Record data from the global context, if any
@@ -144,9 +157,4 @@ void interceptor_ICJC::ProcessShutdownWork(ICorStaticInfo* info)
 void interceptor_ICJC::getVersionIdentifier(GUID* versionIdentifier /* OUT */)
 {
     original_ICorJitCompiler->getVersionIdentifier(versionIdentifier);
-}
-
-unsigned interceptor_ICJC::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
-{
-    return original_ICorJitCompiler->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
 }

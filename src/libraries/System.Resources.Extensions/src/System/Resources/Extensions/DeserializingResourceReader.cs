@@ -11,7 +11,11 @@ namespace System.Resources.Extensions
     public partial class DeserializingResourceReader
     {
         private bool _assumeBinaryFormatter;
+
+// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011
         private BinaryFormatter? _formatter;
+#pragma warning restore SYSLIB0011
 
         private bool ValidateReaderType(string readerType)
         {
@@ -59,7 +63,7 @@ namespace System.Resources.Extensions
                     // incorrect ResXSerialization binder.
                     typeName = typeName + ", " + assemblyName;
 
-                    type = Type.GetType(typeName, throwOnError: false, ignoreCase:false);
+                    type = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
                 }
 
                 // if type is null we'll fall back to the default type binder which is preferable

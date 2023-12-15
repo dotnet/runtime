@@ -199,22 +199,23 @@ namespace System.Diagnostics
 
             major = minor = build = priv = 0;
 
-            if (versionString != null)
+            ReadOnlySpan<char> versionSpan = versionString;
+
+            Span<Range> parts = stackalloc Range[5];
+            parts = parts.Slice(0, versionSpan.Split(parts, '.'));
+
+            if (parts.Length <= 4 && parts.Length > 0)
             {
-                string[] parts = versionString.Split('.');
-                if (parts.Length <= 4 && parts.Length > 0)
+                major = ParseUInt16UntilNonDigit(versionSpan[parts[0]], out bool endedEarly);
+                if (!endedEarly && parts.Length > 1)
                 {
-                    major = ParseUInt16UntilNonDigit(parts[0], out bool endedEarly);
-                    if (!endedEarly && parts.Length > 1)
+                    minor = ParseUInt16UntilNonDigit(versionSpan[parts[1]], out endedEarly);
+                    if (!endedEarly && parts.Length > 2)
                     {
-                        minor = ParseUInt16UntilNonDigit(parts[1], out endedEarly);
-                        if (!endedEarly && parts.Length > 2)
+                        build = ParseUInt16UntilNonDigit(versionSpan[parts[2]], out endedEarly);
+                        if (!endedEarly && parts.Length > 3)
                         {
-                            build = ParseUInt16UntilNonDigit(parts[2], out endedEarly);
-                            if (!endedEarly && parts.Length > 3)
-                            {
-                                priv = ParseUInt16UntilNonDigit(parts[3], out _);
-                            }
+                            priv = ParseUInt16UntilNonDigit(versionSpan[parts[3]], out _);
                         }
                     }
                 }
@@ -225,7 +226,7 @@ namespace System.Diagnostics
         /// <param name="s">The string to parse.</param>
         /// <param name="endedEarly">Whether parsing ended prior to reaching the end of the input.</param>
         /// <returns>The parsed value.</returns>
-        private static ushort ParseUInt16UntilNonDigit(string s, out bool endedEarly)
+        private static ushort ParseUInt16UntilNonDigit(ReadOnlySpan<char> s, out bool endedEarly)
         {
             endedEarly = false;
             ushort result = 0;

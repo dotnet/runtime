@@ -7,31 +7,19 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Sse1
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void StoreFence()
         {
-            int testResult = Pass;
-
             if (Sse.IsSupported)
             {
-                try
-                {
-                    Sse.StoreFence();
-                }
-                catch
-                {
-                    testResult = Fail;
-                }
+                Sse.StoreFence();
             }
-
-            return testResult;
         }
     }
 }

@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public enum TestEnum
 {
@@ -29,7 +30,8 @@ public class App
 {
     public static AA m_xStatic1 = new AA();
     public static AA m_xStatic2 = new AA();
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

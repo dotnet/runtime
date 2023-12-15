@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -10,17 +12,17 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal static class DynamicInterfaceCastableHelpers
     {
-        [Diagnostics.StackTraceHidden]
+        [StackTraceHidden]
         internal static bool IsInterfaceImplemented(IDynamicInterfaceCastable castable, RuntimeType interfaceType, bool throwIfNotImplemented)
         {
-            bool isImplemented= castable.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
+            bool isImplemented = castable.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), throwIfNotImplemented);
             if (!isImplemented && throwIfNotImplemented)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castable.GetType(), interfaceType));
 
             return isImplemented;
         }
 
-        [Diagnostics.StackTraceHidden]
+        [StackTraceHidden]
         internal static RuntimeType? GetInterfaceImplementation(IDynamicInterfaceCastable castable, RuntimeType interfaceType)
         {
             RuntimeTypeHandle handle = castable.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType));

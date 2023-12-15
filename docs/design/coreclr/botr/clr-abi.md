@@ -80,7 +80,7 @@ Managed varargs are not supported in .NET Core.
 
 ## Generics
 
-*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
+*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64 and RISC-V, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
 
 Sometimes the VM asks the JIT to report and keep alive the generics parameter. In this case, it must be saved on the stack someplace and kept alive via normal GC reporting (if it was the `this` pointer, as compared to a MethodDesc or MethodTable) for the entire method except the prolog and epilog. Also note that the code to home it, must be in the range of code reported as the prolog in the GC info (which probably isn't the same as the range of code reported as the prolog in the unwind info).
 
@@ -112,6 +112,10 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
 *Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
+
+## Small primitive returns
+
+Primitive value types smaller than 32-bits are widened to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.
 
 # PInvokes
 
@@ -191,9 +195,7 @@ JIT32 does not implement finally cloning.
 
 In order to have proper forward progress and `Thread.Abort` semantics, there are restrictions on where a call-to-finally can be, and what the call site must look like. The return address can **NOT** be in the corresponding try body (otherwise the VM would think the finally protects itself). The return address **MUST** be within any outer protected region (so exceptions from the finally body are properly handled).
 
-JIT64, and RyuJIT for AMD64 and ARM64, creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
-
-Note that ARM solves this by not using a call (bl) instruction and instead explicitly places a return address in `LR` and then jumps to the finally. We have not yet implemented this for AMD64 because it might mess up the call-return predictor on the CPU. (So far performance data on ARM indicates they don't have an issue).
+JIT64, and RyuJIT for non-x86, creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
 
 ## ThreadAbortException considerations
 
@@ -585,6 +587,11 @@ The native EH clauses would be listed as follows:
 
 If the handlers were in a different order, then clause 6 might appear before clauses 4 and 5, but never in between.
 
+## Clauses covering the same try region
+
+Several consecutive clauses may cover the same `try` block. A clause covering the same region as the previous one is marked by the `COR_ILEXCEPTION_CLAUSE_SAMETRY` flag. When exception ex1 is thrown while running handler for another exception ex2 and the exception ex2 escapes the ex1's handler frame, this enables the runtime to skip clauses that cover the same `try` block as the clause that handled the ex1.
+This flag is used by the NativeAOT and also a new exception handling mechanism in CoreCLR. The NativeAOT doesn't store that flag in the encoded clause data, but rather injects a dummy clause between the clauses with same `try` block. CoreCLR keeps that flag as part of the runtime representation of the clause data. The current CoreCLR exception handling doesn't use it, but [a new exception handling mechanism](https://github.com/dotnet/runtime/issues/77568) that's being developed is taking advantage of it.
+
 ## GC Interruptibility and EH
 
 The VM assumes that anytime a thread is stopped, it must be at a GC safe point, or the current frame is non-resumable (i.e. a throw that will never be caught in the same frame). Thus effectively all methods with EH must be fully interruptible (or at a minimum all try bodies). Currently the GC info appears to support mixing of partially interruptible and fully-interruptible regions within the same method, but no JIT uses this, so use at your own risk.
@@ -607,13 +614,11 @@ The GS Cookie is not a GC object, but still needs to be reported. It can only ha
 
 The unwind callbacks don't know if the current frame is a leaf or a return address. Consequently, the JIT must ensure that the return address of a call is in the same region as the call. Specifically, the JIT must add a NOP (or some other instruction) after any call that otherwise would directly precede the start of a try body, the end of a try body, or the end of a method.
 
-The OS has an optimization in the unwinder such that if an unwind results in a PC being within (or at the start of) an epilog, it assumes that frame is unimportant and unwinds again. Since the CLR considers every frame important, it does not want this double-unwind behavior and requires the JIT to place a NOP (or other instruction) between the any call and any epilog.
+The OS has an optimization in the unwinder such that if an unwind results in a PC being within (or at the start of) an epilog, it assumes that frame is unimportant and unwinds again. Since the CLR considers every frame important, it does not want this double-unwind behavior and requires the JIT to place a NOP (or other instruction) between any call and any epilog.
 
 ### ARM and ARM64 padding info
 
 The OS unwinder uses the `RUNTIME_FUNCTION` extents to determine which function or funclet to unwind out of. The net result is that a call (bl opcode) to `IL_Throw` cannot be the last thing. So similar to AMD64 the JIT must inject an opcode (a breakpoint in this case) when the `bl IL_Throw` would otherwise be the last opcode of a function or funclet, the last opcode before the end of the hot section, or (this might be an x86-ism leaking into ARM) the last before a "special throw block".
-
-The CLR unwinder assumes any non-leaf frame was unwound as a result of a call. This is mostly (always?) true except for non-exceptional finally invocations. For those cases, the JIT must place a 2 byte NOP **before** the address set as the finally return address (in the LR register, before jumping to the finally). I believe this is only needed if the preceding 2 bytes would have otherwise been in a different region (i.e. the end or start of a try body, etc.), but currently the JIT always emits the NOP. This is because the stack walker looks at the return address, subtracts 2, and uses that as the PC for the next step of stack walking. Note that the inserted NOP must have correct GC information.
 
 # Profiler Hooks
 
@@ -696,7 +701,7 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 ## Generics
 
-EnC is not supported for generic methods and methods on generic types.
+EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
 # System V x86_64 support
 
@@ -711,34 +716,34 @@ The general rules outlined in the System V x86_64 ABI documentation are followed
 6. The following table describes register usage according to the System V x86_64 ABI
 
 ```
-| Register     | Usage                                   | Preserved across  |
-|              |                                         | function calls    |
-|--------------|-----------------------------------------|-------------------|
-| %rax         | temporary register; with variable argu- | No                |
-|              | ments passes information about the      |                   |
-|              | number of SSE registers used;           |                   |
-|              | 1st return argument                     |                   |
-| %rbx         | callee-saved register; optionally used  | Yes               |
-|              | as base pointer                         |                   |
-| %rcx         | used to pass 4st integer argument to    | No                |
-|              | to functions                            |                   |
-| %rdx         | used to pass 3rd argument to functions  | No                |
-|              | 2nd return register                     |                   |
-| %rsp         | stack pointer                           | Yes               |
-| %rbp         | callee-saved register; optionally used  | Yes               |
-|              | as frame pointer                        |                   |
-| %rsi         | used to pass 2nd argument to functions  | No                |
-| %rdi         | used to pass 1st argument to functions  | No                |
-| %r8          | used to pass 5th argument to functions  | No                |
-| %r9          | used to pass 6th argument to functions  | No                |
-| %r10         | temporary register, used for passing a  | No                |
-|              | function's static chain pointer         |                   |
-| %r11         | temporary register                      | No                |
-| %r12-%r15    | callee-saved registers                  | Yes               |
-| %xmm0-%xmm1  | used to pass and return floating point  | No                |
-|              | arguments                               |                   |
-| %xmm2-%xmm7  | used to pass floating point arguments   | No                |
-| %xmm8-%xmm15 | temporary registers                     | No                |
+| Register      | Usage                                   | Preserved across  |
+|               |                                         | function calls    |
+|---------------|-----------------------------------------|-------------------|
+| %rax          | temporary register; with variable argu- | No                |
+|               | ments passes information about the      |                   |
+|               | number of SSE registers used;           |                   |
+|               | 1st return argument                     |                   |
+| %rbx          | callee-saved register; optionally used  | Yes               |
+|               | as base pointer                         |                   |
+| %rcx          | used to pass 4st integer argument to    | No                |
+|               | to functions                            |                   |
+| %rdx          | used to pass 3rd argument to functions  | No                |
+|               | 2nd return register                     |                   |
+| %rsp          | stack pointer                           | Yes               |
+| %rbp          | callee-saved register; optionally used  | Yes               |
+|               | as frame pointer                        |                   |
+| %rsi          | used to pass 2nd argument to functions  | No                |
+| %rdi          | used to pass 1st argument to functions  | No                |
+| %r8           | used to pass 5th argument to functions  | No                |
+| %r9           | used to pass 6th argument to functions  | No                |
+| %r10          | temporary register, used for passing a  | No                |
+|               | function's static chain pointer         |                   |
+| %r11          | temporary register                      | No                |
+| %r12-%r15     | callee-saved registers                  | Yes               |
+| %xmm0-%xmm1   | used to pass and return floating point  | No                |
+|               | arguments                               |                   |
+| %xmm2-%xmm7   | used to pass floating point arguments   | No                |
+| %xmm8-%xmm31  | temporary registers                     | No                |
 ```
 
 # Calling convention specifics for x86

@@ -37,7 +37,7 @@
     call  void [System.Console]System.Console::WriteLine(string)
     ret
   }
-  .method public hidebysig static int32 Main(class System.String[] args) il managed
+  .method public hidebysig static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

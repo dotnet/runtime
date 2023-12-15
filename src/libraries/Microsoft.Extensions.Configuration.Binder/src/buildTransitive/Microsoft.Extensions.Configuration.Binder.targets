@@ -1,0 +1,31 @@
+<Project InitialTargets="NETStandardCompatError_Microsoft_Extensions_Configuration_Binder">
+    <PropertyGroup Condition="'$(EnableConfigurationBindingGenerator)' == 'true'">
+        <!-- The configuration binding source generator uses a preview version of the compiler interceptors feature. Enable it implicitly when the generator is enabled. -->
+        <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
+    </PropertyGroup>
+
+    <Target Name="_Microsoft_Extensions_Configuration_Binder_RemoveAnalyzer"
+            Condition="'$(EnableConfigurationBindingGenerator)' != 'true'"
+            AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets">
+
+        <ItemGroup>
+            <Analyzer Remove="@(Analyzer->WithMetadataValue('NuGetPackageId', 'Microsoft.Extensions.Configuration.Binder'))" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="NETStandardCompatError_Microsoft_Extensions_Configuration_Binder"
+            Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
+        <PropertyGroup>
+            <_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework
+                Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp2.0')) AND
+                           !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))"
+                >net6.0</_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework>
+            <_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework
+                Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net461')) AND
+                           !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))"
+                >net462</_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework>
+        </PropertyGroup>
+        <Warning Condition="'$(_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework)' != ''"
+                Text="Microsoft.Extensions.Configuration.Binder doesn't support $(TargetFramework) and has not been tested with it. Consider upgrading your TargetFramework to $(_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework) or later. You may also set &lt;SuppressTfmSupportBuildWarnings&gt;true&lt;/SuppressTfmSupportBuildWarnings&gt; in the project file to ignore this warning and attempt to run in this unsupported configuration at your own risk." />
+    </Target>
+</Project>

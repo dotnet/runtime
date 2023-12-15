@@ -8,7 +8,7 @@ using System.Reflection;
 namespace System.Xml.Serialization.TrimmingTests
 {
     /// <summary>
-    /// Tests that using XmlSerializer with linker option '--enable-opt sealer' works
+    /// Tests that using XmlSerializer with ILLink option '--enable-opt sealer' works
     /// when IsDynamicCodeSupported==false.
     /// </summary>
     internal class Program

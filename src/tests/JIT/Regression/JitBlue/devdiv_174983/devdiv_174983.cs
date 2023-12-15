@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class Test_devdiv_174983
 {
@@ -11,7 +12,8 @@ public class Test_devdiv_174983
 
     public static int l;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_devdiv_174983 test = new Test_devdiv_174983();
         test.i = 3;

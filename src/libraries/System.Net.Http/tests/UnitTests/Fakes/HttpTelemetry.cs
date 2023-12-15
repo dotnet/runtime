@@ -11,9 +11,9 @@ namespace System.Net.Http
 
         public void RequestStart(HttpRequestMessage request) { }
 
-        public void RequestStop() { }
+        public void RequestStop(HttpResponseMessage response) { }
 
-        public void RequestFailed() { }
+        public void RequestFailed(Exception exception) { }
 
         public void ResponseContentStart() { }
 

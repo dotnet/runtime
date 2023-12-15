@@ -637,6 +637,7 @@ void BaseDomain::Init()
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
+    m_crstStaticBoxInitLock.Init(CrstStaticBoxInit);
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
@@ -664,6 +665,13 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
+void BaseDomain::InitThreadStaticBlockTypeMap()
+{
+    STANDARD_VM_CONTRACT;
+
+    m_NonGCThreadStaticBlockTypeIDMap.Init();
+    m_GCThreadStaticBlockTypeIDMap.Init();
+}
 
 void BaseDomain::ClearBinderContext()
 {
@@ -948,7 +956,6 @@ void SystemDomain::Attach()
 
     // Initialize stub managers
     PrecodeStubManager::Init();
-    DelegateInvokeStubManager::Init();
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();
@@ -1032,10 +1039,7 @@ void SystemDomain::DetachEnd()
 void SystemDomain::Stop()
 {
     WRAPPER_NO_CONTRACT;
-    AppDomainIterator i(TRUE);
-
-    while (i.Next())
-        i.GetDomain()->Stop();
+    AppDomain::GetCurrentDomain()->Stop();
 }
 
 void SystemDomain::PreallocateSpecialObjects()
@@ -1135,7 +1139,7 @@ void SystemDomain::Init()
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    if (!m_BaseLibrary.EndsWith(SString{ DIRECTORY_SEPARATOR_CHAR_W }))
     {
         m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
     }
@@ -1220,19 +1224,6 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
     CONTRACT_END;
 
-    // We don't do a normal AppDomainIterator because we can't take the SystemDomain lock from
-    // here.
-    // We're only supposed to call this from a Server GC. We're walking here m_appDomainIdList
-    // m_appDomainIdList will have an AppDomain* or will be NULL. So the only danger is if we
-    // Fetch an AppDomain and then in some other thread the AppDomain is deleted.
-    //
-    // If the thread deleting the AppDomain (AppDomain::~AppDomain)was in Preemptive mode
-    // while doing SystemDomain::EnumAllStaticGCRefs we will issue a GCX_COOP(), which will wait
-    // for the GC to finish, so we are safe
-    //
-    // If the thread is in cooperative mode, it must have been suspended for the GC so a delete
-    // can't happen.
-
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
@@ -1281,141 +1272,172 @@ void SystemDomain::LoadBaseSystemClasses()
 
     ETWOnStartup(LdSysBases_V1, LdSysBasesEnd_V1);
 
-    m_pSystemPEAssembly = PEAssembly::OpenSystem();
-
-    // Only partially load the system assembly. Other parts of the code will want to access
-    // the globals in this function before finishing the load.
-    m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_LOADLIBRARY)->GetAssembly();
-
-    // Set up binder for CoreLib
-    CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
-
-    // Load Object
-    g_pObjectClass = CoreLibBinder::GetClass(CLASS__OBJECT);
-
-    // Now that ObjectClass is loaded, we can set up
-    // the system for finalizers.  There is no point in deferring this, since we need
-    // to know this before we allocate our first object.
-    g_pObjectFinalizerMD = CoreLibBinder::GetMethod(METHOD__OBJECT__FINALIZE);
-
-
-    g_pCanonMethodTableClass = CoreLibBinder::GetClass(CLASS____CANON);
-
-    // NOTE: !!!IMPORTANT!!! ValueType and Enum MUST be loaded one immediately after
-    //                       the other, because we have coded MethodTable::IsChildValueType
-    //                       in such a way that it depends on this behaviour.
-    // Load the ValueType class
-    g_pValueTypeClass = CoreLibBinder::GetClass(CLASS__VALUE_TYPE);
-
-    // Load the enum class
-    g_pEnumClass = CoreLibBinder::GetClass(CLASS__ENUM);
-    _ASSERTE(!g_pEnumClass->IsValueType());
-
-    // Load System.RuntimeType
-    g_pRuntimeTypeClass = CoreLibBinder::GetClass(CLASS__CLASS);
-    _ASSERTE(g_pRuntimeTypeClass->IsFullyLoaded());
-
-    // Load Array class
-    g_pArrayClass = CoreLibBinder::GetClass(CLASS__ARRAY);
-
-    // Calling a method on IList<T> for an array requires redirection to a method on
-    // the SZArrayHelper class. Retrieving such methods means calling
-    // GetActualImplementationForArrayGenericIListMethod, which calls FetchMethod for
-    // the corresponding method on SZArrayHelper. This basically results in a class
-    // load due to a method call, which the debugger cannot handle, so we pre-load
-    // the SZArrayHelper class here.
-    g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
-
-    // Load Nullable class
-    g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
-
-    // Load the Object array class.
-    g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
-
-    // We have delayed allocation of CoreLib's static handles until we load the object class
-    CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
-
-    // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
-    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
-
-    // Int32 has to be loaded next to break cycle in IShiftOperators
-    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
-
-    // Make sure all primitive types are loaded
-    for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
-        CoreLibBinder::LoadPrimitiveType((CorElementType)et);
-
-    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
-    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
-
-    g_TypedReferenceMT = CoreLibBinder::GetClass(CLASS__TYPED_REFERENCE);
-
-    // unfortunately, the following cannot be delay loaded since the jit
-    // uses it to compute method attributes within a function that cannot
-    // handle Complus exception and the following call goes through a path
-    // where a complus exception can be thrown. It is unfortunate, because
-    // we know that the delegate class and multidelegate class are always
-    // guaranteed to be found.
-    g_pDelegateClass = CoreLibBinder::GetClass(CLASS__DELEGATE);
-    g_pMulticastDelegateClass = CoreLibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
-
-    // further loading of nonprimitive types may need casting support.
-    // initialize cast cache here.
-    CastCache::Initialize();
-    ECall::PopulateManagedCastHelpers();
-
-    // used by IsImplicitInterfaceOfSZArray
-    CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
-    CoreLibBinder::GetClass(CLASS__ICOLLECTIONGENERIC);
-    CoreLibBinder::GetClass(CLASS__ILISTGENERIC);
-    CoreLibBinder::GetClass(CLASS__IREADONLYCOLLECTIONGENERIC);
-    CoreLibBinder::GetClass(CLASS__IREADONLYLISTGENERIC);
-
-    // Load String
-    g_pStringClass = CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
-
-    ECall::PopulateManagedStringConstructors();
-
-    g_pExceptionClass = CoreLibBinder::GetClass(CLASS__EXCEPTION);
-    g_pOutOfMemoryExceptionClass = CoreLibBinder::GetException(kOutOfMemoryException);
-    g_pStackOverflowExceptionClass = CoreLibBinder::GetException(kStackOverflowException);
-    g_pExecutionEngineExceptionClass = CoreLibBinder::GetException(kExecutionEngineException);
-    g_pThreadAbortExceptionClass = CoreLibBinder::GetException(kThreadAbortException);
-
-    g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
-
-#ifdef FEATURE_COMINTEROP
-    if (g_pConfig->IsBuiltInCOMSupported())
+    EX_TRY
     {
-        g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
-    }
-    else
-    {
-        g_pBaseCOMObject = NULL;
-    }
+        m_pSystemPEAssembly = PEAssembly::OpenSystem();
+
+        // Only partially load the system assembly. Other parts of the code will want to access
+        // the globals in this function before finishing the load.
+        m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_LOADLIBRARY)->GetAssembly();
+
+        // Set up binder for CoreLib
+        CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
+
+        // Load Object
+        g_pObjectClass = CoreLibBinder::GetClass(CLASS__OBJECT);
+
+        // Now that ObjectClass is loaded, we can set up
+        // the system for finalizers.  There is no point in deferring this, since we need
+        // to know this before we allocate our first object.
+        g_pObjectFinalizerMD = CoreLibBinder::GetMethod(METHOD__OBJECT__FINALIZE);
+
+
+        g_pCanonMethodTableClass = CoreLibBinder::GetClass(CLASS____CANON);
+
+        // NOTE: !!!IMPORTANT!!! ValueType and Enum MUST be loaded one immediately after
+        //                       the other, because we have coded MethodTable::IsChildValueType
+        //                       in such a way that it depends on this behaviour.
+        // Load the ValueType class
+        g_pValueTypeClass = CoreLibBinder::GetClass(CLASS__VALUE_TYPE);
+
+        // Load the enum class
+        g_pEnumClass = CoreLibBinder::GetClass(CLASS__ENUM);
+        _ASSERTE(!g_pEnumClass->IsValueType());
+
+        // Load System.RuntimeType
+        g_pRuntimeTypeClass = CoreLibBinder::GetClass(CLASS__CLASS);
+        _ASSERTE(g_pRuntimeTypeClass->IsFullyLoaded());
+
+        // Load Array class
+        g_pArrayClass = CoreLibBinder::GetClass(CLASS__ARRAY);
+
+        // Calling a method on IList<T> for an array requires redirection to a method on
+        // the SZArrayHelper class. Retrieving such methods means calling
+        // GetActualImplementationForArrayGenericIListMethod, which calls FetchMethod for
+        // the corresponding method on SZArrayHelper. This basically results in a class
+        // load due to a method call, which the debugger cannot handle, so we pre-load
+        // the SZArrayHelper class here.
+        g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
+
+        // Load Nullable class
+        g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
+
+        // Load the Object array class.
+        g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
+
+        // We have delayed allocation of CoreLib's static handles until we load the object class
+        CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+
+        // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
+        CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
+
+        // Int32 has to be loaded next to break cycle in IShiftOperators
+        CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
+
+        // Make sure all primitive types are loaded
+        for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
+            CoreLibBinder::LoadPrimitiveType((CorElementType)et);
+
+        CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
+        CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
+
+        g_TypedReferenceMT = CoreLibBinder::GetClass(CLASS__TYPED_REFERENCE);
+
+        // unfortunately, the following cannot be delay loaded since the jit
+        // uses it to compute method attributes within a function that cannot
+        // handle Complus exception and the following call goes through a path
+        // where a complus exception can be thrown. It is unfortunate, because
+        // we know that the delegate class and multidelegate class are always
+        // guaranteed to be found.
+        g_pDelegateClass = CoreLibBinder::GetClass(CLASS__DELEGATE);
+        g_pMulticastDelegateClass = CoreLibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
+
+        // further loading of nonprimitive types may need casting support.
+        // initialize cast cache here.
+        CastCache::Initialize();
+        ECall::PopulateManagedCastHelpers();
+
+        // used by IsImplicitInterfaceOfSZArray
+        CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
+        CoreLibBinder::GetClass(CLASS__ICOLLECTIONGENERIC);
+        CoreLibBinder::GetClass(CLASS__ILISTGENERIC);
+        CoreLibBinder::GetClass(CLASS__IREADONLYCOLLECTIONGENERIC);
+        CoreLibBinder::GetClass(CLASS__IREADONLYLISTGENERIC);
+
+        // Load String
+        g_pStringClass = CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
+
+        ECall::PopulateManagedStringConstructors();
+
+        g_pExceptionClass = CoreLibBinder::GetClass(CLASS__EXCEPTION);
+        g_pOutOfMemoryExceptionClass = CoreLibBinder::GetException(kOutOfMemoryException);
+        g_pStackOverflowExceptionClass = CoreLibBinder::GetException(kStackOverflowException);
+        g_pExecutionEngineExceptionClass = CoreLibBinder::GetException(kExecutionEngineException);
+        g_pThreadAbortExceptionClass = CoreLibBinder::GetException(kThreadAbortException);
+
+        g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
+
+        g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
+        g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
+
+        g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+
+    #ifdef FEATURE_COMINTEROP
+        if (g_pConfig->IsBuiltInCOMSupported())
+        {
+            g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
+        }
+        else
+        {
+            g_pBaseCOMObject = NULL;
+        }
+    #endif
+
+        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
+
+    #ifdef FEATURE_ICASTABLE
+        g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
+    #endif // FEATURE_ICASTABLE
+
+#ifdef FEATURE_EH_FUNCLETS
+        g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
 #endif
 
-    g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
+        // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
+        // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
+        ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__MONITOR__ENTER));
 
-#ifdef FEATURE_ICASTABLE
-    g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
-#endif // FEATURE_ICASTABLE
+    #ifdef PROFILING_SUPPORTED
+        // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after
+        // all base system classes are loaded.  Profilers are not allowed to call any type-loading
+        // APIs until g_profControlBlock.fBaseSystemClassesLoaded is TRUE.  It is important that
+        // all base system classes need to be loaded before profilers can trigger the type loading.
+        g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
+    #endif // PROFILING_SUPPORTED
 
-    // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
-    // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
-    ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__MONITOR__ENTER));
+        // Perform any once-only SafeHandle initialization.
+        SafeHandle::Init();
 
-#ifdef PROFILING_SUPPORTED
-    // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after
-    // all base system classes are loaded.  Profilers are not allowed to call any type-loading
-    // APIs until g_profControlBlock.fBaseSystemClassesLoaded is TRUE.  It is important that
-    // all base system classes need to be loaded before profilers can trigger the type loading.
-    g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
-#endif // PROFILING_SUPPORTED
+    #if defined(_DEBUG)
+        g_CoreLib.Check();
+        g_CoreLib.CheckExtended();
+    #endif // _DEBUG
+    }
+    EX_HOOK
+    {
+        Exception *ex = GET_EXCEPTION();
 
-#if defined(_DEBUG)
-    g_CoreLib.Check();
-#endif
+        LogErrorToHost("Failed to load System.Private.CoreLib.dll (error code 0x%08X)", ex->GetHR());
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(filePathUtf8, SystemDomain::System()->BaseLibrary())
+        if (filePathUtf8 != NULL)
+        {
+            LogErrorToHost("Path: %s", filePathUtf8);
+        }
+        SString err;
+        ex->GetMessage(err);
+        LogErrorToHost("Error message: %s", err.GetUTF8());
+    }
+    EX_END_HOOK;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1529,8 +1551,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
-        CLASS__METHOD_INVOKER,
-        CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__METHODBASEINVOKER,
     };
 
     static bool fInited = false;
@@ -1578,6 +1599,9 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
+
+    if (stackMark == NULL)
+        return NULL;
 
     GCX_COOP();
 
@@ -1749,6 +1773,9 @@ void AppDomain::Create()
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
 
+    // allocate a thread static block to index map
+    pDomain->InitThreadStaticBlockTypeMap();
+
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
 
@@ -1906,10 +1933,6 @@ AppDomain::AppDomain()
 
     m_ForceTrivialWaitOperations = false;
     m_Stage=STAGE_CREATING;
-
-#ifdef _DEBUG
-    m_dwIterHolders=0;
-#endif
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_pTypeEquivalenceTable = NULL;
@@ -3239,7 +3262,7 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #ifndef DACCESS_COMPILE
 
-BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BOOL fAllowFailure)
+BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
@@ -3251,25 +3274,10 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    {
-        GCX_PREEMP();
-        DomainCacheCrstHolderForGCCoop holder(this);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
 
-        // !!! suppress exceptions
-        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
-        {
-            // TODO: Disabling the below assertion as currently we experience
-            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-            // This causes below assertion to fire and crashes the VS. This issue
-            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-            // is fixed.
-            // _ASSERTE(FALSE);
-
-            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
-        }
-    }
-
-    return TRUE;
+    return m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly);
 }
 
 BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly)
@@ -3337,7 +3345,7 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HAN
         return;
     }
 
-    size_t len = (wcslen(libraryName) + 1) * sizeof(WCHAR);
+    size_t len = (u16_strlen(libraryName) + 1) * sizeof(WCHAR);
     AllocMemHolder<WCHAR> copiedName(GetLowFrequencyHeap()->AllocMem(S_SIZE_T(len)));
     memcpy(copiedName, libraryName, len);
 
@@ -3482,10 +3490,10 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
             // The binder does a re-fetch of the
             // original binding spec and therefore will not cause inconsistency here.
             // For the purposes of the resolve event, failure to add to the cache still is a success.
-            AddFileToCache(pPrePolicySpec, result, TRUE /* fAllowFailure */);
+            AddFileToCache(pPrePolicySpec, result);
             if (*ppFailedSpec != pPrePolicySpec)
             {
-                AddFileToCache(pPostPolicySpec, result, TRUE /* fAllowFailure */ );
+                AddFileToCache(pPostPolicySpec, result);
             }
         }
     }
@@ -3546,7 +3554,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     // Failure to add simply means someone else beat us to it. In that case
                     // the FindCachedFile call below (after catch block) will update result
                     // to the cached value.
-                    AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
+                    AddFileToCache(pSpec, result);
                 }
                 else
                 {
@@ -3958,8 +3966,7 @@ void AppDomain::NotifyDebuggerUnload()
     if (!IsDebuggerAttached())
         return;
 
-    LOG((LF_CORDB, LL_INFO10, "AD::NDD domain %#08x %ls\n",
-         this, GetFriendlyNameForLogging()));
+    LOG((LF_CORDB, LL_INFO10, "AD::NDD domain %#08x\n", this));
 
     LOG((LF_CORDB, LL_INFO100, "AD::NDD: Interating domain bound assemblies\n"));
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded |  kIncludeLoading  | kIncludeExecution));
@@ -4183,7 +4190,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
 
     if (oldDynamicEntries != 0)
     {
-        memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
+        memcpy((void*)pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
     }
 
     // Note: Memory allocated on loader heap is zero filled
@@ -4626,7 +4633,7 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
-    return m_typeIDMap.GetTypeID(pMT);
+    return m_typeIDMap.GetTypeID(pMT, true);
 }
 
 //------------------------------------------------------------------------
@@ -4654,6 +4661,57 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
 
     CONSISTENCY_CHECK(CheckPointer(pMT));
     CONSISTENCY_CHECK(pMT->IsInterface());
+    return pMT;
+}
+
+//------------------------------------------------------------------------
+UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMT->GetDomain() == this);
+    } CONTRACTL_END;
+
+    return m_NonGCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
+}
+
+//------------------------------------------------------------------------
+PTR_MethodTable BaseDomain::LookupNonGCThreadStaticBlockType(UINT32 id) {
+        CONTRACTL {
+        NOTHROW;
+        WRAPPER(GC_TRIGGERS);
+        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
+    } CONTRACTL_END;
+
+    PTR_MethodTable pMT = m_NonGCThreadStaticBlockTypeIDMap.LookupType(id);
+
+    CONSISTENCY_CHECK(CheckPointer(pMT));
+    return pMT;
+}
+//------------------------------------------------------------------------
+UINT32 BaseDomain::GetGCThreadStaticTypeIndex(PTR_MethodTable pMT)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMT->GetDomain() == this);
+    } CONTRACTL_END;
+
+    return m_GCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
+}
+
+//------------------------------------------------------------------------
+PTR_MethodTable BaseDomain::LookupGCThreadStaticBlockType(UINT32 id) {
+        CONTRACTL {
+        NOTHROW;
+        WRAPPER(GC_TRIGGERS);
+        CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
+    } CONTRACTL_END;
+
+    PTR_MethodTable pMT = m_GCThreadStaticBlockTypeIDMap.LookupType(id);
+
+    CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;
 }
 
@@ -5117,7 +5175,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
     {
         GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    
+
     m_Assemblies.EnumMemoryRegions(flags);
     AssemblyIterator assem = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;

@@ -68,6 +68,11 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 rawData = File.ReadAllBytes(fileName!);
                             }
+                            else
+                            {
+                                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile: false, password.PasswordProvided);
+                            }
+
                             fixed (byte* pRawData2 = rawData)
                             {
                                 Interop.Crypt32.DATA_BLOB blob2 = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData2), (uint)rawData!.Length);

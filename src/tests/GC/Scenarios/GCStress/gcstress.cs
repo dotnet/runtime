@@ -9,7 +9,7 @@ namespace DefaultNamespace {
         internal GCStress next;
         internal byte[] data;
 
-        public static int Main(String [] args)
+        public static int Main()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             GCStress obj= new GCStress();

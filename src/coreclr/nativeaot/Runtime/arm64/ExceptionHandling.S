@@ -275,7 +275,7 @@
         // where the tail-calling thread had saved LR, which may not match where we have saved LR.
 
         ldr         x1, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        cbz         x1, NotHijacked
+        cbz         x1, LOCAL_LABEL(NotHijacked)
 
         ldr         x3, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
 
@@ -286,13 +286,13 @@
 
         add         x12, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)        // re-compute SP at callsite
         cmp         x3, x12             // if (m_ppvHijackedReturnAddressLocation < SP at callsite)
-        blo         TailCallWasHijacked
+        blo         LOCAL_LABEL(TailCallWasHijacked)
 
         // normal case where a valid return address location is hijacked
         str         x1, [x3]
-        b           ClearThreadState
+        b           LOCAL_LABEL(ClearThreadState)
 
-TailCallWasHijacked:
+LOCAL_LABEL(TailCallWasHijacked):
 
         // Abnormal case where the return address location is now invalid because we ended up here via a tail
         // call.  In this case, our hijacked return address should be the correct caller of this method.
@@ -302,13 +302,13 @@ TailCallWasHijacked:
         str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__LR)]
         str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
 
-ClearThreadState:
+LOCAL_LABEL(ClearThreadState):
 
         // clear the Thread's hijack state
         str         xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
         str         xzr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
-NotHijacked:
+LOCAL_LABEL(NotHijacked):
 
         add         x1, sp, #rsp_offsetof_ExInfo                    // x1 <- ExInfo*
         str         xzr, [x1, #OFFSETOF__ExInfo__m_exception]       // pExInfo->m_exception = null
@@ -429,13 +429,13 @@ NotHijacked:
 
         add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
 
-ClearRetry_Catch:
+LOCAL_LABEL(ClearRetry_Catch):
         ldxr        w4, [x12]
         bic         w4, w4, #TSF_DoNotTriggerGc
         stxr        w6, w4, [x12]
-        cbz         w6, ClearSuccess_Catch
-        b           ClearRetry_Catch
-ClearSuccess_Catch:
+        cbz         w6, LOCAL_LABEL(ClearSuccess_Catch)
+        b           LOCAL_LABEL(ClearRetry_Catch)
+LOCAL_LABEL(ClearSuccess_Catch):
 
         //
         // set preserved regs to the values expected by the funclet
@@ -480,8 +480,6 @@ ClearSuccess_Catch:
 
         ldr         x1, [sp, rsp_CatchFunclet_offset_thread]
 
-        ldr x1, [sp, rsp_CatchFunclet_offset_thread]
-
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
         INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12
@@ -489,21 +487,21 @@ ClearSuccess_Catch:
         ldr         x3, [sp, #rsp_offset_x3]                    // x3 <- current ExInfo*
         ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
 
-PopExInfoLoop:
+LOCAL_LABEL(PopExInfoLoop):
         ldr         x3, [x3, #OFFSETOF__ExInfo__m_pPrevExInfo]  // x3 <- next ExInfo
-        cbz         x3, DonePopping                             // if (pExInfo == null) { we're done }
+        cbz         x3, LOCAL_LABEL(DonePopping)                // if (pExInfo == null) { we're done }
         cmp         x3, x2
-        blt         PopExInfoLoop                               // if (pExInfo < resume SP} { keep going }
+        blt         LOCAL_LABEL(PopExInfoLoop)                  // if (pExInfo < resume SP} { keep going }
 
-DonePopping:
+LOCAL_LABEL(DonePopping):
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 3
 
-        tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, NoAbort
+        tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, LOCAL_LABEL(NoAbort)
 
         ldr         x3, [sp, #rsp_offset_is_not_handling_thread_abort]
-        cbnz        x3, NoAbort
+        cbnz        x3, LOCAL_LABEL(NoAbort)
 
         // It was the ThreadAbortException, so rethrow it
         // reset SP
@@ -512,10 +510,17 @@ DonePopping:
         mov         sp, x2
         b           C_FUNC(RhpThrowHwEx)
 
-NoAbort:
+LOCAL_LABEL(NoAbort):
         // reset SP and jump to continuation address
         mov         sp, x2
         br          x0
+
+#undef rsp_offset_is_not_handling_thread_abort
+#undef rsp_offset_x0
+#undef rsp_offset_x1
+#undef rsp_offset_x2
+#undef rsp_offset_x3
+#undef rsp_CatchFunclet_offset_thread
 
     NESTED_END RhpCallCatchFunclet, _Text
 
@@ -559,13 +564,13 @@ NoAbort:
 
         add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
 
-ClearRetry:
+LOCAL_LABEL(ClearRetry):
         ldxr        w4, [x12]
         bic         w4, w4, #TSF_DoNotTriggerGc
         stxr        w3, w4, [x12]
-        cbz         w3, ClearSuccess
-        b           ClearRetry
-ClearSuccess:
+        cbz         w3, LOCAL_LABEL(ClearSuccess)
+        b           LOCAL_LABEL(ClearRetry)
+LOCAL_LABEL(ClearSuccess):
 
         //
         // set preserved regs to the values expected by the funclet
@@ -597,13 +602,13 @@ ClearSuccess:
         ldr x2, [sp, rsp_FinallyFunclet_offset_thread]
 
         add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
-SetRetry:
+LOCAL_LABEL(SetRetry):
         ldxr        w1, [x12]
         orr         w1, w1, #TSF_DoNotTriggerGc
         stxr        w3, w1, [x12]
-        cbz         w3, SetSuccess
-        b           SetRetry
-SetSuccess:
+        cbz         w3, LOCAL_LABEL(SetSuccess)
+        b           LOCAL_LABEL(SetRetry)
+LOCAL_LABEL(SetSuccess):
 
         ldp         d8, d9,   [sp, #0x00]
         ldp         d10, d11, [sp, #0x10]
@@ -612,6 +617,9 @@ SetSuccess:
 
         FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
+
+#undef rsp_offset_x1
+#undef rsp_FinallyFunclet_offset_thread
 
     NESTED_END RhpCallFinallyFunclet, _Text
 
@@ -653,3 +661,123 @@ SetSuccess:
         EPILOG_RETURN
 
     NESTED_END RhpCallFilterFunclet, Text
+
+#ifdef FEATURE_OBJCMARSHAL
+
+//
+// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+//                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
+//
+// INPUT:  X0:  callback context
+//         X1:  callback
+//         X2:  REGDISPLAY*
+//         X3:  ExInfo*
+//         X4:  pPreviousTransitionFrame
+//
+// OUTPUT:
+//
+
+    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+
+#define rsp_offset_x0 0x10
+#define rsp_offset_x1 0x18
+#define rsp_offset_x2 0x20
+#define rsp_offset_x3 0x28
+#define rsp_offset_x4 0x30
+#define rsp_CallPropagationCallback_offset_thread 0x38
+
+        // Using the NO_FP macro so that the debugger unwinds using SP.
+        // This makes backtraces work even after using RESTORE_PRESERVED_REGISTERS.
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x40
+        mov fp, sp
+        stp x0, x1,   [sp, #rsp_offset_x0] // x0 to x3 are stored to restore them anytime
+        stp x2, x3,   [sp, #rsp_offset_x2]
+        stp x4, xzr,  [sp, #rsp_offset_x4]
+        // str xzr,      [sp, #rsp_CallPropagationCallback_offset_thread] // xzr makes space to store the thread obj
+
+        //
+        // clear the DoNotTriggerGc flag, trashes x4-x6
+        //
+
+        bl C_FUNC(RhpGetThread)
+        str x0, [sp, rsp_CallPropagationCallback_offset_thread]
+        mov x5,x0
+        ldp x0, x1,   [sp, #rsp_offset_x0]
+        ldp x2, x3,   [sp, #rsp_offset_x2]
+
+        add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
+
+LOCAL_LABEL(ClearRetry_Propagate):
+        ldxr        w4, [x12]
+        bic         w4, w4, #TSF_DoNotTriggerGc
+        stxr        w6, w4, [x12]
+        cbz         w6, LOCAL_LABEL(ClearSuccess_Propagate)
+        b           LOCAL_LABEL(ClearRetry_Propagate)
+LOCAL_LABEL(ClearSuccess_Propagate):
+
+        //
+        // set preserved regs to the values expected by the funclet
+        //
+        RESTORE_PRESERVED_REGISTERS x2
+        //
+        // trash the values at the old homes to make sure nobody uses them
+        //
+        TRASH_PRESERVED_REGISTERS_STORAGE x2
+
+#ifdef _DEBUG
+        // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we
+        // have to spill all the preserved registers and then refill them after the call.
+
+        SAVE_PRESERVED_REGISTERS x2
+
+        ldr         x0, [sp, rsp_CallPropagationCallback_offset_thread]  // x0 <- Thread*
+        ldr         x1, [sp, #rsp_offset_x3]                             // x1 <- current ExInfo*
+        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]                  // x2 <- resume SP value
+        bl          C_FUNC(RhpValidateExInfoPop)
+
+        ldr         x2, [sp, rsp_offset_x2]                              // x2 <- REGDISPLAY*
+
+        RESTORE_PRESERVED_REGISTERS x2
+#endif
+
+        ldr         x1, [sp, rsp_CallPropagationCallback_offset_thread]
+
+        // We must unhijack the thread at this point because the section of stack where the hijack is applied
+        // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
+        INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12
+
+        ldr         x3, [sp, #rsp_offset_x3]                    // x3 <- current ExInfo*
+        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
+
+LOCAL_LABEL(Propagate_PopExInfoLoop):
+        ldr         x3, [x3, #OFFSETOF__ExInfo__m_pPrevExInfo]  // x3 <- next ExInfo
+        cbz         x3, LOCAL_LABEL(Propagate_DonePopping)      // if (pExInfo == null) { we're done }
+        cmp         x3, x2
+        blt         LOCAL_LABEL(Propagate_PopExInfoLoop)        // if (pExInfo < resume SP} { keep going }
+
+LOCAL_LABEL(Propagate_DonePopping):
+        str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
+
+        // restore preemptive mode
+        ldr         x4, [sp, #rsp_offset_x4]                    // pPreviousTransitionFrame
+        str         x4, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
+
+        // reset SP and LR and jump to continuation address
+        ldr         x0, [sp, #rsp_offset_x0]                    // callback context
+        ldr         x1, [sp, #rsp_offset_x1]                    // callback
+        ldr         x2, [sp, #rsp_offset_x2]                    // REGDISPLAY*
+        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__pLR]        // x3 <- &resume LR value
+        ldr         lr, [x3]
+        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__SP]         // x3 <- resume SP value
+        mov         sp, x3
+        br          x1
+
+#undef rsp_offset_x0
+#undef rsp_offset_x1
+#undef rsp_offset_x2
+#undef rsp_offset_x3
+#undef rsp_CallPropagationCallback_offset_thread
+
+    NESTED_END RhpCallPropagateExceptionCallback, _Text
+
+#endif // FEATURE_OBJCMARSHAL

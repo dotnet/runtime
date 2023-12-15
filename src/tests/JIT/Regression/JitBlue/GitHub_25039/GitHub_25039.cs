@@ -8,8 +8,9 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using static System.Runtime.Intrinsics.X86.Avx;
 using static System.Runtime.Intrinsics.X86.Avx2;
+using Xunit;
 
-class GitHub_25039
+public class GitHub_25039
 {
     static ReadOnlySpan<byte> PermTable => new byte[]
     {
@@ -32,7 +33,8 @@ class GitHub_25039
         return ConvertToVector256Int32(pBase + pvbyte * 8);
     }
 
-    static unsafe int Main(string[] args)
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         if (System.Runtime.Intrinsics.X86.Avx2.IsSupported)
         {

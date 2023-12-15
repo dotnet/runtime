@@ -3,13 +3,15 @@
 //
 
 using System;
+using Xunit;
 
-class Repro
+public class Repro
 {
     static char c1 = (char)32768;
     static char c2 = (char)0;
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //This testcase ensures that we correctly generate character comparisons
 

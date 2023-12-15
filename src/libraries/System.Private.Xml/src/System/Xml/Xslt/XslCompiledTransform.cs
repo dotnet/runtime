@@ -35,6 +35,7 @@ namespace System.Xml.Xsl
     //      results, resultsFile        - cannot be null
     //----------------------------------------------------------------------------------------------------
 
+    [RequiresDynamicCode("XslCompiledTransform requires dynamic code because it generates IL at runtime.")]
     public sealed class XslCompiledTransform
     {
         // Version for GeneratedCodeAttribute
@@ -139,7 +140,7 @@ namespace System.Xml.Xsl
             }
             if (!settings.CheckOnly)
             {
-                CompileQilToMsil(settings);
+                CompileQilToMsil();
             }
         }
 
@@ -165,7 +166,7 @@ namespace System.Xml.Xsl
             return null;
         }
 
-        private void CompileQilToMsil(XsltSettings settings)
+        private void CompileQilToMsil()
         {
             _command = new XmlILGenerator().Generate(_qil!, null)!;
             OutputSettings = _command.StaticData.DefaultWriterSettings;
@@ -405,7 +406,7 @@ namespace System.Xml.Xsl
         {
             if (LocalAppContextSwitches.AllowDefaultResolver)
             {
-                return new XmlUrlResolver();
+                return XmlReaderSettings.GetDefaultPermissiveResolver();
             }
 
             return XmlResolver.ThrowingResolver;

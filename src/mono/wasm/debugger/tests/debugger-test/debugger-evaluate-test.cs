@@ -391,9 +391,9 @@ namespace DebuggerTests
                 return str + parm;
             }
 
-            public string CallMethodWithParmString_λ(string parm)
+            public string CallMethodWithParmString_\u03BB(string parm)
             {
-                return "λ_" + parm;
+                return "\u03BB_" + parm;
             }
 
             public string CallMethodWithParmBool(bool parm)
@@ -506,42 +506,83 @@ namespace DebuggerTests
 
     public class EvaluateLocalsWithIndexingTests
     {
-        public class TestEvaluate
+        public record Indexer(int index);
+
+        public class CommonCollections
         {
-            public List<int> numList;
-            public List<string> textList;
-            public int[] numArray;
-            public string[] textArray;
+            public List<int> numList = new List<int> { 1, 2 };
+            public List<string> textList = new List<string> { "1", "2" };
+            public int[] numArray = new int[] { 1, 2, 0 };
+            public string[] textArray = new string[] { "1", "2" };
             public int[][] numArrayOfArrays;
             public List<List<int>> numListOfLists;
             public string[][] textArrayOfArrays;
             public List<List<string>> textListOfLists;
-            public int idx0;
-            public int idx1;
+            public Dictionary<string, bool> indexedByStr = new Dictionary<string, bool>() { { "1", true }, { "111", false }, { "true", true} };
+            public Dictionary<char, string> indexedByChar = new Dictionary<char, string>() { { 'i', "I" }, { '5', "5" } };
+            public Dictionary<bool, string> indexedByBool = new Dictionary<bool, string>() { { true, "TRUE" }, { false, "FALSE" } };
+            public int idx0 = 0;
+            public int idx1 = 1;
 
-            public bool this[string key] => key.Length > 3;
-
-            public void run()
+            public CommonCollections()
             {
-                numList = new List<int> { 1, 2 };
-                textList = new List<string> { "1", "2" };
-                numArray = new int[] { 1, 2 };
-                textArray = new string[] { "1", "2" };
                 numArrayOfArrays = new int[][] { numArray, numArray };
                 numListOfLists = new List<List<int>> { numList, numList };
                 textArrayOfArrays = new string[][] { textArray, textArray };
                 textListOfLists = new List<List<string>> { textList, textList };
-                idx0 = 0;
-                idx1 = 1;
             }
+        }
+
+        public class ClassWithIndexers
+        {
+            public string this[char keyChar] => "res_" + keyChar;
+            public string this[bool keyBool] => keyBool.ToString();
+            public bool this[string keyStr] => keyStr.Length > 3;
+            public int this[double keyDouble] => (int)keyDouble;
+            public int this[float keyFloat] => (int)keyFloat;
+            public int this[decimal keyDecimal] => (int)keyDecimal;
+            public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
+
+            public InlineArray.Arr1 inlineArr;
+        }
+
+        public struct StructWithIndexers
+        {
+            public string this[char keyChar] => "res_" + keyChar;
+            public string this[bool keyBool] => keyBool.ToString();
+            public bool this[string keyStr] => keyStr.Length > 3;
+            public int this[double keyDouble] => (int)keyDouble;
+            public int this[float keyFloat] => (int)keyFloat;
+            public int this[decimal keyDecimal] => (int)keyDecimal;
+            public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
+
+            public InlineArray.Arr1 inlineArr;
         }
 
         public static void EvaluateLocals()
         {
             int i = 0;
             int j = 1;
-            TestEvaluate f = new TestEvaluate();
-            f.run();
+            ClassWithIndexers c = new();
+            StructWithIndexers s = new();
+            CommonCollections cc = new();
+            string longString = "longString";
+            string shortString = "9";
+            char aChar = '9';
+            bool aBool = true;
+            float aFloat = 1.23f;
+            double aDouble = 2.34;
+            decimal aDecimal = 3.34m;
+            Indexer objIdx = new(index: 123);
+            char[] arr = new char[] { 't', 'e', 's', 't' };
         }
     }
 
@@ -1906,6 +1947,29 @@ namespace DebuggerTests
         }
     }
 
+    public static class FastCheck
+    {
+        public class InstanceClass
+        {
+            public int number = 123;
+        }
+
+        public class MemberClass
+        {
+            public int Method(InstanceClass ic) => ic.number;
+            public int Method(int num) => num;
+        }
+
+        public static void run()
+        {
+            int number = -123;
+            InstanceClass ic = new();
+            MemberClass mc = new();
+            EvaluateStaticFieldsInInstanceClass instance = new();
+            PrimitiveTypeMethods.TestClass instance2 = new();
+        }
+    }
+
     public static class DefaultParamMethods
     {
         public class TestClass
@@ -1914,7 +1978,7 @@ namespace DebuggerTests
 
             public bool GetBool(bool param = true) => param;
             public char GetChar(char param = 'T') => param;
-            public char GetUnicodeChar(char param = 'ą') => param;
+            public char GetUnicodeChar(char param = '\u0105') => param;
             public byte GetByte(byte param = 1) => param;
             public sbyte GetSByte(sbyte param = 1) => param;
             public short GetInt16(short param = 1) => param;
@@ -1926,7 +1990,7 @@ namespace DebuggerTests
             public float GetSingle(float param = 1.23f) => param;
             public double GetDouble(double param = 1.23) => param;
             public string GetString(string param = "1.23") => param;
-            public string GetUnicodeString(string param = "żółć") => param;
+            public string GetUnicodeString(string param = "\u017C\u00F3\u0142\u0107") => param;
 
 #nullable enable
             public bool? GetBoolNullable(bool? param = true) => param;
@@ -1945,7 +2009,13 @@ namespace DebuggerTests
 #nullable disable
 
             public bool GetNull(object param = null) => param == null ? true : false;
-            public int GetDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public int SumDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public int SumDefaultNegativeAndRequiredParamInts(int requiredParam, int optionalParam = -3) => requiredParam + optionalParam;
+            public long SumDefaultNegativeAndRequiredParamLongInts(long requiredParam, long optionalParam = -123) => requiredParam + optionalParam;
+            public float SumDefaultNegativeAndRequiredParamFloats(float requiredParam, float optionalParam = -3.3f) => requiredParam + optionalParam;
+            public double SumDefaultNegativeAndRequiredParamDoubles(double requiredParam, double optionalParam = -3.2) => requiredParam + optionalParam;
+            public short SumDefaultNegativeAndRequiredParamShortInts(short requiredParam, short optionalParam = -123) => (short)(requiredParam + optionalParam);
+            public short GetDefaultNegativeShortInt(short optionalParam = -123) => optionalParam;
             public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
         }
 
@@ -2020,6 +2090,20 @@ namespace DebuggerTests
         {
             var instance = new InstanceProperties();
             var localString = "aB.c[";
+        }
+    }
+
+    public static class EvaluateMethodsOnEnum
+    {
+        public static SampleEnum s_valueTypeEnum = SampleEnum.no;
+        public class MemberClass
+        {
+            public SampleEnum valueTypeEnum = SampleEnum.yes;
+        }
+        public static void run()
+        {
+            MemberClass mc = new();
+            Console.WriteLine("Break here");
         }
     }
 }
@@ -2101,6 +2185,64 @@ public static class NoNamespaceClass
                 public static string StaticProperty => "StaticProperty30";
                 public static string StaticPropertyWithError => throw new Exception("not implemented 30");
             }
+        }
+    }
+}
+[System.Diagnostics.DebuggerDisplay("{MyMethod2(),nq}")]
+public class TestEvaluateDontPauseOnBreakpoint
+{
+    public int count;
+    public static void run()
+    {
+        var myVar = new TestEvaluateDontPauseOnBreakpoint();
+        myVar.count = 10;
+        myVar.MyMethod2();
+        myVar.MyMethod();
+    }
+    public string MyMethod() {
+        System.Diagnostics.Debugger.Break();
+        return string.Format("Object {0}", count);
+    }
+    public string MyMethod2() {
+        return string.Format("Object {0}", count + 1);
+    }
+    public string MyMethod3() {
+        return MyMethod2();
+    }
+    public string MyCount
+    {
+        get
+        {
+            return MyMethod2();
+        }
+    }
+}
+public struct EvaluateStaticGetterInValueType
+{
+    public static int A => 5;
+}
+
+namespace DebuggerTests
+{
+    public class SumObjectAndString
+    {
+        public class MyClass
+        {
+            public override string ToString()
+            {
+                return "OverridenToString";
+            }
+        }
+        public static void run()
+        {
+            DateTime dt = new DateTime();
+            List<int> myList = new();
+            List<int> listNull = null;
+            object o = new();
+            MyClass myClass = new();
+            myList.Add(1);
+            Console.WriteLine(myList);
+            Console.WriteLine(dt);
         }
     }
 }

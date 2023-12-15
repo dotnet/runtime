@@ -16,9 +16,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     64      // Upper bound to let the code generator to loop unroll InitBlk.
-
 #ifdef FEATURE_SIMD
 #pragma error("SIMD Unimplemented yet LOONGARCH")
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
@@ -78,8 +75,8 @@
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
 
-  #define REG_DEFAULT_HELPER_CALL_TARGET REG_T2
-  #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_T2
+  #define REG_DEFAULT_HELPER_CALL_TARGET REG_T4
+  #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_T4
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -124,10 +121,6 @@
 
   // This is a float scratch register that does not conflict with the argument registers
   #define REG_SCRATCH_FLT          REG_F11
-
-  // This is a general register that can be optionally reserved for other purposes during codegen
-  #define REG_OPT_RSVD             REG_T1
-  #define RBM_OPT_RSVD             RBM_T1
 
   // Where is the exception object on entry to the handler block?
   #define REG_EXCEPTION_OBJECT     REG_A0
@@ -219,14 +212,14 @@
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   // The following registers are used in emitting Enter/Leave/Tailcall profiler callbacks
-  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R10
-  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R10
-  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R11
-  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R11
-  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R10
-  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R10
-  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R11
-  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R11
+  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_T1
+  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_T1
+  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_T2
+  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_T2
+  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_PROFILER_ENTER_ARG_FUNC_ID
+  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_PROFILER_ENTER_ARG_FUNC_ID
+  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_PROFILER_ENTER_ARG_CALLER_SP
+  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_PROFILER_ENTER_ARG_CALLER_SP
 
   // The registers trashed by profiler enter/leave/tailcall hook
   #define RBM_PROFILER_ENTER_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS|RBM_FP))

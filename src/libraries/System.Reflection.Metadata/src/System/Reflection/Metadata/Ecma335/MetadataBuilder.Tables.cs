@@ -215,10 +215,10 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Returns the current number of entires in the specified table.
+        /// Returns the current number of entries in the specified table.
         /// </summary>
         /// <param name="table">Table index.</param>
-        /// <returns>The number of entires in the table.</returns>
+        /// <returns>The number of entries in the table.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="table"/> is not a valid table index.</exception>
         public int GetRowCount(TableIndex table)
         {
@@ -286,7 +286,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Returns the current number of entires in each table.
+        /// Returns the current number of entries in each table.
         /// </summary>
         /// <returns>
         /// An array of size <see cref="MetadataTokens.TableCount"/> with each item filled with the current row count of the corresponding table.
@@ -493,7 +493,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Note that if this directive applies to a value type, then the size shall be less than 1 MB.
         /// </param>
         /// <remarks>
-        /// Entires must be added in the same order as the corresponding type definitions.
+        /// Entries must be added in the same order as the corresponding type definitions.
         /// </remarks>
         public void AddTypeLayout(
             TypeDefinitionHandle type,
@@ -897,7 +897,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="field">Field definition.</param>
         /// <param name="offset">The byte offset of the field within the declaring type instance.</param>
         /// <remarks>
-        /// Entires must be added in the same order as the corresponding field definitions.
+        /// Entries must be added in the same order as the corresponding field definitions.
         /// </remarks>
         public void AddFieldLayout(
             FieldDefinitionHandle field,
@@ -946,7 +946,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// by adding the offset to the virtual address of the block start.
         /// </param>
         /// <remarks>
-        /// Entires must be added in the same order as the corresponding field definitions.
+        /// Entries must be added in the same order as the corresponding field definitions.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is negative.</exception>
         public void AddFieldRelativeVirtualAddress(FieldDefinitionHandle field, int offset)
@@ -1358,7 +1358,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _stateMachineMethodTable.Add(new StateMachineMethodRow
             {
-                MoveNextMethod  = moveNextMethod.RowId,
+                MoveNextMethod = moveNextMethod.RowId,
                 KickoffMethod = kickoffMethod.RowId
             });
         }
@@ -1894,13 +1894,17 @@ namespace System.Reflection.Metadata.Ecma335
 
             if (metadataSizes.IsEncDelta)
             {
-                heapSizes |= (HeapSizeFlag.EncDeltas | HeapSizeFlag.DeletedMarks);
+                heapSizes |= HeapSizeFlag.EncDeltas | HeapSizeFlag.DeletedMarks;
             }
 
-            ulong sortedDebugTables = metadataSizes.PresentTablesMask & MetadataSizes.SortedDebugTables;
+            // Custom Attribute table is not sorted in delta metadata:
+            ulong sortedTables =
+                metadataSizes.IsEncDelta ? MetadataSizes.SortedTypeSystemTables & ~(1UL << (int)TableIndex.CustomAttribute) :
+                metadataSizes.IsStandaloneDebugMetadata ? 0 :
+                MetadataSizes.SortedTypeSystemTables;
 
             // Consider filtering out type system tables that are not present:
-            ulong sortedTables = sortedDebugTables | (metadataSizes.IsStandaloneDebugMetadata ? 0UL : 0x16003301fa00);
+            sortedTables |= metadataSizes.PresentTablesMask & MetadataSizes.SortedDebugTables;
 
             writer.WriteUInt32(0); // reserved
             writer.WriteByte(MetadataFormatMajorVersion);
@@ -2048,7 +2052,9 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _customAttributeTableNeedsSorting ? _customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
+            // Avoid sorting the table when emitting EnC delta. Deleted attributes are represented in the table as rows with nil Parent field.
+            // Sorting the table would move them to the beginning of the table and break mapping specified in EncMap table.
+            var ordered = _customAttributeTableNeedsSorting && !metadataSizes.IsEncDelta ? _customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
 
             foreach (CustomAttributeRow customAttribute in ordered)
             {

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_Rotate
 {
@@ -233,7 +234,8 @@ public class Test_Rotate
         usfield = k;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

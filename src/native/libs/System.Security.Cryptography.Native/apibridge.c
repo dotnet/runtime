@@ -809,6 +809,12 @@ void local_SSL_set_security_level(SSL* ssl, int32_t level)
     (void)level;
 }
 
+void local_SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb)
+{
+    (void)ctx;
+    (void)cb;
+}
+
 int local_BIO_up_ref(BIO *bio)
 {
     if (!bio)
@@ -890,7 +896,6 @@ int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
     }
 }
 
-
 int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
 {
     (void)s;
@@ -898,4 +903,10 @@ int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
 
     return 0;
 }
+
+int local_BN_is_zero(const BIGNUM* a)
+{
+    return a->top == 0;
+}
+
 #endif

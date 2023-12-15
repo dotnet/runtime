@@ -82,7 +82,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
+        private DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _tsc.GetWellKnownType(wellKnownType);
         }
@@ -327,19 +327,10 @@ namespace Internal.TypeSystem.Ecma
 
         public MethodSignature ParseMethodSignature()
         {
-            try
-            {
-                _indexStack = new Stack<int>();
-                _indexStack.Push(0);
-                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
-                return ParseMethodSignatureInternal(skipEmbeddedSignatureData: false);
-            }
-            finally
-            {
-                _indexStack = null;
-                _embeddedSignatureDataList = null;
-            }
-
+            _indexStack = new Stack<int>();
+            _indexStack.Push(0);
+            _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+            return ParseMethodSignatureInternal(skipEmbeddedSignatureData: false);
         }
 
         private MethodSignature ParseMethodSignatureInternal(bool skipEmbeddedSignatureData)
@@ -371,7 +362,19 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == (int)SignatureCallingConvention.Unmanaged);
 
-                flags = (MethodSignatureFlags)signatureCallConv;
+                // If skipEmbeddedSignatureData is true, we're building the signature for the purposes of building a type.
+                // We normalize unmanaged calling convention into a single value - "unmanaged".
+                if (skipEmbeddedSignatureData)
+                {
+                    flags = MethodSignatureFlags.UnmanagedCallingConvention;
+
+                    // But we still need to remember this signature is different, so add this to the EmbeddedSignatureData of the owner signature.
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack) + "|" + ((int)signatureCallConv).ToString(), kind = EmbeddedSignatureDataKind.UnmanagedCallConv, type = null });
+                }
+                else
+                {
+                    flags = (MethodSignatureFlags)signatureCallConv;
+                }
             }
 
             if (!header.IsInstance)
@@ -409,6 +412,14 @@ namespace Internal.TypeSystem.Ecma
 
         public PropertySignature ParsePropertySignature()
         {
+            _indexStack = new Stack<int>();
+            _indexStack.Push(0);
+            _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+            return ParsePropertySignatureInternal();
+        }
+
+        private PropertySignature ParsePropertySignatureInternal()
+        {
             // As PropertySignature is a struct, we cannot return null
             if (_notFoundBehavior != NotFoundBehavior.Throw)
                 throw new ArgumentException();
@@ -438,7 +449,9 @@ namespace Internal.TypeSystem.Ecma
                 parameters = TypeDesc.EmptyTypes;
             }
 
-            return new PropertySignature(isStatic, parameters, returnType);
+            EmbeddedSignatureData[] embeddedSignatureDataArray = (_embeddedSignatureDataList == null || _embeddedSignatureDataList.Count == 0) ? null : _embeddedSignatureDataList.ToArray();
+
+            return new PropertySignature(isStatic, parameters, returnType, embeddedSignatureDataArray);
         }
 
         public TypeDesc ParseFieldSignature()
@@ -451,21 +464,13 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc ParseFieldSignature(out EmbeddedSignatureData[] embeddedSigData)
         {
-            try
-            {
-                _indexStack = new Stack<int>();
-                _indexStack.Push(1);
-                _indexStack.Push(0);
-                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
-                TypeDesc parsedType = ParseFieldSignature();
-                embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
-                return parsedType;
-            }
-            finally
-            {
-                _indexStack = null;
-                _embeddedSignatureDataList = null;
-            }
+            _indexStack = new Stack<int>();
+            _indexStack.Push(1);
+            _indexStack.Push(0);
+            _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+            TypeDesc parsedType = ParseFieldSignature();
+            embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
+            return parsedType;
         }
 
         public LocalVariableDefinition[] ParseLocalsSignature()

@@ -44,9 +44,16 @@ typedef struct
 /**
  * Gets the windows size of the terminal
  *
- * Returns 0 on success; otherwise, returns errorNo.
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
+PALEXPORT int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowsSize);
+
+/**
+ * Sets the windows size of the terminal
+ *
+ * Returns 0 on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_SetWindowSize(WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.
@@ -69,7 +76,7 @@ PALEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-PALEXPORT void SystemNative_SetKeypadXmit(const char* terminfoString);
+PALEXPORT void SystemNative_SetKeypadXmit(intptr_t fd, const char* terminfoString);
 
 /**
  * Gets the special control character codes for the requested control characters.
@@ -86,12 +93,12 @@ PALEXPORT void SystemNative_GetControlCharacters(
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
  */
-PALEXPORT int32_t SystemNative_StdinReady(int32_t distinguishNewLines);
+PALEXPORT int32_t SystemNative_StdinReady(void);
 
 /**
  * Configures the terminal for System.Console Read.
  */
-PALEXPORT void SystemNative_InitializeConsoleBeforeRead(int32_t distinguishNewLines, uint8_t minChars, uint8_t decisecondsTimeout);
+PALEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
 
 /**
  * Configures the terminal after System.Console Read.
@@ -121,7 +128,7 @@ PALEXPORT int32_t SystemNative_GetSignalForBreak(void);
  *
  * Returns 1 on success, 0 on failure, in which case errno is set.
  */
-PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distinguishNewLines);
+PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
 
 typedef enum
 {

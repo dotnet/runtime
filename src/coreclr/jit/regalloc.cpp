@@ -1,17 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                           RegAlloc                                        XX
-XX                                                                           XX
-XX  Does the register allocation and puts the remaining lclVars on the stack XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -165,7 +154,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
-            unsigned cSlots = GetHfaCount(argDsc->GetStructHnd());
+            unsigned cSlots = argDsc->lvHfaSlots();
             for (unsigned i = 1; i < cSlots; i++)
             {
                 assert(inArgReg + i <= LAST_FP_ARGREG);
@@ -192,12 +181,19 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
     return inArgReg;
 }
 
-/****************************************************************************/
-/* Returns true when we must create an EBP frame
-   This is used to force most managed methods to have EBP based frames
-   which allows the ETW kernel stackwalker to walk the stacks of managed code
-   this allows the kernel to perform light weight profiling
- */
+//------------------------------------------------------------------------
+// rpMustCreateEBPFrame:
+//   Returns true when we must create an EBP frame
+//
+// Parameters:
+//   wbReason - [out] Detailed reason why a frame must be created. Only valid if
+//                    the function returns true.
+//
+// Remarks:
+//   This is used to force most managed methods to have EBP based frames
+//   which allows the ETW kernel stackwalker to walk the stacks of managed code
+//   this allows the kernel to perform light weight profiling
+//
 bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
 {
     bool result = false;
@@ -276,12 +272,11 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
     return result;
 }
 
-/*****************************************************************************
- *
- *  Mark all variables as to whether they live on the stack frame
- *  (part or whole), and if so what the base is (FP or SP).
- */
-
+//------------------------------------------------------------------------
+// raMarkStkVars:
+//   Mark all variables as to whether they live on the stack frame
+//  (part or whole), and if so what the base is (FP or SP).
+//
 void Compiler::raMarkStkVars()
 {
     unsigned   lclNum;
@@ -297,42 +292,20 @@ void Compiler::raMarkStkVars()
             goto ON_STK;
         }
 
-        /* Fully enregistered variables don't need any frame space */
+        // Fully enregistered variables don't need any frame space
 
         if (varDsc->lvRegister)
         {
             goto NOT_STK;
         }
-        /* Unused variables typically don't get any frame space */
+        // Unused variables typically don't get any frame space
         else if (varDsc->lvRefCnt() == 0)
         {
-            bool needSlot = false;
-
-            bool stkFixedArgInVarArgs =
-                info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg && lclNum != lvaVarargsHandleArg;
-
-            // If its address has been exposed, ignore lvRefCnt. However, exclude
-            // fixed arguments in varargs method as lvOnFrame shouldn't be set
-            // for them as we don't want to explicitly report them to GC.
-
-            if (!stkFixedArgInVarArgs)
-            {
-                needSlot |= varDsc->IsAddressExposed();
-            }
-
-#if FEATURE_FIXED_OUT_ARGS
-
-            /* Is this the dummy variable representing GT_LCLBLK ? */
-            needSlot |= (lclNum == lvaOutgoingArgSpaceVar);
-
-#endif // FEATURE_FIXED_OUT_ARGS
-
 #ifdef DEBUG
-            /* For debugging, note that we have to reserve space even for
-               unused variables if they are ever in scope. However, this is not
-               an issue as fgExtendDbgLifetimes() adds an initialization and
-               variables in scope will not have a zero ref-cnt.
-             */
+            // For debugging, note that we have to reserve space even for
+            // unused variables if they are ever in scope. However, this is not
+            // an issue as fgExtendDbgLifetimes() adds an initialization and
+            // variables in scope will not have a zero ref-cnt.
             if (opts.compDbgCode && !varDsc->lvIsParam && varDsc->lvTracked)
             {
                 for (unsigned scopeNum = 0; scopeNum < info.compVarScopesCount; scopeNum++)
@@ -341,36 +314,12 @@ void Compiler::raMarkStkVars()
                 }
             }
 #endif
-            /*
-              For Debug Code, we have to reserve space even if the variable is never
-              in scope. We will also need to initialize it if it is a GC var.
-              So we set lvMustInit and verify it has a nonzero ref-cnt.
-             */
 
-            if (opts.compDbgCode && !stkFixedArgInVarArgs && lclNum < info.compLocalsCount)
-            {
-                if (varDsc->lvRefCnt() == 0)
-                {
-                    assert(!"unreferenced local in debug codegen");
-                    varDsc->lvImplicitlyReferenced = 1;
-                }
+            varDsc->lvOnFrame = false;
+            // Clear the lvMustInit flag in case it is set
+            varDsc->lvMustInit = false;
 
-                needSlot |= true;
-
-                if (!varDsc->lvIsParam)
-                {
-                    varDsc->lvMustInit = true;
-                }
-            }
-
-            varDsc->lvOnFrame = needSlot;
-            if (!needSlot)
-            {
-                /* Clear the lvMustInit flag in case it is set */
-                varDsc->lvMustInit = false;
-
-                goto NOT_STK;
-            }
+            goto NOT_STK;
         }
 
         if (!varDsc->lvOnFrame)
@@ -379,7 +328,7 @@ void Compiler::raMarkStkVars()
         }
 
     ON_STK:
-        /* The variable (or part of it) lives on the stack frame */
+        // The variable (or part of it) lives on the stack frame
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
@@ -410,7 +359,7 @@ void Compiler::raMarkStkVars()
 
 #endif
 
-        /* Some basic checks */
+        // Some basic checks
 
         // It must be in a register, on frame, or have zero references.
 

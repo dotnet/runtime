@@ -7,24 +7,21 @@ using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// A delegate to represent the Meterlistener callbacks used in measurements recording operation.
+    /// A delegate to represent the MeterListener callbacks used in measurements recording operation.
     /// </summary>
     public delegate void MeasurementCallback<T>(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) where T : struct;
 
     /// <summary>
     /// MeterListener is class used to listen to the metrics instrument measurements recording.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class MeterListener : IDisposable
     {
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // DiagLinkedList is thread safe for Add, Remove, and Clear operations.
-        private static List<MeterListener> s_allStartedListeners = new List<MeterListener>();
+        private static readonly List<MeterListener> s_allStartedListeners = new List<MeterListener>();
 
         // List of the instruments which the current listener is listening to.
-        private DiagLinkedList<Instrument> _enabledMeasurementInstruments = new DiagLinkedList<Instrument>();
+        private readonly DiagLinkedList<Instrument> _enabledMeasurementInstruments = new DiagLinkedList<Instrument>();
         private bool _disposed;
 
         // We initialize all measurement callback with no-op operations so we'll avoid the null checks during the execution;
@@ -59,6 +56,11 @@ namespace System.Diagnostics.Metrics
         /// <param name="state">A state object which will be passed back to the callback getting measurements events.</param>
         public void EnableMeasurementEvents(Instrument instrument, object? state = null)
         {
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             bool oldStateStored = false;
             bool enabled = false;
             object? oldState = null;
@@ -95,7 +97,12 @@ namespace System.Diagnostics.Metrics
         /// <returns>The state object originally passed to <see cref="EnableMeasurementEvents" /> method.</returns>
         public object? DisableMeasurementEvents(Instrument instrument)
         {
-            object? state =  null;
+            if (!Meter.IsSupported)
+            {
+                return default;
+            }
+
+            object? state = null;
             lock (Instrument.SyncObject)
             {
                 if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, object.ReferenceEquals) == default)
@@ -103,7 +110,7 @@ namespace System.Diagnostics.Metrics
                     return default;
                 }
 
-                state =  instrument.DisableMeasurements(this);
+                state = instrument.DisableMeasurements(this);
             }
 
             MeasurementsCompleted?.Invoke(instrument, state);
@@ -117,6 +124,11 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             measurementCallback ??= (instrument, measurement, tags, state) => { /* no-op */};
 
             if (typeof(T) == typeof(byte))
@@ -158,6 +170,11 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Start()
         {
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             List<Instrument>? publishedInstruments = null;
             lock (Instrument.SyncObject)
             {
@@ -187,6 +204,11 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void RecordObservableInstruments()
         {
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             List<Exception>? exceptionsList = null;
             DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
             while (current is not null)
@@ -218,6 +240,11 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void Dispose()
         {
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             Dictionary<Instrument, object?>? callbacksArguments = null;
             Action<Instrument, object?>? measurementsCompleted = MeasurementsCompleted;
 

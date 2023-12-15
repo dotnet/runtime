@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Runtime.InteropServices;
 
 #pragma warning disable CA1067 // override Equals because it implements IEquatable<T>
 
@@ -42,8 +42,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (0 != (attributes & TypeAttributes.Import))
                     yield return new RuntimePseudoCustomAttributeData(typeof(ComImportAttribute), null);
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if (0 != (attributes & TypeAttributes.Serializable))
                     yield return new RuntimePseudoCustomAttributeData(typeof(SerializableAttribute), null);
+#pragma warning restore SYSLIB0050
             }
         }
 
@@ -93,7 +95,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 string name = Name;
 
-                Type? declaringType = this.DeclaringType;
+                RuntimeTypeInfo? declaringType = this.InternalDeclaringType;
                 if (declaringType is not null)
                 {
                     string? declaringTypeFullName = declaringType.FullName;
@@ -106,10 +108,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return ns + "." + name;
             }
         }
-
-#if DEBUG
-        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
-#endif
 
         protected abstract void GetPackSizeAndSize(out int packSize, out int size);
 
@@ -130,7 +128,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                     case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                     case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
-                    default: layoutKind = LayoutKind.Auto;  break;
+                    default: layoutKind = LayoutKind.Auto; break;
                 }
 
                 CharSet charSet;
@@ -139,7 +137,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     case TypeAttributes.AnsiClass: charSet = CharSet.Ansi; break;
                     case TypeAttributes.AutoClass: charSet = CharSet.Auto; break;
                     case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
-                    default: charSet = CharSet.None;  break;
+                    default: charSet = CharSet.None; break;
                 }
 
                 GetPackSizeAndSize(out int pack, out int size);

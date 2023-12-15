@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 
@@ -8,7 +9,17 @@ namespace System.Net.Http
 {
     internal static class HttpRuleParser
     {
-        private static readonly bool[] s_tokenChars = CreateTokenChars();
+        // token = 1*<any CHAR except CTLs or separators>
+        // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
+        private static readonly SearchValues<char> s_tokenChars =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+
+        private static readonly SearchValues<byte> s_tokenBytes =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
+
+        private static readonly SearchValues<char> s_hostDelimiterChars =
+            SearchValues.Create("/ \t\r,");
+
         private const int MaxNestedCount = 5;
 
         internal const char CR = (char)13;
@@ -18,98 +29,22 @@ namespace System.Net.Http
 
         internal static Encoding DefaultHttpEncoding => Encoding.Latin1;
 
-        private static bool[] CreateTokenChars()
-        {
-            // token = 1*<any CHAR except CTLs or separators>
-            // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
-
-            var tokenChars = new bool[128]; // All elements default to "false".
-
-            for (int i = 33; i < 127; i++) // Skip Space (32) & DEL (127).
-            {
-                tokenChars[i] = true;
-            }
-
-            // Remove separators: these are not valid token characters.
-            tokenChars[(byte)'('] = false;
-            tokenChars[(byte)')'] = false;
-            tokenChars[(byte)'<'] = false;
-            tokenChars[(byte)'>'] = false;
-            tokenChars[(byte)'@'] = false;
-            tokenChars[(byte)','] = false;
-            tokenChars[(byte)';'] = false;
-            tokenChars[(byte)':'] = false;
-            tokenChars[(byte)'\\'] = false;
-            tokenChars[(byte)'"'] = false;
-            tokenChars[(byte)'/'] = false;
-            tokenChars[(byte)'['] = false;
-            tokenChars[(byte)']'] = false;
-            tokenChars[(byte)'?'] = false;
-            tokenChars[(byte)'='] = false;
-            tokenChars[(byte)'{'] = false;
-            tokenChars[(byte)'}'] = false;
-
-            return tokenChars;
-        }
-
-        internal static bool IsTokenChar(char character)
-        {
-            // Must be between 'space' (32) and 'DEL' (127).
-            if (character > 127)
-            {
-                return false;
-            }
-
-            return s_tokenChars[character];
-        }
-
         internal static int GetTokenLength(string input, int startIndex)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
 
-            if (startIndex >= input.Length)
-            {
-                return 0;
-            }
+            ReadOnlySpan<char> slice = input.AsSpan(startIndex);
 
-            int current = startIndex;
+            int index = slice.IndexOfAnyExcept(s_tokenChars);
 
-            while (current < input.Length)
-            {
-                if (!IsTokenChar(input[current]))
-                {
-                    return current - startIndex;
-                }
-                current++;
-            }
-            return input.Length - startIndex;
+            return index < 0 ? slice.Length : index;
         }
 
-        internal static bool IsToken(string input)
-        {
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (!IsTokenChar(input[i]))
-                {
-                    return false;
-                }
-            }
+        internal static bool IsToken(ReadOnlySpan<char> input) =>
+            !input.ContainsAnyExcept(s_tokenChars);
 
-            return true;
-        }
-
-        internal static bool IsToken(ReadOnlySpan<byte> input)
-        {
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (!IsTokenChar((char)input[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        internal static bool IsToken(ReadOnlySpan<byte> input) =>
+            !input.ContainsAnyExcept(s_tokenBytes);
 
         internal static string GetTokenString(ReadOnlySpan<byte> input)
         {
@@ -147,10 +82,8 @@ namespace System.Net.Http
             return input.Length - startIndex;
         }
 
-        internal static bool ContainsNewLine(string value, int startIndex = 0)
-        {
-            return value.AsSpan(startIndex).IndexOfAny('\r', '\n') != -1;
-        }
+        internal static bool ContainsNewLine(string value, int startIndex = 0) =>
+            value.AsSpan(startIndex).ContainsAny('\r', '\n');
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
         {
@@ -206,41 +139,33 @@ namespace System.Net.Http
                 return 0;
             }
 
+            ReadOnlySpan<char> slice = input.AsSpan(startIndex);
+
             // A 'host' is either a token (if 'allowToken' == true) or a valid host name as defined by the URI RFC.
             // So we first iterate through the string and search for path delimiters and whitespace. When found, stop
             // and try to use the substring as token or URI host name. If it works, we have a host name, otherwise not.
-            int current = startIndex;
-            bool isToken = true;
-            while (current < input.Length)
+            int index = slice.IndexOfAny(s_hostDelimiterChars);
+            if (index >= 0)
             {
-                char c = input[current];
-                if (c == '/')
+                if (index == 0)
+                {
+                    return 0;
+                }
+
+                if (slice[index] == '/')
                 {
                     return 0; // Host header must not contain paths.
                 }
 
-                if ((c == ' ') || (c == '\t') || (c == '\r') || (c == ','))
-                {
-                    break; // We hit a delimiter (',' or whitespace). Stop here.
-                }
-
-                isToken = isToken && IsTokenChar(c);
-
-                current++;
+                slice = slice.Slice(0, index);
             }
 
-            int length = current - startIndex;
-            if (length == 0)
+            if ((allowToken && IsToken(slice)) || IsValidHostName(slice))
             {
-                return 0;
+                return slice.Length;
             }
 
-            if ((!allowToken || !isToken) && !IsValidHostName(input.AsSpan(startIndex, length)))
-            {
-                return 0;
-            }
-
-            return length;
+            return 0;
         }
 
         internal static HttpParseResult GetCommentLength(string input, int startIndex, out int length)

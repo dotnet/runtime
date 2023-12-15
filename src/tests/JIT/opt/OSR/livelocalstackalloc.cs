@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Example where local address is live in a stackalloc region
 
-class LiveLocalStackalloc
+public class LiveLocalStackalloc
 {
     static int n = 100;
     static int j = 30;
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         int nn = n;
         int** ptrs = stackalloc int*[nn];

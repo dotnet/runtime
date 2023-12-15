@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Principal
 {
@@ -97,23 +97,23 @@ namespace System.Security.Principal
         //
 
 
-        internal static int CreateSidFromString(
+        internal static unsafe int CreateSidFromString(
             string stringSid,
             out byte[]? resultSid
             )
         {
             int ErrorCode;
-            IntPtr ByteArray = IntPtr.Zero;
+            void* pSid = null;
 
             try
             {
-                if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out pSid))
                 {
                     ErrorCode = Marshal.GetLastPInvokeError();
                     goto Error;
                 }
 
-                resultSid = ConvertIntPtrSidToByteArraySid(ByteArray);
+                resultSid = ConvertIntPtrSidToByteArraySid((IntPtr)pSid);
             }
             finally
             {
@@ -121,7 +121,7 @@ namespace System.Security.Principal
                 // Now is a good time to get rid of the returned pointer
                 //
 
-                Marshal.FreeHGlobal(ByteArray);
+                Marshal.FreeHGlobal((IntPtr)pSid);
             }
 
             //

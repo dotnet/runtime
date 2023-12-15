@@ -251,140 +251,140 @@ namespace System.Linq.Tests
         [Fact]
         public void Sum1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((int)3, val);
         }
 
         [Fact]
         public void Sum2()
         {
-            var val = (new int?[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new int?[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((int)3, val);
         }
 
         [Fact]
         public void Sum3()
         {
-            var val = (new long[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new long[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((long)3, val);
         }
 
         [Fact]
         public void Sum4()
         {
-            var val = (new long?[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new long?[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((long)3, val);
         }
 
         [Fact]
         public void Sum5()
         {
-            var val = (new float[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new float[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((float)3, val);
         }
 
         [Fact]
         public void Sum6()
         {
-            var val = (new float?[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new float?[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((float)3, val);
         }
 
         [Fact]
         public void Sum7()
         {
-            var val = (new double[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new double[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((double)3, val);
         }
 
         [Fact]
         public void Sum8()
         {
-            var val = (new double?[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new double?[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((double)3, val);
         }
 
         [Fact]
         public void Sum9()
         {
-            var val = (new decimal[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new decimal[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((decimal)3, val);
         }
 
         [Fact]
         public void Sum10()
         {
-            var val = (new decimal?[] { 0, 2, 1 }).AsQueryable().Sum();
+            var val = new decimal?[] { 0, 2, 1 }.AsQueryable().Sum();
             Assert.Equal((decimal)3, val);
         }
 
         [Fact]
         public void Sum11()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((int)3, val);
         }
 
         [Fact]
         public void Sum12()
         {
-            var val = (new int?[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new int?[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((int)3, val);
         }
 
         [Fact]
         public void Sum13()
         {
-            var val = (new long[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new long[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((long)3, val);
         }
 
         [Fact]
         public void Sum14()
         {
-            var val = (new long?[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new long?[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((long)3, val);
         }
 
         [Fact]
         public void Sum15()
         {
-            var val = (new float[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new float[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((float)3, val);
         }
 
         [Fact]
         public void Sum16()
         {
-            var val = (new float?[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new float?[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((float)3, val);
         }
 
         [Fact]
         public void Sum17()
         {
-            var val = (new double[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new double[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((double)3, val);
         }
 
         [Fact]
         public void Sum18()
         {
-            var val = (new double?[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new double?[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((double)3, val);
         }
 
         [Fact]
         public void Sum19()
         {
-            var val = (new decimal[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new decimal[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((decimal)3, val);
         }
 
         [Fact]
         public void Sum20()
         {
-            var val = (new decimal?[] { 0, 2, 1 }).AsQueryable().Sum(n => n);
+            var val = new decimal?[] { 0, 2, 1 }.AsQueryable().Sum(n => n);
             Assert.Equal((decimal)3, val);
         }
     }

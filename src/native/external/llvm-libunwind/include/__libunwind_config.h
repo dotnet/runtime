@@ -9,8 +9,10 @@
 #ifndef ____LIBUNWIND_CONFIG_H__
 #define ____LIBUNWIND_CONFIG_H__
 
+#define _LIBUNWIND_VERSION 15000
+
 #if defined(__arm__) && !defined(__USING_SJLJ_EXCEPTIONS__) && \
-    !defined(__ARM_DWARF_EH__)
+    !defined(__ARM_DWARF_EH__) && !defined(__SEH__)
 #define _LIBUNWIND_ARM_EHABI
 #endif
 
@@ -27,6 +29,8 @@
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER_HEXAGON   34
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV     64
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER_VE        143
+#define _LIBUNWIND_HIGHEST_DWARF_REGISTER_S390X     83
+#define _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH 64
 
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
 # if defined(__linux__)
@@ -158,12 +162,27 @@
 #  define _LIBUNWIND_CONTEXT_SIZE 67
 #  define _LIBUNWIND_CURSOR_SIZE 79
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_VE
+# elif defined(__s390x__)
+#  define _LIBUNWIND_TARGET_S390X 1
+#  define _LIBUNWIND_CONTEXT_SIZE 34
+#  define _LIBUNWIND_CURSOR_SIZE 46
+#  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_S390X
+#elif defined(__loongarch__)
+#define _LIBUNWIND_TARGET_LOONGARCH 1
+#if __loongarch_grlen == 64
+#define _LIBUNWIND_CONTEXT_SIZE 65
+#define _LIBUNWIND_CURSOR_SIZE 77
 #elif defined(HOST_WASM)
 #define _LIBUNWIND_TARGET_WASM 1
 // TODO: Determine the right values
 #define _LIBUNWIND_CONTEXT_SIZE 0xbadf00d
 #define _LIBUNWIND_CURSOR_SIZE 0xbadf00d
 #else
+#error "Unsupported LoongArch ABI"
+#endif
+#define _LIBUNWIND_HIGHEST_DWARF_REGISTER                                      \
+  _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH
+# else
 #  error "Unsupported architecture."
 # endif
 #else // !_LIBUNWIND_IS_NATIVE_ONLY
@@ -181,6 +200,8 @@
 # define _LIBUNWIND_TARGET_HEXAGON 1
 # define _LIBUNWIND_TARGET_RISCV 1
 # define _LIBUNWIND_TARGET_VE 1
+# define _LIBUNWIND_TARGET_S390X 1
+#define _LIBUNWIND_TARGET_LOONGARCH 1
 # define _LIBUNWIND_CONTEXT_SIZE 167
 # define _LIBUNWIND_CURSOR_SIZE 179
 # define _LIBUNWIND_HIGHEST_DWARF_REGISTER 287

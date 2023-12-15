@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPSmall
 {
     const int Pass = 100;
@@ -21,7 +22,8 @@ public class BringUpTest_FPSmall
        return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPSmall(3f, 2f);
         Console.WriteLine(y);

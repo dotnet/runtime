@@ -11,6 +11,47 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public class ConcurrentTests
     {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop]
+        public async Task StressTargetCorePostponement()
+        {
+            for (int trial = 0; trial < 1000; trial++)
+            {
+                var bufferBlock = new BufferBlock<int>();
+
+                var transformOptions = new ExecutionDataflowBlockOptions()
+                {
+                    BoundedCapacity = 10,
+                    MaxDegreeOfParallelism = 2,
+                };
+                var transformBlocks = new TransformBlock<int, int>[]
+                {
+                    new TransformBlock<int, int>(x => x, transformOptions),
+                    new TransformBlock<int, int>(x => x, transformOptions)
+                };
+
+                int done = 0;
+                var actionBlock = new ActionBlock<int>(_ => Interlocked.Increment(ref done));
+
+                foreach (TransformBlock<int, int> transformBlock in transformBlocks)
+                {
+                    bufferBlock.LinkTo(transformBlock, new DataflowLinkOptions { PropagateCompletion = true });
+                    transformBlock.LinkTo(actionBlock, new DataflowLinkOptions { PropagateCompletion = false });
+                }
+                _ = Task.Factory.ContinueWhenAll(transformBlocks.Select(b => b.Completion).ToArray(), _ => actionBlock.Complete());
+
+                const int ItemCount = 40;
+                for (int item = 0; item < ItemCount; item++)
+                {
+                    await bufferBlock.SendAsync(item);
+                }
+                bufferBlock.Complete();
+                await actionBlock.Completion;
+
+                Assert.Equal(ItemCount, done);
+            }
+        }
+
         static readonly int s_dop = Environment.ProcessorCount * 2;
         const int IterationCount = 10000;
 

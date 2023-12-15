@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using Xunit;
 
 class C<T>
 {
@@ -19,7 +20,8 @@ class C<T>
 
 public class P
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         C<bool?> c = new();
 

@@ -3,13 +3,13 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -87,7 +87,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlString(bool fNull)
+        private SqlString(bool _)
         {
             m_value = null;
             m_cmpInfo = null;

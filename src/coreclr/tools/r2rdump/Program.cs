@@ -209,6 +209,7 @@ namespace R2RDump
                     Machine.Amd64 => TargetArchitecture.X64,
                     Machine.ArmThumb2 => TargetArchitecture.ARM,
                     Machine.Arm64 => TargetArchitecture.ARM64,
+                    Machine.LoongArch64 => TargetArchitecture.LoongArch64,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
                 TargetOS os = r2r.OperatingSystem switch
@@ -445,7 +446,7 @@ namespace R2RDump
                 {
                     // parse the ReadyToRun image
                     ReadyToRunReader r2r = new(model, filename);
-
+                    r2r.ValidateDebugInfo = Get(_command.ValidateDebugInfo);
                     if (disasm)
                     {
                         disassembler = new Disassembler(r2r, model);
@@ -494,14 +495,12 @@ namespace R2RDump
             return 0;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
-            new CommandLineBuilder(new R2RDumpRootCommand())
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseHelp()
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new R2RDumpRootCommand().UseVersion())
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+            }.Invoke(args);
     }
 }

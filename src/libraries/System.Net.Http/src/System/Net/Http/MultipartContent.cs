@@ -23,6 +23,9 @@ namespace System.Net.Http
         private const int ColonSpaceLength = 2;
         private const int CommaSpaceLength = 2;
 
+        private static readonly SearchValues<char> s_allowedBoundaryChars =
+            SearchValues.Create(" '()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+
         private readonly List<HttpContent> _nestedContent;
         private readonly string _boundary;
 
@@ -40,10 +43,7 @@ namespace System.Net.Http
 
         public MultipartContent(string subtype, string boundary)
         {
-            if (string.IsNullOrWhiteSpace(subtype))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(subtype));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(subtype);
             ValidateBoundary(boundary);
 
             _boundary = boundary;
@@ -65,10 +65,7 @@ namespace System.Net.Http
         {
             // NameValueHeaderValue is too restrictive for boundary.
             // Instead validate it ourselves and then quote it.
-            if (string.IsNullOrWhiteSpace(boundary))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(boundary));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(boundary);
 
             // RFC 2046 Section 5.1.1
             // boundary := 0*69<bchars> bcharsnospace
@@ -85,15 +82,9 @@ namespace System.Net.Http
                 throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
 
-            const string AllowedMarks = @"'()+_,-./:=? ";
-
-            foreach (char ch in boundary)
+            if (boundary.AsSpan().ContainsAnyExcept(s_allowedBoundaryChars))
             {
-                if (!char.IsAsciiLetterOrDigit(ch) &&
-                    !AllowedMarks.Contains(ch)) // Marks.
-                {
-                    throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
-                }
+                throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
         }
 
@@ -349,12 +340,12 @@ namespace System.Net.Http
             return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer), cancellationToken);
         }
 
-        private static Stream EncodeStringToNewStream(string input)
+        private static MemoryStream EncodeStringToNewStream(string input)
         {
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
-        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        private MemoryStream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
         {
             var stream = new MemoryStream();
             SerializeHeadersToStream(stream, content, writeDivider);
@@ -536,10 +527,10 @@ namespace System.Net.Http
                 ReadAsyncPrivate(buffer, cancellationToken);
 
             public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-                TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+                TaskToAsyncResult.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
             public override int EndRead(IAsyncResult asyncResult) =>
-                TaskToApm.End<int>(asyncResult);
+                TaskToAsyncResult.End<int>(asyncResult);
 
             public async ValueTask<int> ReadAsyncPrivate(Memory<byte> buffer, CancellationToken cancellationToken)
             {
@@ -576,10 +567,7 @@ namespace System.Net.Http
                 get { return _position; }
                 set
                 {
-                    if (value < 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                     long previousStreamsLength = 0;
                     for (int i = 0; i < _streams.Length; i++)

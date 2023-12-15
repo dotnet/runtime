@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <IsManagedCOMClient>true</IsManagedCOMClient>
     <UseManagedCOMServer>true</UseManagedCOMServer>
-    <!-- This test is very slow under some GCStress variations, especially with COMPlus_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
+    <!-- This test is very slow under some GCStress variations, especially with DOTNET_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
          Issue: https://github.com/dotnet/runtime/issues/39584
     -->
     <GCStressIncompatible>true</GCStressIncompatible>
@@ -26,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="Server/CMakeLists.txt" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="../NETServer/NETServer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

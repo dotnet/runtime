@@ -135,6 +135,8 @@ namespace System.Net.Http
         public long MaxRequestContentBufferSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
@@ -201,6 +203,11 @@ namespace System.Net.Http
         protected virtual System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal abstract bool TryComputeLength(out long length);
     }
+    public class HttpIOException : System.IO.IOException
+    {
+        public System.Net.Http.HttpRequestError HttpRequestError { get { throw null; } }
+        public HttpIOException(System.Net.Http.HttpRequestError httpRequestError, string? message = null, System.Exception? innerException = null) { }
+    }
     public abstract partial class HttpMessageHandler : System.IDisposable
     {
         protected HttpMessageHandler() { }
@@ -237,12 +244,28 @@ namespace System.Net.Http
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
+        public static System.Net.Http.HttpMethod Parse(ReadOnlySpan<char> method) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class HttpProtocolException : System.IO.IOException
+    public sealed class HttpProtocolException : System.Net.Http.HttpIOException
     {
-        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) : base (default(System.Net.Http.HttpRequestError), default(string?), default(System.Exception?)) { }
         public long ErrorCode { get { throw null; } }
+    }
+    public enum HttpRequestError
+    {
+        Unknown = 0,
+        NameResolutionError,
+        ConnectionError,
+        SecureConnectionError,
+        HttpProtocolError,
+        ExtendedConnectNotSupported,
+        VersionNegotiationError,
+        UserAuthenticationError,
+        ProxyTunnelError,
+        InvalidResponse,
+        ResponseEnded,
+        ConfigurationLimitExceeded,
     }
     public partial class HttpRequestException : System.Exception
     {
@@ -250,6 +273,8 @@ namespace System.Net.Http
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
+        public HttpRequestException(System.Net.Http.HttpRequestError httpRequestError, string? message = null, System.Exception? inner = null, System.Net.HttpStatusCode? statusCode = null) { }
+        public System.Net.Http.HttpRequestError HttpRequestError { get { throw null; } }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
@@ -277,8 +302,10 @@ namespace System.Net.Http
         public string Key { get { throw null; } }
     }
 
-    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>
+    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>, System.Collections.Generic.IReadOnlyDictionary<string, object?>
     {
+        bool System.Collections.Generic.IReadOnlyDictionary<string, object?>.ContainsKey(string key) { throw null; }
+        int System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>.Count { get { throw null; } }
         void System.Collections.Generic.IDictionary<string, object?>.Add(string key, object? value) { throw null; }
         System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, object?>.Keys { get { throw null; } }
         System.Collections.Generic.ICollection<object?> System.Collections.Generic.IDictionary<string, object?>.Values { get { throw null; } }
@@ -297,6 +324,10 @@ namespace System.Net.Http
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value) { throw null; }
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
+        bool System.Collections.Generic.IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value) { throw null; }
+        object? System.Collections.Generic.IReadOnlyDictionary<string, object?>.this[string key] { get { throw null; } }
+        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<string, object?>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<object?> System.Collections.Generic.IReadOnlyDictionary<string, object?>.Values { get { throw null; } }
     }
 
     public partial class HttpResponseMessage : System.IDisposable
@@ -391,6 +422,8 @@ namespace System.Net.Http
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionIdleTimeout { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
         public bool PreAuthenticate { get { throw null; } set { } }
@@ -462,7 +495,7 @@ namespace System.Net.Http.Headers
         public string Scheme { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.AuthenticationHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.AuthenticationHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.AuthenticationHeaderValue? parsedValue) { throw null; }
@@ -508,7 +541,7 @@ namespace System.Net.Http.Headers
         public long? Size { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.ContentDispositionHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.ContentDispositionHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.ContentDispositionHeaderValue? parsedValue) { throw null; }
@@ -526,7 +559,7 @@ namespace System.Net.Http.Headers
         public string Unit { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.ContentRangeHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.ContentRangeHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.ContentRangeHeaderValue? parsedValue) { throw null; }
@@ -540,7 +573,7 @@ namespace System.Net.Http.Headers
         public string Tag { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.EntityTagHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.EntityTagHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.EntityTagHeaderValue? parsedValue) { throw null; }
@@ -710,7 +743,7 @@ namespace System.Net.Http.Headers
         public System.Collections.Generic.ICollection<System.Net.Http.Headers.NameValueHeaderValue> Parameters { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.MediaTypeHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.MediaTypeHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.MediaTypeHeaderValue? parsedValue) { throw null; }
@@ -720,7 +753,7 @@ namespace System.Net.Http.Headers
         public MediaTypeWithQualityHeaderValue(string mediaType) : base (default(System.Net.Http.Headers.MediaTypeHeaderValue)) { }
         public MediaTypeWithQualityHeaderValue(string mediaType, double quality) : base (default(System.Net.Http.Headers.MediaTypeHeaderValue)) { }
         public double? Quality { get { throw null; } set { } }
-        public static new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue Parse(string? input) { throw null; }
+        public static new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.MediaTypeWithQualityHeaderValue? parsedValue) { throw null; }
     }
@@ -733,7 +766,7 @@ namespace System.Net.Http.Headers
         public string? Value { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.NameValueHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.NameValueHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.NameValueHeaderValue? parsedValue) { throw null; }
@@ -746,7 +779,7 @@ namespace System.Net.Http.Headers
         public System.Collections.Generic.ICollection<System.Net.Http.Headers.NameValueHeaderValue> Parameters { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static new System.Net.Http.Headers.NameValueWithParametersHeaderValue Parse(string? input) { throw null; }
+        public static new System.Net.Http.Headers.NameValueWithParametersHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.NameValueWithParametersHeaderValue? parsedValue) { throw null; }
@@ -759,7 +792,7 @@ namespace System.Net.Http.Headers
         public string? Version { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.ProductHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.ProductHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.ProductHeaderValue? parsedValue) { throw null; }
@@ -787,7 +820,7 @@ namespace System.Net.Http.Headers
         public System.Net.Http.Headers.EntityTagHeaderValue? EntityTag { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.RangeConditionHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.RangeConditionHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.RangeConditionHeaderValue? parsedValue) { throw null; }
@@ -800,7 +833,7 @@ namespace System.Net.Http.Headers
         public string Unit { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.RangeHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.RangeHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.RangeHeaderValue? parsedValue) { throw null; }
@@ -823,7 +856,7 @@ namespace System.Net.Http.Headers
         public System.TimeSpan? Delta { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.RetryConditionHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.RetryConditionHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.RetryConditionHeaderValue? parsedValue) { throw null; }
@@ -836,7 +869,7 @@ namespace System.Net.Http.Headers
         public string Value { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.StringWithQualityHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.StringWithQualityHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.StringWithQualityHeaderValue? parsedValue) { throw null; }
@@ -849,7 +882,7 @@ namespace System.Net.Http.Headers
         public string Value { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.TransferCodingHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.TransferCodingHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.TransferCodingHeaderValue? parsedValue) { throw null; }
@@ -859,7 +892,7 @@ namespace System.Net.Http.Headers
         public TransferCodingWithQualityHeaderValue(string value) : base (default(System.Net.Http.Headers.TransferCodingHeaderValue)) { }
         public TransferCodingWithQualityHeaderValue(string value, double quality) : base (default(System.Net.Http.Headers.TransferCodingHeaderValue)) { }
         public double? Quality { get { throw null; } set { } }
-        public static new System.Net.Http.Headers.TransferCodingWithQualityHeaderValue Parse(string? input) { throw null; }
+        public static new System.Net.Http.Headers.TransferCodingWithQualityHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.TransferCodingWithQualityHeaderValue? parsedValue) { throw null; }
     }
@@ -874,7 +907,7 @@ namespace System.Net.Http.Headers
         public string ReceivedBy { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.ViaHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.ViaHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.ViaHeaderValue? parsedValue) { throw null; }
@@ -889,9 +922,21 @@ namespace System.Net.Http.Headers
         public string Text { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.Http.Headers.WarningHeaderValue Parse(string? input) { throw null; }
+        public static System.Net.Http.Headers.WarningHeaderValue Parse(string input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.WarningHeaderValue? parsedValue) { throw null; }
+    }
+}
+namespace System.Net.Http.Metrics
+{
+    public sealed class HttpMetricsEnrichmentContext
+    {
+        internal HttpMetricsEnrichmentContext() { }
+        public System.Net.Http.HttpRequestMessage Request { get { throw null; } }
+        public System.Net.Http.HttpResponseMessage? Response { get { throw null; } }
+        public System.Exception? Exception { get { throw null; } }
+        public void AddCustomTag(string name, object? value) { throw null; }
+        public static void AddCallback(System.Net.Http.HttpRequestMessage request, System.Action<System.Net.Http.Metrics.HttpMetricsEnrichmentContext> callback) { throw null; }
     }
 }

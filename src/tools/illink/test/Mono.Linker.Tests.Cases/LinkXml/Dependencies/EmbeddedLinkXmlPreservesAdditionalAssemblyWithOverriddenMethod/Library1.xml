@@ -1,0 +1,14 @@
+<linker>
+    <assembly fullname="Library1, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.Dependencies.EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod.Library1Secondary" preserve="none">
+            <!-- Need to preserve a ctor so that an instance of the type is possible-->
+            <method name=".ctor"/>
+        </type>
+    </assembly>
+    <assembly fullname="Library2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.Dependencies.EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod.Library2" preserve="none">
+            <!-- Need to preserve a ctor so that an instance of the type is possible-->
+            <method name=".ctor"/>
+        </type>
+    </assembly>
+</linker>

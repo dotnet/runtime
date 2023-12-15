@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -400,13 +401,13 @@ namespace System.Net.Sockets.Tests
                 }
                 // An abstract socket address starts with a zero byte.
                 serverAddress = '\0' + Guid.NewGuid().ToString();
-                clientAddress = '\0' + Guid.NewGuid().ToString();
+                clientAddress = '\0' + Guid.NewGuid().ToString() + "ABC";
                 expectedClientAddress = '@' + clientAddress.Substring(1);
             }
             else
             {
                 serverAddress = GetRandomNonExistingFilePath();
-                clientAddress = GetRandomNonExistingFilePath();
+                clientAddress = GetRandomNonExistingFilePath() + "ABC";
                 expectedClientAddress = clientAddress;
             }
 
@@ -534,6 +535,55 @@ namespace System.Net.Sockets.Tests
 
             Assert.NotEqual(endPoint1, endPoint3);
             Assert.NotEqual(endPoint2, endPoint3);
+        }
+
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReceiveFrom_EndPoints_Correct(bool useAsync)
+        {
+            string serverAddress = GetRandomNonExistingFilePath();
+            string clientAddress = GetRandomNonExistingFilePath() + "ABCD";
+
+            using (Socket server = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
+            {
+                server.Bind(new UnixDomainSocketEndPoint(serverAddress));
+                using (Socket client = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
+                {
+                    byte[] data = Encoding.ASCII.GetBytes(nameof(ReceiveFrom_EndPoints_Correct));
+                    // Bind the client.
+                    client.Bind(new UnixDomainSocketEndPoint(clientAddress));
+
+                    var sender = new UnixDomainSocketEndPoint(GetRandomNonExistingFilePath());
+                    EndPoint senderRemote = (EndPoint)sender;
+                    int transferredBytes;
+                    if (useAsync)
+                    {
+                        transferredBytes = await client.SendToAsync(data, server.LocalEndPoint);
+                    }
+                    else
+                    {
+                        transferredBytes = client.SendTo(data, server.LocalEndPoint);
+                    }
+                    Assert.Equal(data.Length, transferredBytes);
+
+                    byte[] buffer = new byte[data.Length * 2];
+                    if (useAsync)
+                    {
+                        SocketReceiveFromResult result = await server.ReceiveFromAsync(buffer, senderRemote);
+                        Assert.Equal(clientAddress, result.RemoteEndPoint.ToString());
+                        Assert.Equal(data.Length, result.ReceivedBytes);
+                    }
+                    else
+                    {
+                        transferredBytes = server.ReceiveFrom(buffer, ref senderRemote);
+                        Assert.Equal(data.Length, transferredBytes);
+                        Assert.Equal(clientAddress, senderRemote.ToString());
+                    }
+                }
+            }
         }
 
         private static string GetRandomNonExistingFilePath()

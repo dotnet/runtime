@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-internal enum NodeType
+using Xunit;
+public enum NodeType
 {
     True, False, Not, Other
 }
 
-internal class Node
+public class Node
 {
     public NodeType NodeType;
     public Node Child;
@@ -14,7 +15,7 @@ internal class Node
 
     public Node(string s) { name = s; }
 }
-internal class NodeFactory
+public class NodeFactory
 {
     public Node Conditional(Node condition, Node trueBranch, Node falseBranch)
     {
@@ -30,9 +31,10 @@ internal class NodeFactory
         return falseBranch;  //<- should return the original trueBranch
     }
 
-    private class Test_simple_repro
+    public class Test_simple_repro
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             NodeFactory f = new NodeFactory();
 

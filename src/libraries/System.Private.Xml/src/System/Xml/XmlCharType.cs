@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,6 +14,19 @@ namespace System.Xml
     /// </summary>
     internal static class XmlCharType
     {
+#if DEBUG
+        static XmlCharType()
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                char c = (char)i;
+                Debug.Assert(PublicIdChars.Contains(c) == IsPubidChar(c));
+                Debug.Assert(AsciiCharDataChars.Contains(c) == IsCharData(c));
+                Debug.Assert(WhiteSpaceChars.Contains(c) == IsWhiteSpace(c));
+            }
+        }
+#endif
+
         // Surrogate constants
         internal const int SurHighStart = 0xd800;    // 1101 10xx
         internal const int SurHighEnd = 0xdbff;
@@ -39,6 +53,13 @@ namespace System.Xml
         // bitmap for public ID characters - 1 bit per character 0x0 - 0x80; no character > 0x80 is a PUBLIC ID char
         private const string PublicIdBitmap = "\u2400\u0000\uffbb\uafff\uffff\u87ff\ufffe\u07ff";
 
+        private const string PublicIdChars = "\n\r !#$%'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+        private const string AsciiCharDataChars = "\t\n\r !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        private const string WhiteSpaceChars = "\t\n\r ";
+
+        private static readonly SearchValues<char> s_publicIdChars = SearchValues.Create(PublicIdChars);
+        private static readonly SearchValues<char> s_asciiCharDataChars = SearchValues.Create(AsciiCharDataChars);
+        private static readonly SearchValues<char> s_whitespaceChars = SearchValues.Create(WhiteSpaceChars);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsWhiteSpace(char ch) => (GetCharProperties(ch) & Whitespace) != 0u;
@@ -109,79 +130,50 @@ namespace System.Xml
             highChar = (char)(SurHighStart + v / 1024);
         }
 
-        internal static bool IsOnlyWhitespace(string? str)
-        {
-            return IsOnlyWhitespaceWithPos(str) == -1;
-        }
+        internal static bool IsOnlyWhitespace(ReadOnlySpan<char> str) =>
+            IsOnlyWhitespaceWithPos(str) < 0;
 
         // Character checking on strings
-        internal static int IsOnlyWhitespaceWithPos(string? str)
+        internal static int IsOnlyWhitespaceWithPos(ReadOnlySpan<char> str) =>
+            str.IndexOfAnyExcept(s_whitespaceChars);
+
+        internal static int IsOnlyCharData(ReadOnlySpan<char> str)
         {
-            if (str != null)
+            int i = str.IndexOfAnyExcept(s_asciiCharDataChars);
+            if (i < 0)
             {
-                for (int i = 0; i < str.Length; i++)
+                // Fast-path: All ASCII CharData chars
+                return -1;
+            }
+
+            for (; (uint)i < (uint)str.Length; i++)
+            {
+                char c = str[i];
+                if (!IsCharData(c))
                 {
-                    if ((GetCharProperties(str[i]) & Whitespace) == 0u)
+                    if ((uint)(i + 1) >= (uint)str.Length || !char.IsSurrogatePair(c, str[i + 1]))
                     {
                         return i;
                     }
-                }
-            }
-            return -1;
-        }
 
-        internal static int IsOnlyCharData(string str)
-        {
-            if (str != null)
-            {
-                for (int i = 0; i < str.Length; i++)
-                {
-                    if ((GetCharProperties(str[i]) & CharData) == 0u)
-                    {
-                        if (i + 1 >= str.Length || !(XmlCharType.IsHighSurrogate(str[i]) && XmlCharType.IsLowSurrogate(str[i + 1])))
-                        {
-                            return i;
-                        }
-                        else
-                        {
-                            i++;
-                        }
-                    }
+                    i++;
                 }
             }
+
             return -1;
         }
 
         internal static bool IsOnlyDigits(string str, int startPos, int len)
         {
             Debug.Assert(str != null);
-            Debug.Assert(startPos + len <= str.Length);
             Debug.Assert(startPos <= str.Length);
+            Debug.Assert(startPos + len <= str.Length);
 
-            for (int i = startPos; i < startPos + len; i++)
-            {
-                if (!char.IsAsciiDigit(str[i]))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return !str.AsSpan(startPos, len).ContainsAnyExceptInRange('0', '9');
         }
 
-        internal static int IsPublicId(string str)
-        {
-            if (str != null)
-            {
-                for (int i = 0; i < str.Length; i++)
-                {
-                    if (!IsPubidChar(str[i]))
-                    {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        }
+        internal static int IsPublicId(string str) =>
+            str.AsSpan().IndexOfAnyExcept(s_publicIdChars);
 
         // This method tests whether a value is in a given range with just one test; start and end should be constants
         private static bool InRange(int value, int start, int end)
@@ -193,8 +185,8 @@ namespace System.Xml
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint GetCharProperties(char ch) => Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch);
 
-        private static ReadOnlySpan<byte> CharProperties => new byte[]
-        {
+        private static ReadOnlySpan<byte> CharProperties =>
+        [
             //            0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    A,    B,    C,    D,    E,    F
             /* 0000 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00, 0x00, 0x11, 0x00, 0x00,
             /* 0010 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4292,7 +4284,6 @@ namespace System.Xml
             /* FFD0 */ 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0,
             /* FFE0 */ 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0,
             /* FFF0 */ 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0x00, 0x00,
-        };
-
+        ];
     }
 }

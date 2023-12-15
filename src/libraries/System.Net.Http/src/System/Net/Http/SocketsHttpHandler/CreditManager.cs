@@ -160,10 +160,7 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObject), "Shouldn't be called outside lock.");
 
-            if (_disposed)
-            {
-                throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_current > 0)
             {

@@ -76,7 +76,7 @@ namespace System.IO.Compression
             const UnixFileMode OwnershipPermissions =
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                 UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
             // Restore Unix permissions.
             // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
@@ -109,7 +109,10 @@ namespace System.IO.Compression
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
             string destinationDirectoryFullPath = di.FullName;
             if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
-                destinationDirectoryFullPath += Path.DirectorySeparatorChar;
+            {
+                char sep = Path.DirectorySeparatorChar;
+                destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
+            }
 
             string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 

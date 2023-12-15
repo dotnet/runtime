@@ -106,7 +106,7 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            if (dstEEType.IsPointer)
+            if (dstEEType.IsPointer || dstEEType.IsFunctionPointer)
             {
                 Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
@@ -134,8 +134,7 @@ namespace System
             switch (dstCorElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    bool boolValue = Convert.ToBoolean(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
+                    dstObject = Convert.ToBoolean(srcObject);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CHAR:
@@ -244,7 +243,7 @@ namespace System
                 case CheckArgumentSemantics.SetFieldDirect:
                     return CreateChangeTypeArgumentException(srcEEType, dstEEType);
                 case CheckArgumentSemantics.ArraySet:
-                    return CreateChangeTypeInvalidCastException(srcEEType, dstEEType);
+                    return CreateChangeTypeInvalidCastException();
                 default:
                     Debug.Fail("Unexpected CheckArgumentSemantics value: " + semantics);
                     throw new InvalidOperationException();
@@ -252,14 +251,17 @@ namespace System
         }
 
         internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, EETypePtr dstEEType, bool destinationIsByRef = false)
+            => CreateChangeTypeArgumentException(srcEEType, Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType)), destinationIsByRef);
+
+        internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, Type dstType, bool destinationIsByRef = false)
         {
-            object? destinationTypeName = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
+            object? destinationTypeName = dstType;
             if (destinationIsByRef)
                 destinationTypeName += "&";
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));
         }
 
-        private static InvalidCastException CreateChangeTypeInvalidCastException(EETypePtr srcEEType, EETypePtr dstEEType)
+        private static InvalidCastException CreateChangeTypeInvalidCastException()
         {
             return new InvalidCastException(SR.InvalidCast_StoreArrayElement);
         }

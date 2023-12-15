@@ -49,7 +49,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validPath && validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                    .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
             }
             else
             {
@@ -64,13 +65,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData(true, true, false)]
         public void CallDelegateOnApplicationContext(bool validPath, bool validType, bool validMethod)
         {
-            var appProject = sharedState.ApplicationFixture.TestProject;
+            var app = sharedState.FrameworkDependentApp;
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
             string[] args =
             {
                 AppLoadAssemblyAndGetFunctionPointerArg,
                 sharedState.HostFxrPath,
-                appProject.AppDll,
+                app.AppDll,
                 validPath ? componentProject.AppDll : "BadPath...",
                 validType ? sharedState.ComponentTypeName : $"Component.BadType, {componentProject.AssemblyName}",
                 validMethod ? sharedState.ComponentEntryPoint1 : "BadMethod",
@@ -79,12 +80,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForApp(appProject.AppDll);
+                .InitializeContextForApp(app.AppDll);
 
             if (validPath && validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                    .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
             }
             else
             {
@@ -95,13 +97,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void CallDelegateOnSelfContainedApplicationContext()
         {
-            var appProject = sharedState.SelfContainedApplicationFixture.TestProject;
+            var app = sharedState.SelfContainedApp;
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
             string[] args =
             {
                 AppLoadAssemblyAndGetFunctionPointerArg,
-                appProject.HostFxrDll,
-                appProject.AppDll,
+                app.HostFxrDll,
+                app.AppDll,
                 componentProject.AppDll,
                 sharedState.ComponentTypeName,
                 sharedState.ComponentEntryPoint1,
@@ -110,9 +112,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForApp(appProject.AppDll)
+                .InitializeContextForApp(app.AppDll)
                 .And.Pass()
-                .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+                .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
         }
 
         [Theory]
@@ -153,13 +156,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson);
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
+                .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
-                    .ExecuteComponentEntryPoint(comp1Name, i * 2 - 1, i)
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint2, i * 2, i);
+                    .ExecuteFunctionPointer(comp1Name, i * 2 - 1, i)
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i * 2, i);
             }
         }
 
@@ -197,13 +201,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson);
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
+                .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
-                    .ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, i, i)
-                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint2, i, i);
+                    .ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, i, i)
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint2, i, i);
             }
         }
 
@@ -226,7 +231,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.InitializeContextForConfig(componentProject.RuntimeConfigJson)
-                .And.ExecuteComponentEntryPointWithException(entryPoint, 1);
+                .And.ExecuteFunctionPointerWithException(entryPoint, 1);
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -234,9 +239,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string HostFxrPath { get; }
             public string DotNetRoot { get; }
 
-            public TestProjectFixture ApplicationFixture { get; }
             public TestProjectFixture ComponentWithNoDependenciesFixture { get; }
-            public TestProjectFixture SelfContainedApplicationFixture { get; }
+            public TestApp FrameworkDependentApp { get; }
+            public TestApp SelfContainedApp { get; }
+
             public string ComponentTypeName { get; }
             public string ComponentEntryPoint1 => "ComponentEntryPoint1";
             public string ComponentEntryPoint2 => "ComponentEntryPoint2";
@@ -244,62 +250,31 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
-                DotNetRoot = dotNet.BinPath;
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = TestContext.BuiltDotNet.BinPath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
-                ApplicationFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
                 ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
                     .EnsureRestored()
                     .PublishProject();
-                SelfContainedApplicationFixture = new TestProjectFixture("StandaloneApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject(selfContained: true);
+
+                FrameworkDependentApp = TestApp.CreateFromBuiltAssets("HelloWorld");
+
+                SelfContainedApp = TestApp.CreateFromBuiltAssets("HelloWorld");
+                SelfContainedApp.PopulateSelfContained(TestApp.MockedComponent.None);
+
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
             }
 
             protected override void Dispose(bool disposing)
             {
-                if (ApplicationFixture != null)
-                    ApplicationFixture.Dispose();
                 if (ComponentWithNoDependenciesFixture != null)
                     ComponentWithNoDependenciesFixture.Dispose();
-                if (SelfContainedApplicationFixture != null)
-                    SelfContainedApplicationFixture.Dispose();
+
+                FrameworkDependentApp?.Dispose();
+                SelfContainedApp?.Dispose();
 
                 base.Dispose(disposing);
             }
-        }
-    }
-
-    internal static class ComponentActivationResultExtensions
-    {
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPoint(this CommandResultAssertions assertion, string methodName, int componentCallCount, int returnValue)
-        {
-            return assertion.ExecuteComponentEntryPoint(methodName, componentCallCount)
-                .And.HaveStdOutContaining($"{methodName} delegate result: 0x{returnValue.ToString("x")}");
-        }
-
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPointWithException(this CommandResultAssertions assertion, string methodName, int componentCallCount)
-        {
-            var constraint = assertion.ExecuteComponentEntryPoint(methodName, componentCallCount);
-            if (OperatingSystem.IsWindows())
-            {
-                return constraint.And.HaveStdOutContaining($"{methodName} delegate threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
-            }
-            else
-            {
-                // Exception is unhandled by native host on non-Windows systems
-                return constraint.And.ExitWith(Constants.ErrorCode.SIGABRT)
-                    .And.HaveStdErrContaining($"Unhandled exception. System.InvalidOperationException: {methodName}");
-            }
-        }
-
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPoint(this CommandResultAssertions assertion, string methodName, int componentCallCount)
-        {
-            return assertion.HaveStdOutContaining($"Called {methodName}(0xdeadbeef, 42) - component call count: {componentCallCount}");
         }
     }
 }

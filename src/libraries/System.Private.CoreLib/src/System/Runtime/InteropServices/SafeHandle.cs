@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// <summary>Represents a wrapper class for operating system handles.</summary>
     public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
-#if DEBUG
+#if DEBUG && CORECLR
         /// <summary>Indicates whether debug tracking and logging of SafeHandle finalization is enabled.</summary>
         private static readonly bool s_logFinalization = Environment.GetEnvironmentVariable("DEBUG_SAFEHANDLE_FINALIZATION") == "1";
         /// <summary>Debug counter for the number of SafeHandles that have been finalized.</summary>
@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         //   code, so this managed code must not assume it is the only code
         //   manipulating _state.
 
-#if DEBUG
+#if DEBUG && CORECLR
         private readonly string? _ctorStackTrace;
 #endif
         /// <summary>Specifies the handle to be wrapped.</summary>
@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Whether we can release this handle.</summary>
         private readonly bool _ownsHandle;
         /// <summary>Whether constructor completed.</summary>
-        private volatile bool _fullyInitialized;
+        private readonly bool _fullyInitialized;
 
         /// <summary>Bitmasks for the <see cref="_state"/> field.</summary>
         /// <remarks>
@@ -71,7 +71,7 @@ namespace System.Runtime.InteropServices
             {
                 GC.SuppressFinalize(this);
             }
-#if DEBUG
+#if DEBUG && CORECLR
             else if (s_logFinalization)
             {
                 int lastError = Marshal.GetLastPInvokeError();
@@ -80,7 +80,7 @@ namespace System.Runtime.InteropServices
             }
 #endif
 
-            _fullyInitialized = true;
+            Volatile.Write(ref _fullyInitialized, true);
         }
 
         ~SafeHandle()
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
 
         protected virtual void Dispose(bool disposing)
         {
-#if DEBUG
+#if DEBUG && CORECLR
             if (!disposing && _ctorStackTrace is not null)
             {
                 long count = Interlocked.Increment(ref s_safeHandlesFinalized);
@@ -169,10 +169,7 @@ namespace System.Runtime.InteropServices
                 // update predicated on the initial state (a conditional write).
                 // Check for closed state.
                 oldState = _state;
-                if ((oldState & StateBits.Closed) != 0)
-                {
-                    throw new ObjectDisposedException(nameof(SafeHandle), SR.ObjectDisposed_SafeHandleClosed);
-                }
+                ObjectDisposedException.ThrowIf((oldState & StateBits.Closed) != 0, this);
 
                 // Not closed, let's propose an update (to the ref count, just add
                 // StateBits.RefCountOne to the state to effectively add 1 to the ref count).
@@ -203,7 +200,7 @@ namespace System.Runtime.InteropServices
             // See AddRef above for the design of the synchronization here. Basically we
             // will try to decrement the current ref count and, if that would take us to
             // zero refs, set the closed state on the handle as well.
-            bool performRelease = false;
+            bool performRelease;
 
             // Might have to perform the following steps multiple times due to
             // interference from other AddRef's and Release's.
@@ -229,10 +226,7 @@ namespace System.Runtime.InteropServices
                 // unbalanced AddRef and Releases). (We might see a closed state before
                 // hitting zero though -- that can happen if SetHandleAsInvalid is
                 // used).
-                if ((oldState & StateBits.RefCount) == 0)
-                {
-                    throw new ObjectDisposedException(nameof(SafeHandle), SR.ObjectDisposed_SafeHandleClosed);
-                }
+                ObjectDisposedException.ThrowIf((oldState & StateBits.RefCount) == 0, this);
 
                 // If we're proposing a decrement to zero and the handle is not closed
                 // and we own the handle then we need to release the handle upon a
@@ -262,7 +256,7 @@ namespace System.Runtime.InteropServices
 
             // If we get here we successfully decremented the ref count. Additionally we
             // may have decremented it to zero and set the handle state as closed. In
-            // this case (providng we own the handle) we will call the ReleaseHandle
+            // this case (providing we own the handle) we will call the ReleaseHandle
             // method on the SafeHandle subclass.
             if (performRelease)
             {

@@ -8,37 +8,13 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-unsafe class Program
+public unsafe class Program
 {
-    class NativeFunctions
-    {
-        public const string Name = nameof(NativeFunctions);
-
-        public static string GetFileName()
-        {
-            if (OperatingSystem.IsWindows())
-                return $"{Name}.dll";
-
-            if (OperatingSystem.IsLinux())
-                return $"lib{Name}.so";
-
-            if (OperatingSystem.IsMacOS())
-                return $"lib{Name}.dylib";
-
-            throw new PlatformNotSupportedException();
-        }
-
-        public static string GetFullPath()
-        {
-            return Path.Combine(AppContext.BaseDirectory, GetFileName());
-        }
-    }
-
     static void BlittableFunctionPointers()
     {
         Console.WriteLine($"Running {nameof(BlittableFunctionPointers)}...");
 
-        IntPtr mod = NativeLibrary.Load(NativeFunctions.GetFullPath());
+        IntPtr mod = NativeLibrary.Load("NativeFunctions", Assembly.GetExecutingAssembly(), null);
         var cbDefault = NativeLibrary.GetExport(mod, "DoubleInt").ToPointer();
         var cbCdecl = NativeLibrary.GetExport(mod, "DoubleIntCdecl").ToPointer();
         var cbStdcall = NativeLibrary.GetExport(mod, "DoubleIntStdcall").ToPointer();
@@ -115,7 +91,7 @@ unsafe class Program
     {
         Console.WriteLine($"Running {nameof(NonblittableFunctionPointers)}...");
 
-        IntPtr mod = NativeLibrary.Load(NativeFunctions.GetFullPath());
+        IntPtr mod = NativeLibrary.Load("NativeFunctions", Assembly.GetExecutingAssembly(), null);
         var cbDefault = NativeLibrary.GetExport(mod, "ToUpper").ToPointer();
         var cbCdecl = NativeLibrary.GetExport(mod, "ToUpperCdecl").ToPointer();
         var cbStdcall = NativeLibrary.GetExport(mod, "ToUpperStdcall").ToPointer();
@@ -188,7 +164,8 @@ unsafe class Program
         }
     }
 
-    static int Main(string[] doNotUse)
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

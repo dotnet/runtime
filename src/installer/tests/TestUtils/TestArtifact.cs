@@ -12,41 +12,43 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class TestArtifact : IDisposable
     {
-        private static readonly Lazy<RepoDirectoriesProvider> _repoDirectoriesProvider =
-            new Lazy<RepoDirectoriesProvider>(() => new RepoDirectoriesProvider());
-
         private static readonly Lazy<bool> _preserveTestRuns = new Lazy<bool>(() =>
-            _repoDirectoriesProvider.Value.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
-
-        private static readonly string TestArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
-        private static readonly Lazy<string> _testArtifactsPath = new Lazy<string>(() =>
-        {
-            return _repoDirectoriesProvider.Value.GetTestContextVariable(TestArtifactDirectoryEnvironmentVariable)
-                   ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
-        }, isThreadSafe: true);
+            TestContext.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
-        public static string TestArtifactsPath => _testArtifactsPath.Value;
+        public static string TestArtifactsPath => TestContext.TestArtifactsPath;
 
         public string Location { get; }
         public string Name { get; }
 
+        protected string DirectoryToDelete { get; init; }
+
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
 
-        public TestArtifact(string location, string? name = null)
+        public TestArtifact(string location)
         {
             Location = location;
-            Name = name ?? Path.GetFileName(Location);
+            Name = Path.GetFileName(Location);
+            DirectoryToDelete = Location;
         }
 
         protected TestArtifact(TestArtifact source)
         {
             Name = source.Name;
-            Location = GetNewTestArtifactPath(Name);
+            (Location, DirectoryToDelete) = GetNewTestArtifactPath(source.Name);
 
             CopyRecursive(source.Location, Location, overwrite: true);
 
             source._copies.Add(this);
+        }
+
+        public static TestArtifact Create(string name)
+        {
+            var (location, parentPath) = GetNewTestArtifactPath(name);
+            return new TestArtifact(location)
+            {
+                DirectoryToDelete = parentPath
+            };
         }
 
         protected void RegisterCopy(TestArtifact artifact)
@@ -56,16 +58,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public virtual void Dispose()
         {
-            if (!PreserveTestRuns() && Directory.Exists(Location))
+            if (!PreserveTestRuns() && Directory.Exists(DirectoryToDelete))
             {
                 try
                 {
-                    Directory.Delete(Location, true);
+                    Directory.Delete(DirectoryToDelete, true);
+                    Debug.Assert(!Directory.Exists(DirectoryToDelete));
 
                     // Delete lock file last
-                    Debug.Assert(!Directory.Exists(Location));
-                    var lockPath = Directory.GetParent(Location) + ".lock";
-                    File.Delete(lockPath);
+                    File.Delete($"{DirectoryToDelete}.lock");
                 } catch (Exception e)
                 {
                     Console.WriteLine("delete failed" + e);
@@ -80,7 +81,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _copies.Clear();
         }
 
-        protected static string GetNewTestArtifactPath(string artifactName)
+        protected static (string, string) GetNewTestArtifactPath(string artifactName)
         {
             Exception? lastException = null;
             for (int i = 0; i < 10; i++)
@@ -100,7 +101,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     continue;
                 }
                 Directory.CreateDirectory(artifactPath);
-                return artifactPath;
+                return (artifactPath, parentPath);
             }
             Debug.Assert(lastException != null);
             throw lastException;

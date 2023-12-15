@@ -6,7 +6,7 @@
 .assembly GitHub_14321 {}
 .assembly extern xunit.core {}
 
-.class Program
+.class public Program
 {
     .method static bool TestUnsigned(int32) noinlining
     {
@@ -32,7 +32,7 @@
 		ret
     }
 
-    .method static int32 Main() 
+    .method public static int32 Main() 
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

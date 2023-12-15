@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.MemoryMappedFiles
 {
@@ -43,17 +43,13 @@ namespace System.IO.MemoryMappedFiles
             get { return _access; }
         }
 
-        private void Dispose(bool disposing)
+        public void Dispose()
         {
             if (!_viewHandle.IsClosed)
             {
                 _viewHandle.Dispose();
             }
-        }
 
-        public void Dispose()
-        {
-            Dispose(true);
             GC.SuppressFinalize(this);
         }
 

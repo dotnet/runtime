@@ -121,7 +121,7 @@ namespace System.Security.AccessControl
             try
             {
                 AccessControlSections persistRules = GetAccessControlSectionsFromChanges();
-                base.Persist(fullPath, persistRules);
+                base.Persist(PathInternal.EnsureExtendedPrefixIfNeeded(fullPath), persistRules);
                 OwnerModified = GroupModified = AuditRulesModified = AccessRulesModified = false;
             }
             finally
@@ -130,7 +130,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        internal void Persist(SafeFileHandle handle, string fullPath)
+        internal void Persist(SafeFileHandle handle, string _ /*fullPath*/)
         {
             WriteLock();
 

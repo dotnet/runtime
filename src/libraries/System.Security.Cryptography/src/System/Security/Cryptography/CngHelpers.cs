@@ -152,50 +152,41 @@ namespace System.Security.Cryptography
         /// rather than throw exceptions for missing or ill-formatted property values. Only use it for well-known properties that
         /// are unlikely to be ill-formatted.)
         /// </summary>
-        public static int GetPropertyAsDword(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
-        {
-            byte[]? value = ncryptHandle.GetProperty(propertyName, options);
-
-            if (value == null)
-            {
-                // .NET Framework compat: return 0 if key not present.
-                return 0;
-            }
-
-            return BitConverter.ToInt32(value, 0);
-        }
+        public static int GetPropertyAsDword(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options) =>
+            GetPropertyAsPrimitive<int>(ncryptHandle, propertyName, options);
 
         /// <summary>
         /// Retrieve a well-known CNG pointer property. (Note: .NET Framework compat: this helper likes to return special values
         /// rather than throw exceptions for missing or ill-formatted property values. Only use it for well-known properties that
         /// are unlikely to be ill-formatted.)
         /// </summary>
-        internal static IntPtr GetPropertyAsIntPtr(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        internal static IntPtr GetPropertyAsIntPtr(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options) =>
+            GetPropertyAsPrimitive<IntPtr>(ncryptHandle, propertyName, options);
+
+        private static unsafe T GetPropertyAsPrimitive<T>(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+            where T : unmanaged
         {
-            unsafe
+            T value;
+
+            ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(
+                ncryptHandle,
+                propertyName,
+                &value,
+                sizeof(T),
+                out _,
+                options);
+
+            if (errorCode == ErrorCode.NTE_NOT_FOUND)
             {
-                IntPtr value;
-
-                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(
-                    ncryptHandle,
-                    propertyName,
-                    &value,
-                    IntPtr.Size,
-                    out _,
-                    options);
-
-                if (errorCode == ErrorCode.NTE_NOT_FOUND)
-                {
-                    return IntPtr.Zero;
-                }
-
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                {
-                    throw errorCode.ToCryptographicException();
-                }
-
-                return value;
+                return default;
             }
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                throw errorCode.ToCryptographicException();
+            }
+
+            return value;
         }
 
         /// <summary>

@@ -3,11 +3,7 @@
 
 
 // Metadata version: v4.0.30319
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:2:0:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
@@ -18,7 +14,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Bug.Program
+.class public auto ansi beforefieldinit Bug.Program
        extends [System.Runtime]System.Object
 {
   .method static char ILGEN_METHOD(int16, unsigned int16, native unsigned int)

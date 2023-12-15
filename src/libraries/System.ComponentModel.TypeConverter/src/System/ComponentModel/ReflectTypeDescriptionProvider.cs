@@ -196,7 +196,7 @@ namespace System.ComponentModel
                     [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
                     [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => CreateNullableConverter(type), cacheConverterInstance: false),
                     [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
-               });
+                });
             }
         }
 
@@ -260,7 +260,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 
@@ -277,9 +277,9 @@ namespace System.ComponentModel
                     argTypes = new Type[args.Length];
                     for (int idx = 0; idx < args.Length; idx++)
                     {
-                        if (args[idx] != null)
+                        if (args[idx] is object arg)
                         {
-                            argTypes[idx] = args[idx].GetType();
+                            argTypes[idx] = arg.GetType();
                         }
                         else
                         {
@@ -351,7 +351,7 @@ namespace System.ComponentModel
         internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
-            return td.GetClassName(null);
+            return td.GetClassName();
         }
 
         /// <summary>
@@ -465,7 +465,7 @@ namespace System.ComponentModel
         /// Retrieves custom extender attributes. We don't support
         /// extender attributes, so we always return an empty collection.
         /// </summary>
-        internal static AttributeCollection GetExtendedAttributes(object instance)
+        internal static AttributeCollection GetExtendedAttributes()
         {
             return AttributeCollection.Empty;
         }
@@ -510,7 +510,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
-        internal static PropertyDescriptor? GetExtendedDefaultProperty(object instance)
+        internal static PropertyDescriptor? GetExtendedDefaultProperty()
         {
             return null; // extender properties are never the default.
         }
@@ -527,7 +527,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal static EventDescriptorCollection GetExtendedEvents(object instance)
+        internal static EventDescriptorCollection GetExtendedEvents()
         {
             return EventDescriptorCollection.Empty;
         }
@@ -790,9 +790,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal static object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
+        internal static object GetExtendedPropertyOwner(object instance)
         {
-            return GetPropertyOwner(instance.GetType(), instance, pd);
+            return GetPropertyOwner(instance.GetType(), instance);
         }
 
         //////////////////////////////////////////////////////////
@@ -872,7 +872,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal static object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
+        internal static object GetPropertyOwner(Type type, object instance)
         {
             return TypeDescriptor.GetAssociation(type, instance);
         }

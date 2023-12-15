@@ -4,13 +4,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
-class Program
+using Xunit;
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Test(null);
         Console.WriteLine("Test Success");
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

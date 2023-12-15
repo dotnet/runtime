@@ -81,23 +81,14 @@
   <data name="Barrier_RemoveParticipants_ArgumentOutOfRange" xml:space="preserve">
     <value>The participantCount argument must be less than or equal the number of participants.</value>
   </data>
-  <data name="Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange" xml:space="preserve">
-    <value>The participantCount argument must be a positive value.</value>
-  </data>
   <data name="Barrier_InvalidOperation_CalledFromPHA" xml:space="preserve">
     <value>This method may not be called from within the postPhaseAction.</value>
-  </data>
-  <data name="Barrier_AddParticipants_NonPositive_ArgumentOutOfRange" xml:space="preserve">
-    <value>The participantCount argument must be a positive value.</value>
   </data>
   <data name="Barrier_SignalAndWait_InvalidOperation_ThreadsExceeded" xml:space="preserve">
     <value>The number of threads using the barrier exceeded the total number of registered participants.</value>
   </data>
   <data name="BarrierPostPhaseException" xml:space="preserve">
     <value>The postPhaseAction failed with an exception.</value>
-  </data>
-  <data name="Barrier_ctor_ArgumentOutOfRange" xml:space="preserve">
-    <value>The participantCount argument must be non-negative and less than or equal to 32767.</value>
   </data>
   <data name="Barrier_AddParticipants_Overflow_ArgumentOutOfRange" xml:space="preserve">
     <value>Adding participantCount participants would result in the number of participants exceeding the maximum number allowed.</value>
@@ -140,9 +131,6 @@
   </data>
   <data name="ReaderWriterLock_Timeout" xml:space="preserve">
     <value>The operation has timed out. {0}</value>
-  </data>
-  <data name="ArgumentOutOfRange_TimeoutMilliseconds" xml:space="preserve">
-    <value>Timeout value in milliseconds must be nonnegative and less than or equal to Int32.MaxValue, or -1 for an infinite timeout.</value>
   </data>
   <data name="ReaderWriterLock_NotOwner" xml:space="preserve">
     <value>Attempt to release a lock that is not owned by the calling thread. {0}</value>

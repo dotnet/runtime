@@ -67,7 +67,7 @@ public:
     static void DiagWalkBGCSurvivors(void* gcContext);
     static void StompWriteBarrier(WriteBarrierParameters* args);
 
-    static void EnableFinalization(bool foundFinalizers);
+    static void EnableFinalization(bool gcHasWorkForFinalizerThread);
 
     static void HandleFatalError(unsigned int exitCode);
     static bool EagerFinalized(Object* obj);
@@ -94,6 +94,8 @@ public:
     static uint32_t GetCurrentProcessCpuCount();
 
     static void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
+
+    static void LogErrorToHost(const char *message);
 };
 
 #endif // __GCENV_EE_H__

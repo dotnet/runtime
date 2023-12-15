@@ -38,7 +38,7 @@ namespace System.IO
 
             return hasSeparator ?
                 directory + name :
-                directory + Path.DirectorySeparatorChar + name;
+                directory + PathInternal.DirectorySeparatorCharAsString + name;
         }
 
         /// <devdoc>

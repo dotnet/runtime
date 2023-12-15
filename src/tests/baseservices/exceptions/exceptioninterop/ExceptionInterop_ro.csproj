@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </PropertyGroup>
     <PropertyGroup>
       <DebugType>None</DebugType>

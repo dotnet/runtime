@@ -24,7 +24,7 @@
 // in each handle we allocate and the pattern with which we null out object references in the array.
 //
 // Additionally this test stresses substantially more complex code paths in the GC if server mode is enabled.
-// This can be achieved by setting the environment variable COMPlus_BuildFlavor=svr prior to executing the
+// This can be achieved by setting the environment variable DOTNET_BuildFlavor=svr prior to executing the
 // test executable.
 //
 // Note that we don't go to any lengths to ensure that dependent handle ownership is spread over multiple cpus
@@ -41,6 +41,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // How we assign nodes to dependent handles.
 enum TableStyle
@@ -357,10 +358,11 @@ class Node
 }
 
 // The test class itself.
-class DhTest1
+public class DhTest1
 {
     // Entry point.
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // The actual test runs are controlled from RunTest. True is returned if all succeeded, false
         // otherwise.

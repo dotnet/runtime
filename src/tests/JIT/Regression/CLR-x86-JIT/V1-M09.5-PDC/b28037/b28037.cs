@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /*
 COMPILE THIS WITH OPTIMIZATION TURNED OFF:
 coolc /o- bug.cs
@@ -10,7 +11,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static int m_nStatic1 = 0;
 
@@ -28,14 +29,14 @@ namespace Test
             }
         }
 
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             try
             {
                 Method1(null);
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

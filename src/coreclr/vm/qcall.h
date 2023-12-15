@@ -95,7 +95,7 @@
 //          COMPlusThrow(kArgumentException, L"InvalidFlags");
 //
 //      // No need to worry about GC moving strings passed into QCall. Marshaling pins them for us.
-//      printf("%S", wszString);
+//      wprintf("%s", wszString);
 //
 //      // This is the most efficient way to return strings back to managed code. No need to use StringBuilder.
 //      retString.Set(L"Hello");
@@ -159,6 +159,12 @@ public:
     {
         StringObject ** m_ppStringObject;
 
+        STRINGREF Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ObjectToSTRINGREF(*m_ppStringObject);
+        }
+
 #ifndef DACCESS_COMPILE
         //
         // Helpers for returning managed string from QCall
@@ -221,7 +227,6 @@ public:
        // Do not add operator overloads to convert this object into a stack reference to a specific object type
        // such as OBJECTREF *. While such things are correct, our debug checking logic is unable to verify that
        // the object reference is actually protected from access and therefore will assert.
-       // See bug 254159 for details.
 
 #endif // !DACCESS_COMPILE
     };

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.Xml
 {
@@ -36,7 +36,7 @@ namespace System.Xml
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }
 
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(s));
+            throw new XmlException(s);
         }
 
         [DoesNotReturn]
@@ -47,7 +47,7 @@ namespace System.Xml
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(s));
+            throw new XmlException(s);
         }
 
         private static string GetName(string prefix, string localName)

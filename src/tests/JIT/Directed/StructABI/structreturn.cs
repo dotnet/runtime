@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 #region Test struct return optimizations.
 class TestStructReturns
@@ -1809,15 +1810,15 @@ class TestNon2PowerStructs
     }
 }
 
-class TestStructs
+public class TestStructs
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         TestStructReturns.Test();
         TestUnsafeCasts.Test();
         TestMergeReturnBlocks.Test();
         TestHFAandHVA.Test();
         TestNon2PowerStructs.Test();
-        return 100;
     }
 }

@@ -9,6 +9,7 @@ man3_MANS = libunwind.man libunwind-dynamic.man libunwind-ia64.man	\
 	unw_get_proc_info_by_ip.man					\
 	unw_get_proc_info_in_range.man					\
 	unw_get_proc_name.man						\
+	unw_get_proc_name_by_ip.man					\
 	unw_get_fpreg.man						\
 	unw_get_reg.man							\
 	unw_getcontext.man						\
@@ -40,6 +41,7 @@ EXTRA_DIST = NOTES libunwind.trans					\
 	unw_get_proc_info_by_ip.tex					\
 	unw_get_proc_info_in_range.tex					\
 	unw_get_proc_name.tex						\
+	unw_get_proc_name_by_ip.tex					\
 	unw_get_fpreg.tex						\
 	unw_get_reg.tex							\
 	unw_getcontext.tex						\
@@ -64,16 +66,16 @@ L2M_CMD	= $(L2M) -t $(srcdir)/libunwind.trans
 L2H_CMD	= $(L2M) -H -t $(srcdir)/libunwind.trans
 
 .tex.man:
-	$(L2M_CMD) $< $@
+	$(AM_V_GEN)$(L2M_CMD) $< $@
 	-cp $@ $(srcdir)/$@
 
-html:
+html-local:
 	for n in $(man3_MANS); do					\
 		page=`basename $$n .man`;				\
 		$(L2H_CMD) $(srcdir)/$$page.tex "$$page(3).raw";	\
 	done
 
-pdf:
+pdf-local:
 	for n in $(man3_MANS); do					\
 		page=`basename $$n .man`;				\
 		$(L2P) $(srcdir)/$$page.tex "$$page(3).pdf";		\

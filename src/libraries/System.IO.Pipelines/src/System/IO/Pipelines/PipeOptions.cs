@@ -38,10 +38,10 @@ namespace System.IO.Pipelines
             // to let users specify the maximum buffer size, so we pick a reasonable number based on defaults. They can influence
             // how much gets buffered by increasing the minimum segment size.
 
-            // With a defaukt segment size of 4K this maps to 16K
+            // With a default segment size of 4K this maps to 16K
             InitialSegmentPoolSize = 4;
 
-            // With a defaukt segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
+            // With a default segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
             MaxSegmentPoolSize = 256;
 
             // By default, we'll throttle the writer at 64K of buffered data
@@ -63,7 +63,15 @@ namespace System.IO.Pipelines
             {
                 resumeWriterThreshold = DefaultResumeWriterThreshold;
             }
-            else if (resumeWriterThreshold < 0 || resumeWriterThreshold > pauseWriterThreshold)
+            else if (resumeWriterThreshold == 0)
+            {
+                // A resumeWriterThreshold of 0 makes no sense because the writer could never resume if paused.
+                // By setting it to 1, the writer will resume only after all data is consumed.
+                resumeWriterThreshold = 1;
+            }
+
+            // Only validate that the resumeWriterThreshold is not too large if the writer could actually pause.
+            if (resumeWriterThreshold < 0 || (pauseWriterThreshold > 0 && resumeWriterThreshold > pauseWriterThreshold))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.resumeWriterThreshold);
             }

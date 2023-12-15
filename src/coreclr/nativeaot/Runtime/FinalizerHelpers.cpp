@@ -10,7 +10,6 @@
 
 #include "slist.h"
 #include "gcrhinterface.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
 
@@ -29,14 +28,12 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-// Finalizer method implemented by redhawkm.
 extern "C" void __cdecl ProcessFinalizers();
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we're still executing the DllMain for RedhawkU. At that point we can't run managed code
-// successfully (in particular module initialization code has not run for RedhawkM). Instead this method waits
+// finalizer thread we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
-// managed portion of the thread at that point.
+// managed portion of the thread at that point
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
     HANDLE hFinalizerEvent = (HANDLE)pContext;
@@ -62,8 +59,7 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
     ASSERT(fResult);
 
-    // Run the managed portion of the finalizer. Until we implement (non-process) shutdown this call will
-    // never return.
+    // Run the managed portion of the finalizer. This call will never return.
 
     ProcessFinalizers();
 
@@ -153,6 +149,17 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
         {
         case WAIT_OBJECT_0:
             // At least one object is ready for finalization.
+            {
+                // Process pending finalizer work items from the GC first.
+                FinalizerWorkItem* pWork = pHeap->GetExtraWorkForFinalization();
+                while (pWork != NULL)
+                {
+                    FinalizerWorkItem* pNext = pWork->next;
+                    pWork->callback(pWork);
+                    pWork = pNext;
+                }
+            }
+            FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
             return TRUE;
 
         case WAIT_OBJECT_0 + 1:
@@ -176,8 +183,9 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 }
 
 // Indicate that the current round of finalizations is complete.
-EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete()
+EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete(uint32_t fcount)
 {
+    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
     g_FinalizerDoneEvent.Set();
 }
 

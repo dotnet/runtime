@@ -20,10 +20,22 @@ internal static partial class Interop
         internal static partial bool BioDestroy(IntPtr a);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGets")]
-        internal static partial int BioGets(SafeBioHandle b, byte[] buf, int size);
+        private static unsafe partial int BioGets(SafeBioHandle b, byte* buf, int size);
+
+        internal static unsafe int BioGets(SafeBioHandle b, Span<byte> buf)
+        {
+            fixed (byte* pBuf = buf)
+            {
+                return BioGets(b, pBuf, buf.Length);
+            }
+        }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioRead")]
         internal static partial int BioRead(SafeBioHandle b, byte[] data, int len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioRead")]
+        private static partial int BioRead(SafeBioHandle b, Span<byte> data, int len);
+        internal static int BioRead(SafeBioHandle b, Span<byte> data) => BioRead(b, data, data.Length);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static partial int BioWrite(SafeBioHandle b, byte[] data, int len);

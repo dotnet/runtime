@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Globalization;
-using System.Security;
-using System.Reflection;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -417,9 +417,8 @@ namespace System.Xml
                 XmlQualifiedName attrQName;
                 for (int i = 0; i < _defaultAttributes.Count; i++)
                 {
-                    XmlSchemaAttribute schemaAttribute = (_defaultAttributes[i] as XmlSchemaAttribute)!;
+                    XmlSchemaAttribute schemaAttribute = (XmlSchemaAttribute)_defaultAttributes[i]!;
                     attrQName = schemaAttribute.QualifiedName;
-                    Debug.Assert(schemaAttribute != null);
                     attr = _document.CreateDefaultAttribute(GetDefaultPrefix(attrQName.Namespace), attrQName.Name, attrQName.Namespace);
                     SetDefaultAttributeSchemaInfo(schemaAttribute);
                     attr.XmlName = _document.AddAttrXmlName(attr.Prefix, attr.LocalName, attr.NamespaceURI, _attributeSchemaInfo);
@@ -474,7 +473,7 @@ namespace System.Xml
             return defaultPrefix;
         }
 
-        private object? GetNodeValue()
+        private string? GetNodeValue()
         {
             return _currentNode!.Value;
         }

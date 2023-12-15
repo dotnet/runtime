@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.ComponentModel;
-using System.Data.SqlTypes;
 using System.Data.Common;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -107,7 +107,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void AddXdoProperties(object? instance, XmlElement root, XmlDocument xd)
+        internal void AddXdoProperties(object? instance, XmlElement root)
         {
             if (instance == null)
             {
@@ -123,13 +123,13 @@ namespace System.Data
 
             for (int i = 0; i < pds.Count; i++)
             {
-                AddXdoProperty(pds[i], instance, root, xd);
+                AddXdoProperty(pds[i], instance, root);
             }
             return;
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void AddXdoProperty(PropertyDescriptor pd, object instance, XmlElement root, XmlDocument xd)
+        internal void AddXdoProperty(PropertyDescriptor pd, object instance, XmlElement root)
         {
             Type type = pd.PropertyType;
             bool bisDataColumn = false;
@@ -374,7 +374,7 @@ namespace System.Data
             return false;
         }// HaveExtendedProperties
 
-        internal void WriteSchemaRoot(XmlDocument xd, XmlElement rootSchema, string targetNamespace)
+        internal void WriteSchemaRoot(XmlElement rootSchema, string targetNamespace)
         {
             /*
                         if (_ds != null)
@@ -597,11 +597,11 @@ namespace System.Data
             }
             if (_ds != null)
             {
-                WriteSchemaRoot(xd, rootSchema, _ds.Namespace);
+                WriteSchemaRoot(rootSchema, _ds.Namespace);
             }
             else
             {
-                WriteSchemaRoot(xd, rootSchema, _dt.Namespace);
+                WriteSchemaRoot(rootSchema, _dt.Namespace);
             }
 
             // register the root element and associated NS
@@ -665,7 +665,7 @@ namespace System.Data
                 // probably we need to throw an exception
                 FillDataSetElement(xd, ds, dt);
                 rootSchema.AppendChild(_dsElement);
-                AddXdoProperties(_ds, _dsElement, xd);
+                AddXdoProperties(_ds, _dsElement);
                 AddExtendedProperties(ds!._extendedProperties, _dsElement);
 
 
@@ -687,7 +687,7 @@ namespace System.Data
             // DataSet properties
             if (_ds != null)
             {
-                AddXdoProperties(_ds, _dsElement, xd);
+                AddXdoProperties(_ds, _dsElement);
                 AddExtendedProperties(_ds._extendedProperties, _dsElement);
             }
 
@@ -747,7 +747,7 @@ namespace System.Data
                 }
                 else
                 {
-                    AppendChildWithoutRef(rootSchema, top[i].Namespace, el, Keywords.XSD_ELEMENT);
+                    AppendChildWithoutRef(top[i].Namespace, el);
                     XmlElement node = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_ELEMENT, Keywords.XSDNS);
                     node.SetAttribute(Keywords.REF, ((string)_prefixes[top[i].Namespace]!) + ':' + top[i].EncodedTableName);
                     dsCompositor.AppendChild(node);
@@ -955,7 +955,7 @@ namespace System.Data
 
             XmlElement rootSchema = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SCHEMA, Keywords.XSDNS);
             _sRoot = rootSchema;
-            WriteSchemaRoot(xd, rootSchema, dt.Namespace);
+            WriteSchemaRoot(rootSchema, dt.Namespace);
 
             _ = FillDataSetElement(xd, null, dt);
 
@@ -1218,7 +1218,7 @@ namespace System.Data
             if (schemaEl == null)
             {
                 schemaEl = _dc!.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SCHEMA, Keywords.XSDNS);
-                WriteSchemaRoot(_dc, schemaEl, NamespaceURI);
+                WriteSchemaRoot(schemaEl, NamespaceURI);
                 if (!string.IsNullOrEmpty(NamespaceURI))
                 {
                     string prefix = Keywords.APP + Convert.ToString(++_prefixCount, CultureInfo.InvariantCulture);
@@ -1250,7 +1250,7 @@ namespace System.Data
                     XmlNode type;
                     string? name = stNode.Name;
 
-                    if (name != null && name.Length != 0)
+                    if (!string.IsNullOrEmpty(name))
                     {
                         // For remoting, always need to work with root schema's namespace
                         string nSpace = (_schFormat != SchemaFormat.Remoting) ? stNode.Namespace :
@@ -1314,7 +1314,7 @@ namespace System.Data
             else
             {
                 string typeName = XmlDataTypeName(col.DataType); // do not update the hashtable, as it will not write msdata:DataType
-                if (typeName == null || typeName.Length == 0)
+                if (string.IsNullOrEmpty(typeName))
                 {
                     if (col.DataType == typeof(Guid) || col.DataType == typeof(Type))
                     {
@@ -1440,7 +1440,7 @@ namespace System.Data
             }
 
             if (col.GetType() != typeof(DataColumn))
-                AddXdoProperties(col, root, dc);
+                AddXdoProperties(col, root);
             else
                 AddColumnProperties(col, root);
 
@@ -1556,7 +1556,7 @@ namespace System.Data
                 _ => null!,
             };
 
-        internal void AppendChildWithoutRef(XmlElement node, string Namespace, XmlElement el, string refString)
+        internal void AppendChildWithoutRef(string Namespace, XmlElement el)
         {
             XmlElement schNode = GetSchema(Namespace);
             if (FindTypeNode(schNode, el.GetAttribute(Keywords.NAME)) == null)
@@ -1779,7 +1779,7 @@ namespace System.Data
                 root.SetAttribute(Keywords.MSD_LOCALE, Keywords.MSDNS, table.Locale.ToString());
             }
 
-            AddXdoProperties(table, root, dc);
+            AddXdoProperties(table, root);
 
             DataColumnCollection columns = table.Columns;
 
@@ -1812,7 +1812,7 @@ namespace System.Data
                 // the type for this element
                 DataColumn col = table.Columns[0];
                 string _typeName = XmlDataTypeName(col.DataType);
-                if (_typeName == null || _typeName.Length == 0)
+                if (string.IsNullOrEmpty(_typeName))
                 {
                     _typeName = Keywords.XSD_ANYTYPE;
                 }
@@ -1860,7 +1860,7 @@ namespace System.Data
                 XmlElement sc = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SIMPLECONTENT, Keywords.XSDNS);
 
                 if (colTxt.GetType() != typeof(DataColumn))
-                    AddXdoProperties(colTxt, sc, dc);
+                    AddXdoProperties(colTxt, sc);
                 else
                     AddColumnProperties(colTxt, sc);
                 AddExtendedProperties(colTxt._extendedProperties, sc);
@@ -2445,7 +2445,7 @@ namespace System.Data
                     DataColumn column = table.Columns[colNum];
                     string error = row.GetColumnError(column);
                     string columnPrefix = (column.Namespace.Length != 0) ? column.Prefix : string.Empty;
-                    if (error == null || error.Length == 0)
+                    if (string.IsNullOrEmpty(error))
                     {
                         continue;
                     }
@@ -2770,7 +2770,7 @@ namespace System.Data
             {
                 DataColumn column = row.Table.Columns[colNum];
                 string error = row.GetColumnError(column);
-                if (error == null || error.Length == 0)
+                if (string.IsNullOrEmpty(error))
                 {
                     continue;
                 }
@@ -2794,7 +2794,7 @@ namespace System.Data
 
             string prefix = (_ds != null) ? ((_ds.Namespace.Length == 0) ? "" : _ds.Prefix) : ((_dt!.Namespace.Length == 0) ? "" : _dt.Prefix);
 
-            if (_ds == null || _ds.DataSetName == null || _ds.DataSetName.Length == 0)
+            if (_ds == null || string.IsNullOrEmpty(_ds.DataSetName))
                 _xmlw.WriteStartElement(prefix, Keywords.DOCUMENTELEMENT, (_dt!.Namespace == null) ? "" : _dt.Namespace);
             else
                 _xmlw.WriteStartElement(prefix, XmlConvert.EncodeLocalName(_ds.DataSetName), _ds.Namespace);
@@ -2852,7 +2852,7 @@ namespace System.Data
                 }
                 else
                 {
-                    if (_ds.DataSetName == null || _ds.DataSetName.Length == 0)
+                    if (string.IsNullOrEmpty(_ds.DataSetName))
                         _xmlw.WriteStartElement(prefix, Keywords.DOCUMENTELEMENT, _ds.Namespace);
                     else
                         _xmlw.WriteStartElement(prefix, XmlConvert.EncodeLocalName(_ds.DataSetName), _ds.Namespace);

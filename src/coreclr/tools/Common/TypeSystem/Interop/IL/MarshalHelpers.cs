@@ -3,6 +3,7 @@
 
 using System;
 using Debug = System.Diagnostics.Debug;
+using System.Runtime.InteropServices.ObjectiveC;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
@@ -230,7 +231,8 @@ namespace Internal.TypeSystem.Interop
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
 
-            if (type.IsByRef)
+            bool isByRef = type.IsByRef;
+            if (isByRef)
             {
                 type = type.GetParameterType();
 
@@ -415,9 +417,15 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields)
+                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields && !isByRef)
                 {
                     // Int128 types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
+                if (!isField && ((DefType)type).IsVectorTOrHasVectorTFields)
+                {
+                    // Vector<T> types or structs that contain them cannot be passed by value
                     return MarshallerKind.Invalid;
                 }
 
@@ -873,6 +881,7 @@ namespace Internal.TypeSystem.Interop
             // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
             // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
             // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+            // * Vector512<T>: Represents the __m512 ABI primitive which requires currently unimplemented handling
             // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
             return !InteropTypes.IsSystemNullable(type.Context, type)
                 && !InteropTypes.IsSystemSpan(type.Context, type)
@@ -880,6 +889,7 @@ namespace Internal.TypeSystem.Interop
                 && !InteropTypes.IsSystemRuntimeIntrinsicsVector64T(type.Context, type)
                 && !InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type)
                 && !InteropTypes.IsSystemRuntimeIntrinsicsVector256T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector512T(type.Context, type)
                 && !InteropTypes.IsSystemNumericsVectorT(type.Context, type);
         }
 
@@ -920,12 +930,13 @@ namespace Internal.TypeSystem.Interop
             return MarshallerKind.Invalid;
         }
 
+        private const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
+
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
-            if (!target.IsOSX)
+            if (!target.IsOSXLike)
                 return false;
 
-            const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
             const string ObjectiveCMsgSend = "objc_msgSend";
 
             // This is for the objc_msgSend suite of functions.
@@ -936,6 +947,24 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
+        {
+            if (!target.IsOSXLike || pinvokeModule != ObjectiveCLibrary)
+                return null;
+
+#pragma warning disable CA1416
+            return pinvokeFunction switch
+            {
+                "objc_msgSend" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSend,
+                "objc_msgSend_fpret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
+                "objc_msgSend_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
+                "objc_msgSendSuper" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
+                "objc_msgSendSuper_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
+                _ => null,
+            };
+#pragma warning restore CA1416
         }
 
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)

@@ -46,14 +46,14 @@ namespace ILCompiler
         public abstract bool ShouldReferenceThroughImportTable(TypeDesc type);
 
         /// <summary>
-        /// If true, there may be type system constructs that will not be linked into the same module as the current compilation and therefore
-        /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
-        /// </summary>
-        public abstract bool CanHaveReferenceThroughImportTable { get; }
-
-        /// <summary>
         /// If true, instance methods will only be generated once their owning type is created.
         /// </summary>
         public abstract bool AllowInstanceMethodOptimization(MethodDesc method);
+
+        /// <summary>
+        /// If true, virtual methods on abstract types will only be generated once a non-abstract derived
+        /// type that doesn't override the virtual method is created.
+        /// </summary>
+        public abstract bool AllowVirtualMethodOnAbstractTypeOptimization(MethodDesc method);
     }
 }

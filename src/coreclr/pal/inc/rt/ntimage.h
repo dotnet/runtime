@@ -244,6 +244,7 @@ typedef struct _IMAGE_FILE_HEADER {
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #define IMAGE_FILE_MACHINE_CEE               0xC0EE
 #define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
+#define IMAGE_FILE_MACHINE_RISCV64           0x5064  // RISCV64
 
 //
 // Directory format.
@@ -473,22 +474,6 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 #define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
 #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
 #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
-
-#ifdef _MSC_VER
-//
-// Non-COFF Object file header
-//
-
-typedef struct ANON_OBJECT_HEADER {
-    USHORT  Sig1;            // Must be IMAGE_FILE_MACHINE_UNKNOWN
-    USHORT  Sig2;            // Must be 0xffff
-    USHORT  Version;         // >= 1 (implies the CLSID field is present)
-    USHORT  Machine;
-    ULONG   TimeDateStamp;
-    CLSID   ClassID;         // Used to invoke CoCreateInstance
-    ULONG   SizeOfData;      // Size of data that follows the header
-} ANON_OBJECT_HEADER;
-#endif
 
 //
 // Section header format.
@@ -1035,6 +1020,12 @@ typedef IMAGE_RELOCATION UNALIGNED *PIMAGE_RELOCATION;
 //
 #define IMAGE_REL_LOONGARCH64_PC        0x0003
 #define IMAGE_REL_LOONGARCH64_JIR       0x0004
+
+//
+// RISCV64 relocation types
+//
+#define IMAGE_REL_RISCV64_PC            0x0003
+#define IMAGE_REL_RISCV64_JALR          0x0004
 
 //
 // CEF relocation types.

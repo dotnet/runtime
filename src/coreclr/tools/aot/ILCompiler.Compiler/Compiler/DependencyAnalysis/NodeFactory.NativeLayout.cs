@@ -38,11 +38,6 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutMethodSignatureVertexNode(_factory, signature);
                 });
 
-                _callingConventionSlots = new NodeCache<CallingConventionConverterKey, NativeLayoutCallingConventionConverterGenericDictionarySlotNode>(key =>
-                {
-                    return new NativeLayoutCallingConventionConverterGenericDictionarySlotNode(key.Signature, key.ConverterKind);
-                });
-
                 _methodNameAndSignatures = new NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode>(method =>
                 {
                     return new NativeLayoutMethodNameAndSignatureVertexNode(_factory, method);
@@ -113,24 +108,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutUnwrapNullableGenericDictionarySlotNode(_factory, type);
                 });
 
-                _typeSize_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutTypeSizeGenericDictionarySlotNode>(type =>
-                {
-                    return new NativeLayoutTypeSizeGenericDictionarySlotNode(_factory, type);
-                });
-
                 _allocateObject_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutAllocateObjectGenericDictionarySlotNode>(type =>
                 {
                     return new NativeLayoutAllocateObjectGenericDictionarySlotNode(_factory, type);
-                });
-
-                _castClass_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutCastClassGenericDictionarySlotNode>(type =>
-                {
-                    return new NativeLayoutCastClassGenericDictionarySlotNode(_factory, type);
-                });
-
-                _isInst_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutIsInstGenericDictionarySlotNode>(type =>
-                {
-                    return new NativeLayoutIsInstGenericDictionarySlotNode(_factory, type);
                 });
 
                 _threadStaticIndex_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutThreadStaticBaseIndexDictionarySlotNode>(type =>
@@ -141,11 +121,6 @@ namespace ILCompiler.DependencyAnalysis
                 _defaultConstructor_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutDefaultConstructorGenericDictionarySlotNode>(type =>
                 {
                     return new NativeLayoutDefaultConstructorGenericDictionarySlotNode(_factory, type);
-                });
-
-                _allocateArray_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutAllocateArrayGenericDictionarySlotNode>(type =>
-                {
-                    return new NativeLayoutAllocateArrayGenericDictionarySlotNode(_factory, type);
                 });
 
                 _interfaceCell_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutInterfaceDispatchGenericDictionarySlotNode>(method =>
@@ -173,29 +148,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutMethodLdTokenGenericDictionarySlotNode(method);
                 });
 
-                _fieldOffset_GenericDictionaryslots = new NodeCache<FieldDesc, NativeLayoutFieldOffsetGenericDictionarySlotNode>(field =>
-                {
-                    return new NativeLayoutFieldOffsetGenericDictionarySlotNode(field);
-                });
-
-                _vtableOffset_GenericDictionaryslots = new NodeCache<MethodDesc, NativeLayoutVTableOffsetGenericDictionarySlotNode>(method =>
-                {
-                    return new NativeLayoutVTableOffsetGenericDictionarySlotNode(method);
-                });
-
                 _dictionarySignatures = new NodeCache<TypeSystemEntity, NativeLayoutDictionarySignatureNode>(owningMethodOrType =>
                 {
                     return new NativeLayoutDictionarySignatureNode(_factory, owningMethodOrType);
-                });
-
-                _integerSlots = new NodeCache<int, NativeLayoutIntegerDictionarySlotNode>(value =>
-                {
-                    return new NativeLayoutIntegerDictionarySlotNode(value);
-                });
-
-                _otherSlotPointerSlots = new NodeCache<int, NativeLayoutPointerToOtherSlotDictionarySlotNode>(otherSlotIndex =>
-                {
-                    return new NativeLayoutPointerToOtherSlotDictionarySlotNode(otherSlotIndex);
                 });
 
                 _constrainedMethodUseSlots = new NodeCache<ConstrainedMethodUseKey, NativeLayoutConstrainedMethodDictionarySlotNode>(constrainedMethodUse =>
@@ -221,11 +176,27 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         yield return _factory.NativeLayout.TemplateTypeLayout(arrayCanonicalType);
                     }
+
+                    yield return _factory.MaximallyConstructableType(arrayCanonicalType);
                 }
 
                 while (type.IsParameterizedType)
                 {
                     type = ((ParameterizedType)type).ParameterType;
+                }
+
+                if (type.IsFunctionPointer)
+                {
+                    MethodSignature sig = ((FunctionPointerType)type).Signature;
+                    foreach (var dependency in TemplateConstructableTypes(sig.ReturnType))
+                        yield return dependency;
+
+                    foreach (var param in sig)
+                        foreach (var dependency in TemplateConstructableTypes(param))
+                            yield return dependency;
+
+                    // Nothing else to do for function pointers
+                    yield break;
                 }
 
                 TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -281,12 +252,6 @@ namespace ILCompiler.DependencyAnalysis
                     type = _factory.TypeSystemContext.GetSignatureVariable(genericParameter.Index, method: (genericParameter.Kind == GenericParameterKind.Method));
                 }
 
-                if (type.Category == TypeFlags.FunctionPointer)
-                {
-                    // Pretend for now it's an IntPtr, may need to be revisited depending on https://github.com/dotnet/runtime/issues/11354
-                    type = _factory.TypeSystemContext.GetWellKnownType(WellKnownType.IntPtr);
-                }
-
                 return _typeSignatures.GetOrAdd(type);
             }
 
@@ -294,12 +259,6 @@ namespace ILCompiler.DependencyAnalysis
             internal NativeLayoutMethodSignatureVertexNode MethodSignatureVertex(MethodSignature signature)
             {
                 return _methodSignatures.GetOrAdd(signature);
-            }
-
-            private NodeCache<CallingConventionConverterKey, NativeLayoutCallingConventionConverterGenericDictionarySlotNode> _callingConventionSlots;
-            internal NativeLayoutCallingConventionConverterGenericDictionarySlotNode CallingConventionConverter(CallingConventionConverterKey key)
-            {
-                return _callingConventionSlots.GetOrAdd(key);
             }
 
             private NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode> _methodNameAndSignatures;
@@ -512,28 +471,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _unwrapNullable_GenericDictionarySlots.GetOrAdd(type);
             }
 
-            private NodeCache<TypeDesc, NativeLayoutTypeSizeGenericDictionarySlotNode> _typeSize_GenericDictionarySlots;
-            public NativeLayoutTypeSizeGenericDictionarySlotNode TypeSizeDictionarySlot(TypeDesc type)
-            {
-                return _typeSize_GenericDictionarySlots.GetOrAdd(type);
-            }
-
             private NodeCache<TypeDesc, NativeLayoutAllocateObjectGenericDictionarySlotNode> _allocateObject_GenericDictionarySlots;
             public NativeLayoutAllocateObjectGenericDictionarySlotNode AllocateObjectDictionarySlot(TypeDesc type)
             {
                 return _allocateObject_GenericDictionarySlots.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, NativeLayoutCastClassGenericDictionarySlotNode> _castClass_GenericDictionarySlots;
-            public NativeLayoutCastClassGenericDictionarySlotNode CastClassDictionarySlot(TypeDesc type)
-            {
-                return _castClass_GenericDictionarySlots.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, NativeLayoutIsInstGenericDictionarySlotNode> _isInst_GenericDictionarySlots;
-            public NativeLayoutIsInstGenericDictionarySlotNode IsInstDictionarySlot(TypeDesc type)
-            {
-                return _isInst_GenericDictionarySlots.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, NativeLayoutThreadStaticBaseIndexDictionarySlotNode> _threadStaticIndex_GenericDictionarySlots;
@@ -546,12 +487,6 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutDefaultConstructorGenericDictionarySlotNode DefaultConstructorDictionarySlot(TypeDesc type)
             {
                 return _defaultConstructor_GenericDictionarySlots.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, NativeLayoutAllocateArrayGenericDictionarySlotNode> _allocateArray_GenericDictionarySlots;
-            public NativeLayoutAllocateArrayGenericDictionarySlotNode AllocateArrayDictionarySlot(TypeDesc type)
-            {
-                return _allocateArray_GenericDictionarySlots.GetOrAdd(type);
             }
 
             private NodeCache<MethodDesc, NativeLayoutInterfaceDispatchGenericDictionarySlotNode> _interfaceCell_GenericDictionarySlots;
@@ -631,34 +566,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _methodLdToken_GenericDictionarySlots.GetOrAdd(method);
             }
 
-            private NodeCache<FieldDesc, NativeLayoutFieldOffsetGenericDictionarySlotNode> _fieldOffset_GenericDictionaryslots;
-            public NativeLayoutFieldOffsetGenericDictionarySlotNode FieldOffsetDictionarySlot(FieldDesc field)
-            {
-                return _fieldOffset_GenericDictionaryslots.GetOrAdd(field);
-            }
-
-            private NodeCache<MethodDesc, NativeLayoutVTableOffsetGenericDictionarySlotNode> _vtableOffset_GenericDictionaryslots;
-            public NativeLayoutVTableOffsetGenericDictionarySlotNode VTableOffsetDictionarySlot(MethodDesc method)
-            {
-                return _vtableOffset_GenericDictionaryslots.GetOrAdd(method);
-            }
-
             private NodeCache<TypeSystemEntity, NativeLayoutDictionarySignatureNode> _dictionarySignatures;
             public NativeLayoutDictionarySignatureNode DictionarySignature(TypeSystemEntity owningMethodOrType)
             {
                 return _dictionarySignatures.GetOrAdd(owningMethodOrType);
-            }
-
-            private NodeCache<int, NativeLayoutIntegerDictionarySlotNode> _integerSlots;
-            public NativeLayoutIntegerDictionarySlotNode IntegerSlot(int value)
-            {
-                return _integerSlots.GetOrAdd(value);
-            }
-
-            private NodeCache<int, NativeLayoutPointerToOtherSlotDictionarySlotNode> _otherSlotPointerSlots;
-            public NativeLayoutPointerToOtherSlotDictionarySlotNode PointerToOtherSlot(int otherSlotIndex)
-            {
-                return _otherSlotPointerSlots.GetOrAdd(otherSlotIndex);
             }
 
             private NodeCache<ConstrainedMethodUseKey, NativeLayoutConstrainedMethodDictionarySlotNode> _constrainedMethodUseSlots;

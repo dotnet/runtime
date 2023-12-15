@@ -28,11 +28,8 @@ class PEWriter : public PESectionMan
 public:
 
     // See ICeeFileGen.h for definition of createFlags
-    HRESULT Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileName = NULL);
+    HRESULT Init(PESectionMan *pFrom, DWORD createFlags);
     HRESULT Cleanup();
-
-    // Finds section with given name.  returns 0 if not found
-    virtual PESection* getSection(const char* name);
 
     // Create a new section
     virtual HRESULT newSection(const char* name, PESection **section,
@@ -117,17 +114,6 @@ private:
     DWORD  m_peFileTimeStamp;
 
     HANDLE   m_file;
-
-    // "Seed" file information. The new file data will be "appended" to the seed file
-    // These are valid only if m_hSeedFile is valid
-
-    HANDLE              m_hSeedFile;
-    HANDLE              m_hSeedFileMap;
-    PEDecoder *         m_pSeedFileDecoder;
-    IMAGE_NT_HEADERS *  m_pSeedFileNTHeaders;
-    unsigned            m_iSeedSections;
-    IMAGE_SECTION_HEADER*m_pSeedSections;
-    IMAGE_SECTION_HEADER*m_pSeedSectionToAdd; // used only by newSection()
 
     PEWriterSection **getSectStart() {
         return (PEWriterSection**)sectStart;
@@ -221,73 +207,13 @@ public:
 
     virtual HRESULT  write      (HANDLE file);
     virtual unsigned writeMem   (void ** pMem);
-    virtual bool     isSeedSection() { return false; }
-
-};
-
-// This is for sections from the seed file. Their order needs to be maintained and
-// they need to be written to the output file.
-
-class PESeedSection : public PEWriterSection {
-
-public:
-
-    PESeedSection(PEDecoder * peDecoder, IMAGE_SECTION_HEADER * seedSection);
-
-    // PESection methods
-
-    unsigned dataLen() { return m_pSeedSectionHeader->SizeOfRawData; }
-    HRESULT applyRelocs(CeeGenTokenMapper *pTokenMapper) { return S_OK; }
-    char* getBlock(unsigned len, unsigned align) { _ASSERTE(!"PESeedSection"); return NULL; }
-    HRESULT truncate(unsigned newLen) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
-    void writeSectReloc(unsigned val, CeeSection& relativeTo,
-                CeeSectionRelocType reloc,
-                CeeSectionRelocExtra *extra) { _ASSERTE(!"PESeedSection"); return; }
-    HRESULT addSectReloc(unsigned offset, CeeSection& relativeTo,
-                            CeeSectionRelocType reloc,
-                            CeeSectionRelocExtra *extra) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
-    HRESULT addSectReloc(unsigned offset, PESection *relativeTo,
-                            CeeSectionRelocType reloc,
-                            CeeSectionRelocExtra *extra) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
-    HRESULT addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
-                            CeeSectionRelocExtra *extra) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
-//  unsigned char *name();
-//  unsigned flags();
-//  unsigned getBaseRVA();
-    int getDirEntry() { _ASSERTE(!"PESeedSection"); return 0; }
-    HRESULT directoryEntry(unsigned num) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
-    char * computePointer(unsigned offset) const { _ASSERTE(!"PESeedSection"); return NULL; }
-    BOOL containsPointer(_In_ char *ptr) const { _ASSERTE(!"PESeedSection"); return FALSE; }
-    unsigned computeOffset(_In_ char *ptr) const { _ASSERTE(!"PESeedSection"); return 0; }
-    HRESULT cloneInstance(PESection *destination) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
-
-    // PEWriterSection
-
-    HRESULT applyRelocs(IMAGE_NT_HEADERS *  pNtHeaders,
-                        PERelocSection *    relocSection,
-                        CeeGenTokenMapper * pTokenMapper,
-                        DWORD               rdataRvaBase,
-                        DWORD               dataRvaBase,
-                        DWORD               textRvaBase) { return S_OK; }
-
-    HRESULT  write(HANDLE file);
-    unsigned writeMem(void ** pMem);
-    bool isSeedSection() { return true; }
-
-protected:
-
-    PEDecoder *             m_pSeedFileDecoder;
-    IMAGE_SECTION_HEADER *  m_pSeedSectionHeader;
-
 };
 
 inline DWORD PEWriter::getSectionAlignment() {
-    return VAL32(m_ntHeaders->OptionalHeader.FileAlignment);
+    return VAL32(m_ntHeaders->OptionalHeader.SectionAlignment);
 }
 
 inline void PEWriter::setSectionAlignment(DWORD SectionAlignment) {
-
-    _ASSERTE(m_hSeedFile == INVALID_HANDLE_VALUE);
     m_ntHeaders->OptionalHeader.SectionAlignment = VAL32(SectionAlignment);
 }
 
@@ -296,7 +222,6 @@ inline DWORD PEWriter::getFileAlignment() {
 }
 
 inline void PEWriter::setFileAlignment(DWORD fileAlignment) {
-    _ASSERTE(m_hSeedFile == INVALID_HANDLE_VALUE);
     m_ntHeaders->OptionalHeader.FileAlignment = VAL32(fileAlignment);
 }
 

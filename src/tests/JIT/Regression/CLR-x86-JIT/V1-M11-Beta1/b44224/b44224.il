@@ -9,8 +9,8 @@
 }
 .assembly 'b44224' {}
 .assembly extern xunit.core {}
-.class ILGEN_0x1d9cf497 {
-.method static int32 Main() {
+.class public ILGEN_0x1d9cf497 {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

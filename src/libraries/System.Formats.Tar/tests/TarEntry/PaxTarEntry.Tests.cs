@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Linq;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -34,6 +33,30 @@ namespace System.Formats.Tar.Tests
             // The user should not be creating these entries manually in pax
             Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.ExtendedAttributes, InitialEntryName));
             Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.GlobalExtendedAttributes, InitialEntryName));
+        }
+
+
+        [Theory]
+        [InlineData("\n", "value")]
+        [InlineData("=", "value")]
+        [InlineData("key", "\n")]
+        [InlineData("\nkey", "value")]
+        [InlineData("k\ney", "value")]
+        [InlineData("key\n", "value")]
+        [InlineData("=key", "value")]
+        [InlineData("ke=y", "value")]
+        [InlineData("key=", "value")]
+        [InlineData("key", "\nvalue")]
+        [InlineData("key", "val\nue")]
+        [InlineData("key", "value\n")]
+        [InlineData("key=", "value\n")]
+        [InlineData("key\n", "value\n")]
+        public void Disallowed_ExtendedAttributes_SeparatorCharacters(string key, string value)
+        {
+            Dictionary<string, string> extendedAttribute = new Dictionary<string, string>() { { key, value } };
+
+            Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttribute));
+            Assert.Throws<ArgumentException>(() => new PaxGlobalExtendedAttributesTarEntry(extendedAttribute));
         }
 
         [Fact]

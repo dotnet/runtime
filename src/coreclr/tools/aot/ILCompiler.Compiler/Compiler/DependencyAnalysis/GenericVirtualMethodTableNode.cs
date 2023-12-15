@@ -14,15 +14,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map of generic virtual method implementations.
     /// </summary>
-    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>> _gvmImplementations;
 
         public GenericVirtualMethodTableNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__gvm_table_End", true);
             _externalReferences = externalReferences;
             _gvmImplementations = new Dictionary<MethodDesc, Dictionary<TypeDesc, MethodDesc>>();
         }
@@ -32,10 +31,10 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__gvm_table");
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -61,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openImplementationMethodNameAndSig), "gvm table implementation method signature"));
         }
 
-        private void AddGenericVirtualMethodImplementation(NodeFactory factory, MethodDesc callingMethod, MethodDesc implementationMethod)
+        private void AddGenericVirtualMethodImplementation(MethodDesc callingMethod, MethodDesc implementationMethod)
         {
             Debug.Assert(!callingMethod.OwningType.IsInterface);
 
@@ -87,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var typeGVMEntryInfo in interestingEntry.ScanForGenericVirtualMethodEntries())
                 {
-                    AddGenericVirtualMethodImplementation(factory, typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationMethod);
+                    AddGenericVirtualMethodImplementation(typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationMethod);
                 }
             }
 
@@ -135,9 +134,9 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeFormatWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

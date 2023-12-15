@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="DynamicDependencyMethodInNonReferencedAssemblyLibrary, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInNonReferencedAssemblyLibrary" preserve="all" />
+    </assembly>
+</linker>

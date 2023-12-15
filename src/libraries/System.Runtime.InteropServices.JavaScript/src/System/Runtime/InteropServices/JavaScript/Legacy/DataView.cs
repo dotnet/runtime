@@ -17,7 +17,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public DataView(ArrayBuffer buffer)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
@@ -28,7 +31,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public DataView(ArrayBuffer buffer, int byteOffset)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
@@ -40,7 +46,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public DataView(ArrayBuffer buffer, int byteOffset, int byteLength)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset, byteLength }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>

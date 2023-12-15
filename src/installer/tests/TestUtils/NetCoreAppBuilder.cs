@@ -49,7 +49,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     FileUtils.EnsureFileDirectoryExists(absolutePath);
                     File.Copy(SourcePath, absolutePath);
                 }
-                else if (FileOnDiskPath == null || FileOnDiskPath.Length >= 0)
+                else if ((FileOnDiskPath == null || FileOnDiskPath.Length > 0)
+                    && !File.Exists(absolutePath))
                 {
                     FileUtils.CreateEmptyFile(absolutePath);
                 }
@@ -188,7 +189,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public enum RuntimeLibraryType
         {
             project,
-            package
+            package,
+            runtimepack,
         }
 
         public class RuntimeLibraryBuilder
@@ -287,13 +289,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
-        public static NetCoreAppBuilder ForNETCoreApp(string name, string runtime)
+        public static NetCoreAppBuilder ForNETCoreApp(string name, string runtime, string version = "3.0")
         {
             return new NetCoreAppBuilder()
             {
                 _sourceApp = null,
                 Name = name,
-                Framework = ".NETCoreApp,Version=v3.0",
+                Framework = $".NETCoreApp,Version=v{version}",
                 Runtime = runtime
             };
         }
@@ -332,6 +334,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return WithRuntimeLibrary(RuntimeLibraryType.package, name, version, customizer);
         }
 
+        public NetCoreAppBuilder WithRuntimePack(string name, string version, Action<RuntimeLibraryBuilder> customizer = null)
+        {
+            return WithRuntimeLibrary(RuntimeLibraryType.runtimepack, $"runtimepack.{name}", version, customizer);
+        }
+
         public NetCoreAppBuilder WithRuntimeFallbacks(string runtime, params string[] fallbacks)
         {
             RuntimeFallbacks.Add(new RuntimeFallbacksBuilder(runtime, fallbacks));
@@ -348,7 +355,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 .WithRuntimeFallbacks("win-x86", "win", "any")
                 .WithRuntimeFallbacks("win", "any")
                 .WithRuntimeFallbacks("linux-x64", "linux", "any")
-                .WithRuntimeFallbacks("linux", "any");
+                .WithRuntimeFallbacks("linux-musl-x64", "linux", "any")
+                .WithRuntimeFallbacks("linux", "any")
+                .WithRuntimeFallbacks("osx.10.12-x64", "osx-x64", "osx", "any")
+                .WithRuntimeFallbacks("osx-x64", "osx", "any");
         }
 
         public NetCoreAppBuilder WithCustomizer(Action<NetCoreAppBuilder> customizer)

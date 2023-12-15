@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void {Method}{BaseType}()
+        [Fact]
+        public static void {Method}{BaseType}()
         {
             var test = new VectorGetAndWithLowerAndUpper__{Method}{BaseType}();
 
@@ -176,7 +178,7 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithLower(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}>.WithLower(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
@@ -197,7 +199,7 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}.WithUpper(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{VectorType}<{BaseType}>.WithUpper(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);

@@ -310,9 +310,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 CharKind.General : // The previous character kind is irrelevant when anchors are not used.
                 GetPositionKind(TInputReader.GetPositionId(this, input, i));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsMintermId(int positionId) => positionId >= 0;
-
         private void CheckTimeout(long timeoutOccursAt)
         {
             Debug.Assert(_checkTimeout);
@@ -1271,7 +1268,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 where TInputReader : struct, IInputReader
             {
                 // Find the first position that matches with some likely character.
-                if (!matcher._findOpts!.TryFindNextStartingPosition(input, ref pos, 0))
+                if (!matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     // No match exists
                     return false;

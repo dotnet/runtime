@@ -1,0 +1,13 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsInvalid">
+      <method signature="System.Boolean NoValueFeatureMethod()" body="stub" value="true" feature="NoValueFeature" />
+      <method signature="System.Boolean NonBooleanFeatureMethod()" body="stub" value="false" feature="NonBooleanFeature" featurevalue="nonboolean" />
+      <method signature="System.Boolean InvalidDefaultFeatureMethod()" body="stub" value="true" feature="InvalidDefaultFeatureMethod" featurevalue="true" featuredefault="false" />
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsInvalid/Foo">
+      <field name="NonExistentField" />
+      <method signature="NonExistentMethod" />
+    </type>
+  </assembly>
+</linker>

@@ -1,15 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.Json.Serialization.Tests;
 using System.Text.Json.Tests.SourceGenRegressionTests.Net60;
-using System.Threading.Tasks;
 using Xunit;
 using HighLowTemps = System.Text.Json.Tests.SourceGenRegressionTests.Net60.HighLowTemps;
 using WeatherForecastWithPOCOs = System.Text.Json.Tests.SourceGenRegressionTests.Net60.WeatherForecastWithPOCOs;
@@ -144,6 +138,26 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
             jsonPropertyInfo.Set(instance, 2);
             Assert.Equal(2, instance.Low);
             Assert.Equal(2, jsonPropertyInfo.Get(instance));
+        }
+
+        [Fact]
+        public static void SupportsRecursiveTypeSerialization()
+        {
+            JsonTypeInfo<MyLinkedList> jsonTypeInfo = Net60GeneratedContext.Default.MyLinkedList;
+
+            MyLinkedList linkedList = new(
+                value: 0,
+                nested: new(
+                    value: 1,
+                    nested: new(
+                        value: 2,
+                        nested: null)));
+
+            string json = JsonSerializer.Serialize(linkedList, jsonTypeInfo);
+            Assert.Equal("""{"Value":0,"Nested":{"Value":1,"Nested":{"Value":2,"Nested":null}}}""", json);
+
+            linkedList = JsonSerializer.Deserialize(json, jsonTypeInfo);
+            Assert.Equal(2, linkedList.Nested.Nested.Value);
         }
 
         [Fact]

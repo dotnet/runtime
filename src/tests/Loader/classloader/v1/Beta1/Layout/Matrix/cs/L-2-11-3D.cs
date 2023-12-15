@@ -15,7 +15,7 @@ public struct A{
 
   //@csharp - Note that C# will not compile an illegal access of b.FldPrivInst
   //So there is no negative test here, it should be covered elsewhere and
-  //should throw a FielAccessException within the runtime.  (IL sources is
+  //should throw a FieldAccessException within the runtime.  (IL sources is
   //the most logical, only?, choice)
 
   //@csharp - C# Won't compile illegal family access from non-family members
@@ -39,7 +39,7 @@ public struct A{
     mi_RetCode = 0;
 
   /////////////////////////////////
-  // Test instance b.Method access  
+  // Test instance b.Method access
   if(b.MethPubInst() != 100)
     mi_RetCode = 0;
 
@@ -70,7 +70,7 @@ public struct A{
 public int FldPubInst;
 private int FldPrivInst;
 internal int FldAsmInst;           //Translates to "assembly"
-  
+
   //////////////////////////////
   // Static Fields
 public static int FldPubStat;

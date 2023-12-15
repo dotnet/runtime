@@ -14,13 +14,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int iterationCount)
         {
-            if (iterationCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(iterationCount),
-                    iterationCount,
-                    SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterationCount);
 
             EncryptionAlgorithm = encryptionAlgorithm;
             HashAlgorithm = hashAlgorithm;

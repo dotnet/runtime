@@ -16,71 +16,7 @@
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
   </PropertyGroup>
 
-  <!--
-    We should not build some pkgproj in source-build (i.e. targeting-pack).
-  -->
-  <Target Name="GetSourceBuildSkipBuildProps"
-          Condition="'$(DotNetBuildFromSource)' == 'true' and '$(AlwaysBuildEvenInSourceBuild)' != 'true'"
-          BeforeTargets="GetSkipBuildProps">
-    <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
-      <SkipBuild>true</SkipBuild>
-    </PropertyGroup>
-  </Target>
-
-  <!--
-    For any Dependency items with a VersionProp, set it to the property by that name given by the
-    version generation target. For any with a VersionFromProject, query the ProductVersion from that
-    project file and use it as the dependency's version.
-  -->
-  <Target Name="SetCustomPackageDependencyVersions"
-          BeforeTargets="GetPackageDependencies"
-          DependsOnTargets="GetProductVersions">
-    <!--
-      Generate a VersionProp name for each dependency with VersionFromProject. The batched MSBuild
-      task then generates the property, which is picked up by the VersionProp implementation.
-
-      Using PropertyName rather than ItemName on the MSBuild task avoids the difficulty in
-      reattaching the separate list of items back into the original Dependency items without any
-      reasonable Join operation available.
-    -->
-    <ItemGroup>
-      <Dependency
-        VersionProp="_VersionProp_$([System.String]::new('%(Dependency.Identity)').Replace('.', '_'))"
-        Condition="'%(Dependency.VersionFromProject)' != ''" />
-    </ItemGroup>
-
-    <MSBuild
-      Condition="'%(Dependency.VersionFromProject)' != ''"
-      Projects="%(Dependency.VersionFromProject)"
-      Targets="ReturnProductVersion">
-      <Output TaskParameter="TargetOutputs" PropertyName="%(Dependency.VersionProp)" />
-    </MSBuild>
-
-    <!-- Use batching to use the value of an arbitrary property as the version. -->
-    <ItemGroup>
-      <Dependency Version="$(%(Dependency.VersionProp))" Condition="'%(Dependency.VersionProp)' != ''" />
-    </ItemGroup>
-  </Target>
-
-  <!--
-    If the project is configured to use a shipped package version, set it. Use a target because we
-    need the versions from GetProductVersions.
-  -->
-  <Target Name="SetSpecificPackageVersion"
-          Condition="'$(VersionProp)' != ''"
-          BeforeTargets="GenerateNuSpec"
-          DependsOnTargets="GetProductVersions">
-    <!-- Use item metadata: $(%(foo)) works, $($(foo)) doesn't. -->
-    <ItemGroup>
-      <VersionPropItem Include="$(VersionProp)" />
-    </ItemGroup>
-    <PropertyGroup>
-      <Version>$(%(VersionPropItem.Identity))</Version>
-    </PropertyGroup>
-  </Target>
-
   <Target Name="SetTargetBasedPackageVersion"
-          Condition="'$(VersionProp)' == ''"
           BeforeTargets="GenerateNuSpec"
           DependsOnTargets="GetProductVersions">
     <PropertyGroup>
@@ -115,12 +51,6 @@
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
       <ReferenceCopyLocalPaths Include="@(FilteredReferenceCopyLocalPaths)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="SetupFindSiblingSymbolFilesByNameForSymbolPackage">
-    <ItemGroup>
-      <FindSiblingSymbolsForFile Include="@(File)" />
     </ItemGroup>
   </Target>
 

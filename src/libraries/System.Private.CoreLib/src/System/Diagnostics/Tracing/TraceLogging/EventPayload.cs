@@ -29,8 +29,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (key == null)
-                    throw new System.ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
 
                 int position = 0;
                 foreach (string name in m_names)
@@ -42,24 +41,24 @@ namespace System.Diagnostics.Tracing
                     position++;
                 }
 
-                throw new System.Collections.Generic.KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
             }
-            set => throw new System.NotSupportedException();
+            set => throw new NotSupportedException();
         }
 
         public void Add(string key, object? value)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         public void Add(KeyValuePair<string, object?> payloadEntry)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         public void Clear()
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         public bool Contains(KeyValuePair<string, object?> entry)
@@ -69,10 +68,7 @@ namespace System.Diagnostics.Tracing
 
         public bool ContainsKey(string key)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             foreach (string item in m_names)
             {
@@ -94,33 +90,26 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            var instance = this as IEnumerable<KeyValuePair<string, object?>>;
-            return instance.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public void CopyTo(KeyValuePair<string, object?>[] payloadEntries, int count)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         public bool Remove(string key)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         public bool Remove(KeyValuePair<string, object?> entry)
         {
-            throw new System.NotSupportedException();
+            throw new NotSupportedException();
         }
 
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             int position = 0;
             foreach (string name in m_names)

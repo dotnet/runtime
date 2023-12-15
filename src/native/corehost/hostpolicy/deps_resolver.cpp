@@ -6,9 +6,10 @@
 #include <cassert>
 
 #include <trace.h>
-#include <deps_entry.h>
-#include <deps_format.h>
+#include "deps_entry.h"
+#include "deps_format.h"
 #include "deps_resolver.h"
+#include "shared_store.h"
 #include <utils.h>
 #include <fx_ver.h>
 
@@ -30,6 +31,8 @@ namespace
         "    package: '%s', version: '%s'\n"
         "    path: '%s'\n"
         "    previously found assembly: '%s'");
+
+    const int AppFxLevel = 0;
 
     // -----------------------------------------------------------------------------
     // A uniqifying append helper that doesn't let two "paths" to be identical in
@@ -83,126 +86,106 @@ namespace
 
         return path.substr(name_pos + 1);
     }
+
+    // A uniqifying append helper that doesn't let two entries with the same
+    // "asset_name" be part of the "items" paths.
+    void add_tpa_asset(
+        const deps_asset_t& asset,
+        const pal::string_t& resolved_path,
+        name_to_resolved_asset_map_t* items)
+    {
+        name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
+        if (existing == items->end())
+        {
+            if (trace::is_enabled())
+            {
+                trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
+                    resolved_path.c_str(),
+                    asset.assembly_version.as_str().c_str(),
+                    asset.file_version.as_str().c_str());
+            }
+
+            items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
+        }
+    }
+
+    // -----------------------------------------------------------------------------
+    // Load local assemblies by priority order of their file extensions and
+    // uniquified by their simple name.
+    //
+    void get_dir_assemblies(
+        const pal::string_t& dir,
+        const pal::string_t& dir_name,
+        name_to_resolved_asset_map_t* items)
+    {
+        version_t empty;
+        trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
+
+        // Managed extensions in priority order, pick DLL over EXE and NI over IL.
+        const pal::string_t managed_ext[] = { _X(".ni.dll"), _X(".dll"), _X(".ni.exe"), _X(".exe") };
+
+        // List of files in the dir
+        std::vector<pal::string_t> files;
+        pal::readdir(dir, &files);
+
+        for (const auto& ext : managed_ext)
+        {
+            for (const auto& file : files)
+            {
+                // Nothing to do if file length is smaller than expected ext.
+                if (file.length() <= ext.length())
+                {
+                    continue;
+                }
+
+                auto file_name = file.substr(0, file.length() - ext.length());
+                auto file_ext = file.substr(file_name.length());
+
+                // Ext did not match expected ext, skip this file.
+                if (pal::strcasecmp(file_ext.c_str(), ext.c_str()))
+                {
+                    continue;
+                }
+
+                // Already added entry for this asset, by priority order skip this ext
+                if (items->count(file_name))
+                {
+                    trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
+                        file.c_str(),
+                        items->find(file_name)->second.asset.relative_path.c_str(),
+                        dir_name.c_str());
+
+                    continue;
+                }
+
+                // Add entry for this asset
+                pal::string_t file_path = dir;
+                if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
+                {
+                    file_path.push_back(DIR_SEPARATOR);
+                }
+                file_path.append(file);
+
+                trace::verbose(_X("Adding %s to %s assembly set from %s"),
+                    file_name.c_str(),
+                    dir_name.c_str(),
+                    file_path.c_str());
+
+                deps_asset_t asset(file_name, file, empty, empty);
+                add_tpa_asset(asset, file_path, items);
+            }
+        }
+    }
 } // end of anonymous namespace
 
-  // -----------------------------------------------------------------------------
-  // A uniqifying append helper that doesn't let two entries with the same
-  // "asset_name" be part of the "items" paths.
-  //
-void deps_resolver_t::add_tpa_asset(
-    const deps_asset_t& asset,
-    const pal::string_t& resolved_path,
-    name_to_resolved_asset_map_t* items)
-{
-    name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
-    if (existing == items->end())
-    {
-        if (trace::is_enabled())
-        {
-            trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-                resolved_path.c_str(),
-                asset.assembly_version.as_str().c_str(),
-                asset.file_version.as_str().c_str());
-        }
-
-        items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
-    }
-}
-
-// -----------------------------------------------------------------------------
-// Load local assemblies by priority order of their file extensions and
-// uniquified by their simple name.
-//
-void deps_resolver_t::get_dir_assemblies(
-    const pal::string_t& dir,
-    const pal::string_t& dir_name,
-    name_to_resolved_asset_map_t* items)
-{
-    version_t empty;
-    trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
-
-    // Managed extensions in priority order, pick DLL over EXE and NI over IL.
-    const pal::string_t managed_ext[] = { _X(".ni.dll"), _X(".dll"), _X(".ni.exe"), _X(".exe") };
-
-    // List of files in the dir
-    std::vector<pal::string_t> files;
-    pal::readdir(dir, &files);
-
-    for (const auto& ext : managed_ext)
-    {
-        for (const auto& file : files)
-        {
-            // Nothing to do if file length is smaller than expected ext.
-            if (file.length() <= ext.length())
-            {
-                continue;
-            }
-
-            auto file_name = file.substr(0, file.length() - ext.length());
-            auto file_ext = file.substr(file_name.length());
-
-            // Ext did not match expected ext, skip this file.
-            if (pal::strcasecmp(file_ext.c_str(), ext.c_str()))
-            {
-                continue;
-            }
-
-            // Already added entry for this asset, by priority order skip this ext
-            if (items->count(file_name))
-            {
-                trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
-                    file.c_str(),
-                    items->find(file_name)->second.asset.relative_path.c_str(),
-                    dir_name.c_str());
-
-                continue;
-            }
-
-            // Add entry for this asset
-            pal::string_t file_path = dir;
-            if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
-            {
-                file_path.push_back(DIR_SEPARATOR);
-            }
-            file_path.append(file);
-
-            trace::verbose(_X("Adding %s to %s assembly set from %s"),
-                file_name.c_str(),
-                dir_name.c_str(),
-                file_path.c_str());
-
-            deps_asset_t asset(file_name, file, empty, empty);
-            add_tpa_asset(asset, file_path, items);
-        }
-    }
-}
-
 void deps_resolver_t::setup_shared_store_probes(
-    const arguments_t& args)
+    const std::vector<pal::string_t>& shared_stores)
 {
-    for (const auto& shared : args.env_shared_store)
+    for (const pal::string_t& shared : shared_stores)
     {
         if (pal::directory_exists(shared))
         {
-            // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
-            m_needs_file_existence_checks = true;
-        }
-    }
-
-    if (pal::directory_exists(args.dotnet_shared_store))
-    {
-        // Path relative to the location of "dotnet.exe" if it's being used to run the app
-        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
-        m_needs_file_existence_checks = true;
-    }
-
-    for (const auto& global_shared : args.global_shared_stores)
-    {
-        if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
-        {
-            // Global store probe: the global location
-            m_probes.push_back(probe_config_t::lookup(global_shared));
             m_needs_file_existence_checks = true;
         }
     }
@@ -224,11 +207,12 @@ pal::string_t deps_resolver_t::get_lookup_probe_directories()
 }
 
 void deps_resolver_t::setup_probe_config(
-    const arguments_t& args)
+    const std::vector<pal::string_t>& shared_stores,
+    const std::vector<pal::string_t>& additional_probe_paths)
 {
-    if (pal::directory_exists(args.core_servicing))
+    if (pal::directory_exists(m_core_servicing))
     {
-        pal::string_t ext_ni = args.core_servicing;
+        pal::string_t ext_ni = m_core_servicing;
         append_path(&ext_ni, get_current_arch_name());
         if (pal::directory_exists(ext_ni))
         {
@@ -237,7 +221,7 @@ void deps_resolver_t::setup_probe_config(
         }
 
         // Servicing normal probe.
-        pal::string_t ext_pkgs = args.core_servicing;
+        pal::string_t ext_pkgs = m_core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
 
@@ -253,15 +237,15 @@ void deps_resolver_t::setup_probe_config(
     {
         if (pal::directory_exists(m_fx_definitions[i]->get_dir()))
         {
-            m_probes.push_back(probe_config_t::fx(m_fx_definitions[i]->get_dir(), &m_fx_definitions[i]->get_deps(), i));
+            m_probes.push_back(probe_config_t::fx(m_fx_definitions[i]->get_dir(), m_fx_deps[i].get(), i));
         }
     }
 
-    setup_shared_store_probes(args);
+    setup_shared_store_probes(shared_stores);
 
-    if (m_additional_probes.size() > 0)
+    if (!additional_probe_paths.empty())
     {
-        for (const auto& probe : m_additional_probes)
+        for (const auto& probe : additional_probe_paths)
         {
             // Additional paths
             m_probes.push_back(probe_config_t::lookup(probe));
@@ -272,17 +256,12 @@ void deps_resolver_t::setup_probe_config(
 
     if (trace::is_enabled())
     {
-        trace::verbose(_X("-- Listing probe configurations..."));
+        trace::verbose(_X("-- Probe configurations:"));
         for (const auto& pc : m_probes)
         {
-            pc.print();
+            trace::verbose(_X("  probe %s"), pc.as_str().c_str());
         }
     }
-}
-
-void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& probe_paths)
-{
-    m_additional_probes.assign(probe_paths.begin(), probe_paths.end());
 }
 
 /**
@@ -301,10 +280,9 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
     for (const auto& config : m_probes)
     {
-        trace::verbose(_X("  Considering entry [%s/%s/%s], probe dir [%s], probe fx level:%d, entry fx level:%d"),
-            entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str(), config.probe_dir.c_str(), config.fx_level, fx_level);
+        trace::verbose(_X("  Using probe config: %s"), config.as_str().c_str());
 
-        if (config.only_serviceable_assets && !entry.is_serviceable)
+        if (config.is_servicing() && !entry.is_serviceable)
         {
             trace::verbose(_X("    Skipping... not serviceable asset"));
             continue;
@@ -314,72 +292,74 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             trace::verbose(_X("    Skipping... not runtime asset"));
             continue;
         }
-
-        const pal::string_t& probe_dir = config.probe_dir;
-        uint32_t search_options = deps_entry_t::search_options::none;
-        if (needs_file_existence_checks())
+        if (config.is_app() && fx_level != AppFxLevel)
         {
-            search_options |= deps_entry_t::search_options::file_existence;
+            trace::verbose(_X("    Skipping... not app asset"));
+            continue;
         }
-
-        if (config.is_fx())
+        if (config.is_fx() && fx_level > config.fx_level)
         {
-            assert(config.fx_level > 0);
-
             // Only probe frameworks that are the same level or lower than the current entry because
             // a lower-level fx should not have a dependency on a higher-level fx and because starting
             // with fx_level allows it to override a higher-level fx location if the entry is newer.
             // Note that fx_level 0 is the highest level (the app)
-            if (fx_level <= config.fx_level)
+            trace::verbose(_X("    Skipping... framework is a higher level than entry"));
+            continue;
+        }
+
+        uint32_t search_options = m_needs_file_existence_checks ? deps_entry_t::search_options::file_existence : deps_entry_t::search_options::none;
+
+        if (config.is_fx())
+        {
+            assert(fx_level <= config.fx_level);
+
+            // If the deps json has the package name and version, then someone has already done rid selection and
+            // put the right asset in the dir. So checking just package name and version would suffice.
+            // No need to check further for the exact asset relative sub path.
+            if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(config.probe_dir, candidate, search_options, found_in_bundle))
             {
-                // If the deps json has the package name and version, then someone has already done rid selection and
-                // put the right asset in the dir. So checking just package name and version would suffice.
-                // No need to check further for the exact asset relative sub path.
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate, search_options, found_in_bundle))
-                {
-                    assert(!found_in_bundle);
-                    trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
-                    return true;
-                }
+                assert(!found_in_bundle);
+                trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
+                return true;
             }
 
             trace::verbose(_X("    Skipping... not found in deps json."));
         }
         else if (config.is_app())
         {
-            // This is a published dir probe, so look up rid specific assets in the rid folders.
-            assert(config.fx_level == 0);
-
-            if (fx_level <= config.fx_level)
+            assert(fx_level == AppFxLevel);
+            if (entry.is_rid_specific)
             {
-                if (entry.is_rid_specific)
+                // Look up rid specific assets in the rid folders.
+                if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                 {
-                    if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
-                    {
-                        trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                        return true;
-                    }
+                    trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                    return true;
                 }
-                else
+            }
+            else
+            {
+                // Non-rid assets, lookup in the published dir.
+                if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                 {
-                    // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
-                    {
-                        trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                        return true;
-                    }
+                    trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                    return true;
                 }
             }
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else if (entry.to_full_path(probe_dir, candidate, search_options | (config.only_serviceable_assets ? deps_entry_t::search_options::is_servicing : 0)))
+        else
         {
-            trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
-            return true;
+            if (entry.to_full_path(config.probe_dir, candidate, search_options | (config.is_servicing() ? deps_entry_t::search_options::is_servicing : 0)))
+            {
+                trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
+                return true;
+            }
+
+            trace::verbose(_X("    Skipping... not found in probe dir '%s'"), config.probe_dir.c_str());
         }
 
-        trace::verbose(_X("    Skipping... not found in probe dir '%s'"), probe_dir.c_str());
         // continue to try next probe config
     }
     return false;
@@ -450,7 +430,8 @@ bool deps_resolver_t::resolve_tpa_list(
             return true;
         }
 
-        trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
+        trace::info(_X("Processing TPA for deps entry [%s, %s, %s] with fx level: %d"),
+            entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str(), fx_level);
 
         pal::string_t resolved_path;
 
@@ -514,7 +495,7 @@ bool deps_resolver_t::resolve_tpa_list(
                         }
                     }
                 }
-                else if (fx_level != 0)
+                else if (fx_level != AppFxLevel)
                 {
                     // The framework is missing a newer package, so this is an error.
                     // For compat, it is not an error for the app; this can occur for the main application assembly when using --depsfile
@@ -546,7 +527,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
 
         // Add the app's entries
-        const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
+        const auto& deps_entries = get_app_deps().get_entries(deps_entry_t::asset_types::runtime);
         for (const auto& entry : deps_entries)
         {
             if (!process_entry(m_app_dir, entry, 0))
@@ -558,7 +539,7 @@ bool deps_resolver_t::resolve_tpa_list(
         // If the deps file wasn't present or has missing entries, then
         // add the app local assemblies to the TPA. This is only valid
         // in non-libhost scenarios (e.g. comhost).
-        if (!get_deps().exists())
+        if (!get_app_deps().exists())
         {
             // Obtain the local assemblies in the app dir.
             get_dir_assemblies(m_app_dir, _X("local"), &items);
@@ -588,7 +569,7 @@ bool deps_resolver_t::resolve_tpa_list(
     {
         for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
         {
-            const auto& deps_entries = m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime);
+            const auto& deps_entries = m_fx_deps[i]->get_entries(deps_entry_t::asset_types::runtime);
             for (const auto& entry : deps_entries)
             {
                 if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
@@ -627,7 +608,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t& rid_fallback_graph)
+void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_resolution_options_t& rid_resolution_options)
 {
     if (!m_is_framework_dependent
         || m_host_mode == host_mode_t::libhost)
@@ -646,9 +627,7 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
         return;
     }
 
-    pal::string_t additional_deps_serialized = args.additional_deps_serialized;
-
-    if (additional_deps_serialized.empty())
+    if (additional_deps_serialized == nullptr || pal::strlen(additional_deps_serialized) == 0)
     {
         return;
     }
@@ -667,7 +646,7 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
                 trace::verbose(_X("Using specified additional deps.json: '%s'"),
                     additional_deps_path.c_str());
 
-                m_additional_deps_files.push_back(additional_deps_path);
+                m_additional_deps.push_back(deps_json_t::create_for_framework_dependent(additional_deps_path, rid_resolution_options));
             }
             else
             {
@@ -723,29 +702,25 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
                     {
                         pal::string_t json_full_path = additional_deps_path_fx;
                         append_path(&json_full_path, json_file.c_str());
-                        m_additional_deps_files.push_back(json_full_path);
 
                         trace::verbose(_X("Using specified additional deps.json: '%s'"),
                             json_full_path.c_str());
+
+                        m_additional_deps.push_back(deps_json_t::create_for_framework_dependent(json_full_path, rid_resolution_options));
                     }
                 }
             }
         }
     }
 
-    for (pal::string_t json_file : m_additional_deps_files)
-    {
-        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-            new deps_json_t(true, json_file, rid_fallback_graph)));
-    }
+    if (!m_additional_deps.empty())
+        m_needs_file_existence_checks = true;
 }
 
-void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
+void deps_resolver_t::enum_app_context_deps_files(std::function<void(const pal::string_t&)> callback)
 {
-    assert(begin != nullptr && end != nullptr);
-
-    auto begin_iter = m_fx_definitions.begin();
-    auto end_iter = m_fx_definitions.end();
+    auto begin_iter = m_fx_deps.cbegin();
+    auto end_iter = m_fx_deps.cend();
 
     if ((m_host_mode == host_mode_t::libhost
         || (bundle::info_t::is_single_file_bundle() && !bundle::runner_t::app()->is_netcoreapp3_compat_mode()))
@@ -754,12 +729,14 @@ void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::i
         // Neither in a libhost scenario nor in a bundled app
         // the deps files should be exposed in the app context
         // properties.
-        assert(begin_iter->get() == &get_app(m_fx_definitions));
+        assert(begin_iter->get() == &get_app_deps());
         ++begin_iter;
     }
 
-    *begin = begin_iter;
-    *end = end_iter;
+    for (auto it = begin_iter; it != m_fx_deps.cend(); ++it)
+    {
+        callback((*it)->get_deps_file());
+    }
 }
 
 /**
@@ -843,7 +820,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     };
 
     // Add app entries
-    const auto& entries = get_deps().get_entries(asset_type);
+    const auto& entries = get_app_deps().get_entries(asset_type);
     for (const auto& entry : entries)
     {
         if (!add_package_cache_entry(entry, m_app_dir, 0))
@@ -853,12 +830,14 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // If the deps file is missing add known locations.
-    if (!get_deps().exists())
+    if (!get_app_deps().exists())
     {
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
-        (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+        // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
+        // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
+        (void) file_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
     }
 
     // Handle any additional deps.json that were specified.
@@ -877,7 +856,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     // Add fx package locations to fx_dir
     for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
     {
-        const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
+        const auto& fx_entries = m_fx_deps[i]->get_entries(asset_type);
 
         for (const auto& entry : fx_entries)
         {

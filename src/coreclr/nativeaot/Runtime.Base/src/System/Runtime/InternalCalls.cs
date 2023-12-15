@@ -5,10 +5,12 @@
 // This is where we group together all the internal calls.
 //
 
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
+
+#pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib
 
 namespace System.Runtime
 {
@@ -44,6 +46,10 @@ namespace System.Runtime
         OnUnhandledException = 7,
         IDynamicCastableIsInterfaceImplemented = 8,
         IDynamicCastableGetInterfaceImplementation = 9,
+        ObjectiveCMarshalTryGetTaggedMemory = 10,
+        ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
+        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
+        ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
     }
 
     internal static class InternalCalls
@@ -54,14 +60,14 @@ namespace System.Runtime
 
         // Force a garbage collection.
         [RuntimeExport("RhCollect")]
-        internal static void RhCollect(int generation, InternalGCCollectionMode mode)
+        internal static void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false)
         {
-            RhpCollect(generation, mode);
+            RhpCollect(generation, mode, lowMemoryP ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
         }
 
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode);
+        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP);
 
         [RuntimeExport("RhGetGcTotalMemory")]
         internal static long RhGetGcTotalMemory()
@@ -144,17 +150,13 @@ namespace System.Runtime
         internal static extern unsafe object RhpNewFastMisalign(MethodTable * pEEType);
 #endif // FEATURE_64BIT_ALIGNMENT
 
-        [RuntimeImport(Redhawk.BaseName, "RhpCopyObjectContents")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpCopyObjectContents(object objDest, object objSrc);
-
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpAssignRef(ref object address, object obj);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(Redhawk.BaseName, "RhpInitMultibyte")]
-        internal static extern unsafe ref byte RhpInitMultibyte(ref byte dmem, int c, nuint size);
+        [RuntimeImport(Redhawk.BaseName, "RhpGcSafeZeroMemory")]
+        internal static extern unsafe ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(Redhawk.BaseName, "memmove")]
@@ -231,6 +233,13 @@ namespace System.Runtime
         internal static extern unsafe bool RhpCallFilterFunclet(
             object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
 
+#if FEATURE_OBJCMARSHAL
+        [RuntimeImport(Redhawk.BaseName, "RhpCallPropagateExceptionCallback")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
+            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
+#endif // FEATURE_OBJCMARSHAL
+
         [RuntimeImport(Redhawk.BaseName, "RhpFallbackFailFast")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpFallbackFailFast();
@@ -248,33 +257,13 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetNumThunkBlocksPerMapping();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunksPerBlock")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetNumThunksPerBlock();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkSize")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetThunkSize();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockAddress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkStubsBlockAddress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkBlockSize")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetThunkBlockSize();
-
         [RuntimeImport(Redhawk.BaseName, "RhpGetThreadAbortException")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception RhpGetThreadAbortException();
+
+        [RuntimeImport(Redhawk.BaseName, "RhCurrentNativeThreadId")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
@@ -295,31 +284,11 @@ namespace System.Runtime
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpSignalFinalizationComplete();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpAcquireCastCacheLock();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpReleaseCastCacheLock();
+        internal static extern void RhpSignalFinalizationComplete(uint fCount);
 
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static extern ulong RhpGetTickCount64();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpAcquireThunkPoolLock();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpReleaseThunkPoolLock();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern IntPtr RhAllocateThunksMapping();
 
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.

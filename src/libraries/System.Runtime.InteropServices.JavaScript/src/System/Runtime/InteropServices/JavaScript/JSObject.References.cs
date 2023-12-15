@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -10,17 +11,48 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal nint JSHandle;
 
+#if FEATURE_WASM_THREADS
+        private readonly object _thisLock = new object();
+        private SynchronizationContext? m_SynchronizationContext;
+#endif
+
+        public SynchronizationContext SynchronizationContext
+        {
+            get
+            {
+#if FEATURE_WASM_THREADS
+                return m_SynchronizationContext!;
+#else
+                throw new PlatformNotSupportedException();
+#endif
+            }
+        }
+
+#if FEATURE_WASM_THREADS
+        // the JavaScript object could only exist on the single web worker and can't migrate to other workers
+        internal nint OwnerTID;
+#endif
+#if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
+#endif
         private bool _isDisposed;
 
         internal JSObject(IntPtr jsHandle)
         {
             JSHandle = jsHandle;
-            InFlight = null;
-            InFlightCounter = 0;
+#if FEATURE_WASM_THREADS
+            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            if (ctx == null)
+            {
+                Environment.FailFast("Missing CurrentJSSynchronizationContext");
+            }
+            m_SynchronizationContext = ctx;
+            OwnerTID = ctx!.TargetTID;
+#endif
         }
 
+#if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -53,6 +85,34 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+#endif
+
+#if FEATURE_WASM_THREADS
+        internal static void AssertThreadAffinity(object value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+            JSSynchronizationContext.AssertWebWorkerContext();
+            var currentTID = JSSynchronizationContext.CurrentJSSynchronizationContext!.TargetTID;
+
+            if (value is JSObject jsObject)
+            {
+                if (jsObject.OwnerTID != currentTID)
+                {
+                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+            else if (value is JSException jsException)
+            {
+                if (jsException.jsException != null && jsException.jsException.OwnerTID != currentTID)
+                {
+                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+        }
+#endif
 
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
@@ -63,19 +123,52 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
-        private void Dispose(bool disposing)
+        internal void DisposeLocal()
+        {
+            JSHostImplementation.ThreadCsOwnedObjects.Remove(JSHandle);
+            _isDisposed = true;
+            JSHandle = IntPtr.Zero;
+        }
+
+        private void DisposeThis()
         {
             if (!_isDisposed)
             {
+#if FEATURE_WASM_THREADS
+                if (SynchronizationContext == SynchronizationContext.Current)
+                {
+                    lock (_thisLock)
+                    {
+                        JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
+                        _isDisposed = true;
+                        JSHandle = IntPtr.Zero;
+                        m_SynchronizationContext = null;
+                    } //lock
+                    return;
+                }
+
+                SynchronizationContext.Post(static (object? s) =>
+                {
+                    var self = (JSObject)s!;
+                    lock (self._thisLock)
+                    {
+                        JSHostImplementation.ReleaseCSOwnedObject(self.JSHandle);
+                        self._isDisposed = true;
+                        self.JSHandle = IntPtr.Zero;
+                        self.m_SynchronizationContext = null;
+                    } //lock
+                }, this);
+#else
                 JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
+#endif
             }
         }
 
         ~JSObject()
         {
-            Dispose(disposing: false);
+            DisposeThis();
         }
 
         /// <summary>
@@ -83,7 +176,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         public void Dispose()
         {
-            Dispose(disposing: true);
+            DisposeThis();
             GC.SuppressFinalize(this);
         }
     }

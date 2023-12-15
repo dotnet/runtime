@@ -429,14 +429,6 @@ mono_native_thread_os_id_get (void)
 	return (guint64)GetCurrentThreadId ();
 }
 
-gint32
-mono_native_thread_processor_id_get (void)
-{
-	PROCESSOR_NUMBER proc_num;
-	GetCurrentProcessorNumberEx (&proc_num);
-	return ((proc_num.Group << 6) | proc_num.Number);
-}
-
 gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
@@ -508,6 +500,15 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 static gboolean is_wow64 = FALSE;
 #endif
+
+gboolean
+mono_thread_platform_external_eventloop_keepalive_check (void)
+{
+	/* We don't support thread creation with an external eventloop on WIN32: when the thread start
+	   function returns, the thread is done.
+	*/
+	return FALSE;
+}
 
 /* We do this at init time to avoid potential races with module opening */
 void

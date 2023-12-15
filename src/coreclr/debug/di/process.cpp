@@ -180,7 +180,11 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
-    HMODULE hDac = LoadLibraryW(pDacModulePath);
+#ifdef TARGET_WINDOWS
+    HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+#else
+    HMODULE hDac = WszLoadLibrary(pDacModulePath);
+#endif // !TARGET_WINDOWS
     if (hDac == NULL)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -414,11 +418,11 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
-            size_t pathLen = wcslen(mutableFilePath);
+            size_t pathLen = u16_strlen(mutableFilePath);
 
             const WCHAR *nidll = W(".ni.dll");
             const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = wcslen(nidll);  // used for ni.exe as well
+            const size_t dllLen = u16_strlen(nidll);  // used for ni.exe as well
 
             if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
             {
@@ -1001,7 +1005,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     // On Debug builds, we'll ASSERT by default whenever the target appears to be corrupt or
     // otherwise inconsistent (both in DAC and DBI).  But we also need the ability to
     // explicitly test corrupt targets.
-    // Tests should set COMPlus_DbgIgnoreInconsistentTarget=1 to suppress these asserts
+    // Tests should set DOTNET_DbgIgnoreInconsistentTarget=1 to suppress these asserts
     // Note that this controls two things:
     //     1) DAC behavior - see code:IDacDbiInterface::DacSetTargetConsistencyChecks
     //     2) RS-only consistency asserts - see code:CordbProcess::TargetConsistencyCheck
@@ -5802,7 +5806,7 @@ void CordbProcess::RawDispatchEvent(
             FramePointer fp = pEvent->ExceptionCallback2.framePointer;
             if (fp != LEAF_MOST_FRAME)
             {
-                // The interface forces us to to pass a FramePointer via an ICorDebugFrame.
+                // The interface forces us to pass a FramePointer via an ICorDebugFrame.
                 // However, we can't get a real ICDFrame without a stackwalk, and we don't
                 // want to do a stackwalk now. so pass a netuered proxy frame. The shim
                 // can map this to a real frame.
@@ -6438,7 +6442,7 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
     DT_CONTEXT * pContext;
 
-    if (contextSize != sizeof(DT_CONTEXT))
+    if (contextSize < sizeof(DT_CONTEXT))
     {
         LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
         return E_INVALIDARG;
@@ -9617,9 +9621,9 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
     }
 
-    // Now we know it's safe to call wcslen. The buffer is local, so we know the pages are there.
+    // Now we know it's safe to call u16_strlen. The buffer is local, so we know the pages are there.
     // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = wcslen(pString) + 1;
+    SIZE_T dwActualLenWithNull = u16_strlen(pString) + 1;
     if (dwActualLenWithNull != dwExpectedLenWithNull)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
@@ -9723,12 +9727,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
-#if defined(_MSC_VER) && defined(TARGET_ARM)
-// This is a temporary workaround for an ARM specific MS C++ compiler bug (internal LKG build 18.1).
-// Branch < if (ptrRemoteManagedEvent == NULL) > was always taken and the function always returned false.
-// TODO: It should be removed once the bug is fixed.
-#pragma optimize("", off)
-#endif
 bool CordbProcess::CopyManagedEventFromTarget(
     const EXCEPTION_RECORD * pRecord,
     DebuggerIPCEvent * pLocalManagedEvent)
@@ -9775,9 +9773,6 @@ bool CordbProcess::CopyManagedEventFromTarget(
 
     return true;
 }
-#if defined(_MSC_VER) && defined(TARGET_ARM)
-#pragma optimize("", on)
-#endif
 
 //---------------------------------------------------------------------------------------
 // EnsureClrInstanceIdSet - Ensure we have a CLR Instance ID to debug
@@ -11179,10 +11174,10 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
-    CONTEXT context = { 0 };
+    DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(CONTEXT), reinterpret_cast<BYTE*> (&context));
+    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&context));
     IfFailThrow(hr);
 
     TADDR lsContextAddr = (TADDR)context.Rcx;
@@ -12296,7 +12291,7 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
                       (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
                       (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%I64p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
 
 
     if (fIsCorCode)

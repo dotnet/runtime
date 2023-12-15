@@ -49,8 +49,8 @@ namespace System.Text.RegularExpressions.Tests
             RegexOptions options = RegexOptions.NonBacktracking;
 
             // pattern and its expected safe size
-            // all patterns have an implicit 0-start-capture node ⌊₀ and
-            // 0-end-capture node ⁰⌉ and thus also two extra cocatenation nodes
+            // all patterns have an implicit 0-start-capture node \u230A\u2080 and
+            // 0-end-capture node \u2070\u2309 and thus also two extra cocatenation nodes
             // let the safe size of a pattern X be denoted by #(X)
             (string, int)[] patternData = new (string, int)[]{
                 // no singletons

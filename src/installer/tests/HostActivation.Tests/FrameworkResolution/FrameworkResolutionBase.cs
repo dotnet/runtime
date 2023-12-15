@@ -88,14 +88,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         public class SharedTestStateBase : IDisposable
         {
             private readonly string _builtDotnet;
-            private readonly RepoDirectoriesProvider _repoDirectories;
             private readonly string _baseDir;
             private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestStateBase()
             {
                 _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
-                _repoDirectories = new RepoDirectoriesProvider();
 
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
                 _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
@@ -125,36 +123,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public TestApp CreateSelfContainedAppWithMockHostPolicy()
             {
                 string testAppDir = Path.Combine(_baseDir, "SelfContainedApp");
-                Directory.CreateDirectory(testAppDir);
                 TestApp testApp = new TestApp(testAppDir);
-
-                string hostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
-                string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
-                string mockHostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockhostpolicy");
-                string appHostFileName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
-
-                DotNetCli builtDotNetCli = new DotNetCli(_builtDotnet);
-
-                // ./hostfxr - the product version
-                File.Copy(builtDotNetCli.GreatestVersionHostFxrFilePath, Path.Combine(testAppDir, hostFxrFileName));
-
-                // ./hostpolicy - the mock
-                File.Copy(
-                    Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostPolicyFileName),
-                    Path.Combine(testAppDir, hostPolicyFileName));
-
-                // ./SelfContainedApp.dll
-                File.WriteAllText(Path.Combine(testAppDir, "SelfContainedApp.dll"), string.Empty);
-
-                // ./SelfContainedApp.runtimeconfig.json
-                File.WriteAllText(Path.Combine(testAppDir, "SelfContainedApp.runtimeconfig.json"), "{}");
+                testApp.PopulateSelfContained(TestApp.MockedComponent.HostPolicy);
 
                 // ./SelfContainedApp.exe
-                string selfContainedAppExePath = Path.Combine(testAppDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("SelfContainedApp"));
-                File.Copy(
-                    Path.Combine(_repoDirectories.HostArtifacts, appHostFileName),
-                    selfContainedAppExePath);
-                AppHostExtensions.BindAppHost(selfContainedAppExePath);
+                testApp.CreateAppHost(copyResources: false);
 
                 return testApp;
             }

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 
 namespace System
@@ -13,12 +13,11 @@ namespace System
         //
         // All public ctors go through here
         //
+        [MemberNotNull(nameof(_string))]
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
 
-            // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
-            // to be used here.
             if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
             {
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
@@ -228,7 +227,7 @@ namespace System
                     {
                         char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
 
-                        if (value >= UriHelper.UnreservedTable.Length || UriHelper.UnreservedTable[value])
+                        if (!char.IsAscii(value) || UriHelper.Unreserved.Contains(value))
                         {
                             return true;
                         }
@@ -581,12 +580,12 @@ namespace System
         // This method will escape any character that is not a reserved or unreserved character, including percent signs.
         [Obsolete(Obsoletions.EscapeUriStringMessage, DiagnosticId = Obsoletions.EscapeUriStringDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static string EscapeUriString(string stringToEscape) =>
-            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReservedTable);
+            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedReserved);
 
         // Where stringToEscape is intended to be URI data, but not an entire URI.
         // This method will escape any character that is not an unreserved character, including percent signs.
         public static string EscapeDataString(string stringToEscape) =>
-            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.UnreservedTable);
+            UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.Unreserved);
 
         //
         // Cleans up the specified component according to Iri rules
@@ -622,8 +621,6 @@ namespace System
         //
         internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e, in UriCreationOptions creationOptions = default)
         {
-            // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
-            // to be used here.
             if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
             {
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
@@ -766,7 +763,7 @@ namespace System
         {
             if (format == UriFormat.UriEscaped)
             {
-                return UriHelper.EscapeString(_string, checkExistingEscaped: true, UriHelper.UnreservedReservedTable);
+                return UriHelper.EscapeString(_string, checkExistingEscaped: true, UriHelper.UnreservedReserved);
             }
             else if (format == UriFormat.Unescaped)
             {
@@ -869,6 +866,11 @@ namespace System
 
         internal bool IsBaseOfHelper(Uri uriLink)
         {
+            const UriComponents ComponentsToCompare =
+                UriComponents.AbsoluteUri
+                & ~UriComponents.Fragment
+                & ~UriComponents.UserInfo;
+
             if (!IsAbsoluteUri || UserDrivenParsing)
                 return false;
 
@@ -895,8 +897,8 @@ namespace System
                 return false;
 
             // Canonicalize and test for substring match up to the last path slash
-            string self = GetParts(UriComponents.AbsoluteUri & ~UriComponents.Fragment, UriFormat.SafeUnescaped);
-            string other = uriLink.GetParts(UriComponents.AbsoluteUri & ~UriComponents.Fragment, UriFormat.SafeUnescaped);
+            string self = GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
+            string other = uriLink.GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
 
             unsafe
             {
@@ -914,6 +916,7 @@ namespace System
         //
         // Only a ctor time call
         //
+        [MemberNotNull(nameof(_string))]
         private void CreateThisFromUri(Uri otherUri)
         {
             DebugAssertInCtor();

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -23,11 +23,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class NestedTypePolicies : MemberPolicies<Type>
     {
+        public static readonly NestedTypePolicies Instance = new NestedTypePolicies();
+
+        public NestedTypePolicies() : base(MemberTypeIndex.NestedType) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
-        public sealed override IEnumerable<Type> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<Type> GetDeclaredMembers(Type type)
         {
-            return typeInfo.DeclaredNestedTypes;
+            return type.GetNestedTypes(DeclaredOnlyLookup);
         }
 
         public sealed override IEnumerable<Type> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)

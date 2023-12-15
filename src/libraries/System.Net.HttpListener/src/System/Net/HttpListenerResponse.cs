@@ -92,15 +92,9 @@ namespace System.Net
             {
                 CheckDisposed();
                 CheckSentHeaders();
-                if (value >= 0)
-                {
-                    _contentLength = value;
-                    _boundaryType = BoundaryType.ContentLength;
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                _contentLength = value;
+                _boundaryType = BoundaryType.ContentLength;
             }
         }
 
@@ -208,7 +202,7 @@ namespace System.Net
                 {
                     Cookie cookie = _cookies[index];
                     string cookieString = cookie.ToServerString();
-                    if (cookieString == null || cookieString.Length == 0)
+                    if (string.IsNullOrEmpty(cookieString))
                     {
                         continue;
                     }

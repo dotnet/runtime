@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -10,7 +11,7 @@
 .assembly b02062
 {
 }
-.class test
+.class public test
 {
   .field public        int32 m_i
   .field public static int32 s_i
@@ -32,8 +33,11 @@
 		ret
 	}
 
-	.method public static int32 main(class [mscorlib]System.String[] A_0) il managed
+	.method public static int32 main() il managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.locals(class test)
 		

@@ -36,10 +36,8 @@ namespace System.Net.NetworkInformation
 
         public override long GetScopeId(ScopeLevel scopeLevel)
         {
-            if ((scopeLevel < 0) || ((int)scopeLevel >= _zoneIndices.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(scopeLevel));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative((int)scopeLevel, nameof(scopeLevel));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((int)scopeLevel, _zoneIndices.Length, nameof(scopeLevel));
 
             return _zoneIndices[(int)scopeLevel];
         }

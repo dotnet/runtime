@@ -51,6 +51,14 @@ PALEXPORT int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, ui
 
 /*
 Function:
+EvpDigestFinalXOF
+
+Direct shim to DigestFinalXOF.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len);
+
+/*
+Function:
 EvpDigestCurrent
 
 Shims EVP_DigestFinal_ex on a duplicated value of ctx.
@@ -59,11 +67,27 @@ PALEXPORT int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* 
 
 /*
 Function:
+EvpDigestCurrentXOF
+
+Shims EVP_DigestFinalXOF on a duplicated value of ctx.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t len);
+
+/*
+Function:
 EvpDigestOneShot
 
 Combines EVP_MD_CTX_create, EVP_DigestUpdate, and EVP_DigestFinal_ex in to a single operation.
 */
 PALEXPORT int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize);
+
+/*
+Function:
+EvpDigestXOFOneShot
+
+Combines EVP_MD_CTX_create, EVP_DigestUpdate, and EVP_DigestFinalXOF in to a single operation.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t len);
 
 /*
 Function:
@@ -112,6 +136,46 @@ EvpSha512
 Direct shim to EVP_sha512.
 */
 PALEXPORT const EVP_MD* CryptoNative_EvpSha512(void);
+
+/*
+Function:
+EvpSha3_256
+
+Direct shim to EVP_sha3_256.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_256(void);
+
+/*
+Function:
+EvpSha3_384
+
+Direct shim to EVP_sha3_384.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_384(void);
+
+/*
+Function:
+EvpSha3_512
+
+Direct shim to EVP_sha3_512.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_512(void);
+
+/*
+Function:
+EvpShake128
+
+Direct shim to EVP_shake128.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpShake128(void);
+
+/*
+Function:
+EvpShake256
+
+Direct shim to EVP_shake256.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpShake256(void);
 
 /*
 Function:

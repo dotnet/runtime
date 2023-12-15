@@ -144,8 +144,8 @@ namespace
             SString::Iterator i = m_message.Begin();
             if (!m_message.Find(i, new_message))
             {
-                m_message += new_message;
-                m_message += SString(SString::Utf8, "\n");
+                m_message.Append(new_message);
+                m_message.AppendUTF8("\n");
             }
 #else
             m_message = SString(SString::Utf8, message);
@@ -475,7 +475,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        SString path = pAssembly->GetPEAssembly()->GetPath();
+        SString path{ pAssembly->GetPEAssembly()->GetPath() };
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -549,7 +549,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += (ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W) - 1);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 
@@ -606,9 +606,9 @@ namespace
         // or an existing known extension. This is done due to issues with case-sensitive file systems
         // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
         if (libNameIsRelativePath
-            && !libName.EndsWith(W("."))
-            && !libName.EndsWithCaseInsensitive(W(".dll"))
-            && !libName.EndsWithCaseInsensitive(W(".exe")))
+            && !libName.EndsWith(SL(W(".")))
+            && !libName.EndsWithCaseInsensitive(SL(W(".dll")))
+            && !libName.EndsWithCaseInsensitive(SL(W(".exe"))))
         {
             libNameVariations[varCount++] = NameSuffixFmt;
         }
@@ -642,12 +642,12 @@ namespace
         if (g_hostpolicy_embedded)
         {
 #ifdef TARGET_WINDOWS
-            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            if (u16_strcmp(wszLibName, W("hostpolicy.dll")) == 0)
             {
                 return WszGetModuleHandle(NULL);
             }
 #else
-            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            if (u16_strcmp(wszLibName, W("libhostpolicy")) == 0)
             {
                 return PAL_LoadLibraryDirect(NULL);
             }
@@ -665,7 +665,7 @@ namespace
         // We try to dlopen with such variations on the original.
         NameVariations prefixSuffixCombinations[MaxVariationCount] = {};
         int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
-        DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
+        DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, SString{ SString::Literal, wszLibName }, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
             SString currLibNameVariation;
@@ -716,33 +716,6 @@ namespace
             if (hmod != NULL)
             {
                 return hmod;
-            }
-        }
-
-        // This may be an assembly name
-        // Format is "fileName, assemblyDisplayName"
-        MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
-        char *szComma = strchr(szLibName, ',');
-        if (szComma)
-        {
-            *szComma = '\0';
-            // Trim white spaces
-            while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
-
-            AssemblySpec spec;
-            SString ssAssemblyDisplayName(SString::Utf8, szComma);
-            if (SUCCEEDED(spec.InitNoThrow(ssAssemblyDisplayName)))
-            {
-                // Need to perform case insensitive hashing.
-                SString moduleName(SString::Utf8, szLibName);
-                moduleName.LowerCase();
-
-                szLibName = (LPSTR)moduleName.GetUTF8();
-
-                Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
-                Module *pModule = pAssembly->FindModuleByName(szLibName);
-
-                hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
             }
         }
 

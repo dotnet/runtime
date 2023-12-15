@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Sockets", LocalizationResources = "FxResources.System.Net.Sockets.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Sockets")]
     internal sealed partial class NetEventSource
     {
         private const int AcceptedId = NextAvailableEventId;

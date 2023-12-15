@@ -179,22 +179,10 @@ namespace System.Linq.Expressions
 
         private static void ValidateSpan(int startLine, int startColumn, int endLine, int endColumn)
         {
-            if (startLine < 1)
-            {
-                throw Error.OutOfRange(nameof(startLine), 1);
-            }
-            if (startColumn < 1)
-            {
-                throw Error.OutOfRange(nameof(startColumn), 1);
-            }
-            if (endLine < 1)
-            {
-                throw Error.OutOfRange(nameof(endLine), 1);
-            }
-            if (endColumn < 1)
-            {
-                throw Error.OutOfRange(nameof(endColumn), 1);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(startLine);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(startColumn);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(endLine);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(endColumn);
             if (startLine > endLine)
             {
                 throw Error.StartEndMustBeOrdered();

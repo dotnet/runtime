@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Sockets;
-using System.Security;
 using System.Runtime.ExceptionServices;
+using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {
@@ -261,10 +261,8 @@ namespace System.Net
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_ftp_invalid_method_name, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
+
                 if (InUse)
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
@@ -300,10 +298,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
 
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_ftp_invalid_renameto, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 _renameTo = value;
             }
@@ -421,10 +416,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _contentOffset = value;
             }
         }
@@ -494,13 +486,16 @@ namespace System.Net
             if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
                 throw new ArgumentOutOfRangeException(nameof(uri));
 
+            if (uri.OriginalString.Contains("\r\n", StringComparison.Ordinal))
+                throw new FormatException(SR.net_ftp_no_newlines);
+
             _timerCallback = new TimerThread.Callback(TimerCallback);
             _syncObject = new object();
 
             NetworkCredential? networkCredential = null;
             _uri = uri;
             _methodInfo = FtpMethodInfo.GetMethodInfo(WebRequestMethods.Ftp.DownloadFile);
-            if (_uri.UserInfo != null && _uri.UserInfo.Length != 0)
+            if (!string.IsNullOrEmpty(_uri.UserInfo))
             {
                 string userInfo = _uri.UserInfo;
                 string username = userInfo;
@@ -580,7 +575,7 @@ namespace System.Net
                         FinishRequestStage(RequestStage.ReadReady);
                     CheckError();
 
-                    EnsureFtpWebResponse(null);
+                    EnsureFtpWebResponse();
                 }
             }
             catch (Exception exception)
@@ -1105,7 +1100,7 @@ namespace System.Net
             {
                 if (exception is WebException)
                 {
-                    EnsureFtpWebResponse(exception);
+                    EnsureFtpWebResponse();
                     _exception = new WebException(exception.Message, null, ((WebException)exception).Status, _ftpWebResponse);
                 }
                 else if (exception is AuthenticationException || exception is SecurityException)
@@ -1114,7 +1109,7 @@ namespace System.Net
                 }
                 else if (connection != null && connection.StatusCode != FtpStatusCode.Undefined)
                 {
-                    EnsureFtpWebResponse(exception);
+                    EnsureFtpWebResponse();
                     _exception = new WebException(SR.Format(SR.net_ftp_servererror, connection.StatusLine), exception, WebExceptionStatus.ProtocolError, _ftpWebResponse);
                 }
                 else
@@ -1174,7 +1169,7 @@ namespace System.Net
 
                     if (connection != null)
                     {
-                        EnsureFtpWebResponse(null);
+                        EnsureFtpWebResponse();
 
                         // This to update response status and exit message if any.
                         // Note that status 221 "Service closing control connection" is always suppressed.
@@ -1268,7 +1263,7 @@ namespace System.Net
                         }
 
                         stream.SetSocketTimeoutOption(Timeout);
-                        EnsureFtpWebResponse(null);
+                        EnsureFtpWebResponse();
 
                         stageMode = stream.CanRead ? RequestStage.ReadReady : RequestStage.WriteReady;
                     }
@@ -1278,7 +1273,7 @@ namespace System.Net
 
                         if (connection != null)
                         {
-                            EnsureFtpWebResponse(null);
+                            EnsureFtpWebResponse();
 
                             // This to update response status and exit message if any.
                             // Note that the status 221 "Service closing control connection" is always suppressed.
@@ -1626,7 +1621,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Creates an FTP WebResponse based off the responseStream and our active Connection</para>
         /// </summary>
-        private void EnsureFtpWebResponse(Exception? exception)
+        private void EnsureFtpWebResponse()
         {
             if (_ftpWebResponse == null || (_ftpWebResponse.GetResponseStream() is FtpWebResponse.EmptyStream && _stream != null))
             {

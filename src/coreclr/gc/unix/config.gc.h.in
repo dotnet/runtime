@@ -11,7 +11,6 @@
 #cmakedefine01 HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
 #cmakedefine01 HAVE_MAP_HUGETLB
 #cmakedefine01 HAVE_SCHED_GETCPU
-#cmakedefine01 HAVE_NUMA_H
 #cmakedefine01 HAVE_VM_ALLOCATE
 #cmakedefine01 HAVE_SWAPCTL
 #cmakedefine01 HAVE_SYSCTLBYNAME
@@ -33,5 +32,6 @@
 #cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_XSWDEV
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
+#cmakedefine01 HAVE_PROCFS_STATM
 
 #endif // __CONFIG_H__

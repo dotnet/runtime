@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
 {
@@ -113,7 +113,7 @@ namespace System.Numerics
             // This implementation is based on the DirectX Math Library XMVector4NotEqual method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            if (AdvSimd.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
                 Vector128<uint> vResult = AdvSimd.CompareEqual(vector1, vector2).AsUInt32();
 

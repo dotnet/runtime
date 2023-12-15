@@ -162,6 +162,7 @@ namespace
             case 8:
             case 16:
             case 32:
+            case 64:
                 break;
             default:
                 COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
@@ -460,6 +461,7 @@ namespace
         IMDInternalImport* pInternalImport,
         HENUMInternal* phEnumField,
         Module* pModule,
+        mdTypeDef cl,
         ParseNativeTypeFlags nativeTypeFlags,
         const SigTypeContext* pTypeContext,
         BOOL* fDisqualifyFromManagedSequential,
@@ -476,6 +478,8 @@ namespace
     #endif
     )
     {
+        STANDARD_VM_CONTRACT;
+
         HRESULT hr;
         mdFieldDef fd;
         ULONG maxRid = pInternalImport->GetCountWithTokenKind(mdtFieldDef);
@@ -532,20 +536,45 @@ namespace
                 }
     #endif
                 MetaSig fsig(pCOMSignature, cbCOMSignature, pModule, pTypeContext, MetaSig::sigField);
-                CorElementType corElemType = fsig.NextArgNormalized();
+                CorElementType corElemType = fsig.NextArg();
+
                 TypeHandle typeHandleMaybe;
                 if (corElemType == ELEMENT_TYPE_VALUETYPE) // Only look up the next element in the signature if it is a value type to avoid causing recursive type loads in valid scenarios.
                 {
-                    typeHandleMaybe = fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
-                        CLASS_LOAD_APPROXPARENTS,
-                        TRUE);
+                    SigPointer::HandleRecursiveGenericsForFieldLayoutLoad recursiveControl;
+                    recursiveControl.pModuleWithTokenToAvoidIfPossible = pModule;
+                    recursiveControl.tkTypeDefToAvoidIfPossible = cl;
+                    typeHandleMaybe = fsig.GetArgProps().GetTypeHandleThrowing(pModule,
+                                                                             pTypeContext,
+                                                                             ClassLoader::LoadTypes,
+                                                                             CLASS_LOAD_APPROXPARENTS,
+                                                                             TRUE, NULL, NULL, NULL, 
+                                                                             &recursiveControl);
+
+                    if (typeHandleMaybe.IsNull())
+                    {
+                        // Everett C++ compiler can generate a TypeRef with RS=0
+                        // without respective TypeDef for unmanaged valuetypes,
+                        // referenced only by pointers to them.
+                        // In such case, GetTypeHandleThrowing returns null handle,
+                        // and we return E_T_VOID
+                        typeHandleMaybe = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                    }
+                    corElemType = typeHandleMaybe.AsMethodTable()->GetInternalCorElementType();
+                    if (corElemType != ELEMENT_TYPE_VALUETYPE)
+                        typeHandleMaybe = TypeHandle();
                 }
+                else if (corElemType == ELEMENT_TYPE_TYPEDBYREF)
+                {
+                    typeHandleMaybe = TypeHandle(g_TypedReferenceMT);
+                }
+
                 pFieldInfoArrayOut->m_placement = GetFieldPlacementInfo(corElemType, typeHandleMaybe);
                 *fDisqualifyFromManagedSequential |= TypeHasGCPointers(corElemType, typeHandleMaybe);
                 *fHasAutoLayoutField |= TypeHasAutoLayoutField(corElemType, typeHandleMaybe);
                 *fHasInt128Field |= TypeHasInt128Field(corElemType, typeHandleMaybe);
 
-                if (!IsFieldBlittable(pModule, fd, fsig.GetArgProps(), pTypeContext, nativeTypeFlags))
+                if (!IsFieldBlittable(pModule, fd, corElemType, typeHandleMaybe, nativeTypeFlags))
                     *pIsBlittableOut = FALSE;
 
                 (*cInstanceFields)++;
@@ -704,6 +733,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         pInternalImport,
         phEnumField,
         pModule,
+        cl,
         nativeTypeFlags,
         pTypeContext,
         &fDisqualifyFromManagedSequential,
@@ -937,6 +967,31 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
         CONSISTENCY_CHECK(hr == S_OK);
     }
+    else if (pMT->GetClass()->IsInlineArray())
+    {
+        // If the type is an inline array, we need to calculate the size based on the number of elements.
+        const void* pVal;                  // The custom value.
+        ULONG       cbVal;                 // Size of the custom value.
+        HRESULT hr = pMT->GetCustomAttribute(
+            WellKnownAttribute::InlineArrayAttribute,
+            &pVal, &cbVal);
+
+        if (hr != S_FALSE)
+        {
+            // Validity of the InlineArray attribute is checked at type-load time,
+            // so we only assert here as we should have already checked this and failed
+            // type load if this condition is false.
+            _ASSERTE(cbVal >= (sizeof(INT32) + 2));
+            if (cbVal >= (sizeof(INT32) + 2))
+            {
+                INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
+                if (repeat > 0)
+                {
+                    classSizeInMetadata = repeat * pInfoArray[0].m_nfd.NativeSize();
+                }
+            }
+        }
+    }
 
     BYTE parentAlignmentRequirement = 0;
     if (fParentHasLayout)
@@ -979,7 +1034,8 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__UINT128)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
-            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)))
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)))
         {
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }
@@ -1030,7 +1086,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         {
             for (UINT i = 0; i < cInstanceFields; i++)
             {
-                _ASSERTE(pNativeFieldDescriptors[i].GetExternalOffset() == pNativeFieldDescriptors[i].GetFieldDesc()->GetOffset_NoLogging());
+                _ASSERTE(pNativeFieldDescriptors[i].GetExternalOffset() == pNativeFieldDescriptors[i].GetFieldDesc()->GetOffset());
                 _ASSERTE(pNativeFieldDescriptors[i].NativeSize() == pNativeFieldDescriptors[i].GetFieldDesc()->GetSize());
             }
             _ASSERTE(pNativeLayoutInfo->GetSize() == pEEClassLayoutInfo->GetManagedSize());

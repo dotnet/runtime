@@ -12,13 +12,13 @@ namespace System.Net.Http.Headers
             this(name, HttpHeaderType.Custom, parser: null, knownValues: null, http2StaticTableIndex, http3StaticTableIndex)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
-            Debug.Assert(name[0] == ':' || HttpRuleParser.GetTokenLength(name, 0) == name.Length);
+            Debug.Assert(name[0] == ':' || HttpRuleParser.IsToken(name));
         }
 
         public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser? parser, string[]? knownValues = null, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
-            Debug.Assert(name[0] == ':' || HttpRuleParser.GetTokenLength(name, 0) == name.Length);
+            Debug.Assert(name[0] == ':' || HttpRuleParser.IsToken(name));
 
             Name = name;
             HeaderType = headerType;

@@ -6,6 +6,7 @@
 #pragma once
 #include "pal_types.h"
 
+#undef BN_is_zero
 #undef SSL_CTX_set_options
 #undef SSL_set_options
 #undef SSL_session_reused
@@ -20,6 +21,7 @@ typedef struct stack_st OPENSSL_STACK;
 #define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
 
 int ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm);
+int BN_is_zero(const BIGNUM* a);
 int BIO_up_ref(BIO* a);
 const BIGNUM* DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);
@@ -84,6 +86,7 @@ int X509_set1_notBefore(X509* x509, const ASN1_TIME*);
 int32_t X509_up_ref(X509* x509);
 const char *SSL_SESSION_get0_hostname(const SSL_SESSION *s);
 int SSL_SESSION_set1_hostname(SSL_SESSION *s, const char *hostname);
+void SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb);
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 int32_t X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);

@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "hostpolicy_context.h"
-#include "hostpolicy.h"
+#include <hostpolicy.h>
+#include <host_runtime_contract.h>
 
 #include "deps_resolver.h"
 #include <error_codes.h>
 #include <trace.h>
 #include "bundle/runner.h"
 #include "bundle/file_entry.h"
+#include "shared_store.h"
 
 namespace
 {
@@ -103,22 +105,71 @@ namespace
         return nullptr;
     }
 #endif
+
+    size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
+        const char* key,
+        char* value_buffer,
+        size_t value_buffer_size,
+        void* contract_context)
+    {
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        // Properties computed on demand by the host
+        if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+        {
+            return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
+        }
+
+        // Properties from runtime initialization
+        pal::string_t key_str;
+        if (pal::clr_palstring(key, &key_str))
+        {
+            const pal::char_t* value;
+            if (context->coreclr_properties.try_get(key_str.c_str(), &value))
+            {
+                return pal::pal_utf8string(value, value_buffer, value_buffer_size);
+            }
+        }
+
+        return -1;
+    }
 }
 
-int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
+bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
+{
+    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Runtime.Loader.UseRidGraph"));
+    if (iter != init.cfg_keys.cend())
+    {
+        size_t idx = iter - init.cfg_keys.cbegin();
+        return pal::strcasecmp(init.cfg_values[idx].data(), _X("true")) == 0;
+    }
+
+    // Reading the RID fallback graph is disabled by default
+    return false;
+}
+
+int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
     host_mode = hostpolicy_init.host_mode;
-    host_path = args.host_path;
+    host_path = hostpolicy_init.host_info.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
 
+    deps_json_t::rid_resolution_options_t rid_resolution_options
+    {
+        should_read_rid_fallback_graph(hostpolicy_init),
+        nullptr, /*rid_fallback_graph*/
+    };
     deps_resolver_t resolver
-        {
-            args,
-            hostpolicy_init.fx_definitions,
-            /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
-            hostpolicy_init.is_framework_dependent
-        };
+    {
+        args,
+        hostpolicy_init.fx_definitions,
+        hostpolicy_init.additional_deps_serialized.c_str(),
+        shared_store::get_paths(hostpolicy_init.tfm, host_mode, host_path),
+        hostpolicy_init.probe_paths,
+        rid_resolution_options,
+        hostpolicy_init.is_framework_dependent
+    };
 
     pal::string_t resolver_errors;
     if (!resolver.valid(&resolver_errors))
@@ -133,7 +184,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     if (breadcrumbs_enabled)
     {
         pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
 
         // Always insert the hostpolicy that the code is running on.
         breadcrumbs.insert(policy_name);
@@ -191,42 +242,33 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         probe_paths.tpa.append(corelib_path);
     }
 
-    const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
-
     pal::string_t fx_deps_str;
     if (resolver.is_framework_dependent())
     {
         // Use the root fx to define FX_DEPS_FILE
-        fx_deps_str = get_root_framework(fx_definitions).get_deps_file();
+        fx_deps_str = resolver.get_root_deps().get_deps_file();
     }
 
-    fx_definition_vector_t::iterator fx_begin;
-    fx_definition_vector_t::iterator fx_end;
-    resolver.get_app_context_deps_files_range(&fx_begin, &fx_end);
-
     pal::string_t app_context_deps_str;
-    fx_definition_vector_t::iterator fx_curr = fx_begin;
-    while (fx_curr != fx_end)
+    resolver.enum_app_context_deps_files([&](const pal::string_t& deps_file)
     {
-        if (fx_curr != fx_begin)
+        if (!app_context_deps_str.empty())
             app_context_deps_str += _X(';');
 
         // For the application's .deps.json if this is single file, 3.1 backward compat
         // then the path used internally is the bundle path, but externally we need to report
         // the path to the extraction folder.
-        if (fx_curr == fx_begin && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
+        if (app_context_deps_str.empty() && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
         {
             pal::string_t deps_path = bundle::runner_t::app()->extraction_path();
-            append_path(&deps_path, get_filename((*fx_curr)->get_deps_file()).c_str());
+            append_path(&deps_path, get_filename(deps_file).c_str());
             app_context_deps_str += deps_path;
         }
         else
         {
-            app_context_deps_str += (*fx_curr)->get_deps_file();
+            app_context_deps_str += deps_file;
         }
-
-        ++fx_curr;
-    }
+    });
 
     // Build properties for CoreCLR instantiation
     pal::string_t app_base;
@@ -238,7 +280,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
-    coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
+    coreclr_properties.add(common_property::RuntimeIdentifier, get_runtime_id().c_str());
 
     bool set_app_paths = false;
 
@@ -287,43 +329,25 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
     }
 
-    // Single-File Bundle Probe
-    if (bundle::info_t::is_single_file_bundle())
     {
-        // Encode the bundle_probe function pointer as a string, and pass it to the runtime.
-        pal::stringstream_t ptr_stream;
-        ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
-
-        if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
+        host_contract = { sizeof(host_runtime_contract), this };
+        if (bundle::info_t::is_single_file_bundle())
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::BundleProbe));
-            return StatusCode::LibHostDuplicateProperty;
-        }
-    }
-
+            host_contract.bundle_probe = &bundle_probe;
 #if defined(NATIVE_LIBS_EMBEDDED)
-    // PInvoke Override
-    if (bundle::info_t::is_single_file_bundle())
-    {
-        // Encode the pinvoke_override function pointer as a string, and pass it to the runtime.
-        pal::stringstream_t ptr_stream;
-        ptr_stream << "0x" << std::hex << (size_t)(&pinvoke_override);
+            host_contract.pinvoke_override = &pinvoke_override;
+#endif
+        }
 
-        if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
+        host_contract.get_runtime_property = &get_runtime_property;
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&host_contract);
+        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_stream.str().c_str()))
         {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::PInvokeOverride));
+            log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
             return StatusCode::LibHostDuplicateProperty;
         }
     }
-#endif
-
-#if defined(HOSTPOLICY_EMBEDDED)
-    if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
-    {
-        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::HostPolicyEmbedded));
-        return StatusCode::LibHostDuplicateProperty;
-    }
-#endif
 
     return StatusCode::Success;
 }

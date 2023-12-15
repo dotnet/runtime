@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class Runtime_73821
+public unsafe class Runtime_73821
 {
     public struct S
     {
@@ -28,7 +29,8 @@ unsafe class Runtime_73821
         return val2;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test1(33).F + Test2(67);
     }

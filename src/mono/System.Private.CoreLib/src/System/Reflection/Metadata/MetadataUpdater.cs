@@ -35,11 +35,11 @@ namespace System.Reflection.Metadata
 
             // System.Private.CoreLib is not editable
             if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
-                throw new InvalidOperationException (SR.InvalidOperation_AssemblyNotEditable);
+                throw new InvalidOperationException(SR.InvalidOperation_AssemblyNotEditable);
 
             unsafe
             {
-                IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle ();
+                IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle();
                 fixed (byte* metadataDeltaPtr = metadataDelta, ilDeltaPtr = ilDelta, pdbDeltaPtr = pdbDelta)
                 {
                     ApplyUpdate_internal(monoAssembly, metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length);
@@ -59,13 +59,13 @@ namespace System.Reflection.Metadata
             return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty;
         }
 
-        [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern int ApplyUpdateEnabled (int justComponentCheck);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int ApplyUpdateEnabled(int justComponentCheck);
 
-        [MethodImpl (MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string GetApplyUpdateCapabilities();
 
-        [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern unsafe void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void ApplyUpdate_internal(IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte* dil_bytes, int dil_length, byte* dpdb_bytes, int dpdb_length);
     }
 }

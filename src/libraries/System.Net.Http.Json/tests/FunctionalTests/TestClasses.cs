@@ -18,13 +18,13 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             Assert.Equal("R. Daneel Olivaw", Name);
             Assert.Equal(19_230, Age);
-            Assert.Equal("Horní Dolní", PlaceOfBirth);
+            Assert.Equal("Horn\u00ED Doln\u00ED", PlaceOfBirth);
             Assert.Null(Parent);
         }
 
         public static Person Create()
         {
-            return new Person { Name = "R. Daneel Olivaw", Age = 19_230, PlaceOfBirth = "Horní Dolní"};
+            return new Person { Name = "R. Daneel Olivaw", Age = 19_230, PlaceOfBirth = "Horn\u00ED Doln\u00ED"};
         }
 
         public string Serialize(JsonSerializerOptions options = null)
@@ -37,6 +37,32 @@ namespace System.Net.Http.Json.Functional.Tests
             options ??= new JsonSerializerOptions();
             options.NumberHandling = options.NumberHandling | JsonNumberHandling.WriteAsString;
             return JsonSerializer.Serialize(this, options);
+        }
+
+        public static void AssertPersonEquality(Person first, Person second)
+        {
+            Assert.Equal(first.Age, second.Age);
+            Assert.Equal(first.Name, second.Name);
+            Assert.Equal(first.Parent, second.Parent);
+            Assert.Equal(first.PlaceOfBirth, second.PlaceOfBirth);
+        }
+    }
+
+    internal class People
+    {
+        public static int PeopleCount => WomenOfProgramming.Length;
+
+        public static Person[] WomenOfProgramming = new[]
+        {
+            new Person { Name = "Ada Lovelace", Age = 13_140, PlaceOfBirth = "London, England" },
+            new Person { Name = "Jean Bartik", Age = 31_390, PlaceOfBirth = "Alanthus Grove, Missouri, U.S." },
+            new Person { Name = "Grace Hopper", Age = 31_025, PlaceOfBirth = "New York City, New York, U.S." },
+            new Person { Name = "Margaret Hamilton", Age = 31_390, PlaceOfBirth = "Paoli, Indiana, U.S." },
+        };
+
+        public static string Serialize(JsonSerializerOptions options = null)
+        {
+            return JsonSerializer.Serialize(WomenOfProgramming, options);
         }
     }
 

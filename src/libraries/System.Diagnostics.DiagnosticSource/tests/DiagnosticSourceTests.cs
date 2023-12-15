@@ -42,6 +42,34 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Trivial example of passing an object
+        /// </summary>
+        [Fact]
+        public void ObjectPayload()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("TestingObjectPayload"))
+            {
+                DiagnosticSource source = listener;
+                var result = new List<KeyValuePair<string, object>>();
+                var observer = new ObserverToList<TelemData>(result);
+
+                using (listener.Subscribe(new ObserverToList<TelemData>(result)))
+                {
+                    object o = new object();
+
+                    listener.Write("ObjectPayload", o);
+                    Assert.Equal(1, result.Count);
+                    Assert.Equal("ObjectPayload", result[0].Key);
+                    Assert.Same(o, result[0].Value);
+                }   // unsubscribe
+
+                // Make sure that after unsubscribing, we don't get more events.
+                source.Write("ObjectPayload", new object());
+                Assert.Equal(1, result.Count);
+            }
+        }
+
+        /// <summary>
         /// slightly less trivial of passing a structure with a couple of fields
         /// </summary>
         [Fact]
@@ -506,6 +534,7 @@ namespace System.Diagnostics.Tests
         [InlineData(100, 102)]
         [InlineData(100, 103)]
         [InlineData(100, 104)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79906", TestRuntimes.Mono)]
         public void AllSubscriberStress(int numThreads, int numListenersPerThread)
         {
             // No listeners have been created yet
@@ -760,7 +789,7 @@ namespace System.Diagnostics.Tests
 
         public void OnError(Exception error)
         {
-            Assert.True(false, "Error happened on IObserver");
+            Assert.Fail("Error happened on IObserver");
         }
 
         public void OnNext(T value)

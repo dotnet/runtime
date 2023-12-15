@@ -15,7 +15,7 @@
 //
 // See also https://github.com/dotnet/runtime/issues/9899 for more information.
 
-#define PAGE_SIZE 0x1000
+#define PROBE_STEP 0x1000
 
 NESTED_ENTRY RhpStackProbe, _TEXT, NoHandler
         // On entry:
@@ -32,11 +32,11 @@ NESTED_ENTRY RhpStackProbe, _TEXT, NoHandler
 
     END_PROLOGUE
 
-        and     rsp, -PAGE_SIZE        // rsp points to the **lowest address** on the last probed page
+        and     rsp, -PROBE_STEP        // rsp points to the **lowest address** on the last probed page
                                        // This is done to make the following loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-        sub     rsp, PAGE_SIZE         // rsp points to the lowest address of the **next page** to probe
+        sub     rsp, PROBE_STEP         // rsp points to the lowest address of the **next page** to probe
         test    dword ptr [rsp], eax   // rsp points to the lowest address on the **last probed** page
         cmp     rsp, r11
         jg      LOCAL_LABEL(ProbeLoop) // if (rsp > r11), then we need to probe at least one more page.
@@ -44,52 +44,3 @@ LOCAL_LABEL(ProbeLoop):
         RESET_FRAME_WITH_RBP
         ret
 NESTED_END RhpStackProbe, _TEXT
-
-NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
-        // On entry:
-        //   rdi - TypeManagerSlot*
-        //   rsi - type index
-        // On exit:
-        //   rax - the thread static base for the given type
-
-        push_nonvol_reg rbx
-        push_nonvol_reg r12
-
-        mov     rbx, rdi               // Save TypeManagerSlot*
-        mov     r12, rsi               // Save type index
-
-        // rax = GetThread()
-        INLINE_GETTHREAD
-
-        mov     r8d, [rbx + 8]         // Get ModuleIndex out of the TypeManagerSlot
-        cmp     r8d, [rax + OFFSETOF__Thread__m_numThreadLocalModuleStatics]
-        jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-
-        mov     r9, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
-        mov     rax, [r9 + r8 * 8]     // Index into the array of modules
-        test    rax, rax
-        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-
-        mov     r8, [rax]              // Get the managed array from the handle
-        cmp     r12d, [r8 + OFFSETOF__Array__m_Length]
-        jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-        mov     rax, [r8 + r12 * 8 + 0x10]
-
-        test    rax, rax
-        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-
-        .cfi_remember_state
-        pop_nonvol_reg r12
-        pop_nonvol_reg rbx
-        ret
-
-        .cfi_restore_state
-        .cfi_def_cfa_offset 24  // workaround cfi_restore_state bug
-LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath):
-        mov         rdi, rbx    // restore TypeManagerSlot*
-        mov         rsi, r12    // restore type index
-
-        pop_nonvol_reg r12
-        pop_nonvol_reg rbx
-        jmp C_FUNC(RhpGetThreadStaticBaseForTypeSlow)
-NESTED_END RhpGetThreadStaticBaseForType, _TEXT

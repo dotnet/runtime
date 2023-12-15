@@ -229,7 +229,13 @@ DumpWriter::WriteSegments()
             (segment.initprot & VM_PROT_EXECUTE) ? 'x' : '-',
             segment.initprot);
 
-        if (address == SpecialThreadInfoAddress)
+        if (address == SpecialDiagInfoAddress)
+        {
+            if (!WriteDiagInfo(size)) {
+                return false;
+            }
+        }
+        else if (address == SpecialThreadInfoAddress)
         {
             // Write the header
             SpecialThreadInfoHeader header = {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -41,7 +42,8 @@ namespace System
           IEquatable<DateTimeOffset>,
           ISerializable,
           IDeserializationCallback,
-          ISpanParsable<DateTimeOffset>
+          ISpanParsable<DateTimeOffset>,
+          IUtf8SpanFormattable
     {
         // Constants
         internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -116,6 +118,17 @@ namespace System
             _dateTime = ValidateDate(dateTime, offset);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTimeOffset"/> structure by <paramref name="date"/>, <paramref name="time"/> and <paramref name="offset"/>.
+        /// </summary>
+        /// <param name="date">The date part</param>
+        /// <param name="time">The time part</param>
+        /// <param name="offset">The time's offset from Coordinated Universal Time (UTC).</param>
+        public DateTimeOffset(DateOnly date, TimeOnly time, TimeSpan offset)
+            : this(new DateTime(date, time), offset)
+        {
+        }
+
         // Constructs a DateTimeOffset from a given year, month, day, hour,
         // minute, second and offset.
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, TimeSpan offset)
@@ -123,7 +136,7 @@ namespace System
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -139,13 +152,13 @@ namespace System
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
-        // minute, second, millsecond and offset
+        // minute, second, millisecond and offset
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -161,13 +174,13 @@ namespace System
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
-        // minute, second, millsecond, Calendar and offset.
+        // minute, second, millisecond, Calendar and offset.
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -416,6 +429,11 @@ namespace System
         public int Month => ClockDateTime.Month;
 
         public TimeSpan Offset => new TimeSpan(0, _offsetMinutes, 0);
+
+        /// <summary>
+        /// Gets the total number of minutes representing the time's offset from Coordinated Universal Time (UTC).
+        /// </summary>
+        public int TotalOffsetMinutes => _offsetMinutes;
 
         // Returns the second part of this DateTimeOffset. The returned value is
         // an integer between 0 and 59.
@@ -844,6 +862,10 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
             DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, formatProvider, Offset);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
+            DateTimeFormat.TryFormat(ClockDateTime, utf8Destination, out bytesWritten, format, formatProvider, Offset);
+
         public DateTimeOffset ToUniversalTime() =>
             new DateTimeOffset(UtcDateTime);
 
@@ -1042,6 +1064,25 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
+
+        /// <summary>
+        /// Deconstructs <see cref="DateTimeOffset"/> into <see cref="DateOnly"/>, <see cref="TimeOnly"/> and <see cref="TimeSpan"/>.
+        /// </summary>
+        /// <param name="date">
+        /// Deconstructed <see cref="DateOnly"/>.
+        /// </param>
+        /// <param name="time">
+        /// Deconstructed <see cref="TimeOnly"/>
+        /// </param>
+        /// <param name="offset">
+        /// Deconstructed parameter for <see cref="Offset"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out DateOnly date, out TimeOnly time, out TimeSpan offset)
+        {
+            (date, time) = ClockDateTime;
+            offset = Offset;
+        }
 
         //
         // IParsable

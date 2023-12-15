@@ -38,10 +38,13 @@ static void
 mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 {
 	MonoLoadedImages *li = g_new0 (MonoLoadedImages, 1);
+
+	// FIXME:
+	collectible = FALSE;
+
 	mono_loaded_images_init (li, alc);
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
-	alc->memory_manager = mono_mem_manager_new (&alc, 1, collectible);
 	alc->generic_memory_managers = g_ptr_array_new ();
 	mono_coop_mutex_init (&alc->memory_managers_lock);
 	alc->unloading = FALSE;
@@ -49,6 +52,12 @@ mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 	alc->pinvoke_scopes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	mono_coop_mutex_init (&alc->assemblies_lock);
 	mono_coop_mutex_init (&alc->pinvoke_lock);
+
+	alc->memory_manager = mono_mem_manager_new (&alc, 1, collectible);
+
+	if (collectible)
+		/* Eagerly create the loader alloc object for the main memory manager */
+		mono_mem_manager_get_loader_alloc (alc->memory_manager);
 }
 
 static MonoAssemblyLoadContext *
@@ -98,6 +107,7 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC.
 	// The domain refcount might be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	GSList *tmp;
+	const char *name = alc->name ? alc->name : "<default>";
 
 	// Remove the assemblies from loaded_assemblies
 	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
@@ -107,8 +117,8 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 		loaded_assemblies = g_slist_remove (loaded_assemblies, assembly);
 		alcs_unlock ();
 
-		mono_assembly_decref (assembly);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from loaded_assemblies, ref_count=%d\n", alc, assembly->aname.name, assembly, assembly->ref_count);
+		//mono_assembly_decref (assembly);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC '%s'[%p], removing assembly %s[%p] from loaded_assemblies, ref_count=%d\n", name, alc, assembly->aname.name, assembly, assembly->ref_count);
 	}
 
 	// Release the GC roots
@@ -122,7 +132,7 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
 		if (!assembly->image || !image_is_dynamic (assembly->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], dynamic assembly %s[%p], ref_count=%d", alc, assembly->aname.name, assembly, assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC '%s'[%p], dynamic assembly %s[%p], ref_count=%d", name, alc, assembly->aname.name, assembly, assembly->ref_count);
 		if (!mono_assembly_close_except_image_pools (assembly))
 			tmp->data = NULL;
 	}
@@ -134,7 +144,7 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 			continue;
 		if (!assembly->image || image_is_dynamic (assembly->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], non-dynamic assembly %s[%p], ref_count=%d", alc, assembly->aname.name, assembly, assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC '%s'[%p], non-dynamic assembly %s[%p], ref_count=%d", name, alc, assembly->aname.name, assembly, assembly->ref_count);
 		if (!mono_assembly_close_except_image_pools (assembly))
 			tmp->data = NULL;
 	}
@@ -173,15 +183,21 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 
 	mono_alc_cleanup_assemblies (alc);
 
-	mono_mem_manager_free (alc->memory_manager, FALSE);
+	// FIXME: Do it for every memory manager
+	mono_gchandle_free_internal (alc->memory_manager->loader_allocator_handle);
+	alc->memory_manager->loader_allocator_handle = NULL;
+
+	// FIXME: Change to FALSE
+	mono_mem_manager_free (alc->memory_manager, TRUE);
 	alc->memory_manager = NULL;
 
 	/*for (int i = 0; i < alc->generic_memory_managers->len; i++) {
 		MonoGenericMemoryManager *memory_manager = (MonoGenericMemoryManager *)alc->generic_memory_managers->pdata [i];
 		mono_mem_manager_free_generic (memory_manager, FALSE);
 	}*/
-	g_ptr_array_free (alc->generic_memory_managers, TRUE);
-	mono_coop_mutex_destroy (&alc->memory_managers_lock);
+	// FIXME:
+	//g_ptr_array_free (alc->generic_memory_managers, TRUE);
+	//mono_coop_mutex_destroy (&alc->memory_managers_lock);
 
 	mono_gchandle_free_internal (alc->gchandle);
 	alc->gchandle = NULL;
@@ -260,6 +276,10 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContex
 	MonoGCHandle strong_gchandle = (MonoGCHandle)strong_gchandle_ptr;
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_pointer;
 
+	// FIXME:
+	if (!alc->collectible)
+		return;
+
 	g_assert (alc->collectible);
 	g_assert (!alc->unloading);
 	g_assert (alc->gchandle);
@@ -270,6 +290,12 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContex
 	MonoGCHandle weak_gchandle = alc->gchandle;
 	alc->gchandle = strong_gchandle;
 	mono_gchandle_free_internal (weak_gchandle);
+
+	mono_mem_manager_start_unload (alc->memory_manager);
+	mono_alc_memory_managers_lock (alc);
+	for (guint i = 0; i < alc->generic_memory_managers->len; i++)
+		mono_mem_manager_start_unload ((MonoMemoryManager *)g_ptr_array_index (alc->generic_memory_managers, i));
+	mono_alc_memory_managers_unlock (alc);
 }
 
 gpointer
@@ -655,3 +681,60 @@ mono_alc_get_all_loaded_assemblies (void)
 	alcs_unlock ();
 	return assemblies;
 }
+
+GPtrArray*
+mono_alc_get_all (void)
+{
+	// FIXME: prevent the individual ALCs from being collected until the iteration is done.
+	GSList *tmp;
+	GPtrArray *all_alcs = g_ptr_array_new ();
+	MonoAssemblyLoadContext *alc;
+	alcs_lock ();
+	for (tmp = alcs; tmp; tmp = tmp->next) {
+		alc = (MonoAssemblyLoadContext *)tmp->data;
+		g_ptr_array_add (all_alcs, alc);
+	}
+	alcs_unlock ();
+	return all_alcs;
+}
+
+MonoBoolean
+ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native)
+{
+	/* Not enabled yet */
+	return FALSE;
+
+#if 0
+	MonoMemoryManager *mem_manager = (MonoMemoryManager *)native;
+	MonoAssemblyLoadContext *alc;
+
+	MonoGCHandle loader_handle = mem_manager->loader_allocator_weak_handle;
+	if (mono_gchandle_get_target_internal (loader_handle))
+		return FALSE;
+
+	/*
+	 * The weak handle is NULL, meaning the managed LoaderAllocator object is dead, we can
+	 * free the native side.
+	 */
+	for (int i = 0; i < mem_manager->n_alcs; ++i) {
+		alc = mem_manager->alcs [i];
+		mono_alc_memory_managers_lock (alc);
+		g_ptr_array_remove (alc->generic_memory_managers, mem_manager);
+		mono_alc_memory_managers_unlock (alc);
+	}
+
+	alc = mem_manager->alcs [0];
+
+	// FIXME: Generic memory managers might need to be destroyed in a specific order/together,
+	// hold ref counts on alcs etc.
+	if (mem_manager == alc->memory_manager) {
+		mono_alc_cleanup (alc);
+	} else {
+		// FIXME: Use debug_unload=FALSE
+		mono_mem_manager_free (mem_manager, TRUE);
+	}
+
+	return TRUE;
+#endif
+}
+

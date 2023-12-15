@@ -340,11 +340,11 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
     if (offs < 0)
     {
-        printf("-%02XH", -offs);
+        printf("-0x%02X", -offs);
     }
     else if (offs > 0)
     {
-        printf("+%02XH", +offs);
+        printf("+0x%02X", +offs);
     }
 
     printf("] live from %04X to %04X\n", desc->vpdBegOfs, desc->vpdEndOfs);
@@ -1816,7 +1816,7 @@ static int (*zeroFunc)() = zeroFN;
  */
 
 typedef unsigned pasMaskType;
-#define BITS_IN_pasMask (BITS_IN_BYTE * sizeof(pasMaskType))
+#define BITS_IN_pasMask (BITS_PER_BYTE * sizeof(pasMaskType))
 #define HIGHEST_pasMask_BIT (((pasMaskType)0x1) << (BITS_IN_pasMask - 1))
 
 //-----------------------------------------------------------------------------
@@ -2645,7 +2645,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     /* Get hold of the next register bit */
 
-                    tmpMask = genFindLowestReg(regMask);
+                    tmpMask = genFindLowestBit(regMask);
                     assert(tmpMask);
 
                     /* Remember the new state of this register */
@@ -2694,7 +2694,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     /* Get hold of the next register bit */
 
-                    tmpMask = genFindLowestReg(regMask);
+                    tmpMask = genFindLowestBit(regMask);
                     assert(tmpMask);
 
                     /* Remember the new state of this register */
@@ -3567,7 +3567,12 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 {
     GCDump gcDump(GCINFO_VERSION);
 
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
+
     printf("Method info block:\n");
 
     return gcDump.DumpInfoHdr(table, header, methodSize, verifyGCTables);
@@ -3580,7 +3585,12 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
     printf("Pointer table:\n");
 
     GCDump gcDump(GCINFO_VERSION);
+
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
 }
@@ -3593,7 +3603,12 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, unsigned offs)
 {
     GCDump gcDump(GCINFO_VERSION);
+
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
 }
@@ -3872,7 +3887,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
@@ -3915,7 +3930,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();
@@ -4168,7 +4183,8 @@ void GCInfo::gcMakeRegPtrTable(
 
         // If this is a TYP_STRUCT, handle its GC pointers.
         // Note that the enregisterable struct types cannot have GC pointers in them.
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
+        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
+            (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
         {
             ClassLayout* layout = varDsc->GetLayout();
             unsigned     slots  = layout->GetSlotCount();
@@ -4611,7 +4627,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
     while (regMask)
     {
         // Get hold of the next register bit.
-        regMaskTP tmpMask = genFindLowestReg(regMask);
+        regMaskTP tmpMask = genFindLowestBit(regMask);
         assert(tmpMask);
 
         // Remember the new state of this register.

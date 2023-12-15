@@ -7,10 +7,12 @@
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System;
+using Xunit;
 
-class Runtime_39403
+public class Runtime_39403
 { 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         if (Sse41.IsSupported)
         {
@@ -20,7 +22,6 @@ class Runtime_39403
             Vector128<int> mask = Vector128.Create(3);
             Sse41.BlendVariable(left, rightRef, mask);
         }
-        return 100;
     }
 }
 

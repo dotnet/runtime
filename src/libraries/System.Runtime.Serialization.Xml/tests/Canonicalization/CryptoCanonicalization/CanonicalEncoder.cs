@@ -139,7 +139,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         public void EncodeAttribute(string prefix, string localName, string value)
         {
             Encode(' ');
-            if (prefix == null || prefix.Length == 0)
+            if (string.IsNullOrEmpty(prefix))
             {
                 Encode(localName);
             }

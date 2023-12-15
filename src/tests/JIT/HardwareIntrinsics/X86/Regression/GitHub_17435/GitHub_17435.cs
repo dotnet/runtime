@@ -3,15 +3,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace GitHub_17435
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Test()
         {
 
             if (Sse2.IsSupported)
@@ -20,18 +22,16 @@ namespace GitHub_17435
                 if ((a !=3) || (b != 6))
                 {
                     Console.WriteLine($"FAILED {a}, {b}");
-                    return Fail;
+                    Assert.Fail("");
                 }
                 else
                 {
                     Console.WriteLine("Passed");
-                    return Pass;
                 }
             }
             else
             {
                 Console.WriteLine("SSE2 not supported");
-                return Pass;
             }
         }
 

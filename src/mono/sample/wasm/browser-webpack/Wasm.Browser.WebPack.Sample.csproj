@@ -1,22 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="main.js" />
   </ItemGroup>
 
 
   <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="$(WasmAppDir)/dotnet.js;
-          $(WasmAppDir)/dotnet.wasm;
+          $(WasmAppDir)/dotnet.runtime.js;
+          $(WasmAppDir)/dotnet.native.js;
+          $(WasmAppDir)/dotnet.native.wasm;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/dotnet-runtime/.npm-stamp">
     <ItemGroup>
       <NpmPackageFiles Include="$(WasmAppDir)/dotnet.js"/>
-      <NpmPackageFiles Include="$(WasmAppDir)/dotnet.wasm"/>
+      <NpmPackageFiles Include="$(WasmAppDir)/dotnet.runtime.js"/>
+      <NpmPackageFiles Include="$(WasmAppDir)/dotnet.native.js"/>
+      <NpmPackageFiles Include="$(WasmAppDir)/dotnet.native.wasm"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
@@ -31,7 +36,7 @@
   </Target>
 
   <Target Name="RunSample" DependsOnTargets="WebPack">
-    <Exec Command="dotnet serve --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <Exec Command="dotnet serve -S --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
   </Target>
 
 </Project>

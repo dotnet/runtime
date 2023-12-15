@@ -73,7 +73,6 @@ const BYTE decoded_10[2] = {10, END_DECODED };
 #define DECODING_ERROR ((unsigned) -1)
 #define MASK(len) (~(~0u <<(len)))
 #define MASK64(len) ((~((~((unsigned __int64)0))<<(len))))
-#define BITS_PER_BYTE (sizeof(BYTE)*8)
 
 const Decoder::Decode emptyDecode = {decoded_end, DECODING_HEADER(0)};
 

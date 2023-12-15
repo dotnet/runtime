@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class X
+public class X
 {
     // a -> rdi
     // b -> rsi
@@ -43,7 +44,8 @@ class X
 
     // No-opt to stop F from being inlined without marking it noinline
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = F(0, 1, Guid.Empty, 3, 4, 33, 67);
         Console.WriteLine($"Result={result}");

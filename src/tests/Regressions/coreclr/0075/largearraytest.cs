@@ -8,11 +8,13 @@
  */
 
 using System;
+using Xunit;
 
 public class LargeArrayTest
 {
 	
-	public static int Main(string[] args) 
+	[Fact]
+	public static int TestEntryPoint() 
 	{
 		int lowerBound = 100;
 

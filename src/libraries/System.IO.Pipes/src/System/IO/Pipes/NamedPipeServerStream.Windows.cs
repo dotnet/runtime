@@ -80,7 +80,7 @@ namespace System.IO.Pipes
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 PipeSecurity? pipeSecurity, HandleInheritability inheritability, PipeAccessRights additionalAccessRights)
         {
-            Debug.Assert(pipeName != null && pipeName.Length != 0, "fullPipeName is null or empty");
+            Debug.Assert(!string.IsNullOrEmpty(pipeName), "fullPipeName is null or empty");
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(inBufferSize >= 0, "inBufferSize is negative");
             Debug.Assert(outBufferSize >= 0, "outBufferSize is negative");
@@ -240,16 +240,14 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
             ExecuteHelper execHelper = new ExecuteHelper(impersonationWorker, InternalHandle);
-            bool exceptionThrown = true;
 
             try
             {
                 ImpersonateAndTryCode(execHelper);
-                exceptionThrown = false;
             }
             finally
             {
-                RevertImpersonationOnBackout(execHelper, exceptionThrown);
+                RevertImpersonationOnBackout(execHelper);
             }
 
             // now handle win32 impersonate/revert specific errors by throwing corresponding exceptions
@@ -283,7 +281,7 @@ namespace System.IO.Pipes
             }
         }
 
-        private static void RevertImpersonationOnBackout(object? helper, bool exceptionThrown)
+        private static void RevertImpersonationOnBackout(object? helper)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper!;
 

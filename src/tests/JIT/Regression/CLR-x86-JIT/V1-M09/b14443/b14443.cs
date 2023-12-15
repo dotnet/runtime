@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
 
     public class Bug4
     {
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             Decimal cy1;
             Decimal cy2;

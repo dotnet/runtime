@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Microsoft.Win32;
 
 namespace System.Diagnostics.Eventing.Reader
@@ -63,7 +63,7 @@ namespace System.Diagnostics.Eventing.Reader
             _cultureInfo = targetCultureInfo;
             _logFilePath = logFilePath;
 
-            _handle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, _providerName, _logFilePath, 0, 0);
+            _handle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, _providerName, _logFilePath, 0);
 
             _syncObject = new object();
         }
@@ -118,7 +118,7 @@ namespace System.Diagnostics.Eventing.Reader
             get
             {
                 string helpLinkStr = (string)NativeWrapper.EvtGetPublisherMetadataProperty(_handle, UnsafeNativeMethods.EvtPublisherMetadataPropertyId.EvtPublisherMetadataHelpLink);
-                if (helpLinkStr == null || helpLinkStr.Length == 0)
+                if (string.IsNullOrEmpty(helpLinkStr))
                     return null;
                 return new Uri(helpLinkStr);
             }
@@ -205,7 +205,7 @@ namespace System.Diagnostics.Eventing.Reader
                                 {
                                     if (_defaultProviderHandle.IsInvalid)
                                     {
-                                        _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
+                                        _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0);
                                     }
 
                                     channelRefDisplayName = NativeWrapper.EvtFormatMessage(_defaultProviderHandle, unchecked((uint)channelRefMessageId));
@@ -358,7 +358,7 @@ namespace System.Diagnostics.Eventing.Reader
                         {
                             if (_defaultProviderHandle.IsInvalid)
                             {
-                                _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
+                                _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0);
                             }
 
                             generalDisplayName = objectTypeName switch

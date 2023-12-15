@@ -34,7 +34,7 @@ namespace System.Net.WebSockets
             WebSocket?.Abort();
         }
 
-        public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker? _ /*invoker*/, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

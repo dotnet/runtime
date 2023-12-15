@@ -18,14 +18,13 @@
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpanFromNullTerminated.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
-             Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
-             Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
+    <Compile Include="Span\StringSearchValues.cs" />
     <Compile Include="Span\Reflection.cs" />
     <Compile Include="SequenceReader\Advance.cs" />
     <Compile Include="SequenceReader\BasicTests.cs" />
@@ -86,6 +85,7 @@
     <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
     <Compile Include="Span\IndexOfAnyExcept.T.cs" />
+    <Compile Include="Span\IndexOfAnyInRange.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />
@@ -99,7 +99,9 @@
     <Compile Include="Span\LastIndexOfSequence.T.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\Overlaps.cs" />
+    <Compile Include="Span\Replace.T.cs" />
     <Compile Include="Span\Reverse.cs" />
+    <Compile Include="Span\SearchValues.cs" />
     <Compile Include="Span\SequenceCompareTo.bool.cs" />
     <Compile Include="Span\SequenceCompareTo.byte.cs" />
     <Compile Include="Span\SequenceCompareTo.char.cs" />
@@ -138,6 +140,8 @@
     <Compile Include="ReadOnlySpan\AsSpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
+    <Compile Include="ReadOnlySpan\Count.byte.cs" />
+    <Compile Include="ReadOnlySpan\Count.T.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
@@ -243,7 +247,6 @@
   <ItemGroup>
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTestData.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.cs" />
-    <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.Negative.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\TestData.Formatter.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\ValidateFormatter.cs" />
     <Compile Include="ParsersAndFormatters\Parser\ParserTestData.cs" />
@@ -268,11 +271,11 @@
     <Compile Include="Base64\Base64DecoderUnitTests.cs" />
     <Compile Include="Base64\Base64EncoderUnitTests.cs" />
     <Compile Include="Base64\Base64TestHelper.cs" />
+    <Compile Include="Base64\Base64TestBase.cs" />
+    <Compile Include="Base64\Base64ValidationUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
-             Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\MutableDecimal.cs"
-             Link="Common\System\MutableDecimal.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\MutableDecimal.cs" Link="Common\System\MutableDecimal.cs" />
   </ItemGroup>
 </Project>

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 
 namespace System.Xml
 {
@@ -111,20 +111,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (0 > offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (0 > count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (count > array.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, array.Length - offset);
 
             if (_cacheAttrValue)
             {
@@ -448,20 +437,9 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (0 > count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (0 > offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count > array.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, array.Length - offset);
 
             if (_cacheAttrValue)
             {

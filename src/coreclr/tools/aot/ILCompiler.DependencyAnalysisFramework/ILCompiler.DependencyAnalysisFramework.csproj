@@ -8,7 +8,6 @@
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <RunAnalyzers>true</RunAnalyzers>
 
     <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
          the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which

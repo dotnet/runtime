@@ -216,7 +216,7 @@ namespace System.Net
             Interop.HttpApi.HTTP_FLAGS flags,
             bool isWebSocketHandshake)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"pDataChunk: { ((IntPtr)pDataChunk)}, asyncResult: {asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"pDataChunk: {((IntPtr)pDataChunk)}, asyncResult: {asyncResult}");
             Debug.Assert(!SentHeaders, "SentHeaders is true.");
 
             if (StatusCode == (int)HttpStatusCode.Unauthorized)
@@ -283,7 +283,7 @@ namespace System.Net
                                     pResponse,
                                     null,
                                     &bytesSent,
-                                    SafeLocalAllocHandle.Zero,
+                                    null,
                                     0,
                                     asyncResult == null ? null : asyncResult._pOverlapped,
                                     null);
@@ -310,7 +310,7 @@ namespace System.Net
                                 pResponse,
                                 null,
                                 &bytesSent,
-                                SafeLocalAllocHandle.Zero,
+                                null,
                                 0,
                                 asyncResult == null ? null : asyncResult._pOverlapped,
                                 null);

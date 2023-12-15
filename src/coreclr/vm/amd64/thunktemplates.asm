@@ -4,10 +4,11 @@
 include <AsmMacros.inc>
 include AsmConstants.inc
 
-PAGE_SIZE = 4096
+; STUB_PAGE_SIZE must match the behavior of GetStubCodePageSize() on this architecture/os
+STUB_PAGE_SIZE = 16384
 
 DATA_SLOT macro stub, field
-    exitm @CatStr(stub, <Code + PAGE_SIZE + >, stub, <Data__>, field)
+    exitm @CatStr(stub, <Code + STUB_PAGE_SIZE + >, stub, <Data__>, field)
 endm
 
 LEAF_ENTRY StubPrecodeCode, _TEXT
@@ -17,7 +18,6 @@ LEAF_END_MARKED StubPrecodeCode, _TEXT
 
 LEAF_ENTRY FixupPrecodeCode, _TEXT
         jmp QWORD PTR [DATA_SLOT(FixupPrecode, Target)]
-PATCH_LABEL FixupPrecodeCode_Fixup
         mov    r10, QWORD PTR [DATA_SLOT(FixupPrecode, MethodDesc)]
         jmp    QWORD PTR [DATA_SLOT(FixupPrecode, PrecodeFixupThunk)]
 LEAF_END_MARKED FixupPrecodeCode, _TEXT

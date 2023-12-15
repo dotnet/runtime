@@ -11,16 +11,15 @@ namespace BasicEventSourceTests
     public partial class TestsWrite
     {
         // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
-        private static bool IsProcessElevated => s_isElevated.Value;
         private static bool IsProcessElevatedAndNotWindowsNanoServer =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
+            PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
 
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         /// Tests the ETW code path
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_T_ETW()
         {
             using (var listener = new EtwListener())
@@ -29,9 +28,8 @@ namespace BasicEventSourceTests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/25035")]
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_T_In_Manifest_Serialization_WithEtwListener()
         {
             using (var eventListener = new EventListenerListener())

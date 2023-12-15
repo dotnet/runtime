@@ -48,6 +48,9 @@ namespace Microsoft.Extensions.Logging.EventLog
             _intermediateMessageSegmentSize = EventLog.MaxMessageSize - 2 * ContinuationString.Length;
         }
 
+        /// <summary>
+        /// The event log.
+        /// </summary>
         public IEventLog EventLog { get; }
 
         /// <inheritdoc />

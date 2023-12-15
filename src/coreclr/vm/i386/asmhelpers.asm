@@ -251,6 +251,10 @@ COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
 
+ifdef HAS_ADDRESS_SANITIZER
+EXTERN ___asan_handle_no_return:PROC
+endif
+
 ; Note that RtlUnwind trashes EBX, ESI and EDI, so this wrapper preserves them
 CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, callback :DWORD, pExceptionRecord :DWORD, retVal :DWORD
 
@@ -268,6 +272,10 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
 CallRtlUnwind ENDP
 
 _ResumeAtJitEHHelper@4 PROC public
+        ; Call ___asan_handle_no_return here as we are not going to return.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         mov     edx, [esp+4]     ; edx = pContext (EHContext*)
 
         mov     ebx, [edx+EHContext_Ebx]
@@ -293,6 +301,10 @@ _ResumeAtJitEHHelper@4 ENDP
 ; int __stdcall CallJitEHFilterHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFilterHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -334,6 +346,10 @@ _CallJitEHFilterHelper@8 ENDP
 ; void __stdcall CallJITEHFinallyHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFinallyHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -376,91 +392,6 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
-
-
-_GetSpecificCpuTypeAsm@0 PROC public
-        push    ebx         ; ebx is trashed by the cpuid calls
-
-        ; See if the chip supports CPUID
-        pushfd
-        pop     ecx         ; Get the EFLAGS
-        mov     eax, ecx    ; Save for later testing
-        xor     ecx, 200000h ; Invert the ID bit.
-        push    ecx
-        popfd               ; Save the updated flags.
-        pushfd
-        pop     ecx         ; Retrieve the updated flags
-        xor     ecx, eax    ; Test if it actually changed (bit set means yes)
-        push    eax
-        popfd               ; Restore the flags
-
-        test    ecx, 200000h
-        jz      Assume486
-
-        xor     eax, eax
-        cpuid
-
-        test    eax, eax
-        jz      Assume486   ; brif CPUID1 not allowed
-
-        mov     eax, 1
-        cpuid
-
-        ; filter out everything except family and model
-        ; Note that some multi-procs have different stepping number for each proc
-        and     eax, 0ff0h
-
-        jmp     CpuTypeDone
-
-Assume486:
-        mov     eax, 0400h ; report 486
-CpuTypeDone:
-        pop     ebx
-        retn
-_GetSpecificCpuTypeAsm@0 ENDP
-
-; uint32_t __stdcall GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
-_GetSpecificCpuFeaturesAsm@4 PROC public
-        push    ebx         ; ebx is trashed by the cpuid calls
-
-        ; See if the chip supports CPUID
-        pushfd
-        pop     ecx         ; Get the EFLAGS
-        mov     eax, ecx    ; Save for later testing
-        xor     ecx, 200000h ; Invert the ID bit.
-        push    ecx
-        popfd               ; Save the updated flags.
-        pushfd
-        pop     ecx         ; Retrieve the updated flags
-        xor     ecx, eax    ; Test if it actually changed (bit set means yes)
-        push    eax
-        popfd               ; Restore the flags
-
-        test    ecx, 200000h
-        jz      CpuFeaturesFail
-
-        xor     eax, eax
-        cpuid
-
-        test    eax, eax
-        jz      CpuFeaturesDone ; br if CPUID1 not allowed
-
-        mov     eax, 1
-        cpuid
-        mov     eax, edx        ; return all feature flags
-        mov     edx, [esp+8]
-        test    edx, edx
-        jz      CpuFeaturesDone
-        mov     [edx],ebx       ; return additional useful information
-        jmp     CpuFeaturesDone
-
-CpuFeaturesFail:
-        xor     eax, eax    ; Nothing to report
-CpuFeaturesDone:
-        pop     ebx
-        retn    4
-_GetSpecificCpuFeaturesAsm@4 ENDP
-
 
 ;-----------------------------------------------------------------------
 ; The out-of-line portion of the code to enable preemptive GC.

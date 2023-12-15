@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -181,6 +183,11 @@ namespace System.SpanTests
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, value));
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((Span<T>)span, new[] { value }));
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, new[] { value }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, value));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, value));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, new[] { value }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, new[] { value }));
+            AssertSearchValues(span, new[] { value }, result, last: false);
             return result;
         }
         private static int IndexOfAnyExcept(Span<T> span, T value0, T value1)
@@ -189,6 +196,11 @@ namespace System.SpanTests
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1));
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((Span<T>)span, new[] { value0, value1 }));
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, value0, value1));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, value0, value1));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, new[] { value0, value1 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1 }));
+            AssertSearchValues(span, new[] { value0, value1 }, result, last: false);
             return result;
         }
         private static int IndexOfAnyExcept(Span<T> span, T value0, T value1, T value2)
@@ -197,12 +209,20 @@ namespace System.SpanTests
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1, value2));
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((Span<T>)span, new[] { value0, value1, value2 }));
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1, value2 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, value0, value1, value2));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, value0, value1, value2));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, new[] { value0, value1, value2 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1, value2 }));
+            AssertSearchValues(span, new[] { value0, value1, value2 }, result, last: false);
             return result;
         }
         private static int IndexOfAnyExcept(Span<T> span, params T[] values)
         {
             int result = MemoryExtensions.IndexOfAnyExcept(span, values);
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExcept((ReadOnlySpan<T>)span, values));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, values));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, values));
+            AssertSearchValues(span, values, result, last: false);
             return result;
         }
         private static int LastIndexOfAnyExcept(Span<T> span, T value)
@@ -211,6 +231,11 @@ namespace System.SpanTests
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, value));
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((Span<T>)span, new[] { value }));
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, new[] { value }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, value));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, value));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, new[] { value }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, new[] { value }));
+            AssertSearchValues(span, new[] { value }, result, last: true);
             return result;
         }
         private static int LastIndexOfAnyExcept(Span<T> span, T value0, T value1)
@@ -219,6 +244,11 @@ namespace System.SpanTests
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1));
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((Span<T>)span, new[] { value0, value1 }));
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, value0, value1));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, value0, value1));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, new[] { value0, value1 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1 }));
+            AssertSearchValues(span, new[] { value0, value1 }, result, last: true);
             return result;
         }
         private static int LastIndexOfAnyExcept(Span<T> span, T value0, T value1, T value2)
@@ -227,13 +257,45 @@ namespace System.SpanTests
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, value0, value1, value2));
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((Span<T>)span, new[] { value0, value1, value2 }));
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1, value2 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, value0, value1, value2));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, value0, value1, value2));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, new[] { value0, value1, value2 }));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, new[] { value0, value1, value2 }));
+            AssertSearchValues(span, new[] { value0, value1, value2 }, result, last: true);
             return result;
         }
         private static int LastIndexOfAnyExcept(Span<T> span, params T[] values)
         {
             int result = MemoryExtensions.LastIndexOfAnyExcept(span, values);
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExcept((ReadOnlySpan<T>)span, values));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept(span, values));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExcept((ReadOnlySpan<T>)span, values));
+            AssertSearchValues(span, values, result, last: true);
             return result;
+        }
+
+        private static void AssertSearchValues(Span<T> span, ReadOnlySpan<T> values, int expectedIndex, bool last)
+        {
+            if (typeof(T) == typeof(byte) || typeof(T) == typeof(char))
+            {
+                SearchValues<T> searchValuesInstance = (SearchValues<T>)(object)(typeof(T) == typeof(byte)
+                    ? SearchValues.Create(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)), values.Length))
+                    : SearchValues.Create(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values)), values.Length)));
+
+                if (last)
+                {
+                    Assert.Equal(expectedIndex, span.LastIndexOfAnyExcept(searchValuesInstance));
+                    Assert.Equal(expectedIndex, ((ReadOnlySpan<T>)span).LastIndexOfAnyExcept(searchValuesInstance));
+                }
+                else
+                {
+                    Assert.Equal(expectedIndex, span.IndexOfAnyExcept(searchValuesInstance));
+                    Assert.Equal(expectedIndex, ((ReadOnlySpan<T>)span).IndexOfAnyExcept(searchValuesInstance));
+                }
+
+                Assert.Equal(expectedIndex >= 0, span.ContainsAnyExcept(searchValuesInstance));
+                Assert.Equal(expectedIndex >= 0, ((ReadOnlySpan<T>)span).ContainsAnyExcept(searchValuesInstance));
+            }
         }
     }
 }

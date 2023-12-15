@@ -2,23 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
-#include <clrconfignocache.h>
+
+typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
+typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
 
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
+// This is the NativeAOT DotNetRuntimeDebugHeader signature
+uint8_t g_debugHeaderCookie[4] = { 0x44, 0x4E, 0x44, 0x48 };
+
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
-CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal) :
+CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
-    m_pid(pid),
+    m_pid(options.Pid),
     m_ppid(-1),
-    m_hdac(nullptr),
+    m_dacModule(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
-    m_gatherFrames(gatherFrames),
-    m_crashThread(crashThread),
-    m_signal(signal),
+    m_appModel(options.AppModel),
+    m_gatherFrames(options.CrashReport),
+    m_crashThread(options.CrashThread),
+    m_signal(options.Signal),
+    m_exceptionRecord(options.ExceptionRecord),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -26,12 +33,18 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_enumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
+    m_runtimeBaseAddress = 0;
 #ifdef __APPLE__
     m_task = 0;
 #else
     m_auxvValues.fill(0);
-    m_fd = -1;
+    m_fdMem = -1;
 #endif
+    memset(&m_siginfo, 0, sizeof(m_siginfo));
+    m_siginfo.si_signo = options.Signal;
+    m_siginfo.si_code = options.SignalCode;
+    m_siginfo.si_errno = options.SignalErrno;
+    m_siginfo.si_addr = (void*)options.SignalAddress;
 }
 
 CrashInfo::~CrashInfo()
@@ -60,10 +73,10 @@ CrashInfo::~CrashInfo()
         m_pClrDataProcess->Release();
     }
     // Unload DAC module
-    if (m_hdac != nullptr)
+    if (m_dacModule != nullptr)
     {
-        FreeLibrary(m_hdac);
-        m_hdac = nullptr;
+        dlclose(m_dacModule);
+        m_dacModule = nullptr;
     }
 #ifdef __APPLE__
     if (m_task != 0)
@@ -141,7 +154,7 @@ CrashInfo::LogMessage(
 // Gather all the necessary crash dump info.
 //
 bool
-CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
+CrashInfo::GatherCrashInfo(DumpType dumpType)
 {
     // Get the info about the threads (registers, etc.)
     for (ThreadInfo* thread : m_threads)
@@ -174,7 +187,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     }
 #endif
     // Load and initialize DAC interfaces
-    if (!InitializeDAC())
+    if (!InitializeDAC(dumpType))
     {
         return false;
     }
@@ -185,6 +198,9 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         return false;
     }
+    // Add the special (fake) memory region for the special diagnostics info
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + PAGE_SIZE);
+    m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();
 #endif
@@ -201,7 +217,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         }
     }
     // If full memory dump, include everything regardless of permissions
-    if (minidumpType & MiniDumpWithFullMemory)
+    if (dumpType == DumpType::Full)
     {
         for (const MemoryRegion& region : m_moduleMappings)
         {
@@ -220,7 +236,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         // Add all the heap read/write memory regions (m_otherMappings contains the heaps). On Alpine
         // the heap regions are marked RWX instead of just RW.
-        if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
+        if (dumpType == DumpType::Heap)
         {
             for (const MemoryRegion& region : m_otherMappings)
             {
@@ -250,18 +266,18 @@ GetHResultString(HRESULT hr)
 {
     switch (hr)
     {
-        case E_FAIL:
-            return "The operation has failed";
-        case E_INVALIDARG:
-            return "Invalid argument";
-        case E_OUTOFMEMORY:
-            return "Out of memory";
-        case CORDBG_E_INCOMPATIBLE_PLATFORMS:
-            return "The operation failed because debuggee and debugger are on incompatible platforms";
-        case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
-            return "The debuggee memory space does not have the expected debugging export table";
-        case CORDBG_E_UNSUPPORTED:
-            return "The specified action is unsupported by this version of the runtime";
+    case E_FAIL:
+        return "The operation has failed";
+    case E_INVALIDARG:
+        return "Invalid argument";
+    case E_OUTOFMEMORY:
+        return "Out of memory";
+    case CORDBG_E_INCOMPATIBLE_PLATFORMS:
+        return "The operation failed because debuggee and debugger are on incompatible platforms";
+    case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
+        return "The debuggee memory space does not have the expected debugging export table";
+    case CORDBG_E_UNSUPPORTED:
+        return "The specified action is unsupported by this version of the runtime";
     }
     return "";
 }
@@ -270,49 +286,74 @@ GetHResultString(HRESULT hr)
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
 bool
-CrashInfo::InitializeDAC()
+CrashInfo::InitializeDAC(DumpType dumpType)
 {
+    // Don't attempt to load the DAC if the app model doesn't support it by default. The default for single-file is
+    // a full dump, but if the dump type requested is a mini, triage or heap and the DAC is next to the single-file
+    // application the core dump will be generated. For NativeAOT, there is currently no DAC available so never
+    // attempt to load it.
+    if ((dumpType == DumpType::Full && m_appModel == AppModelType::SingleFile) || m_appModel == AppModelType::NativeAOT)
+    {
+        return true;
+    }
+    // Can't load the DAC if the runtime wasn't found
+    if (m_coreclrPath.empty())
+    {
+        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
+        return true;
+    }
     ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*this);
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
+    PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
     HRESULT hr = S_OK;
 
-    if (!m_coreclrPath.empty())
-    {
-        // We assume that the DAC is in the same location as the libcoreclr.so module
-        std::string dacPath;
-        dacPath.append(m_coreclrPath);
-        dacPath.append(MAKEDLLNAME_A("mscordaccore"));
+    // We assume that the DAC is in the same location as the libcoreclr.so module
+    std::string dacPath;
+    dacPath.append(m_coreclrPath);
+    dacPath.append(MAKEDLLNAME_A("mscordaccore"));
 
-        // Load and initialize the DAC
-        m_hdac = LoadLibraryA(dacPath.c_str());
-        if (m_hdac == nullptr)
+    // Load and initialize the DAC. We don't use the LoadLibraryA here because the PAL may not be
+    // initialized properly in the forked process for the statically linked single-file scenario.
+    m_dacModule = dlopen(dacPath.c_str(), RTLD_LAZY);
+    if (m_dacModule == nullptr)
+    {
+        printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
+        goto exit;
+    }
+    pfnDllMain = (PFN_DLLMAIN)dlsym(m_dacModule, "DllMain");
+    if (pfnDllMain != nullptr)
+    {
+        PFN_REGISTER_MODULE registerModule = (PFN_REGISTER_MODULE)dlsym(m_dacModule, "PAL_RegisterModule");
+        if (registerModule == nullptr)
         {
-            printf_error("InitializeDAC: LoadLibraryA(%s) FAILED %s\n", dacPath.c_str(), GetLastErrorString().c_str());
+            printf_error("InitializeDAC: PAL_RegisterModule FAILED\n");
             goto exit;
         }
-        pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
-        if (pfnCLRDataCreateInstance == nullptr)
+        HINSTANCE hModule = registerModule(dacPath.c_str());
+        if (!pfnDllMain(hModule, DLL_PROCESS_ATTACH, nullptr))
         {
-            printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", GetLastErrorString().c_str());
-            goto exit;
-        }
-        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
-        if (FAILED(hr))
-        {
-            printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
-            goto exit;
-        }
-        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
-        if (FAILED(hr))
-        {
-            printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+            printf_error("InitializeDAC: DllMain(DLL_PROCESS_ATTACH) FAILED\n");
             goto exit;
         }
     }
-    else
+    pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)dlsym(m_dacModule, "CLRDataCreateInstance");
+    if (pfnCLRDataCreateInstance == nullptr)
     {
-        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
+        printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", dlerror());
+        goto exit;
+    }
+    hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
+    if (FAILED(hr))
+    {
+        printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+        goto exit;
+    }
+    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
+    if (FAILED(hr))
+    {
+        printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+        goto exit;
     }
     result = true;
 exit:
@@ -323,36 +364,38 @@ exit:
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
 bool
-CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
+CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
 {
-    if (m_pClrDataEnumRegions != nullptr && (minidumpType & MiniDumpWithFullMemory) == 0)
+    if (m_pClrDataEnumRegions != nullptr && dumpType != DumpType::Full)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
-        // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
-        // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
-        // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
-        // applications (4 minutes, or even more), and this should already be in RW pages. Change
-        // the dump type to the faster normal one. This one already ensures necessary DAC globals,
-        // etc. without the costly assembly, module, class, type runtime data structures enumeration.
-        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_DEFAULT;
-        if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
+        // CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
+        // low level data structures and adds all the loader allocator heaps instead. The older 'DbgEnableFastHeapDumps'
+        // env var didn't generate a complete enough heap dump on Linux and this new path does.
+        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
+        MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
+        if (dumpType == DumpType::Heap)
         {
             // This is the old fast heap env var for backwards compatibility for VS4Mac.
             CLRConfigNoCache fastHeapDumps = CLRConfigNoCache::Get("DbgEnableFastHeapDumps", /*noprefix*/ false, &getenv);
             DWORD val = 0;
             if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
             {
+                // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
+                // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
+                // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
+                // applications (4 minutes, or even more), and this should already be in RW pages. Change
+                // the dump type to the faster normal one. This one already ensures necessary DAC globals,
+                // etc. without the costly assembly, module, class, type runtime data structures enumeration.
                 minidumpType = MiniDumpNormal;
+                flags = CLRDATA_ENUM_MEM_DEFAULT;
             }
-            // This the new variable that also skips the expensive (in both time and memory usage)
-            // enumeration of the low level data structures and adds all the loader allocator heaps
-            // instead. The above original env var didn't generate a complete enough heap dump on
-            // Linux and this new one does.
+            // This env var allows the CLRDATA_ENUM_MEM_HEAP2 fast path to be opt-ed out
             fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 0)
             {
-                flags = CLRDATA_ENUM_MEM_HEAP2;
+                flags = CLRDATA_ENUM_MEM_DEFAULT;
             }
         }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
@@ -414,7 +457,7 @@ CrashInfo::EnumerateManagedModules()
                     ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                     {
-                        std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
+                        std::string moduleName = ConvertString(wszUnicodeName.GetPtr());
 
                         // Change the module mapping name
                         AddOrReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
@@ -449,19 +492,24 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
-    TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
-    ReleaseHolder<ISOSDacInterface> pSos = nullptr;
-    if (m_pClrDataProcess != nullptr) {
-        m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
-    }
-    // For each native and managed thread
-    for (ThreadInfo* thread : m_threads)
+    // Don't unwind any threads if Native AOT since there isn't a DAC to get the remote
+    // unwinder support and they are full dumps.
+    if (m_appModel != AppModelType::NativeAOT)
     {
-        if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
-            return false;
+        TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
+        ReleaseHolder<ISOSDacInterface> pSos = nullptr;
+        if (m_pClrDataProcess != nullptr) {
+            m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
         }
+        // For each native and managed thread
+        for (ThreadInfo* thread : m_threads)
+        {
+            if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
+                return false;
+            }
+        }
+        TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     }
-    TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     return true;
 }
 
@@ -683,72 +731,107 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
 int
 CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 {
-    // First check if the full memory region can be added without conflicts and is fully valid.
-    const auto& found = m_memoryRegions.find(region);
-    if (found == m_memoryRegions.end())
+    // Check if the new region overlaps with the previously added ones
+    const auto& conflictingRegion = m_memoryRegions.find(region);
+    const bool hasConflict = conflictingRegion != m_memoryRegions.end();
+    if (hasConflict && conflictingRegion->Contains(region))
     {
-        // If the region is valid, add the full memory region
-        if (ValidRegion(region))
-        {
-            m_memoryRegions.insert(region);
-            return region.SizeInPages();
-        }
+        // The region is contained in the one we added before
+        // Nothing to do
+        return 0;
     }
-    else
-    {
-        // If the memory region is wholly contained in region found
-        if (found->Contains(region))
-        {
-            return 0;
-        }
-    }
-    // Either part of the region was invalid, part of it hasn't been added or the backed
-    // by memory state is different.
-    uint64_t start = region.StartAddress();
 
-    // The region overlaps/conflicts with one already in the set so add one page at a
-    // time to avoid the overlapping pages.
-    uint64_t numberPages = region.SizeInPages();
+    // Go page by page and split the region into valid sub-regions
+    uint64_t pageStart = region.StartAddress();
+    uint64_t numberPages = region.Size() / PAGE_SIZE;
+    uint64_t subRegionStart, subRegionEnd;
     int pagesAdded = 0;
-
-    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
+    subRegionStart = subRegionEnd = pageStart;
+    for (size_t p = 0; p < numberPages; p++, pageStart += PAGE_SIZE)
     {
-        MemoryRegion memoryRegionPage(region.Flags(), start, start + PAGE_SIZE);
+        MemoryRegion page(region.Flags(), pageStart, pageStart + PAGE_SIZE);
 
-        const auto& found = m_memoryRegions.find(memoryRegionPage);
-        if (found == m_memoryRegions.end())
+        // avoid searching for conflicts if we know we don't have one
+        const bool pageHasConflicts = hasConflict && m_memoryRegions.find(page) != m_memoryRegions.end();
+        // avoid validating the page if it conflicts: we won't add it in any case
+        const bool pageIsValid = !pageHasConflicts && PageMappedToPhysicalMemory(pageStart) && PageCanBeRead(pageStart);
+
+        if (pageIsValid)
         {
-            // All the single pages added here will be combined in CombineMemoryRegions()
-            if (ValidRegion(memoryRegionPage))
-            {
-                m_memoryRegions.insert(memoryRegionPage);
-                pagesAdded++;
-            }
+            subRegionEnd = page.EndAddress();
+            pagesAdded++;
         }
+        else
+        {
+            // the next page is not valid thus sub-region is complete
+            if (subRegionStart != subRegionEnd)
+            {
+                m_memoryRegions.insert(MemoryRegion(region.Flags(), subRegionStart, subRegionEnd));
+            }
+            subRegionStart = subRegionEnd = page.EndAddress();
+        }
+    }
+    // add the last sub-region if it's not empty
+    if (subRegionStart != subRegionEnd)
+    {
+        m_memoryRegions.insert(MemoryRegion(region.Flags(), subRegionStart, subRegionEnd));
     }
 
     return pagesAdded;
 }
 
 //
-// Validates a memory region
+// Check the page is really used by the application before adding it to the dump
+// On some kernels reading a region from createdump results in committing this region in the parent application
+// That leads to OOM in container environment and unnecesserally increses the size of the dump file
+// However this is an optimization: if it fails we still try to add the page to the dump
 //
 bool
-CrashInfo::ValidRegion(const MemoryRegion& region)
+CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
 {
-    uint64_t start = region.StartAddress();
-    uint64_t numberPages = region.SizeInPages();
-    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
-    {
-        BYTE buffer[1];
-        size_t read;
-
-        if (!ReadProcessMemory((void*)start, buffer, 1, &read))
+    #if !defined(__linux__)
+        // this check has not been implemented yet for other unix systems
+        return true;
+    #else
+        // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
+        if (m_fdPagemap == -1)
         {
-            return false;
+            // Weren't able to open pagemap file, so don't run this check
+            // Expected on kernels 4.0 and 4.1 as we need CAP_SYS_ADMIN to open /proc/pid/pagemap
+            // On kernels after 4.2 we only need PTRACE_MODE_READ_FSCREDS as we are ok with zeroed PFNs
+            return true;
         }
-    }
-    return true;
+
+        uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
+        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
+        if (seekResult != pagemapOffset)
+        {
+            int seekErrno = errno;
+            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
+            return true;
+        }
+        uint64_t value;
+        size_t readResult = read(m_fdPagemap, (void*)&value, sizeof(value));
+        if (readResult == (size_t) -1)
+        {
+            int readErrno = errno;
+            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+            return true;
+        }
+
+        bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
+        bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
+        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx ", pagemap offset %" PRIA PRIx " is %" PRIA PRIx " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
+        return is_page_present || is_page_swapped;
+    #endif
+}
+
+bool
+CrashInfo::PageCanBeRead(uint64_t start)
+{
+    BYTE buffer[1];
+    size_t read;
+    return ReadProcessMemory((void*)start, buffer, 1, &read);
 }
 
 //
@@ -890,9 +973,28 @@ FormatString(const char* format, ...)
     ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
     va_list args;
     va_start(args, format);
-    int result = vsprintf_s(buffer, MAX_LONGPATH, format, args);
+    int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
     va_end(args);
-    return result > 0 ? std::string(buffer) : std::string();
+    return result > 0 && result < MAX_LONGPATH ? std::string(buffer) : std::string();
+}
+
+//
+// Converts a WCHAR into a std:string containing a UTF-8 encoded string.
+//
+std::string
+ConvertString(const WCHAR* str)
+{
+    if (str == nullptr)
+        return { };
+
+    size_t cch = u16_strlen(str) + 1;
+    int len = minipal_get_length_utf16_to_utf8((CHAR16_T*)str, cch, 0);
+    if (len == 0)
+        return { };
+
+    ArrayHolder<char> buffer = new char[len + 1];
+    minipal_convert_utf16_to_utf8((CHAR16_T*)str, cch, buffer, len + 1, 0);
+    return std::string { buffer };
 }
 
 //

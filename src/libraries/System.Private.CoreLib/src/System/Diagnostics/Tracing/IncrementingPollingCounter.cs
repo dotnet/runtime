@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tracing
     /// </summary>
 #if !ES_BUILD_STANDALONE
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser")]
 #endif
 #endif
     public partial class IncrementingPollingCounter : DiagnosticCounter
@@ -31,10 +31,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="totalValueProvider">The delegate to invoke to get the total value for this counter.</param>
         public IncrementingPollingCounter(string name, EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource)
         {
-            if (totalValueProvider is null)
-            {
-                throw new ArgumentNullException(nameof(totalValueProvider));
-            }
+            ArgumentNullException.ThrowIfNull(totalValueProvider);
 
             _totalValueProvider = totalValueProvider;
             Publish();

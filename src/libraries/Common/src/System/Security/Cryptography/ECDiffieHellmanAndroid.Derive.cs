@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -70,6 +70,16 @@ namespace System.Security.Cryptography
                     prfLabel,
                     prfSeed,
                     DeriveSecretAgreement);
+            }
+
+            public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+            {
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ThrowIfDisposed();
+
+                byte[]? secretAgreement = DeriveSecretAgreement(otherPartyPublicKey, hasher: null);
+                Debug.Assert(secretAgreement is not null);
+                return secretAgreement;
             }
 
             /// <summary>

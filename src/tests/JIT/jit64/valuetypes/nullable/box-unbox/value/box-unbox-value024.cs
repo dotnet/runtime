@@ -4,8 +4,9 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(ValueType o)
     {
@@ -17,7 +18,8 @@ internal class NullableTest
         return Helper.Compare((NotEmptyStructA?)o, Helper.Create(default(NotEmptyStructA)));
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         NotEmptyStructA? s = Helper.Create(default(NotEmptyStructA));
 

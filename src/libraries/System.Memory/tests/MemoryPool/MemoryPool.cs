@@ -90,7 +90,7 @@ namespace System.MemoryTests
         public static void MemoryPoolPinBadOffset(int elementIndex)
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            IMemoryOwner<int> block = pool.Rent(10);
+            using IMemoryOwner<int> block = pool.Rent(10);
             Memory<int> memory = block.Memory;
             Span<int> sp = memory.Span;
             Assert.Equal(memory.Length, sp.Length);
@@ -101,7 +101,7 @@ namespace System.MemoryTests
         public static void MemoryPoolPinOffsetAtEnd()
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            IMemoryOwner<int> block = pool.Rent(10);
+            using IMemoryOwner<int> block = pool.Rent(10);
             Memory<int> memory = block.Memory;
             Span<int> sp = memory.Span;
             Assert.Equal(memory.Length, sp.Length);
@@ -122,7 +122,7 @@ namespace System.MemoryTests
         public static void MemoryPoolPinBadOffsetTooLarge()
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            IMemoryOwner<int> block = pool.Rent(10);
+            using IMemoryOwner<int> block = pool.Rent(10);
             Memory<int> memory = block.Memory;
             Span<int> sp = memory.Span;
             Assert.Equal(memory.Length, sp.Length);

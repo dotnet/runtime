@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -5539,6 +5540,33 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector256SingleCopyToTest()
+        {
+            float[] array = new float[8];
+            Vector256.Create(2.0f).CopyTo(array);
+            Assert.True(array.AsSpan().SequenceEqual([2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector256SingleCopyToOffsetTest()
+        {
+            float[] array = new float[9];
+            Vector256.Create(2.0f).CopyTo(array, 1);
+            Assert.True(array.AsSpan().SequenceEqual([0.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector256SByteAbs_MinValue()
+        {
+            Vector256<sbyte> vector = Vector256.Create(sbyte.MinValue);
+            Vector256<sbyte> abs = Vector256.Abs(vector);
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal(sbyte.MinValue, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
@@ -5605,6 +5633,51 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.False((bool)methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
+        public void GetOneByte() => TestGetOne<byte>();
+
+        [Fact]
+        public void GetOneDouble() => TestGetOne<double>();
+
+        [Fact]
+        public void GetOneInt16() => TestGetOne<short>();
+
+        [Fact]
+        public void GetOneInt32() => TestGetOne<int>();
+
+        [Fact]
+        public void GetOneInt64() => TestGetOne<long>();
+
+        [Fact]
+        public void GetOneIntPtr() => TestGetOne<nint>();
+
+        [Fact]
+        public void GetOneSByte() => TestGetOne<sbyte>();
+
+        [Fact]
+        public void GetOneSingle() => TestGetOne<float>();
+
+        [Fact]
+        public void GetOneUInt16() => TestGetOne<ushort>();
+
+        [Fact]
+        public void GetOneUInt32() => TestGetOne<uint>();
+
+        [Fact]
+        public void GetOneUInt64() => TestGetOne<ulong>();
+
+        [Fact]
+        public void GetOneUIntPtr() => TestGetOne<nuint>();
+
+        private static void TestGetOne<T>()
+            where T : struct, INumber<T>
+        {
+            Assert.Equal(Vector256<T>.One, Vector256.Create(T.One));
+
+            MethodInfo methodInfo = typeof(Vector256<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.Equal((Vector256<T>)methodInfo.Invoke(null, null), Vector256.Create(T.One));
         }
     }
 }

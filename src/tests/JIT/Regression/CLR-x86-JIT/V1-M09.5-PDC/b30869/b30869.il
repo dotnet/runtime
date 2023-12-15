@@ -4,13 +4,14 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xcd4c3cc0 {}
-.class ILGEN_0xcd4c3cc0 {
+.assembly 'b30869' {}
+.class public ILGEN_0xcd4c3cc0 {
 
 //BEGIN STATIC FIELDS
 .field static	int32[] field_0x0
@@ -21,7 +22,10 @@
 .field static	unsigned int8[] field_0x5
 .field static	float32[] field_0x6
 //END STATIC FIELDS
-.method static int32 main() {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	17
 

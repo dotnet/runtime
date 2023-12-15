@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Buffers.Text
 {
@@ -144,7 +145,7 @@ namespace System.Buffers.Text
 
             Debug.Assert(fraction >= 0 && fraction <= Utf8Constants.MaxDateTimeFraction); // All of our callers to date parse the fraction from fixed 7-digit fields so this value is trusted.
 
-            int[] days = DateTime.IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = DateTime.IsLeapYear(year) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int yearMinusOne = year - 1;
             int totalDays = (yearMinusOne * 365) + (yearMinusOne / 4) - (yearMinusOne / 100) + (yearMinusOne / 400) + days[month - 1] + day - 1;
             long ticks = totalDays * TimeSpan.TicksPerDay;
@@ -154,8 +155,5 @@ namespace System.Buffers.Text
             value = new DateTime(ticks: ticks, kind: kind);
             return true;
         }
-
-        private static readonly int[] s_daysToMonth365 = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        private static readonly int[] s_daysToMonth366 = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
     }
 }

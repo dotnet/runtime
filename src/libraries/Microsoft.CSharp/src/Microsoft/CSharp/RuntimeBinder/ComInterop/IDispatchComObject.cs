@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -230,7 +230,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return false;
             }
 
-            throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
+            throw Error.CouldNotGetDispId(name, $"0x{(uint)hresult:X})");
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
@@ -267,7 +267,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return false;
             }
 
-            throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
+            throw Error.CouldNotGetDispId(name, $"0x{(uint)hresult:X})");
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]

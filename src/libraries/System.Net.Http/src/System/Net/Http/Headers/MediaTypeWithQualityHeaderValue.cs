@@ -42,7 +42,7 @@ namespace System.Net.Http.Headers
             return new MediaTypeWithQualityHeaderValue(this);
         }
 
-        public static new MediaTypeWithQualityHeaderValue Parse(string? input)
+        public static new MediaTypeWithQualityHeaderValue Parse(string input)
         {
             int index = 0;
             return (MediaTypeWithQualityHeaderValue)MediaTypeHeaderParser.SingleValueWithQualityParser.ParseValue(

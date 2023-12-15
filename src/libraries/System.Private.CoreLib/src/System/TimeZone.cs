@@ -1,27 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose:
-** This class is used to represent a TimeZone.  It
-** has methods for converting a DateTime to UTC from local time
-** and to local time from UTC and methods for getting the
-** standard name and daylight name of the time zone.
-**
-** The only TimeZone that we support in version 1 is the
-** CurrentTimeZone as determined by the system timezone.
-**
-**
-============================================================*/
-
-using System.Threading;
 using System.Globalization;
+using System.Threading;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a time zone.
+    /// </summary>
     [Obsolete("System.TimeZone has been deprecated. Investigate the use of System.TimeZoneInfo instead.")]
     public abstract class TimeZone
     {
@@ -123,7 +110,7 @@ namespace System
                 return time;
             }
             bool isAmbiguousLocalDst = false;
-            long offset = ((CurrentSystemTimeZone)(TimeZone.CurrentTimeZone)).GetUtcOffsetFromUniversalTime(time, ref isAmbiguousLocalDst);
+            long offset = ((CurrentSystemTimeZone)(CurrentTimeZone)).GetUtcOffsetFromUniversalTime(time, ref isAmbiguousLocalDst);
             return new DateTime(time.Ticks + offset, DateTimeKind.Local, isAmbiguousLocalDst);
         }
 

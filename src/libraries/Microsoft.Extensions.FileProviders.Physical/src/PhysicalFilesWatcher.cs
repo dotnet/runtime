@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private Timer? _timer;
         private bool _timerInitialized;
         private object _timerLock = new();
-        private Func<Timer> _timerFactory;
+        private readonly Func<Timer> _timerFactory;
         private bool _disposed;
 
         /// <summary>
@@ -160,7 +160,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken;
+#if NET5_0_OR_GREATER
+            bool isWildCard = pattern.Contains('*');
+#else
             bool isWildCard = pattern.IndexOf('*') != -1;
+#endif
             if (isWildCard || IsDirectoryPath(pattern))
             {
                 changeToken = GetOrAddWildcardChangeToken(pattern);

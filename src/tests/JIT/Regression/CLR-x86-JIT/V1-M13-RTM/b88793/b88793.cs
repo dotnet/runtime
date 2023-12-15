@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class CC
 {
@@ -20,10 +21,10 @@ public class CC
             } while (a);
         }
     }
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         ulong ul = 0;
         Method1(ref ul, __arglist());
-        return 100;
     }
 }

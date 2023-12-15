@@ -7,9 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-
-using PAL_SymmetricAlgorithm = Interop.AppleCrypto.PAL_SymmetricAlgorithm;
 using PAL_ChainingMode = Interop.AppleCrypto.PAL_ChainingMode;
+using PAL_SymmetricAlgorithm = Interop.AppleCrypto.PAL_SymmetricAlgorithm;
 
 namespace System.Security.Cryptography
 {
@@ -46,7 +45,7 @@ namespace System.Security.Cryptography
                         ? Interop.AppleCrypto.PAL_SymmetricOperation.Encrypt
                         : Interop.AppleCrypto.PAL_SymmetricOperation.Decrypt,
                     algorithm,
-                    GetPalChainMode(algorithm, cipherMode, feedbackSizeInBytes),
+                    GetPalChainMode(cipherMode, feedbackSizeInBytes),
                     Interop.AppleCrypto.PAL_PaddingMode.None,
                     pbKey,
                     key.Length,
@@ -186,7 +185,7 @@ namespace System.Security.Cryptography
             return bytesWritten;
         }
 
-        private static PAL_ChainingMode GetPalChainMode(PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
+        private static PAL_ChainingMode GetPalChainMode(CipherMode cipherMode, int feedbackSizeInBytes)
         {
             return cipherMode switch
             {

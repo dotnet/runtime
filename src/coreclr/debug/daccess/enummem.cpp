@@ -224,6 +224,34 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 
         ReportMem(g_gcDacGlobals.GetAddr(), sizeof(GcDacVars));
 
+        PTR_WSTR entryAssemblyPath = (PTR_WSTR)g_EntryAssemblyPath;
+        entryAssemblyPath.EnumMem();
+
+        // Triage dumps must not include full paths (PII data). Replace entry assembly path with file name only.
+        if (flags == CLRDATA_ENUM_MEM_TRIAGE)
+        {
+            WCHAR* path = entryAssemblyPath;
+            if (path != NULL)
+            {
+                size_t pathLen = u16_strlen(path) + 1;
+
+                // Get the file name based on the last directory separator
+                const WCHAR* name = u16_strrchr(path, DIRECTORY_SEPARATOR_CHAR_W);
+                if (name != NULL)
+                {
+                    name += 1;
+                    size_t len = u16_strlen(name) + 1;
+                    wcscpy_s(path, len, name);
+
+                    // Null out the rest of the buffer
+                    for (size_t i = len; i < pathLen; ++i)
+                        path[i] = W('\0');
+
+                    DacUpdateMemoryRegion(entryAssemblyPath.GetAddr(), pathLen, (BYTE*)path);
+                }
+            }
+        }
+
         // We need all of the dac variables referenced by the GC DAC global struct.
         // This struct contains pointers to pointers, so we first dereference the pointers
         // to obtain the location of the variable that's reported.
@@ -702,18 +730,18 @@ HRESULT ClrDataAccess::EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags)
         SystemDomain::System()->GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
 
-    AppDomainIterator adIter(FALSE);
+    AppDomain* appDomain = AppDomain::GetCurrentDomain();
+    if (appDomain == NULL)
+        return S_OK;
+
     EX_TRY
     {
-        while (adIter.Next())
-        {
-            CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
-            (
-                // Note that the flags being CLRDATA_ENUM_MEM_MINI prevents
-                // you from pulling entire files loaded into memory into the dump.
-                adIter.GetDomain()->EnumMemoryRegions(flags, true);
-            );
-        }
+        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
+        (
+            // Note that the flags being CLRDATA_ENUM_MEM_MINI prevents
+            // you from pulling entire files loaded into memory into the dump.
+            appDomain->EnumMemoryRegions(flags, true);
+        );
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
@@ -888,7 +916,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                 {
                                     // This method has a generic type token which is required to figure out the exact instantiation
                                     // of the method.
-                                    // We need to to use the variable index of the generic type token in order to do the look up.
+                                    // We need to use the variable index of the generic type token in order to do the look up.
                                     CLRDATA_ADDRESS address = NULL;
                                     DWORD dwExactGenericArgsTokenIndex = 0;
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);
@@ -2050,7 +2078,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     fprintf(fp, "Total = %g msec\n"
                "ReadVirtual = %g msec\n"
                "StackWalk = %g msec; Find: %g msec\n"
-               "Find = %g msec; Hash = %g msec; Calls = %I64u; Hits = %I64u; Not found = %I64u\n\n=====\n",
+               "Find = %g msec; Hash = %g msec; Calls = %llu; Hits = %llu; Not found = %llu\n\n=====\n",
                (float) (1000*g_nTotalTime/nClockFrequency.QuadPart),
                (float) (1000*g_nReadVirtualTotalTime/nClockFrequency.QuadPart),
                (float) (1000*g_nStackTotalTime/nClockFrequency.QuadPart), (float) (1000*g_nFindStackTotalTime/nClockFrequency.QuadPart),

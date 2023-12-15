@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, HashSizeInBytes, key, source, destination);
+            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA256, key, source, destination);
         }
 
         /// <summary>
@@ -252,7 +252,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, HashSizeInBytes, key.Span, source, cancellationToken);
+            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA256, key.Span, source, cancellationToken);
         }
 
         /// <summary>
@@ -318,7 +318,6 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.SHA256,
-                HashSizeInBytes,
                 key.Span,
                 source,
                 destination,

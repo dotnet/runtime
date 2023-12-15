@@ -34,7 +34,7 @@
 } // end of class RangeTest
 
 
-.class private auto ansi beforefieldinit Test_b89546
+.class public auto ansi beforefieldinit Test_b89546
        extends [mscorlib]System.Object
 {
 .method public hidebysig specialname rtspecialname 
@@ -48,7 +48,7 @@
 } // end of method Test::.ctor
 
 
-.method private hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00

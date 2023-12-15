@@ -31,16 +31,6 @@ namespace System.Globalization
         // Number of days in 4 years
         private const int JulianDaysPer4Years = JulianDaysPerYear * 4 + 1;
 
-        private static readonly int[] s_daysToMonth365 =
-        {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365
-        };
-
-        private static readonly int[] s_daysToMonth366 =
-        {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
-        };
-
         // Gregorian Calendar 9999/12/31 = Julian Calendar 9999/10/19
         // keep it as variable field for serialization compat.
         internal int MaxYear = 9999;
@@ -54,7 +44,7 @@ namespace System.Globalization
         public JulianCalendar()
         {
             // There is no system setting of TwoDigitYear max, so set the value here.
-            _twoDigitYearMax = 2029;
+            _twoDigitYearMax = 2049;
         }
 
         internal override CalendarId ID => CalendarId.JULIAN;
@@ -106,7 +96,7 @@ namespace System.Globalization
             }
 
             bool isLeapYear = (year % 4) == 0;
-            int[] days = isLeapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = isLeapYear ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int monthDays = days[month] - days[month - 1];
             if (day < 1 || day > monthDays)
             {
@@ -153,7 +143,7 @@ namespace System.Globalization
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
             bool leapYear = (y1 == 3);
-            int[] days = leapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = leapYear ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
             int m = (n >> 5) + 1;
@@ -178,7 +168,7 @@ namespace System.Globalization
         /// </summary>
         internal static long DateToTicks(int year, int month, int day)
         {
-            int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int y = year - 1;
             int n = y * 365 + y / 4 + days[month - 1] + day - 1;
             // Gregorian 1/1/0001 is Julian 1/3/0001. n * TicksPerDay is the ticks in JulianCalendar.
@@ -212,7 +202,7 @@ namespace System.Globalization
                 y += (i - 11) / 12;
             }
 
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int days = daysArray[m] - daysArray[m - 1];
             if (d > days)
             {
@@ -220,7 +210,7 @@ namespace System.Globalization
             }
 
             long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -245,7 +235,7 @@ namespace System.Globalization
         {
             CheckYearEraRange(year, era);
             CheckMonthRange(month);
-            int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             return days[month] - days[month - 1];
         }
 
@@ -349,10 +339,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
             if (year > MaxYear)
             {
                 throw new ArgumentOutOfRangeException(

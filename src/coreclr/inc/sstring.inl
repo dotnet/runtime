@@ -380,7 +380,7 @@ inline SString::SString(tagUTF8Literal dummytag, const UTF8 *literal)
 }
 
 inline SString::SString(tagLiteral dummytag, const WCHAR *literal)
-  : SBuffer(Immutable, (const BYTE *) literal, (COUNT_T) (wcslen(literal)+1)*sizeof(WCHAR))
+  : SBuffer(Immutable, (const BYTE *) literal, (COUNT_T) (u16_strlen(literal)+1)*sizeof(WCHAR))
 {
     SS_CONTRACT_VOID
     {
@@ -636,7 +636,7 @@ inline const UTF8 *SString::GetUTF8() const
 }
 
 // Normalize the string to unicode.  This will make many operations nonfailing.
-inline void SString::Normalize() const
+inline void SString::Normalize()
 {
     SS_CONTRACT_VOID
     {
@@ -784,7 +784,7 @@ inline void SString::AppendUTF8(const CHAR c)
 
 // Helpers for CRT function equivalance.
 /* static */
-inline int __cdecl SString::_stricmp(const CHAR *buffer1, const CHAR *buffer2) {
+inline int SString::_stricmp(const CHAR *buffer1, const CHAR *buffer2) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelperA(buffer1, buffer2, 0, TRUE, FALSE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -795,7 +795,7 @@ inline int __cdecl SString::_stricmp(const CHAR *buffer1, const CHAR *buffer2) {
 }
 
 /* static */
-inline int __cdecl SString::_strnicmp(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count) {
+inline int SString::_strnicmp(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelperA(buffer1, buffer2, count, TRUE, TRUE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -805,7 +805,7 @@ inline int __cdecl SString::_strnicmp(const CHAR *buffer1, const CHAR *buffer2, 
 }
 
 /* static */
-inline int __cdecl SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2) {
+inline int SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelper(buffer1, buffer2, 0, TRUE, FALSE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -816,7 +816,7 @@ inline int __cdecl SString::_wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2)
 }
 
 /* static */
-inline int __cdecl SString::_wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count) {
+inline int SString::_wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count) {
     WRAPPER_NO_CONTRACT;
     int returnValue = CaseCompareHelper(buffer1, buffer2, count, TRUE, TRUE);
 #ifdef VERIFY_CRT_EQUIVALNCE
@@ -1097,7 +1097,7 @@ inline void SString::Delete(const Iterator &i, COUNT_T length)
 }
 
 // Preallocate some space for the string buffer
-inline void SString::Preallocate(COUNT_T characters) const
+inline void SString::Preallocate(COUNT_T characters)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1106,14 +1106,14 @@ inline void SString::Preallocate(COUNT_T characters) const
 }
 
 // Trim unused space from the buffer
-inline void SString::Trim() const
+inline void SString::Trim()
 {
     WRAPPER_NO_CONTRACT;
 
     if (GetRawCount() == 0)
     {
         // Share the global empty string buffer.
-        const_cast<SString *>(this)->SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
+        SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
     }
     else
     {
@@ -1649,6 +1649,28 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
 }
 
 //----------------------------------------------------------------------------
+// Return a copy of the underlying  buffer, the caller is responsible for managing
+// the returned memory
+//----------------------------------------------------------------------------
+inline UTF8 *SString::GetCopyOfUTF8String()
+{
+    SS_CONTRACT(UTF8*)
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(this));
+        SS_POSTCONDITION(CheckPointer(buffer));
+        THROWS;
+    }
+    SS_CONTRACT_END;
+    NewArrayHolder<UTF8> buffer = NULL;
+
+    buffer = new UTF8[GetSize()];
+    strncpy(buffer, GetUTF8(), GetSize());
+
+    SS_RETURN buffer.Extract();
+}
+
+//----------------------------------------------------------------------------
 // Return a writeable buffer that can store 'countChars'+1 ansi characters.
 // Call CloseBuffer when done.
 //----------------------------------------------------------------------------
@@ -1895,6 +1917,7 @@ FORCEINLINE SString::CIterator SString::End() const
     }
     SS_CONTRACT_END;
 
+    ConvertToIteratable();
     ConvertToIteratable();
 
     SS_RETURN CIterator(this, GetCount());

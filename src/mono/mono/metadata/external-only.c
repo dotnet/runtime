@@ -14,7 +14,6 @@
 #include "class-internals.h"
 #include "domain-internals.h"
 #include "mono-hash-internals.h"
-#include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
 #include <mono/metadata/assembly.h>
@@ -741,4 +740,9 @@ void*
 mono_method_get_unmanaged_callers_only_ftnptr (MonoMethod *method, MonoError *error)
 {
  	MONO_EXTERNAL_ONLY_GC_UNSAFE (gpointer, mono_method_get_unmanaged_wrapper_ftnptr_internal (method, TRUE, error));
+}
+
+void
+mono_marshal_ilgen_init (void)
+{
 }

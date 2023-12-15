@@ -174,17 +174,12 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 
     // Is the operation a write? If so, set `node` to the location that is being written to.
     bool isWrite = false;
-    if (node->OperIs(GT_ASG))
-    {
-        isWrite = true;
-        node    = node->gtGetOp1();
-    }
-    else if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
+    if (node->OperIsStore() || node->OperIs(GT_STORE_DYN_BLK, GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
     {
         isWrite = true;
     }
@@ -203,7 +198,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         // If the indirection targets a lclVar, we can be more precise with regards to aliasing by treating the
         // indirection as a lclVar access.
         GenTree* address = node->AsIndir()->Addr();
-        if (address->OperIsLocalAddr())
+        if (address->OperIs(GT_LCL_ADDR))
         {
             isLclVarAccess = true;
             lclNum         = address->AsLclVarCommon()->GetLclNum();
@@ -422,6 +417,21 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
 }
 
 //------------------------------------------------------------------------
+// AliasSet::WritesLocal:
+//    Returns true if this alias set contains a write to the specified local.
+//
+// Arguments:
+//    lclNum - The local number.
+//
+// Returns:
+//    True if so.
+//
+bool AliasSet::WritesLocal(unsigned lclNum) const
+{
+    return m_lclVarWrites.Contains(lclNum);
+}
+
+//------------------------------------------------------------------------
 // AliasSet::Clear:
 //    Clears the current alias set.
 //
@@ -465,7 +475,7 @@ SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFl
 //
 void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 {
-    m_sideEffectFlags |= (node->gtFlags & GTF_ALL_EFFECT);
+    m_sideEffectFlags |= node->OperEffects(compiler);
     m_aliasSet.AddNode(compiler, node);
 }
 
@@ -572,7 +582,7 @@ bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) cons
 //
 bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool strict) const
 {
-    return InterferesWith((node->gtFlags & GTF_ALL_EFFECT), AliasSet::NodeInfo(compiler, node), strict);
+    return InterferesWith(node->OperEffects(compiler), AliasSet::NodeInfo(compiler, node), strict);
 }
 
 //------------------------------------------------------------------------

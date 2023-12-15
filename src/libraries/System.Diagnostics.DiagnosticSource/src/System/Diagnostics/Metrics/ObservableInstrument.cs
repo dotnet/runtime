@@ -12,9 +12,6 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public abstract class ObservableInstrument<T> : Instrument where T : struct
     {
         /// <summary>
@@ -25,7 +22,20 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null)
+        {
+        }
+
+        /// <summary>
+        /// Create the metrics observable instrument using the properties meter, name, description, and unit.
+        /// All classes extending ObservableInstrument{T} need to call this constructor when constructing object of the extended class.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument.</param>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">tags to attach to the counter.</param>
+        protected ObservableInstrument(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
             ValidateTypeParameter<T>();
         }
@@ -41,9 +51,6 @@ namespace System.Diagnostics.Metrics
         public override bool IsObservable => true;
 
         // Will be called from MeterListener.RecordObservableInstruments for each observable instrument.
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         internal override void Observe(MeterListener listener)
         {
             object? state = GetSubscriptionState(listener);

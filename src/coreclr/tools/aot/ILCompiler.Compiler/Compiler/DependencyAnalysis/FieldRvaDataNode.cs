@@ -15,13 +15,15 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly EcmaField _field;
 
+        public EcmaField Field => _field;
+
         public FieldRvaDataNode(EcmaField field)
         {
             Debug.Assert(field.HasRva);
             _field = field;
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         public override bool StaticDependenciesAreComputed => true;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

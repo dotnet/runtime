@@ -15,7 +15,6 @@
 
 #include "common.h"
 
-#include <shlwapi.h>
 #include <stdlib.h>
 #include "assemblynative.hpp"
 #include "dllimport.h"
@@ -138,8 +137,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
-    DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
-
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
 
@@ -156,15 +153,22 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     if (hr != S_OK)
     {
-        // Give a more specific message for the case when we found the assembly with the same name already loaded.
-        if (hr == COR_E_FILELOAD)
-        {
-            dwMessageID = IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT;
-        }
-
         StackSString name;
         spec.GetDisplayName(0, name);
-        COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
+        if (hr == COR_E_FILELOAD)
+        {
+            // Give a more specific message for the case when we found the assembly with the same name already loaded.
+            // Show the assembly name, since we know the error is about the assembly name.
+            StackSString errorString;
+            errorString.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+        }
+        else
+        {
+            // Propagate the actual HResult to the FileLoadException
+            // Use the path if this load request was for a file path, display name otherwise
+            EEFileLoadException::Throw(pImage->GetPath().IsEmpty() ? name : pImage->GetPath(), hr);
+        }
     }
 
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
@@ -336,51 +340,119 @@ extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAsse
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly,
-                                       LPCWSTR wszName,
-                                       BOOL bThrowOnError,
-                                       BOOL bIgnoreCase,
-                                       QCall::ObjectHandleOnStack retType,
-                                       QCall::ObjectHandleOnStack keepAlive,
-                                       QCall::ObjectHandleOnStack pAssemblyLoadContext)
+extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assemblyHandle,
+    LPCSTR szTypeName,
+    LPCSTR * rgszNestedTypeNames,
+    int32_t cNestedTypeNamesLength,
+    QCall::ObjectHandleOnStack retType)
 {
     CONTRACTL
     {
         QCALL_CHECK;
-        PRECONDITION(CheckPointer(wszName));
+        PRECONDITION(CheckPointer(szTypeName));
     }
     CONTRACTL_END;
 
-    TypeHandle retTypeHandle;
-
     BEGIN_QCALL;
 
-    BOOL prohibitAsmQualifiedName = TRUE;
+    Assembly* pAssembly = assemblyHandle->GetAssembly();
 
-    AssemblyBinder * pBinder = NULL;
+    TypeHandle th = TypeHandle();
+    Module* pManifestModule = pAssembly->GetModule();
+    ClassLoader* pClassLoader = pAssembly->GetLoader();
 
-    if (*pAssemblyLoadContext.m_ppObject != NULL)
+    NameHandle typeName(pManifestModule, mdtBaseType);
+
+    for (int32_t i = -1; i < cNestedTypeNamesLength; i++)
     {
-        GCX_COOP();
-        ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
+        typeName.SetName((i == -1) ? szTypeName : rgszNestedTypeNames[i]);
 
-        INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
+        // typeName.m_pBucket gets set here if the type is found
+        // it will be used in the next iteration to look up the nested type
+        th = pClassLoader->LoadTypeHandleThrowing(&typeName, CLASS_LOADED);
 
-        pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
+        // If we didn't find a type, don't bother looking for its nested type
+        if (th.IsNull())
+            break;
+
+        if (th.GetAssembly() != pAssembly)
+        {
+            // For forwarded type, use the found assembly class loader for potential nested types search
+            // The nested type has to be in the same module as the nesting type, so it doesn't make
+            // sense to follow the same chain of type forwarders again for the nested type
+            pClassLoader = th.GetAssembly()->GetLoader();
+        }
     }
 
-    // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pBinder);
-
-    if (!retTypeHandle.IsNull())
+    if (!th.IsNull())
     {
-         GCX_COOP();
-         retType.Set(retTypeHandle.GetManagedClassObject());
+        GCX_COOP();
+        retType.Set(th.GetManagedClassObject());
     }
 
     END_QCALL;
+}
 
-    return;
+extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHandle assemblyHandle,
+    LPCWSTR wszTypeName,
+    LPCWSTR* rgwszNestedTypeNames,
+    int32_t cNestedTypeNamesLength,
+    QCall::ObjectHandleOnStack retType)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(wszTypeName));
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    Assembly* pAssembly = assemblyHandle->GetAssembly();
+
+    TypeHandle th = TypeHandle();
+    Module* pManifestModule = pAssembly->GetModule();
+    ClassLoader* pClassLoader = pAssembly->GetLoader();
+
+    NameHandle typeName(pManifestModule, mdtBaseType);
+
+    // Set up the name handle
+    typeName.SetCaseInsensitive();
+
+    for (int32_t i = -1; i < cNestedTypeNamesLength; i++)
+    {
+        // each extra name represents one more level of nesting
+        StackSString name((i == -1) ? wszTypeName : rgwszNestedTypeNames[i]);
+
+        // The type name is expected to be lower-cased by the caller for case-insensitive lookups
+        name.LowerCase();
+
+        typeName.SetName(name.GetUTF8());
+
+        // typeName.m_pBucket gets set here if the type is found
+        // it will be used in the next iteration to look up the nested type
+        th = pClassLoader->LoadTypeHandleThrowing(&typeName, CLASS_LOADED);
+
+        // If we didn't find a type, don't bother looking for its nested type
+        if (th.IsNull())
+            break;
+
+        if (th.GetAssembly() != pAssembly)
+        {
+            // For forwarded type, use the found assembly class loader for potential nested types search
+            // The nested type has to be in the same module as the nesting type, so it doesn't make
+            // sense to follow the same chain of type forwarders again for the nested type
+            pClassLoader = th.GetAssembly()->GetLoader();
+        }
+    }
+
+    if (!th.IsNull())
+    {
+         GCX_COOP();
+         retType.Set(th.GetManagedClassObject());
+    }
+
+    END_QCALL;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle pAssembly, mdToken mdtExternalType, QCall::ObjectHandleOnStack retType)
@@ -1136,7 +1208,6 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
         {
             // Create a new AssemblyLoaderAllocator for an AssemblyLoadContext
             loaderAllocator = new AssemblyLoaderAllocator();
-            loaderAllocator->SetCollectible();
 
             GCX_COOP();
             LOADERALLOCATORREF pManagedLoaderAllocator = NULL;
@@ -1327,7 +1398,7 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDelta != nullptr);
     _ASSERTE(ilDeltaLength > 0);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     GCX_COOP();
     {
         if (CORDebuggerAttached())
@@ -1362,7 +1433,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
 
     BEGIN_QCALL;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
 #endif
 

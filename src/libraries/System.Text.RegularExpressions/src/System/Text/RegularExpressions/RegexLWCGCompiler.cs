@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -63,7 +63,7 @@ namespace System.Text.RegularExpressions
             DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
             EmitScan(options, tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
 
-            return new CompiledRegexRunnerFactory(scanMethod, regexTree.Culture);
+            return new CompiledRegexRunnerFactory(scanMethod, _searchValues?.ToArray(), regexTree.Culture);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>

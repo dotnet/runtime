@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -122,6 +123,51 @@ namespace System.Threading.RateLimiting.Test
             lease = await wait1;
             Assert.True(lease.IsAcquired);
         }
+
+#if DEBUG
+        [Fact]
+        public Task DoesNotDeadlockCleaningUpCanceledRequestedLease_Pre() =>
+            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => SetReleasePreHook(limiter, hook));
+
+        [Fact]
+        public Task DoesNotDeadlockCleaningUpCanceledRequestedLease_Post() =>
+            DoesNotDeadlockCleaningUpCanceledRequestedLease((limiter, hook) => SetReleasePostHook(limiter, hook));
+
+        private void SetReleasePreHook(ConcurrencyLimiter limiter, Action hook)
+        {
+            typeof(ConcurrencyLimiter).GetEvent("ReleasePreHook", BindingFlags.NonPublic | BindingFlags.Instance).AddMethod.Invoke(limiter, new object[] { hook });
+        }
+
+        private void SetReleasePostHook(ConcurrencyLimiter limiter, Action hook)
+        {
+            typeof(ConcurrencyLimiter).GetEvent("ReleasePostHook", BindingFlags.NonPublic | BindingFlags.Instance).AddMethod.Invoke(limiter, new object[] { hook });
+        }
+
+        private async Task DoesNotDeadlockCleaningUpCanceledRequestedLease(Action<ConcurrencyLimiter, Action> attachHook)
+        {
+            using var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
+            var lease = limiter.AttemptAcquire(1);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            _ = limiter.AcquireAsync(1, cts.Token);
+            attachHook(limiter, () =>
+            {
+                Task.Run(cts.Cancel);
+                Thread.Sleep(1);
+            });
+
+            var task1 = Task.Delay(1000);
+            var task2 = Task.Run(lease.Dispose);
+            Assert.Same(task2, await Task.WhenAny(task1, task2));
+            await task2;
+        }
+#endif
 
         [Fact]
         public override async Task FailsWhenQueuingMoreThanLimit_OldestFirst()
@@ -537,6 +583,39 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
 
             Assert.Equal(1, limiter.GetStatistics()?.CurrentAvailablePermits);
+        }
+
+        [Fact]
+        public override async Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3,
+            });
+
+            var lease = limiter.AttemptAcquire(2);
+            Assert.True(lease.IsAcquired);
+
+            var lease1 = limiter.AttemptAcquire(1);
+            Assert.True(lease1.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.AcquireAsync(3, cts.Token);
+            cts.Cancel();
+
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            var wait2 = limiter.AcquireAsync(2);
+
+            lease.Dispose();
+            lease = await wait2;
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.Equal(0, limiter.GetStatistics().CurrentQueuedCount);
         }
 
         [Fact]

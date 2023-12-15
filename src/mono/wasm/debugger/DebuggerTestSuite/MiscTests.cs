@@ -86,7 +86,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c0", '\u20AC');
                     await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
@@ -737,7 +737,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("lazy-debugger-test")]
-        [InlineData("lazy-debugger-test-chinese-char-in-path-ㄨ")]
+        [InlineData("lazy-debugger-test-chinese-char-in-path-\u3128")]
         public async Task DebugLazyLoadedAssemblyWithPdb(string assembly_name)
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -858,7 +858,7 @@ namespace DebuggerTests
             Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [ConditionalFact(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
@@ -874,7 +874,7 @@ namespace DebuggerTests
                 await CheckProps(t_props, new
                     {
                         Status = TGetter("Status")
-                    }, "t_props", num_fields: 58);
+                    }, "t_props", num_fields: 33);
             });
 
 
@@ -938,6 +938,12 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
         {
+            /*DebugType.Full generates symbols in a format that we don't understand (vs portable). If JMC=true (default for tests) then we will not load the assemblies
+            that don't have debug symbols. With JMC=false, the assembly will be loaded, even with unusable symbols, and the proxy will use the assembly metadata
+            instead.
+
+            This test specifically tries to inspect an object defined in the external library, so we need JMC=false here.*/
+            await SetJustMyCode(false);
             var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";
 
             await EvaluateAndCheck(
@@ -958,23 +964,39 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/test%23.cs",
+            "debugger-test-special-char-in-path-%23%40/test%23.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-%C4%85%C5%82%C3%85.cs",
+            "debugger-test-special-char-in-path-%23%40/non-ascii-test-%C4%85%C5%82%C3%85.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
-            string classWithNamespace, string expectedFileLocation)
+            string classWithNamespace, string expectedFileLocation, string expectedFileNameEscaped)
         {
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
-            await EvaluateAndCheck(
+            var ret = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
                 expectedFileLocation,
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"{classWithNamespace}.Evaluate");
+            Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
+        }
+
+        [ConditionalFact(nameof(RunningOnChromeAndLinux))]
+        public async Task SetBreakpointInProjectWithColonInSourceName()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-with-colon-in-source-name.dll", "DebuggerTests.CheckColonInSourceName", "Evaluate", 1);
+            var ret = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-with-colon-in-source-name] DebuggerTests.CheckColonInSourceName:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-with-colon-in-source-name.dll/test:.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                $"DebuggerTests.CheckColonInSourceName.Evaluate");
+            Assert.EndsWith("debugger-test-with-colon-in-source-name/test:.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Theory]
@@ -986,6 +1008,8 @@ namespace DebuggerTests
             1160)]
         public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
+            //Setting JustMyCode = false because we are trying to inspect an object from an external library, and this is only allowed when JMC is disabled
+            await SetJustMyCode(false);
             var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
 
             await EvaluateAndCheck(
@@ -1049,6 +1073,12 @@ namespace DebuggerTests
         [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
         [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
         [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols", 1618, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols", 1618, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass", 1635, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass", 1635, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1653, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1653, false)]
         public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
         {
             await SetJustMyCode(jmc);
@@ -1097,37 +1127,77 @@ namespace DebuggerTests
         public async Task SetBreakpointInProjectWithChineseCharactereInPath()
         {
             var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
-            await EvaluateAndCheck(
+            var ret = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
                 "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
+            Assert.EndsWith("debugger-test-chinese-char-in-path-%E3%84%A8/test.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Fact]
-        public async Task InspectReadOnlySpan()
+        public async Task InspectRefFields()
         {
             var expression = $"{{ invoke_static_method('[debugger-test] ReadOnlySpanTest:Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1371, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1427, 8,
                 "ReadOnlySpanTest.CheckArguments",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                     await EvaluateOnCallFrameAndCheck(id,
-                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]"))
+                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]")),
+                        ("myR1.Run()", TNumber(10)),
+                        ("r2.Run()", TNumber(456))
                     );
                 }
             );
-            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1363, 8, "ReadOnlySpanTest.Run",
+            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1406, 8, "ReadOnlySpanTest.Run",
                 locals_fn: async (locals) =>
                 {
                     await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
                 }
             );
+        }
+
+        public static TheoryData<int> CountToTen()
+        {
+            var data = new TheoryData<int>();
+            for(int i=0;i<10;i++)
+            {
+                data.Add(i);
+            }
+            return data;
+        }
+
+        [ConditionalTheory(nameof(WasmMultiThreaded))]
+        [MemberData(nameof(CountToTen))]
+        public async Task TestDebugUsingMultiThreadedRuntime(int _attempt)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);
+            var expression = $"{{ invoke_static_method('[debugger-test] MultiThreadedTest:Run'); }}";
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8,
+                "MultiThreadedTest.Write");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
         }
     }
 }

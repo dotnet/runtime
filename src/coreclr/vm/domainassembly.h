@@ -148,7 +148,7 @@ public:
     }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName()
+    LPCUTF8 GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->GetDebugName();
@@ -159,12 +159,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_fCollectible;
-    }
-
-    ULONG HashIdentity()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->HashIdentity();
     }
 
     // ------------------------------------------------------------

@@ -30,8 +30,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            dataBuilder.RequireInitialPointerAlignment();
-            dataBuilder.EmitPointerReloc(Target);
+            if (factory.Target.SupportsRelativePointers)
+            {
+                dataBuilder.RequireInitialAlignment(sizeof(int));
+                dataBuilder.EmitReloc(Target, RelocType.IMAGE_REL_BASED_RELPTR32);
+            }
+            else
+            {
+                dataBuilder.RequireInitialPointerAlignment();
+                dataBuilder.EmitPointerReloc(Target);
+            }
         }
 
         // At minimum, Target needs to be reported as a static dependency by inheritors.

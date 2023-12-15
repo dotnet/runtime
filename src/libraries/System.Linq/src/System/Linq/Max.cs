@@ -13,11 +13,12 @@ namespace System.Linq
 
         public static long Max(this IEnumerable<long> source) => MinMaxInteger<long, MaxCalc<long>>(source);
 
-        private struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        private readonly struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
         {
             public static bool Compare(T left, T right) => left > right;
             public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
             public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
+            public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Max(left, right);
         }
 
         public static int? Max(this IEnumerable<int?> source) => MaxInteger(source);

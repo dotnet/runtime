@@ -77,19 +77,14 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Get a slot index for a given entry. Slot indices are never expected to change once given out.
         /// </summary>
-        public abstract int GetSlotForEntry(GenericLookupResult entry);
-
-        /// <summary>
-        /// Get the slot for an entry which is fixed already. Otherwise return -1
-        /// </summary>
-        /// <param name="entry"></param>
-        /// <returns></returns>
-        public virtual int GetSlotForFixedEntry(GenericLookupResult entry)
-        {
-            return GetSlotForEntry(entry);
-        }
+        public abstract bool TryGetSlotForEntry(GenericLookupResult entry, out int slot);
 
         public abstract IEnumerable<GenericLookupResult> Entries
+        {
+            get;
+        }
+
+        public abstract bool IsEmpty
         {
             get;
         }
@@ -195,41 +190,39 @@ namespace ILCompiler.DependencyAnalysis
     public class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
     {
         private readonly GenericLookupResult[] _layout;
+        private readonly GenericLookupResult[] _discardedSlots;
 
         public override bool HasFixedSlots => true;
 
-        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, IEnumerable<GenericLookupResult> layout)
+        public override bool IsEmpty => _layout.Length == 0;
+
+        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, GenericLookupResult[] layout, GenericLookupResult[] discardedSlots)
             : base(owningMethodOrType)
         {
-            ArrayBuilder<GenericLookupResult> l = default(ArrayBuilder<GenericLookupResult>);
-            foreach (var entry in layout)
-                l.Add(entry);
-
-            _layout = l.ToArray();
+            _layout = layout;
+            _discardedSlots = discardedSlots;
         }
 
         public override void EnsureEntry(GenericLookupResult entry)
         {
-            int index = Array.IndexOf(_layout, entry);
-
-            if (index == -1)
-            {
-                // Using EnsureEntry to add a slot to a PrecomputedDictionaryLayoutNode is not supported
-                throw new NotSupportedException();
-            }
+            throw new NotSupportedException();
         }
 
-        public override int GetSlotForEntry(GenericLookupResult entry)
+        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
         {
-            int index = Array.IndexOf(_layout, entry);
+            slot = Array.IndexOf(_layout, entry);
+
+            // If this is a slot we should discard, respond false
+            if (slot < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)
+                return false;
 
             // This entry wasn't precomputed. If this is an optimized build with scanner, it might suggest
             // the scanner didn't see the need for this. There is a discrepancy between scanning and compiling.
             // This is a fatal error to prevent bad codegen.
-            if (index < 0)
+            if (slot < 0)
                 throw new InvalidOperationException($"{OwningMethodOrType}: {entry}");
 
-            return index;
+            return true;
         }
 
         public override IEnumerable<GenericLookupResult> Entries
@@ -284,19 +277,19 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public override int GetSlotForEntry(GenericLookupResult entry)
+        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
         {
             if (_layout == null)
                 ComputeLayout();
 
-            int index = Array.IndexOf(_layout, entry);
+            slot = Array.IndexOf(_layout, entry);
 
             // We never called EnsureEntry on this during compilation?
             // This is a fatal error to prevent bad codegen.
-            if (index < 0)
+            if (slot < 0)
                 throw new InvalidOperationException($"{OwningMethodOrType}: {entry}");
 
-            return index;
+            return true;
         }
 
         public override IEnumerable<GenericLookupResult> Entries
@@ -307,6 +300,17 @@ namespace ILCompiler.DependencyAnalysis
                     ComputeLayout();
 
                 return _layout;
+            }
+        }
+
+        public override bool IsEmpty
+        {
+            get
+            {
+                if (_layout == null)
+                    ComputeLayout();
+
+                return _layout.Length == 0;
             }
         }
     }

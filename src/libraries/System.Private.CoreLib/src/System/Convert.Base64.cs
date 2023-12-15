@@ -13,12 +13,11 @@ namespace System
         /// Decode the span of UTF-16 encoded text represented as base 64 into binary data.
         /// If the input is not a multiple of 4, or contains illegal characters, it will decode as much as it can, to the largest possible multiple of 4.
         /// This invariant allows continuation of the parse with a slower, whitespace-tolerant algorithm.
-        ///
+        /// </summary>
         /// <param name="utf16">The input span which contains UTF-16 encoded text in base 64 that needs to be decoded.</param>
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="consumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="written">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// </summary>
         /// <returns>Returns:
         /// - true  - The entire input span was successfully parsed.
         /// - false - Only a part of the input span was successfully parsed. Failure causes may include embedded or trailing whitespace,
@@ -26,7 +25,7 @@ namespace System
         ///           or a destination span that's too small. <paramref name="consumed"/> and <paramref name="written"/> are set so that
         ///           parsing can continue with a slower whitespace-tolerant algorithm.
         ///
-        /// Note: This is a cut down version of the implementation of Base64.DecodeFromUtf8(), modified the accept UTF16 chars and act as a fast-path
+        /// Note: This is a cut down version of the implementation of Base64.DecodeFromUtf8(), modified the accept UTF-16 chars and act as a fast-path
         /// helper for the Convert routines when the input string contains no whitespace.
         /// </returns>
         private static bool TryDecodeFromUtf16(ReadOnlySpan<char> utf16, Span<byte> bytes, out int consumed, out int written)
@@ -191,8 +190,8 @@ namespace System
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
-        private static ReadOnlySpan<sbyte> DecodingMap => new sbyte[] // rely on C# compiler optimization to reference static data
-        {
+        private static ReadOnlySpan<sbyte> DecodingMap =>
+        [
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         // 62 is placed at index 43 (for +), 63 at index 47 (for /)
@@ -209,7 +208,7 @@ namespace System
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        };
+        ];
 
         private const byte EncodingPad = (byte)'='; // '=', for padding
     }

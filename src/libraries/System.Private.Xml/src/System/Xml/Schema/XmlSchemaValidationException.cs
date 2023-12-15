@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Resources;
 using System.Runtime.Serialization;
-using System.Diagnostics;
+using System.Text;
 
 namespace System.Xml.Schema
 {
@@ -16,10 +17,14 @@ namespace System.Xml.Schema
     {
         private object? _sourceNodeObject;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

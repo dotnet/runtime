@@ -8,6 +8,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 namespace PInvokeTest
@@ -23,7 +24,7 @@ namespace PInvokeTest
         private extern static int GetConstantInternal();
     }
 
-    internal class Test
+    public class Test
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int AsForceInline()
@@ -214,7 +215,8 @@ namespace PInvokeTest
             return result1 && result2;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool result = true;
 

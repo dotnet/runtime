@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeLibraryTests : BuildTestBase
+    public class NativeLibraryTests : TestMainJsTestBase
     {
         public NativeLibraryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -56,14 +56,8 @@ namespace Wasm.Build.Tests
             string projectName = $"AppUsingSkiaSharp";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
-                            // FIXME: temporary, till `main` is either completely on 3.1.7, or 3.1.12
-                            extraProperties: "<EmccExtraLDFlags>-s ERROR_ON_UNDEFINED_SYMBOLS=0</EmccExtraLDFlags>",
                             extraItems: @$"
-                                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
-                                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
-
-                                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
-
+                                {GetSkiaSharpReferenceItems()}
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
                             ");
 
@@ -97,7 +91,7 @@ public class Test
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [BuildAndRun(aot: false, host: RunHost.Chrome)]
         [BuildAndRun(aot: true, host: RunHost.Chrome)]
         public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)

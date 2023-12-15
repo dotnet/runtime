@@ -46,6 +46,13 @@ enum LFH {
 
 #include "runtimeexceptionkind.h"
 
+#ifndef TARGET_UNIX
+// Windows uses 64kB as the null-reference area
+#define NULL_AREA_SIZE   (64 * 1024)
+#else // !TARGET_UNIX
+#define NULL_AREA_SIZE   GetOsPageSize()
+#endif // !TARGET_UNIX
+
 class IJitManager;
 
 //
@@ -194,17 +201,7 @@ enum UnhandledExceptionLocation
 };
 
 #ifdef HOST_WINDOWS
-
-// Must be the same as the copy in pal.h and the WriteDumpFlags enum in the diagnostics repo
-enum
-{
-    GenerateDumpFlagsNone = 0x00,
-    GenerateDumpFlagsLoggingEnabled = 0x01,
-    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04,
-    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
-};
-
+#include <generatedumpflags.h>
 void InitializeCrashDump();
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
@@ -259,6 +256,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -289,19 +287,20 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID
 // passed as the first substitution string (%1).
 //==========================================================================
 
-enum tagGetErrorInfo
-{
-    kGetErrorInfo
-};
-
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException = NULL);
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL,
                                           LPCWSTR wszArg3 = NULL, LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL,
                                           LPCWSTR wszArg6 = NULL);
 
 #ifdef FEATURE_COMINTEROP
+
+enum tagGetErrorInfo
+{
+    kGetErrorInfo
+};
+
+VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
 
 //==========================================================================
 // Throw a runtime exception based on an HResult, check for error info
@@ -719,10 +718,9 @@ bool IsInterceptableException(Thread *pThread);
 // perform simple checking to see if the current exception is intercepted
 bool CheckThreadExceptionStateForInterception();
 
-#ifndef TARGET_UNIX
-// Currently, only Windows supports ClrUnwindEx (used inside ClrDebuggerDoUnwindAndIntercept)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 #define DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-#endif // !TARGET_UNIX
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 // Intercept the current exception and start an unwind.  This function may never return.
@@ -757,6 +755,9 @@ LONG WatsonLastChance(
 
 bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
+#ifndef FEATURE_EH_FUNCLETS
+#define g_isNewExceptionHandlingEnabled false
+#endif
 
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
@@ -766,6 +767,12 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 #endif // TARGET_AMD64
 
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
+#ifdef TARGET_AMD64
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
+    }
+#endif // TARGET_AMD64
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);

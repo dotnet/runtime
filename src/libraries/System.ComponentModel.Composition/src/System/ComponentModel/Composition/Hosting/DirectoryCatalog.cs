@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
+using System.Composition.Diagnostics;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.Hosting
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
 
-        private readonly Lock _thisLock = new Lock();
+        private readonly ReadWriteLock _thisLock = new ReadWriteLock();
         private readonly ICompositionElement? _definitionOrigin;
         private ComposablePartCatalogCollection _catalogCollection;
         private Dictionary<string, AssemblyCatalog> _assemblyCatalogs;
@@ -632,7 +632,7 @@ namespace System.ComponentModel.Composition.Hosting
                             _catalogCollection.Remove(catalogToRemove.Item2);
                         }
 
-                        _loadedFiles = afterFiles.ToReadOnlyCollection();
+                        _loadedFiles = Array.AsReadOnly(afterFiles);
 
                         // Lastly complete any changes added to the atomicComposition during the change event
                         atomicComposition.Complete();
@@ -756,7 +756,7 @@ namespace System.ComponentModel.Composition.Hosting
             _assemblyCatalogs = new Dictionary<string, AssemblyCatalog>();
             _catalogCollection = new ComposablePartCatalogCollection(null, null, null);
 
-            _loadedFiles = GetFiles().ToReadOnlyCollection();
+            _loadedFiles = Array.AsReadOnly(GetFiles());
 
             foreach (string file in _loadedFiles)
             {

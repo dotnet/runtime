@@ -69,7 +69,6 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal));
     _ASSERTE(fIsRVA + fIsThreadLocal <= 1);
 
-    m_requiresFullMbValue = 0;
     SetMemberDef(mb);
 
     // A TypedByRef should be treated like a regular value type.
@@ -103,30 +102,6 @@ BOOL FieldDesc::IsByRef()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     return CorTypeInfo::IsByRef_NoThrow(GetFieldType());
-}
-
-BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We only have space for a name hash when we are using the packed mb layout
-    if (m_requiresFullMbValue)
-    {
-        return TRUE;
-    }
-
-    ULONG thisHashValue = m_mb & enum_packedMbLayout_NameHashMask;
-
-    // A zero value might mean no hash has ever been set
-    // (checking this way is better than dedicating a bit to tell us)
-    if (thisHashValue == 0)
-    {
-        return TRUE;
-    }
-
-    ULONG testHashValue = nameHashValue & enum_packedMbLayout_NameHashMask;
-
-    return (thisHashValue == testHashValue);
 }
 
 #ifndef DACCESS_COMPILE //we don't require DAC to special case simple types
@@ -249,12 +224,12 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         MODE_ANY;
         FORBID_FAULT;
         PRECONDITION(IsStatic());
-        PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(GetEnclosingMethodTable()->IsRestored());
     }
     CONTRACTL_END
 
     _ASSERTE(IsStatic());
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (IsEnCNew())
     {
         EnCFieldDesc * pFD = dac_cast<PTR_EnCFieldDesc>(this);
@@ -279,7 +254,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 #endif // !DACCESS_COMPILE
         return retVal;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 
     if (IsRVA())
@@ -468,14 +443,14 @@ PTR_VOID FieldDesc::GetAddress(PTR_VOID o)
                            // the field desc is for the EnCHelper, not the new EnC field
 #endif
 
-#if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     // EnC added fields aren't at a simple offset like normal fields.
     if (IsEnCNew())
     {
         // We'll have to go through some effort to compute the address of this field.
         return ((EnCFieldDesc *)this)->GetAddress(o);
     }
-#endif //  defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif //  defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     return GetAddressNoThrowNoGC(o);
 }
 
@@ -490,7 +465,7 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
 
     DWORD dwOffset = m_dwOffset; // GetOffset()
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // EnC added fields aren't at a simple offset like normal fields.
     if (dwOffset == FIELD_OFFSET_NEW_ENC) // IsEnCNew()
     {
@@ -692,6 +667,32 @@ UINT FieldDesc::LoadSize()
         //        LOG((LF_CLASSLOADER, LL_INFO10000, "FieldDesc::LoadSize %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
         CONSISTENCY_CHECK(GetFieldType() == ELEMENT_TYPE_VALUETYPE);
         size = GetApproxFieldTypeHandleThrowing().GetMethodTable()->GetNumInstanceFieldBytes();
+    }
+
+    return size;
+}
+
+UINT FieldDesc::GetSize(MethodTable *pMTOfValueTypeField)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END
+
+    CorElementType type = GetFieldType();
+    UINT size = GetSizeForCorElementType(type);
+    if (size == (UINT) -1)
+    {
+        LOG((LF_CLASSLOADER, LL_INFO10000, "FieldDesc::GetSize %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
+        CONSISTENCY_CHECK(GetFieldType() == ELEMENT_TYPE_VALUETYPE);
+        TypeHandle t = (pMTOfValueTypeField != NULL) ? TypeHandle(pMTOfValueTypeField) : LookupApproxFieldTypeHandle();
+        _ASSERTE(!t.IsNull());
+        size = t.GetMethodTable()->GetNumInstanceFieldBytes();
     }
 
     return size;

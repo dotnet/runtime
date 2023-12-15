@@ -10,10 +10,10 @@ namespace System.Text.RegularExpressions
     /// <remarks>
     /// This information is made available through <see cref="RegexParseException.Error"/>.
     /// </remarks>
-#if REGEXGENERATOR
-    internal
-#else
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
     public
+#else
+    internal
 #endif
     enum RegexParseError
     {

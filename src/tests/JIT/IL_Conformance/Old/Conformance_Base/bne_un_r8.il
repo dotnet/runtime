@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 #define NEG_INF    "float64(0xFFF0000000000000)"
 #define MIN        "float64(0xFF7FFFFFFFFFFFFF)"
@@ -13,6 +14,8 @@
 #define POS_INF    "float64(0x7FF0000000000000)"
 #define NAN        "float64(0x7FF8000000000000)"
 
+.namespace bne_un_r8
+{
 .class public bne_un {
 
 .field public static	float64 neg_inf
@@ -27,491 +30,494 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.r8		NEG_INF
-	stsfld	float64 bne_un::neg_inf
+	stsfld	float64 bne_un_r8.bne_un::neg_inf
 	ldc.r8		MIN
-	stsfld	float64 bne_un::min
+	stsfld	float64 bne_un_r8.bne_un::min
 	ldc.r8		MINUS_ONE
-	stsfld	float64 bne_un::minus_one
+	stsfld	float64 bne_un_r8.bne_un::minus_one
 	ldc.r8		MINUS_ZERO
-	stsfld	float64 bne_un::minus_zero
+	stsfld	float64 bne_un_r8.bne_un::minus_zero
 	ldc.r8		ZERO
-	stsfld	float64 bne_un::zero
+	stsfld	float64 bne_un_r8.bne_un::zero
 	ldc.r8		ONE
-	stsfld	float64 bne_un::one
+	stsfld	float64 bne_un_r8.bne_un::one
 	ldc.r8		MAX
-	stsfld	float64 bne_un::max
+	stsfld	float64 bne_un_r8.bne_un::max
 	ldc.r8		POS_INF
-	stsfld	float64 bne_un::pos_inf
+	stsfld	float64 bne_un_r8.bne_un::pos_inf
 	ldc.r8		NAN
-	stsfld	float64 bne_un::NaN
+	stsfld	float64 bne_un_r8.bne_un::NaN
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void bne_un::initialize()
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::neg_inf
+	call	void bne_un_r8.bne_un::initialize()
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un A
 	br FAIL
 
 A:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un B
 	br FAIL
 
 B:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un C
 	br FAIL
 
 C:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un D
 	br FAIL
 
 D:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un E
 	br FAIL
 
 E:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un F
 	br FAIL
 
 F:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un G
 	br FAIL
 
 G:
-	ldsfld	float64 bne_un::neg_inf
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un H
 	br FAIL
 
 H:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un I
 	br FAIL
 
 I:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un J
 	br FAIL
 
 J:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un K
 	br FAIL
 
 K:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un L
 	br		FAIL
 
 L:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un M
 	br		FAIL
 
 M:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un N
 	br		FAIL
 
 N:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un O
 	br		FAIL
 
 O:
-	ldsfld	float64 bne_un::min
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un P
 	br		FAIL
 P:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un Q
 	br		FAIL
 
 Q:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un R
 	br		FAIL
 
 R:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un FAIL
 
 S:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un T
 	br		FAIL
 
 T:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un U
 	br		FAIL
 
 U:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un V
 	br		FAIL
 
 V:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un W
 	br		FAIL
 
 W:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un X
 	br		FAIL
 
 X:
-	ldsfld	float64 bne_un::minus_one
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un Y
 	br		FAIL
 Y:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un Z
 	br		FAIL
 
 Z:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un AA
 	br		FAIL
 
 AA:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un BB
 	br		FAIL
 
 BB:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un CC
 	br		FAIL
 
 CC:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un DD
 	br		FAIL
 
 DD:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un EE
 	br		FAIL
 
 EE:
-	ldsfld	float64 bne_un::minus_zero
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un FF
 	br		FAIL
 FF:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un GG
 	br		FAIL
 
 GG:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un HH
 	br		FAIL
 
 HH:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un II
 	br		FAIL
 
 II:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un JJ
 	br		FAIL
 
 JJ:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un KK
 	br		FAIL
 
 KK:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un LL
 	br		FAIL
 
 LL:
-	ldsfld	float64 bne_un::zero
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un MM
 	br		FAIL
 
 MM:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un NN
 	br		FAIL
 
 NN:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un OO
 	br		FAIL
 
 OO:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un PP
 	br		FAIL
 
 PP:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un QQ
 	br		FAIL
 
 QQ:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un RR
 	br		FAIL
 
 RR:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un FAIL
 
 SS:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un TT
 	br		FAIL
 
 TT:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un UU
 	br		FAIL
 
 UU:
-	ldsfld	float64 bne_un::one
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un VV
 	br		FAIL
 
 VV:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un WW
 	br		FAIL
 
 WW:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un XX
 	br		FAIL
 
 XX:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un YY
 	br		FAIL
 
 YY:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un ZZ
 	br		FAIL
 
 ZZ:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un AAA
 	br		FAIL
 
 AAA:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un BBB
 	br		FAIL
 
 BBB:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un CCC
 	br		FAIL
 
 CCC:
-	ldsfld	float64 bne_un::max
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un DDD
 	br	FAIL
 
 DDD:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un EEE
 	br		FAIL
 
 EEE:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un FFF
 	br		FAIL
 
 FFF:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un GGG
 	br		FAIL
 
 GGG:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un HHH
 	br		FAIL
 
 HHH:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un III
 	br		FAIL
 
 III:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un JJJ
 	br		FAIL
 
 JJJ:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un KK_
 	br		FAIL
 
 KK_:
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un FAIL
 
-	ldsfld	float64 bne_un::pos_inf
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un LLL
 	br		FAIL
 
 LLL:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::neg_inf
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::neg_inf
 	bne.un MMM
 	br		FAIL
 
 MMM:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::min
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::min
 	bne.un NNN
 	br		FAIL
 
 NNN:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::minus_one
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::minus_one
 	bne.un OOO
 	br		FAIL
 
 OOO:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::minus_zero
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::minus_zero
 	bne.un PPP
 	br		FAIL
 
 PPP:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::zero
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::zero
 	bne.un QQQ
 	br		FAIL
 
 QQQ:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::one
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::one
 	bne.un RRR
 	br		FAIL
 
 RRR:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::max
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::max
 	bne.un SSS
 	br		FAIL
 
 SSS:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::pos_inf
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::pos_inf
 	bne.un TTT
 	br		FAIL
 
 TTT:
-	ldsfld	float64 bne_un::NaN
-	ldsfld	float64 bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::NaN
+	ldsfld	float64 bne_un_r8.bne_un::NaN
 	bne.un L0
 	br FAIL
 
@@ -1001,3 +1007,4 @@ FAIL:
 }
 }
 .assembly bne_un_r8{}
+}

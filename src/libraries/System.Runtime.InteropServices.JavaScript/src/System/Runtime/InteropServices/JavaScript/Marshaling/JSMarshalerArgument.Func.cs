@@ -19,13 +19,17 @@ namespace System.Runtime.InteropServices.JavaScript
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
 
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 args_exception.Initialize();
                 args_return.Initialize();
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
 
         }
@@ -43,6 +47,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T arg1)
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
@@ -52,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_return.Initialize();
                 Arg1Marshaler(ref args_arg1, arg1);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -71,6 +79,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T1 arg1, T2 arg2)
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
@@ -82,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -103,6 +115,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
@@ -116,7 +132,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -209,6 +225,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
 
@@ -218,7 +238,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_exception.Initialize();
                 args_return.Initialize();
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -241,6 +261,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T arg1)
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
@@ -250,7 +274,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_return.Initialize();
                 Arg1Marshaler(ref args_arg1, arg1);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -274,6 +298,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T1 arg1, T2 arg2)
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
@@ -285,7 +313,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -311,6 +339,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(JSObject);
+#endif
+
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
@@ -324,7 +356,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;

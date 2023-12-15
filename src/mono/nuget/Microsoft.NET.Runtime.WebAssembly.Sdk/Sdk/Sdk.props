@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true'">
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>browser</TargetOS>
     <UseMonoRuntime>true</UseMonoRuntime>

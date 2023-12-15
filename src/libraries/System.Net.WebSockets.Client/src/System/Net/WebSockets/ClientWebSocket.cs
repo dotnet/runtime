@@ -148,6 +148,9 @@ namespace System.Net.WebSockets
         public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
             ConnectedWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
 
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken) =>
+            ConnectedWebSocket.SendAsync(buffer, messageType, messageFlags, cancellationToken);
+
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken) =>
             ConnectedWebSocket.ReceiveAsync(buffer, cancellationToken);
 

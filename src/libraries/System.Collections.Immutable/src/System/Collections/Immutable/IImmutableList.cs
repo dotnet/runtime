@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -14,6 +14,7 @@ namespace System.Collections.Immutable
     /// Mutations on this list generate new lists.  Incremental changes to a list share as much memory as possible with the prior versions of a list,
     /// while allowing garbage collection to clean up any unique list data that is no longer being referenced.
     /// </remarks>
+    [CollectionBuilder(typeof(ImmutableList), nameof(ImmutableList.Create))]
     public interface IImmutableList<T> : IReadOnlyList<T>
     {
         /// <summary>

@@ -140,12 +140,6 @@ namespace System.Security.Cryptography.Xml
                 return !nearestAncestorWithSamePrefix.Value.Equals(a.Value);
         }
 
-        internal static bool IsXmlPrefixDefinitionNode(XmlAttribute a)
-        {
-            return false;
-            //            return a.Prefix.Equals("xmlns") && a.LocalName.Equals("xml") && a.Value.Equals(NamespaceUrlForXmlPrefix);
-        }
-
         internal static string DiscardWhiteSpaces(string inputBuffer)
         {
             return DiscardWhiteSpaces(inputBuffer, 0, inputBuffer.Length);
@@ -627,9 +621,9 @@ namespace System.Security.Cryptography.Xml
         // Mimic the behavior of the X509IssuerSerial constructor with null and empty checks
         internal static X509IssuerSerial CreateX509IssuerSerial(string? issuerName, string? serialNumber)
         {
-            if (issuerName == null || issuerName.Length == 0)
+            if (string.IsNullOrEmpty(issuerName))
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
-            if (serialNumber == null || serialNumber.Length == 0)
+            if (string.IsNullOrEmpty(serialNumber))
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
 
             return new X509IssuerSerial()
@@ -726,10 +720,17 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
+#if NET5_0_OR_GREATER
+        internal static string EncodeHexString(byte[] sArray)
+        {
+            return Convert.ToHexString(sArray);
+        }
+#else
         internal static string EncodeHexString(byte[] sArray)
         {
             return HexConverter.ToString(sArray);
         }
+#endif
 
         internal static byte[] DecodeHexString(string s)
         {

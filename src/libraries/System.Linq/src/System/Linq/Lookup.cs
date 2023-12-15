@@ -154,15 +154,20 @@ namespace System.Linq
             Grouping<TKey, TElement>? g = _lastGrouping;
             if (g != null)
             {
+                Span<TResult> span = Enumerable.SetCountAndGetSpan(list, _count);
+                int index = 0;
                 do
                 {
                     g = g._next;
 
                     Debug.Assert(g != null);
                     g.Trim();
-                    list.Add(resultSelector(g._key, g._elements));
+                    span[index] = resultSelector(g._key, g._elements);
+                    ++index;
                 }
                 while (g != _lastGrouping);
+
+                Debug.Assert(index == _count, "All list elements were not initialized.");
             }
 
             return list;
@@ -196,7 +201,7 @@ namespace System.Linq
         internal Grouping<TKey, TElement>? GetGrouping(TKey key, bool create)
         {
             int hashCode = InternalGetHashCode(key);
-            for (Grouping<TKey, TElement>? g = _groupings[hashCode % _groupings.Length]; g != null; g = g._hashNext)
+            for (Grouping<TKey, TElement>? g = _groupings[(uint)hashCode % _groupings.Length]; g != null; g = g._hashNext)
             {
                 if (g._hashCode == hashCode && _comparer.Equals(g._key, key))
                 {

@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
                 TryReadX509Pem(rawData, out cert) ||
                 OpenSslPkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
                 OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out cert, out openSslException))
+                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -87,6 +87,7 @@ namespace System.Security.Cryptography.X509Certificates
                     File.ReadAllBytes(fileName),
                     password,
                     ephemeralSpecified,
+                    readingFromFile: true,
                     out pal,
                     out Exception? exception);
 
@@ -606,7 +607,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
-        private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
+        private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
             // are functionally immutable (unlike Windows ones) an UpRef is sufficient.
@@ -709,15 +710,26 @@ namespace System.Security.Cryptography.X509Certificates
 
                 int bioSize = Interop.Crypto.GetMemoryBioSize(bioHandle);
                 // Ensure space for the trailing \0
-                var buf = new byte[bioSize + 1];
-                int read = Interop.Crypto.BioGets(bioHandle, buf, buf.Length);
+                Span<byte> buffer = new byte[bioSize + 1];
+                Span<byte> current = buffer;
+                int total = 0;
+                int read;
 
-                if (read < 0)
+                do
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
+                    read = Interop.Crypto.BioGets(bioHandle, current);
 
-                return Encoding.UTF8.GetString(buf, 0, read);
+                    if (read < 0)
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    current = current.Slice(read);
+                    total += read;
+                }
+                while (read > 0);
+
+                return Encoding.UTF8.GetString(buffer.Slice(0, total));
             }
         }
 

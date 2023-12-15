@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using System.Xml;
 
 namespace System.Xml
 {
@@ -38,7 +38,7 @@ namespace System.Xml
                 if (key != -1)
                 {
                     // If the key is already set, then something is wrong
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlKeyAlreadyExists));
+                    throw new InvalidOperationException(SR.XmlKeyAlreadyExists);
                 }
 
                 key = Add(value.Value);

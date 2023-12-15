@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -13,11 +13,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class PropertyPolicies : MemberPolicies<PropertyInfo>
     {
+        public static readonly PropertyPolicies Instance = new PropertyPolicies();
+
+        public PropertyPolicies() : base(MemberTypeIndex.Property) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
-        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(Type type)
         {
-            return typeInfo.DeclaredProperties;
+            return type.GetProperties(DeclaredOnlyLookup);
         }
 
         public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
@@ -54,7 +58,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
             MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
+            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         //

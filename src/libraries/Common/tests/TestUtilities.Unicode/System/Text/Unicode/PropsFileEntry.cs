@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
@@ -10,10 +11,8 @@ namespace System.Text.Unicode
 {
     // Represents an entry in a Unicode props file.
     // The expected format is "XXXX[..YYYY] ; <propName> [# <comment>]".
-    internal sealed class PropsFileEntry
+    internal sealed partial class PropsFileEntry
     {
-        private static readonly Regex _regex = new Regex(@"^\s*(?<firstCodePoint>[0-9a-f]{4,})(\.\.(?<lastCodePoint>[0-9a-f]{4,}))?\s*;\s*(?<propName>.+?)\s*(#\s*(?<comment>.*))?$", RegexOptions.IgnoreCase);
-
         public readonly int FirstCodePoint;
         public readonly int LastCodePoint;
         public readonly string PropName;
@@ -31,9 +30,9 @@ namespace System.Text.Unicode
 
         public bool IsSingleCodePoint => (FirstCodePoint == LastCodePoint);
 
-        public static bool TryParseLine(string line, out PropsFileEntry value)
+        public static bool TryParseLine(string line, [NotNullWhen(true)] out PropsFileEntry? value)
         {
-            Match match = _regex.Match(line);
+            Match match = GetRegex().Match(line);
 
             if (!match.Success)
             {
@@ -52,5 +51,8 @@ namespace System.Text.Unicode
             value = new PropsFileEntry(firstCodePoint, lastCodePoint, match.Groups["propName"].Value);
             return true;
         }
+
+        [GeneratedRegex(@"^\s*(?<firstCodePoint>[0-9a-f]{4,})(\.\.(?<lastCodePoint>[0-9a-f]{4,}))?\s*;\s*(?<propName>.+?)\s*(#\s*(?<comment>.*))?$", RegexOptions.IgnoreCase)]
+        private static partial Regex GetRegex();
     }
 }

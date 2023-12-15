@@ -110,10 +110,10 @@ namespace System.Text.RegularExpressions
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
-            if (arrayIndex < 0 || arrayIndex > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
+
             if (array.Length - arrayIndex < Count)
             {
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);

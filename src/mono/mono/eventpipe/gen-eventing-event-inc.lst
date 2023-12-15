@@ -5,8 +5,11 @@ AssemblyDCEnd_V1
 AssemblyLoad_V1
 AssemblyUnload_V1
 BulkType
+ContentionLockCreated
 ContentionStart_V1
+ContentionStart_V2
 ContentionStop
+ContentionStop_V1
 DCEndComplete_V1
 DCEndInit_V1
 DomainModuleDCEnd_V1
@@ -21,6 +24,13 @@ ExceptionFinallyStart
 ExceptionFinallyStop
 ExceptionThrown_V1
 ExceptionThrownStop
+GCBulkEdge
+GCBulkNode
+GCBulkRootConditionalWeakTableElementEdge
+GCBulkRootEdge
+GCBulkRootStaticVar
+GCEnd_V1
+GCStart_V2
 MethodDCEndILToNativeMap
 MethodDCEnd_V1
 MethodDCEndVerbose_V1
@@ -49,4 +59,6 @@ ThreadPoolIOPack
 ThreadTerminated
 TypeLoadStart
 TypeLoadStop
+WaitHandleWaitStart
+WaitHandleWaitStop
 Microsoft-DotNETRuntimeMonoProfiler:*

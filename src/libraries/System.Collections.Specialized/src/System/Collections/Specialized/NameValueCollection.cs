@@ -7,6 +7,7 @@
  *
  */
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text;
@@ -89,6 +90,8 @@ namespace System.Collections.Specialized
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NameValueCollection(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -199,10 +202,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(dest));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (dest.Length - index < Count)
             {

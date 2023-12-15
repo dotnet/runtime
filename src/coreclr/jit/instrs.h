@@ -9,6 +9,8 @@
 #include "instrsarm64.h"
 #elif defined(TARGET_LOONGARCH64)
 #include "instrsloongarch64.h"
+#elif defined(TARGET_RISCV64)
+#include "instrsriscv64.h"
 #else
 #error Unsupported or unset target architecture
 #endif // target type

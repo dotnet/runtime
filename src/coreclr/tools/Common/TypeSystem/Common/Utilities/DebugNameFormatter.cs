@@ -182,6 +182,9 @@ namespace Internal.TypeSystem
 
         private static void AssemblyQualify(StringBuilder sb, DefType type, FormatOptions options)
         {
+            // TODO: We should introduce a DiagnosticModuleName to use here instead. The type
+            // loader already has that.
+#if !TYPE_LOADER_IMPLEMENTATION
             if (((options & FormatOptions.AssemblyQualify) != 0)
                 && type is MetadataType mdType
                 && mdType.Module is IAssemblyDesc)
@@ -211,6 +214,7 @@ namespace Internal.TypeSystem
 
                 sb.Append(']');
             }
+#endif
         }
 
         private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)

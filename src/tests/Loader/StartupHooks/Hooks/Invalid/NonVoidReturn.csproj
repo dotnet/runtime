@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <DefineConstants>$(DefineConstants);NONVOID_RETURN</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InvalidHook.cs" />
+  </ItemGroup>
+</Project>

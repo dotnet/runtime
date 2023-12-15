@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test to stress FP-relative addressing of generics context slot on ARM64. "str" instruction has a 32760 byte offset limit.
 // And normally, the frame pointer is at the bottom of the frame and the stored generics context at the top. If the locals
@@ -532,7 +533,7 @@ public class Test_GitHub_21990
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void SetStructValue(ref S s)
+    internal static void SetStructValue(ref S s)
     {
         s.i9782 = 17;
     }
@@ -571,7 +572,8 @@ public class Test_GitHub_21990
         return (s.i9782 - 16) * x * TestGenericContext<GenericClass<T>>(x - 1);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

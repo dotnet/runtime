@@ -13,7 +13,7 @@ namespace System.Net.WebSockets.Compression
     internal sealed class WebSocketInflater : IDisposable
     {
         internal const int FlushMarkerLength = 4;
-        internal static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
+        internal static ReadOnlySpan<byte> FlushMarker => [0x00, 0x00, 0xFF, 0xFF];
 
         private readonly int _windowBits;
         private ZLibStreamHandle? _stream;
@@ -58,11 +58,7 @@ namespace System.Net.WebSockets.Compression
 
         public void Dispose()
         {
-            if (_stream is not null)
-            {
-                _stream.Dispose();
-                _stream = null;
-            }
+            _stream?.Dispose();
             ReleaseBuffer();
         }
 
@@ -252,7 +248,7 @@ namespace System.Net.WebSockets.Compression
                 ErrorCode.MemError => SR.ZLibErrorNotEnoughMemory,
                 ErrorCode.DataError => SR.ZLibUnsupportedCompression,
                 ErrorCode.StreamError => SR.ZLibErrorInconsistentStream,
-                _ => string.Format(SR.ZLibErrorUnexpected, (int)errorCode)
+                _ => SR.Format(SR.ZLibErrorUnexpected, (int)errorCode)
             };
             throw new WebSocketException(message);
         }
@@ -281,7 +277,7 @@ namespace System.Net.WebSockets.Compression
 
             string message = errorCode == ErrorCode.MemError
                 ? SR.ZLibErrorNotEnoughMemory
-                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
         }
     }

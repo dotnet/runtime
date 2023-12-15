@@ -2,25 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
-using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Runtime.CompilerServices;
+using System.Text;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Metadata.NativeFormat;
 using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
 namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
@@ -75,10 +75,15 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
+        public override Type GetModifiedPropertyType()
+        {
+            return ModifiedType.Create(PropertyType, _reader, _reader.GetPropertySignature(_property.Signature).Type);
+
+        }
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             if (!(other is NativeFormatRuntimePropertyInfo otherProperty))
                 return false;
@@ -129,7 +134,8 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(_reader, _property.DefaultValue, PropertyType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue)
+                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

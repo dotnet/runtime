@@ -57,7 +57,7 @@ and inserting a property in a `<PropertyGroup>`, as follows:
 
 Note that these properties can be conditional, e.g.:
 ```
-<GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">true</GCStressIncompatible>
+<GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
 ```
 
 (REVIEW: I'm not clear which conditions are allowed, and respected.)

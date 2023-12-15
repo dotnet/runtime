@@ -3,25 +3,14 @@
 
 
 using System;
-using System.Runtime;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
-
 using System.Reflection.Runtime.General;
-
-using Internal.Runtime;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-#if ECMA_METADATA_SUPPORT
-using Internal.TypeSystem.Ecma;
-#endif
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -103,18 +92,15 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Return the metadata handle for a TypeRef if this type was referenced indirectly by other type that pay-for-play has denoted as browsable
-        /// (for example, as part of a method signature.)
-        ///
-        /// This is only used in "debug" builds to provide better diagnostics when metadata is missing.
+        /// Return the metadata handle for a TypeDef if the pay-for-policy enabled this type as browsable. This is used to obtain name and other information for types
+        /// obtained via typeof() or Object.GetType(). This can include generic types (not to be confused with generic instances).
         ///
         /// Preconditions:
         ///    runtimeTypeHandle is a typedef (not a constructed type such as an array or generic instance.)
         /// </summary>
-        /// <param name="runtimeTypeHandle">MethodTable of the type in question</param>
-        /// <param name="metadataReader">Metadata reader for the type</param>
-        /// <param name="typeRefHandle">Located TypeRef handle</param>
-        public static unsafe bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
+        /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
+        /// <param name="qTypeDefinition">TypeDef handle for the type</param>
+        public static unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
             int hashCode = runtimeTypeHandle.GetHashCode();
 
@@ -138,10 +124,10 @@ namespace Internal.Runtime.TypeLoader
                         if (foundType.Equals(runtimeTypeHandle))
                         {
                             Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
-                            if (entryMetadataHandle.HandleType == HandleType.TypeReference)
+                            if (entryMetadataHandle.HandleType == HandleType.TypeDefinition)
                             {
-                                metadataReader = module.MetadataReader;
-                                typeRefHandle = entryMetadataHandle.ToTypeReferenceHandle(metadataReader);
+                                MetadataReader metadataReader = module.MetadataReader;
+                                qTypeDefinition = new QTypeDefinition(metadataReader, entryMetadataHandle.ToTypeDefinitionHandle(metadataReader));
                                 return true;
                             }
                         }
@@ -149,118 +135,48 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            metadataReader = null;
-            typeRefHandle = default(TypeReferenceHandle);
-
+            qTypeDefinition = default;
             return false;
         }
 
         /// <summary>
-        /// Return the RuntimeTypeHandle for the named type referenced by another type that pay-for-play denotes as browsable (for example,
-        /// in a member signature.) This will only find the typehandle if it is not defined in the current module, and is primarily used
-        /// to find non-browsable types.
-        ///
-        /// This is used to ensure that we can produce a Type object if requested and that it match up with the analogous
-        /// Type obtained via typeof().
-        ///
+        /// Return the RuntimeTypeHandle for the named type described in metadata. This is used to implement the Create and Invoke
+        /// apis for types.
         ///
         /// Preconditions:
-        ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
+        ///    metadataReader + typeDefHandle  - a valid metadata reader + typeDefinitionHandle where "metadataReader" is one
         ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
         ///
         /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
-        /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
+        /// guarantees that any type enabled for metadata also has a RuntimeTypeHandle underneath.
         /// </summary>
-        /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
-        /// <param name="typeRefHandle">TypeRef handle to look up</param>
-        /// <param name="runtimeTypeHandle">Resolved MethodTable for the type reference</param>
-        /// <param name="searchAllModules">Search all modules</param>
-        public static unsafe bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle, bool searchAllModules = false)
+        /// <param name="qTypeDefinition">TypeDef handle for the type to look up</param>
+        /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
+        public static unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            int hashCode = typeRefHandle.ComputeHashCode(metadataReader);
-            NativeFormatModuleInfo typeRefModule = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
-            return TryGetNamedTypeForTypeReference_Inner(metadataReader, typeRefModule, typeRefHandle, hashCode, typeRefModule, out runtimeTypeHandle);
-        }
-
-        /// <summary>
-        /// Return the RuntimeTypeHandle for the named type referenced by another type that pay-for-play denotes as browsable (for example,
-        /// in a member signature.) This lookup will attempt to resolve to an MethodTable in any module to cover situations where the type
-        /// does not have a TypeDefinition (non-browsable type) as well as cases where it does.
-        ///
-        /// Preconditions:
-        ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
-        ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
-        ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
-        /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
-        /// </summary>
-        /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
-        /// <param name="typeRefHandle">TypeRef handle to look up</param>
-        /// <param name="runtimeTypeHandle">Resolved MethodTable for the type reference</param>
-        public static unsafe bool TryResolveNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            int hashCode = typeRefHandle.ComputeHashCode(metadataReader);
-            NativeFormatModuleInfo typeRefModule = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
-            runtimeTypeHandle = default(RuntimeTypeHandle);
-
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(typeRefModule.Handle))
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
             {
-                if (TryGetNamedTypeForTypeReference_Inner(metadataReader, typeRefModule, typeRefHandle, hashCode, module, out runtimeTypeHandle))
-                    return true;
-            }
+                MetadataReader metadataReader = qTypeDefinition.NativeFormatReader;
+                TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
+                int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
 
-            return false;
-        }
+                NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
 
-        private static unsafe bool TryGetNamedTypeForTypeReference_Inner(MetadataReader metadataReader,
-            NativeFormatModuleInfo typeRefModule,
-            TypeReferenceHandle typeRefHandle,
-            int hashCode,
-            NativeFormatModuleInfo module,
-            out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            Debug.Assert(typeRefModule == ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader));
-
-            NativeReader typeMapReader;
-            if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
-            {
-                NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
-                NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
-
-                ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                externalReferences.InitializeCommonFixupsTable(module);
-
-                var lookup = typeHashtable.Lookup(hashCode);
-                NativeParser entryParser;
-                while (!(entryParser = lookup.GetNext()).IsNull)
+                NativeReader typeMapReader;
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
                 {
-                    var foundTypeIndex = entryParser.GetUnsigned();
-                    var handle = entryParser.GetUnsigned().AsHandle();
+                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
 
-                    if (module == typeRefModule)
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = typeHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
                     {
-                        if (handle.Equals(typeRefHandle))
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            return true;
-                        }
-                    }
-                    else if (handle.HandleType == HandleType.TypeReference)
-                    {
-                        MetadataReader mrFoundHandle = module.MetadataReader;
-                        // We found a type reference handle in another module.. see if it matches
-                        if (MetadataReaderHelpers.CompareTypeReferenceAcrossModules(typeRefHandle, metadataReader, handle.ToTypeReferenceHandle(mrFoundHandle), mrFoundHandle))
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            return true;
-                        }
-                    }
-                    else if (handle.HandleType == HandleType.TypeDefinition)
-                    {
-                        // We found a type definition handle in another module. See if it matches
-                        MetadataReader mrFoundHandle = module.MetadataReader;
-                        // We found a type definition handle in another module.. see if it matches
-                        if (MetadataReaderHelpers.CompareTypeReferenceToDefinition(typeRefHandle, metadataReader, handle.ToTypeDefinitionHandle(mrFoundHandle), mrFoundHandle))
+                        var foundTypeIndex = entryParser.GetUnsigned();
+                        if (entryParser.GetUnsigned().AsHandle().Equals(typeDefHandle))
                         {
                             runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
                             return true;
@@ -269,7 +185,7 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            runtimeTypeHandle = default(RuntimeTypeHandle);
+            runtimeTypeHandle = default;
             return false;
         }
 
@@ -281,13 +197,12 @@ namespace Internal.Runtime.TypeLoader
         /// Preconditions:
         ///     elementTypeHandle is a valid RuntimeTypeHandle.
         /// </summary>
-        /// <param name="elementTypeHandle">MethodTable of the array element type</param>
-        /// <param name="arrayTypeHandle">Resolved MethodTable of the array type</param>
-        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
-            arrayTypeHandle = new RuntimeTypeHandle();
+            arrayTypeHandle = default(RuntimeTypeHandle);
 
-            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), -1);
+            Debug.Assert(isMdArray || rank == -1);
+            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);
 
             // Note: ReflectionMapBlob.ArrayMap may not exist in the module that contains the element type.
             // So we must enumerate all loaded modules in order to find ArrayMap and the array type for
@@ -309,7 +224,8 @@ namespace Internal.Runtime.TypeLoader
                     {
                         RuntimeTypeHandle foundArrayType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         RuntimeTypeHandle foundArrayElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundArrayType);
-                        if (foundArrayElementType.Equals(elementTypeHandle))
+                        if (foundArrayElementType.Equals(elementTypeHandle)
+                            && rank == RuntimeAugments.GetArrayRankOrMinusOneForSzArray(foundArrayType))
                         {
                             arrayTypeHandle = foundArrayType;
                             return true;
@@ -321,92 +237,99 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        /// <summary>
-        /// The array table only holds some of the precomputed array types, others may be found in the template type.
-        /// As our system requires us to find the RuntimeTypeHandle of templates we must not be in a situation where we fail to find
-        /// a RuntimeTypeHandle for a type which is actually in the template table. This function fixes that problem for arrays.
-        /// </summary>
-        /// <param name="arrayType"></param>
-        /// <param name="arrayTypeHandle"></param>
-        /// <returns></returns>
-        public bool TryGetArrayTypeHandleForNonDynamicArrayTypeFromTemplateTable(ArrayType arrayType, out RuntimeTypeHandle arrayTypeHandle)
+        public static unsafe bool TryGetByRefTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
-            arrayTypeHandle = default(RuntimeTypeHandle);
+            int byRefHashcode = TypeHashingAlgorithms.ComputeByrefTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, byRefHashcode, ReflectionMapBlob.ByRefTypeMap, out pointerTypeHandle);
+        }
 
-            // Only SzArray types have templates.
-            if (!arrayType.IsSzArray)
-                return false;
+        public static unsafe bool TryGetPointerTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            int pointerHashcode = TypeHashingAlgorithms.ComputePointerTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, pointerHashcode, ReflectionMapBlob.PointerTypeMap, out pointerTypeHandle);
+        }
 
-            // If we can't find a RuntimeTypeHandle for the element type, we can't find the array in the template table.
-            if (!arrayType.ParameterType.RetrieveRuntimeTypeHandleIfPossible())
-                return false;
-
-            unsafe
+        private static unsafe bool TryGetParameterizedTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, int hashCode, ReflectionMapBlob blob, out RuntimeTypeHandle parameterizedTypeHandle)
+        {
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                // If the elementType is a dynamic type it cannot exist in the template table.
-                if (arrayType.ParameterType.RuntimeTypeHandle.ToEETypePtr()->IsDynamicType)
-                    return false;
+                NativeReader mapReader;
+                if (TryGetNativeReaderForBlob(module, blob, out mapReader))
+                {
+                    NativeParser mapParser = new NativeParser(mapReader, 0);
+                    NativeHashtable hashtable = new NativeHashtable(mapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = hashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        RuntimeTypeHandle foundParameterizedType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        RuntimeTypeHandle foundElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundParameterizedType);
+                        if (foundElementType.Equals(elementTypeHandle))
+                        {
+                            parameterizedTypeHandle = foundParameterizedType;
+                            return true;
+                        }
+                    }
+                }
             }
 
-            // Try to find out if the type exists as a template
-            var canonForm = arrayType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            var hashCode = canonForm.GetHashCode();
-            foreach (var module in ModuleList.EnumerateModules())
+            parameterizedTypeHandle = default;
+            return false;
+        }
+
+        public bool TryGetStaticFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            int hashCode = TypeHashingAlgorithms.ComputeMethodSignatureHashCode(returnTypeHandle.GetHashCode(), parameterHandles);
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                ExternalReferencesTable externalFixupsTable;
-
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(module, ReflectionMapBlob.TypeTemplateMap, out externalFixupsTable);
-
-                if (typeTemplatesHashtable.IsNull)
-                    continue;
-
-                var enumerator = typeTemplatesHashtable.Lookup(hashCode);
-
-                NativeParser entryParser;
-                while (!(entryParser = enumerator.GetNext()).IsNull)
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.FunctionPointerTypeMap, out NativeReader fnPtrMapReader))
                 {
-                    RuntimeTypeHandle candidateTemplateTypeHandle = externalFixupsTable.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                    TypeDesc foundType = arrayType.Context.ResolveRuntimeTypeHandle(candidateTemplateTypeHandle);
-                    if (foundType == arrayType)
-                    {
-                        arrayTypeHandle = candidateTemplateTypeHandle;
+                    NativeParser fnPtrMapParser = new NativeParser(fnPtrMapReader, 0);
+                    NativeHashtable fnPtrHashtable = new NativeHashtable(fnPtrMapParser);
 
-                        // This lookup in the template table is fairly slow, so if we find the array here, add it to the dynamic array cache, so that
-                        // we can find it faster in the future.
-                        if (arrayType.IsSzArray)
-                            TypeSystemContext.GetArrayTypesCache(false, -1).AddOrGetExisting(arrayTypeHandle);
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = fnPtrHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        uint foundFnPtrTypeIndex = entryParser.GetUnsigned();
+                        RuntimeTypeHandle foundTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundFnPtrTypeIndex);
+
+                        if (RuntimeAugments.GetFunctionPointerParameterCount(foundTypeHandle) != parameterHandles.Length)
+                            continue;
+
+                        if (!RuntimeAugments.GetFunctionPointerReturnType(foundTypeHandle).Equals(returnTypeHandle))
+                            continue;
+
+                        if (RuntimeAugments.IsUnmanagedFunctionPointerType(foundTypeHandle) != isUnmanaged)
+                            continue;
+
+                        for (int i = 0; i < parameterHandles.Length; i++)
+                            if (!parameterHandles[i].Equals(RuntimeAugments.GetFunctionPointerParameterType(foundTypeHandle, i)))
+                                continue;
+
+                        runtimeTypeHandle = foundTypeHandle;
                         return true;
                     }
                 }
             }
 
+            runtimeTypeHandle = default;
             return false;
-        }
-
-        // Lazy loadings of hashtables (load on-demand only)
-        private static unsafe NativeHashtable LoadHashtable(NativeFormatModuleInfo module, ReflectionMapBlob hashtableBlobId, out ExternalReferencesTable externalFixupsTable)
-        {
-            // Load the common fixups table
-            externalFixupsTable = default(ExternalReferencesTable);
-            if (!externalFixupsTable.InitializeCommonFixupsTable(module))
-                return default(NativeHashtable);
-
-            // Load the hashtable
-            byte* pBlob;
-            uint cbBlob;
-            if (!module.TryFindBlob(hashtableBlobId, out pBlob, out cbBlob))
-                return default(NativeHashtable);
-
-            NativeReader reader = new NativeReader(pBlob, cbBlob);
-            NativeParser parser = new NativeParser(reader, 0);
-            return new NativeHashtable(parser);
         }
 
         /// <summary>
         /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
         /// </summary>
         /// <param name="typeHandle">MethodTable of the type to look up</param>
-        public static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        public static unsafe IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.HasCctor(typeHandle))
             {
@@ -493,50 +416,20 @@ namespace Internal.Runtime.TypeLoader
         /// <returns>Function pointer representing the constructor, IntPtr.Zero when not found</returns>
         internal static IntPtr TryGetDefaultConstructorForType(TypeDesc type)
         {
-            // Try to find the default constructor in metadata first
-            IntPtr result = IntPtr.Zero;
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            result = TryGetDefaultConstructorForTypeViaMetadata_Inner(type);
-#endif
-
-            DefType defType = type as DefType;
-            if ((result == IntPtr.Zero) && (defType != null))
+            if (type is DefType defType)
             {
-#if GENERICS_FORCE_USG
-                // In force USG mode, prefer universal matches over canon specific matches.
-                CanonicalFormKind firstCanonFormKind = CanonicalFormKind.Universal;
-                CanonicalFormKind secondCanonFormKind = CanonicalFormKind.Specific;
-#else
-                CanonicalFormKind firstCanonFormKind = CanonicalFormKind.Specific;
-                CanonicalFormKind secondCanonFormKind = CanonicalFormKind.Universal;
-#endif
-
-                CanonicallyEquivalentEntryLocator canonHelperSpecific = new CanonicallyEquivalentEntryLocator(defType, firstCanonFormKind);
+                CanonicallyEquivalentEntryLocator canonHelperSpecific = new CanonicallyEquivalentEntryLocator(defType, CanonicalFormKind.Specific);
 
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
-                    result = TryGetDefaultConstructorForType_Inner(module, ref canonHelperSpecific);
+                    IntPtr result = TryGetDefaultConstructorForType_Inner(module, ref canonHelperSpecific);
 
                     if (result != IntPtr.Zero)
-                        break;
-                }
-
-                if (result == IntPtr.Zero)
-                {
-                    CanonicallyEquivalentEntryLocator canonHelperUniversal = new CanonicallyEquivalentEntryLocator(defType, secondCanonFormKind);
-
-                    foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
-                    {
-                        result = TryGetDefaultConstructorForType_Inner(module, ref canonHelperUniversal);
-
-                        if (result != IntPtr.Zero)
-                            break;
-                    }
+                        return result;
                 }
             }
 
-            return result;
+            return IntPtr.Zero;
         }
 
         /// <summary>
@@ -557,57 +450,7 @@ namespace Internal.Runtime.TypeLoader
                     return result;
             }
 
-            CanonicallyEquivalentEntryLocator canonHelperUniversal = new CanonicallyEquivalentEntryLocator(runtimeTypeHandle, CanonicalFormKind.Universal);
-
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle)))
-            {
-                IntPtr result = TryGetDefaultConstructorForType_Inner(module, ref canonHelperUniversal);
-
-                if (result != IntPtr.Zero)
-                    return result;
-            }
-
-            // Try to find the default constructor in metadata last (this is costly as it requires spinning up a TypeLoaderContext, and
-            // currently also the _typeLoaderLock) (TODO when the _typeLoaderLock is no longer necessary to correctly use the type system
-            // context, remove the use of the lock here.)
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-
-                TypeDesc type = context.ResolveRuntimeTypeHandle(runtimeTypeHandle);
-                IntPtr result = TryGetDefaultConstructorForTypeViaMetadata_Inner(type);
-
-                TypeSystemContextFactory.Recycle(context);
-
-                if (result != IntPtr.Zero)
-                    return result;
-            }
-
             return IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Lookup default constructor via the typesystem api surface and such
-        /// </summary>
-        private static IntPtr TryGetDefaultConstructorForTypeViaMetadata_Inner(TypeDesc type)
-        {
-            IntPtr metadataLookupResult = IntPtr.Zero;
-
-            DefType defType = type as DefType;
-
-            if (defType != null)
-            {
-                if (!defType.IsValueType && defType is MetadataType)
-                {
-                    MethodDesc defaultConstructor = ((MetadataType)defType).GetDefaultConstructor();
-                    if (defaultConstructor != null)
-                    {
-                        TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(defaultConstructor, out metadataLookupResult, out _, out _);
-                    }
-                }
-            }
-
-            return metadataLookupResult;
         }
 
         /// <summary>
@@ -645,122 +488,7 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            // If not found in the invoke map, try the default constructor map
-            NativeReader defaultCtorMapReader;
-            if (TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.DefaultConstructorMap, out defaultCtorMapReader))
-            {
-                NativeParser defaultCtorMapParser = new NativeParser(defaultCtorMapReader, 0);
-                NativeHashtable defaultCtorHashtable = new NativeHashtable(defaultCtorMapParser);
-
-                ExternalReferencesTable externalReferencesForDefaultCtorMap = default(ExternalReferencesTable);
-                externalReferencesForDefaultCtorMap.InitializeCommonFixupsTable(mappingTableModule);
-                var lookup = defaultCtorHashtable.Lookup(canonHelper.LookupHashCode);
-                NativeParser defaultCtorParser;
-                while (!(defaultCtorParser = lookup.GetNext()).IsNull)
-                {
-                    RuntimeTypeHandle entryType = externalReferencesForDefaultCtorMap.GetRuntimeTypeHandleFromIndex(defaultCtorParser.GetUnsigned());
-                    if (!canonHelper.IsCanonicallyEquivalent(entryType))
-                        continue;
-
-                    return externalReferencesForDefaultCtorMap.GetFunctionPointerFromIndex(defaultCtorParser.GetUnsigned());
-                }
-            }
             return IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Try to resolve a member reference in all registered binary modules containing metadata.
-        /// </summary>
-        /// <param name="metadataReader">Metadata reader for the member reference</param>
-        /// <param name="memberReferenceHandle">Member reference handle (method, field, property, event) to resolve</param>
-        /// <param name="resolvedMetadataReader">Metadata reader for the resolved reference</param>
-        /// <param name="resolvedContainingTypeHandle">Resolved runtime handle to the containing type</param>
-        /// <param name="resolvedMemberHandle">Resolved handle to the referenced member</param>
-        /// <returns>true when the lookup was successful; false when not</returns>
-        public static bool TryResolveMemberReference(
-            MetadataReader metadataReader,
-            MemberReferenceHandle memberReferenceHandle,
-            out MetadataReader resolvedMetadataReader,
-            out RuntimeTypeHandle resolvedContainingTypeHandle,
-            out Handle resolvedMemberHandle)
-        {
-            // TODO
-            resolvedMetadataReader = null;
-            resolvedContainingTypeHandle = default(RuntimeTypeHandle);
-            resolvedMemberHandle = default(Handle);
-            return false;
-        }
-
-        /// <summary>
-        /// Get the information necessary to resolve to metadata given a vtable slot and a type that defines that vtable slot
-        /// </summary>
-        /// <param name="context">type context to use.</param>
-        /// <param name="type">Type that defines the vtable slot. (Derived types are not valid here)</param>
-        /// <param name="vtableSlot">vtable slot index</param>
-        /// <param name="methodNameAndSig">output name/sig of method</param>
-        /// <returns></returns>
-        public static unsafe bool TryGetMethodMethodNameAndSigFromVTableSlotForPregeneratedOrTemplateType(TypeSystemContext context, RuntimeTypeHandle type, int vtableSlot, out MethodNameAndSignature methodNameAndSig)
-        {
-            //
-            // See comment in TryGetVirtualResolveData for more details on the semantics of the vtable slot and method declaring type in the VirtualInvokeMap table
-            //
-
-            int logicalSlot = vtableSlot;
-            MethodTable* ptrType = type.ToEETypePtr();
-            RuntimeTypeHandle openOrNonGenericTypeDefinition = default(RuntimeTypeHandle);
-
-            // Compute the logical slot by removing space reserved for generic dictionary pointers
-            if (ptrType->IsInterface && ptrType->IsGeneric)
-            {
-                openOrNonGenericTypeDefinition = RuntimeAugments.GetGenericDefinition(type);
-                logicalSlot--;
-            }
-            else
-            {
-                MethodTable* searchForSharedGenericTypesInParentHierarchy = ptrType;
-                while (searchForSharedGenericTypesInParentHierarchy != null)
-                {
-                    // See if this type is shared generic. If so, adjust the slot by 1.
-                    if (searchForSharedGenericTypesInParentHierarchy->IsGeneric)
-                    {
-                        RuntimeTypeHandle[] genericTypeArgs;
-                        RuntimeTypeHandle genericDefinition = RuntimeAugments.GetGenericInstantiation(searchForSharedGenericTypesInParentHierarchy->ToRuntimeTypeHandle(),
-                                                                                                      out genericTypeArgs);
-
-                        if (Instance.ConversionToCanonFormIsAChange(genericTypeArgs, CanonicalFormKind.Specific))
-                        {
-                            // Shared generic types have a slot dedicated to holding the generic dictionary.
-                            logicalSlot--;
-                        }
-                        if (openOrNonGenericTypeDefinition.IsNull())
-                            openOrNonGenericTypeDefinition = genericDefinition;
-                    }
-                    else if (searchForSharedGenericTypesInParentHierarchy->IsArray)
-                    {
-                        // Arrays are like shared generics
-                        RuntimeTypeHandle arrayElementTypeHandle = searchForSharedGenericTypesInParentHierarchy->RelatedParameterType->ToRuntimeTypeHandle();
-
-                        TypeDesc arrayElementType = context.ResolveRuntimeTypeHandle(arrayElementTypeHandle);
-                        TypeDesc canonFormOfArrayElementType = context.ConvertToCanon(arrayElementType, CanonicalFormKind.Specific);
-
-                        if (canonFormOfArrayElementType != arrayElementType)
-                        {
-                            logicalSlot--;
-                        }
-                    }
-
-                    // Walk to parent
-                    searchForSharedGenericTypesInParentHierarchy = searchForSharedGenericTypesInParentHierarchy->BaseType;
-                }
-            }
-
-            if (openOrNonGenericTypeDefinition.IsNull())
-                openOrNonGenericTypeDefinition = type;
-
-            TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(openOrNonGenericTypeDefinition);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
-
-            return TryGetMethodNameAndSigFromVirtualResolveData(module, openOrNonGenericTypeDefinition, logicalSlot, out methodNameAndSig);
         }
 
         public struct VirtualResolveDataResult
@@ -818,13 +546,7 @@ namespace Internal.Runtime.TypeLoader
 
                 uint nameAndSigPointerToken = entryParser.GetUnsigned();
 
-                MethodNameAndSignature nameAndSig;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, nameAndSigPointerToken, out nameAndSig))
-                {
-                    Debug.Assert(false);
-                    continue;
-                }
-
+                MethodNameAndSignature nameAndSig = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, nameAndSigPointerToken);
                 if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
                 {
                     continue;
@@ -887,74 +609,6 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Given a virtual logical slot and its open defining type, get information necessary to acquire the associated metadata from the mapping tables.
-        /// </summary>
-        /// <param name="module">Module to look in</param>
-        /// <param name="declaringType">Declaring type that is known to define the slot</param>
-        /// <param name="logicalSlot">The logical slot that the method goes in. For this method, the logical
-        /// slot is defined as the nth virtual method defined in order on the type (including base types).
-        /// VTable slots reserved for dictionary pointers are ignored.</param>
-        /// <param name="methodNameAndSig">The name and signature of the method</param>
-        /// <returns>true if a definition is found, false if not</returns>
-        private static unsafe bool TryGetMethodNameAndSigFromVirtualResolveData(NativeFormatModuleInfo module,
-            RuntimeTypeHandle declaringType, int logicalSlot, out MethodNameAndSignature methodNameAndSig)
-        {
-            //
-            // See comment in TryGetVirtualResolveData for more details on the semantics of the vtable slot and method declaring type in the VirtualInvokeMap table
-            //
-
-            NativeReader invokeMapReader = GetNativeReaderForBlob(module, ReflectionMapBlob.VirtualInvokeMap);
-            NativeParser invokeMapParser = new NativeParser(invokeMapReader, 0);
-            NativeHashtable invokeHashtable = new NativeHashtable(invokeMapParser);
-            ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-            externalReferences.InitializeCommonFixupsTable(module);
-
-            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(declaringType, CanonicalFormKind.Specific);
-
-            methodNameAndSig = default(MethodNameAndSignature);
-
-            var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
-            NativeParser entryParser;
-            while (!(entryParser = lookup.GetNext()).IsNull)
-            {
-                // Grammar of an entry in the hash table:
-                // Virtual Method uses a normal slot
-                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
-                // OR
-                // Generic Virtual Method
-                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
-
-                RuntimeTypeHandle entryType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!canonHelper.IsCanonicallyEquivalent(entryType))
-                    continue;
-
-                uint nameAndSigPointerToken = entryParser.GetUnsigned();
-
-                uint parentHierarchyAndFlag = entryParser.GetUnsigned();
-                bool isGenericVirtualMethod = ((parentHierarchyAndFlag & VirtualInvokeTableEntry.FlagsMask) == VirtualInvokeTableEntry.GenericVirtualMethod);
-
-                // We're looking for a method with a specific slot. By definition, it isn't a GVM as we define GVM as not having slots in the vtable
-                if (isGenericVirtualMethod)
-                    continue;
-
-                uint mappingTableSlot = entryParser.GetUnsigned();
-
-                // Slot doesn't match
-                if (logicalSlot != mappingTableSlot)
-                    continue;
-
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, nameAndSigPointerToken, out methodNameAndSig))
-                {
-                    Debug.Assert(false);
-                    continue;
-                }
-
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Try to look up method invoke info for given canon.
         /// </summary>
         /// <param name="declaringTypeHandle">Declaring type for the method</param>
@@ -987,124 +641,9 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            bool success = TryGetMethodInvokeMetadataFromNativeFormatMetadata(
-                declaringTypeHandle,
-                methodHandle,
-                genericMethodTypeArgumentHandles,
-                ref methodSignatureComparer,
-                context,
-                canonFormKind,
-                out methodInvokeMetadata);
-
-            TypeSystemContextFactory.Recycle(context);
-
-            return success;
-        }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        /// <summary>
-        /// Try to look up method invoke info for given canon in InvokeMap blobs for all available modules.
-        /// </summary>
-        /// <param name="typicalMethodDesc">Metadata MethodDesc to look for</param>
-        /// <param name="method">method to search for</param>
-        /// <param name="methodSignatureComparer">Helper class used to compare method signatures</param>
-        /// <param name="canonFormKind">Canonical form to use</param>
-        /// <param name="methodEntryPoint">Output - Output code address</param>
-        /// <param name="foundAddressType">Output - The type of method address match found. A canonical address may require extra parameters to call.</param>
-        /// <returns>true when found, false otherwise</returns>
-        private static bool TryGetMethodInvokeDataFromInvokeMap(
-            NativeFormatMethod typicalMethodDesc,
-            MethodDesc method,
-            ref MethodSignatureComparer methodSignatureComparer,
-            CanonicalFormKind canonFormKind,
-            out IntPtr methodEntryPoint,
-            out MethodAddressType foundAddressType)
-        {
-            methodEntryPoint = IntPtr.Zero;
-            foundAddressType = MethodAddressType.None;
-
-            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(method.OwningType.GetClosestDefType(), canonFormKind);
-
-            TypeManagerHandle methodHandleModule = typicalMethodDesc.MetadataUnit.RuntimeModule;
-
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(methodHandleModule))
-            {
-                NativeReader invokeMapReader;
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.InvokeMap, out invokeMapReader))
-                {
-                    continue;
-                }
-
-                NativeParser invokeMapParser = new NativeParser(invokeMapReader, 0);
-                NativeHashtable invokeHashtable = new NativeHashtable(invokeMapParser);
-
-                ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                externalReferences.InitializeCommonFixupsTable(module);
-
-                var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
-                var entryData = new InvokeMapEntryDataEnumerator<TypeSystemTypeComparator, bool>(
-                    new TypeSystemTypeComparator(method),
-                    canonFormKind,
-                    module.Handle,
-                    typicalMethodDesc.Handle,
-                    methodHandleModule);
-
-                NativeParser entryParser;
-                while (!(entryParser = lookup.GetNext()).IsNull)
-                {
-                    entryData.GetNext(ref entryParser, ref externalReferences, ref methodSignatureComparer, canonHelper);
-
-                    if (!entryData.IsMatchingOrCompatibleEntry())
-                        continue;
-
-                    IntPtr rawMethodEntryPoint;
-                    bool needsDictionaryForCall;
-
-                    if (entryData.GetMethodEntryPoint(
-                        out methodEntryPoint,
-                        out needsDictionaryForCall,
-                        out rawMethodEntryPoint))
-                    {
-                        // At this time, because we don't have any logic which generates a true fat function pointer
-                        // in the TypeSystemTypeComparator, rawMethodEntryPoint should always be the same as methodEntryPoint
-                        Debug.Assert(rawMethodEntryPoint == methodEntryPoint);
-
-                        if (canonFormKind == CanonicalFormKind.Universal)
-                        {
-                            foundAddressType = MethodAddressType.UniversalCanonical;
-                        }
-                        else
-                        {
-                            Debug.Assert(canonFormKind == CanonicalFormKind.Specific);
-
-                            if (needsDictionaryForCall)
-                            {
-                                foundAddressType = MethodAddressType.Canonical;
-                            }
-                            else
-                            {
-                                if (method.OwningType.IsValueType && method.OwningType != method.OwningType.ConvertToCanonForm(canonFormKind) && !method.Signature.IsStatic)
-                                {
-                                    // The entrypoint found is the unboxing stub for a non-generic instance method on a structure
-                                    foundAddressType = MethodAddressType.Canonical;
-                                }
-                                else
-                                {
-                                    foundAddressType = MethodAddressType.Exact; // We may or may not have found a canonical method here, but if its exactly callable... its close enough
-                                }
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-            }
-
+            methodInvokeMetadata = default;
             return false;
         }
-#endif
 
         /// <summary>
         /// Try to look up method invoke info for given canon in InvokeMap blobs for all available modules.
@@ -1177,124 +716,6 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        /// <summary>
-        /// Look up method entry point based on native format metadata information.
-        /// </summary>
-        /// <param name="declaringTypeHandle">Declaring type for the method</param>
-        /// <param name="methodHandle">Method handle</param>
-        /// <param name="genericMethodTypeArgumentHandles">Handles of generic argument types</param>
-        /// <param name="methodSignatureComparer">Helper class used to compare method signatures</param>
-        /// <param name="typeSystemContext">Type system context to use</param>
-        /// <param name="canonFormKind">Canonical form to use</param>
-        /// <param name="methodInvokeMetadata">Output - metadata information for method invoker construction</param>
-        /// <returns>true when found, false otherwise</returns>
-        private static bool TryGetMethodInvokeMetadataFromNativeFormatMetadata(
-            RuntimeTypeHandle declaringTypeHandle,
-            QMethodDefinition methodHandle,
-            RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
-            ref MethodSignatureComparer methodSignatureComparer,
-            TypeSystemContext typeSystemContext,
-            CanonicalFormKind canonFormKind,
-            out MethodInvokeMetadata methodInvokeMetadata)
-        {
-            methodInvokeMetadata = default(MethodInvokeMetadata);
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            TypeDesc declaringType = typeSystemContext.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            TypeDesc declaringTypeDefinition = declaringType.GetTypeDefinition();
-
-            if (declaringTypeDefinition == null)
-                return false;
-
-
-            MethodDesc methodOnType = null;
-
-            if (declaringTypeDefinition is NativeFormatType)
-            {
-                NativeFormatType nativeFormatType = ((NativeFormatType)declaringTypeDefinition);
-                Debug.Assert(methodHandle.NativeFormatReader == nativeFormatType.MetadataReader);
-                methodOnType = nativeFormatType.MetadataUnit.GetMethod(methodHandle.NativeFormatHandle, nativeFormatType);
-            }
-            else
-            {
-                EcmaType ecmaType = ((EcmaType)declaringTypeDefinition);
-                Debug.Assert(methodHandle.EcmaFormatReader == ecmaType.MetadataReader);
-                methodOnType = ecmaType.EcmaModule.GetMethod(methodHandle.EcmaFormatHandle);
-            }
-
-            if (methodOnType == null)
-            {
-                return false;
-            }
-
-            if (declaringTypeDefinition != declaringType)
-            {
-                // If we reach here, then the method is on a generic type, and we just found the uninstantiated form
-                // Get the method on the instantiated type and continue
-                methodOnType = typeSystemContext.GetMethodForInstantiatedType(methodOnType, (InstantiatedType)declaringType);
-            }
-
-            if (genericMethodTypeArgumentHandles.Length > 0)
-            {
-                // If we reach here, this is a generic method, instantiate and continue
-                methodOnType = typeSystemContext.GetInstantiatedMethod(methodOnType, typeSystemContext.ResolveRuntimeTypeHandles(genericMethodTypeArgumentHandles));
-            }
-
-            IntPtr entryPoint = IntPtr.Zero;
-            IntPtr unboxingStubAddress = IntPtr.Zero;
-            MethodAddressType foundAddressType = MethodAddressType.None;
-#if SUPPORT_DYNAMIC_CODE
-            if (foundAddressType == MethodAddressType.None)
-                MethodEntrypointStubs.TryGetMethodEntrypoint(methodOnType, out entryPoint, out unboxingStubAddress, out foundAddressType);
-#endif
-            if (foundAddressType == MethodAddressType.None)
-                return false;
-
-            // Only find a universal canon implementation if searching for one
-            if (foundAddressType == MethodAddressType.UniversalCanonical &&
-                !((canonFormKind == CanonicalFormKind.Universal) || (canonFormKind == CanonicalFormKind.Any)))
-            {
-                return false;
-            }
-
-            // TODO: This will probably require additional work to smoothly use unboxing stubs
-            // in vtables - for plain reflection invoke everything seems to work
-            // without additional changes thanks to the "NeedsParameterInterpretation" flag.
-            if (methodHandle.IsNativeFormatMetadataBased)
-                methodInvokeMetadata.MappingTableModule = ((NativeFormatType)declaringTypeDefinition).MetadataUnit.RuntimeModuleInfo;
-            else
-                methodInvokeMetadata.MappingTableModule = null; // MappingTableModule is only used if NeedsParameterInterpretation isn't set
-            methodInvokeMetadata.MethodEntryPoint = entryPoint;
-            methodInvokeMetadata.RawMethodEntryPoint = entryPoint;
-            // TODO: methodInvokeMetadata.DictionaryComponent
-            // TODO: methodInvokeMetadata.DefaultValueString
-            // TODO: methodInvokeMetadata.DynamicInvokeCookie
-
-            methodInvokeMetadata.InvokeTableFlags =
-                InvokeTableFlags.HasMetadataHandle |
-                InvokeTableFlags.HasEntrypoint |
-                InvokeTableFlags.NeedsParameterInterpretation;
-            if (methodOnType.Signature.GenericParameterCount != 0)
-            {
-                methodInvokeMetadata.InvokeTableFlags |= InvokeTableFlags.IsGenericMethod;
-            }
-            if (canonFormKind == CanonicalFormKind.Universal)
-            {
-                methodInvokeMetadata.InvokeTableFlags |= InvokeTableFlags.IsUniversalCanonicalEntry;
-            }
-            /* TODO
-            if (methodOnType.HasDefaultParameters)
-            {
-                methodInvokeMetadata.InvokeTableFlags |= InvokeTableFlags.HasDefaultParameters;
-            }
-            */
-
-            return true;
-#else
-            return false;
-#endif
-        }
-
         // Api surface for controlling invoke map enumeration.
         private interface IInvokeMapEntryDataDeclaringTypeAndGenericMethodParameterHandling<TDictionaryComponentType>
         {
@@ -1355,88 +776,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        // Comparator for invoke map when used to find an invoke map entry and the search data is
-        // a type system object with Metadata
-        private struct TypeSystemTypeComparator : IInvokeMapEntryDataDeclaringTypeAndGenericMethodParameterHandling<bool>
-        {
-            private readonly MethodDesc _targetMethod;
-
-            public TypeSystemTypeComparator(MethodDesc targetMethod)
-            {
-                _targetMethod = targetMethod;
-            }
-
-            public bool GetTypeDictionary(out bool dictionary)
-            {
-                // The true is to indicate a dictionary is necessary
-                dictionary = true;
-                return true;
-            }
-
-            public bool GetMethodDictionary(MethodNameAndSignature nameAndSignature, out bool dictionary)
-            {
-                // The true is to indicate a dictionary is necessary
-                dictionary = true;
-                return true;
-            }
-
-            public bool IsUninterestingDictionaryComponent(bool dictionary)
-            {
-                return dictionary == false;
-            }
-
-            public IntPtr ProduceFatFunctionPointerMethodEntryPoint(IntPtr methodEntrypoint, bool dictionary)
-            {
-                // We don't actually want to produce the fat function pointer here. We want to delay until its actually needed
-                return methodEntrypoint;
-            }
-
-            public bool CompareMethodInstantiation(RuntimeTypeHandle[] methodInstantiation)
-            {
-                if (!_targetMethod.HasInstantiation)
-                    return false;
-
-                if (_targetMethod.Instantiation.Length != methodInstantiation.Length)
-                    return false;
-
-                int i = 0;
-                foreach (TypeDesc instantiationType in _targetMethod.Instantiation)
-                {
-                    TypeDesc genericArg2 = _targetMethod.Context.ResolveRuntimeTypeHandle(methodInstantiation[i]);
-                    if (instantiationType != genericArg2)
-                    {
-                        return false;
-                    }
-                    i++;
-                }
-
-                return true;
-            }
-
-            public bool CanInstantiationsShareCode(RuntimeTypeHandle[] methodInstantiation, CanonicalFormKind canonFormKind)
-            {
-                if (!_targetMethod.HasInstantiation)
-                    return false;
-
-                if (_targetMethod.Instantiation.Length != methodInstantiation.Length)
-                    return false;
-
-                int i = 0;
-                foreach (TypeDesc instantiationType in _targetMethod.Instantiation)
-                {
-                    TypeSystemContext context = _targetMethod.Context;
-                    TypeDesc genericArg2 = context.ResolveRuntimeTypeHandle(methodInstantiation[i]);
-                    if (context.ConvertToCanon(instantiationType, canonFormKind) != context.ConvertToCanon(genericArg2, canonFormKind))
-                    {
-                        return false;
-                    }
-                    i++;
-                }
-
-                return true;
-            }
-        }
-
         // Enumerator for discovering methods in the InvokeMap. This is generic to allow highly efficient
         // searching of this table with multiple different input data formats.
         private struct InvokeMapEntryDataEnumerator<TLookupMethodInfo, TDictionaryComponentType> where TLookupMethodInfo : IInvokeMapEntryDataDeclaringTypeAndGenericMethodParameterHandling<TDictionaryComponentType>
@@ -1453,14 +792,12 @@ namespace Internal.Runtime.TypeLoader
             public RuntimeTypeHandle _entryType;
             public IntPtr _methodEntrypoint;
             public uint _dynamicInvokeCookie;
-            public IntPtr _entryDictionary;
             public RuntimeTypeHandle[] _methodInstantiation;
 
             // Computed data
             private bool _hasEntryPoint;
             private bool _isMatchingMethodHandleAndDeclaringType;
             private MethodNameAndSignature _nameAndSignature;
-            private RuntimeTypeHandle[] _entryMethodInstantiation;
 
             public InvokeMapEntryDataEnumerator(
                 TLookupMethodInfo lookupMethodInfo,
@@ -1481,10 +818,8 @@ namespace Internal.Runtime.TypeLoader
                 _dynamicInvokeCookie = 0xffffffff;
                 _hasEntryPoint = false;
                 _isMatchingMethodHandleAndDeclaringType = false;
-                _entryDictionary = IntPtr.Zero;
                 _methodInstantiation = null;
                 _nameAndSignature = null;
-                _entryMethodInstantiation = null;
             }
 
             public void GetNext(
@@ -1500,10 +835,8 @@ namespace Internal.Runtime.TypeLoader
                 _entryType = default(RuntimeTypeHandle);
                 _methodEntrypoint = IntPtr.Zero;
                 _dynamicInvokeCookie = 0xffffffff;
-                _entryDictionary = IntPtr.Zero;
                 _methodInstantiation = null;
                 _nameAndSignature = null;
-                _entryMethodInstantiation = null;
 
                 // If the current entry is not a canonical entry of the same canonical form kind we are looking for, then this cannot be a match
                 if (((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0) != (_canonFormKind == CanonicalFormKind.Universal))
@@ -1522,12 +855,7 @@ namespace Internal.Runtime.TypeLoader
                 else
                 {
                     uint nameAndSigToken = entryParser.GetUnsigned();
-                    MethodNameAndSignature nameAndSig;
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken, out nameAndSig))
-                    {
-                        Debug.Assert(false);
-                        return;
-                    }
+                    MethodNameAndSignature nameAndSig = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken);
                     Debug.Assert(nameAndSig.Signature.IsNativeLayoutSignature);
                     if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
                         return;
@@ -1549,21 +877,18 @@ namespace Internal.Runtime.TypeLoader
                 if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
                     return;
 
-                if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
+                if ((_flags & InvokeTableFlags.RequiresInstArg) != 0)
                 {
-                    Debug.Assert((_hasEntryPoint || ((_flags & InvokeTableFlags.HasVirtualInvoke) != 0)) && ((_flags & InvokeTableFlags.RequiresInstArg) != 0));
+                    Debug.Assert(_hasEntryPoint || ((_flags & InvokeTableFlags.HasVirtualInvoke) != 0));
 
                     uint nameAndSigPointerToken = entryParser.GetUnsigned();
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken, out _nameAndSignature))
-                    {
-                        Debug.Assert(false);    //Error
-                        _isMatchingMethodHandleAndDeclaringType = false;
-                    }
+                    _nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken);
                 }
-                else if (((_flags & InvokeTableFlags.RequiresInstArg) != 0) && _hasEntryPoint)
-                    _entryDictionary = extRefTable.GetGenericDictionaryFromIndex(entryParser.GetUnsigned());
-                else
+
+                if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) == 0)
+                {
                     _methodInstantiation = GetTypeSequence(ref extRefTable, ref entryParser);
+                }
             }
 
             public bool IsMatchingOrCompatibleEntry()
@@ -1583,15 +908,7 @@ namespace Internal.Runtime.TypeLoader
                     return true;
                 }
 
-                // Generic non-shareable method or abstract methods: check for the canonical equivalency of the method
-                // instantiation arguments that we read from the entry
-                if (((_flags & InvokeTableFlags.RequiresInstArg) == 0) || !_hasEntryPoint)
-                    return _lookupMethodInfo.CanInstantiationsShareCode(_methodInstantiation, _canonFormKind);
-
-                // Generic shareable method: check for canonical equivalency of the method instantiation arguments.
-                // The method instantiation arguments are extracted from the generic dictionary pointer that we read from the entry.
-                Debug.Assert(_entryDictionary != IntPtr.Zero);
-                return GetNameAndSignatureAndMethodInstantiation() && _lookupMethodInfo.CanInstantiationsShareCode(_entryMethodInstantiation, _canonFormKind);
+                return _lookupMethodInfo.CanInstantiationsShareCode(_methodInstantiation, _canonFormKind);
             }
 
             public bool GetMethodEntryPoint(out IntPtr methodEntrypoint, out TDictionaryComponentType dictionaryComponent, out IntPtr rawMethodEntrypoint)
@@ -1622,7 +939,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 // Dictionary for generic method (either found statically or constructed dynamically)
-                return GetNameAndSignatureAndMethodInstantiation() && _lookupMethodInfo.GetMethodDictionary(_nameAndSignature, out dictionaryComponent);
+                return _lookupMethodInfo.GetMethodDictionary(_nameAndSignature, out dictionaryComponent);
             }
 
             private bool GetMethodEntryPointComponent(TDictionaryComponentType dictionaryComponent, out IntPtr methodEntrypoint)
@@ -1639,71 +956,6 @@ namespace Internal.Runtime.TypeLoader
 
                 return true;
             }
-
-            private bool GetNameAndSignatureAndMethodInstantiation()
-            {
-                if (_nameAndSignature != null)
-                {
-                    Debug.Assert(((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0) || (_entryMethodInstantiation != null && _entryMethodInstantiation.Length > 0));
-                    return true;
-                }
-
-                if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
-                {
-                    // _nameAndSignature should have been read from the InvokeMap entry directly!
-                    Debug.Fail("Universal canonical entries do NOT have dictionary entries!");
-                    return false;
-                }
-
-                RuntimeTypeHandle dummy1;
-                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(_entryDictionary, out dummy1, out _nameAndSignature, out _entryMethodInstantiation);
-                Debug.Assert(success && dummy1.Equals(_entryType) && _nameAndSignature != null && _entryMethodInstantiation != null && _entryMethodInstantiation.Length > 0);
-                return success;
-            }
-        }
-
-        public static ModuleInfo GetModuleInfoForType(TypeDesc type)
-        {
-            for (;;)
-            {
-                type = type.GetTypeDefinition();
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                NativeFormatType nativeType = type as NativeFormatType;
-                if (nativeType != null)
-                {
-                    MetadataReader metadataReader = nativeType.MetadataReader;
-                    ModuleInfo moduleInfo = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
-
-                    return moduleInfo;
-                }
-#endif
-#if ECMA_METADATA_SUPPORT
-                Internal.TypeSystem.Ecma.EcmaType ecmaType = type as Internal.TypeSystem.Ecma.EcmaType;
-                if (ecmaType != null)
-                {
-                    return ecmaType.EcmaModule.RuntimeModuleInfo;
-                }
-#endif
-                ArrayType arrayType = type as ArrayType;
-                if (arrayType != null)
-                {
-                    // Arrays are defined in the core shared library
-                    return ModuleList.Instance.SystemModule;
-                }
-                InstantiatedType instantiatedType = type as InstantiatedType;
-                if (instantiatedType != null)
-                {
-                    type = instantiatedType.GetTypeDefinition();
-                }
-                ParameterizedType parameterizedType = type as ParameterizedType;
-                if (parameterizedType != null)
-                {
-                    type = parameterizedType.ParameterType;
-                    continue;
-                }
-                // Unable to resolve the native type
-                return ModuleList.Instance.SystemModule;
-            }
         }
 
         public bool TryGetMetadataForTypeMethodNameAndSignature(RuntimeTypeHandle declaringTypeHandle, MethodNameAndSignature nameAndSignature, out QMethodDefinition methodHandle)
@@ -1711,19 +963,8 @@ namespace Internal.Runtime.TypeLoader
             if (!nameAndSignature.Signature.IsNativeLayoutSignature)
             {
                 ModuleInfo moduleInfo = nameAndSignature.Signature.GetModuleInfo();
+                methodHandle = new QMethodDefinition(((NativeFormatModuleInfo)moduleInfo).MetadataReader, nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null));
 
-#if ECMA_METADATA_SUPPORT
-                if (moduleInfo is NativeFormatModuleInfo)
-#endif
-                {
-                    methodHandle = new QMethodDefinition(((NativeFormatModuleInfo)moduleInfo).MetadataReader, nameAndSignature.Signature.Token.AsHandle().ToMethodHandle(null));
-                }
-#if ECMA_METADATA_SUPPORT
-                else
-                {
-                    methodHandle = new QMethodDefinition(((EcmaModuleInfo)moduleInfo).MetadataReader, (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(nameAndSignature.Signature.Token));
-                }
-#endif
                 // When working with method signature that draw directly from metadata, just return the metadata token
                 return true;
             }

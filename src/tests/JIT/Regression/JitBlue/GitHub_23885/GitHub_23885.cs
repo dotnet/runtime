@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 public class GitHub_23885
 {
@@ -38,7 +39,8 @@ public class GitHub_23885
     {
     }
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = 100;
 

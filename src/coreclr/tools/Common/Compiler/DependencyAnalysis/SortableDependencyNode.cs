@@ -42,7 +42,8 @@ namespace ILCompiler.DependencyAnalysis
             /// affect compiler correctness. Today that includes native layout tables.
             /// </summary>
             Ordered,
-            Unordered
+            Unordered,
+            Late,
         }
 
         protected enum ObjectNodeOrder
@@ -76,6 +77,9 @@ namespace ILCompiler.DependencyAnalysis
             DelegateMarshallingStubMapNode,
             StructMarshallingStubMapNode,
             ArrayMapNode,
+            PointerMapNode,
+            ByRefMapNode,
+            FunctionPointerMapNode,
             ReflectionFieldMapNode,
             NativeLayoutInfoNode,
             ExactMethodInstantiationsNode,
@@ -85,11 +89,9 @@ namespace ILCompiler.DependencyAnalysis
             InterfaceGenericVirtualMethodTableNode,
             GenericMethodsTemplateMap,
             GenericTypesTemplateMap,
-            BlockReflectionTypeMapNode,
             StaticsInfoHashtableNode,
             ReflectionVirtualInvokeMapNode,
             ArrayOfEmbeddedPointersNode,
-            DefaultConstructorMapNode,
             ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,

@@ -54,7 +54,8 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_AMD64,
     SPMI_TARGET_ARCHITECTURE_ARM64,
     SPMI_TARGET_ARCHITECTURE_ARM,
-    SPMI_TARGET_ARCHITECTURE_LOONGARCH64
+    SPMI_TARGET_ARCHITECTURE_LOONGARCH64,
+    SPMI_TARGET_ARCHITECTURE_RISCV64
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -67,7 +68,7 @@ inline bool IsSpmiTarget32Bit()
 
 inline bool IsSpmiTarget64Bit()
 {
-    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_RISCV64);
 }
 
 inline size_t SpmiTargetPointerSize()
@@ -92,5 +93,10 @@ inline constexpr unsigned ArrLen(T (&)[size])
 {
     return size;
 }
+
+std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd);
+std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd);
+
+std::string ConvertToUtf8(const WCHAR* str);
 
 #endif // !_SPMIUtil

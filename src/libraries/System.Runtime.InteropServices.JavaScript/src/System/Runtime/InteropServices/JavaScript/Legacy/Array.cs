@@ -18,7 +18,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public Array(params object[] _params)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Array), _params))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
@@ -83,7 +86,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="i">The index.</param>
         public object this[int i]
         {
-            [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
             get
             {
                 this.AssertNotDisposed();
@@ -92,10 +94,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (exception != 0)
                     throw new JSException((string)indexValue);
-                JSHostImplementation.ReleaseInFlight(indexValue);
+                LegacyHostImplementation.ReleaseInFlight(indexValue);
                 return indexValue;
             }
-            [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
             set
             {
                 this.AssertNotDisposed();

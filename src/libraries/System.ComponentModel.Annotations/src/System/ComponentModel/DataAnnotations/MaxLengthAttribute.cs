@@ -74,15 +74,12 @@ namespace System.ComponentModel.DataAnnotations
             {
                 return true;
             }
+
             if (value is string str)
             {
                 length = str.Length;
             }
-            else if (CountPropertyHelper.TryGetCount(value, out var count))
-            {
-                length = count;
-            }
-            else
+            else if (!CountPropertyHelper.TryGetCount(value, out length))
             {
                 throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }

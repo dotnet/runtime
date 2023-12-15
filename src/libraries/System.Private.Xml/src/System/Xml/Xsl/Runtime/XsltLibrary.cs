@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Specialized;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Xml.XPath;
 using System.Xml.Xsl.Xslt;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -324,10 +324,14 @@ namespace System.Xml.Xsl.Runtime
         #region Comparisons
         internal enum ComparisonOperator
         {
-            /*Equality  */
-            Eq, Ne,
-            /*Relational*/
-            Lt, Le, Gt, Ge,
+            /* Equality */
+            Eq,
+            Ne,
+            /* Relational */
+            Lt,
+            Le,
+            Gt,
+            Ge,
         }
 
         // Returns TypeCode of the given atomic value
@@ -336,17 +340,17 @@ namespace System.Xml.Xsl.Runtime
             // Faster implementation of Type.GetTypeCode(item.ValueType);
             Debug.Assert(!item.IsNode, "Atomic value expected");
             Type itemType = item.ValueType;
-            if (itemType == XsltConvert.StringType)
+            if (itemType == typeof(string))
             {
                 return TypeCode.String;
             }
-            else if (itemType == XsltConvert.DoubleType)
+            else if (itemType == typeof(double))
             {
                 return TypeCode.Double;
             }
             else
             {
-                Debug.Assert(itemType == XsltConvert.BooleanType, $"Unexpected type of atomic value {itemType}");
+                Debug.Assert(itemType == typeof(bool), $"Unexpected type of atomic value {itemType}");
                 return TypeCode.Boolean;
             }
         }

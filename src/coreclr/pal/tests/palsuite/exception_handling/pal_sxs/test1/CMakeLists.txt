@@ -11,10 +11,10 @@ if(CORECLR_SET_RPATH)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   endif(CLR_CMAKE_HOST_OSX)
-  if(CLR_CMAKE_HOST_LINUX)
+  if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_HAIKU)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_HOST_LINUX)
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_HAIKU)
 endif(CORECLR_SET_RPATH)
 
 # Test DLL1
@@ -40,6 +40,7 @@ add_dependencies(paltest_pal_sxs_test1_dll1
 )
 
 target_link_libraries(paltest_pal_sxs_test1_dll1
+    PUBLIC
     ${COMMON_TEST_LIBRARIES}
     m
     coreclrpal
@@ -71,6 +72,7 @@ add_dependencies(paltest_pal_sxs_test1_dll2
 )
 
 target_link_libraries(paltest_pal_sxs_test1_dll2
+  PUBLIC
    ${COMMON_TEST_LIBRARIES}
 )
 
@@ -86,6 +88,7 @@ add_dependencies(paltest_pal_sxs_test1
 )
 
 target_link_libraries(paltest_pal_sxs_test1
+  PUBLIC
    paltest_pal_sxs_test1_dll1
    paltest_pal_sxs_test1_dll2
 )

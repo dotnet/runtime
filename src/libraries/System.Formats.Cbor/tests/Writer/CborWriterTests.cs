@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using Test.Cryptography;
 using Xunit;
@@ -332,14 +333,50 @@ namespace System.Formats.Cbor.Tests
         [InlineData((CborConformanceMode)(-1))]
         public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceMode: mode));
+            Assert.Throws<ArgumentOutOfRangeException>("conformanceMode", () => new CborWriter(conformanceMode: mode));
+        }
+
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(int.MinValue)]
+        public static void InvalidInitialCapacity_ShouldThrowArgumentOutOfRangeException(int capacity)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("initialCapacity", () => new CborWriter(initialCapacity: capacity));
+        }
+
+        [Theory]
+        [InlineData(-1, 0)]
+        [InlineData(0, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1023, 1023)]
+        public static void InitialCapacity_ShouldSetInitialBuffer(int capacity, int expectedBufferLength)
+        {
+            CborWriter writer = new CborWriter(initialCapacity: capacity);
+            byte[]? buffer = (byte[]?)typeof(CborWriter).GetField("_buffer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(writer);
+
+            Assert.NotNull(buffer);
+            Assert.Equal(expectedBufferLength, buffer.Length);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(1)]
+        public static void Encode_InitialCapacity_Grows(int capacity)
+        {
+            CborWriter writer = new CborWriter(initialCapacity: capacity);
+            writer.WriteByteString((ReadOnlySpan<byte>)new byte[] { 1, 2, 3, 4, 5, 6 });
+            byte[] encoded = writer.Encode();
+
+            ReadOnlySpan<byte> expected = new byte[] { (2 << 5) | 6, 1, 2, 3, 4, 5, 6 };
+            AssertExtensions.SequenceEqual(expected, encoded);
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });
         public static IEnumerable<object[]> EncodedValueBadInputs => CborReaderTests.InvalidCborValues.Select(x => new[] { x });
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser | TestPlatforms.Wasi)]
         [InlineData("a501020326200121582065eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d2258201e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",
                     "65eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d",
                     "1e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c",

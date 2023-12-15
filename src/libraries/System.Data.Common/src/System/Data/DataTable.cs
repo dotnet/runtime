@@ -4,18 +4,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Data
 {
@@ -195,6 +195,8 @@ namespace System.Data
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DataTable(SerializationInfo info, StreamingContext context) : this()
         {
             bool isSingleTable = context.Context != null ? Convert.ToBoolean(context.Context, CultureInfo.InvariantCulture) : true;
@@ -216,21 +218,23 @@ namespace System.Data
                 throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
             }
 
-            DeserializeDataTable(info, context, isSingleTable, remotingFormat);
+            DeserializeDataTable(info, isSingleTable, remotingFormat);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Binary serialization is unsafe in general and is planned to be obsoleted. We do not want to mark interface or ctors of this class as unsafe as that would show many unnecessary warnings elsewhere.")]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
             bool isSingleTable = context.Context != null ? Convert.ToBoolean(context.Context, CultureInfo.InvariantCulture) : true;
-            SerializeDataTable(info, context, isSingleTable, remotingFormat);
+            SerializeDataTable(info, isSingleTable, remotingFormat);
         }
 
         // Serialize the table schema and data.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        private void SerializeDataTable(SerializationInfo info, StreamingContext context, bool isSingleTable, SerializationFormat remotingFormat)
+        private void SerializeDataTable(SerializationInfo info, bool isSingleTable, SerializationFormat remotingFormat)
         {
             info.AddValue("DataTable.RemotingVersion", new Version(2, 0));
 
@@ -243,10 +247,10 @@ namespace System.Data
             if (remotingFormat != SerializationFormat.Xml)
             {
                 //Binary
-                SerializeTableSchema(info, context, isSingleTable);
+                SerializeTableSchema(info, isSingleTable);
                 if (isSingleTable)
                 {
-                    SerializeTableData(info, context, 0);
+                    SerializeTableData(info, 0);
                 }
             }
             else
@@ -294,15 +298,15 @@ namespace System.Data
 
         // Deserialize the table schema and data.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void DeserializeDataTable(SerializationInfo info, StreamingContext context, bool isSingleTable, SerializationFormat remotingFormat)
+        internal void DeserializeDataTable(SerializationInfo info, bool isSingleTable, SerializationFormat remotingFormat)
         {
             if (remotingFormat != SerializationFormat.Xml)
             {
                 //Binary
-                DeserializeTableSchema(info, context, isSingleTable);
+                DeserializeTableSchema(info, isSingleTable);
                 if (isSingleTable)
                 {
-                    DeserializeTableData(info, context, 0);
+                    DeserializeTableData(info, 0);
                     ResetIndexes();
                 }
             }
@@ -336,7 +340,7 @@ namespace System.Data
 
         // Serialize the columns
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void SerializeTableSchema(SerializationInfo info, StreamingContext context, bool isSingleTable)
+        internal void SerializeTableSchema(SerializationInfo info, bool isSingleTable)
         {
             //DataTable basic  properties
             info.AddValue("DataTable.TableName", TableName);
@@ -407,13 +411,13 @@ namespace System.Data
             //Constraints
             if (isSingleTable)
             {
-                SerializeConstraints(info, context, 0, false);
+                SerializeConstraints(info, 0, false);
             }
         }
 
         // Deserialize all the Columns
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void DeserializeTableSchema(SerializationInfo info, StreamingContext context, bool isSingleTable)
+        internal void DeserializeTableSchema(SerializationInfo info, bool isSingleTable)
         {
             //DataTable basic properties
             _tableName = info.GetString("DataTable.TableName")!;
@@ -499,7 +503,7 @@ namespace System.Data
             //Constraints
             if (isSingleTable)
             {
-                DeserializeConstraints(info, context, /*table index */ 0, /* serialize all constraints */false); // since single table, send table index as 0, meanwhile passing
+                DeserializeConstraints(info, /*table index */ 0, /* serialize all constraints */false); // since single table, send table index as 0, meanwhile passing
                 // false for 'allConstraints' means, handle all the constraint related to the table
             }
         }
@@ -508,7 +512,7 @@ namespace System.Data
         // ***Schema for Serializing ArrayList of Constraints***
         // Unique Constraint - ["U"]->[constraintName]->[columnIndexes]->[IsPrimaryKey]->[extendedProperties]
         // Foriegn Key Constraint - ["F"]->[constraintName]->[parentTableIndex, parentcolumnIndexes]->[childTableIndex, childColumnIndexes]->[AcceptRejectRule, UpdateRule, DeleteRule]->[extendedProperties]
-        internal void SerializeConstraints(SerializationInfo info, StreamingContext context, int serIndex, bool allConstraints)
+        internal void SerializeConstraints(SerializationInfo info, int serIndex, bool allConstraints)
         {
             if (allConstraints)
             {
@@ -580,7 +584,7 @@ namespace System.Data
         // ***Schema for Serializing ArrayList of Constraints***
         // Unique Constraint - ["U"]->[constraintName]->[columnIndexes]->[IsPrimaryKey]->[extendedProperties]
         // Foriegn Key Constraint - ["F"]->[constraintName]->[parentTableIndex, parentcolumnIndexes]->[childTableIndex, childColumnIndexes]->[AcceptRejectRule, UpdateRule, DeleteRule]->[extendedProperties]
-        internal void DeserializeConstraints(SerializationInfo info, StreamingContext context, int serIndex, bool allConstraints)
+        internal void DeserializeConstraints(SerializationInfo info, int serIndex, bool allConstraints)
         {
             ArrayList constraintList = (ArrayList)info.GetValue(string.Format(CultureInfo.InvariantCulture, "DataTable_{0}.Constraints", serIndex), typeof(ArrayList))!;
 
@@ -651,7 +655,7 @@ namespace System.Data
         }
 
         // Serialize the expressions on the table - Marked internal so that DataSet deserializer can call into this
-        internal void SerializeExpressionColumns(SerializationInfo info, StreamingContext context, int serIndex)
+        internal void SerializeExpressionColumns(SerializationInfo info, int serIndex)
         {
             int colCount = Columns.Count;
             for (int i = 0; i < colCount; i++)
@@ -662,7 +666,7 @@ namespace System.Data
 
         // Deserialize the expressions on the table - Marked internal so that DataSet deserializer can call into this
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void DeserializeExpressionColumns(SerializationInfo info, StreamingContext context, int serIndex)
+        internal void DeserializeExpressionColumns(SerializationInfo info, int serIndex)
         {
             int colCount = Columns.Count;
             for (int i = 0; i < colCount; i++)
@@ -677,7 +681,7 @@ namespace System.Data
 
         // Serialize all the Rows.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void SerializeTableData(SerializationInfo info, StreamingContext context, int serIndex)
+        internal void SerializeTableData(SerializationInfo info, int serIndex)
         {
             //Cache all the column count, row count
             int colCount = Columns.Count;
@@ -763,7 +767,7 @@ namespace System.Data
 
         // Deserialize all the Rows.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void DeserializeTableData(SerializationInfo info, StreamingContext context, int serIndex)
+        internal void DeserializeTableData(SerializationInfo info, int serIndex)
         {
             bool enforceConstraintsOrg = _enforceConstraints;
             bool inDataLoadOrg = _inDataLoad;
@@ -2348,7 +2352,7 @@ namespace System.Data
             return targetTable;
         }
 
-        private DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
+        private static DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
         {
             visitedMap ??= new Hashtable();
             if (visitedMap.Contains(sourceTable))
@@ -3930,7 +3934,7 @@ namespace System.Data
             }
             else
             {
-                equalValues = dc.CompareValueTo(record, newValue, true);
+                equalValues = dc.CompareValueToChecked(record, newValue);
             }
 
             // if expression has changed
@@ -4105,7 +4109,7 @@ namespace System.Data
         {
             try
             {
-                if (UpdatingCurrent(eRow, eAction) && (IsTypedDataTable || (null != _onRowChangedDelegate)))
+                if (UpdatingCurrent(eAction) && (IsTypedDataTable || (null != _onRowChangedDelegate)))
                 {
                     args = OnRowChanged(args, eRow, eAction);
                 }
@@ -4128,7 +4132,7 @@ namespace System.Data
 
         private DataRowChangeEventArgs? RaiseRowChanging(DataRowChangeEventArgs? args, DataRow eRow, DataRowAction eAction)
         {
-            if (UpdatingCurrent(eRow, eAction) && (IsTypedDataTable || (null != _onRowChangingDelegate)))
+            if (UpdatingCurrent(eAction) && (IsTypedDataTable || (null != _onRowChangingDelegate)))
             {
                 eRow._inChangingEvent = true;
 
@@ -4811,7 +4815,7 @@ namespace System.Data
             return Rows.Add(values);
         }
 
-        internal static bool UpdatingCurrent(DataRow row, DataRowAction action)
+        internal static bool UpdatingCurrent(DataRowAction action)
         {
             return (action == DataRowAction.Add || action == DataRowAction.Change ||
                    action == DataRowAction.Rollback || action == DataRowAction.ChangeOriginal ||
@@ -4892,7 +4896,7 @@ namespace System.Data
         /// additional properties.  The returned array of properties will be
         /// filtered by the given set of attributes.
         /// </summary>
-        internal PropertyDescriptorCollection GetPropertyDescriptorCollection(Attribute[]? attributes)
+        internal PropertyDescriptorCollection GetPropertyDescriptorCollection()
         {
             if (_propertyDescriptorCollectionCache == null)
             {
@@ -5492,7 +5496,7 @@ namespace System.Data
             WriteXmlSchema(w, writeHierarchy);
         }
 
-        private bool CheckForClosureOnExpressions(DataTable dt, bool writeHierarchy)
+        private static bool CheckForClosureOnExpressions(DataTable dt, bool writeHierarchy)
         {
             List<DataTable> tableList = new List<DataTable>();
             tableList.Add(dt);
@@ -6370,7 +6374,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void ReadXSDSchema(XmlReader reader, bool denyResolving)
+        internal void ReadXSDSchema(XmlReader reader)
         {
             XmlSchemaSet sSet = new XmlSchemaSet();
             while (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
@@ -6613,7 +6617,7 @@ namespace System.Data
             }
         }
 
-        private void CreateTableList(DataTable currentTable, List<DataTable> tableList)
+        private static void CreateTableList(DataTable currentTable, List<DataTable> tableList)
         {
             foreach (DataRelation r in currentTable.ChildRelations)
             {
@@ -6676,10 +6680,7 @@ namespace System.Data
             MemoryStream stream = new MemoryStream();
 
             XmlWriter writer = new XmlTextWriter(stream, null);
-            if (writer != null)
-            {
-                (new XmlTreeGen(SchemaFormat.WebService)).Save(this, writer);
-            }
+            new XmlTreeGen(SchemaFormat.WebService).Save(this, writer);
             stream.Position = 0;
             return XmlSchema.Read(new XmlTextReader(stream), null);
         }

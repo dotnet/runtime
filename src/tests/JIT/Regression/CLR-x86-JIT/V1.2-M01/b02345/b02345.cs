@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using Xunit;
 
 public enum TestEnum
 {
@@ -76,9 +77,10 @@ public class AA
     }
 }
 
-class App
+public class App
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -99,6 +101,5 @@ class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
 }

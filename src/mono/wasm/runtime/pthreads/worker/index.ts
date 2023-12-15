@@ -4,10 +4,11 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
-import { isMonoThreadMessageApplyMonoConfig, makeChannelCreatedMonoMessage } from "../shared";
-import type { pthread_ptr } from "../shared/types";
-import { mono_assert, is_nullish, MonoConfig } from "../../types";
+
+import { Module, ENVIRONMENT_IS_PTHREAD, mono_assert } from "../../globals";
+import { makeChannelCreatedMonoMessage, set_thread_info } from "../shared";
+import type { pthreadPtr } from "../shared/types";
+import { is_nullish } from "../../types/internal";
 import type { MonoThreadMessage } from "../shared";
 import {
     PThreadSelf,
@@ -16,7 +17,9 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
-import { setup_proxy_console } from "../../logging";
+import { postRunWorker, preRunWorker } from "../../startup";
+import { mono_log_debug, mono_set_thread_id } from "../../logging";
+import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
 
 // re-export some of the events types
 export {
@@ -29,7 +32,7 @@ export {
 
 class WorkerSelf implements PThreadSelf {
     readonly isBrowserThread = false;
-    constructor(readonly pthread_id: pthread_ptr, readonly portToBrowser: MessagePort) { }
+    constructor(readonly pthreadId: pthreadPtr, readonly portToBrowser: MessagePort) { }
     postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
         if (transfer) {
             this.portToBrowser.postMessage(message, transfer);
@@ -50,26 +53,23 @@ export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 /// pthreads that are running on the current worker.
 /// Example:
 ///    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev: WorkerThreadEvent) => {
-///       console.debug("MONO_WASM: thread created on worker with id", ev.pthread_ptr);
+///       mono_trace("thread created on worker with id", ev.pthread_ptr);
 ///    });
-export const currentWorkerThreadEvents: WorkerThreadEventTarget =
-    MonoWasmThreads ? new EventTarget() : null as any as WorkerThreadEventTarget; // treeshake if threads are disabled
+export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any;
 
+export function initWorkerThreadEvents() {
+    // treeshake if threads are disabled
+    currentWorkerThreadEvents = MonoWasmThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+}
 
 // this is the message handler for the worker that receives messages from the main thread
 // extend this with new cases as needed
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
-    if (isMonoThreadMessageApplyMonoConfig(event.data)) {
-        const config = JSON.parse(event.data.config) as MonoConfig;
-        console.debug("MONO_WASM: applying mono config from main", event.data.config);
-        onMonoConfigReceived(config);
-        return;
-    }
-    console.debug("MONO_WASM: got message from main on the dedicated channel", event.data);
+    mono_log_debug("got message from main on the dedicated channel", event.data);
 }
 
-function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
-    console.debug("MONO_WASM: creating a channel", pthread_ptr);
+
+function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
@@ -80,40 +80,37 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
     return pthread_self;
 }
 
-// TODO: should we just assign to Module.config here?
-let workerMonoConfig: MonoConfig = null as unknown as MonoConfig;
-
-// called when the main thread sends us the mono config
-function onMonoConfigReceived(config: MonoConfig): void {
-    if (workerMonoConfig !== null) {
-        console.debug("MONO_WASM: mono config already received");
-        return;
-    }
-    workerMonoConfig = config;
-    console.debug("MONO_WASM: mono config received", config);
-    if (workerMonoConfig.diagnosticTracing) {
-        setup_proxy_console("pthread-worker", console, self.location.href);
-    }
-}
 
 /// This is an implementation detail function.
-/// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
+/// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
+    if (!MonoWasmThreads) return;
     const self = pthread_self;
-    mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
-    console.debug("MONO_WASM: attaching pthread to runtime", pthread_id);
+    mono_assert(self !== null && self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
+    mono_set_thread_id("0x" + pthread_id.toString(16));
+    preRunWorker();
+    set_thread_info(pthread_id, true, false, false);
+    jiterpreter_allocate_tables();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
+}
+
+/// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
+export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
+    if (!MonoWasmThreads) return;
+    postRunWorker();
+    set_thread_info(pthread_id, false, false, false);
+    mono_set_thread_id("");
 }
 
 /// This is an implementation detail function.
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
 /// for the same worker, since emscripten can reuse workers.  This is an implementation detail, that shouldn't be used directly.
 export function afterThreadInitTLS(): void {
+    if (!MonoWasmThreads) return;
     // don't do this callback for the main thread
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
-        console.debug("MONO_WASM: after thread init, pthread ptr", pthread_ptr);
         const self = setupChannelToMainThread(pthread_ptr);
         currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, self));
     }

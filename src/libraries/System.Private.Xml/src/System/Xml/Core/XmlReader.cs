@@ -578,10 +578,9 @@ namespace System.Xml
         // Moves to the attribute with the specified index.
         public virtual void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= AttributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, AttributeCount);
+
             MoveToElement();
             MoveToFirstAttribute();
             int j = 0;
@@ -1186,7 +1185,7 @@ namespace System.Xml
         }
 
         // Writes the attribute into the provided XmlWriter.
-        private void WriteAttributeValue(XmlWriter xtw)
+        private void WriteAttributeValue(XmlTextWriter xtw)
         {
             string attrName = Name;
             while (ReadAttributeValue())
@@ -1613,7 +1612,7 @@ namespace System.Xml
 
             // Avoid using XmlReader.Create(string, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
-            return new XmlTextReaderImpl(inputUri, XmlReaderSettings.s_defaultReaderSettings, null, new XmlUrlResolver());
+            return new XmlTextReaderImpl(inputUri, XmlReaderSettings.s_defaultReaderSettings, null, XmlReaderSettings.GetDefaultPermissiveResolver());
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given Uri.

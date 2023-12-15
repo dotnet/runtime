@@ -8,15 +8,15 @@ parameters:
   # 'gcstress' - platforms that support running under GCStress0x3 and GCStress0xC scenarios
   platformGroup: ''
   # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
-  # used, instead of the usual criteria. Allowed values:
+  # used, instead of the usual criteria. Values that must be supported by the supplied helixQueuesTemplate:
   # 'pr' - the queues used for a pull request for the platform. Typically a small set.
   # 'ci' - the queues used for a CI (post-merge) test run.
-  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  # Other values might be supported by the template specified in helixQueuesTemplate, but they do not have specified
+  # meanings here.
   helixQueueGroup: 'pr'
   # helixQueuesTemplate is a yaml template which will be expanded in order to set up the helix queues
   # for the given platform and helixQueueGroup.
   helixQueuesTemplate: ''
-  stagedBuild: false
   container: ''
   shouldContinueOnError: false
   jobParameters: {}
@@ -25,42 +25,42 @@ parameters:
 jobs:
 
 # Linux arm
-- ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+
+- ${{ if or(containsValue(parameters.platforms, 'linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: arm
       targetRid: linux-arm
-      platform: Linux_arm
+      platform: linux_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_arm
+      container: linux_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux armv6
-- ${{ if containsValue(parameters.platforms, 'Linux_armv6') }}:
+
+- ${{ if containsValue(parameters.platforms, 'linux_armv6') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: armv6
       targetRid: linux-armv6
-      platform: Linux_armv6
+      platform: linux_armv6
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_armv6
+      container: linux_armv6
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -68,26 +68,25 @@ jobs:
 
 # Linux arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: arm64
       targetRid: linux-arm64
-      platform: Linux_arm64
+      platform: linux_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       ${{ if eq(parameters.container, '') }}:
-        container: Linux_arm64
+        container: linux_arm64
       ${{ if ne(parameters.container, '') }}:
         container:
           image: ${{ parameters.container }}
           registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -95,44 +94,43 @@ jobs:
 
 # Linux musl x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       osSubgroup: _musl
       archType: x64
       targetRid: linux-musl-x64
-      platform: Linux_musl_x64
+      platform: linux_musl_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_musl_x64
+      container: linux_musl_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_musl_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       osSubgroup: _musl
       archType: arm
       targetRid: linux-musl-arm
-      platform: Linux_musl_arm
+      platform: linux_musl_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_musl_arm
+      container: linux_musl_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -140,22 +138,21 @@ jobs:
 
 # Linux musl arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       osSubgroup: _musl
       archType: arm64
       targetRid: linux-musl-arm64
-      platform: Linux_musl_arm64
+      platform: linux_musl_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_musl_arm64
+      container: linux_musl_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -163,119 +160,133 @@ jobs:
 
 # Linux Bionic arm64
 
-- ${{ if containsValue(parameters.platforms, 'Linux_bionic_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_bionic_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       osSubgroup: _bionic
       archType: arm64
       targetRid: linux-bionic-arm64
-      platform: Linux_bionic_arm64
+      platform: linux_bionic_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_bionic
+      container: linux_bionic
       jobParameters:
         runtimeFlavor: mono
         # We build on Linux, but the test queue runs Windows, so
         # we need to override the test script generation
         runScriptWindowsCmd: true
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux Bionic x64
 
-- ${{ if containsValue(parameters.platforms, 'Linux_bionic_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_bionic_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       osSubgroup: _bionic
       archType: x64
       targetRid: linux-bionic-x64
-      platform: Linux_bionic_x64
+      platform: linux_bionic_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_bionic
+      container: linux_bionic
       jobParameters:
         runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: x64
       targetRid: linux-x64
-      platform: Linux_x64
+      platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       ${{ if eq(parameters.container, '') }}:
-        container: Linux_x64
+        container: linux_x64
       ${{ if ne(parameters.container, '') }}:
         container:
           image: ${{ parameters.container }}
           registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x86
 
-- ${{ if containsValue(parameters.platforms, 'Linux_x86') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_x86') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: x86
       targetRid: linux-x86
-      platform: Linux_x86
+      platform: linux_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_x86
+      container: linux_x86
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Centos 7 x64 Source Build
+# Runtime-dev-innerloop build
 
-- ${{ if containsValue(parameters.platforms, 'SourceBuild_Centos7_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_x64_dev_innerloop') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: x64
-      targetRid: centos.7-x64
-      platform: Centos7_Linux_x64
+      targetRid: linux-x64
+      platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container:
-        image: centos-7-source-build-20210714125450-5d87b80
-        registry: mcr
+      container: linux_x64_dev_innerloop
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Centos 8 Stream x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_centos8_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: centos.8-x64
+      platform: centos8_linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: SourceBuild_centos_x64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
@@ -284,23 +295,21 @@ jobs:
 
 # Non-existent RID Source Build
 
-- ${{ if containsValue(parameters.platforms, 'SourceBuild_Banana24_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_banana24_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: x64
       targetRid: banana.24-x64
-      platform: Banana24_Linux_x64
+      platform: banana24_linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container:
-        image: centos-7-source-build-20210714125450-5d87b80
-        registry: mcr
+      container: SourceBuild_centos_x64 # Run the unknown-rid build on a platform with a known RID so our RID graph tooling can automatically add it to the RID graph.
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
+        baseOS: linux
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
@@ -309,44 +318,82 @@ jobs:
 
 # Portable Linux x64 Source Build
 
-- ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_linux_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: x64
       targetRid: linux-x64
-      platform: Linux_x64
+      platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: SourceBuild_Linux_x64
+      container: SourceBuild_linux_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
         isNonPortableSourceBuild: false
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux s390x
+# GCC Linux x64 Build
 
-- ${{ if containsValue(parameters.platforms, 'Linux_s390x') }}:
+- ${{ if containsValue(parameters.platforms, 'gcc_linux_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
-      archType: s390x
-      targetRid: linux-s390x
-      platform: Linux_s390x
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_s390x
+      container: debian-12-gcc13-amd64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Mono LLVMAot test build
+
+- ${{ if containsValue(parameters.platforms, 'linux_x64_llvmaot') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_x64_llvmaot
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux s390x
+
+- ${{ if containsValue(parameters.platforms, 'linux_s390x') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: s390x
+      targetRid: linux-s390x
+      platform: linux_s390x
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_s390x
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -354,80 +401,80 @@ jobs:
 
 # Linux PPC64le
 
-- ${{ if containsValue(parameters.platforms, 'Linux_ppc64le') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_ppc64le') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: linux
       archType: ppc64le
       targetRid: linux-ppc64le
-      platform: Linux_ppc64le
+      platform: linux_ppc64le
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_ppc64le
+      container: linux_ppc64le
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly
+# Linux RISCV64
 
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_riscv64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Browser
-      archType: wasm
-      targetRid: browser-wasm
-      platform: Browser_wasm
+      osGroup: linux
+      archType: riscv64
+      targetRid: linux-riscv64
+      platform: linux_riscv64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Browser_wasm
+      container: linux_riscv64
       jobParameters:
-        hostedOs: Linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        disableClrTest: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WASI WebAssembly
+
+- ${{ if containsValue(parameters.platforms, 'wasi_wasm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: wasi
+      archType: wasm
+      targetRid: wasi-wasm
+      platform: wasi_wasm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: wasi_wasm
+      jobParameters:
+        hostedOs: linux
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly Linux Firefox
+# WASI WebAssembly windows
 
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm_firefox') }}:
+- ${{ if containsValue(parameters.platforms, 'wasi_wasm_win') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Browser
+      osGroup: wasi
       archType: wasm
-      targetRid: browser-wasm
-      platform: Browser_wasm_firefox
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Browser_wasm
-      jobParameters:
-        hostedOs: Linux
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
-# WebAssembly on Windows
-
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: Browser
-      archType: wasm
-      targetRid: browser-wasm
-      platform: Browser_wasm_win
+      targetRid: wasi-wasm
+      platform: wasi_wasm_win
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         hostedOs: windows
@@ -436,19 +483,78 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# FreeBSD
-- ${{ if containsValue(parameters.platforms, 'FreeBSD_x64') }}:
+# Browser WebAssembly
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: FreeBSD
+      osGroup: browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: browser_wasm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: browser_wasm
+      jobParameters:
+        hostedOs: linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Browser WebAssembly Linux Firefox
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm_firefox') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: browser_wasm_firefox
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: browser_wasm
+      jobParameters:
+        hostedOs: linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Browser WebAssembly on Windows
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm_win') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: browser_wasm_win
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      jobParameters:
+        hostedOs: windows
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# FreeBSD
+- ${{ if containsValue(parameters.platforms, 'freebsd_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: freebsd
       archType: x64
       targetRid: freebsd-x64
-      platform: FreeBSD_x64
+      platform: freebsd_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: FreeBSD_x64
+      container: freebsd_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -458,305 +564,295 @@ jobs:
 
 # Android x64
 
-- ${{ if containsValue(parameters.platforms, 'Android_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'android_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Android
+      osGroup: android
       archType: x64
       targetRid: android-x64
-      platform: Android_x64
+      platform: android_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_bionic
+      container: linux_bionic
       jobParameters:
         runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Android x64 with Docker-in-Docker
+
+- ${{ if containsValue(parameters.platforms, 'android_x64_docker') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: android
+      archType: x64
+      targetRid: android-x64
+      platform: android_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: android_docker
+      jobParameters:
+        runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android x86
 
-- ${{ if containsValue(parameters.platforms, 'Android_x86') }}:
+- ${{ if containsValue(parameters.platforms, 'android_x86') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Android
+      osGroup: android
       archType: x86
       targetRid: android-x86
-      platform: Android_x86
+      platform: android_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_bionic
+      container: linux_bionic
       jobParameters:
         runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android arm
 
-- ${{ if containsValue(parameters.platforms, 'Android_arm') }}:
+- ${{ if containsValue(parameters.platforms, 'android_arm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Android
+      osGroup: android
       archType: arm
       targetRid: android-arm
-      platform: Android_arm
+      platform: android_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_bionic
+      container: linux_bionic
       jobParameters:
         runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android arm64
 
-- ${{ if containsValue(parameters.platforms, 'Android_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'android_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Android
+      osGroup: android
       archType: arm64
       targetRid: android-arm64
-      platform: Android_arm64
+      platform: android_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Linux_bionic
+      container: linux_bionic
       jobParameters:
         runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Mac Catalyst x64
 
-- ${{ if containsValue(parameters.platforms, 'MacCatalyst_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'maccatalyst_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: MacCatalyst
+      osGroup: maccatalyst
       archType: x64
       targetRid: maccatalyst-x64
-      platform: MacCatalyst_x64
+      platform: maccatalyst_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Mac Catalyst arm64
 
-- ${{ if containsValue(parameters.platforms, 'MacCatalyst_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'maccatalyst_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: MacCatalyst
+      osGroup: maccatalyst
       archType: arm64
       targetRid: maccatalyst-arm64
-      platform: MacCatalyst_arm64
+      platform: maccatalyst_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # tvOS arm64
 
-- ${{ if containsValue(parameters.platforms, 'tvOS_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvos_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS
+      osGroup: tvos
       archType: arm64
       targetRid: tvos-arm64
-      platform: tvOS_arm64
+      platform: tvos_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # tvOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'tvOSSimulator_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvossimulator_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOSSimulator
+      osGroup: tvossimulator
       archType: x64
       targetRid: tvossimulator-x64
-      platform: tvOSSimulator_x64
+      platform: tvossimulator_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # tvOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'tvOSSimulator_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvossimulator_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOSSimulator
+      osGroup: tvossimulator
       archType: arm64
       targetRid: tvossimulator-arm64
-      platform: tvOSSimulator_arm64
+      platform: tvossimulator_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
-# iOS arm
-
-- ${{ if containsValue(parameters.platforms, 'iOS_arm') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: iOS
-      archType: arm
-      targetRid: ios-arm
-      platform: iOS_arm
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS arm64
 
-- ${{ if containsValue(parameters.platforms, 'iOS_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'ios_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
+      osGroup: ios
       archType: arm64
       targetRid: ios-arm64
-      platform: iOS_arm64
+      platform: ios_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'iOSSimulator_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'iossimulator_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOSSimulator
+      osGroup: iossimulator
       archType: x64
       targetRid: iossimulator-x64
-      platform: iOSSimulator_x64
+      platform: iossimulator_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
-# iOS Simulator x86
-
-- ${{ if containsValue(parameters.platforms, 'iOSSimulator_x86') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: iOSSimulator
-      archType: x86
-      targetRid: iossimulator-x86
-      platform: iOSsimulator_x86
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'iOSSimulator_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'iossimulator_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOSSimulator
+      osGroup: iossimulator
       archType: arm64
       targetRid: iossimulator-arm64
-      platform: iOSSimulator_arm64
+      platform: iossimulator_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
+        ${{ if eq(parameters.runtimeFlavor, '') }}:
+          runtimeFlavor: mono
+        ${{ else }}:
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS arm64
 
-- ${{ if containsValue(parameters.platforms, 'OSX_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'osx_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: OSX
+      osGroup: osx
       archType: arm64
       targetRid: osx-arm64
-      platform: OSX_arm64
+      platform: osx_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -764,41 +860,39 @@ jobs:
 
 # macOS x64
 
-- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'osx_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: OSX
+      osGroup: osx
       archType: x64
       targetRid: osx-x64
-      platform: OSX_x64
+      platform: osx_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Tizen armel
 
-- ${{ if containsValue(parameters.platforms, 'Tizen_armel') }}:
+- ${{ if containsValue(parameters.platforms, 'tizen_armel') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Tizen
+      osGroup: linux # Our build scripts don't support Tizen and have always used Linux as the OS parameter.
       archType: armel
       targetRid: tizen-armel
-      platform: Tizen_armel
+      platform: tizen_armel
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: Tizen_armel
+      container: tizen_armel
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
@@ -820,7 +914,6 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -840,26 +933,6 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
-# Windows arm
-- ${{ if or(containsValue(parameters.platforms, 'windows_arm'), eq(parameters.platformGroup, 'all')) }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: windows
-      archType: arm
-      targetRid: win-arm
-      platform: windows_arm
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -879,7 +952,6 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}

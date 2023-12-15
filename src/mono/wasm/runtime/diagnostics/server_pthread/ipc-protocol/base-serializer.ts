@@ -57,7 +57,7 @@ const Serializer = {
         advancePos(pos, payload.byteLength);
     },
     serializeString(buf: Uint8Array, pos: { pos: number }, s: string | null): void {
-        if (s === null) {
+        if (s === null || s === undefined || s === "") {
             Serializer.serializeUint32(buf, pos, 0);
         } else {
             const len = s.length;

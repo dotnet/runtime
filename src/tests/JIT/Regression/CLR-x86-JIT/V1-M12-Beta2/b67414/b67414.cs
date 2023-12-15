@@ -5,11 +5,12 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.IO;
+using Xunit;
 
-internal class bug
+public class bug
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        return 100;
     }
 }

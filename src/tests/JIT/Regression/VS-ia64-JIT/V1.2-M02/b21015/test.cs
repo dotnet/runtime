@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct T
 {
@@ -26,9 +27,10 @@ struct T
     }
 }
 
-class Tester
+public class Tester
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         T t1, t2;
 
@@ -37,11 +39,9 @@ class Tester
 
         bar(t1);
         bar(t2);
-
-        return 100;
     }
 
-    public static void bar(T t)
+    static void bar(T t)
     {
         Console.WriteLine(t.TheString);
     }

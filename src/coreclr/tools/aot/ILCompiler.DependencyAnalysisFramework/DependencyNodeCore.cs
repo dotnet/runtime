@@ -153,5 +153,8 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             return GetName(context);
         }
+
+        public static string GetNodeName(DependencyNodeCore<DependencyContextType> node, DependencyContextType context)
+            => node.GetName(context);
     }
 }

@@ -110,18 +110,21 @@ namespace System.Runtime.Versioning
         {
             ArgumentException.ThrowIfNullOrEmpty(frameworkName);
 
-            string[] components = frameworkName.Split(ComponentSeparator);
+            ReadOnlySpan<char> frameworkNameSpan = frameworkName;
+            Span<Range> components = stackalloc Range[4];
+            int numComponents = frameworkNameSpan.Split(components, ComponentSeparator);
 
             // Identifier and Version are required, Profile is optional.
-            if (components.Length < 2 || components.Length > 3)
+            if (numComponents is not (2 or 3))
             {
                 throw new ArgumentException(SR.Argument_FrameworkNameTooShort, nameof(frameworkName));
             }
+            components = components.Slice(0, numComponents);
 
             //
             // 1) Parse the "Identifier", which must come first. Trim any whitespace
             //
-            _identifier = components[0].Trim();
+            _identifier = frameworkNameSpan[components[0]].Trim().ToString();
 
             if (_identifier.Length == 0)
             {
@@ -137,7 +140,7 @@ namespace System.Runtime.Versioning
             for (int i = 1; i < components.Length; i++)
             {
                 // Get the key/value pair separated by '='
-                string component = components[i];
+                ReadOnlySpan<char> component = frameworkNameSpan[components[i]];
                 int separatorIndex = component.IndexOf(KeyValueSeparator);
 
                 if (separatorIndex < 0 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
@@ -146,8 +149,8 @@ namespace System.Runtime.Versioning
                 }
 
                 // Get the key and value, trimming any whitespace
-                ReadOnlySpan<char> key = component.AsSpan(0, separatorIndex).Trim();
-                ReadOnlySpan<char> value = component.AsSpan(separatorIndex + 1).Trim();
+                ReadOnlySpan<char> key = component.Slice(0, separatorIndex).Trim();
+                ReadOnlySpan<char> value = component.Slice(separatorIndex + 1).Trim();
 
                 //
                 // 2) Parse the required "Version" key value

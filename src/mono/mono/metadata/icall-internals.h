@@ -22,14 +22,6 @@ mono_add_internal_call_internal (const char *name, gconstpointer method);
 MonoAssembly*
 mono_runtime_get_caller_from_stack_mark (MonoStackCrawlMark *stack_mark);
 
-typedef enum {
-	MONO_ICALL_FLAGS_NONE = 0,
-	MONO_ICALL_FLAGS_FOREIGN = 1 << 1,
-	MONO_ICALL_FLAGS_USES_HANDLES = 1 << 2,
-	MONO_ICALL_FLAGS_COOPERATIVE = 1 << 3,
-	MONO_ICALL_FLAGS_NO_WRAPPER = 1 << 4
-} MonoInternalCallFlags;
-
 gconstpointer
 mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_missing, guint32 *flags);
 

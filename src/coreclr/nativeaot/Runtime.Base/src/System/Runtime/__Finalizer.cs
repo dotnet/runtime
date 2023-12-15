@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 //
 // Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
@@ -29,11 +29,11 @@ namespace System.Runtime
                 // otherwise memory is low and we should initiate a collection.
                 if (InternalCalls.RhpWaitForFinalizerRequest() != 0)
                 {
-                    DrainQueue();
+                    uint finalizerCount = DrainQueue();
 
                     // Tell anybody that's interested that the finalization pass is complete (there is a race condition here
                     // where we might immediately signal a new request as complete, but this is acceptable).
-                    InternalCalls.RhpSignalFinalizationComplete();
+                    InternalCalls.RhpSignalFinalizationComplete(finalizerCount);
                 }
                 else
                 {
@@ -48,14 +48,17 @@ namespace System.Runtime
         // objects that came off of the finalizer queue.  If such temps were reported across the duration of the
         // finalizer thread wait operation, it could cause unpredictable behavior with weak handles.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void DrainQueue()
+        private static unsafe uint DrainQueue()
         {
+            uint finalizerCount = 0;
             // Drain the queue of finalizable objects.
             while (true)
             {
                 object target = InternalCalls.RhpGetNextFinalizableObject();
                 if (target == null)
-                    return;
+                    return finalizerCount;
+
+                finalizerCount++;
 
                 // Call the finalizer on the current target object. If the finalizer throws we'll fail
                 // fast via normal Redhawk exception semantics (since we don't attempt to catch

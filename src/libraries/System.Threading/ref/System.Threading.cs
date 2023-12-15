@@ -39,6 +39,8 @@ namespace System.Threading
     {
         public BarrierPostPhaseException() { }
         public BarrierPostPhaseException(System.Exception? innerException) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public BarrierPostPhaseException(string? message) { }
         public BarrierPostPhaseException(string? message, System.Exception? innerException) { }
@@ -130,6 +132,8 @@ namespace System.Threading
     {
         public AbandonedMutexException() { }
         public AbandonedMutexException(int location, System.Threading.WaitHandle? handle) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AbandonedMutexException(string? message) { }
         public AbandonedMutexException(string? message, System.Exception? inner) { }
@@ -194,6 +198,8 @@ namespace System.Threading
         public static System.Threading.ExecutionContext? Capture() { throw null; }
         public System.Threading.ExecutionContext CreateCopy() { throw null; }
         public void Dispose() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsFlowSuppressed() { throw null; }
         public static void Restore(System.Threading.ExecutionContext executionContext) { }
@@ -265,9 +271,9 @@ namespace System.Threading
         public static uint Or(ref uint location1, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Or(ref ulong location1, ulong value) { throw null; }
-        public static long Read(ref long location) { throw null; }
+        public static long Read(ref readonly long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { throw null; }
+        public static ulong Read(ref readonly ulong location) { throw null; }
     }
     public static partial class LazyInitializer
     {
@@ -280,6 +286,8 @@ namespace System.Threading
     public partial class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public LockRecursionException(string? message) { }
         public LockRecursionException(string? message, System.Exception? innerException) { }
@@ -398,6 +406,8 @@ namespace System.Threading
     public partial class SemaphoreFullException : System.SystemException
     {
         public SemaphoreFullException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SemaphoreFullException(string? message) { }
         public SemaphoreFullException(string? message, System.Exception? innerException) { }
@@ -478,6 +488,8 @@ namespace System.Threading
     public partial class SynchronizationLockException : System.SystemException
     {
         public SynchronizationLockException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SynchronizationLockException(string? message) { }
         public SynchronizationLockException(string? message, System.Exception? innerException) { }
@@ -499,26 +511,27 @@ namespace System.Threading
     }
     public static partial class Volatile
     {
-        public static bool Read(ref bool location) { throw null; }
-        public static byte Read(ref byte location) { throw null; }
-        public static double Read(ref double location) { throw null; }
-        public static short Read(ref short location) { throw null; }
-        public static int Read(ref int location) { throw null; }
-        public static long Read(ref long location) { throw null; }
-        public static System.IntPtr Read(ref System.IntPtr location) { throw null; }
+        public static bool Read(ref readonly bool location) { throw null; }
+        public static byte Read(ref readonly byte location) { throw null; }
+        public static double Read(ref readonly double location) { throw null; }
+        public static short Read(ref readonly short location) { throw null; }
+        public static int Read(ref readonly int location) { throw null; }
+        public static long Read(ref readonly long location) { throw null; }
+        public static System.IntPtr Read(ref readonly System.IntPtr location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte Read(ref sbyte location) { throw null; }
-        public static float Read(ref float location) { throw null; }
+        public static sbyte Read(ref readonly sbyte location) { throw null; }
+        public static float Read(ref readonly float location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort Read(ref ushort location) { throw null; }
+        public static ushort Read(ref readonly ushort location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Read(ref uint location) { throw null; }
+        public static uint Read(ref readonly uint location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { throw null; }
+        public static ulong Read(ref readonly ulong location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
+        public static System.UIntPtr Read(ref readonly System.UIntPtr location) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
-        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref T location) where T : class? { throw null; }
+        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref readonly T location) where T : class? { throw null; }
+
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }
@@ -542,6 +555,8 @@ namespace System.Threading
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public WaitHandleCannotBeOpenedException(string? message) { }
         public WaitHandleCannotBeOpenedException(string? message, System.Exception? innerException) { }

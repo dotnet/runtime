@@ -101,19 +101,19 @@ namespace System.Transactions
                         }
                         else
                         {
-                            current = EnterpriseServices.GetContextTransaction(contextData);
+                            current = EnterpriseServices.GetContextTransaction();
                         }
                     }
                     break;
 
                 case EnterpriseServicesInteropOption.Full:
-                    current = EnterpriseServices.GetContextTransaction(contextData);
+                    current = EnterpriseServices.GetContextTransaction();
                     break;
 
                 case EnterpriseServicesInteropOption.Automatic:
                     if (EnterpriseServices.UseServiceDomainForCurrent())
                     {
-                        current = EnterpriseServices.GetContextTransaction(contextData);
+                        current = EnterpriseServices.GetContextTransaction();
                     }
                     else
                     {

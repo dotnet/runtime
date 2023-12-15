@@ -78,23 +78,6 @@ inline ULONG PEAssembly::Release()
     RETURN result;
 }
 
-// ------------------------------------------------------------
-// Identity
-// ------------------------------------------------------------
-
-inline ULONG PEAssembly::HashIdentity()
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(m_PEImage));
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-    return m_pHostAssembly->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
-}
-
 inline void PEAssembly::ValidateForExecution()
 {
     CONTRACTL
@@ -221,7 +204,7 @@ inline const SString &PEAssembly::GetModuleFileNameHint()
 #endif // DACCESS_COMPILE
 
 #ifdef LOGGING
-inline LPCWSTR PEAssembly::GetDebugName()
+inline LPCUTF8 PEAssembly::GetDebugName()
 {
     CONTRACTL
     {
@@ -232,14 +215,9 @@ inline LPCWSTR PEAssembly::GetDebugName()
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
     return m_pDebugName;
-#else
-    return GetPath();
-#endif
 }
-#endif
+#endif // LOGGING
 
 // ------------------------------------------------------------
 // Classification
@@ -743,7 +721,7 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
     {
         PRECONDITION(CheckValue(result));
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;

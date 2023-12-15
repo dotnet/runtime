@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Security;
+using System.Security.Authentication.ExtendedProtection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Http
 {
@@ -38,9 +38,9 @@ namespace System.Net.Http
                 else
                 {
                     // AppContext switch wasn't used. Check the environment variable.
-                   s_usePortInSpn =
-                       Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
-                       (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                    s_usePortInSpn =
+                        Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
                 }
 
                 return s_usePortInSpn != 0;
@@ -50,7 +50,7 @@ namespace System.Net.Http
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
-                connection.SendAsyncCore(request, async, cancellationToken) :
+                connection.SendAsync(request, async, cancellationToken) :
                 pool.SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
         }
 
@@ -209,7 +209,7 @@ namespace System.Net.Http
                                 {
                                     isNewConnection = false;
                                     connection.Dispose();
-                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode), null, HttpStatusCode.Unauthorized);
+                                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.Format(SR.net_http_authvalidationfailure, statusCode), statusCode: HttpStatusCode.Unauthorized);
                                 }
                                 break;
                             }

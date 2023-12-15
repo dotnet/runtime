@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class LiteHashProvider
     {
-        internal static int HashStream(string hashAlgorithmId, int hashSizeInBytes, Stream source, Span<byte> destination)
+        internal static int HashStream(string hashAlgorithmId, Stream source, Span<byte> destination)
         {
             LiteHash hash = CreateHash(hashAlgorithmId);
             return ProcessStream(hash, source, destination);
@@ -27,7 +27,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<int> HashStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken)
@@ -43,7 +42,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<byte[]> HashStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             Stream source,
             CancellationToken cancellationToken)
         {
@@ -53,12 +51,11 @@ namespace System.Security.Cryptography
             }
 
             LiteHash hash = CreateHash(hashAlgorithmId);
-            return ProcessStreamAsync(hash, source, cancellationToken);
+            return ProcessStreamAsync(hash, hash.HashSizeInBytes, source, cancellationToken);
         }
 
         internal static int HmacStream(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             ReadOnlySpan<byte> key,
             Stream source,
             Span<byte> destination)
@@ -82,7 +79,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<int> HmacStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             ReadOnlySpan<byte> key,
             Stream source,
             Memory<byte> destination,
@@ -99,7 +95,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<byte[]> HmacStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             ReadOnlySpan<byte> key,
             Stream source,
             CancellationToken cancellationToken)
@@ -110,7 +105,7 @@ namespace System.Security.Cryptography
             }
 
             LiteHmac hash = CreateHmac(hashAlgorithmId, key);
-            return ProcessStreamAsync(hash, source, cancellationToken);
+            return ProcessStreamAsync(hash, hash.HashSizeInBytes, source, cancellationToken);
         }
 
         /// This takes ownership of the hash parameter and disposes of it when done.
@@ -171,13 +166,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// This takes ownership of the hash parameter and disposes of it when done.
+        // This takes ownership of the hash parameter and disposes of it when done.
         private static async ValueTask<byte[]> ProcessStreamAsync<T>(
             T hash,
+            int outputLength,
             Stream source,
             CancellationToken cancellationToken) where T : ILiteHash
         {
-            byte[] result = new byte[hash.HashSizeInBytes];
+            byte[] result = new byte[outputLength];
             int written = await ProcessStreamAsync(hash, source, result, cancellationToken).ConfigureAwait(false);
 
             Debug.Assert(written == result.Length);

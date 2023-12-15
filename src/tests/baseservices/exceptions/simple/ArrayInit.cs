@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using TestLibrary;
+using Xunit;
 
 public class ArrayInit {
 
-	public static int Main(string[] args)
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
         ArrayInit ai = new ArrayInit();

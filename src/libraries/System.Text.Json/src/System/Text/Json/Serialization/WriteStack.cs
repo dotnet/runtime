@@ -17,17 +17,17 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
-        public int CurrentDepth => _count;
+        public readonly int CurrentDepth => _count;
 
         /// <summary>
-        /// Exposes the stackframe that is currently active.
+        /// Exposes the stack frame that is currently active.
         /// </summary>
         public WriteStackFrame Current;
 
         /// <summary>
-        /// Gets the parent stackframe, if it exists.
+        /// Gets the parent stack frame, if it exists.
         /// </summary>
-        public ref WriteStackFrame Parent
+        public readonly ref WriteStackFrame Parent
         {
             get
             {
@@ -91,13 +91,7 @@ namespace System.Text.Json
         /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.
         /// </summary>
-        public bool IsContinuation => _continuationCount != 0;
-
-        /// <summary>
-        /// Indicates that the root-level JsonTypeInfo is the result of
-        /// polymorphic dispatch from the internal System.Object converter.
-        /// </summary>
-        public bool IsPolymorphicRootValue;
+        public readonly bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
@@ -123,9 +117,14 @@ namespace System.Text.Json
         public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
+        /// The polymorphic type resolver used by the next converter.
+        /// </summary>
+        public PolymorphicTypeResolver? PolymorphicTypeResolver;
+
+        /// <summary>
         /// Whether the current frame needs to write out any metadata.
         /// </summary>
-        public bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
+        public readonly bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
 
         private void EnsurePushCapacity()
         {
@@ -139,7 +138,11 @@ namespace System.Text.Json
             }
         }
 
-        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false, bool supportAsync = false)
+        internal void Initialize(
+            JsonTypeInfo jsonTypeInfo,
+            object? rootValueBoxed = null,
+            bool supportContinuation = false,
+            bool supportAsync = false)
         {
             Debug.Assert(!supportAsync || supportContinuation, "supportAsync must imply supportContinuation");
             Debug.Assert(!IsContinuation);
@@ -156,13 +159,20 @@ namespace System.Text.Json
             {
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
+
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                    rootValueBoxed is not null && jsonTypeInfo.Type.IsValueType)
+                {
+                    // Root object is a boxed value type, we need to push it to the reference stack before starting the serializer.
+                    ReferenceResolver.PushReferenceForCycleDetection(rootValueBoxed);
+                }
             }
         }
 
         /// <summary>
         /// Gets the nested JsonTypeInfo before resolving any polymorphic converters
         /// </summary>
-        public JsonTypeInfo PeekNestedJsonTypeInfo()
+        public readonly JsonTypeInfo PeekNestedJsonTypeInfo()
         {
             Debug.Assert(Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
             return _count == 0 ? Current.JsonTypeInfo : Current.JsonPropertyInfo!.JsonTypeInfo;
@@ -414,7 +424,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
@@ -430,6 +440,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path = {PropertyPath()} Current = ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

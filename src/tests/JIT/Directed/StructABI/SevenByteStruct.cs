@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // On ARM32 the following has S0 passed in two registers, which requires passing 3 bytes in the last register.
 // We cannot do that in a single load from an arbitrary source and must copy it to a local first.
@@ -20,7 +21,8 @@ public struct S0
 public class SevenByteStruct
 {
     public static S0 s_4 = new S0 { F0 = 1, F1 = 2, F2 = 3, F3 = 4, F4 = 5, F5 = 6, F6 = 7 };
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ref S0 vr0 = ref s_4;
         int sum = M35(vr0);

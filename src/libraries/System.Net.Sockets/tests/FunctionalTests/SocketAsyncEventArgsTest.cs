@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
@@ -122,27 +123,25 @@ namespace System.Net.Sockets.Tests
                 using (Socket server = await acceptTask)
                 using (var receiveSaea = new SocketAsyncEventArgs())
                 {
-                    if (suppressed)
+                    using (suppressed ? ExecutionContext.SuppressFlow() : default)
                     {
-                        ExecutionContext.SuppressFlow();
+                        var local = new AsyncLocal<int>();
+                        local.Value = 42;
+                        int threadId = Environment.CurrentManagedThreadId;
+
+                        var mres = new ManualResetEventSlim();
+                        receiveSaea.SetBuffer(new byte[1], 0, 1);
+                        receiveSaea.Completed += delegate
+                        {
+                            Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
+                            Assert.Equal(suppressed ? 0 : 42, local.Value);
+                            mres.Set();
+                        };
+
+                        Assert.True(client.ReceiveAsync(receiveSaea));
+                        server.Send(new byte[1]);
+                        mres.Wait();
                     }
-
-                    var local = new AsyncLocal<int>();
-                    local.Value = 42;
-                    int threadId = Environment.CurrentManagedThreadId;
-
-                    var mres = new ManualResetEventSlim();
-                    receiveSaea.SetBuffer(new byte[1], 0, 1);
-                    receiveSaea.Completed += delegate
-                    {
-                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
-                        Assert.Equal(suppressed ? 0 : 42, local.Value);
-                        mres.Set();
-                    };
-
-                    Assert.True(client.ReceiveAsync(receiveSaea));
-                    server.Send(new byte[1]);
-                    mres.Wait();
                 }
             }
         }
@@ -849,7 +848,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop("Involves GC and finalization")]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void Finalizer_InvokedWhenNoLongerReferenced(bool afterAsyncOperation)

@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="ValidateTargetOSLowercase">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -7,10 +7,30 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
+  <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
+  <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
+
+  <!--
+  When .NET gets built from source, make the SDK aware there are bootstrap packages
+  for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
+  -->
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))">
+      <RuntimePackRuntimeIdentifiers>$(PackageRID)</RuntimePackRuntimeIdentifiers>
+    </KnownFrameworkReference>
+    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack->WithMetadataValue('Identity', 'Microsoft.NETCore.App.Crossgen2')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))">
+      <Crossgen2RuntimeIdentifiers>$(PackageRID)</Crossgen2RuntimeIdentifiers>
+    </KnownCrossgen2Pack>
+    <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
   <PropertyGroup>
     <!--
@@ -18,11 +38,11 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-    <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">$(RunAnalyzers)</EnableNETAnalyzers>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
@@ -59,7 +79,119 @@
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
+    <!-- Until we update the TFM to match the Major version, we need to patch in support for RequiresPreviewFeatures -->
+    <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
+
+  <Target Name="ValidateTargetOSLowercase"
+          Condition="!$(TargetOS.Equals($(TargetOS.ToLower()), StringComparison.InvariantCulture))">
+    <Error Text="The passed-in TargetOS property value '$(TargetOS)' must be lowercase." />
+  </Target>
+
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
+  <Target Name="ValidateReferenceAssemblyProjectReferencesAndTargetFramework"
+          AfterTargets="ResolveReferences"
+          Condition="'$(IsReferenceAssemblyProject)' == 'true' and
+                     '$(SkipValidateReferenceAssemblyProjectReferences)' != 'true'">
+    <Error Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'."
+           Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''" />
+    <Error Text="Reference assemblies must be TargetPlatform agnostic. $(MSBuildProjectName) incorrectly targets $(TargetFramework), platform: $(TargetPlatformIdentifier)."
+           Condition="'$(TargetPlatformIdentifier)' != ''" />
+  </Target>
+
+  <!-- For experimental ref assemblies (which typically have the same name as a regular ref
+       assembly), bump their minor file version by 100 to make it distinguishable from the regular
+       ref assembly. -->
+  <Target Name="UpdateExperimentalRefAssemblyFileVersion"
+          AfterTargets="_InitializeAssemblyVersion"
+	        Condition="'$(IsReferenceAssemblyProject)' == 'true' and '$(IsExperimentalRefAssembly)' == 'true'">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Allows building against source assemblies when the 'SkipUseReferenceAssembly' attribute is present on ProjectReference items. -->
+  <Target Name="HandleReferenceAssemblyAttributeForProjectReferences"
+          AfterTargets="ResolveProjectReferences"
+          BeforeTargets="FindReferenceAssembliesForReferences"
+          Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
+    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies,
+         and ignore architecture mismatches in those implementation assemblies. -->
+    <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
+      <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
+      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    </PropertyGroup>
+
+    <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
+    <ItemGroup>
+      <_ResolvedProjectReferencePaths Condition="'%(_ResolvedProjectReferencePaths.SkipUseReferenceAssembly)' == 'true'"
+                                      ReferenceAssembly="" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Filter out transitive P2Ps which should be excluded. -->
+  <Target Name="FilterTransitiveProjectReferences"
+          AfterTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
+                     '@(DefaultReferenceExclusion)' != ''">
+    <ItemGroup>
+      <_transitiveProjectReferenceWithProjectName Include="@(ProjectReference->Metadata('NuGetPackageId'))"
+                                                  OriginalIdentity="%(Identity)" />
+      <_transitiveIncludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
+                                                          Exclude="@(DefaultReferenceExclusion)" />
+      <_transitiveExcludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
+                                                          Exclude="@(_transitiveIncludedProjectReferenceWithProjectName)" />
+      <ProjectReference Remove="@(_transitiveExcludedProjectReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Filter out conflicting implicit assembly references. -->
+  <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'$(DisableImplicitFrameworkReferences)' != 'true'"
+          DependsOnTargets="ResolveProjectReferences"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <_targetingPackReferenceExclusion Include="$(TargetName)" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
+      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
+    </ItemGroup>
+
+    <!-- Filter out shims from the targeting pack references as an opt-in. -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                          '$(SkipTargetingPackShimReferences)' == 'true'">
+      <_targetingPackReferenceExclusion Include="@(NetFxReference)" />
+      <_targetingPackReferenceExclusion Include="netstandard" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                              OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
+      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackAnalyzerReferenceWithProjectName Include="@(Analyzer->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                                      OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
+                                                              Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
+                                                              Exclude="@(_targetingPackIncludedAnalyzerReferenceWithProjectName)" />
+      <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
+  </Target>
 
   <!--
     Arcade SDK versioning is defined by static properties in a targets file: work around this by
@@ -83,19 +215,7 @@
       <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
       <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
       <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-
-      <!--
-        By default, we are always building the nuget packages for HostPolicy, HostFXR and
-        Dotnet/AppHost. Thus, the properties (below) are always set to $(ProductVersion).
-        However, there are scenarios when only some of these components will change (e.g. during
-        servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
-        pass the appropriate version value(s) as argument to the build command in order to override;
-        e.g. 'build -p:HostPolicyVersion=x.y.z ...'
-      -->
-      <HostVersion Condition="'$(HostVersion)' == ''">$(ProductVersion)</HostVersion>
-      <AppHostVersion Condition="'$(AppHostVersion)' == ''">$(ProductVersion)</AppHostVersion>
-      <HostResolverVersion Condition="'$(HostResolverVersion)' == ''">$(ProductVersion)</HostResolverVersion>
-      <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
     </PropertyGroup>
   </Target>
+
 </Project>

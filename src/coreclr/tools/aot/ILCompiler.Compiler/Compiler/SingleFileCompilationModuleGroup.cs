@@ -63,15 +63,12 @@ namespace ILCompiler
             return false;
         }
 
-        public override bool CanHaveReferenceThroughImportTable
+        public override bool AllowInstanceMethodOptimization(MethodDesc method)
         {
-            get
-            {
-                return false;
-            }
+            return true;
         }
 
-        public override bool AllowInstanceMethodOptimization(MethodDesc method)
+        public override bool AllowVirtualMethodOnAbstractTypeOptimization(MethodDesc method)
         {
             return true;
         }

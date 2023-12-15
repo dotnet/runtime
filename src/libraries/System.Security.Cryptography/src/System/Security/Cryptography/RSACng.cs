@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class RSACng : RSA
     {
-        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(RSACng));
+        private CngAlgorithmCore _core = new CngAlgorithmCore(typeof(RSACng));
 
         /// <summary>
         ///     Creates a new RSACng object that will use the specified key. The key's

@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -38,6 +37,7 @@ namespace System
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
+        private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
         public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
@@ -83,8 +83,8 @@ namespace System
 
                     SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
                                                 new StdInReader(
-                                                    encoding: Console.InputEncoding,
-                                                    bufferSize: InteractiveBufferSize));
+                                                    encoding: Console.InputEncoding
+                                                ));
 
                     // Don't overwrite a set reader.
                     // The reader doesn't own resources, so we don't need to dispose
@@ -128,13 +128,7 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
             }
 
-            bool previouslyProcessed;
-            ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
-
-            if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
-            {
-                Console.Write(keyInfo.KeyChar);
-            }
+            ConsoleKeyInfo keyInfo = StdInReader.ReadKey(intercept);
             return keyInfo;
         }
 
@@ -153,7 +147,7 @@ namespace System
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value), distinguishNewLines: !ConsoleUtils.UseNet6KeyParser) == 0)
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
@@ -206,7 +200,7 @@ namespace System
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
-                    WriteStdoutAnsiString(ansiStr, mayChangeCursorPosition: false);
+                    WriteTerminalAnsiString(ansiStr, mayChangeCursorPosition: false);
                 }
             }
         }
@@ -215,20 +209,15 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Bell, mayChangeCursorPosition: false);
             }
-        }
-
-        public static void Beep(int frequency, int duration)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public static void Clear()
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }
 
@@ -237,6 +226,11 @@ namespace System
             if (Console.IsOutputRedirected)
                 return;
 
+            SetTerminalCursorPosition(left, top);
+        }
+
+        public static void SetTerminalCursorPosition(int left, int top)
+        {
             lock (Console.Out)
             {
                 if (TryGetCachedCursorPosition(out int leftCurrent, out int topCurrent) &&
@@ -250,7 +244,7 @@ namespace System
                 if (!string.IsNullOrEmpty(cursorAddressFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
-                    WriteStdoutAnsiString(ansiStr);
+                    WriteTerminalAnsiString(ansiStr);
                 }
 
                 SetCachedCursorPosition(left, top);
@@ -312,11 +306,6 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
-        public static void SetBufferSize(int width, int height)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static int LargestWindowWidth
         {
             get { return WindowWidth; }
@@ -346,7 +335,7 @@ namespace System
                 GetWindowSize(out int width, out _);
                 return width;
             }
-            set { throw new PlatformNotSupportedException(); }
+            set => SetWindowSize(value, WindowHeight);
         }
 
         public static int WindowHeight
@@ -356,7 +345,7 @@ namespace System
                 GetWindowSize(out _, out int height);
                 return height;
             }
-            set { throw new PlatformNotSupportedException(); }
+            set => SetWindowSize(WindowWidth, value);
         }
 
         private static void GetWindowSize(out int width, out int height)
@@ -366,33 +355,44 @@ namespace System
                 // Invalidate before reading cached values.
                 CheckTerminalSettingsInvalidated();
 
-                if (s_windowWidth == -1)
+                Interop.Sys.WinSize winsize;
+                if (s_windowWidth == -1 &&
+                    s_terminalHandle != null &&
+                    Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
                 {
-                    Interop.Sys.WinSize winsize;
-                    if (Interop.Sys.GetWindowSize(out winsize) == 0)
-                    {
-                        s_windowWidth = winsize.Col;
-                        s_windowHeight = winsize.Row;
-                    }
-                    else
-                    {
-                        s_windowWidth = TerminalFormatStringsInstance.Columns;
-                        s_windowHeight = TerminalFormatStringsInstance.Lines;
-                    }
+                    s_windowWidth = winsize.Col;
+                    s_windowHeight = winsize.Row;
+                }
+                else
+                {
+                    s_windowWidth = TerminalFormatStringsInstance.Columns;
+                    s_windowHeight = TerminalFormatStringsInstance.Lines;
                 }
                 width = s_windowWidth;
                 height = s_windowHeight;
             }
         }
 
-        public static void SetWindowPosition(int left, int top)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static void SetWindowSize(int width, int height)
         {
-            throw new PlatformNotSupportedException();
+           lock (Console.Out)
+           {
+               Interop.Sys.WinSize winsize = default;
+               winsize.Row = (ushort)height;
+               winsize.Col = (ushort)width;
+               if (Interop.Sys.SetWindowSize(in winsize) == 0)
+               {
+                   s_windowWidth = winsize.Col;
+                   s_windowHeight = winsize.Row;
+               }
+               else
+               {
+                   Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                   throw errorInfo.Error == Interop.Error.ENOTSUP ?
+                       new PlatformNotSupportedException() :
+                       Interop.GetIOException(errorInfo);
+               }
+           }
         }
 
         public static bool CursorVisible
@@ -402,7 +402,7 @@ namespace System
             {
                 if (!Console.IsOutputRedirected)
                 {
-                    WriteStdoutAnsiString(value ?
+                    WriteTerminalAnsiString(value ?
                         TerminalFormatStringsInstance.CursorVisible :
                         TerminalFormatStringsInstance.CursorInvisible);
                 }
@@ -411,6 +411,11 @@ namespace System
 
         public static (int Left, int Top) GetCursorPosition()
         {
+            if (Console.IsInputRedirected || Console.IsOutputRedirected)
+            {
+                return (0, 0);
+            }
+
             TryGetCursorPosition(out int left, out int top);
             return (left, top);
         }
@@ -435,14 +440,9 @@ namespace System
         /// <param name="reinitializeForRead">Indicates whether this method is called as part of a on-going Read operation.</param>
         internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
-            left = top = 0;
+            Debug.Assert(!Console.IsInputRedirected);
 
-            // Getting the cursor position involves both writing out a request string and
-            // parsing a response string from the terminal.  So if anything is redirected, bail.
-            if (Console.IsInputRedirected || Console.IsOutputRedirected)
-            {
-                return false;
-            }
+            left = top = 0;
 
             int cursorVersion;
             lock (Console.Out)
@@ -479,12 +479,12 @@ namespace System
                 // involved in reading/writing, such as when accessing a remote system. We also extend
                 // the timeout on the very first request to 15 seconds, to account for potential latency
                 // before we know if we will receive a response.
-                Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser, minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
+                Interop.Sys.InitializeConsoleBeforeRead(minChars: (byte)(s_everReceivedCursorPositionResponse ? 1 : 0), decisecondsTimeout: (byte)(s_firstCursorPositionRequest ? 100 : 10));
                 try
                 {
                     // Write out the cursor position report request.
                     Debug.Assert(!string.IsNullOrEmpty(TerminalFormatStrings.CursorPositionReport));
-                    WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport, mayChangeCursorPosition: false);
+                    WriteTerminalAnsiString(TerminalFormatStrings.CursorPositionReport, mayChangeCursorPosition: false);
 
                     // Read the cursor position report (CPR), of the form \ESC[row;colR. This is not
                     // as easy as it sounds.  Prior to the CPR having been supplied to stdin, other
@@ -554,7 +554,7 @@ namespace System
                 {
                     if (reinitializeForRead)
                     {
-                        Interop.Sys.InitializeConsoleBeforeRead(distinguishNewLines: !ConsoleUtils.UseNet6KeyParser);
+                        Interop.Sys.InitializeConsoleBeforeRead();
                     }
                     else
                     {
@@ -666,16 +666,6 @@ namespace System
             }
         }
 
-        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.
         /// It's considered redirected if it doesn't refer to a terminal.
@@ -720,6 +710,27 @@ namespace System
                 Encoding.Default;
         }
 
+#pragma warning disable IDE0060
+        public static void Beep(int frequency, int duration)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void SetBufferSize(int width, int height)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static void SetConsoleInputEncoding(Encoding enc)
         {
             // No-op.
@@ -731,6 +742,13 @@ namespace System
             // No-op.
             // There is no good way to set the terminal console encoding.
         }
+
+        public static void SetWindowPosition(int left, int top)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Refreshes the foreground and background colors in use by the terminal by resetting
@@ -783,7 +801,7 @@ namespace System
             string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
-                WriteStdoutAnsiString(evaluatedString);
+                WriteTerminalAnsiString(evaluatedString);
                 return;
             }
 
@@ -797,8 +815,8 @@ namespace System
                     // The values of the ConsoleColor enums unfortunately don't map to the
                     // corresponding ANSI values.  We need to do the mapping manually.
                     // See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-                    ReadOnlySpan<byte> consoleColorToAnsiCode = new byte[] // rely on C# compiler optimization to avoid array allocation
-                    {
+                    ReadOnlySpan<byte> consoleColorToAnsiCode =
+                    [
                         // Dark/Normal colors
                         0, // Black,
                         4, // DarkBlue,
@@ -818,12 +836,12 @@ namespace System
                         13, // Magenta,
                         11, // Yellow,
                         15  // White
-                    };
+                    ];
 
                     int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
-                    WriteStdoutAnsiString(evaluatedString);
+                    WriteTerminalAnsiString(evaluatedString);
 
                     s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
                 }
@@ -835,7 +853,7 @@ namespace System
         {
             if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteStdoutAnsiString(TerminalFormatStringsInstance.Reset);
+                WriteTerminalAnsiString(TerminalFormatStringsInstance.Reset);
             }
         }
 
@@ -878,16 +896,17 @@ namespace System
                         throw new Win32Exception();
                     }
 
+                    s_terminalHandle = !Console.IsOutputRedirected ? Interop.Sys.FileDescriptors.STDOUT_FILENO :
+                                       !Console.IsInputRedirected  ? Interop.Sys.FileDescriptors.STDIN_FILENO :
+                                       null;
+
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
                     // the native lib later to handle signals that require re-entering the mode.
-                    if (!Console.IsOutputRedirected)
+                    if (s_terminalHandle != null &&
+                        TerminalFormatStringsInstance.KeypadXmit is string keypadXmit)
                     {
-                        string? keypadXmit = TerminalFormatStringsInstance.KeypadXmit;
-                        if (keypadXmit != null)
-                        {
-                            Interop.Sys.SetKeypadXmit(keypadXmit);
-                        }
+                        Interop.Sys.SetKeypadXmit(s_terminalHandle, keypadXmit);
                     }
 
                     if (!Console.IsInputRedirected)
@@ -897,15 +916,16 @@ namespace System
                         Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                         // Load special control character codes used for input processing
-                        var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                        const int NumControlCharacterNames = 4;
+                        Interop.Sys.ControlCharacterNames* controlCharacterNames = stackalloc Interop.Sys.ControlCharacterNames[NumControlCharacterNames]
                         {
                             Interop.Sys.ControlCharacterNames.VERASE,
                             Interop.Sys.ControlCharacterNames.VEOL,
                             Interop.Sys.ControlCharacterNames.VEOL2,
                             Interop.Sys.ControlCharacterNames.VEOF
                         };
-                        var controlCharacterValues = new byte[controlCharacterNames.Length];
-                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                        byte* controlCharacterValues = stackalloc byte[NumControlCharacterNames];
+                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, NumControlCharacterNames, out s_posixDisableValue);
                         s_veraseCharacter = controlCharacterValues[0];
                         s_veolCharacter = controlCharacterValues[1];
                         s_veol2Character = controlCharacterValues[2];
@@ -932,17 +952,32 @@ namespace System
             }
         }
 
+        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        {
+            Debug.Assert(s_terminalHandle is not null);
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(s_terminalHandle, buffer, mayChangeCursorPosition);
+            }
+        }
+
+        internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        {
+            EnsureConsoleInitialized();
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(fd, buffer);
+            }
+        }
+
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            // Console initialization might emit data to stdout.
-            // In order to avoid splitting user data we need to
-            // complete it before any writes are performed.
-            EnsureConsoleInitialized();
-
             fixed (byte* p = buffer)
             {
                 byte* bufPtr = p;
@@ -1012,7 +1047,16 @@ namespace System
                     byte c = bufPtr[i];
                     if (c < 127 && c >= 32) // ASCII/UTF-8 characters that take up a single position
                     {
-                        IncrementX();
+                        left++;
+
+                        // After printing in the last column, setting CursorLeft is expected to
+                        // place the cursor back in that same row.
+                        // Invalidate the cursor position rather than moving it to the next row.
+                        if (left >= width)
+                        {
+                            InvalidateCachedCursorPosition();
+                            return;
+                        }
                     }
                     else if (c == (byte)'\r')
                     {
@@ -1021,7 +1065,12 @@ namespace System
                     else if (c == (byte)'\n')
                     {
                         left = 0;
-                        IncrementY();
+                        top++;
+
+                        if (top >= height)
+                        {
+                            top = height - 1;
+                        }
                     }
                     else if (c == (byte)'\b')
                     {
@@ -1039,25 +1088,6 @@ namespace System
 
                 // We pass cursorVersion because it may have changed the earlier check by calling GetWindowSize.
                 SetCachedCursorPosition(left, top, cursorVersion);
-
-                void IncrementY()
-                {
-                    top++;
-                    if (top >= height)
-                    {
-                        top = height - 1;
-                    }
-                }
-
-                void IncrementX()
-                {
-                    left++;
-                    if (left >= width)
-                    {
-                        left = 0;
-                        IncrementY();
-                    }
-                }
             }
         }
 
@@ -1083,7 +1113,7 @@ namespace System
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1100,58 +1130,8 @@ namespace System
                 data = Encoding.UTF8.GetBytes(value);
             }
 
-            lock (Console.Out) // synchronize with other writers
-            {
-                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, mayChangeCursorPosition);
-            }
-        }
-
-        /// <summary>Provides a stream to use for Unix console input or output.</summary>
-        private sealed class UnixConsoleStream : ConsoleStream
-        {
-            /// <summary>The file descriptor for the opened file.</summary>
-            private readonly SafeFileHandle _handle;
-
-            private readonly bool _useReadLine;
-
-            /// <summary>Initialize the stream.</summary>
-            /// <param name="handle">The file handle wrapped by this stream.</param>
-            /// <param name="access">FileAccess.Read or FileAccess.Write.</param>
-            /// <param name="useReadLine">Use ReadLine API for reading.</param>
-            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access, bool useReadLine = false)
-                : base(access)
-            {
-                Debug.Assert(handle != null, "Expected non-null console handle");
-                Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
-                _handle = handle;
-                _useReadLine = useReadLine;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _handle.Dispose();
-                }
-                base.Dispose(disposing);
-            }
-
-            public override int Read(Span<byte> buffer) =>
-                _useReadLine ?
-                    ConsolePal.StdInReader.ReadLine(buffer) :
-                    ConsolePal.Read(_handle, buffer);
-
-            public override void Write(ReadOnlySpan<byte> buffer) =>
-                ConsolePal.Write(_handle, buffer);
-
-            public override void Flush()
-            {
-                if (_handle.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
-                base.Flush();
-            }
+            EnsureConsoleInitialized();
+            WriteToTerminal(data, mayChangeCursorPosition);
         }
     }
 }

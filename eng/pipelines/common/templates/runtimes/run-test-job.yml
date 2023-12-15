@@ -7,12 +7,12 @@ parameters:
   testGroup: ''
   crossBuild: false
   readyToRun: false
+  hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
   condition: true
-  stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
   tieringTest: false
@@ -40,7 +40,6 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'
     runtimeVariant: ${{ parameters.runtimeVariant }}
@@ -61,20 +60,19 @@ jobs:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
-          # This is needed for creating a CORE_ROOT in the current design.
-          - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }} :
-          # minijit and mono interpreter runtimevariants do not require any special build of the runtime
-          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
-          - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-            - ${{ format('{0}_llvmaot_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-          - ${{ if ne(parameters.runtimeVariant, 'llvmfullaot') }}:
-            - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
+        # This is needed for creating a CORE_ROOT in the current design.
+        - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }} :
+        # minijit and mono interpreter runtimevariants do not require any special build of the runtime
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
+        - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+          - ${{ format('{0}_llvmaot_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if ne(parameters.runtimeVariant, 'llvmfullaot') }}:
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
       # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
       - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
           - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.buildConfig) }}
@@ -100,20 +98,6 @@ jobs:
       - name: monoAotBuildshCommand
         value: 'mono_fullaot'
 
-    - name: runtimeFlavorArgs
-      value: ''
-
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      - name: runtimeFlavorArgs
-        value: '-mono'
-
-    - name: runtimeVariantArg
-      value: ''
-
-    - ${{ if ne(parameters.runtimeVariant, '') }}:
-      - name: runtimeVariantArg
-        value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
-
     - name: codeFlowEnforcementArg
       value: ''
 
@@ -136,18 +120,17 @@ jobs:
           value: 'composite'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
+      - ${{ if eq(parameters.hotColdSplitting, true) }}:
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_HotColdSplitting
 
     - name: testTreeFilterArg
       value: ''
 
     # Only build GCSimulator tests when the gc-simulator group is specified.
     - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: 'tree GC/Scenarios/GCSimulator'
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: '-tree:GC/Scenarios/GCSimulator'
+      - name: testTreeFilterArg
+        value: 'tree GC/Scenarios/GCSimulator'
 
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
@@ -179,71 +162,14 @@ jobs:
         - name: SpmiLogsLocation
           value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
 
-    # Set job timeouts
-    #
-    # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
-    # In case xUnit test wrappers get refactored this number should also be adjusted.
-    #
-    # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
-    # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
-    # xunit test dlls that invokes the actual tests).
-    #
-    # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
-    # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
-    #
-    # Please note that for Crossgen2 R2R runs, the "test running time" also includes the
-    # time needed to compile the test into native code with the Crossgen2 compiler.
-
-    - name: timeoutPerTestInMinutes
-      value: 10
-    - name: timeoutPerTestCollectionInMinutes
-      value: 30
-    - ${{ if in(parameters.testGroup, 'outerloop') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-    - ${{ if eq(parameters.readyToRun, true) }}:
-        - name: timeoutPerTestCollectionInMinutes
-          value: 90
-        - name: timeoutPerTestInMinutes
-          value: 30
-    - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 360
-      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
-      - name: timeoutPerTestInMinutes
-        value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-      - name: timeoutPerTestInMinutes
-        value: 30
-    - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 240
-      - name: timeoutPerTestInMinutes
-        value: 60
-    - ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 300
-      - name: timeoutPerTestInMinutes
-        value: 90
-    - ${{ if eq(parameters.testGroup, 'ilasm') }}:
-      # ilasm-ildasm round trip testing runs every test twice, plus runs ilasm and ildasm, so double the 'outerloop' timeout numbers.
-      - name: timeoutPerTestInMinutes
-        value: 20
-      - name: timeoutPerTestCollectionInMinutes
-        value: 240
-    - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-      - name: timeoutPerTestInMinutes
-        value: 30
-    - ${{ if in(parameters.testGroup, 'pgo') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-    - ${{ if in(parameters.testGroup, 'jit-cfg') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
+    - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup }}
+        testGroup: ${{ parameters.testGroup }}
+        readyToRun: ${{ parameters.readyToRun }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -260,15 +186,15 @@ jobs:
         timeoutInMinutes: 300
       ${{ else }}:
         timeoutInMinutes: 200
-    ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'jit-cfg') }}:
+    ${{ if in(parameters.testGroup, 'outerloop', 'jit-cfg') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo') }}:
+    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -335,8 +261,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-          artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
-          artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
+          artifactFileName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
+          artifactName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
           displayName: 'CoreCLR product build (x64)'
 
 
@@ -369,9 +295,8 @@ jobs:
                   -arch $(archType)
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
-                  /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                   /p:MonoAOTEnableLLVM=true
-                  /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
@@ -420,14 +345,11 @@ jobs:
 
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
-
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
-        ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
-          runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
-
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
         tieringTest: ${{ parameters.tieringTest }}
+        hotColdSplitting: ${{ parameters.hotColdSplitting }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
@@ -435,6 +357,17 @@ jobs:
           helixAccessToken: $(HelixApiAccessToken)
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+
+        # helixpublishwitharcade.proj processes one scenario per parallel MSBuild invocation. Each invocation only
+        # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
+        # computationally intensive. We want Helix to be provided with all the possible work items in up front,
+        # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
+        # to at least the maximum number of scenarios to be processed in a testGroup.
+        #
+        # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
+        # a problem to always do it. Thus, we only exempt this setting for a few cases.
+        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'clrinterpreter', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
+          msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
@@ -474,9 +407,11 @@ jobs:
           - jitstress_isas_nohwintrinsic
           - jitstress_isas_nohwintrinsic_nosimd
           - jitstress_isas_nosimd
+          - jitstress_isas_x86_evex
           - jitstress_isas_x86_noaes
           - jitstress_isas_x86_noavx
           - jitstress_isas_x86_noavx2
+          - jitstress_isas_x86_noavx512
           - jitstress_isas_x86_nobmi1
           - jitstress_isas_x86_nobmi2
           - jitstress_isas_x86_nofma
@@ -494,6 +429,7 @@ jobs:
           - jitstress_isas_1_x86_noaes
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
+          - jitstress_isas_1_x86_noavx512
           - jitstress_isas_1_x86_nobmi1
           - jitstress_isas_1_x86_nobmi2
           - jitstress_isas_1_x86_nofma
@@ -511,6 +447,7 @@ jobs:
           - jitstress_isas_2_x86_noaes
           - jitstress_isas_2_x86_noavx
           - jitstress_isas_2_x86_noavx2
+          - jitstress_isas_2_x86_noavx512
           - jitstress_isas_2_x86_nobmi1
           - jitstress_isas_2_x86_nobmi2
           - jitstress_isas_2_x86_nofma
@@ -525,6 +462,11 @@ jobs:
           - jitstress_isas_2_x86_nosse41
           - jitstress_isas_2_x86_nosse42
           - jitstress_isas_2_x86_nossse3
+        ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
+          scenarios:
+          - jitstress_isas_x86_evex
+          - jitstress_isas_x86_noavx512
+          - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -535,6 +477,7 @@ jobs:
           - jitstressregs0x10_x86_noavx
           - jitstressregs0x80_x86_noavx
           - jitstressregs0x1000_x86_noavx
+          - jitstressregs0x2000_x86_noavx
         ${{ if in(parameters.testGroup, 'jitstressregs' ) }}:
           scenarios:
           - jitstressregs1
@@ -545,6 +488,7 @@ jobs:
           - jitstressregs0x10
           - jitstressregs0x80
           - jitstressregs0x1000
+          - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs') }}:
           scenarios:
           - jitstress2_jitstressregs1
@@ -555,6 +499,7 @@ jobs:
           - jitstress2_jitstressregs0x10
           - jitstress2_jitstressregs0x80
           - jitstress2_jitstressregs0x1000
+          - jitstress2_jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
           scenarios:
           - gcstress0x3
@@ -583,20 +528,30 @@ jobs:
           - jitstressregs0x10
           - jitstressregs0x80
           - jitstressregs0x1000
+          - jitstressregs0x2000
           - jitminopts
           - forcerelocs
           - gcstress0xc
         ${{ if in(parameters.testGroup, 'pgo') }}:
           scenarios:
-          - nopgo
           - defaultpgo
-          - dynamicpgo
-          - fullpgo
-          - fullpgo_methodprofiling
-          - fullpgo_random_gdv
-          - fullpgo_random_gdv_methodprofiling_only
-          - fullpgo_random_edge
-          - fullpgo_random_gdv_edge
+        ${{ if in(parameters.testGroup, 'pgostress') }}:
+          # We run a limited number of scenarios on the win-arm64 queues as we hit frequent timeouts on those queues otherwise.
+          # The loss of coverage is not critical as win-arm64 is practically equivalent to linux-arm64 to the JIT.
+          ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+            scenarios:
+            - fullpgo
+            - fullpgo_random_gdv_edge
+          ${{ else }}:
+            scenarios:
+            - fullpgo
+            - fullpgo_methodprofiling
+            - fullpgo_random_gdv
+            - fullpgo_random_gdv_methodprofiling_only
+            - fullpgo_random_gdv_edge
+            - fullpgo_methodprofiling_always_optimized
+            - syntheticpgo
+            - syntheticpgo_blend
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -616,15 +571,21 @@ jobs:
           - jitelthookenabled
           - jitelthookenabled_tiered
         ${{ if in(parameters.testGroup, 'jit-experimental') }}:
-          scenarios:
-          - jitosr_stress
-          - jitosr_pgo
-          - jitosr_stress_random
-          - jit_stress_splitting
-          - jitpartialcompilation
-          - jitpartialcompilation_osr
-          - jitpartialcompilation_osr_pgo
-          - jitobjectstackallocation
+          ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+            scenarios:
+            - jitosr_stress
+            - jitpartialcompilation_pgo
+          ${{ else }}:
+            scenarios:
+            - jitosr_stress
+            - jitosr_stress_random
+            - jit_stress_splitting
+            - jitpartialcompilation
+            - jitpartialcompilation_pgo
+            - jitobjectstackallocation
+            - jitphysicalpromotion_only
+            - jitphysicalpromotion_full
+            - jitcrossblocklocalassertionprop
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg
@@ -643,7 +604,7 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_Attempt$(System.JobAttempt)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()
 
@@ -671,7 +632,7 @@ jobs:
           displayName: Create SuperPMI directories
           condition: always()
 
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
         displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
         condition: always()
 
@@ -685,6 +646,14 @@ jobs:
           artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
           displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
           condition: always()
+
+      # Add authenticated pip feed
+      - task: PipAuthenticate@1
+        displayName: 'Pip Authenticate'
+        inputs:
+          artifactFeeds: public/dotnet-public-pypi
+          onlyAddExtraIndex: false
+        condition: always()
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall

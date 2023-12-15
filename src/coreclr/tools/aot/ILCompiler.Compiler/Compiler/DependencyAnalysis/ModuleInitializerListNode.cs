@@ -10,16 +10,11 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
 
-        public ModuleInitializerListNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__module_initializers_End", true);
-        }
-
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -30,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -118,9 +113,8 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var module in allModules)
                     {
-                        if (!markedModules.Contains(module))
+                        if (markedModules.Add(module))
                         {
-                            markedModules.Add(module);
                             if (modulesWithCctor.Contains(module.Module))
                                 sortedModules.Add(module.Module);
                             break;
@@ -137,16 +131,19 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialAlignment(factory.Target.PointerSize);
             builder.AddSymbol(this);
-            builder.AddSymbol(_endSymbol);
 
             foreach (var module in sortedModules)
             {
-                builder.EmitPointerReloc(factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor()));
+                IMethodNode entrypoint = factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor());
+                if (factory.Target.SupportsRelativePointers)
+                    builder.EmitReloc(entrypoint, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    builder.EmitPointerReloc(entrypoint);
             }
 
             var result = builder.ToObjectData();
 
-            _endSymbol.SetSymbolOffset(result.Data.Length);
+            _size = result.Data.Length;
 
             return result;
         }

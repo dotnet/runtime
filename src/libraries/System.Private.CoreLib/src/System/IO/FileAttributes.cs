@@ -6,6 +6,7 @@ namespace System.IO
     [Flags]
     public enum FileAttributes
     {
+        None = 0x0000,
         ReadOnly = 0x0001,
         Hidden = 0x0002,
         System = 0x0004,

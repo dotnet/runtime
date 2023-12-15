@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This is conformance test for conv described in ECMA-335 Table III.8: Conversion Operations.
@@ -12,17 +12,18 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 namespace TestCasts
 {
-    class Program
+    public class Program
     {
-        static int failedCount = 0;
+        static int failedCount;
 
-        static readonly bool ExpectException = true;
-        static readonly bool DontExpectException = false;
+        const bool ExpectException = true;
+        const bool DontExpectException = false;
 
-        static readonly bool UnspecifiedBehaviour = true;
+        const bool UnspecifiedBehaviour = true;
 
         static void GenerateTest<F, T>(F from, OpCode fromOpcode, OpCode convOpcode, bool exceptionExpected, T expectedTo, bool undefined = false) where F : struct where T : struct, IEquatable<T>
         {
@@ -30,7 +31,7 @@ namespace TestCasts
             Debug.Assert(!exceptionExpected || !checkResult);
             Debug.Assert(checkResult || expectedTo.Equals(default(T)));
 
-            Type[] args = new Type[] { }; // No args.
+            Type[] args = Array.Empty<Type>(); // No args.
             Type returnType = typeof(T);
             string name = "DynamicConvertFrom" + typeof(F).FullName + "To" + typeof(T).FullName + from.ToString() + "Op" + convOpcode.Name;
             DynamicMethod dm = new DynamicMethod(name, returnType, args);
@@ -52,7 +53,7 @@ namespace TestCasts
 
             try
             {
-                T res = (T)dm.Invoke(null, BindingFlags.Default, null, new object[] { }, null);
+                T res = (T)dm.Invoke(null, BindingFlags.Default, null, Array.Empty<object>(), null);
                 if (exceptionExpected)
                 {
                     failedCount++;
@@ -1165,7 +1166,8 @@ namespace TestCasts
             GenerateTest<double, ulong>(Single.NaN, sourceOp, convOvfUn, ExpectException, 0);
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestConvertFromInt4();
             TestConvertFromInt8();

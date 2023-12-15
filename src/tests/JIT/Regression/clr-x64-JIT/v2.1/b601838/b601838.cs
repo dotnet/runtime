@@ -5,9 +5,10 @@ using System;
 using System.Security;
 // using System.Security.Permissions;
 using System.Collections.Generic;
+using Xunit;
 
 // [KeyContainerPermission(SecurityAction.Demand, Flags = KeyContainerPermissionFlags.Delete)]
-internal static class GenericSecurity
+public static class GenericSecurity
 {
     private static int s_result = 99;
 
@@ -24,7 +25,8 @@ internal static class GenericSecurity
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

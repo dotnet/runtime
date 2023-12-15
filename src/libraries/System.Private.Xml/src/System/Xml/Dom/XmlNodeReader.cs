@@ -355,10 +355,8 @@ namespace System.Xml
 
         private void CheckIndexCondition(int attributeIndex)
         {
-            if (attributeIndex < 0 || attributeIndex >= AttributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(attributeIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(attributeIndex, AttributeCount);
         }
 
         //8 functions below are the helper functions to deal with virtual attributes of XmlDeclaration nodes and DocumentType nodes.
@@ -366,21 +364,21 @@ namespace System.Xml
         {
             int i = 0;
             string? strTemp = _doc.Version;
-            if (strTemp != null && strTemp.Length != 0)
+            if (!string.IsNullOrEmpty(strTemp))
             {
                 decNodeAttributes[i].name = strVersion;
                 decNodeAttributes[i].value = strTemp;
                 i++;
             }
             strTemp = _doc.Encoding;
-            if (strTemp != null && strTemp.Length != 0)
+            if (!string.IsNullOrEmpty(strTemp))
             {
                 decNodeAttributes[i].name = strEncoding;
                 decNodeAttributes[i].value = strTemp;
                 i++;
             }
             strTemp = _doc.Standalone;
-            if (strTemp != null && strTemp.Length != 0)
+            if (!string.IsNullOrEmpty(strTemp))
             {
                 decNodeAttributes[i].name = strStandalone;
                 decNodeAttributes[i].value = strTemp;

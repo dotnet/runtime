@@ -56,13 +56,8 @@ PALTEST(threading_GetExitCodeProcess_test1_paltest_getexitcodeprocess_test1, "th
     rgchAbsPathName = &absPathBuf[0];
     dwFileLength = strlen( rgchChildFile );
 
-    dwDirLength = GetCurrentDirectory( _MAX_PATH, rgchDirName );
-    if( dwDirLength == 0 )
-    {
-        dwError = GetLastError();
-        Fail( "GetCurrentDirectory call failed with error code %d\n",
-              dwError );
-    }
+    strcpy(rgchDirName, ".\\");
+    dwDirLength = strlen(rgchDirName);
 
     dwSize = mkAbsoluteFilename(   rgchDirName,
                                    dwDirLength,

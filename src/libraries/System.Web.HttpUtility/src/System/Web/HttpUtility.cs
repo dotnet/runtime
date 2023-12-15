@@ -3,7 +3,7 @@
 
 // Authors:
 //   Patrik Torstensson (Patrik.Torstensson@labs2.com)
-//   Wictor Wilén (decode/encode functions) (wictor@ibizkit.se)
+//   Wictor Wil\u00E9n (decode/encode functions) (wictor@ibizkit.se)
 //   Tim Coleman (tim@timcoleman.com)
 //   Gonzalo Paniagua Javier (gonzalo@ximian.com)
 //
@@ -143,7 +143,12 @@ namespace System.Web
 
         [return: NotNullIfNotNull(nameof(value))]
         public static string? HtmlEncode(object? value) =>
-            value == null ? null : HtmlEncode(Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty);
+            value switch
+            {
+                null => null,
+                IHtmlString ihs => ihs.ToHtmlString() ?? string.Empty,
+                _ => HtmlEncode(Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty),
+            };
 
         public static void HtmlEncode(string? s, TextWriter output) => HttpEncoder.HtmlEncode(s, output);
 

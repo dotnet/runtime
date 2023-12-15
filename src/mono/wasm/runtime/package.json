@@ -3,7 +3,7 @@
   "description": ".NET is a developer platform with tools and libraries for building any type of app, including web, mobile, desktop, games, IoT, cloud, and microservices.",
   "repository": {
     "type": "git",
-    "url": "git@github.com:dotnet/runtime.git"
+    "url": "https://github.com/dotnet/runtime.git"
   },
   "version": "1.0.0",
   "main": "dotnet.js",
@@ -11,7 +11,8 @@
   "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",
-    "lint": "eslint --no-color --max-warnings=0 ./**/*.ts ./*.js"
+    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./*.js\"",
+    "format": "eslint --fix \"./**/*.ts\" \"./*.js\""
   },
   "keywords": [
     "dotnet",
@@ -21,18 +22,23 @@
   "author": "Microsoft",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-typescript": "8.3.3",
-    "@typescript-eslint/eslint-plugin": "5.30.7",
-    "@typescript-eslint/parser": "5.30.7",
-    "eslint": "8.20.0",
-    "fast-glob": "3.2.11",
-    "git-commit-info": "2.0.1",
-    "rollup": "2.77.0",
-    "rollup-plugin-consts": "1.1.0",
-    "rollup-plugin-dts": "4.2.2",
-    "rollup-plugin-terser": "7.0.2",
-    "terser": "5.14.2",
-    "tslib": "2.4.0",
-    "typescript": "4.7.4"
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-terser": "0.4.3",
+    "@rollup/plugin-typescript": "11.1.2",
+    "@rollup/plugin-virtual": "3.0.1",
+    "@typescript-eslint/eslint-plugin": "5.59.1",
+    "@typescript-eslint/parser": "5.59.1",
+    "eslint": "8.44.0",
+    "fast-glob": "3.3.0",
+    "git-commit-info": "2.0.2",
+    "magic-string": "0.30.1",
+    "rollup": "3.26.2",
+    "rollup-plugin-dts": "5.3.0",
+    "terser": "5.19.0",
+    "tslib": "2.6.0",
+    "typescript": "5.1.6"
+  },
+  "dependencies": {
+    "wasm-feature-detect": "1.5.1"
   }
 }

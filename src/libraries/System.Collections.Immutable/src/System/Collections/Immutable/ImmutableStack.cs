@@ -42,8 +42,8 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            var stack = ImmutableStack<T>.Empty;
-            foreach (var item in items)
+            ImmutableStack<T> stack = ImmutableStack<T>.Empty;
+            foreach (T item in items)
             {
                 stack = stack.Push(item);
             }
@@ -61,8 +61,19 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            var stack = ImmutableStack<T>.Empty;
-            foreach (var item in items)
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable stack that contains the specified array of items.
+        /// </summary>
+        /// <typeparam name="T">The type of items in the immutable stack.</typeparam>
+        /// <param name="items">A span that contains the items to prepopulate the stack with.</param>
+        /// <returns>A new immutable stack that contains the specified items.</returns>
+        public static ImmutableStack<T> Create<T>(ReadOnlySpan<T> items)
+        {
+            ImmutableStack<T> stack = ImmutableStack<T>.Empty;
+            foreach (T item in items)
             {
                 stack = stack.Push(item);
             }

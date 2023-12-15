@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Collections.Generic;
 
 namespace System.Reflection
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class AssemblyRuntimeNameHelpers
     {
         //

@@ -9,6 +9,8 @@ namespace System.IO
     /// <summary>Provides a stream whose implementation is supplied by delegates or by an inner stream.</summary>
     internal sealed class DelegateDelegatingStream : DelegatingStream
     {
+        public delegate int ReadSpanDelegate(Span<byte> buffer);
+
         public static DelegateDelegatingStream NopDispose(Stream innerStream) =>
             new DelegateDelegatingStream(innerStream)
             {
@@ -27,6 +29,7 @@ namespace System.IO
         public Func<long> GetPositionFunc { get; set; }
         public Action<long> SetPositionFunc { get; set; }
         public Func<byte[], int, int, int> ReadFunc { get; set; }
+        public ReadSpanDelegate ReadSpanFunc { get; set; }
         public Func<byte[], int, int, CancellationToken, Task<int>> ReadAsyncArrayFunc { get; set; }
         public Func<Memory<byte>, CancellationToken, ValueTask<int>> ReadAsyncMemoryFunc { get; set; }
         public Func<long, SeekOrigin, long> SeekFunc { get; set; }
@@ -34,6 +37,8 @@ namespace System.IO
         public Action<byte[], int, int> WriteFunc { get; set; }
         public Func<byte[], int, int, CancellationToken, Task> WriteAsyncArrayFunc { get; set; }
         public Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask> WriteAsyncMemoryFunc { get; set; }
+        public Action<Stream, int> CopyToFunc { get; set; }
+        public Func<Stream, int, CancellationToken, Task> CopyToAsyncFunc { get; set; }
         public Action<bool> DisposeFunc { get; set; }
         public Func<ValueTask> DisposeAsyncFunc { get; set; }
 
@@ -48,6 +53,7 @@ namespace System.IO
         public override long Position => GetPositionFunc != null ? GetPositionFunc() : base.Position;
 
         public override int Read(byte[] buffer, int offset, int count) => ReadFunc != null ? ReadFunc(buffer, offset, count) : base.Read(buffer, offset, count);
+        public override int Read(Span<byte> buffer) => ReadSpanFunc != null ? ReadSpanFunc(buffer) : base.Read(buffer);
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => ReadAsyncArrayFunc != null ? ReadAsyncArrayFunc(buffer, offset, count, cancellationToken) : base.ReadAsync(buffer, offset, count, cancellationToken);
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => ReadAsyncMemoryFunc != null ? ReadAsyncMemoryFunc(buffer, cancellationToken) : base.ReadAsync(buffer, cancellationToken);
 
@@ -57,6 +63,9 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count) { if (WriteFunc != null) WriteFunc(buffer, offset, count); else base.Write(buffer, offset, count); }
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => WriteAsyncArrayFunc != null ? WriteAsyncArrayFunc(buffer, offset, count, cancellationToken) : base.WriteAsync(buffer, offset, count, cancellationToken);
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => WriteAsyncMemoryFunc != null ? WriteAsyncMemoryFunc(buffer, cancellationToken) : base.WriteAsync(buffer, cancellationToken);
+
+        public override void CopyTo(Stream destination, int bufferSize) { if (CopyToFunc != null) CopyToFunc(destination, bufferSize); else base.CopyTo(destination, bufferSize); }
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => CopyToAsyncFunc != null ? CopyToAsyncFunc(destination, bufferSize, cancellationToken) : base.CopyToAsync(destination, bufferSize, cancellationToken);
 
         protected override void Dispose(bool disposing) { if (DisposeFunc != null) DisposeFunc(disposing); else base.Dispose(disposing); }
         public override ValueTask DisposeAsync() => DisposeAsyncFunc != null ? DisposeAsyncFunc() : base.DisposeAsync();

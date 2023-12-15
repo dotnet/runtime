@@ -17,6 +17,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/handle.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/mono-debug.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
@@ -176,6 +177,7 @@ struct _MonoArray {
 	} name;
 
 MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfVoid, void)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
@@ -439,6 +441,7 @@ TYPED_HANDLE_DECL (MonoSafeHandle);
 struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
+	MonoObject *m_keepalive;
 };
 
 /* Safely access System.Type from native code */
@@ -613,6 +616,7 @@ struct _MonoInternalThread {
 	 * longer */
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
+	MonoBoolean external_eventloop;
 	guint8	apartment_state;
 	gint32 managed_id;
 	guint32 small_id;
@@ -653,7 +657,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	gsize handleAndKind;
+	gsize taggedHandle;
 } MonoWeakReference;
 
 /* Safely access System.Delegate from native code */
@@ -661,6 +665,40 @@ TYPED_HANDLE_DECL (MonoDelegate);
 
 
 typedef void (*InterpJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
+
+#ifdef MONO_SMALL_CONFIG
+#define MONO_IMT_SIZE 9
+#else
+#define MONO_IMT_SIZE 19
+#endif
+
+typedef union {
+	int vtable_slot;
+	gpointer target_code;
+} MonoImtItemValue;
+
+typedef struct _MonoImtBuilderEntry {
+	gpointer key;
+	struct _MonoImtBuilderEntry *next;
+	MonoImtItemValue value;
+	int children;
+	guint8 has_target_code : 1;
+} MonoImtBuilderEntry;
+
+typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
+
+struct _MonoIMTCheckItem {
+	gpointer          key;
+	int               check_target_idx;
+	MonoImtItemValue  value;
+	guint8           *jmp_code;
+	guint8           *code_target;
+	guint8            is_equals;
+	guint8            compare_done;
+	guint8            chunk_size;
+	guint8            short_branch;
+	guint8            has_target_code;
+};
 
 /*
  * Callbacks supplied by the runtime and called by the modules in metadata/
@@ -684,7 +722,6 @@ typedef struct {
 	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoMethod *method);
-	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
@@ -693,10 +730,31 @@ typedef struct {
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
-	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
+	gpointer (*get_ftnptr)(MonoMethod *method, gboolean need_unbox, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);
+	MonoArray *(*get_trace) (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
+	MonoBoolean (*get_frame_info) (gint32 skip, MonoMethod **out_method,
+								   MonoDebugSourceLocation **out_location,
+								   gint32 *iloffset, gint32 *native_offset);
+	gboolean (*get_cached_class_info) (MonoClass *klass, MonoCachedClassInfo *res);
+	gboolean (*get_class_from_name) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
+	gpointer (*build_imt_trampoline) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
+	MonoJitInfo *(*find_jit_info_in_aot) (MonoImage *image, gpointer addr);
+	/**
+	 * mono_class_set_deferred_type_load_failure_callback:
+	 * @param klass: Class in which the failure was detected.
+	 * @param fmt: printf-style error message string.
+	 *
+	 * The callback is responsible for processing the failure information provided by the @klass parameter and the error message format string @fmt.
+	 * If a deferred failure occurs, the callback should return FALSE to let the AOT compiler proceed with the class layout setup.
+	 * Otherwise, if the callback returns TRUE, it indicates that the failure should be reported.
+	 *
+	 * @returns: TRUE if the failure is handled and the runtime should not proceed with class setup, FALSE if the failure should be deferred for runtime class setup.
+	 * 
+	 */
+	gboolean (*mono_class_set_deferred_type_load_failure_callback) (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -829,17 +887,15 @@ struct _MonoDelegate {
 	gpointer delegate_trampoline;
 	/* Extra argument passed to the target method in llvmonly mode */
 	gpointer extra_arg;
-	/*
-	 * If non-NULL, this points to a memory location which stores the address of
-	 * the compiled code of the method, or NULL if it is not yet compiled.
-	 */
-	guint8 **method_code;
+	/* MonoDelegateTrampInfo */
+	gpointer invoke_info;
 	gpointer interp_method;
 	/* Interp method that is executed when invoking the delegate */
 	gpointer interp_invoke_impl;
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	/* Whenever to resolve the target method using ldvirtftn at call time */
 	MonoBoolean method_is_virtual;
 	MonoBoolean bound;
 };
@@ -905,10 +961,11 @@ struct _MonoReflectionMethodBody {
 /* Safely access System.Reflection.MethodBody from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
-/* System.RuntimeAssembly */
+/* System.Reflection.RuntimeAssembly */
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
+	MonoObject *m_keepalive;
 };
 
 typedef struct {
@@ -1056,7 +1113,7 @@ typedef struct {
 	MonoArray *param_modopt;
 } MonoReflectionCtorBuilder;
 
-/* Safely access System.Reflection.Emit.ConstructorBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeConstructorBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionCtorBuilder);
 
 typedef struct {
@@ -1089,7 +1146,7 @@ typedef struct {
 	MonoArray *param_modopt;
 } MonoReflectionMethodBuilder;
 
-/* Safely access System.Reflection.Emit.MethodBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeMethodBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBuilder);
 
 typedef struct {
@@ -1119,7 +1176,7 @@ typedef struct {
 	guint32 access;
 } MonoReflectionAssemblyBuilder;
 
-/* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeAssemblyBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionAssemblyBuilder);
 
 typedef struct {
@@ -1138,7 +1195,7 @@ typedef struct {
 	MonoArray *modopt;
 } MonoReflectionFieldBuilder;
 
-/* Safely access System.Reflection.Emit.FieldBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeFieldBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionFieldBuilder);
 
 typedef struct {
@@ -1189,7 +1246,7 @@ typedef struct {
 	MonoArray *table_indexes;
 } MonoReflectionModuleBuilder;
 
-/* Safely acess System.Reflection.Emit.ModuleBuilder from native code */
+/* Safely acess System.Reflection.Emit.RuntimeModuleBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {
@@ -1229,19 +1286,12 @@ struct _MonoReflectionTypeBuilder {
 typedef struct {
 	MonoReflectionType type;
 	MonoReflectionType *element_type;
+	gint32 type_kind;
 	gint32 rank;
-} MonoReflectionArrayType;
+} MonoReflectionSymbolType;
 
-/* Safely access System.Reflection.Emit.ArrayType (in DerivedTypes.cs) from native code */
-TYPED_HANDLE_DECL (MonoReflectionArrayType);
-
-typedef struct {
-	MonoReflectionType type;
-	MonoReflectionType *element_type;
-} MonoReflectionDerivedType;
-
-/* Safely access System.Reflection.Emit.SymbolType and subclasses (in DerivedTypes.cs) from native code */
-TYPED_HANDLE_DECL (MonoReflectionDerivedType);
+/* Safely access System.Reflection.Emit.SymbolType from native code */
+TYPED_HANDLE_DECL (MonoReflectionSymbolType);
 
 typedef struct {
 	MonoReflectionType type;
@@ -1255,7 +1305,7 @@ typedef struct {
 	guint32 attrs;
 } MonoReflectionGenericParam;
 
-/* Safely access System.Reflection.Emit.GenericTypeParameterBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeGenericTypeParameterBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionGenericParam);
 
 typedef struct {
@@ -1263,7 +1313,7 @@ typedef struct {
 	MonoReflectionTypeBuilder *tb;
 } MonoReflectionEnumBuilder;
 
-/* Safely access System.Reflection.Emit.EnumBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeEnumBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionEnumBuilder);
 
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
@@ -1422,6 +1472,14 @@ typedef enum {
 } MonoManagedAssemblyLoadContextInternalState;
 
 
+typedef struct {
+	MonoObject object;
+	MonoObject *m_scout;
+	MonoArray *m_slots;
+	MonoArray *m_hashes;
+	int m_nslots;
+} MonoManagedLoaderAllocator;
+
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
  */
@@ -1457,8 +1515,10 @@ MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMe
 
 MonoArrayHandle mono_param_get_objects_internal  (MonoMethod *method, MonoClass *refclass, MonoError *error);
 
+MONO_COMPONENT_API
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
+
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle type, int type_argc, MonoType **types, MonoError *error);
 void
@@ -1569,45 +1629,6 @@ mono_nullable_box_handle (gpointer buf, MonoClass *klass, MonoError *error);
 // A code size optimization (source and object) equivalent to MONO_HANDLE_NEW (MonoObject, NULL);
 MonoObjectHandle
 mono_new_null (void);
-
-#ifdef MONO_SMALL_CONFIG
-#define MONO_IMT_SIZE 9
-#else
-#define MONO_IMT_SIZE 19
-#endif
-
-typedef union {
-	int vtable_slot;
-	gpointer target_code;
-} MonoImtItemValue;
-
-typedef struct _MonoImtBuilderEntry {
-	gpointer key;
-	struct _MonoImtBuilderEntry *next;
-	MonoImtItemValue value;
-	int children;
-	guint8 has_target_code : 1;
-} MonoImtBuilderEntry;
-
-typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
-
-struct _MonoIMTCheckItem {
-	gpointer          key;
-	int               check_target_idx;
-	MonoImtItemValue  value;
-	guint8           *jmp_code;
-	guint8           *code_target;
-	guint8            is_equals;
-	guint8            compare_done;
-	guint8            chunk_size;
-	guint8            short_branch;
-	guint8            has_target_code;
-};
-
-typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
-
-void
-mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func);
 
 void
 mono_set_always_build_imt_trampolines (gboolean value);
@@ -1809,6 +1830,9 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 gboolean
 mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
+gboolean
+mono_object_isinst_vtable_mbyref (MonoVTable *vt, MonoClass *klass, MonoError *error);
+
 MonoStringHandle
 mono_string_new_size_handle (gint32 len, MonoError *error);
 
@@ -1878,12 +1902,8 @@ void
 mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
 MonoObject*
-mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
-			       MonoObject **exc, MonoError *error);
-
-MonoObject*
-mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
-				   MonoError *error);
+mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_byref,
+				MonoObject **exc, MonoError *error);
 
 void*
 mono_compile_method_checked (MonoMethod *method, MonoError *error);
@@ -1986,6 +2006,9 @@ mono_string_hash_internal (MonoString *s);
 
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
+
+int
+mono_object_try_get_hash_internal (MonoObject* obj);
 
 ICALL_EXPORT
 void
@@ -2134,5 +2157,11 @@ mono_string_instance_is_interned (MonoString *str);
 
 gpointer
 mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
+
+void
+mono_runtime_run_startup_hooks (void);
+
+MONO_COMPONENT_API gpointer
+mono_get_span_data_from_field (MonoClassField *field_handle, MonoType *field_type, MonoType *target_type, gint32 *count);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

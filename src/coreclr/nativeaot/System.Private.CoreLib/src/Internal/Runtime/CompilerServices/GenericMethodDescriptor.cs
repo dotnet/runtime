@@ -5,7 +5,6 @@ using System;
 
 namespace Internal.Runtime.CompilerServices
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public struct GenericMethodDescriptor
     {
         public readonly IntPtr MethodFunctionPointer;

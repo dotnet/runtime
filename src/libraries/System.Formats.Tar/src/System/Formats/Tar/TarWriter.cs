@@ -222,6 +222,7 @@ namespace System.Formats.Tar
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
+            ValidateStreamsSeekability(entry);
             WriteEntryInternal(entry);
         }
 
@@ -270,6 +271,7 @@ namespace System.Formats.Tar
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
+            ValidateStreamsSeekability(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 
@@ -306,7 +308,7 @@ namespace System.Formats.Tar
 
                 default:
                     Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                    throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format));
+                    throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format));
             }
 
             _wroteEntries = true;
@@ -328,7 +330,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
                 TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
                 TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
-                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
             await task.ConfigureAwait(false);
 
@@ -372,6 +374,14 @@ namespace System.Formats.Tar
             string? actualEntryName = string.IsNullOrEmpty(entryName) ? Path.GetFileName(fileName) : entryName;
 
             return (fullPath, actualEntryName);
+        }
+
+        private void ValidateStreamsSeekability(TarEntry entry)
+        {
+            if (!_archiveStream.CanSeek && entry._header._dataStream != null && !entry._header._dataStream.CanSeek)
+            {
+                throw new IOException(SR.Format(SR.TarStreamSeekabilityUnsupportedCombination, entry.Name));
+            }
         }
 
         private static void ValidateEntryLinkName(TarEntryType entryType, string? linkName)

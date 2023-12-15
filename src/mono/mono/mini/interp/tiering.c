@@ -32,6 +32,7 @@ get_tier_up_imethod (InterpMethod *imethod)
 	new_imethod->code_type = imethod->code_type;
 	new_imethod->rtype = imethod->rtype;
 	new_imethod->param_types = imethod->param_types;
+	new_imethod->is_invoke = imethod->is_invoke;
 	new_imethod->optimized = TRUE;
 	new_imethod->prof_flags = imethod->prof_flags;
 
@@ -209,5 +210,7 @@ mono_interp_tier_up_frame_patchpoint (InterpFrame *frame, ThreadContext *context
 	}
 	context->stack_pointer = (guchar*)frame->stack + optimized_method->alloca_size;
 	frame->imethod = optimized_method;
-	return optimized_method->code + lookup_patchpoint_data (optimized_method, bb_index);
+	int offset = lookup_patchpoint_data (optimized_method, bb_index);
+	g_assert (offset != G_MAXINT32);
+	return optimized_method->code + offset;
 }

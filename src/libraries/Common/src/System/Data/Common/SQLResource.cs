@@ -53,11 +53,6 @@ namespace System.Data.SqlTypes
 
         internal static string ClosedXmlReaderMessage => SR.SqlMisc_ClosedXmlReaderMessage;
 
-        internal static string InvalidOpStreamClosed(string method)
-        {
-            return SR.Format(SR.SqlMisc_InvalidOpStreamClosed, method);
-        }
-
         internal static string InvalidOpStreamNonWritable(string method)
         {
             return SR.Format(SR.SqlMisc_InvalidOpStreamNonWritable, method);

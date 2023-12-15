@@ -4,12 +4,7 @@
             {
                 "name": "node",
                 "js-path": "main.mjs",
-                "Host": "nodejs"
-            },
-            {
-                "name": "v8",
-                "js-path": "main.mjs",
-                "Host": "v8"
+                "host": "nodejs"
             }
         ]
     }

@@ -70,6 +70,8 @@ namespace MonoTests.System.Runtime.Caching
         }
         public static bool DoesNotSupportPhysicalMemoryMonitor => !SupportsPhysicalMemoryMonitor;
 
+        public static bool IsNotHybridGlobalizationOnBrowser => PlatformDetection.IsNotHybridGlobalizationOnBrowser;
+
         private bool IsFullFramework = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
         private PokerMemoryCache CreatePokerMemoryCache(string name, string throwOnDisposed)
@@ -84,7 +86,7 @@ namespace MonoTests.System.Runtime.Caching
             return new PokerMemoryCache("MyCache", config);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void ConstructorParameters()
         {
             MemoryCache mc;
@@ -236,7 +238,7 @@ namespace MonoTests.System.Runtime.Caching
             mc.Trim(0);
         }
 
-        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor), nameof(IsNotHybridGlobalizationOnBrowser))]
         public void ConstructorValues()
         {
             var config = new NameValueCollection();
@@ -258,7 +260,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal(TimeSpan.FromMinutes(70), mc.PollingInterval);
         }
 
-        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData(null)]
         public void Indexer(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -303,7 +308,10 @@ namespace MonoTests.System.Runtime.Caching
             }
         }
 
-        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData(null)]
         //[ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
         public void Contains(string throwOnDisposed)
         {
@@ -401,7 +409,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.True (monitor.HasChanged);
         }
 
-        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData(null)]
         public void AddOrGetExisting_String_Object_DateTimeOffset_String(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -675,7 +686,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("AddOrGetExisting (CacheItem item, CacheItemPolicy policy)", mc.Calls[0]);
         }
 
-        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData(null)]
         public void Set_String_Object_CacheItemPolicy_String(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -901,7 +915,10 @@ namespace MonoTests.System.Runtime.Caching
             Assert.Equal("Set (string key, object value, CacheItemPolicy policy, string regionName = null)", mc.Calls[1]);
         }
 
-        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData(null)]
         public void Remove(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -1010,7 +1027,10 @@ namespace MonoTests.System.Runtime.Caching
             }
         }
 
-        [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData(null)]
         public void GetValues(string throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
@@ -1111,7 +1131,7 @@ namespace MonoTests.System.Runtime.Caching
 
         // Due to internal implementation details Trim has very few easily verifiable scenarios
         // ActiveIssue: https://github.com/dotnet/runtime/issues/36488
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData("true"), InlineData("false"), InlineData(null)]
         public void Trim(string throwOnDisposed)
         {
@@ -1162,7 +1182,7 @@ namespace MonoTests.System.Runtime.Caching
             }
         }
 
-        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor), nameof(IsNotHybridGlobalizationOnBrowser))]
         public void TestExpiredGetValues()
         {
             var config = new NameValueCollection();
@@ -1508,8 +1528,10 @@ namespace MonoTests.System.Runtime.Caching
     public class MemoryCacheTestExpires4
     {
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
+        public static bool IsNotHybridGlobalizationOnBrowser => MemoryCacheTest.IsNotHybridGlobalizationOnBrowser;
 
-        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor), nameof(IsNotHybridGlobalizationOnBrowser))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheShrink()
         {
             const int HEAP_RESIZE_THRESHOLD = 8192 + 2;
@@ -1567,8 +1589,10 @@ namespace MonoTests.System.Runtime.Caching
     public class MemoryCacheTestExpires5
     {
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
+        public static bool IsNotHybridGlobalizationOnBrowser => MemoryCacheTest.IsNotHybridGlobalizationOnBrowser;
 
-        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor), nameof(IsNotHybridGlobalizationOnBrowser))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheExpiryOrdering()
         {
             var config = new NameValueCollection();

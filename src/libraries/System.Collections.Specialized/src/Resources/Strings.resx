@@ -60,12 +60,6 @@
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
-  <data name="Argument_InvalidValue_TooSmall" xml:space="preserve">
-    <value>Argument {0} should be larger than {1}.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum_Index" xml:space="preserve">
-    <value>Index is less than zero.</value>
-  </data>
   <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
     <value>Collection was modified after the enumerator was instantiated.</value>
   </data>

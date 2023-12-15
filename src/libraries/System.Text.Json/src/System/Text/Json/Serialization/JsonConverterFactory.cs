@@ -19,25 +19,18 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.None;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.None;
 
         /// <summary>
-        /// Create a converter for the provided <see cref="Type"/>.
+        /// Create a converter for the provided <see cref="System.Type"/>.
         /// </summary>
-        /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
+        /// <param name="typeToConvert">The <see cref="System.Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
         /// If <see langword="null"/> is returned, a <see cref="NotSupportedException"/> will be thrown.
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
-
-        internal override JsonParameterInfo CreateJsonParameterInfo()
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
 
         internal sealed override Type? KeyType => null;
 
@@ -61,10 +54,7 @@ namespace System.Text.Json.Serialization
             return converter;
         }
 
-        internal sealed override object ReadCoreAsObject(
-            ref Utf8JsonReader reader,
-            JsonSerializerOptions options,
-            scoped ref ReadStack state)
+        internal sealed override object? ReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Fail("We should never get here.");
 
@@ -73,6 +63,7 @@ namespace System.Text.Json.Serialization
 
         internal sealed override bool OnTryReadAsObject(
             ref Utf8JsonReader reader,
+            Type typeToConvert,
             JsonSerializerOptions options,
             scoped ref ReadStack state,
             out object? value)
@@ -84,9 +75,49 @@ namespace System.Text.Json.Serialization
 
         internal sealed override bool TryReadAsObject(
             ref Utf8JsonReader reader,
+            Type typeToConvert,
             JsonSerializerOptions options,
             scoped ref ReadStack state,
             out object? value)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override object? ReadAsPropertyNameAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override object? ReadAsPropertyNameCoreAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override object? ReadNumberWithCustomHandlingAsObject(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override void WriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override bool OnTryWriteAsObject(
+            Utf8JsonWriter writer,
+            object? value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             Debug.Fail("We should never get here.");
 
@@ -104,21 +135,19 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override Type TypeToConvert => null!;
-
-        internal sealed override bool WriteCoreAsObject(
-            Utf8JsonWriter writer,
-            object? value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
+        internal sealed override void WriteAsPropertyNameAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
             Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
 
+        /// <inheritdoc/>
+        public sealed override Type? Type => null;
+
         internal sealed override void WriteAsPropertyNameCoreAsObject(
-            Utf8JsonWriter writer, object value,
+            Utf8JsonWriter writer,
+            object? value,
             JsonSerializerOptions options,
             bool isWritingExtensionDataProperty)
         {
@@ -127,10 +156,11 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
+        internal sealed override void WriteNumberWithCustomHandlingAsObject(Utf8JsonWriter writer, object? value, JsonNumberHandling handling)
         {
-            ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(typeof(TTarget), this);
-            return null!;
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
         }
     }
 }

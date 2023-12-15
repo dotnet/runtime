@@ -15,7 +15,6 @@ using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Core
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public struct QScopeDefinition : IEquatable<QScopeDefinition>
     {
@@ -63,7 +62,6 @@ namespace Internal.Reflection.Core
 
 namespace System.Reflection.Runtime.General
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public struct QHandle : IEquatable<QHandle>
     {
@@ -101,7 +99,6 @@ namespace System.Reflection.Runtime.General
         private readonly Handle _handle;
     }
 
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct QMethodDefinition
     {
@@ -127,7 +124,6 @@ namespace System.Reflection.Runtime.General
         private readonly int _handle;
     }
 
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct QTypeDefinition
     {
@@ -143,7 +139,6 @@ namespace System.Reflection.Runtime.General
     }
 
 
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct QTypeDefRefOrSpec
     {
@@ -158,7 +153,6 @@ namespace System.Reflection.Runtime.General
         private readonly int _handle;
     }
 
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public struct QGenericParameter : IEquatable<QGenericParameter>
     {

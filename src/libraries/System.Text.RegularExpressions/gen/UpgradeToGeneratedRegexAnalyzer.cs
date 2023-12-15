@@ -168,7 +168,13 @@ namespace System.Text.RegularExpressions.Generator
             for (int i = 0; i < arguments.Length; i++)
             {
                 IArgumentOperation argument = arguments[i];
-                string argumentName = argument.Parameter.Name;
+                string? argumentName = argument.Parameter?.Name;
+
+                // If the argument name is null (e.g. an __arglist), then we don't emit a diagnostic.
+                if (argumentName is null)
+                {
+                    return false;
+                }
 
                 // If one of the arguments is a timeout, then we don't emit a diagnostic.
                 if (argumentName.Equals(timeoutArgumentName, StringComparison.OrdinalIgnoreCase) ||
@@ -180,8 +186,20 @@ namespace System.Text.RegularExpressions.Generator
                 // If the argument is the pattern, then we validate that it is constant and we store the index.
                 if (argumentName.Equals(PatternArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!IsConstant(argument))
+                    if (!argument.Value.ConstantValue.HasValue)
                     {
+                        return false;
+                    }
+
+                    try
+                    {
+                        _ = RegexParser.ParseOptionsInPattern((string)argument.Value.ConstantValue.Value!, RegexOptions.None);
+                    }
+                    catch (RegexParseException)
+                    {
+                        // Pattern contained something invalid like "\g" or "\xZZZZ" so we can't parse
+                        // sufficiently to look for options in the pattern like "(?i)"
+                        // so we won't be able to safely make the fix
                         return false;
                     }
 
@@ -191,12 +209,12 @@ namespace System.Text.RegularExpressions.Generator
                 // If the argument is the options, then we validate that it is constant, that it doesn't have RegexOptions.NonBacktracking, and we store the index.
                 if (argumentName.Equals(OptionsArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!IsConstant(argument))
+                    if (!argument.Value.ConstantValue.HasValue)
                     {
                         return false;
                     }
 
-                    RegexOptions value = (RegexOptions)((int)argument.Value.ConstantValue.Value);
+                    RegexOptions value = (RegexOptions)(int)argument.Value.ConstantValue.Value!;
                     if ((value & RegexOptions.NonBacktracking) > 0)
                     {
                         return false;
@@ -208,15 +226,6 @@ namespace System.Text.RegularExpressions.Generator
 
             return true;
         }
-
-        /// <summary>
-        /// Ensures that the input to the constructor or invocation is constant at compile time
-        /// which is a requirement in order to be able to use the source generator.
-        /// </summary>
-        /// <param name="argument">The argument to be analyzed.</param>
-        /// <returns><see langword="true"/> if the argument is constant; otherwise, <see langword="false"/>.</returns>
-        private static bool IsConstant(IArgumentOperation argument)
-            => argument.Value.ConstantValue.HasValue;
 
         /// <summary>
         /// Ensures that the compilation can find the Regex and RegexAttribute types, and also validates that the
@@ -233,7 +242,7 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            INamedTypeSymbol generatedRegexAttributeTypeSymbol = compilation.GetTypeByMetadataName(GeneratedRegexTypeName);
+            INamedTypeSymbol? generatedRegexAttributeTypeSymbol = compilation.GetTypeByMetadataName(GeneratedRegexTypeName);
             if (generatedRegexAttributeTypeSymbol == null)
             {
                 return false;

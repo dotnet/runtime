@@ -184,7 +184,7 @@ namespace System.Xml
 
             Task task;
             <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'<';
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 task = RawTextAsync(prefix, ":", localName);
             }
@@ -216,7 +216,7 @@ namespace System.Xml
                 <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'<';
                 <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'/';
 
-                if (prefix != null && prefix.Length != 0)
+                if (!string.IsNullOrEmpty(prefix))
                 {
                     return RawTextAsync(prefix, ":", localName, ">");
                 }
@@ -248,7 +248,7 @@ namespace System.Xml
             <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'<';
             <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'/';
 
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 return RawTextAsync(prefix, ":", localName, ">");
             }
@@ -321,13 +321,18 @@ namespace System.Xml
 
 #><#= SetTextContentMark(3, false) #>
 
+            if (_attrEndPos == _bufPos)
+            {
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)' ';
+            }
+
             if (prefix.Length == 0)
             {
-                await RawTextAsync(" xmlns=\"").ConfigureAwait(false);
+                await RawTextAsync("xmlns=\"").ConfigureAwait(false);
             }
             else
             {
-                await RawTextAsync(" xmlns:").ConfigureAwait(false);
+                await RawTextAsync("xmlns:").ConfigureAwait(false);
                 await RawTextAsync(prefix).ConfigureAwait(false);
                 <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'=';
                 <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'"';
@@ -1857,7 +1862,7 @@ namespace System.Xml
         public override async Task WriteStartElementAsync(string prefix, string localName, string ns)
         {
             CheckAsyncCall();
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)
@@ -1917,6 +1922,19 @@ namespace System.Xml
             }
 
             await base.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
+        }
+
+        // Same as base class, plus possible indentation.
+        internal override async Task WriteStartNamespaceDeclarationAsync(string prefix)
+        {
+            CheckAsyncCall();
+            // Add indentation
+            if (_newLineOnAttributes)
+            {
+                await WriteIndentAsync().ConfigureAwait(false);
+            }
+
+            await base.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
         }
 
         public override Task WriteCDataAsync(string text)

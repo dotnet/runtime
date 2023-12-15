@@ -35,10 +35,12 @@ public class Interfaces
         if (TestIterfaceCallOptimization() == Fail)
             return Fail;
 
+        TestPublicAndNonpublicDifference.Run();
         TestDefaultInterfaceMethods.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
+        TestGenericAnalysis.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -51,6 +53,9 @@ public class Interfaces
         TestMoreConstraints.Run();
         TestSimpleNonGeneric.Run();
         TestSimpleGeneric.Run();
+        TestDefaultDynamicStaticNonGeneric.Run();
+        TestDefaultDynamicStaticGeneric.Run();
+        TestDynamicStaticGenericVirtualMethods.Run();
 
         return Pass;
     }
@@ -476,6 +481,46 @@ public class Interfaces
 
     #endregion
 
+    class TestPublicAndNonpublicDifference
+    {
+        interface IFrobber
+        {
+            string Frob();
+        }
+        class ProtectedBase : IFrobber
+        {
+            string IFrobber.Frob() => "IFrobber.Frob";
+            protected virtual string Frob() => "Base.Frob";
+        }
+
+        class ProtectedDerived : ProtectedBase, IFrobber
+        {
+            protected override string Frob() => "Derived.Frob";
+        }
+
+        class PublicBase : IFrobber
+        {
+            string IFrobber.Frob() => "IFrobber.Frob";
+            public virtual string Frob() => "Base.Frob";
+        }
+
+        class PublicDerived : PublicBase, IFrobber
+        {
+            public override string Frob() => "Derived.Frob";
+        }
+
+        public static void Run()
+        {
+            IFrobber f1 = new PublicDerived();
+            if (f1.Frob() != "Derived.Frob")
+                throw new Exception();
+
+            IFrobber f2 = new ProtectedDerived();
+            if (f2.Frob() != "IFrobber.Frob")
+                throw new Exception();
+        }
+    }
+
     class TestDefaultInterfaceMethods
     {
         interface IFoo
@@ -605,6 +650,56 @@ public class Interfaces
             IFace<object> o = new Yadda() { InnerValue = "SomeString" };
             string r3 = o.GrabValue("Hello there");
             if (r3 != "'SomeString' over 'System.Object' with 'Hello there'")
+                throw new Exception();
+        }
+    }
+
+    class TestGenericAnalysis
+    {
+        interface IInterface
+        {
+            string Method(object p);
+        }
+
+        interface IInterface<T>
+        {
+            string Method(T p);
+        }
+
+        class C1<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        class C2<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        class C3<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        static IInterface s_c1 = new C1<object>();
+        static IInterface<object> s_c2 = new C2<object>();
+        static IInterface<object> s_c3a = new C3<object>();
+        static IInterface s_c3b = new C3<object>();
+
+        // Works around https://github.com/dotnet/runtime/issues/94399
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        public static void Run()
+        {
+            if (s_c1.Method(null) != "Method(object)")
+                throw new Exception();
+            if (s_c2.Method(null) != "Method(T)")
+                throw new Exception();
+            if (s_c3a.Method(null) != "Method(T)")
+                throw new Exception();
+            if (s_c3b.Method(null) != "Method(object)")
                 throw new Exception();
         }
     }
@@ -1457,6 +1552,144 @@ public class Interfaces
                 throw new Exception();
             if (CallIndirect<SimpleStruct>(2) != (1236, typeof(IBar<Atom2>)))
                 throw new Exception();
+        }
+    }
+
+    class TestDefaultDynamicStaticNonGeneric
+    {
+        interface IFoo
+        {
+            abstract static string ImHungryGiveMeCookie();
+        }
+
+        interface IBar : IFoo
+        {
+            static string IFoo.ImHungryGiveMeCookie() => "IBar";
+        }
+
+        class Baz : IBar
+        {
+        }
+
+        class Gen<T> where T : IFoo
+        {
+            public static string GrabCookie() => T.ImHungryGiveMeCookie();
+        }
+
+        public static void Run()
+        {
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar")
+                throw new Exception(r);
+
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar")
+                throw new Exception(r);
+        }
+    }
+
+    class TestDefaultDynamicStaticGeneric
+    {
+        class Atom1 { }
+        class Atom2 { }
+
+        interface IFoo
+        {
+            abstract static string ImHungryGiveMeCookie();
+        }
+
+        interface IBar<T> : IFoo
+        {
+            static string IFoo.ImHungryGiveMeCookie() => $"IBar<{typeof(T).Name}>";
+        }
+
+        class Baz<T> : IBar<T>
+        {
+        }
+
+        class Gen<T> where T : IFoo
+        {
+            public static string GrabCookie() => T.ImHungryGiveMeCookie();
+        }
+
+        public static void Run()
+        {
+            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(typeof(Atom1)));
+
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(typeof(Atom1))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar<Atom1>")
+                throw new Exception(r);
+
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(typeof(Atom2))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar<Atom2>")
+                throw new Exception(r);
+        }
+    }
+
+    class TestDynamicStaticGenericVirtualMethods
+    {
+        interface IEntry
+        {
+            string Enter1<T>(string cookie) where T : ISimpleCall;
+        }
+
+        interface ISimpleCall
+        {
+            static virtual string Wrap<T>(string cookie) => $"ISimpleCall.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        interface ISimpleCallOverride : ISimpleCall
+        {
+            static string ISimpleCall.Wrap<T>(string cookie) => $"ISimpleCallOverride.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        interface ISimpleCallGenericOverride<U> : ISimpleCall
+        {
+            static string ISimpleCall.Wrap<T>(string cookie) => $"ISimpleCallGenericOverride<{typeof(U).Name}>.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        class SimpleCallClass : ISimpleCall
+        {
+            public static string Wrap<T>(string cookie) => $"SimpleCall.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        class SimpleCallGenericClass<U> : ISimpleCall
+        {
+            public static string Wrap<T>(string cookie) => $"SimpleCallGenericClass<{typeof(U).Name}>.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        struct SimpleCallStruct<U> : ISimpleCall
+        {
+            public static string Wrap<T>(string cookie) => $"SimpleCallStruct<{typeof(U).Name}>.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        class Entry : IEntry
+        {
+            public virtual string Enter1<T>(string cookie) where T : ISimpleCall
+            {
+                return T.Wrap<T>(cookie);
+            }
+        }
+
+        class EnsureVirtualCall : Entry
+        {
+            public override string Enter1<T>(string cookie) => string.Empty;
+        }
+
+        static IEntry s_ensure = new EnsureVirtualCall();
+        static IEntry s_entry = new Entry();
+
+        public static void Run()
+        {
+            // Just to make sure this cannot be devirtualized.
+            s_ensure.Enter1<ISimpleCall>("One");
+
+            //Console.WriteLine(s_entry.Enter1<ISimpleCall>("One"));
+            //Console.WriteLine(s_entry.Enter1<ISimpleCallOverride>("One"));
+            //Console.WriteLine(s_entry.Enter1<ISimpleCallGenericOverride<object>>("One"));
+            Console.WriteLine(s_entry.Enter1<SimpleCallClass>("One"));
+            //Console.WriteLine(s_entry.Enter1<SimpleCallGenericClass<object>>("One"));
+            Console.WriteLine(s_entry.Enter1<SimpleCallStruct<object>>("One"));
         }
     }
 }

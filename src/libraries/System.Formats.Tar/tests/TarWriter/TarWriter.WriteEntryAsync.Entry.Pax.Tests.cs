@@ -378,7 +378,9 @@ namespace System.Formats.Tar.Tests
             await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
             {
                 PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
+                Assert.Equal("PaxGlobalExtendedAttributesTarEntry", gea.Name);
                 await writer.WriteEntryAsync(gea);
+                Assert.Matches(@".*/GlobalHead\.\d+\.\d+", gea.Name);
             }
 
             archive.Seek(0, SeekOrigin.Begin);

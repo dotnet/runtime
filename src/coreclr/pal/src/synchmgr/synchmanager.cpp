@@ -613,7 +613,7 @@ namespace CorUnix
             // Signal the object and trigger thread awakening
             psdSynchData->Signal(pthrCurrent, 1, false);
 
-            // Release reference to to SynchData
+            // Release reference to SynchData
             psdSynchData->Release(pthrCurrent);
 
             // Return node to the cache
@@ -1500,7 +1500,7 @@ namespace CorUnix
 
         if ((NULL == pSynchManager) || ((LONG)SynchMgrStatusRunning != s_lInitStatus))
         {
-            ERROR("Trying to to create worker thread in invalid state\n");
+            ERROR("Trying to create worker thread in invalid state\n");
             return ERROR_INTERNAL_ERROR;
         }
 

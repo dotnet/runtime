@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct BB
+    public struct BB
     {
         static uint m_uForward4;
         static float[] m_afForward3;
@@ -30,7 +31,8 @@ namespace Test
                     new BB().Method3(Static1(ref ab[N], ref ab[N]), bb[N].m_adField5, bb, Static2());
             }
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

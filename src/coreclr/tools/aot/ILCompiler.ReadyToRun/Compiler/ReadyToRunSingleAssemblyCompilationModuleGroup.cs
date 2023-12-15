@@ -29,7 +29,7 @@ namespace ILCompiler
 
             if (_profileGuidedCompileRestriction != null)
             {
-                if (!_profileGuidedCompileRestriction.IsMethodInProfileData(method))
+                if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method))
                     return false;
             }
 

@@ -4,11 +4,12 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // SIMD8 could be retyped as a long in the past and if that long value was CSE-ed together with original SIMD8
 // values we could hit an assert `IsCompatibleType(cseLclVarTyp, expTyp)`.
 
-class Runtime_35724
+public class Runtime_35724
 {
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	static Vector2 Test()
@@ -21,9 +22,9 @@ class Runtime_35724
         return a / b;
     }
 	
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Test();
-        return 100;
     }
 }

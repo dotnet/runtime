@@ -7,7 +7,7 @@
 
 // Ensure the jit is not tripped up by a foldable zero-length localloc
 
-.class private auto ansi beforefieldinit X
+.class public auto ansi beforefieldinit X
        extends [mscorlib]System.Object
 {
   .method private hidebysig static void  Foo(int32* x) cil managed noinlining

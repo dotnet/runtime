@@ -14,14 +14,8 @@ namespace System.Runtime.Serialization.Json
     // ASSUMPTION (Microsoft): This class will only be used for EITHER reading OR writing.  It can be done, it would just mean more buffers.
     internal sealed class JsonEncodingStreamWrapper : Stream
     {
-        private static readonly UnicodeEncoding s_validatingBEUTF16 = new UnicodeEncoding(true, false, true);
-
-        private static readonly UnicodeEncoding s_validatingUTF16 = new UnicodeEncoding(false, false, true);
-
-        private static readonly UTF8Encoding s_validatingUTF8 = new UTF8Encoding(false, true);
         private const int BufferLength = 128;
 
-        private readonly byte[] _byteBuffer = new byte[1];
         private int _byteCount;
         private int _byteOffset;
         private byte[]? _bytes;
@@ -33,7 +27,7 @@ namespace System.Runtime.Serialization.Json
         private SupportedEncoding _encodingCode;
         private readonly bool _isReading;
 
-        private Stream _stream = null!; // initialized in InitForXXX
+        private BufferedStream _stream = null!; // initialized in InitForXXX
 
         public JsonEncodingStreamWrapper(Stream stream, Encoding? encoding, bool isReader)
         {
@@ -154,7 +148,7 @@ namespace System.Runtime.Serialization.Json
 
                 // Convert to UTF-8
                 return
-                    new ArraySegment<byte>(s_validatingUTF8.GetBytes(GetEncoding(dataEnc).GetChars(buffer, offset, count)));
+                    new ArraySegment<byte>(DataContractSerializer.ValidatingUTF8.GetBytes(GetEncoding(dataEnc).GetChars(buffer, offset, count)));
             }
             catch (DecoderFallbackException e)
             {
@@ -232,11 +226,13 @@ namespace System.Runtime.Serialization.Json
             {
                 return _stream.ReadByte();
             }
-            if (Read(_byteBuffer, 0, 1) == 0)
+
+            byte b = 0;
+            if (Read(new Span<byte>(ref b)) == 0)
             {
                 return -1;
             }
-            return _byteBuffer[0];
+            return b;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -250,25 +246,28 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException();
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count) =>
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
             // Optimize UTF-8 case
             if (_encodingCode == SupportedEncoding.UTF8)
             {
-                _stream.Write(buffer, offset, count);
+                _stream.Write(buffer);
                 return;
             }
 
             Debug.Assert(_bytes != null);
             Debug.Assert(_chars != null);
-            while (count > 0)
+
+            while (buffer.Length > 0)
             {
-                int size = _chars.Length < count ? _chars.Length : count;
-                int charCount = _dec!.GetChars(buffer, offset, size, _chars, 0, false);
+                int size = Math.Min(_chars.Length, buffer.Length);
+                int charCount = _dec!.GetChars(buffer.Slice(0, size), _chars, false);
                 _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
                 _stream.Write(_bytes, 0, _byteCount);
-                offset += size;
-                count -= size;
+                buffer = buffer.Slice(size);
             }
         }
 
@@ -279,16 +278,16 @@ namespace System.Runtime.Serialization.Json
                 _stream.WriteByte(b);
                 return;
             }
-            _byteBuffer[0] = b;
-            Write(_byteBuffer, 0, 1);
+
+            Write(new ReadOnlySpan<byte>(in b));
         }
 
         private static Encoding GetEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => s_validatingUTF8,
-                SupportedEncoding.UTF16LE => s_validatingUTF16,
-                SupportedEncoding.UTF16BE => s_validatingBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.ValidatingUTF8,
+                SupportedEncoding.UTF16LE => DataContractSerializer.ValidatingUTF16,
+                SupportedEncoding.UTF16BE => DataContractSerializer.ValidatingBEUTF16,
                 _ => throw new XmlException(SR.JsonEncodingNotSupported),
             };
 
@@ -307,15 +306,15 @@ namespace System.Runtime.Serialization.Json
             {
                 return SupportedEncoding.None;
             }
-            if (encoding.WebName == s_validatingUTF8.WebName)
+            if (encoding.WebName == DataContractSerializer.ValidatingUTF8.WebName)
             {
                 return SupportedEncoding.UTF8;
             }
-            else if (encoding.WebName == s_validatingUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingUTF16.WebName)
             {
                 return SupportedEncoding.UTF16LE;
             }
-            else if (encoding.WebName == s_validatingBEUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingBEUTF16.WebName)
             {
                 return SupportedEncoding.UTF16BE;
             }
@@ -451,7 +450,7 @@ namespace System.Runtime.Serialization.Json
                     CleanupCharBreak();
                     int count = _encoding.GetChars(_bytes, _byteOffset, _byteCount, _chars, 0);
                     _byteOffset = 0;
-                    _byteCount = s_validatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
+                    _byteCount = DataContractSerializer.ValidatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
                 }
             }
             catch (DecoderFallbackException ex)
@@ -471,7 +470,7 @@ namespace System.Runtime.Serialization.Json
             if (_encodingCode != SupportedEncoding.UTF8)
             {
                 EnsureBuffers();
-                _dec = s_validatingUTF8.GetDecoder();
+                _dec = DataContractSerializer.ValidatingUTF8.GetDecoder();
                 _enc = _encoding.GetEncoder();
             }
         }

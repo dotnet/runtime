@@ -31,6 +31,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/environ.h"
+#include <minipal/utils.h>
 
 #include "machmessage.h"
 
@@ -356,19 +357,23 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
     return palError;
 }
 
-#if defined(HOST_AMD64)
-// Since HijackFaultingThread pushed the context, exception record and info on the stack, we need to adjust the
-// signature of PAL_DispatchException such that the corresponding arguments are considered to be on the stack
-// per GCC64 calling convention rules. Hence, the first 6 dummy arguments (corresponding to RDI, RSI, RDX,RCX, R8, R9).
+#if defined(HOST_ARM64)
 extern "C"
-void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 dwRCX, DWORD64 dwR8, DWORD64 dwR9, PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
-#elif defined(HOST_ARM64)
-extern "C"
-void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
+void
+RestoreCompleteContext(
+  PCONTEXT ContextRecord,
+  PEXCEPTION_RECORD ExceptionRecord
+);
 #endif
-{
-    CPalThread *pThread = InternalGetCurrentThread();
 
+__attribute__((noinline))
+static void PAL_DispatchExceptionInner(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
+{
+    // Stash the inner context record into a local in a frame other than PAL_DispatchException
+    // to ensure we have a compiler-defined callee stack frame state to record the context record
+    // local before we call SEHProcessException. The instrumentation introduced by native sanitizers
+    // doesn't interface that well with the fake caller frames we define for PAL_DispatchException,
+    // but they work fine for any callees of PAL_DispatchException.
     CONTEXT *contextRecord = pContext;
     g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
 
@@ -392,14 +397,37 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
 
     if (continueExecution)
     {
+        __asan_handle_no_return();
 #if defined(HOST_ARM64)
         // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
         // used for GCStress=C restore
-        MachSetThreadContext(pContext);
+        RestoreCompleteContext(pContext, pExRecord);
 #else
         RtlRestoreContext(pContext, pExRecord);
 #endif
     }
+}
+
+#if defined(HOST_AMD64)
+// Since HijackFaultingThread pushed the context, exception record and info on the stack, we need to adjust the
+// signature of PAL_DispatchException such that the corresponding arguments are considered to be on the stack
+// per GCC64 calling convention rules. Hence, the first 6 dummy arguments (corresponding to RDI, RSI, RDX,RCX, R8, R9).
+extern "C"
+void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 dwRCX, DWORD64 dwR8, DWORD64 dwR9, PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
+#elif defined(HOST_ARM64)
+
+extern "C"
+void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
+#endif
+{
+    // At the time of executing this function, this thread's stack is a lie.
+    // This frame and the calling frame were never actually pushed onto the stack
+    // and were synthetically added by HijackFaultingThread.
+    // We need to let ASAN know that its stack tracking is out of date.
+    __asan_handle_no_return();
+    CPalThread *pThread = InternalGetCurrentThread();
+
+    PAL_DispatchExceptionInner(pContext, pExRecord);
 
     // Send the forward request to the exception thread to process
     MachMessage sSendMessage;
@@ -634,8 +662,7 @@ Function :
 
 Parameters:
     thread - thread the exception happened
-    task - task the exception happened
-    message - exception message
+    exceptionInfo - exception info
 
 Return value :
     None
@@ -643,11 +670,9 @@ Return value :
 static
 void
 HijackFaultingThread(
-    mach_port_t thread,             // [in] thread the exception happened on
-    mach_port_t task,               // [in] task the exception happened on
-    MachMessage& message)           // [in] exception message
+    mach_port_t thread,               // [in] thread the exception happened on
+    MachExceptionInfo& exceptionInfo) // [in] exception info
 {
-    MachExceptionInfo exceptionInfo(thread, message);
     EXCEPTION_RECORD exceptionRecord;
     CONTEXT threadContext;
     kern_return_t machret;
@@ -1148,8 +1173,23 @@ SEHExceptionThread(void *args)
 
             if (!feFound)
             {
-                NONPAL_TRACE("HijackFaultingThread thread %08x\n", thread);
-                HijackFaultingThread(thread, mach_task_self(), sMessage);
+                MachExceptionInfo exceptionInfo(thread, sMessage);
+
+#if defined(HOST_ARM64)
+                // Check for a special case of invalid instruction that is used to implement RestoreCompleteContext
+                if (arm_thread_state64_get_pc_fptr(exceptionInfo.ThreadState) == (void*)RestoreCompleteContext)
+                {
+                    // The CONTEXT pointer was passed to RestoreCompleteContext in x0
+                    CONTEXT *pContext = (CONTEXT *)exceptionInfo.ThreadState.__x[0];
+                    machret = CONTEXT_SetThreadContextOnPort(thread, pContext);
+                    CHECK_MACH("CONTEXT_SetThreadContextOnPort", machret);
+                }
+                else
+#endif // HOST_ARM64
+                {
+                    NONPAL_TRACE("HijackFaultingThread thread %08x\n", thread);
+                    HijackFaultingThread(thread, exceptionInfo);
+                }
 
                 // Send the result of handling the exception back in a reply.
                 NONPAL_TRACE("ReplyToNotification KERN_SUCCESS thread %08x port %08x\n", thread, sMessage.GetRemotePort());

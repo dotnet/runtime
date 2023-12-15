@@ -38,7 +38,7 @@ namespace ILCompiler.Dataflow
             Operation = operation;
             Offset = offset;
             CalledMethod = calledMethod;
-            Instance = instance.Clone();
+            Instance = instance.DeepCopy();
             if (arguments.IsEmpty)
             {
                 Arguments = ImmutableArray<MultiValue>.Empty;
@@ -47,7 +47,7 @@ namespace ILCompiler.Dataflow
             {
                 var builder = ImmutableArray.CreateBuilder<MultiValue>();
                 foreach (var argument in arguments)
-                    builder.Add(argument.Clone());
+                    builder.Add(argument.DeepCopy());
                 Arguments = builder.ToImmutableArray();
             }
             Origin = origin;
@@ -84,7 +84,7 @@ namespace ILCompiler.Dataflow
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 logger);
-            ReflectionMethodBodyScanner.HandleCall(MethodBody, CalledMethod, Operation, Offset, Instance, Arguments,
+            ReflectionMethodBodyScanner.HandleCall(MethodBody, CalledMethod, Operation, Instance, Arguments,
                 diagnosticContext,
                 reflectionMarker,
                 out MultiValue _);

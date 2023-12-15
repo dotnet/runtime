@@ -5,40 +5,9 @@ namespace System.Text.Json.Serialization
 {
     public partial class JsonConverter<T>
     {
-        internal sealed override bool WriteCoreAsObject(
-            Utf8JsonWriter writer,
-            object? value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
-        {
-            if (
-#if NETCOREAPP
-                // Treated as a constant by recent versions of the JIT.
-                typeof(T).IsValueType)
-#else
-                IsValueType)
-#endif
-            {
-                // Value types can never have a null except for Nullable<T>.
-                if (default(T) is not null && value is null)
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                }
-
-                // Root object is a boxed value type, we need to push it to the reference stack before it gets unboxed here.
-                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles && value != null)
-                {
-                    state.ReferenceResolver.PushReferenceForCycleDetection(value);
-                }
-            }
-
-            T actualValue = (T)value!;
-            return WriteCore(writer, actualValue, options, ref state);
-        }
-
         internal bool WriteCore(
             Utf8JsonWriter writer,
-            in T value,
+            in T? value,
             JsonSerializerOptions options,
             ref WriteStack state)
         {

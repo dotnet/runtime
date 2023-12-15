@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">16진수가 충분하지 않습니다.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">16진수가 부족하거나 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">\\p{X} 문자 이스케이프가 완전하지 않습니다.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">\p{X} 문자 이스케이프가 완전하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">\\k&lt;...&gt; 역참조 형식이 잘못되었습니다.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">\k&lt;...&gt; 역참조 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">\\p{X} 문자 이스케이프 형식이 잘못되었습니다.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">\p{X} 문자 이스케이프 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">실패한 Match에서 결과를 호출할 수 없습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegexOptions.NonBacktracking에서는 그룹을 대체하는 Regex 대체가 지원되지 않습니다.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">읽기 전용 컬렉션입니다.</target>
@@ -193,8 +188,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">RegEx 엔진이 패턴을 입력 문자열에 일치시키는 동안 시간 초과되었습니다. 이 오류는 많은 입력, 중첩 수량자로 인한 과도한 역추적, 역참조, 기타 요인 등의 다양한 이유로 인해 발생할 수 있습니다.</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">Regex 엔진이 패턴을 입력 문자열에 일치시키는 동안 시간 초과되었습니다. 이 오류는 많은 입력, 중첩 수량자로 인한 과도한 역추적, 역참조, 기타 요인 등의 다양한 이유로 인해 발생할 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">문자 범위에 \\{0} 클래스를 포함할 수 없습니다.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">문자 범위에 \{0} 클래스를 포함할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">패턴 끝에 잘못된 \\가 있습니다.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">패턴 끝에 잘못된 \가 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">인식할 수 없는 이스케이프 시퀀스 \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">인식할 수 없는 이스케이프 시퀀스 \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

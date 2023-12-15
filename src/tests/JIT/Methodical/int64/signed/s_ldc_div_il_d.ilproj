@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="s_ldc_div_d.il" />
     <Compile Include="s_ldc_div.il" />
   </ItemGroup>
 </Project>

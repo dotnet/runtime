@@ -16,11 +16,11 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - OSX_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - osx_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -35,11 +35,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - OSX_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - osx_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -53,11 +53,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - OSX_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - osx_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -72,52 +72,25 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
-#
-# CoreCLR NativeAOT release build and additional libraries tests that are known to be passing
-# Only when CoreCLR or library is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    platforms:
-    - windows_x64
-    - windows_arm64
-    - OSX_x64
-    - OSX_arm64
-    - Linux_x64
-    - Linux_arm64
-    - Linux_musl_x64
-    jobParameters:
-      testGroup: innerloop
-      isSingleFile: true
-      nameSuffix: NativeAOT_Libs
-      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
-      timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
-
 # Run net48 tests on win-x64
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: Release
     platforms:
     - windows_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       framework: net48
-      runTests: true
-      testScope: innerloop
+      buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+      nameSuffix: Libraries_NET48
+      timeoutInMinutes: 150
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: NET48_$(_BuildConfig)
+            extraHelixArguments: /p:BuildTargetFramework=net48
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -135,7 +108,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Windows_x64
+    - windows_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -154,15 +127,16 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        condition: >-
-          or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
-          eq(variables['isRollingBuild'], true))
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            condition: >-
+              or(
+              eq(variables['librariesContainsChange'], true),
+              eq(variables['monoContainsChange'], true),
+              eq(variables['isRollingBuild'], true))
 
 #
 # Build the whole product using Mono and run runtime tests
@@ -175,7 +149,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
-    - Linux_arm64
+    - linux_arm64
     jobParameters:
       condition: >-
         or(
@@ -193,7 +167,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    - CoreClrTestBuildHost # Either osx_x64 or linux_x64
     jobParameters:
       testGroup: innerloop
       condition: >-
@@ -211,7 +185,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - Linux_arm64
+    - linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -226,6 +200,45 @@ jobs:
           eq(variables['isRollingBuild'], true))
 
 #
+# Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
+# Only when Mono is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+      - linux_x64
+      - linux_arm64
+    variables:
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
+      runtimeVariant: llvmfullaot
+      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      timeoutInMinutes: 300
+
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            llvmAotStepContainer: linux_x64_llvmaot
+            testRunNamePrefixSuffix: Mono_Release
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+
+#
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
 # Only when Mono is changed
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -234,7 +247,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - Linux_arm64
+    - linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

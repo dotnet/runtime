@@ -61,7 +61,7 @@ namespace System.Reflection.Metadata.Tests
             var builder2 = new BlobBuilder(0);
             builder2.WriteBytes(right);
 
-            bool expected = ByteSequenceComparer.Equals(left, right);
+            bool expected = left.AsSpan().SequenceEqual(right.AsSpan());
             Assert.Equal(expected, builder1.ContentEquals(builder2));
         }
 

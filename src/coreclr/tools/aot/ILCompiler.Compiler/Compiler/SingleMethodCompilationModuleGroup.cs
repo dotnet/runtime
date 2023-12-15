@@ -30,7 +30,7 @@ namespace ILCompiler
 
         public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
-            return method == _method;
+            return method == _method || method == _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
         }
 
         public sealed override bool ContainsMethodDictionary(MethodDesc method)
@@ -74,15 +74,12 @@ namespace ILCompiler
             return false;
         }
 
-        public override bool CanHaveReferenceThroughImportTable
+        public override bool AllowInstanceMethodOptimization(MethodDesc method)
         {
-            get
-            {
-                return false;
-            }
+            return false;
         }
 
-        public override bool AllowInstanceMethodOptimization(MethodDesc method)
+        public override bool AllowVirtualMethodOnAbstractTypeOptimization(MethodDesc method)
         {
             return false;
         }

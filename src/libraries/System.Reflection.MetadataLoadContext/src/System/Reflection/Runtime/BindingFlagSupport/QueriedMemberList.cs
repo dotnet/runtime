@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Reflection.Core.Execution;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
+using Internal.Reflection.Core.Execution;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -50,7 +50,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             get
             {
                 if (_typeThatBlockedBrowsing != null)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(_typeThatBlockedBrowsing);
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException();
                 return _totalCount;
             }
         }
@@ -157,15 +157,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 }
 
                 type = type.BaseType!.CastToRuntimeTypeInfo();
-                if (type != null && !type.CanBrowseWithoutMissingMetadataExceptions())
-                {
-                    // If we got here, one of the base classes is missing metadata. We don't want to throw a MissingMetadataException now because we may be
-                    // building a cached result for a caller who passed BindingFlags.DeclaredOnly. So we'll mark the results in a way that
-                    // it will throw a MissingMetadataException if a caller attempts to iterate past the declared-only subset.
-                    queriedMembers._typeThatBlockedBrowsing = type;
-                    queriedMembers._totalCount = queriedMembers._declaredOnlyCount;
-                    break;
-                }
             }
 
             return queriedMembers;
@@ -201,7 +192,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         private int _declaredOnlyCount; // # of entries for members only in the most derived class.
         private M[] _members;  // Length is equal to or greater than _totalCount. Entries beyond _totalCount contain null or garbage and should be read.
         private BindingFlags[] _allFlagsThatMustMatch; // Length will be equal to _members.Length
-        private RuntimeTypeInfo? _typeThatBlockedBrowsing; // If non-null, one of the base classes was missing metadata.
+        private readonly RuntimeTypeInfo? _typeThatBlockedBrowsing; // If non-null, one of the base classes was missing metadata.
         private const int Grow = 64;
     }
 }

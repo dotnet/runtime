@@ -3,11 +3,15 @@
 
 using System.Collections;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Runtime.Serialization;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
+using System.Threading;
+
+// We need to target netstandard2.0, so keep using ref for MemoryMarshal.Write
+// CS9191: The 'ref' modifier for argument 2 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+#pragma warning disable CS9191
 
 namespace WbemClient_v1 { }
 namespace WbemUtilities_v1 { }
@@ -15,7 +19,7 @@ namespace WbemUtilities_v1 { }
 namespace System.Management
 {
     #region FreeThreadedInterfaces
-    internal sealed class IWbemClassObjectFreeThreaded : IDisposable, ISerializable
+    internal sealed class IWbemClassObjectFreeThreaded : IDisposable
     {
         //
         // This is to force load wminet_utils.dll as a COM component. Since wminet_utils.dll
@@ -42,16 +46,6 @@ namespace System.Management
             if (null == wbemClassObject)
                 return IntPtr.Zero;
             return wbemClassObject.pWbemClassObject;
-        }
-
-        public IWbemClassObjectFreeThreaded(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public void Dispose()

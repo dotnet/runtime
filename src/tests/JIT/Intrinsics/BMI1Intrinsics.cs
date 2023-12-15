@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace BMI1Intrinsics
@@ -7,9 +7,9 @@ namespace BMI1Intrinsics
     {
         private static int _errorCode = 100;
 
-        static int Main(string[] args)
+        static int Main()
         {
-            // bmi1 expression are folded to to hwintrinsics that return identical results
+            // bmi1 expression are folded to hwintrinsics that return identical results
 
             var values = new (uint input1, uint input2, uint andnExpected, uint blsiExpected, uint blsrExpected, uint blmskExpected)[] {
                 (0, 0, 0, 0 ,0 ,0xFFFFFFFF),

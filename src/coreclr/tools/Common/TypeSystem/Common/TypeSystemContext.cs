@@ -4,13 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 using Internal.NativeFormat;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
-    public abstract partial class TypeSystemContext : IModuleResolver
+    public abstract partial class TypeSystemContext
     {
         public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown, TargetAbi.Unknown))
         {
@@ -44,38 +47,7 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public ModuleDesc SystemModule
-        {
-            get;
-            private set;
-        }
-
-        protected void InitializeSystemModule(ModuleDesc systemModule)
-        {
-            Debug.Assert(SystemModule == null);
-            SystemModule = systemModule;
-        }
-
         public abstract DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true);
-
-        public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
-        {
-            if (throwIfNotFound)
-                throw new NotSupportedException();
-            return null;
-        }
-
-        internal virtual ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
-        {
-            if (throwIfNotFound)
-                throw new NotSupportedException();
-            return null;
-        }
-
-        ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
-        {
-            return ResolveModule(referencingModule, fileName, throwIfNotFound);
-        }
 
         //
         // Array types
@@ -270,6 +242,10 @@ namespace Internal.TypeSystem
 
         public FunctionPointerType GetFunctionPointerType(MethodSignature signature)
         {
+            // The type system only distinguishes between unmanaged and managed signatures.
+            // The caller should have normalized the signature by modifying flags and stripping modopts.
+            Debug.Assert((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) is 0 or MethodSignatureFlags.UnmanagedCallingConvention);
+            Debug.Assert(!signature.HasEmbeddedSignatureData);
             return _functionPointerTypes.GetOrCreateValue(signature);
         }
 
@@ -683,16 +659,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Abstraction to allow the type system context to affect the field layout
-        /// algorithm used by types to lay themselves out.
-        /// </summary>
-        public virtual FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
-        {
-            // Type system contexts that support computing field layout need to override this.
-            throw new NotSupportedException();
-        }
-
-        /// <summary>
         /// Abstraction to allow the type system context to control the interfaces
         /// algorithm used by types.
         /// </summary>
@@ -813,5 +779,8 @@ namespace Internal.TypeSystem
         /// Determine if the type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
         protected internal abstract bool IsIDynamicInterfaceCastableInterface(DefType type);
+
+        public virtual bool SupportsTypeEquivalence => false;
+        public virtual bool SupportsCOMInterop => false;
     }
 }

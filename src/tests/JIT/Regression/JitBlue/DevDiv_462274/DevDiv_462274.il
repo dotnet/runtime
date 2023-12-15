@@ -4,7 +4,7 @@
 .assembly extern mscorlib{}
 .assembly 'DevDiv_462274'{}
 .assembly extern xunit.core {}
-.class ILGEN_CLASS
+.class public ILGEN_CLASS
 {
     .method static int64 ILGEN_METHOD(unsigned int32, float32, unsigned int8, char, int64, float64)
     {
@@ -49,7 +49,7 @@ skip:
         ret
     }
 
-    .method static int32 Main()
+    .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

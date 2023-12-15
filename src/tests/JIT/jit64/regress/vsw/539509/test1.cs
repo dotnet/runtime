@@ -35,6 +35,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 class ApplicationException : Exception { }
 
@@ -615,7 +616,8 @@ public struct BB
 
 public class App
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -700,7 +702,6 @@ public class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
     public static byte m_byFwd1;
     public static bool m_bFwd2;

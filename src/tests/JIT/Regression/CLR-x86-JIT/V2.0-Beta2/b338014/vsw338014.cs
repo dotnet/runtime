@@ -10,8 +10,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class My
+public class My
 {
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -30,12 +31,11 @@ class My
         return null;
     }
 
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Object o = new Object();
         foo(o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, bar(o), o);
-
-        return 100;
     }
 }
 

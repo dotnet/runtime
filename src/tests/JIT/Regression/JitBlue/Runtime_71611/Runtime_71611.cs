@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class Runtime_71611
 {
@@ -35,7 +36,8 @@ public class Runtime_71611
         return r;
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] xs = new int[] { 1, 2, 3, 4 };
         I m = new Add();

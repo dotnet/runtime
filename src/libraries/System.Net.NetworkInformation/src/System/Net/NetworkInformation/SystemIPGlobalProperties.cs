@@ -368,10 +368,10 @@ namespace System.Net.NetworkInformation
         }
 
         public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(GetUnicastAddressesAsync(), callback, state);
+            TaskToAsyncResult.Begin(GetUnicastAddressesAsync(), callback, state);
 
         public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult) =>
-            TaskToApm.End<UnicastIPAddressInformationCollection>(asyncResult);
+            TaskToAsyncResult.End<UnicastIPAddressInformationCollection>(asyncResult);
 
         public override UnicastIPAddressInformationCollection GetUnicastAddresses() =>
             GetUnicastAddressesAsync().GetAwaiter().GetResult();

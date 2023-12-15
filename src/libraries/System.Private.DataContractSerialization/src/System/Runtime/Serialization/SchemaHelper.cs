@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.Schema;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Xml;
+using System.Xml.Schema;
 using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
 
 namespace System.Runtime.Serialization
@@ -43,8 +42,8 @@ namespace System.Runtime.Serialization
     {
         internal static bool NamespacesEqual(string? ns1, string? ns2)
         {
-            if (ns1 == null || ns1.Length == 0)
-                return (ns2 == null || ns2.Length == 0);
+            if (string.IsNullOrEmpty(ns1))
+                return string.IsNullOrEmpty(ns2);
             else
                 return ns1 == ns2;
         }

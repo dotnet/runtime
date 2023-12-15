@@ -105,9 +105,8 @@ public:
     {
         return 64;
     }
-    static unsigned GetArrSize(CompAllocator alloc, unsigned elemSize)
+    static unsigned GetArrSize(CompAllocator alloc)
     {
-        assert(elemSize == sizeof(size_t));
         return (64 / 8) / sizeof(size_t);
     }
     static unsigned GetEpoch(CompAllocator alloc)

@@ -170,8 +170,9 @@ error_t TP_putenv_s(LPWSTR name, LPWSTR value)
         return 0;
 #else
     int retVal = 0;
-    char *assignment = (char*) malloc(sizeof(char) * (TP_slen(name) + TP_slen(value) + 1));
-    sprintf(assignment, "%s=%s", HackyConvertToSTR(name), HackyConvertToSTR(value));
+    size_t assignmentSize = sizeof(char) * (TP_slen(name) + TP_slen(value) + 1 + 1);
+    char *assignment = (char*) malloc(assignmentSize);
+    snprintf(assignment, assignmentSize, "%s=%s", HackyConvertToSTR(name), HackyConvertToSTR(value));
 
     if (0 != putenv(assignment))
         retVal = 2;
@@ -330,10 +331,15 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
 #define INTSAFE_E_ARITHMETIC_OVERFLOW       ((HRESULT)0x80070216L)  // 0x216 = 534 = ERROR_ARITHMETIC_OVERFLOW
 #define ULONG_ERROR     (0xffffffffUL)
 #define WIN32_ALLOC_ALIGN (16 - 1)
+
+#ifndef UInt32x32To64
+#define UInt32x32To64(a, b) ((uint64_t)((ULONG)(a)) * (uint64_t)((ULONG)(b)))
+#endif // UInt32x32To64
+
 //
-// ULONGLONG -> ULONG conversion
+// uint64_t -> ULONG conversion
 //
-HRESULT ULongLongToULong(ULONGLONG ullOperand, ULONG* pulResult)
+static HRESULT UInt64ToULong(uint64_t ullOperand, ULONG* pulResult)
 {
     HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
     *pulResult = ULONG_ERROR;
@@ -347,7 +353,7 @@ HRESULT ULongLongToULong(ULONGLONG ullOperand, ULONG* pulResult)
     return hr;
 }
 
-HRESULT ULongAdd(ULONG ulAugend, ULONG ulAddend,ULONG* pulResult)
+static HRESULT ULongAdd(ULONG ulAugend, ULONG ulAddend,ULONG* pulResult)
 {
     HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
     *pulResult = ULONG_ERROR;
@@ -361,14 +367,14 @@ HRESULT ULongAdd(ULONG ulAugend, ULONG ulAddend,ULONG* pulResult)
     return hr;
 }
 
-HRESULT ULongMult(ULONG ulMultiplicand, ULONG ulMultiplier, ULONG* pulResult)
+static HRESULT ULongMult(ULONG ulMultiplicand, ULONG ulMultiplier, ULONG* pulResult)
 {
-    ULONGLONG ull64Result = UInt32x32To64(ulMultiplicand, ulMultiplier);
+    uint64_t ull64Result = UInt32x32To64(ulMultiplicand, ulMultiplier);
 
-    return ULongLongToULong(ull64Result, pulResult);
+    return UInt64ToULong(ull64Result, pulResult);
 }
 
-HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
+static HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
 {
     if (result == NULL)
         return E_INVALIDARG;

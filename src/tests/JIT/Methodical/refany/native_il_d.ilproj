@@ -6,6 +6,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="native_d.il" />
     <Compile Include="native.il" />
   </ItemGroup>
 </Project>

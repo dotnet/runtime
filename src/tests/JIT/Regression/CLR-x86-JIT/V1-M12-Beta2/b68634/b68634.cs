@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
     public class AA
     {
-        public static void Main1()
+        internal static void Main1()
         {
             bool local2 = true;
             while (local2) { throw new Exception(); }
@@ -21,7 +22,8 @@ namespace Test
                 }
             }
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

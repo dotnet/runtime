@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!-- FIXME: update the condition for this in Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets -->
+    <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>wasi</TargetOS>
+    <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
+    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <WasmIsWorkloadAvailable Condition="'$(WasiNativeWorkload)' == 'true'">true</WasmIsWorkloadAvailable>
+  </PropertyGroup>
+
+  <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.props" />
+</Project>

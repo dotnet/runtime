@@ -61,8 +61,7 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
-                throw new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+            ObjectDisposedException.ThrowIf(_stream is null, this);
         }
 
         /// <summary>Releases the unmanaged resources used by the <see cref="System.IO.Compression.BrotliStream" /> and optionally releases the managed resources.</summary>

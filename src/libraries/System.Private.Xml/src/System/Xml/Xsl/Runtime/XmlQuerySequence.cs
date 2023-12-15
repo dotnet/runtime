@@ -4,14 +4,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Xml;
 using System.Xml.Schema;
-using System.Xml.Xsl;
 using System.Xml.XPath;
-using System.Diagnostics;
-using System.ComponentModel;
+using System.Xml.Xsl;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -245,8 +245,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
@@ -321,8 +320,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
@@ -726,8 +724,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (index >= Count)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
                 return base[index];
             }

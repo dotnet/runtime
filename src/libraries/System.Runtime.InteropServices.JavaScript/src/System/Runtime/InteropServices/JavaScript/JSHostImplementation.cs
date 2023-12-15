@@ -1,31 +1,116 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     internal static partial class JSHostImplementation
     {
         private const string TaskGetResultName = "get_Result";
-        private static readonly MethodInfo s_taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
+        private static MethodInfo? s_taskGetResultMethodInfo;
         // we use this to maintain identity of JSHandle for a JSObject proxy
-        public static readonly Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
-        // we use this to maintain identity of GCHandle for a managed object
-        public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<nint, WeakReference<JSObject>>? s_csOwnedObjects;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RegisterCSOwnedObject(JSObject proxy)
+        public static Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects
         {
-            lock (s_csOwnedObjects)
+            get
             {
-                s_csOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
+                s_csOwnedObjects ??= new();
+                return s_csOwnedObjects;
             }
+        }
+
+        // we use this to maintain identity of GCHandle for a managed object
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<object, nint>? s_jsOwnedObjects;
+
+        public static Dictionary<object, nint> ThreadJsOwnedObjects
+        {
+            get
+            {
+                s_jsOwnedObjects ??= new Dictionary<object, nint>(ReferenceEqualityComparer.Instance);
+                return s_jsOwnedObjects;
+            }
+        }
+
+        // this is similar to GCHandle, but the GCVHandle is allocated on JS side and this keeps the C# proxy alive
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<nint, PromiseHolder>? s_jsOwnedHolders;
+
+        public static Dictionary<nint, PromiseHolder> ThreadJsOwnedHolders
+        {
+            get
+            {
+                s_jsOwnedHolders ??= new Dictionary<nint, PromiseHolder>();
+                return s_jsOwnedHolders;
+            }
+        }
+
+        // JSVHandle is like JSHandle, but it's not tracked and allocated by the JS side
+        // It's used when we need to create JSHandle-like identity ahead of time, before calling JS.
+        // they have negative values, so that they don't collide with JSHandles.
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        public static nint NextJSVHandle;
+
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static List<nint>? s_JSVHandleFreeList;
+        public static List<nint> JSVHandleFreeList
+        {
+            get
+            {
+                s_JSVHandleFreeList ??= new();
+                return s_JSVHandleFreeList;
+            }
+        }
+
+        public static nint AllocJSVHandle()
+        {
+#if FEATURE_WASM_THREADS
+            // TODO, when Task is passed to JSImport as parameter, it could be sent from another thread (in the future)
+            // and so we need to use JSVHandleFreeList of the target thread
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+
+            if (JSVHandleFreeList.Count > 0)
+            {
+                var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count];
+                JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
+                return jsvHandle;
+            }
+            if (NextJSVHandle == IntPtr.Zero)
+            {
+                NextJSVHandle = -2;
+            }
+            return NextJSVHandle--;
+        }
+
+        public static void FreeJSVHandle(nint jsvHandle)
+        {
+            JSVHandleFreeList.Add(jsvHandle);
+        }
+
+        public static bool IsGCVHandle(nint gcHandle)
+        {
+            return gcHandle < -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -33,30 +118,29 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (jsHandle != IntPtr.Zero)
             {
-                lock (s_csOwnedObjects)
-                {
-                    s_csOwnedObjects.Remove((int)jsHandle);
-                }
+#if FEATURE_WASM_THREADS
+                JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+                ThreadCsOwnedObjects.Remove(jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static object? GetTaskResult(Task task)
+        public static bool GetTaskResultDynamic(Task task, out object? value)
         {
-            MethodInfo method = GetTaskResultMethodInfo(task.GetType());
+            var type = task.GetType();
+            if (type == typeof(Task))
+            {
+                value = null;
+                return false;
+            }
+            MethodInfo method = GetTaskResultMethodInfo(type);
             if (method != null)
             {
-                return method.Invoke(task, null);
+                value = method.Invoke(task, null);
+                return true;
             }
             throw new InvalidOperationException();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseInFlight(object obj)
-        {
-            JSObject? jsObj = obj as JSObject;
-            jsObj?.ReleaseInFlight();
         }
 
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
@@ -69,19 +153,19 @@ namespace System.Runtime.InteropServices.JavaScript
         public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
         {
             if (obj == null)
-                return IntPtr.Zero;
-
-            IntPtr result;
-            lock (s_gcHandleFromJSOwnedObject)
             {
-                IntPtr gcHandle;
-                if (s_gcHandleFromJSOwnedObject.TryGetValue(obj, out gcHandle))
-                    return gcHandle;
-
-                result = (IntPtr)GCHandle.Alloc(obj, handleType);
-                s_gcHandleFromJSOwnedObject[obj] = result;
-                return result;
+                return IntPtr.Zero;
             }
+
+            IntPtr gcHandle;
+            if (ThreadJsOwnedObjects.TryGetValue(obj, out gcHandle))
+            {
+                return gcHandle;
+            }
+
+            IntPtr result = (IntPtr)GCHandle.Alloc(obj, handleType);
+            ThreadJsOwnedObjects[obj] = result;
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,145 +173,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var temp = new IntPtrAndHandle { ptr = ptr };
             return temp.methodHandle;
-        }
-
-        public static MarshalType GetMarshalTypeFromType(Type type)
-        {
-            if (type is null)
-                return MarshalType.VOID;
-
-            var typeCode = Type.GetTypeCode(type);
-            if (type.IsEnum)
-            {
-                switch (typeCode)
-                {
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                        return MarshalType.ENUM;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        return MarshalType.ENUM64;
-                    default:
-                        throw new JSException($"Unsupported enum underlying type {typeCode}");
-                }
-            }
-
-            switch (typeCode)
-            {
-                case TypeCode.SByte:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                    return MarshalType.INT;
-                case TypeCode.Byte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                    return MarshalType.UINT32;
-                case TypeCode.Boolean:
-                    return MarshalType.BOOL;
-                case TypeCode.Int64:
-                    return MarshalType.INT64;
-                case TypeCode.UInt64:
-                    return MarshalType.UINT64;
-                case TypeCode.Single:
-                    return MarshalType.FP32;
-                case TypeCode.Double:
-                    return MarshalType.FP64;
-                case TypeCode.String:
-                    return MarshalType.STRING;
-                case TypeCode.Char:
-                    return MarshalType.CHAR;
-            }
-
-            if (type.IsArray)
-            {
-                if (!type.IsSZArray)
-                    throw new JSException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
-
-                var elementType = type.GetElementType();
-                switch (Type.GetTypeCode(elementType))
-                {
-                    case TypeCode.Byte:
-                        return MarshalType.ARRAY_UBYTE;
-                    case TypeCode.SByte:
-                        return MarshalType.ARRAY_BYTE;
-                    case TypeCode.Int16:
-                        return MarshalType.ARRAY_SHORT;
-                    case TypeCode.UInt16:
-                        return MarshalType.ARRAY_USHORT;
-                    case TypeCode.Int32:
-                        return MarshalType.ARRAY_INT;
-                    case TypeCode.UInt32:
-                        return MarshalType.ARRAY_UINT;
-                    case TypeCode.Single:
-                        return MarshalType.ARRAY_FLOAT;
-                    case TypeCode.Double:
-                        return MarshalType.ARRAY_DOUBLE;
-                    default:
-                        throw new JSException($"Unsupported array element type {elementType}");
-                }
-            }
-            else if (type == typeof(IntPtr))
-                return MarshalType.POINTER;
-            else if (type == typeof(UIntPtr))
-                return MarshalType.POINTER;
-            else if (type == typeof(SafeHandle))
-                return MarshalType.SAFEHANDLE;
-            else if (typeof(Delegate).IsAssignableFrom(type))
-                return MarshalType.DELEGATE;
-            else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
-                return MarshalType.TASK;
-            else if (type.FullName == "System.Uri")
-                return MarshalType.URI;
-            else if (type.IsPointer)
-                return MarshalType.POINTER;
-
-            if (type.IsValueType)
-                return MarshalType.VT;
-            else
-                return MarshalType.OBJECT;
-        }
-
-        public static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
-        {
-            switch (t)
-            {
-                case MarshalType.BOOL:
-                    return 'b';
-                case MarshalType.UINT32:
-                case MarshalType.POINTER:
-                    return 'I';
-                case MarshalType.INT:
-                    return 'i';
-                case MarshalType.UINT64:
-                    return 'L';
-                case MarshalType.INT64:
-                    return 'l';
-                case MarshalType.FP32:
-                    return 'f';
-                case MarshalType.FP64:
-                    return 'd';
-                case MarshalType.STRING:
-                    return 's';
-                case MarshalType.URI:
-                    return 'u';
-                case MarshalType.SAFEHANDLE:
-                    return 'h';
-                case MarshalType.ENUM:
-                    return 'j'; // this is wrong for uint enums
-                case MarshalType.ENUM64:
-                    return 'k'; // this is wrong for ulong enums
-                case MarshalType.TASK:
-                case MarshalType.DELEGATE:
-                case MarshalType.OBJECT:
-                    return 'o';
-                case MarshalType.VT:
-                    return 'a';
-                default:
-                    if (defaultValue.HasValue)
-                        return defaultValue.Value;
-                    else
-                        throw new JSException($"Unsupported marshal type {t}");
-            }
         }
 
         /// <summary>
@@ -242,15 +187,19 @@ namespace System.Runtime.InteropServices.JavaScript
         /// ensuring that trimming doesn't change the application's behavior.
         /// </remarks>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
+            Justification = "Task<T>.Result is preserved by the ILLinker because s_taskGetResultMethodInfo was initialized with it.")]
         public static MethodInfo GetTaskResultMethodInfo(Type taskType)
         {
             if (taskType != null)
             {
-                MethodInfo? result = taskType.GetMethod(TaskGetResultName);
-                if (result != null && result.HasSameMetadataDefinitionAs(s_taskGetResultMethodInfo))
+                if (s_taskGetResultMethodInfo == null)
                 {
-                    return result;
+                    s_taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName);
+                }
+                MethodInfo? getter = taskType.GetMethod(TaskGetResultName);
+                if (getter != null && getter.HasSameMetadataDefinitionAs(s_taskGetResultMethodInfo!))
+                {
+                    return getter;
                 }
             }
 
@@ -266,15 +215,16 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 throw ex;
             }
-            throw new InvalidProgramException();
+            throw new InvalidOperationException();
         }
 
-        public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken )
+        public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken)
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
             var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
-            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
-            return await wrappedTask.ConfigureAwait(true);
+            return await wrappedTask.ConfigureAwait(
+                ConfigureAwaitOptions.ContinueOnCapturedContext |
+                ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
         public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
@@ -283,20 +233,40 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return jsTask.Result;
             }
-            using (var receiveRegistration = cancellationToken.Register(() =>
+            using (var receiveRegistration = cancellationToken.Register(static s =>
             {
-                CancelablePromise.CancelPromise(jsTask);
-            }))
+                CancelablePromise.CancelPromise((Task<JSObject>)s!);
+            }, jsTask))
             {
                 return await jsTask.ConfigureAwait(true);
             }
         }
 
         // res type is first argument
-        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
+        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types, string? functionName, string? moduleName)
         {
             int argsCount = types.Length - 1;
             int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
+
+            int functionNameBytes = 0;
+            int functionNameOffset = 0;
+            if (functionName != null)
+            {
+                functionNameOffset = size;
+                size += 4;
+                functionNameBytes = functionName.Length * 2;
+                size += functionNameBytes;
+            }
+            int moduleNameBytes = 0;
+            int moduleNameOffset = 0;
+            if (moduleName != null)
+            {
+                moduleNameOffset = size;
+                size += 4;
+                moduleNameBytes = moduleName.Length * 2;
+                size += moduleNameBytes;
+            }
+
             // this is never unallocated
             IntPtr buffer = Marshal.AllocHGlobal(size);
 
@@ -306,33 +276,200 @@ namespace System.Runtime.InteropServices.JavaScript
                 Sigs = (JSFunctionBinding.JSBindingType*)(buffer + JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + (2 * sizeof(JSFunctionBinding.JSBindingType))),
             };
 
-            signature.Version = 1;
+            signature.Version = 2;
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
+#if FEATURE_WASM_THREADS
+            signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
+            signature.IsThreadCaptured = false;
+#else
+            signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
+#endif
+
             for (int i = 0; i < argsCount; i++)
             {
-                signature.Sigs[i] = types[i + 1]._signatureType;
+                var type = signature.Sigs[i] = types[i + 1]._signatureType;
+#if FEATURE_WASM_THREADS
+                if (i > 0 && (type.Type == MarshalerType.JSObject || type.Type == MarshalerType.JSException))
+                {
+                    signature.IsThreadCaptured = true;
+                }
+#endif
+            }
+            signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
+
+            signature.Header[0].ImportHandle = signature.ImportHandle;
+            signature.Header[0].FunctionNameLength = functionNameBytes;
+            signature.Header[0].FunctionNameOffset = functionNameOffset;
+            signature.Header[0].ModuleNameLength = moduleNameBytes;
+            signature.Header[0].ModuleNameOffset = moduleNameOffset;
+            if (functionNameBytes != 0)
+            {
+                fixed (void* fn = functionName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + functionNameOffset, fn, (uint)functionNameBytes);
+                }
+            }
+            if (moduleNameBytes != 0)
+            {
+                fixed (void* mn = moduleName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + moduleNameOffset, mn, (uint)moduleNameBytes);
+                }
+
             }
 
             return signature;
         }
 
+        public static unsafe void FreeMethodSignatureBuffer(JSFunctionBinding signature)
+        {
+            Marshal.FreeHGlobal((nint)signature.Header);
+            signature.Header = null;
+            signature.Sigs = null;
+        }
+
         public static JSObject CreateCSOwnedProxy(nint jsHandle)
         {
-            JSObject? res = null;
+#if FEATURE_WASM_THREADS
+            JSSynchronizationContext.AssertWebWorkerContext();
+#endif
+            JSObject? res;
 
-            lock (s_csOwnedObjects)
+            if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
+                !reference.TryGetTarget(out res) ||
+                res.IsDisposed)
             {
-                if (!s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out res) ||
-                    res.IsDisposed)
-                {
-                    res = new JSObject(jsHandle);
-                    s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
+                res = new JSObject(jsHandle);
+                ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
         }
+
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        public static void LoadLazyAssembly(byte[] dllBytes, byte[]? pdbBytes)
+        {
+            if (pdbBytes == null)
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
+            else
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
+        }
+
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        public static void LoadSatelliteAssembly(byte[] dllBytes)
+        {
+            AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
+        }
+
+#if FEATURE_WASM_THREADS
+        public static void InstallWebWorkerInterop(bool isMainThread)
+        {
+            Interop.Runtime.InstallWebWorkerInterop();
+            var currentTID = GetNativeThreadId();
+            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            if (ctx == null)
+            {
+                ctx = new JSSynchronizationContext(Thread.CurrentThread, currentTID);
+                ctx.previousSynchronizationContext = SynchronizationContext.Current;
+                JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
+                SynchronizationContext.SetSynchronizationContext(ctx);
+                if (isMainThread)
+                {
+                    JSSynchronizationContext.MainJSSynchronizationContext = ctx;
+                }
+            }
+            else if (ctx.TargetTID != currentTID)
+            {
+                Environment.FailFast($"JSSynchronizationContext.Install has wrong native thread id {ctx.TargetTID} != {currentTID}");
+            }
+            ctx.AwaitNewData();
+        }
+
+        public static void UninstallWebWorkerInterop()
+        {
+            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            var uninstallJSSynchronizationContext = ctx != null;
+            if (uninstallJSSynchronizationContext)
+            {
+                try
+                {
+                    foreach (var jsObjectWeak in ThreadCsOwnedObjects.Values)
+                    {
+                        if (jsObjectWeak.TryGetTarget(out var jso))
+                        {
+                            jso.Dispose();
+                        }
+                    }
+                    SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
+                    JSSynchronizationContext.CurrentJSSynchronizationContext = null;
+                    ctx.isDisposed = true;
+                }
+                catch (Exception ex)
+                {
+                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
+                }
+            }
+            else
+            {
+                if (ThreadCsOwnedObjects.Count > 0)
+                {
+                    Environment.FailFast($"There should be no JSObjects proxies on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
+                }
+                if (ThreadJsOwnedObjects.Count > 0)
+                {
+                    Environment.FailFast($"There should be no JS proxies of managed objects on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
+                }
+            }
+
+            Interop.Runtime.UninstallWebWorkerInterop();
+
+            if (uninstallJSSynchronizationContext)
+            {
+                try
+                {
+                    foreach (var gch in ThreadJsOwnedObjects.Values)
+                    {
+                        GCHandle gcHandle = (GCHandle)gch;
+                        gcHandle.Free();
+                    }
+                    foreach (var holder in ThreadJsOwnedHolders.Values)
+                    {
+                        unsafe
+                        {
+                            holder.Callback!.Invoke(null);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
+                }
+            }
+
+            ThreadCsOwnedObjects.Clear();
+            ThreadJsOwnedObjects.Clear();
+            JSVHandleFreeList.Clear();
+            NextJSVHandle = IntPtr.Zero;
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
+        private static extern ref bool GetThreadExternalEventloop(Thread @this);
+
+        public static void SetHasExternalEventLoop(Thread thread)
+        {
+            GetThreadExternalEventloop(thread) = true;
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
+        private static extern ref long GetThreadNativeThreadId(Thread @this);
+
+        public static IntPtr GetNativeThreadId()
+        {
+            return (int)GetThreadNativeThreadId(Thread.CurrentThread);
+        }
+
+#endif
+
     }
 }

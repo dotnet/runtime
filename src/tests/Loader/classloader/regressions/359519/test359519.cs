@@ -6,8 +6,9 @@
 
 using System; 
 using System.Runtime.InteropServices; 
+using Xunit;
 
-class MainClass 
+public class MainClass 
 
 { 
     //Variable 
@@ -26,7 +27,8 @@ class MainClass
         public Variable var1; 
     } 
 
-    public static int Main(String[] args) 
+    [Fact]
+    public static int TestEntryPoint() 
     { 
     	try
     	{

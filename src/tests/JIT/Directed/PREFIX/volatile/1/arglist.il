@@ -19,7 +19,8 @@ arg1==arg4, arg2==arg5, arg3==arg6.
 */
 
 .assembly extern legacy library mscorlib {}
-.assembly 'arglist'{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
+.assembly extern xunit.core {}
+.assembly 'arglist_Target_32BIT_volatile'{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 
@@ -79,7 +80,11 @@ REALLYDONE:
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.class public auto ansi arglist_ {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	()
 .maxstack	10
@@ -109,4 +114,5 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }

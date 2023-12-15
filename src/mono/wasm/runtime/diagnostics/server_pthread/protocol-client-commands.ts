@@ -41,10 +41,10 @@ export interface EventPipeCommandStopTracing extends EventPipeClientCommandBase 
 }
 
 export interface EventPipeCollectTracingCommandProvider {
-    keywords: [number, number];  // lo,hi.  FIXME: this is ugly
+    keywords: [number, number]; // lo,hi.  FIXME: this is ugly
     logLevel: number;
     provider_name: string;
-    filter_data: string;
+    filter_data: string | null;
 }
 
 export type RemoveCommandSetAndId<T extends ProtocolClientCommandBase> = Omit<T, "command_set" | "command">;

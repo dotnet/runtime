@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Having an UnsafeValueTypeAttribute on a struct causes incoming arguments to be
 //  spilled into shadow copies and the struct promotion optimization does not 
@@ -38,7 +39,7 @@ struct Point1
     }
 }
 
-class TestCase
+public class TestCase
 {
     static public long[] arr;
 
@@ -74,7 +75,8 @@ class TestCase
         return sum;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     { 
         long testResult = 0;
         int mainResult = 0;

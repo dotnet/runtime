@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// method body along with the instantiation context the canonical body requires.
     /// Pointers to these structures can be created by e.g. ldftn/ldvirtftn of a method with a canonical body.
     /// </summary>
-    public class FatFunctionPointerNode : ObjectNode, IMethodNode, ISymbolDefinitionNode
+    public class FatFunctionPointerNode : DehydratableObjectNode, IMethodNode, ISymbolDefinitionNode
     {
         private bool _isUnboxingStub;
 
@@ -41,22 +41,19 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method { get; }
 
-        public override ObjectNodeSection Section
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            get
-            {
-                if (Method.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             var builder = new ObjectDataBuilder(factory, relocsOnly);
 

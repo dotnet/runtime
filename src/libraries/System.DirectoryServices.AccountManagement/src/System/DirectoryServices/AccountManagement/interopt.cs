@@ -19,15 +19,23 @@ namespace System.DirectoryServices.AccountManagement
     {
         public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)
         {
+            IntPtr ppObjPtr = IntPtr.Zero;
             try
             {
-                int hr = Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out IntPtr ppObjPtr);
+                int hr = Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out ppObjPtr);
                 ppObject = Marshal.GetObjectForIUnknown(ppObjPtr);
                 return hr;
             }
             catch (EntryPointNotFoundException)
             {
                 throw new InvalidOperationException(SR.AdsiNotInstalled);
+            }
+            finally
+            {
+                if (ppObjPtr != IntPtr.Zero)
+                {
+                    Marshal.Release(ppObjPtr);
+                }
             }
         }
 
@@ -287,7 +295,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             void Set(
                 [In, MarshalAs(UnmanagedType.BStr)] string bstrADsPath,
-                [In, MarshalAs(UnmanagedType.U4)]  int lnSetType
+                [In, MarshalAs(UnmanagedType.U4)] int lnSetType
                 );
 
             void SetDisplayType(
@@ -305,7 +313,7 @@ namespace System.DirectoryServices.AccountManagement
             [return: MarshalAs(UnmanagedType.BStr)]
             string
             GetElement(
-                [In, MarshalAs(UnmanagedType.U4)]  int lnElementIndex
+                [In, MarshalAs(UnmanagedType.U4)] int lnElementIndex
                 );
 
             void AddLeafElement(

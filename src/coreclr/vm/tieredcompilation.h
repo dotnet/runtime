@@ -42,7 +42,7 @@ public:
 public:
     void HandleCallCountingForFirstCall(MethodDesc* pMethodDesc);
     bool TrySetCodeEntryPointAndRecordMethodForCallCounting(MethodDesc* pMethodDesc, PCODE codeEntryPoint);
-    void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *createTieringBackgroundWorkerRef);
+    void AsyncPromoteToTier1(NativeCodeVersion currentNativeCodeVersion, bool *createTieringBackgroundWorkerRef);
     static CORJIT_FLAGS GetJitFlags(PrepareCodeConfig *config);
 
 #if !defined(DACCESS_COMPILE) && defined(_DEBUG)
@@ -63,10 +63,10 @@ private:
     void BackgroundWorkerStart();
 
 private:
-    bool IsTieringDelayActive();
     bool TryDeactivateTieringDelay();
 
 public:
+    bool IsTieringDelayActive();
     void AsyncCompleteCallCounting();
 
 private:
@@ -75,9 +75,14 @@ private:
 
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
+    HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
+    
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
+public:
+    HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
+    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
 
 #ifndef DACCESS_COMPILE
 public:
@@ -116,7 +121,7 @@ private:
 #ifdef _DEBUG
     static Thread *s_backgroundWorkerThread;
 #endif
-    static CLREvent s_backgroundWorkAvailableEvent;
+    static CLREventStatic s_backgroundWorkAvailableEvent;
     static bool s_isBackgroundWorkerRunning;
     static bool s_isBackgroundWorkerProcessingWork;
 #endif // !DACCESS_COMPILE

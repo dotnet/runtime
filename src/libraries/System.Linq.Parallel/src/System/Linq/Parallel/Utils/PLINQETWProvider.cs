@@ -11,10 +11,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Tracing;
 
 namespace System.Linq.Parallel
 {
@@ -22,7 +22,6 @@ namespace System.Linq.Parallel
     [EventSource(
         Name = "System.Linq.Parallel.PlinqEventSource",
         Guid = "159eeeec-4a14-4418-a8fe-faabcd987887")]
-    /* LocalizationResources = "System.Linq")]*/
     internal sealed class PlinqEtwProvider : EventSource
     {
         /// <summary>

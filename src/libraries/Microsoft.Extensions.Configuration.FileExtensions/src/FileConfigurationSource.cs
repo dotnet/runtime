@@ -19,6 +19,11 @@ namespace Microsoft.Extensions.Configuration
         public IFileProvider? FileProvider { get; set; }
 
         /// <summary>
+        /// Set to true when <see cref="FileProvider"/> was not provided by user and can be safely disposed.
+        /// </summary>
+        internal bool OwnsFileProvider { get; private set; }
+
+        /// <summary>
         /// The path to the file.
         /// </summary>
         [DisallowNull]
@@ -58,6 +63,11 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
+            if (FileProvider is null && builder.GetUserDefinedFileProvider() is null)
+            {
+                OwnsFileProvider = true;
+            }
+
             FileProvider ??= builder.GetFileProvider();
             OnLoadException ??= builder.GetFileLoadExceptionHandler();
         }
@@ -81,6 +91,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 if (Directory.Exists(directory))
                 {
+                    OwnsFileProvider = true;
                     FileProvider = new PhysicalFileProvider(directory);
                     Path = pathToFile;
                 }

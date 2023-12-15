@@ -13,13 +13,13 @@ namespace System.Numerics
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
-        /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <returns>The product of <paramref name="left" /> multiplied-by <paramref name="right" />.</returns>
         static abstract TResult operator *(TSelf left, TOther right);
 
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
-        /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <returns>The product of <paramref name="left" /> multiplied-by <paramref name="right" />.</returns>
         /// <exception cref="OverflowException">The product of <paramref name="left" /> multiplied-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
         static virtual TResult operator checked *(TSelf left, TOther right) => left * right;
     }

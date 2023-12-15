@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Xml;                   //Required for Content Type File manipulation
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
+using System.Xml;                   //Required for Content Type File manipulation
 
 namespace System.IO.Packaging
 {
@@ -169,7 +169,7 @@ namespace System.IO.Packaging
                             // part, it will be detected at this point because the part's Uri (which
                             // is independent of interleaving) will already be in the dictionary.
                             parts.Add(new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry,
-                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
+                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo()));
                         }
                     }
                     //If not valid part uri we can completely ignore this zip file item. Even if later someone adds
@@ -258,7 +258,7 @@ namespace System.IO.Packaging
                 else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true, Text.Encoding.UTF8);
+                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true);
                 _zipStreamManager = new ZipStreamManager(zipArchive, _packageFileMode, _packageFileAccess);
                 contentTypeHelper = new ContentTypeHelper(zipArchive, _packageFileMode, _packageFileAccess, _zipStreamManager);
             }
@@ -325,7 +325,7 @@ namespace System.IO.Packaging
                 else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(s, zipArchiveMode, true, Text.Encoding.UTF8);
+                zipArchive = new ZipArchive(s, zipArchiveMode, true);
 
                 _zipStreamManager = new ZipStreamManager(zipArchive, packageFileMode, packageFileAccess);
                 contentTypeHelper = new ContentTypeHelper(zipArchive, packageFileMode, packageFileAccess, _zipStreamManager);
@@ -452,7 +452,7 @@ namespace System.IO.Packaging
         }
 
         // convert from Zip CompressionMethodEnum and DeflateOptionEnum to XPS CompressionOption
-        private static CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
+        private static CompressionOption GetCompressionOptionFromZipFileInfo()
         {
             // Note: we can't determine compression method / level from the ZipArchiveEntry.
             CompressionOption result = CompressionOption.Normal;
@@ -501,7 +501,7 @@ namespace System.IO.Packaging
                 //with the rules for comparing/normalizing partnames.
                 //Refer to PackUriHelper.ValidatedPartUri.GetNormalizedPartUri method.
                 //Currently normalization just involves upper-casing ASCII and hence the simplification.
-                return (string.CompareOrdinal(extensionA.ToUpperInvariant(), extensionB.ToUpperInvariant()) == 0);
+                return extensionA.Equals(extensionB, StringComparison.InvariantCultureIgnoreCase);
             }
 
             int IEqualityComparer<string>.GetHashCode(string extension)
@@ -653,7 +653,7 @@ namespace System.IO.Packaging
                         _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
                     }
 
-                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite))
+                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite))
                     {
                         // use UTF-8 encoding by default
                         using (XmlWriter writer = XmlWriter.Create(s, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 }))
@@ -727,8 +727,8 @@ namespace System.IO.Packaging
                     // Make sure that the current node read is an Element
                     if ((reader.NodeType == XmlNodeType.Element)
                         && (reader.Depth == 0)
-                        && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                        && (string.CompareOrdinal(reader.Name, TypesTagName) == 0))
+                        && (reader.NamespaceURI == TypesNamespaceUri)
+                        && (reader.Name == TypesTagName))
                     {
                         //There should be a namespace Attribute present at this level.
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
@@ -753,19 +753,19 @@ namespace System.IO.Packaging
                             // Currently we expect the Default and Override Tag at Depth 1
                             if (reader.NodeType == XmlNodeType.Element
                                 && reader.Depth == 1
-                                && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                && (string.CompareOrdinal(reader.Name, DefaultTagName) == 0))
+                                && (reader.NamespaceURI == TypesNamespaceUri)
+                                && (reader.Name == DefaultTagName))
                             {
                                 ProcessDefaultTagAttributes(reader);
                             }
                             else if (reader.NodeType == XmlNodeType.Element
                                      && reader.Depth == 1
-                                     && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                     && (string.CompareOrdinal(reader.Name, OverrideTagName) == 0))
+                                     && (reader.NamespaceURI == TypesNamespaceUri)
+                                     && (reader.Name == OverrideTagName))
                             {
                                 ProcessOverrideTagAttributes(reader);
                             }
-                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, TypesTagName) == 0)
+                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && reader.Name == TypesTagName)
                             {
                                 continue;
                             }
@@ -810,7 +810,7 @@ namespace System.IO.Packaging
                 if (_contentTypeZipArchiveEntry != null)
                 {
                     _contentTypeStreamExists = true;
-                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite);
+                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite);
                 }
 
                 // No content type stream was found.
@@ -884,7 +884,7 @@ namespace System.IO.Packaging
                 //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
                 reader.MoveToContent();
 
-                if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(elementName, reader.LocalName) == 0)
+                if (reader.NodeType == XmlNodeType.EndElement && elementName == reader.LocalName)
                     return;
                 else
                     throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);

@@ -3,11 +3,15 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 using Internal.Reflection.Augments;
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 using CorElementType = System.Reflection.CorElementType;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
@@ -16,18 +20,56 @@ namespace System
 {
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
-        internal static EnumInfo GetEnumInfo(Type enumType, bool getNames = true)
+#pragma warning disable IDE0060
+        internal static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
             Debug.Assert(enumType != null);
-            Debug.Assert(enumType is RuntimeType);
             Debug.Assert(enumType.IsEnum);
 
-            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
+            return enumType.TypeHandle.ToEETypePtr().ElementType switch
+            {
+                EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
+                EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
+                EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
+                EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
+                _ => throw new NotSupportedException(),
+            };
         }
+
+        internal static EnumInfo<TStorage> GetEnumInfo<TStorage>(RuntimeType enumType, bool getNames = true)
+            where TStorage : struct, INumber<TStorage>
+        {
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType.IsEnum);
+            Debug.Assert(
+                typeof(TStorage) == typeof(byte) ||
+                typeof(TStorage) == typeof(ushort) ||
+                typeof(TStorage) == typeof(uint) ||
+                typeof(TStorage) == typeof(ulong));
+
+            return (EnumInfo<TStorage>)ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType,
+                static (underlyingType, names, valuesAsObject, isFlags) =>
+                {
+                    // Only after we've sorted, create the underlying array.
+                    var values = new TStorage[valuesAsObject.Length];
+                    for (int i = 0; i < valuesAsObject.Length; i++)
+                    {
+                        values[i] = (TStorage)valuesAsObject[i];
+                    }
+                    return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
+                });
+        }
+#pragma warning restore
 
         private static object InternalBoxEnum(Type enumType, long value)
         {
             return ToObject(enumType.TypeHandle.ToEETypePtr(), value);
+        }
+
+        private static CorElementType InternalGetCorElementType(RuntimeType rt)
+        {
+            Debug.Assert(rt.IsActualEnum);
+            return rt.TypeHandle.ToEETypePtr().CorElementType;
         }
 
         private CorElementType InternalGetCorElementType()
@@ -59,10 +101,6 @@ namespace System
 
             switch (elementType)
             {
-                case EETypeElementType.Boolean:
-                    result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
-                    return true;
-
                 case EETypeElementType.Char:
                     result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
                     return true;
@@ -111,27 +149,6 @@ namespace System
             Debug.Assert(enumType.IsEnum);
 
             return GetEnumInfo(enumType).UnderlyingType;
-        }
-
-        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
-        {
-            Array values = GetEnumInfo(typeof(TEnum)).ValuesAsUnderlyingType;
-            TEnum[] result = new TEnum[values.Length];
-            Array.Copy(values, result, values.Length);
-            return result;
-        }
-
-        //
-        // Checks if value.GetType() matches enumType exactly.
-        //
-        internal static bool ValueTypeMatchesEnumType(Type enumType, object value)
-        {
-            EETypePtr enumEEType;
-            if (!enumType.TryGetEEType(out enumEEType))
-                return false;
-            if (!(enumEEType == value.GetEETypePtr()))
-                return false;
-            return true;
         }
 
         [Conditional("BIGENDIAN")]

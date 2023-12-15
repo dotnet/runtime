@@ -79,6 +79,11 @@ namespace ILCompiler
             foreach (var methodNode in sortedMethodsList)
             {
                 methodNode.CustomSort = sortOrder;
+                MethodColdCodeNode methodColdCodeNode = methodNode.ColdCodeNode;
+                if (methodColdCodeNode != null)
+                {
+                    methodColdCodeNode.CustomSort = sortOrder + sortedMethodsList.Count;
+                }
                 sortOrder++;
             }
 

@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 // Notes about the SerialStream:
 //  * The stream is always opened via the SerialStream constructor.
@@ -874,7 +874,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -952,7 +952,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -1031,7 +1031,7 @@ namespace System.IO.Ports
             return numBytes;
         }
 
-        internal unsafe int ReadByte(int timeout)
+        internal unsafe int ReadByte(int _/*timeout*/)
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
@@ -1101,12 +1101,7 @@ namespace System.IO.Ports
         }
 
         // use default timeout as argument to WriteByte override with timeout arg
-        public override void WriteByte(byte value)
-        {
-            WriteByte(value, WriteTimeout);
-        }
-
-        internal unsafe void WriteByte(byte value, int timeout)
+        public override unsafe void WriteByte(byte value)
         {
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);

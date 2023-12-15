@@ -32,7 +32,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             // Check if the token is for a voice
             string tokenName = keyName;
-            if (!string.IsNullOrEmpty(tokenName) && tokenName.IndexOf("HKEY_", StringComparison.Ordinal) != 0)
+            if (!string.IsNullOrEmpty(tokenName) && !tokenName.StartsWith("HKEY_", StringComparison.Ordinal))
             {
                 tokenName = string.Format(CultureInfo.InvariantCulture, @"{0}\Tokens\{1}", Id, tokenName);
             }
@@ -40,9 +40,9 @@ namespace System.Speech.Internal.ObjectTokens
             return ObjectToken.Open(null, tokenName, false);
         }
 
-        internal IList<ObjectToken> FindMatchingTokens(string requiredAttributes, string optionalAttributes)
+        internal List<ObjectToken> FindMatchingTokens(string requiredAttributes, string optionalAttributes)
         {
-            IList<ObjectToken> objectTokenList = new List<ObjectToken>();
+            var objectTokenList = new List<ObjectToken>();
             ISpObjectTokenCategory category = null;
             IEnumSpObjectTokens enumTokens = null;
 
@@ -83,7 +83,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         IEnumerator<ObjectToken> IEnumerable<ObjectToken>.GetEnumerator()
         {
-            IList<ObjectToken> objectTokenList = FindMatchingTokens(null, null);
+            List<ObjectToken> objectTokenList = FindMatchingTokens(null, null);
 
             foreach (ObjectToken objectToken in objectTokenList)
             {

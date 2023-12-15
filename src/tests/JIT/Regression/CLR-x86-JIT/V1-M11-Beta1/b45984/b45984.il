@@ -10,7 +10,7 @@
 }
 .assembly 'b45984' {}
 .assembly extern xunit.core {}
-.class ILGEN_0x496bb0b {
+.class public ILGEN_0x496bb0b {
 
 .field static	int32[] field_0x1
 .method static int32 Method_0x110798c(int64 Arg_0x0) {
@@ -100,7 +100,7 @@ End_Orphan_0:
  ldc.i4.0
 ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

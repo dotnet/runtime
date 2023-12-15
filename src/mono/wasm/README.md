@@ -1,25 +1,20 @@
-# Building
+# Build WebAssembly
 
-This depends on `emsdk` to be installed.
+If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\wasm\emsdk` directory.
 
-## emsdk on macOS
+### Windows
 
-* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
-Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
+Windows build [requirements](../../../docs/workflow/requirements/windows-requirements.md)
 
-`EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
+**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
 
-Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if
-you are directly using the `dotnet build`, or `build.sh`.
+## Building
 
-* Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](./emscripten-version.txt)
+At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
-Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
+## macOS
 
-## Building on macOS
-
-* To build the whole thing, with libraries:
+* To build the whole repository, including libraries:
 
 `make build-all`
 
@@ -29,19 +24,16 @@ Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for 
 
 **Note:** Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
 
-## emsdk on Windows
+## Windows
 
-Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
+`build.cmd -os browser -subset mono+libs` in the repo top level directory.
 
-If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
+## Linux
 
-**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
+* To build the whole repository, including libraries:
 
-## Building on Windows
+`build.sh -os browser -subset mono+libs` in the repo top level directory.
 
-* To build everything
-
-`build.cmd -os Browser -subset mono+libs` in the repo top level directory.
 
 # Running tests
 
@@ -71,7 +63,7 @@ Add `~/.jsvu` to your `PATH`:
 
 * Install node/npm from https://nodejs.org/en/ and add its npm and nodejs directories to the `PATH` environment variable
 
-* * Install jsvu with npm:
+* Install jsvu with npm:
 
 `npm install jsvu -g`
 
@@ -96,7 +88,7 @@ For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Coll
 
 ### Windows
 
-Library tests on windows can be run as described in [testing-libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
+Library tests on windows can be run as described in [testing-libraries](../../../docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
 
 `.\build.cmd libs.tests -test -os browser`
 
@@ -104,8 +96,8 @@ Library tests on windows can be run as described in [testing-libraries](https://
 
 Examples of running tests for individual libraries:
 
-`.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
-`.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=browser src\libraries\System.Collections.Concurrent\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
 ### Browser tests on macOS
 
@@ -133,13 +125,13 @@ The wrapper script used to actually run these tests, accepts:
 
 Exceptions thrown after the runtime starts get symbolicating from js itself. Exceptions before that, like asserts containing native traces get symbolicated by xharness using `src/mono/wasm/symbolicator`.
 
-If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
+If you need to symbolicate some traces manually, then you need the corresponding `dotnet.native.js.symbols` file. Then:
 
-```
-src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
+```console
+src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.native.js.symbols /path/to/file/with/traces
 ```
 
-When not relinking, or not building with AOT, you can find `dotnet.js.symbols` in the runtime pack.
+When not relinking, or not building with AOT, you can find `dotnet.native.js.symbols` in the runtime pack.
 
 ## Debugger tests on macOS
 
@@ -155,7 +147,7 @@ To run a test with `FooBar` in the name:
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
-- Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
+Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
 
 ## Run samples
 
@@ -175,6 +167,10 @@ To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the ab
 
 Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
 
+## Wasm App Host
+
+[Use dotnet run to run wasm applications](host/README.md)
+
 ## Templates
 
 The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
@@ -185,13 +181,38 @@ To test changes in the templates, use `dotnet new install --force src/mono/wasm/
 
 Example use of the `wasmconsole` template:
 
-    > dotnet new wasmconsole
-    > dotnet publish
-    > cd bin/Debug/net7.0/browser-wasm/AppBundle
-    > node main.mjs
-    mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
-    Hello World!
-    Args:
+```console
+> dotnet new wasmconsole
+> dotnet publish
+> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> node main.mjs
+Hello World!
+Args:
+```
+
+## ES6 modules
+
+JavaScript part of the .NET runtime for WebAssembly is composed of several ES6 modules.
+
+#### dotnet.js
+
+`dotnet.js` is entry point ("loader") containing public API for interacting with .NET runtime. This is the file that you import into your JavaScript code. This file don't change during app development. Adding fingerprint on this file can be turned on by setting msbuild property `WasmFingerprintDotnetJs=true`.
+
+#### dotnet.native.js
+
+`dotnet.native.js` contains emscripten API and is loaded by the loader. This file changes when native build (relink) is invoked. The file name always contains fingerprint to avoid stale cache during app development.
+
+#### dotnet.runtime.js
+
+`dotnet.runtime.js` contains the rest JavaScript part of the .NET runtime. The file name also always contains fingerprint.
+
+## Analyzing binary wasm files
+
+We have few tools to analyze binary wasm files. The [wa-info](https://github.com/radekdoulik/wa-info#wa-info) and [wa-diff](https://github.com/radekdoulik/wa-info#wa-info) to analyze `dotnet.native.wasm` in the `AppBundle` directory, once you build your app. These can be easily [installed](https://github.com/radekdoulik/wa-info#installation) as dotnet tools.
+
+They are handy to quickly disassemble functions and inspect webassembly module sections. The wa-diff is able to compare 2 wasm files, so you can for example check the effect of changes in your source code. You can see changes in the functions code as well as changes in sizes of sections and of code.
+
+There is also the [wa-edit](https://github.com/radekdoulik/wa-info#wa-edit) tool, which is now used to prototype improved warm startup.
 
 ## Upgrading Emscripten
 
@@ -203,25 +224,58 @@ Bumping Emscripten version involves these steps:
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
 * update version number in docs
 * update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
-* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
+* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/WorkloadManifest.json.in
 
 ## Upgrading NPM packages
+
+Two things to keep in mind:
+
+1. We use the Azure DevOps NPM registry (configured in `src/mono/wasm/runtime/.npmrc`).  When
+   updating `package.json`, you will need to be logged in (see instructions for Windows and
+   mac/Linux, below) in order for the registry to populate with the correct package versions.
+   Otherwise, CI builds will fail.
+
+2. Currently the Emscripten SDK uses NPM version 6 which creates `package-lock.json` files in the
+  "v1" format.  When updating NPM packages, it is important to use this older version of NPM (for
+  example by using the `emsdk_env.sh` script to set the right environment variables) or by using the
+  `--lockfile-format=1` option with more recent versions of NPM.
+
+### Windows
+
+The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
+
 In folder `src\mono\wasm\runtime\`
+
 ```sh
 rm -rf node_modules
 rm package-lock.json
-npm install -g vsts-npm-aut`
+npm install -g vsts-npm-auth`
 vsts-npm-auth -config .npmrc
-npm npm cache clean --force
+npm cache clean --force
 npm outdated
-npm update
+npm update --lockfile-version=1
+```
+
+### mac/Linux
+
+Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm and log in and click on the "Other" tab.
+Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
+
+In folder `src/mono/wasm/runtime/`
+
+```sh
+rm -rf node_modules
+rm package-lock.json
+npm cache clean --force
+npm outdated
+npm update --lockfile-version=1
 ```
 
 ## Code style
+
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
 * You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
-
 
 ## Builds on CI
 
@@ -247,26 +301,28 @@ npm update
 | Debugger tests    | linux+windows:        only-pc |
 | Runtime tests     | linux+windows:        only-pc |
 
-
 ### Run manually with `/azp run ..`
 
 * `runtime-wasm*` pipelines are triggered manually, and they only run the jobs that would not run on any default pipelines based on path changes.
 * The `AOT` jobs run only smoke tests on `runtime`, and on `runtime-wasm*` pipelines all the `AOT` tests are run.
+* HG libtests are library test with `HybridGlobalization=true`
 
 | .                 | runtime-wasm               | runtime-wasm-libtests | runtime-wasm-non-libtests |
 | ----------------- | -------------------------- | --------------------  | --------------------      |
 | libtests          | linux+windows: all         | linux+windows: all    | none                      |
 | libtests eat      | linux:         all         | linux:         all    | none                      |
 | libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
+| libtests hg       | linux+windows: all         | linux+windows: all    | none                      |
 | high resource aot | linux+windows: all         | linux+windows: all    | none                      |
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
 | Debugger tests    | linux+windows              | none                  | linux+windows             |
 | Runtime tests     | linux                      | none                  | linux                     |
-| Perftrace         | linux: all tests           | linux: all tests      | none                      |
 | Multi-thread      | linux: all tests           | linux: all tests      | none                      |
 
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
+
+* `runtime-wasm-dbgtests` runs all the debugger test jobs
 
 ## Rolling build (twice a day):
 
@@ -283,7 +339,30 @@ npm update
 | Wasm.Build.Tests  | linux+windows              | none                                 |
 | Debugger tests    | linux+windows              | none                                 |
 | Runtime tests     | linux                      | none                                 |
-| Perftrace         | linux: build only          | none                                 |
 | Multi-thread      | linux: build only          | none                                 |
 
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
+
+
+## Test setup on CI
+
+Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
+
+- V8: the version used is from `eng/testing/ChromeVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
+- Chrome: Same as V8.
+- Node: fixed version from emsdk
+- wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
+
+### `eng/testing/ChromeVersions.props`
+
+This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/GetChromeVersions.cs` task.
+
+# Perf pipeline
+
+- V8 version used to run the microbenchmarks is from `eng/testing/ChromeVersions.props`
+
+TBD
+
+## Updates needed
+
+- when the base OS is upgraded, check if the version of node installed in the `eng/pipelines/coreclr/templates/run-performance-job.yml` needs an upgrade too.

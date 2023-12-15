@@ -4,12 +4,11 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-
-using System.IO.Compression;
 
 namespace System.Reflection.PortableExecutable
 {
@@ -83,9 +82,9 @@ namespace System.Reflection.PortableExecutable
             {
                 decompressed = new NativeHeapMemoryBlock(decompressedSize);
             }
-            catch
+            catch (Exception e)
             {
-                throw new BadImageFormatException(SR.DataTooBig);
+                throw new BadImageFormatException(SR.DataTooBig, e);
             }
 
             bool success = false;
@@ -110,7 +109,7 @@ namespace System.Reflection.PortableExecutable
                     }
                     catch (Exception e)
                     {
-                        throw new BadImageFormatException(e.Message, e.InnerException);
+                        throw new BadImageFormatException(e.Message, e);
                     }
 
                     if (actualLength != decompressed.Size)

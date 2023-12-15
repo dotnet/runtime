@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Xml.Schema;
-using System.Runtime.Serialization;
-using System.Globalization;
 using System.Collections;
 using System.Data.Common;
+using System.Globalization;
+using System.Runtime.Serialization;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace System.Data
 {
@@ -229,7 +229,7 @@ namespace System.Data
         {
             XmlElement typeNode = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SIMPLETYPE, Keywords.XSDNS);
 
-            if (_name != null && _name.Length != 0)
+            if (!string.IsNullOrEmpty(_name))
             {
                 // this is a global type
                 typeNode.SetAttribute(Keywords.NAME, _name);
@@ -296,7 +296,7 @@ namespace System.Data
             return enumType;
         }
 
-        internal static SimpleType CreateByteArrayType(string encoding)
+        internal static SimpleType CreateByteArrayType()
         {
             SimpleType byteArrayType = new SimpleType("base64Binary");
             return byteArrayType;

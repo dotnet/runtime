@@ -10,6 +10,7 @@ using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System
 {
@@ -23,6 +24,7 @@ namespace System
 #pragma warning disable SYSLIB1056 // Specified native type is invalid
     [NativeMarshalling(typeof(SpanMarshaller<,>))]
 #pragma warning restore SYSLIB1056 // Specified native type is invalid
+    [Intrinsic]
     public readonly ref struct Span<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -35,7 +37,7 @@ namespace System
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[]? array)
         {
@@ -59,8 +61,8 @@ namespace System
         /// <param name="start">The index at which to begin the span.</param>
         /// <param name="length">The number of items in the span.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,10 +98,10 @@ namespace System
         /// </summary>
         /// <param name="pointer">An unmanaged pointer to memory.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence cannot be stored in unmanaged memory.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
         [CLSCompliant(false)]
@@ -111,7 +113,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _reference = ref Unsafe.As<byte, T>(ref *(byte*)pointer);
+            _reference = ref *(T*)pointer;
             _length = length;
         }
 
@@ -124,6 +126,7 @@ namespace System
             _length = 1;
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateSpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T reference, int length)
@@ -133,13 +136,14 @@ namespace System
             _reference = ref reference;
             _length = length;
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Returns a reference to specified element of the Span.
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        /// <exception cref="System.IndexOutOfRangeException">
+        /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
         /// </exception>
         public ref T this[int index]
@@ -160,6 +164,7 @@ namespace System
         /// </summary>
         public int Length
         {
+            [Intrinsic]
             [NonVersionable]
             get => _length;
         }
@@ -182,10 +187,10 @@ namespace System
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
-        /// <exception cref="System.NotSupportedException">
+        /// </summary>
+        /// <exception cref="NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
-        /// </summary>
         [Obsolete("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
@@ -193,10 +198,10 @@ namespace System
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed.
-        /// <exception cref="System.NotSupportedException">
+        /// </summary>
+        /// <exception cref="NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
-        /// </summary>
         [Obsolete("GetHashCode() on Span will always throw an exception.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() =>
@@ -281,11 +286,11 @@ namespace System
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (uint)_length * (nuint)(Unsafe.SizeOf<T>() / sizeof(nuint)));
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (uint)_length * (nuint)(sizeof(T) / sizeof(nuint)));
             }
             else
             {
-                SpanHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _reference), (uint)_length * (nuint)Unsafe.SizeOf<T>());
+                SpanHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _reference), (uint)_length * (nuint)sizeof(T));
             }
         }
 
@@ -293,15 +298,15 @@ namespace System
         /// Fills the contents of this span with the given value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Fill(T value)
+        public unsafe void Fill(T value)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 // Special-case single-byte types like byte / sbyte / bool.
                 // The runtime eventually calls memset, which can efficiently support large buffers.
                 // We don't need to check IsReferenceOrContainsReferences because no references
                 // can ever be stored in types this small.
-                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), Unsafe.As<T, byte>(ref value), (uint)_length);
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), *(byte*)&value, (uint)_length);
             }
             else
             {
@@ -316,7 +321,7 @@ namespace System
         /// a temporary location before the destination is overwritten.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when the destination Span is shorter than the source Span.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -361,7 +366,7 @@ namespace System
         /// </summary>
         public static bool operator ==(Span<T> left, Span<T> right) =>
             left._length == right._length &&
-            Unsafe.AreSame<T>(ref left._reference, ref right._reference);
+            Unsafe.AreSame(ref left._reference, ref right._reference);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
@@ -386,7 +391,7 @@ namespace System
         /// Forms a slice out of the given span, beginning at 'start'.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -403,7 +408,7 @@ namespace System
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

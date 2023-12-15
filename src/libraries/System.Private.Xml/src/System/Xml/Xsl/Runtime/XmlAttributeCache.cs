@@ -4,8 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Xml;
-using System.Xml.XPath;
 using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -84,7 +84,7 @@ namespace System.Xml.Xsl.Runtime
         {
             int hashCode;
             int idx = 0;
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             // Compute hashcode based on first letter of the localName
             hashCode = (1 << ((int)localName[0] & 31));

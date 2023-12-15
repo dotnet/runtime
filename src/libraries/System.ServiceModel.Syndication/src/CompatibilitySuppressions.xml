@@ -1,5 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
+  <Suppression>
+    <Left>lib/net6.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <Left>lib/net7.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.ServiceModel.Syndication.SyndicationTextInput</Target>
@@ -29,6 +41,36 @@
     <Target>T:System.ServiceModel.Syndication.XmlUriData</Target>
     <Left>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
     <Right>lib/net462/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.ServiceModel.Syndication.SyndicationTextInput</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.ServiceModel.Syndication.TryParseDateTimeCallback</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.ServiceModel.Syndication.TryParseUriCallback</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.ServiceModel.Syndication.XmlDateTimeData</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.ServiceModel.Syndication.XmlUriData</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -101,5 +143,77 @@
     <Target>M:System.ServiceModel.Syndication.SyndicationFeedFormatter.set_UriParser(System.ServiceModel.Syndication.TryParseUriCallback)</Target>
     <Left>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
     <Right>lib/net462/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.get_Documentation</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.get_SkipDays</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.get_SkipHours</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.get_TextInput</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.get_TimeToLive</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.set_Documentation(System.ServiceModel.Syndication.SyndicationLink)</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.set_TextInput(System.ServiceModel.Syndication.SyndicationTextInput)</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeed.set_TimeToLive(System.Nullable{System.TimeSpan})</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeedFormatter.get_DateTimeParser</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeedFormatter.get_UriParser</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeedFormatter.set_DateTimeParser(System.ServiceModel.Syndication.TryParseDateTimeCallback)</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceModel.Syndication.SyndicationFeedFormatter.set_UriParser(System.ServiceModel.Syndication.TryParseUriCallback)</Target>
+    <Left>ref/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Right>
   </Suppression>
 </Suppressions>

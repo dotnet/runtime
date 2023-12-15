@@ -77,13 +77,12 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        internal CustomAttributeBuilder(ConstructorInfo con, byte[] binaryAttribute)
+        internal CustomAttributeBuilder(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             ctor = con;
-            data = (byte[])binaryAttribute.Clone();
+            data = binaryAttribute.ToArray();
             /* should we check that the user supplied data is correct? */
         }
 
@@ -177,6 +176,8 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(namedFields);
             ArgumentNullException.ThrowIfNull(fieldValues);
 
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             if (con.GetParametersCount() != constructorArgs.Length)
                 throw new ArgumentException(SR.Argument_BadParameterCountsForConstructor);
             if (namedProperties.Length != propertyValues.Length)
@@ -198,11 +199,11 @@ namespace System.Reflection.Emit
             {
                 Type t = fi.DeclaringType!;
                 if ((atype != t) && (!t.IsSubclassOf(atype)) && (!atype.IsSubclassOf(t)))
-                    throw new ArgumentException("Field '" + fi.Name + "' does not belong to the same class as the constructor");
+                    throw new ArgumentException(SR.Format(SR.Argument_FieldDoesNotBelongToConstructorClass, fi.Name));
                 if (!IsValidType(fi.FieldType))
-                    throw new ArgumentException("Field '" + fi.Name + "' does not have a valid type.");
+                    throw new ArgumentException(SR.Format(SR.Argument_FieldDoesNotHaveAValidType, fi.Name));
                 if (!IsValidValue(fi.FieldType, fieldValues[i]))
-                    throw new ArgumentException("Field " + fi.Name + " is not a valid value.");
+                    throw new ArgumentException(SR.Format(SR.Argument_FieldDoesNotHaveAValidValue, fi.Name));
                 // FIXME: Check enums and TypeBuilders as well
                 if (fieldValues[i] != null)
                     // IsEnum does not seem to work on TypeBuilders
@@ -213,7 +214,7 @@ namespace System.Reflection.Emit
                         // MS.NET allows this
                         //
                         if (!fi.FieldType.IsArray)
-                            throw new ArgumentException("Value of field '" + fi.Name + "' does not match field type: " + fi.FieldType);
+                            throw new ArgumentException(SR.Format(SR.Argument_UnmatchedFieldValueAndType, fi.Name, fi.FieldType));
                     }
                 i++;
             }
@@ -222,19 +223,19 @@ namespace System.Reflection.Emit
             foreach (PropertyInfo pi in namedProperties)
             {
                 if (!pi.CanWrite)
-                    throw new ArgumentException("Property '" + pi.Name + "' does not have a setter.");
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyMissingSetter, pi.Name));
                 Type t = pi.DeclaringType!;
                 if ((atype != t) && (!t.IsSubclassOf(atype)) && (!atype.IsSubclassOf(t)))
-                    throw new ArgumentException("Property '" + pi.Name + "' does not belong to the same class as the constructor");
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyClassUnmatchedWithConstructor, pi.Name));
                 if (!IsValidType(pi.PropertyType))
-                    throw new ArgumentException("Property '" + pi.Name + "' does not have a valid type.");
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyInvalidType, pi.Name));
                 if (!IsValidValue(pi.PropertyType, propertyValues[i]))
-                    throw new ArgumentException("Property " + pi.Name + " is not a valid value.");
+                    throw new ArgumentException(SR.Format(SR.Argument_PropertyInvalidValue, pi.Name));
                 if (propertyValues[i] != null)
                 {
                     if (!(pi.PropertyType is TypeBuilder) && !pi.PropertyType.IsEnum && !pi.PropertyType.IsInstanceOfType(propertyValues[i]))
                         if (!pi.PropertyType.IsArray)
-                            throw new ArgumentException("Value of property '" + pi.Name + "' does not match property type: " + pi.PropertyType + " -> " + propertyValues[i]);
+                            throw new ArgumentException(SR.Format(SR.Argument_PropertyUnmatchingPropertyType, pi.Name, pi.PropertyType, propertyValues[i]));
                 }
                 i++;
             }
@@ -246,17 +247,17 @@ namespace System.Reflection.Emit
                 {
                     Type paramType = pi.ParameterType;
                     if (!IsValidType(paramType))
-                        throw new ArgumentException("Parameter " + i + " does not have a valid type.");
+                        throw new ArgumentException(SR.Format(SR.Argument_ParameterInvalidType, i));
                     if (!IsValidValue(paramType, constructorArgs[i]))
-                        throw new ArgumentException("Parameter " + i + " is not a valid value.");
+                        throw new ArgumentException(SR.Format(SR.Argument_ParameterInvalidValue, i));
 
                     if (constructorArgs[i] != null)
                     {
                         if (!(paramType is TypeBuilder) && !paramType.IsEnum && !paramType.IsInstanceOfType(constructorArgs[i]))
                             if (!paramType.IsArray)
-                                throw new ArgumentException("Value of argument " + i + " does not match parameter type: " + paramType + " -> " + constructorArgs[i]);
+                                throw new ArgumentException(SR.Format(SR.Argument_ParameterHasUnmatchedArgumentValue, i, paramType, constructorArgs[i]));
                         if (!IsValidParam(constructorArgs[i]!, paramType))
-                            throw new ArgumentException("Cannot emit a CustomAttribute with argument of type " + constructorArgs[i]!.GetType() + ".");
+                            throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, constructorArgs[i]!.GetType()));
                     }
                 }
                 i++;
@@ -266,7 +267,7 @@ namespace System.Reflection.Emit
         }
 
         /* helper methods */
-        internal static int decode_len(byte[] data, int pos, out int rpos)
+        internal static int decode_len(ReadOnlySpan<byte> data, int pos, out int rpos)
         {
             int len;
             if ((data[pos] & 0x80) == 0)
@@ -287,9 +288,9 @@ namespace System.Reflection.Emit
             return len;
         }
 
-        internal static string string_from_bytes(byte[] data, int pos, int len)
+        internal static string string_from_bytes(ReadOnlySpan<byte> data, int pos, int len)
         {
-            return Text.Encoding.UTF8.GetString(data, pos, len);
+            return Text.Encoding.UTF8.GetString(data.Slice(pos, len));
         }
 
         internal static string? decode_string(byte[] data, int pos, out int rpos)
@@ -401,7 +402,7 @@ namespace System.Reflection.Emit
                         marshalCookie = decode_string(data, pos, out pos)!;
                         break;
                     default:
-                        throw new Exception("Unknown MarshalAsAttribute field: " + named_name);
+                        throw new Exception(SR.Format(SR.Exception_UnknownMarshalAsAttributeField, named_name));
                 }
             }
 
@@ -418,7 +419,7 @@ namespace System.Reflection.Emit
 #endif
                 case UnmanagedType.ByValArray:
                     if (!is_field)
-                        throw new ArgumentException("Specified unmanaged type is only valid on fields");
+                        throw new ArgumentException(SR.Argument_UnmanagedTypeOnlyValidOnFields);
 
                     return UnmanagedMarshal.DefineByValArray(sizeConst);
                 case UnmanagedType.ByValTStr:
@@ -449,10 +450,10 @@ namespace System.Reflection.Emit
                 0x0c => typeof(float),
                 0x0d => typeof(double),
                 0x0e => typeof(string),
-                _ => throw new Exception("Unknown element type '" + elementType + "'"),
+                _ => throw new Exception(SR.Format(SR.ArgumentException_InvalidTypeArgument, elementType)),
             };
 
-        private static object? decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
+        private static object? decode_cattr_value(Type t, ReadOnlySpan<byte> data, int pos, out int rpos)
         {
             switch (Type.GetTypeCode(t))
             {
@@ -478,7 +479,7 @@ namespace System.Reflection.Emit
                     if (subtype >= 0x02 && subtype <= 0x0e)
                         return decode_cattr_value(elementTypeToType(subtype), data, pos, out rpos);
                     else
-                        throw new Exception("Subtype '" + subtype + "' of type object not yet handled in decode_cattr_value");
+                        throw new Exception(SR.Exception_UnhandledSubType);
                 default:
                     throw new Exception("FIXME: Type " + t + " not yet handled in decode_cattr_value.");
             }
@@ -492,23 +493,28 @@ namespace System.Reflection.Emit
             public object?[] namedParamValues;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
-            Justification = "Types referenced from custom attributes are preserved")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Types referenced from custom attributes are preserved")]
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
         {
             byte[] data = customBuilder.Data;
             ConstructorInfo ctor = customBuilder.Ctor;
+            return decode_cattr(ctor, data);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        internal static CustomAttributeInfo decode_cattr(ConstructorInfo ctor, ReadOnlySpan<byte> data)
+        {
             int pos;
 
             CustomAttributeInfo info = default;
 
             // Prolog
             if (data.Length < 2)
-                throw new Exception("Custom attr length is only '" + data.Length + "'");
+                throw new Exception(SR.Format(SR.Exception_InvalidCustomAttributeLength, data.Length));
             if ((data[0] != 0x1) || (data[1] != 0x00))
-                throw new Exception("Prolog invalid");
+                throw new Exception(SR.Exception_InvalidProlog);
             pos = 2;
 
             ParameterInfo[] pi = GetParameters(ctor);
@@ -545,7 +551,7 @@ namespace System.Reflection.Emit
                     /* Field */
                     FieldInfo? fi = ctor.DeclaringType!.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (fi == null)
-                        throw new Exception("Custom attribute type '" + ctor.DeclaringType + "' doesn't contain a field named '" + name + "'");
+                        throw new Exception(SR.Format(SR.Exception_EmptyFieldForCustomAttributeType, ctor.DeclaringType, name));
 
                     object? val = decode_cattr_value(fi.FieldType, data, pos, out pos);
                     if (enum_type_name != null)
@@ -558,7 +564,7 @@ namespace System.Reflection.Emit
                 }
                 else
                     // FIXME:
-                    throw new Exception("Unknown named type: " + named_type);
+                    throw new Exception(SR.Format(SR.Exception_UnknownNamedType, named_type));
             }
 
             return info;

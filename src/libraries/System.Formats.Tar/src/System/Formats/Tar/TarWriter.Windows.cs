@@ -36,7 +36,7 @@ namespace System.Formats.Tar
             }
             else
             {
-                throw new IOException(string.Format(SR.TarUnsupportedFile, fullPath));
+                throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath));
             }
 
             TarEntry entry = Format switch
@@ -45,7 +45,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
 
             FileSystemInfo info = (attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);

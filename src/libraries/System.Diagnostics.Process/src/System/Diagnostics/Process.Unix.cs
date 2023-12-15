@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -837,7 +837,7 @@ namespace System.Diagnostics
         /// <param name="fd">The file descriptor.</param>
         /// <param name="direction">The pipe direction.</param>
         /// <returns>The opened stream.</returns>
-        private static Stream OpenStream(int fd, PipeDirection direction)
+        private static AnonymousPipeClientStream OpenStream(int fd, PipeDirection direction)
         {
             Debug.Assert(fd >= 0);
             return new AnonymousPipeClientStream(direction, new SafePipeHandle((IntPtr)fd, ownsHandle: true));
@@ -1060,7 +1060,7 @@ namespace System.Diagnostics
 
         public bool Responding => true;
 
-        private static bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnknownError);
+        private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
         private static unsafe void EnsureInitialized()
         {

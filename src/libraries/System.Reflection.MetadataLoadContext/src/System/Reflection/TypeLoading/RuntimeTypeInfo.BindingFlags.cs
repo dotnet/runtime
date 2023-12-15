@@ -7,7 +7,7 @@ using System.Reflection.Runtime.General;
 
 namespace System.Reflection.TypeLoading
 {
-    internal abstract partial class RoType
+    internal partial class RoType
     {
         public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(bindingAttr).ToArray();
 
@@ -36,7 +36,7 @@ namespace System.Reflection.TypeLoading
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= Loader.GetDefaultBinder();
 
@@ -136,10 +136,11 @@ namespace System.Reflection.TypeLoading
                 // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types == null || types.Length == 0)
                 {
+                    PropertyInfo firstCandidate = candidates[0];
+
                     // no arguments
                     if (candidates.Count == 1)
                     {
-                        PropertyInfo firstCandidate = candidates[0];
                         if (!(returnType is null) && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                             return null;
                         return firstCandidate;
@@ -148,12 +149,12 @@ namespace System.Reflection.TypeLoading
                     {
                         if (returnType is null)
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException();
+                            throw ThrowHelper.GetAmbiguousMatchException(firstCandidate);
                     }
                 }
 
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
                 binder ??= Loader.GetDefaultBinder();
 

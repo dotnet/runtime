@@ -428,6 +428,9 @@ mono_if_conversion (MonoCompile *cfg)
 			mono_bblock_insert_before_ins (bb, compare, ins2);
 			mono_bblock_insert_before_ins (bb, ins2, ins1);
 
+			bb->needs_decompose |= true_bb->needs_decompose;
+			bb->needs_decompose |= false_bb->needs_decompose;
+
 			/* Add cmov instruction */
 			MONO_INST_NEW (cfg, cmov, OP_NOP);
 			cmov->dreg = dreg;
@@ -1308,7 +1311,7 @@ mono_optimize_branches (MonoCompile *cfg)
 					/* the block are in sequence anyway ... */
 
 					/* branches to the following block can be removed */
-					if (bb->last_ins && bb->last_ins->opcode == OP_BR && !bbn->out_of_line) {
+					if (!COMPILE_LLVM (cfg) && bb->last_ins && bb->last_ins->opcode == OP_BR && !bbn->out_of_line) {
 						NULLIFY_INS (bb->last_ins);
 						changed = TRUE;
 						if (cfg->verbose_level > 2)

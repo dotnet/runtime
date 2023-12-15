@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.Intrinsics;
 
 namespace Sample
@@ -14,6 +15,8 @@ namespace Sample
         {
             measurements = new Measurement[] {
                 new Create(),
+                new PackConstant(),
+                new Pack(),
                 new Add(),
                 new Multiply(),
                 new DotInt(),
@@ -28,6 +31,9 @@ namespace Sample
                 new MaxFloat(),
                 new MinDouble(),
                 new MaxDouble(),
+                new Normalize(),
+                new EqualsInt32(),
+                new EqualsFloat(),
             };
         }
 
@@ -52,6 +58,25 @@ namespace Sample
             public override string Name => "Create Vector128";
 
             public override void RunStep() => vector = Vector128.Create(0x123456);
+        }
+
+        class PackConstant : VectorMeasurement
+        {
+            Vector128<int> vector;
+
+            public override string Name => "Pack Vector128 (Constant)";
+
+            public override void RunStep() => vector = Vector128.Create(1, 2, 3, 4);
+        }
+
+        class Pack : VectorMeasurement
+        {
+            Vector128<int> vector;
+            int a = 1, b = 2, c = 3, d = 4;
+
+            public override string Name => "Pack Vector128";
+
+            public override void RunStep() => vector = Vector128.Create(a, b, c, d);
         }
 
         class Add : VectorMeasurement
@@ -299,6 +324,62 @@ namespace Sample
 
             public override void RunStep() {
                 result = Vector128.Max(vector1, vector2);
+            }
+        }
+
+        class Normalize : VectorMeasurement
+        {
+            Vector128<float> result;
+            float x, y, z, w;
+            public override string Name => "Normalize float";
+
+            public Normalize()
+            {
+                x = Random.Shared.NextSingle();
+                y = Random.Shared.NextSingle();
+                z = Random.Shared.NextSingle();
+                w = Random.Shared.NextSingle();
+            }
+
+            public override void RunStep() {
+                Vector128<float> vector = Vector128.Create(x, y, z, w);
+                result = vector / (float)Math.Sqrt(Vector128.Dot(vector, vector));
+            }
+        }
+
+        class EqualsInt32 : VectorMeasurement
+        {
+            Vector128<Int32> vector1, vector2;
+            bool result;
+
+            public override string Name => "Equals Int32";
+
+            public EqualsInt32()
+            {
+                vector1 = Vector128.Create(1, 2, 3, 4);
+                vector2 = Vector128.Create(4, 3, 2, 1);
+            }
+
+            public override void RunStep() {
+                result = vector1.Equals(vector2);
+            }
+        }
+
+        class EqualsFloat : VectorMeasurement
+        {
+            Vector128<float> vector1, vector2;
+            bool result;
+
+            public override string Name => "Equals Float";
+
+            public EqualsFloat()
+            {
+                vector1 = Vector128.Create(1f, 2f, 3f, 4f);
+                vector2 = Vector128.Create(4f, 3f, 2f, 1f);
+            }
+
+            public override void RunStep() {
+                result = vector1.Equals(vector2);
             }
         }
     }

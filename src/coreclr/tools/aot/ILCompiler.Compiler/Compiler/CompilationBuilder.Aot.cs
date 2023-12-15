@@ -17,11 +17,14 @@ namespace ILCompiler
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
+        protected InlinedThreadStatics _inlinedThreadStatics = new InlinedThreadStatics();
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
+        protected ReadOnlyFieldPolicy _readOnlyFieldPolicy = new ReadOnlyFieldPolicy();
         protected IInliningPolicy _inliningPolicy;
         protected bool _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
+        protected bool _dehydrate;
         protected bool _useDwarf5;
 
         partial void InitializePartial()
@@ -84,6 +87,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseDehydration(bool dehydrate)
+        {
+            _dehydrate = dehydrate;
+            return this;
+        }
+
         public CompilationBuilder UseMethodBodyFolding(bool enable)
         {
             _methodBodyFolding = enable;
@@ -102,6 +111,18 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseReadOnlyFieldPolicy(ReadOnlyFieldPolicy policy)
+        {
+            _readOnlyFieldPolicy = policy;
+            return this;
+        }
+
+        public CompilationBuilder UseInlinedThreadStatics(InlinedThreadStatics inlinedThreadStatics)
+        {
+            _inlinedThreadStatics = inlinedThreadStatics;
+            return this;
+        }
+
         public CompilationBuilder UseDwarf5(bool value)
         {
             _useDwarf5 = value;
@@ -111,7 +132,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), enableInterpreter: false);
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new StaticReadOnlyFieldPolicy());
             return _preinitializationManager;
         }
 

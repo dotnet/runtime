@@ -19,12 +19,12 @@
 #include <pthread.h>
 #include <signal.h>
 
-int32_t SystemNative_GetWindowSize(WinSize* windowSize)
+int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 {
     assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCGWINSZ
-    int error = ioctl(STDOUT_FILENO, TIOCGWINSZ, windowSize);
+    int error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize);
 
     if (error != 0)
     {
@@ -33,7 +33,24 @@ int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 
     return error;
 #else
+    (void)fd;
     memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_SetWindowSize(WinSize* windowSize)
+{
+    assert(windowSize != NULL);
+
+#if HAVE_IOCTL_WITH_INT_REQUEST && HAVE_TIOCSWINSZ
+    return ioctl(STDOUT_FILENO, (int)TIOCSWINSZ, windowSize);
+#elif HAVE_IOCTL && HAVE_TIOCSWINSZ
+    return ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because windowSize is unused
+    (void)windowSize;
     errno = ENOTSUP;
     return -1;
 #endif
@@ -45,6 +62,7 @@ int32_t SystemNative_IsATty(intptr_t fd)
 }
 
 static char* g_keypadXmit = NULL; // string used to enable application mode, from terminfo
+static int g_keypadXmitFd = -1;
 
 static void WriteKeypadXmit(void)
 {
@@ -53,12 +71,12 @@ static void WriteKeypadXmit(void)
     if (g_keypadXmit != NULL)
     {
         ssize_t ret;
-        while (CheckInterrupted(ret = write(STDOUT_FILENO, g_keypadXmit, (size_t)(sizeof(char) * strlen(g_keypadXmit)))));
-        assert(ret >= 0); // failure to change the mode should not prevent app from continuing
+        while (CheckInterrupted(ret = write(g_keypadXmitFd, g_keypadXmit, (size_t)(sizeof(char) * strlen(g_keypadXmit)))));
+        assert(ret >= 0 || (errno == EBADF && g_keypadXmitFd == 0)); // failure to change the mode should not prevent app from continuing
     }
 }
 
-void SystemNative_SetKeypadXmit(const char* terminfoString)
+void SystemNative_SetKeypadXmit(intptr_t fd, const char* terminfoString)
 {
     assert(terminfoString != NULL);
 
@@ -69,6 +87,7 @@ void SystemNative_SetKeypadXmit(const char* terminfoString)
     }
 
     // Store the string to use to enter application mode, then enter
+    g_keypadXmitFd = ToFileDescriptor(fd);
     g_keypadXmit = strdup(terminfoString);
     WriteKeypadXmit();
 }
@@ -92,7 +111,6 @@ static bool g_reading = false;                // tracks whether the application 
 static bool g_childUsesTerminal = false;      // tracks whether a child process is using the terminal
 static bool g_terminalUninitialized = false;  // tracks whether the application is terminating
 static bool g_terminalConfigured = false;     // tracks whether the application configured the terminal.
-
 static bool g_hasTty = false;                  // cache we are not a tty
 
 static volatile bool g_receivedSigTtou = false;
@@ -149,7 +167,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     return rv;
 }
 
-static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground, bool distinguishNewLines)
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
 {
     if (!g_hasTty)
     {
@@ -168,15 +186,7 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     if (!forChild)
     {
-        if (distinguishNewLines)
-        {
-            termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
-        }
-        else
-        {
-            termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
-        }
-
+        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
     }
 
@@ -220,13 +230,13 @@ void UninitializeTerminal(void)
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(int32_t distinguishNewLines, uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true, distinguishNewLines);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
 
         pthread_mutex_unlock(&g_lock);
     }
@@ -264,7 +274,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
         // Avoid configuring the terminal: only change terminal settings when our process has changed them.
         if (g_terminalConfigured)
         {
-            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* distinguishNewLines */ false);
+            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
         }
 
         // Redo "Application mode" when there are no more children using the terminal.
@@ -372,9 +382,9 @@ void SystemNative_GetControlCharacters(
     }
 }
 
-int32_t SystemNative_StdinReady(int32_t distinguishNewLines)
+int32_t SystemNative_StdinReady(void)
 {
-    SystemNative_InitializeConsoleBeforeRead(distinguishNewLines, /* minChars */ 1, /* decisecondsTimeout */ 0);
+    SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
@@ -402,7 +412,7 @@ int32_t SystemNative_GetSignalForBreak(void)
     return g_signalForBreak;
 }
 
-int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distinguishNewLines)
+int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
 
@@ -410,7 +420,7 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak, int32_t distingui
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true, distinguishNewLines))
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
         {
             g_signalForBreak = signalForBreak;
             rv = 1;

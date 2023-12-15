@@ -10,38 +10,7 @@
 #include "regdisplay.h"
 #include "config.h"
 
-#include <libunwind.h>
-
 #include "UnixContext.h"
-#include "UnwindHelpers.h"
-
-// WebAssembly has a slightly different version of LibUnwind that doesn't define unw_get_save_loc
-#if defined(HOST_WASM)
-enum unw_save_loc_type_t
-{
-    UNW_SLT_NONE,       /* register is not saved ("not an l-value") */
-    UNW_SLT_MEMORY,     /* register has been saved in memory */
-    UNW_SLT_REG         /* register has been saved in (another) register */
-};
-typedef enum unw_save_loc_type_t unw_save_loc_type_t;
-
-struct unw_save_loc_t
-{
-    unw_save_loc_type_t type;
-    union
-    {
-        unw_word_t addr;        /* valid if type==UNW_SLT_MEMORY */
-        unw_regnum_t regnum;    /* valid if type==UNW_SLT_REG */
-    }
-    u;
-};
-typedef struct unw_save_loc_t unw_save_loc_t;
-
-int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
-{
-    return -1;
-}
-#endif // _WASM
 
 #ifdef __APPLE__
 
@@ -183,7 +152,43 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 
 #ifdef HOST_64BIT
 
-#if defined(HOST_ARM64)
+#if defined(HOST_ARM64) && defined(TARGET_FREEBSD)
+
+#define MCREG_X0(mc)   (mc.mc_gpregs.gp_x[0])
+#define MCREG_X1(mc)   (mc.mc_gpregs.gp_x[1])
+#define MCREG_X2(mc)   (mc.mc_gpregs.gp_x[2])
+#define MCREG_X3(mc)   (mc.mc_gpregs.gp_x[3])
+#define MCREG_X4(mc)   (mc.mc_gpregs.gp_x[4])
+#define MCREG_X5(mc)   (mc.mc_gpregs.gp_x[5])
+#define MCREG_X6(mc)   (mc.mc_gpregs.gp_x[6])
+#define MCREG_X7(mc)   (mc.mc_gpregs.gp_x[7])
+#define MCREG_X8(mc)   (mc.mc_gpregs.gp_x[8])
+#define MCREG_X9(mc)   (mc.mc_gpregs.gp_x[9])
+#define MCREG_X10(mc)  (mc.mc_gpregs.gp_x[10])
+#define MCREG_X11(mc)  (mc.mc_gpregs.gp_x[11])
+#define MCREG_X12(mc)  (mc.mc_gpregs.gp_x[12])
+#define MCREG_X13(mc)  (mc.mc_gpregs.gp_x[13])
+#define MCREG_X14(mc)  (mc.mc_gpregs.gp_x[14])
+#define MCREG_X15(mc)  (mc.mc_gpregs.gp_x[15])
+#define MCREG_X16(mc)  (mc.mc_gpregs.gp_x[16])
+#define MCREG_X17(mc)  (mc.mc_gpregs.gp_x[17])
+#define MCREG_X18(mc)  (mc.mc_gpregs.gp_x[18])
+#define MCREG_X19(mc)  (mc.mc_gpregs.gp_x[19])
+#define MCREG_X20(mc)  (mc.mc_gpregs.gp_x[20])
+#define MCREG_X21(mc)  (mc.mc_gpregs.gp_x[21])
+#define MCREG_X22(mc)  (mc.mc_gpregs.gp_x[22])
+#define MCREG_X23(mc)  (mc.mc_gpregs.gp_x[23])
+#define MCREG_X24(mc)  (mc.mc_gpregs.gp_x[24])
+#define MCREG_X25(mc)  (mc.mc_gpregs.gp_x[25])
+#define MCREG_X26(mc)  (mc.mc_gpregs.gp_x[26])
+#define MCREG_X27(mc)  (mc.mc_gpregs.gp_x[27])
+#define MCREG_X28(mc)  (mc.mc_gpregs.gp_x[28])
+#define MCREG_Lr(mc)   (mc.mc_gpregs.gp_lr)
+#define MCREG_Sp(mc)   (mc.mc_gpregs.gp_sp)
+#define MCREG_Pc(mc)   (mc.mc_gpregs.gp_elr)
+#define MCREG_Fp(mc)   (mc.mc_gpregs.gp_x[29])
+
+#elif defined(HOST_ARM64)
 
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
@@ -281,221 +286,6 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 #endif // HAVE_GREGSET_T
 
 #endif // __APPLE__
-
-// Update unw_cursor_t from REGDISPLAY.
-// NOTE: We don't set the IP here since the current use cases for this function
-// don't require it.
-static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor)
-{
-#define ASSIGN_REG(regName1, regName2) \
-    unw_set_reg(cursor, regName1, regDisplay->regName2, 0);
-
-#define ASSIGN_REG_PTR(regName1, regName2) \
-    if (regDisplay->p##regName2 != NULL) \
-        unw_set_reg(cursor, regName1, *(regDisplay->p##regName2), 0);
-
-#if defined(HOST_AMD64)
-    ASSIGN_REG(UNW_REG_SP, SP)
-    ASSIGN_REG_PTR(UNW_X86_64_RBP, Rbp)
-    ASSIGN_REG_PTR(UNW_X86_64_RBX, Rbx)
-    ASSIGN_REG_PTR(UNW_X86_64_R12, R12)
-    ASSIGN_REG_PTR(UNW_X86_64_R13, R13)
-    ASSIGN_REG_PTR(UNW_X86_64_R14, R14)
-    ASSIGN_REG_PTR(UNW_X86_64_R15, R15)
-#elif HOST_ARM
-    ASSIGN_REG(UNW_ARM_SP, SP)
-    ASSIGN_REG_PTR(UNW_ARM_R4, R4)
-    ASSIGN_REG_PTR(UNW_ARM_R5, R5)
-    ASSIGN_REG_PTR(UNW_ARM_R6, R6)
-    ASSIGN_REG_PTR(UNW_ARM_R7, R7)
-    ASSIGN_REG_PTR(UNW_ARM_R8, R8)
-    ASSIGN_REG_PTR(UNW_ARM_R9, R9)
-    ASSIGN_REG_PTR(UNW_ARM_R10, R10)
-    ASSIGN_REG_PTR(UNW_ARM_R11, R11)
-    ASSIGN_REG_PTR(UNW_ARM_R14, LR)
-#elif HOST_ARM64
-    ASSIGN_REG(UNW_ARM64_SP, SP)
-    ASSIGN_REG_PTR(UNW_ARM64_FP, FP)
-    ASSIGN_REG_PTR(UNW_ARM64_X19, X19)
-    ASSIGN_REG_PTR(UNW_ARM64_X20, X20)
-    ASSIGN_REG_PTR(UNW_ARM64_X21, X21)
-    ASSIGN_REG_PTR(UNW_ARM64_X22, X22)
-    ASSIGN_REG_PTR(UNW_ARM64_X23, X23)
-    ASSIGN_REG_PTR(UNW_ARM64_X24, X24)
-    ASSIGN_REG_PTR(UNW_ARM64_X25, X25)
-    ASSIGN_REG_PTR(UNW_ARM64_X26, X26)
-    ASSIGN_REG_PTR(UNW_ARM64_X27, X27)
-    ASSIGN_REG_PTR(UNW_ARM64_X28, X28)
-#elif defined(HOST_X86)
-    ASSIGN_REG(UNW_REG_SP, SP)
-    ASSIGN_REG_PTR(UNW_X86_EBP, Rbp)
-    ASSIGN_REG_PTR(UNW_X86_EBX, Rbx)
-#endif
-
-#undef ASSIGN_REG
-#undef ASSIGN_REG_PTR
-}
-
-// Returns the unw_proc_info_t for a given IP.
-bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
-{
-    int st;
-
-    unw_context_t unwContext;
-    unw_cursor_t cursor;
-
-    st = unw_getcontext(&unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-#ifdef HOST_AMD64
-    // We manually index into the unw_context_t's internals for now because there's
-    // no better way to modify it. This will go away in the future when we locate the
-    // LSDA and other information without initializing an unwind cursor.
-    unwContext.data[16] = ip;
-#elif HOST_ARM
-    ((uint32_t*)(unwContext.data))[15] = ip;
-#elif HOST_ARM64
-    unwContext.data[32] = ip;
-#elif HOST_WASM
-    ASSERT(false);
-#elif HOST_X86
-    ASSERT(false);
-#else
-    #error "GetUnwindProcInfo is not supported on this arch yet."
-#endif
-
-    st = unw_init_local(&cursor, &unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    st = unw_get_proc_info(&cursor, procInfo);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-// Initialize unw_cursor_t and unw_context_t from REGDISPLAY
-bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* cursor, unw_context_t* unwContext)
-{
-    int st;
-
-    st = unw_getcontext(unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    // Set the IP here instead of after unwinder initialization. unw_init_local
-    // will do some initialization of internal structures based on the IP value.
-    // We manually index into the unw_context_t's internals for now because there's
-    // no better way to modify it. This whole function will go away in the future
-    // when we are able to read unwind info without initializing an unwind cursor.
-#ifdef HOST_AMD64
-    unwContext->data[16] = regDisplay->IP;
-#elif HOST_ARM
-    ((uint32_t*)(unwContext->data))[15] = regDisplay->IP;
-#elif HOST_ARM64
-    ((uint32_t*)(unwContext->data))[32] = regDisplay->IP;
-#elif HOST_X86
-    ASSERT(false);
-#else
-    #error "InitializeUnwindContextAndCursor is not supported on this arch yet."
-#endif
-
-    st = unw_init_local(cursor, unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    // Set the unwind context to the specified Windows context.
-    RegDisplayToUnwindCursor(regDisplay, cursor);
-
-    return true;
-}
-
-// Update context pointer for a register from the unw_cursor_t.
-static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, PTR_UIntNative *contextPointer)
-{
-    unw_save_loc_t saveLoc;
-    unw_get_save_loc(cursor, reg, &saveLoc);
-    if (saveLoc.type == UNW_SLT_MEMORY)
-    {
-        PTR_UIntNative pLoc = (PTR_UIntNative)saveLoc.u.addr;
-        // Filter out fake save locations that point to unwContext
-        if (unwContext == NULL || (pLoc < (PTR_UIntNative)unwContext) || ((PTR_UIntNative)(unwContext + 1) <= pLoc))
-            *contextPointer = (PTR_UIntNative)saveLoc.u.addr;
-    }
-}
-
-#if defined(HOST_AMD64)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_X86_64_RBP, Rbp)	\
-    GET_CONTEXT_POINTER(UNW_X86_64_RBX, Rbx)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R12, R12)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R13, R13)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R14, R14)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R15, R15)
-#elif defined(HOST_ARM)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_ARM_R4, R4)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R5, R5)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R6, R6)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R7, R7)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R8, R8)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R9, R9)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R10, R10)       \
-    GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
-#elif defined(HOST_ARM64)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_ARM64_X19, X19)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X20, X20)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X21, X21)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X22, X22)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X23, X23)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X24, X24)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X25, X25)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X26, X26)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X27, X27)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X28, X28)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_FP, FP)
-#elif defined(HOST_X86)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_X86_EBP, Rbp)       \
-    GET_CONTEXT_POINTER(UNW_X86_EBX, Rbx)
-#elif defined (HOST_WASM)
-// No registers
-#define GET_CONTEXT_POINTERS
-#else
-#error unsupported architecture
-#endif
-
-// Update REGDISPLAY from the unw_cursor_t and unw_context_t
-void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, REGDISPLAY *regDisplay)
-{
-#define GET_CONTEXT_POINTER(unwReg, rdReg) GetContextPointer(cursor, unwContext, unwReg, &regDisplay->p##rdReg);
-    GET_CONTEXT_POINTERS
-#undef GET_CONTEXT_POINTER
-
-    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &regDisplay->IP);
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &regDisplay->SP);
-
-#if defined(HOST_AMD64)
-    regDisplay->pIP = PTR_PCODE(regDisplay->SP - sizeof(TADDR));
-#endif
-
-#if defined(HOST_ARM) || defined(HOST_ARM64)
-    regDisplay->IP |= 1;
-#endif
-}
 
 #if defined(HOST_AMD64)
 #define ASSIGN_CONTROL_REGS \
@@ -662,36 +452,6 @@ uint64_t GetPC(void* context)
 }
 
 #endif // HOST_AMD64
-
-// Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
-{
-    unw_proc_info_t procInfo;
-
-    if (!GetUnwindProcInfo((PCODE)controlPC, &procInfo))
-    {
-        return false;
-    }
-
-    assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
-
-#if defined(HOST_ARM)
-    // libunwind fills by reference not by value for ARM
-    *lsda = *((uintptr_t *)procInfo.lsda);
-#else
-    *lsda = procInfo.lsda;
-#endif
-    *startAddress = procInfo.start_ip;
-    *endAddress = procInfo.end_ip;
-
-    return true;
-}
-
-// Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool VirtualUnwind(REGDISPLAY* pRegisterSet)
-{
-    return UnwindHelpers::StepFrame(pRegisterSet);
-}
 
 #ifdef TARGET_ARM64
 

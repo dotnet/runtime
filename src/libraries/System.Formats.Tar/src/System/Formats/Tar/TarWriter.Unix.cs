@@ -35,7 +35,7 @@ namespace System.Formats.Tar
                 Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
                 Interop.Sys.FileTypes.S_IFREG => Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
-                _ => throw new IOException(string.Format(SR.TarUnsupportedFile, fullPath)),
+                _ => throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath)),
             };
 
             FileSystemInfo info = entryType is TarEntryType.Directory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
@@ -46,7 +46,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
@@ -66,7 +66,8 @@ namespace System.Formats.Tar
             entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
             entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
 
-            entry._header._mode = status.Mode & 4095; // First 12 bits
+            // This mask only keeps the least significant 12 bits valid for UnixFileModes
+            entry._header._mode = status.Mode & (int)TarHelpers.ValidUnixFileModes;
 
             // Uid and UName
             entry._header._uid = (int)status.Uid;
@@ -81,8 +82,10 @@ namespace System.Formats.Tar
             entry._header._gid = (int)status.Gid;
             if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
             {
-                gName = Interop.Sys.GetGroupName(status.Gid);
-                _groupIdentifiers.Add(status.Gid, gName);
+                if (Interop.Sys.TryGetGroupName(status.Gid, out gName))
+                {
+                    _groupIdentifiers.Add(status.Gid, gName);
+                }
             }
             entry._header._gName = gName;
 

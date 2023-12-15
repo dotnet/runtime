@@ -4,8 +4,9 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-class Runtime_71687
+public class Runtime_71687
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Test<T>(ref T first, int i)
@@ -16,7 +17,8 @@ class Runtime_71687
     // Must be inlined so we end up with null check above
     private static void Consume<T>(T value) { }
 
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Test(ref (new byte[10])[0], 5);
         Test(ref (new sbyte[10])[0], 5);
@@ -37,7 +39,6 @@ class Runtime_71687
         Test(ref (new Struct2[10])[0], 5);
         Test(ref (new Struct4[10])[0], 5);
         Test(ref (new Struct8[10])[0], 5);
-        return 100;
     }
 
     private struct Struct1 { public byte Field; }

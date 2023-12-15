@@ -95,7 +95,7 @@
 //             pRS=pRS->pright;
 //         else
 //         {
-//             return pRS->pjit;
+//             return pRS->_pjit;
 //         }
 //     }
 //
@@ -106,7 +106,7 @@
 // In the assignment statement the compiler will automatically use
 // the implicit conversion from PTR_RangeSection to RangeSection*,
 // causing a host instance to be created.  Finally, if an appropriate
-// section is found the use of pRS->pjit will cause an implicit
+// section is found the use of pRS->_pjit will cause an implicit
 // conversion from PTR_IJitManager to IJitManager.  The VPTR code
 // will look at target memory to determine the actual derived class
 // for the JitManager and instantiate the right class in the host so

@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Xml;
-using System.Net;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Reflection;
 using System.Runtime.Versioning;
+using System.Text;
+using System.Xml;
 
 namespace System.Xml.Resolvers
 {
@@ -292,18 +292,9 @@ namespace System.Xml.Resolvers
             ArgumentNullException.ThrowIfNull(uri);
             ArgumentNullException.ThrowIfNull(value);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (value.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - offset);
 
             Add(uri, new ByteArrayChunk(value, offset, count));
         }
@@ -318,23 +309,15 @@ namespace System.Xml.Resolvers
                 // stream of known length -> allocate the byte array and read all data into it
                 int size = checked((int)value.Length);
                 byte[] bytes = new byte[size];
-                value.Read(bytes, 0, size);
+                value.ReadExactly(bytes);
                 Add(uri, new ByteArrayChunk(bytes));
             }
             else
             {
                 // stream of unknown length -> read into memory stream and then get internal the byte array
                 MemoryStream ms = new MemoryStream();
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = value.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                int size = checked((int)ms.Position);
-                byte[] bytes = new byte[size];
-                Array.Copy(ms.ToArray(), bytes, size);
-                Add(uri, new ByteArrayChunk(bytes));
+                value.CopyTo(ms);
+                Add(uri, new ByteArrayChunk(ms.GetBuffer(), 0, checked((int)ms.Position)));
             }
         }
 
@@ -369,14 +352,7 @@ namespace System.Xml.Resolvers
             Debug.Assert(uri != null);
 
             // override if exists
-            if (_mappings.ContainsKey(uri))
-            {
-                _mappings[uri] = data;
-            }
-            else
-            {
-                _mappings.Add(uri, data);
-            }
+            _mappings[uri] = data;
         }
 
         private void AddKnownDtd(XmlKnownDtdData[] dtdSet)

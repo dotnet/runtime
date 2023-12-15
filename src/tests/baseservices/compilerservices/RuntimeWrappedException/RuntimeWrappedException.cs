@@ -5,10 +5,12 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using Xunit;
 
-class Test 
+public class Test 
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retVal = 0;
         var thrower = new StringThrowerClass();

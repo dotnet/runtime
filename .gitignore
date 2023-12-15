@@ -326,6 +326,7 @@ Vagrantfile
 CMakeFiles/
 cmake_install.cmake
 CMakeCache.txt
+CMakeUserPresets.json
 
 # Cross compilation
 cross/rootfs/*
@@ -341,9 +342,6 @@ jit32
 
 # performance testing sandbox
 sandbox
-
-#IL linker for testing
-linker
 
 # Symbolic link for the shared portion of CoreLib to make grep/findstr work for runtime devs
 #
@@ -366,3 +364,4 @@ src/coreclr/System.Private.CoreLib/common
 # Temporary artifacts from local libraries stress builds
 .dotnet-daily/
 run-stress-*
+test:.cs

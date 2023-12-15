@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- This test isn't technically incompatible with GCStress, but it ends up running very slowly
          in some configurations, e.g. GCStress=3 on Linux/arm32 measured at 20 minutes.

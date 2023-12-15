@@ -29,7 +29,7 @@ namespace Microsoft.Interop.JavaScript
         public static JSSignatureContext Create(
             IMethodSymbol method,
             StubEnvironment env,
-            GeneratorDiagnostics diagnostics,
+            GeneratorDiagnosticsBag diagnostics,
             CancellationToken token)
         {
             // Cancel early if requested
@@ -42,7 +42,7 @@ namespace Microsoft.Interop.JavaScript
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(new FallbackJSMarshallingInfoProvider()));
-            SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, typeof(JSImportGenerator).Assembly);
+            SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, new CodeEmitOptions(SkipInit: true), typeof(JSImportGenerator).Assembly);
 
             string stubTypeFullName = method.ContainingType.ToDisplayString(TypeContainingTypesAndNamespacesStyle);
 
@@ -67,7 +67,8 @@ namespace Microsoft.Interop.JavaScript
                 StubTypeFullName = stubTypeFullName,
                 MethodName = fullName,
                 QualifiedMethodName = qualifiedName,
-                BindingName = "__signature_" + method.Name + "_" + typesHash
+                BindingName = "__signature_" + method.Name + "_" + typesHash,
+                AssemblyName = env.Compilation.AssemblyName,
             };
         }
 
@@ -87,6 +88,7 @@ namespace Microsoft.Interop.JavaScript
         public string MethodName { get; init; }
         public string QualifiedMethodName { get; init; }
         public string BindingName { get; init; }
+        public string AssemblyName { get; init; }
 
         public override int GetHashCode()
         {

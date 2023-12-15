@@ -312,13 +312,13 @@ PALTEST(file_io_errorpathnotfound_test1_paltest_errorpathnotfound_test1, "file_i
 
         }
 
-        if(!DeleteFile(sBadFileName))
+        if(!remove(sBadFileName))
 
         {
 
-            Trace("CreateFileA: Call to DeleteFile failed with ErrorCode "
+            Trace("CreateFileA: Call to remove failed with ErrorCode "
 
-                "[%u]\n", GetLastError());
+                "[%u]\n", errno);
 
         }
 
@@ -390,13 +390,13 @@ PALTEST(file_io_errorpathnotfound_test1_paltest_errorpathnotfound_test1, "file_i
 
         }
 
-        if(!DeleteFile(sBadFilePath))
+        if(!remove(sBadFilePath))
 
         {
 
-            Trace("CreateFileA: Call to DeleteFile Failed with ErrorCode "
+            Trace("CreateFileA: Call to remove Failed with ErrorCode "
 
-                "[%u]\n", GetLastError());
+                "[%u]\n", errno);
 
         }
 

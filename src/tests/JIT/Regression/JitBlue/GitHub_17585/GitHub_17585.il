@@ -13,9 +13,7 @@
 // The fix is to always generate explicit null check before calling VSD with tail call from tail call frame.
 
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
 }
@@ -77,7 +75,7 @@
 
 } // end of class InterfaceImplementation
 
-.class private auto ansi beforefieldinit Test_GitHub_17585
+.class public auto ansi beforefieldinit Test_GitHub_17585
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  CallInterfaceMethod(class Interface iface) cil managed noinlining

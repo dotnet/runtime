@@ -64,7 +64,7 @@ namespace System.Text
                     // This wasn't an escape, so it must be an opening brace.
                     if (brace != '{')
                     {
-                        ThrowFormatInvalidString();
+                        ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnexpectedClosingBrace);
                     }
 
                     // Proceed to parse the hole.
@@ -87,7 +87,7 @@ namespace System.Text
                 int index = ch - '0';
                 if ((uint)index >= 10u)
                 {
-                    ThrowFormatInvalidString();
+                    ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_ExpectedAsciiDigit);
                 }
 
                 // Common case is a single digit index followed by a closing brace.  If it's not a closing brace,
@@ -134,7 +134,7 @@ namespace System.Text
                         width = ch - '0';
                         if ((uint)width >= 10u)
                         {
-                            ThrowFormatInvalidString();
+                            ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_ExpectedAsciiDigit);
                         }
                         ch = MoveNext(format, ref pos);
                         while (char.IsAsciiDigit(ch) && width < WidthLimit)
@@ -157,7 +157,7 @@ namespace System.Text
                         if (ch != ':')
                         {
                             // Unexpected character
-                            ThrowFormatInvalidString();
+                            ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                         }
 
                         // Search for the closing brace; everything in between is the format,
@@ -176,7 +176,7 @@ namespace System.Text
                             if (ch == '{')
                             {
                                 // Braces inside the argument hole are not supported
-                                ThrowFormatInvalidString();
+                                ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                             }
                         }
 
@@ -193,7 +193,7 @@ namespace System.Text
 
                 if ((uint)index >= (uint)args.Length)
                 {
-                    throw new FormatException(SR.Format_IndexOutOfRange);
+                    ThrowHelper.ThrowFormatIndexOutOfRange();
                 }
                 object? arg = args[index];
 
@@ -211,8 +211,8 @@ namespace System.Text
                 {
                     // If arg is ISpanFormattable and the beginning doesn't need padding,
                     // try formatting it into the remaining current chunk.
-                    if (arg is ISpanFormattable spanFormattableArg &&
-                        (leftJustify || width == 0) &&
+                    if ((leftJustify || width == 0) &&
+                        arg is ISpanFormattable spanFormattableArg &&
                         spanFormattableArg.TryFormat(_chars.Slice(_pos), out int charsWritten, itemFormatSpan, provider))
                     {
                         _pos += charsWritten;
@@ -269,12 +269,10 @@ namespace System.Text
                 pos++;
                 if ((uint)pos >= (uint)format.Length)
                 {
-                    ThrowFormatInvalidString();
+                    ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                 }
                 return format[pos];
             }
         }
-
-        private static void ThrowFormatInvalidString() => throw new FormatException(SR.Format_InvalidString);
     }
 }

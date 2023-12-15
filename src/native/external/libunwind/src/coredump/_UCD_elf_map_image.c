@@ -29,13 +29,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include "_UCD_lib.h"
 #include "_UCD_internal.h"
+#include "ucd_file_table.h"
 
 static coredump_phdr_t *
 CD_elf_map_image(struct UCD_info *ui, coredump_phdr_t *phdr)
 {
   struct elf_image *ei = &ui->edi.ei;
 
-  if (phdr->backing_fd < 0)
+  if (phdr->p_backing_file_index == ucd_file_no_index)
     {
       /* Note: coredump file contains only phdr->p_filesz bytes.
        * We want to map bigger area (phdr->p_memsz bytes) to make sure
@@ -45,6 +46,7 @@ CD_elf_map_image(struct UCD_info *ui, coredump_phdr_t *phdr)
       ei->image = mmap(NULL, phdr->p_memsz, PROT_READ, MAP_PRIVATE, ui->coredump_fd, phdr->p_offset);
       if (ei->image == MAP_FAILED)
         {
+          Debug(0, "error %d in mmap(): %s\n", errno, strerror(errno));
           ei->image = NULL;
           return NULL;
         }
@@ -56,21 +58,19 @@ CD_elf_map_image(struct UCD_info *ui, coredump_phdr_t *phdr)
           munmap(remainder_base, remainder_len);
         }
     } else {
-      /* We have a backing file for this segment.
-       * This file is always longer than phdr->p_memsz,
-       * and if phdr->p_filesz !=0, first phdr->p_filesz bytes in coredump
-       * are the same as first bytes in the file. (Thus no need to map coredump)
-       * We map the entire file:
-       * unwinding may need data which is past phdr->p_memsz bytes.
-       */
-      /* addr, length, prot, flags, fd, fd_offset */
-      ei->image = mmap(NULL, phdr->backing_filesize, PROT_READ, MAP_PRIVATE, phdr->backing_fd, 0);
-      if (ei->image == MAP_FAILED)
+      ucd_file_t *ucd_file =  ucd_file_table_at(&ui->ucd_file_table, phdr->p_backing_file_index);
+      if (ucd_file == NULL)
         {
-          ei->image = NULL;
+          Debug(0, "error retrieving backing file for index %d\n", phdr->p_backing_file_index);
           return NULL;
         }
-      ei->size = phdr->backing_filesize;
+      /* addr, length, prot, flags, fd, fd_offset */
+      ei->image = ucd_file_map (ucd_file);
+      if (ei->image == NULL)
+        {
+          return NULL;
+        }
+      ei->size = ucd_file->size;
     }
 
   /* Check ELF header for sanity */

@@ -90,11 +90,11 @@ public partial class QuicStream : Stream
 
     /// <inheritdoc />
     public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        => TaskToApm.Begin(ReadAsync(buffer, offset, count, default), callback, state);
+        => TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, default), callback, state);
 
     /// <inheritdoc />
     public override int EndRead(IAsyncResult asyncResult)
-        => TaskToApm.End<int>(asyncResult);
+        => TaskToAsyncResult.End<int>(asyncResult);
 
     /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count)
@@ -153,11 +153,11 @@ public partial class QuicStream : Stream
 
     /// <inheritdoc />
     public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        => TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+        => TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, default), callback, state);
 
     /// <inheritdoc />
     public override void EndWrite(IAsyncResult asyncResult)
-        => TaskToApm.End(asyncResult);
+        => TaskToAsyncResult.End(asyncResult);
 
     /// <inheritdoc />
     public override void Write(byte[] buffer, int offset, int count)

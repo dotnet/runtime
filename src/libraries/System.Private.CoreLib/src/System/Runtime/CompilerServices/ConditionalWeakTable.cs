@@ -5,12 +5,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    public sealed class ConditionalWeakTable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    public sealed class ConditionalWeakTable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
         where TValue : class?
     {
@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         /// </param>
         /// <returns>Returns "true" if key was found, "false" otherwise.</returns>
         /// <remarks>
-        /// The key may get garbaged collected during the TryGetValue operation. If so, TryGetValue
+        /// The key may get garbage collected during the TryGetValue operation. If so, TryGetValue
         /// may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
         /// </remarks>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
@@ -258,7 +258,7 @@ namespace System.Runtime.CompilerServices
             {
                 Container c = _container;
                 return c is null || c.FirstFreeEntry == 0 ?
-                    ((IEnumerable<KeyValuePair<TKey, TValue>>)Array.Empty<KeyValuePair<TKey, TValue>>()).GetEnumerator() :
+                    GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
                     new Enumerator(this);
             }
         }
@@ -403,8 +403,6 @@ namespace System.Runtime.CompilerServices
             c.CreateEntryNoResize(key, value);
         }
 
-        private static bool IsPowerOfTwo(int value) => (value > 0) && ((value & (value - 1)) == 0);
-
         //--------------------------------------------------------------------------------------------
         // Entry can be in one of four states:
         //
@@ -462,7 +460,7 @@ namespace System.Runtime.CompilerServices
             internal Container(ConditionalWeakTable<TKey, TValue> parent)
             {
                 Debug.Assert(parent != null);
-                Debug.Assert(IsPowerOfTwo(InitialCapacity));
+                Debug.Assert(BitOperations.IsPow2(InitialCapacity));
 
                 const int Size = InitialCapacity;
                 _buckets = new int[Size];
@@ -485,7 +483,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(buckets != null);
                 Debug.Assert(entries != null);
                 Debug.Assert(buckets.Length == entries.Length);
-                Debug.Assert(IsPowerOfTwo(buckets.Length));
+                Debug.Assert(BitOperations.IsPow2(buckets.Length));
 
                 _parent = parent;
                 _buckets = buckets;
@@ -540,7 +538,17 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(key != null); // Key already validated as non-null.
 
-                int hashCode = RuntimeHelpers.GetHashCode(key) & int.MaxValue;
+                int hashCode = RuntimeHelpers.TryGetHashCode(key);
+
+                if (hashCode == 0)
+                {
+                    // No hash code has been assigned to the key, so therefore it has not been added
+                    // to any ConditionalWeakTable.
+                    value = null;
+                    return -1;
+                }
+
+                hashCode &= int.MaxValue;
                 int bucket = hashCode & (_buckets.Length - 1);
                 for (int entriesIndex = Volatile.Read(ref _buckets[bucket]); entriesIndex != -1; entriesIndex = _entries[entriesIndex].Next)
                 {
@@ -678,7 +686,7 @@ namespace System.Runtime.CompilerServices
             internal Container Resize(int newSize)
             {
                 Debug.Assert(newSize >= _buckets.Length);
-                Debug.Assert(IsPowerOfTwo(newSize));
+                Debug.Assert(BitOperations.IsPow2(newSize));
 
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.

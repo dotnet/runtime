@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'neg'{}
 
+.namespace neg_
+{
 .class public _neg {
 
 .method public static int32 negi4(int32) {
@@ -32,27 +35,30 @@
 	ret
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
         ldc.i4  0x00000002
-        call    int32 _neg::negi4(int32)
+        call    int32 neg_._neg::negi4(int32)
         ldc.i4  0xFFFFFFFE
         ceq
         brfalse FAIL
         ldc.i8  0x0000000000000002
-        call    int64 _neg::negi8(int64)
+        call    int64 neg_._neg::negi8(int64)
         ldc.i8  0xFFFFFFFFFFFFFFFE
         ceq
         brfalse FAIL
         ldc.r4  1.1
-        call    float32 _neg::negr4(float32)
+        call    float32 neg_._neg::negr4(float32)
         ldc.r4  -1.1
         ceq
         brfalse FAIL
 
         ldc.r8  99.1
-        call    float64 _neg::negr8(float64)
+        call    float64 neg_._neg::negr8(float64)
         ldc.r8  -99.1
         ceq
         brfalse FAIL
@@ -63,5 +69,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

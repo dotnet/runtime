@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -51,7 +52,7 @@ namespace System.Reflection
             ContentType = 32
         }
 
-        private ReadOnlySpan<char> _input;
+        private readonly ReadOnlySpan<char> _input;
         private int _index;
 
         private AssemblyNameParser(ReadOnlySpan<char> input)
@@ -89,7 +90,7 @@ namespace System.Reflection
             if (token != Token.String)
                 ThrowInvalidAssemblyName();
 
-            if (string.IsNullOrEmpty(name) || name.AsSpan().IndexOfAny('/', '\\', ':') != -1)
+            if (string.IsNullOrEmpty(name))
                 ThrowInvalidAssemblyName();
 
             Version? version = null;
@@ -189,36 +190,39 @@ namespace System.Reflection
 
         private Version ParseVersion(string attributeValue)
         {
-            string[] parts = attributeValue.Split('.');
-            if (parts.Length > 4)
+            ReadOnlySpan<char> attributeValueSpan = attributeValue;
+            Span<Range> parts = stackalloc Range[5];
+            parts = parts.Slice(0, attributeValueSpan.Split(parts, '.'));
+            if (parts.Length is < 2 or > 4)
+            {
                 ThrowInvalidAssemblyName();
+            }
+
             Span<ushort> versionNumbers = stackalloc ushort[4];
             for (int i = 0; i < versionNumbers.Length; i++)
             {
-                if (i >= parts.Length)
-                    versionNumbers[i] = ushort.MaxValue;
-                else
+                if ((uint)i >= (uint)parts.Length)
                 {
-                    // Desktop compat: TryParse is a little more forgiving than Fusion.
-                    for (int j = 0; j < parts[i].Length; j++)
-                    {
-                        if (!char.IsDigit(parts[i][j]))
-                            ThrowInvalidAssemblyName();
-                    }
-                    if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
-                    {
-                        ThrowInvalidAssemblyName();
-                    }
+                    versionNumbers[i] = ushort.MaxValue;
+                    break;
+                }
+
+                if (!ushort.TryParse(attributeValueSpan[parts[i]], NumberStyles.None, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
+                {
+                    ThrowInvalidAssemblyName();
                 }
             }
 
-            if (versionNumbers[0] == ushort.MaxValue || versionNumbers[1] == ushort.MaxValue)
+            if (versionNumbers[0] == ushort.MaxValue ||
+                versionNumbers[1] == ushort.MaxValue)
+            {
                 ThrowInvalidAssemblyName();
-            if (versionNumbers[2] == ushort.MaxValue)
-                return new Version(versionNumbers[0], versionNumbers[1]);
-            if (versionNumbers[3] == ushort.MaxValue)
-                return new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2]);
-            return new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2], versionNumbers[3]);
+            }
+
+            return
+                versionNumbers[2] == ushort.MaxValue ? new Version(versionNumbers[0], versionNumbers[1]) :
+                versionNumbers[3] == ushort.MaxValue ? new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2]) :
+                new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2], versionNumbers[3]);
         }
 
         private static string ParseCulture(string attributeValue)

@@ -117,18 +117,10 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_knownTypeCollection == null)
-                {
-                    if (knownTypeList != null)
-                    {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(knownTypeList);
-                    }
-                    else
-                    {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(Type.EmptyTypes);
-                    }
-                }
-                return _knownTypeCollection;
+                return _knownTypeCollection ??=
+                    knownTypeList != null ?
+                        new ReadOnlyCollection<Type>(knownTypeList) :
+                        ReadOnlyCollection<Type>.Empty;
             }
         }
 
@@ -607,10 +599,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            if (maxItemsInObjectGraph < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxItemsInObjectGraph), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxItemsInObjectGraph);
             _maxItemsInObjectGraph = maxItemsInObjectGraph;
             _ignoreExtensionDataObject = ignoreExtensionDataObject;
             _emitTypeInformation = emitTypeInformation;
@@ -641,11 +630,10 @@ namespace System.Runtime.Serialization.Json
         {
             if (dataContract.IsReference)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    XmlObjectSerializer.CreateSerializationException(SR.Format(
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(
                         SR.JsonUnsupportedForIsReference,
                         DataContract.GetClrTypeFullName(dataContract.UnderlyingType),
-                        dataContract.IsReference)));
+                        dataContract.IsReference));
             }
         }
 

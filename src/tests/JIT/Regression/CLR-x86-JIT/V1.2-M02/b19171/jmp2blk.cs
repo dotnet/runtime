@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public struct AA
 {
     public static int[,] Static2()
@@ -18,7 +19,8 @@ public struct AA
         return (new int[1, 1]);
     }
 
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -30,6 +32,5 @@ public struct AA
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
 }

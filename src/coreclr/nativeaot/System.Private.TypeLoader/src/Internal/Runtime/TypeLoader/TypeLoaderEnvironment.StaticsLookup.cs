@@ -7,9 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-using Internal.Runtime.Augments;
-
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -30,41 +29,6 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public IntPtr TryGetNonGcStaticFieldData(RuntimeTypeHandle runtimeTypeHandle)
         {
-            unsafe
-            {
-                MethodTable* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
-                // Non-generic, non-dynamic types need special handling.
-                if (!typeAsEEType->IsDynamicType && !typeAsEEType->IsGeneric)
-                {
-                    if (typeAsEEType->HasCctor)
-                    {
-                        // The non-gc area for a type is immediately following its cctor context if it has one
-                        IntPtr dataAddress = TryGetStaticClassConstructionContext(runtimeTypeHandle);
-                        if (dataAddress != IntPtr.Zero)
-                        {
-                            return (IntPtr)(((byte*)dataAddress.ToPointer()) + sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext));
-                        }
-                    }
-                    else
-                    {
-                        // If the type does not have a Cctor context, search for the field on the type in the field map which has the lowest offset,
-                        // yet has the correct type of storage.
-                        IntPtr staticAddress;
-                        if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.NonGC, out staticAddress))
-                        {
-                            return staticAddress;
-                        }
-                    }
-                }
-            }
-
-            IntPtr nonGcStaticsAddress;
-            IntPtr gcStaticsAddress;
-            if (TryGetStaticsInfoForNamedType(runtimeTypeHandle, out nonGcStaticsAddress, out gcStaticsAddress))
-            {
-                return nonGcStaticsAddress;
-            }
-
             unsafe
             {
                 // Non-generic, non-dynamic static data is found via the FieldAccessMap
@@ -104,34 +68,6 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public IntPtr TryGetGcStaticFieldData(RuntimeTypeHandle runtimeTypeHandle)
         {
-            unsafe
-            {
-                // Non-generic, non-dynamic static data is found via the FieldAccessMap
-                MethodTable* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
-                // Non-generic, non-dynamic types need special handling.
-                if (!typeAsEEType->IsDynamicType && !typeAsEEType->IsGeneric)
-                {
-                    //search for the field on the type in the field map which has the lowest offset,
-                    // yet has the correct type of storage.
-                    IntPtr staticAddress;
-                    if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.GC, out staticAddress))
-                    {
-                        return staticAddress;
-                    }
-                    else
-                    {
-                        return IntPtr.Zero;
-                    }
-                }
-            }
-
-            IntPtr nonGcStaticsAddress;
-            IntPtr gcStaticsAddress;
-            if (TryGetStaticsInfoForNamedType(runtimeTypeHandle, out nonGcStaticsAddress, out gcStaticsAddress))
-            {
-                return gcStaticsAddress;
-            }
-
             unsafe
             {
                 // Non-generic, non-dynamic static data is found via the FieldAccessMap
@@ -208,7 +144,7 @@ namespace Internal.Runtime.TypeLoader
 
         public IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, uint index)
         {
-            using (LockHolder.Hold(_threadStaticsLock))
+            using (_threadStaticsLock.EnterScope())
             {
                 return _dynamicGenericsThreadStaticDescs[typeManagerHandle.GetIntPtrUNSAFE()][index];
             }
@@ -231,7 +167,7 @@ namespace Internal.Runtime.TypeLoader
 
             IntPtr typeManager = runtimeTypeHandle.GetTypeManager().GetIntPtrUNSAFE();
 
-            _threadStaticsLock.Acquire();
+            _threadStaticsLock.Enter();
             try
             {
                 if (!_dynamicGenericsThreadStaticDescs.TryGetValue(typeManager, out LowLevelDictionary<uint, IntPtr> gcDescs))
@@ -251,7 +187,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
 
-                _threadStaticsLock.Release();
+                _threadStaticsLock.Exit();
             }
         }
         #endregion
@@ -293,7 +229,7 @@ namespace Internal.Runtime.TypeLoader
             NativeHashtable staticsInfoHashtable;
             ExternalReferencesTable externalReferencesLookup;
             if (!GetStaticsInfoHashtable(module, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
-                return new NativeParser();
+                return default(NativeParser);
 
             int lookupHashcode = instantiatedType.GetHashCode();
             var enumerator = staticsInfoHashtable.Lookup(lookupHashcode);
@@ -309,12 +245,7 @@ namespace Internal.Runtime.TypeLoader
                 return entryParser;
             }
 
-            return new NativeParser();
-        }
-
-        private static unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
-        {
-            return PermanentAllocatedMemoryBlobs.GetPointerToUInt(value);
+            return default(NativeParser);
         }
         #endregion
     }

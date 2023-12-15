@@ -28,7 +28,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_UseInvalidValues_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("name", () => { new ProductHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { new ProductHeaderValue(null); });
             AssertExtensions.Throws<ArgumentException>("name", () => { new ProductHeaderValue(string.Empty); });
             Assert.Throws<FormatException>(() => { new ProductHeaderValue(" x"); });
             Assert.Throws<FormatException>(() => { new ProductHeaderValue("x "); });

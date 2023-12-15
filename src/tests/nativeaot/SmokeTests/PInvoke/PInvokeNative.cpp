@@ -569,12 +569,12 @@ DLL_EXPORT bool __stdcall StructTest_Array(NativeSequentialStruct *nss, int leng
             return false;
         if (nss[i].b != i*i)
             return false;
-        sprintf(expected, "%d", i);
+        snprintf(expected, sizeof(expected), "%d", i);
 
         if (CompareAnsiString(expected, nss[i].str) == 0)
             return false;
 
-        sprintf(expected, "u8%d", i);
+        snprintf(expected, sizeof(expected), "u8%d", i);
 
         if (CompareAnsiString(expected, nss[i].u8str) == 0)
             return false;
@@ -692,6 +692,15 @@ DLL_EXPORT void __cdecl SetLastErrorFunc(int errorCode)
 DLL_EXPORT void* __stdcall GetFunctionPointer()
 {
     return (void*)&SetLastErrorFunc;
+}
+
+DLL_EXPORT int __cdecl NativeFunc(int errorCode)
+{
+    return errorCode + 1322;
+}
+DLL_EXPORT void* __stdcall GetNativeFuncFunctionPointer()
+{
+    return (void*)&NativeFunc;
 }
 
 typedef struct {

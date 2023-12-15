@@ -8,7 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
-static unsafe class CopyCtor
+namespace Miscellaneous;
+
+public static unsafe class CopyCtor
 {
     public static unsafe int StructWithCtorTest(StructWithCtor* ptrStruct, ref StructWithCtor refStruct)
     {
@@ -26,17 +28,18 @@ static unsafe class CopyCtor
         return 100;
     }
 
-    public static unsafe int Main()
+    [Fact]
+    [SkipOnMono("Not supported on Mono")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static unsafe void ValidateCopyConstructorAndDestructorCalled()
     {
-        TestDelegate del = (TestDelegate)Delegate.CreateDelegate(typeof(TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
+        CopyCtorUtil.TestDelegate del = (CopyCtorUtil.TestDelegate)Delegate.CreateDelegate(typeof(CopyCtorUtil.TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
         StructWithCtor s1 = new StructWithCtor();
         StructWithCtor s2 = new StructWithCtor();
         s1._instanceField = 1;
         s2._instanceField = 2;
-        int returnVal = FunctionPointer.Call_FunctionPointer(Marshal.GetFunctionPointerForDelegate(del), &s1, ref s2);
+        Assert.Equal(100, FunctionPointer.Call_FunctionPointer(Marshal.GetFunctionPointerForDelegate(del), &s1, ref s2));
 
         GC.KeepAlive(del);
-
-        return returnVal;
     }
 }

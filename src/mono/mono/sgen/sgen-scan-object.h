@@ -14,7 +14,7 @@
  * "start" will point to the start of the next object, if the scanned
  * object contained references.  If not, the value of "start" should
  * be considered undefined after executing this code.  The object's
- * GC descriptor must be in the variable "mword desc".
+ * GC descriptor must be in the variable "SgenDescriptor desc".
  *
  * The macro `HANDLE_PTR` will be invoked for every reference encountered while scanning the
  * object.  It is called with two parameters: The pointer to the reference (not the
@@ -92,6 +92,18 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	default:
 		g_assert_not_reached ();
 	}
+
+#ifndef SCAN_OBJECT_NOVTABLE
+	GCVTable vt = SGEN_LOAD_VTABLE ((GCObject*)start);
+	GCObject *class_obj = sgen_vtable_get_class_obj (vt);
+	if (G_UNLIKELY (class_obj)) {
+		/* Just need to scan the pinned class object */
+		// FIXME:
+		GCObject *ptr_loc = class_obj;
+		HANDLE_PTR (&ptr_loc, obj);
+		g_assert (ptr_loc == class_obj);
+	}
+#endif
 }
 
 #undef SCAN_OBJECT_NOSCAN

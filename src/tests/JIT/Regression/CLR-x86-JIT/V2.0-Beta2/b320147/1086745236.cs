@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public struct AA
 {
@@ -30,7 +31,8 @@ public struct AA
 [StructLayout(LayoutKind.Sequential)]
 public class App
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -44,6 +46,5 @@ public class App
 
         // JIT Stress test... if jitted it passes
         Console.WriteLine("Passed.");
-        return 100;
     }
 }

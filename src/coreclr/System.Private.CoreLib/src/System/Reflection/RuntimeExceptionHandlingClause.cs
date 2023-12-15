@@ -67,21 +67,18 @@ namespace System.Reflection
         {
             if (Flags == ExceptionHandlingClauseOptions.Clause)
             {
-                return string.Format(CultureInfo.CurrentUICulture,
-                    "Flags={0}, TryOffset={1}, TryLength={2}, HandlerOffset={3}, HandlerLength={4}, CatchType={5}",
-                    Flags, TryOffset, TryLength, HandlerOffset, HandlerLength, CatchType);
+                return string.Create(CultureInfo.CurrentUICulture,
+                    $"Flags={Flags}, TryOffset={TryOffset}, TryLength={TryLength}, HandlerOffset={HandlerOffset}, HandlerLength={HandlerLength}, CatchType={CatchType}");
             }
 
             if (Flags == ExceptionHandlingClauseOptions.Filter)
             {
-                return string.Format(CultureInfo.CurrentUICulture,
-                    "Flags={0}, TryOffset={1}, TryLength={2}, HandlerOffset={3}, HandlerLength={4}, FilterOffset={5}",
-                    Flags, TryOffset, TryLength, HandlerOffset, HandlerLength, FilterOffset);
+                return string.Create(CultureInfo.CurrentUICulture,
+                    $"Flags={Flags}, TryOffset={TryOffset}, TryLength={TryLength}, HandlerOffset={HandlerOffset}, HandlerLength={HandlerLength}, FilterOffset={FilterOffset}");
             }
 
-            return string.Format(CultureInfo.CurrentUICulture,
-                "Flags={0}, TryOffset={1}, TryLength={2}, HandlerOffset={3}, HandlerLength={4}",
-                Flags, TryOffset, TryLength, HandlerOffset, HandlerLength);
+            return string.Create(CultureInfo.CurrentUICulture,
+                $"Flags={Flags}, TryOffset={TryOffset}, TryLength={TryLength}, HandlerOffset={HandlerOffset}, HandlerLength={HandlerLength}");
         }
     }
 }

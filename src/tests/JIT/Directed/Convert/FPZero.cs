@@ -13,10 +13,12 @@
  */
 
 using System;
+using Xunit;
 
 public class MyClass
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double d1 = -0e0;
         if (!IsNegativeZero(d1)) return 101;

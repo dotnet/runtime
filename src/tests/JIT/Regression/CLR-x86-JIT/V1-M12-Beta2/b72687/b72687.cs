@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class CSE2
+using Xunit;
+public unsafe class CSE2
 {
     public static int sa = 2;
     public static int sb = 1;
@@ -44,7 +45,8 @@ internal unsafe class CSE2
         return retval;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         VT vt = new VT();
         vt.a0 = -(sa + sb);

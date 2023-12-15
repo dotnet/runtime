@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -96,6 +97,8 @@ namespace System.Text.RegularExpressions
         internal const string NotECMAWordClass = "\x01\x0A\x00" + ECMAWordRanges;
         internal const string ECMADigitClass = "\x00\x02\x00" + ECMADigitRanges;
         internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitRanges;
+
+        internal const string NotNewLineClass = "\x01\x02\x00\x0A\x0B";
 
         internal const string AnyClass = "\x00\x01\x00\x00";
         private const string EmptyClass = "\x00\x00\x00";
@@ -545,12 +548,13 @@ namespace System.Text.RegularExpressions
                 strLength -= 2;
             }
 
-#if REGEXGENERATOR
-            return StringExtensions.Create
+            return
+#if NETCOREAPP2_1_OR_GREATER
+                string
 #else
-            return string.Create
+                StringExtensions
 #endif
-                (strLength, (set, category, startsWithNulls), static (span, state) =>
+                .Create(strLength, (set, category, startsWithNulls), static (span, state) =>
             {
                 int index;
 
@@ -837,6 +841,22 @@ namespace System.Text.RegularExpressions
             return count;
         }
 
+        public static bool TryGetAsciiSetChars(string set, [NotNullWhen(true)] out char[]? asciiChars)
+        {
+            Span<char> chars = stackalloc char[128];
+
+            chars = chars.Slice(0, GetSetChars(set, chars));
+
+            if (chars.IsEmpty || !IsAscii(chars))
+            {
+                asciiChars = null;
+                return false;
+            }
+
+            asciiChars = chars.ToArray();
+            return true;
+        }
+
         /// <summary>
         /// Determines whether two sets may overlap.
         /// </summary>
@@ -977,8 +997,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
-        public static bool IsAscii(ReadOnlySpan<char> s) // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        public static bool IsAscii(ReadOnlySpan<char> s)
         {
+#if NET8_0_OR_GREATER
+            return Ascii.IsValid(s);
+#else
             foreach (char c in s)
             {
                 if (c >= 128)
@@ -988,11 +1011,8 @@ namespace System.Text.RegularExpressions
             }
 
             return true;
+#endif
         }
-
-        /// <summary>Gets whether the specified character is an ASCII letter.</summary>
-        public static bool IsAsciiLetter(char c) =>
-            (uint)((c | 0x20) - 'a') <= 'z' - 'a';
 
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         /// <remarks>This may enumerate negated characters if the set is negated.  This will return false if the set has subtraction.</remarks>
@@ -1116,11 +1136,22 @@ namespace System.Text.RegularExpressions
             ch == '\u0130'; // latin capital letter I with dot above
 
         /// <summary>16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char.</summary>
-        private static ReadOnlySpan<byte> WordCharAsciiLookup => new byte[]
-        {
+        private static ReadOnlySpan<byte> WordCharAsciiLookup =>
+        [
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-        };
+        ];
+
+         /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
+         private const int WordCategoriesMask =
+               1 << (int)UnicodeCategory.UppercaseLetter |
+               1 << (int)UnicodeCategory.LowercaseLetter |
+               1 << (int)UnicodeCategory.TitlecaseLetter |
+               1 << (int)UnicodeCategory.ModifierLetter |
+               1 << (int)UnicodeCategory.OtherLetter |
+               1 << (int)UnicodeCategory.NonSpacingMark |
+               1 << (int)UnicodeCategory.DecimalDigitNumber |
+               1 << (int)UnicodeCategory.ConnectorPunctuation;
 
         /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
         public static bool IsWordChar(char ch)
@@ -1128,31 +1159,14 @@ namespace System.Text.RegularExpressions
             // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
             // returns true for \u200c and \u200d.
 
-            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
-            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            // Bitmap for whether each character 0 through 127 is in [\\w]
+            ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
+
+            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < (uint)asciiLookup.Length)
-            {
-                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
-            }
-
-            // For non-ASCII, fall back to checking the Unicode category.
-            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
-            {
-                case UnicodeCategory.UppercaseLetter:
-                case UnicodeCategory.LowercaseLetter:
-                case UnicodeCategory.TitlecaseLetter:
-                case UnicodeCategory.ModifierLetter:
-                case UnicodeCategory.OtherLetter:
-                case UnicodeCategory.NonSpacingMark:
-                case UnicodeCategory.DecimalDigitNumber:
-                case UnicodeCategory.ConnectorPunctuation:
-                    return true;
-
-                default:
-                    return false;
-            }
+            return (uint)chDiv8 < (uint)ascii.Length ?
+                (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
+                (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
         }
 
         /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
@@ -1162,33 +1176,17 @@ namespace System.Text.RegularExpressions
             // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
             // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
             // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
+            const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
 
-            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
-            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            // Bitmap for whether each character 0 through 127 is in [\\w]
+            ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
+
+            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < (uint)asciiLookup.Length)
-            {
-                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
-            }
-
-            // For non-ASCII, fall back to checking the Unicode category.
-            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
-            {
-                case UnicodeCategory.UppercaseLetter:
-                case UnicodeCategory.LowercaseLetter:
-                case UnicodeCategory.TitlecaseLetter:
-                case UnicodeCategory.ModifierLetter:
-                case UnicodeCategory.OtherLetter:
-                case UnicodeCategory.NonSpacingMark:
-                case UnicodeCategory.DecimalDigitNumber:
-                case UnicodeCategory.ConnectorPunctuation:
-                    return true;
-
-                default:
-                    const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
-                    return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;
-            }
+            return (uint)chDiv8 < (uint)ascii.Length ?
+                (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
+                ((WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0 ||
+                 (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner));
         }
 
         /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
@@ -1196,7 +1194,7 @@ namespace System.Text.RegularExpressions
         public static bool DifferByOneBit(char a, char b, out int mask)
         {
             mask = a ^ b;
-            return mask != 0 && (mask & (mask - 1)) == 0;
+            return BitOperations.IsPow2(mask);
         }
 
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>
@@ -1248,11 +1246,12 @@ namespace System.Text.RegularExpressions
                 }
 
                 uint[]? cache = asciiLazyCache ?? Interlocked.CompareExchange(ref asciiLazyCache, new uint[CacheArrayLength], null) ?? asciiLazyCache;
-#if REGEXGENERATOR
-                InterlockedExtensions.Or(ref cache[ch >> 4], bitsToSet);
+#if NET5_0_OR_GREATER
+                Interlocked
 #else
-                Interlocked.Or(ref cache[ch >> 4], bitsToSet);
+                InterlockedExtensions
 #endif
+                    .Or(ref cache[ch >> 4], bitsToSet);
 
                 // Return the computed value.
                 return isInClass;
@@ -1328,23 +1327,21 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            return CharInCategory(ch, set, start, setLength, categoryLength);
+            return CharInCategory(ch, set.AsSpan(SetStartIndex + start + setLength, categoryLength));
         }
 
-        private static bool CharInCategory(char ch, string set, int start, int setLength, int categoryLength)
+        private static bool CharInCategory(char ch, ReadOnlySpan<char> categorySetSegment)
         {
             UnicodeCategory chcategory = char.GetUnicodeCategory(ch);
 
-            int i = start + SetStartIndex + setLength;
-            int end = i + categoryLength;
-            while (i < end)
+            for (int i = 0; i < categorySetSegment.Length; i++)
             {
-                int curcat = (short)set[i];
+                int curcat = (short)categorySetSegment[i];
 
                 if (curcat == 0)
                 {
                     // zero is our marker for a group of categories - treated as a unit
-                    if (CharInCategoryGroup(chcategory, set, ref i))
+                    if (CharInCategoryGroup(chcategory, categorySetSegment, ref i))
                     {
                         return true;
                     }
@@ -1380,8 +1377,6 @@ namespace System.Text.RegularExpressions
                         return true;
                     }
                 }
-
-                i++;
             }
 
             return false;
@@ -1391,7 +1386,7 @@ namespace System.Text.RegularExpressions
         /// This is used for categories which are composed of other categories - L, N, Z, W...
         /// These groups need special treatment when they are negated
         /// </summary>
-        private static bool CharInCategoryGroup(UnicodeCategory chcategory, string category, ref int i)
+        private static bool CharInCategoryGroup(UnicodeCategory chcategory, ReadOnlySpan<char> category, ref int i)
         {
             int pos = i + 1;
             int curcat = (short)category[pos];
@@ -1538,34 +1533,32 @@ namespace System.Text.RegularExpressions
             }
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
-            fixed (char* charsPtr = chars)
-            {
-#if REGEXGENERATOR
-                return StringExtensions.Create(
+#pragma warning disable CS8500 // takes address of managed type
+            ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
+            return
+#if NETCOREAPP2_1_OR_GREATER
+                string
 #else
-                return string.Create(
+                StringExtensions
 #endif
-                    SetStartIndex + count, ((IntPtr)charsPtr, chars.Length), static (span, state) =>
+                .Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+            {
+                // Fill in the set string
+                span[FlagsIndex] = (char)0;
+                span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
+                span[CategoryLengthIndex] = (char)0;
+                int i = SetStartIndex;
+                foreach (char c in *(ReadOnlySpan<char>*)charsPtr)
                 {
-                    // Reconstruct the span now that we're inside of the lambda.
-                    ReadOnlySpan<char> chars = new ReadOnlySpan<char>((char*)state.Item1, state.Length);
-
-                    // Fill in the set string
-                    span[FlagsIndex] = (char)0;
-                    span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
-                    span[CategoryLengthIndex] = (char)0;
-                    int i = SetStartIndex;
-                    foreach (char c in chars)
+                    span[i++] = c;
+                    if (c != LastChar)
                     {
-                        span[i++] = c;
-                        if (c != LastChar)
-                        {
-                            span[i++] = (char)(c + 1);
-                        }
+                        span[i++] = (char)(c + 1);
                     }
-                    Debug.Assert(i == span.Length);
-                });
-            }
+                }
+                Debug.Assert(i == span.Length);
+            });
+#pragma warning restore CS8500
         }
 
         /// <summary>
@@ -1720,6 +1713,52 @@ namespace System.Text.RegularExpressions
                         }
                     }
                 }
+
+                // If the class now has a range that includes everything, and if it doesn't have subtraction,
+                // we can remove all of its categories, as they're duplicative (the set already includes everything).
+                if (!_negate &&
+                    _subtractor is null &&
+                    _categories?.Length > 0 &&
+                    rangelist.Count == 1 && rangelist[0].First == 0 && rangelist[0].Last == LastChar)
+                {
+                    _categories.Clear();
+                }
+
+                // If there's only a single character omitted from ranges, if there's no subtractor, and if there are categories,
+                // see if that character is in the categories.  If it is, then we can replace whole thing with a complete "any" range.
+                // If it's not, then we can remove the categories, as they're only duplicating the rest of the range, turning the set
+                // into a "not one". This primarily helps in the case of a synthesized set from analysis that ends up combining '.' with
+                // categories, as we want to reduce that set down to either [^\n] or [\0-\uFFFF]. (This can be extrapolated to any number
+                // of missing characters; in fact, categories in general are superfluous and the entire set can be represented as ranges.
+                // But categories serve as a space optimization, and we strike a balance between testing many characters and the time/complexity
+                // it takes to do so.  Thus, we limit this to the common case of a single missing character.)
+                if (!_negate &&
+                    _subtractor is null &&
+                    _categories?.Length > 0 &&
+                    rangelist.Count == 2 && rangelist[0].First == 0 && rangelist[0].Last + 2 == rangelist[1].First && rangelist[1].Last == LastChar)
+                {
+                    var vsb = new ValueStringBuilder(stackalloc char[256]);
+                    foreach (ReadOnlyMemory<char> chunk in _categories!.GetChunks())
+                    {
+                        vsb.Append(chunk.Span);
+                    }
+
+                    if (CharInCategory((char)(rangelist[0].Last + 1), vsb.AsSpan()))
+                    {
+                        rangelist.RemoveAt(1);
+                        rangelist[0] = ('\0', LastChar);
+                    }
+                    else
+                    {
+                        _negate = true;
+                        rangelist.RemoveAt(1);
+                        char notOne = (char)(rangelist[0].Last + 1);
+                        rangelist[0] = (notOne, notOne);
+                    }
+                    _categories.Clear();
+
+                    vsb.Dispose();
+                }
             }
         }
 
@@ -1754,7 +1793,8 @@ namespace System.Text.RegularExpressions
                 SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnrecognizedUnicodeProperty, capname)));
         }
 
-        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
+        private static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
         {
@@ -1794,12 +1834,20 @@ namespace System.Text.RegularExpressions
 
             void RenderRanges()
             {
-                for (; index < SetStartIndex + set[SetLengthIndex]; index += 2)
+                int rangesEnd = SetStartIndex + set[SetLengthIndex];
+                while (index < rangesEnd)
                 {
                     ch1 = set[index];
-                    ch2 = index + 1 < set.Length ?
-                        (char)(set[index + 1] - 1) :
-                        LastChar;
+                    if (index + 1 < rangesEnd)
+                    {
+                        ch2 = (char)(set[index + 1] - 1);
+                        index += 2;
+                    }
+                    else
+                    {
+                        ch2 = LastChar;
+                        index++;
+                    }
 
                     desc.Append(DescribeChar(ch1));
 
@@ -1929,5 +1977,6 @@ namespace System.Text.RegularExpressions
                 < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
                 _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
             };
+#endif
     }
 }

@@ -431,7 +431,7 @@ namespace System.Xml.Xsl.XsltOld
         // the value is ignored iff forwards-compatible mode is on.
         private string[]? ResolvePrefixes(string tokens)
         {
-            if (tokens == null || tokens.Length == 0)
+            if (string.IsNullOrEmpty(tokens))
             {
                 return null;
             }
@@ -749,7 +749,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         private readonly Hashtable[] _typeDeclsByLang = new Hashtable[] { new Hashtable(), new Hashtable(), new Hashtable() };
 
-        internal void AddScript(string source, ScriptingLanguage lang, string ns, string fileName, int lineNumber)
+        internal void AddScript(ScriptingLanguage lang, string ns)
         {
             ValidateExtensionNamespace(ns);
 

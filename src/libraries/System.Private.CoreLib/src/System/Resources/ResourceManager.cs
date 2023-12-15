@@ -103,7 +103,6 @@ namespace System.Resources
 
         private Dictionary<string, ResourceSet>? _resourceSets;
         private readonly string? _moduleDir;          // For assembly-ignorant directory location
-        private readonly Type? _locationInfo;         // For Assembly or type-based directory layout
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         private readonly Type? _userResourceSet;      // Which ResourceSet instance to create
@@ -142,8 +141,6 @@ namespace System.Resources
         // there yet because CultureInfo's class initializer hasn't finished.  If we move SystemResMgr off of
         // Assembly (or at least make it an internal property) we should be able to circumvent this problem.
 
-        // This is our min required ResourceSet type.
-        private static readonly Type s_minResourceSet = typeof(ResourceSet);
         // These Strings are used to avoid using Reflection in CreateResourceSet.
         internal const string ResReaderTypeName = "System.Resources.ResourceReader";
         internal const string ResSetTypeName = "System.Resources.RuntimeResourceSet";
@@ -213,7 +210,7 @@ namespace System.Resources
             MainAssembly = assembly;
             BaseNameField = baseName;
 
-            if (usingResourceSet != null && (usingResourceSet != s_minResourceSet) && !usingResourceSet.IsSubclassOf(s_minResourceSet))
+            if (usingResourceSet != null && (usingResourceSet != typeof(ResourceSet)) && !usingResourceSet.IsSubclassOf(typeof(ResourceSet)))
                 throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
 
@@ -227,9 +224,13 @@ namespace System.Resources
             if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            _locationInfo = resourceSource;
-            MainAssembly = _locationInfo.Assembly;
-            BaseNameField = resourceSource.Name;
+            MainAssembly = resourceSource.Assembly;
+
+            string? nameSpace = resourceSource.Namespace;
+            char c = Type.Delimiter;
+            BaseNameField = nameSpace is null
+                ? resourceSource.Name
+                : string.Concat(nameSpace, new ReadOnlySpan<char>(in c), resourceSource.Name);
 
             CommonAssemblyInit();
         }
@@ -407,7 +408,7 @@ namespace System.Resources
             {
                 string fileName = GetResourceFileName(culture);
                 Debug.Assert(MainAssembly != null);
-                Stream? stream = MainAssembly.GetManifestResourceStream(_locationInfo!, fileName);
+                Stream? stream = MainAssembly.GetManifestResourceStream(fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
@@ -504,7 +505,7 @@ namespace System.Resources
                 // If another thread added this culture, return that.
                 if (localResourceSets.TryGetValue(cultureName, out ResourceSet? lostRace))
                 {
-                    if (!object.ReferenceEquals(lostRace, rs))
+                    if (!ReferenceEquals(lostRace, rs))
                     {
                         // Note: In certain cases, we can be trying to add a ResourceSet for multiple
                         // cultures on one thread, while a second thread added another ResourceSet for one
@@ -747,9 +748,6 @@ namespace System.Resources
             // NEEDED ONLY BY FILE-BASED
             internal string? ModuleDir => _rm._moduleDir;
 
-            // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
-            internal Type? LocationInfo => _rm._locationInfo;
-
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             internal Type? UserResourceSet => _rm._userResourceSet;
 
@@ -778,7 +776,7 @@ namespace System.Resources
             }
 
             internal static Version? ObtainSatelliteContractVersion(Assembly a) =>
-                ResourceManager.GetSatelliteContractVersion(a);
+                GetSatelliteContractVersion(a);
 
             internal UltimateResourceFallbackLocation FallbackLoc
             {

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
 
 using Internal.Reflection.Core;
@@ -32,9 +32,11 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _lazyParameterType ??= QualifiedParameterTypeHandle.Resolve(_typeContext);
+                return _lazyParameterType ??= QualifiedParameterTypeHandle.Resolve(_typeContext).ToType();
             }
         }
+
+        public sealed override Type GetModifiedParameterType() => QualifiedParameterTypeHandle.GetModifiedType(_typeContext);
 
         protected readonly QSignatureTypeHandle QualifiedParameterTypeHandle;
         private readonly TypeContext _typeContext;

@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -64,7 +64,7 @@ namespace System.Xml
         private readonly XmlResolver? _xmlResolver;
         private readonly ValidationEventHandler? _validationEvent;
         private ValidatingReaderState _validationState;
-        private XmlValueGetter _valueGetter;
+        private readonly XmlValueGetter _valueGetter;
 
         // namespace management
         private readonly XmlNamespaceManager? _nsManager;
@@ -81,14 +81,14 @@ namespace System.Xml
         private int _coreReaderAttributeCount;
         private int _currentAttrIndex;
         private AttributePSVIInfo[] _attributePSVINodes;
-        private ArrayList _defaultAttributes;
+        private readonly ArrayList _defaultAttributes;
 
         // Inline Schema
         private Parser? _inlineSchemaParser;
 
         // Typed Value & PSVI
         private object? _atomicValue;
-        private XmlSchemaInfo _xmlSchemaInfo;
+        private readonly XmlSchemaInfo _xmlSchemaInfo;
 
         // original string of the atomic value
         private string? _originalAtomicValueString;
@@ -101,14 +101,14 @@ namespace System.Xml
         private ValidatingReaderNodeData? _textNode;
 
         // To avoid SchemaNames creation
-        private string _nsXmlNs;
-        private string _nsXs;
-        private string _nsXsi;
-        private string _xsiType;
-        private string _xsiNil;
-        private string _xsdSchema;
-        private string _xsiSchemaLocation;
-        private string _xsiNoNamespaceSchemaLocation;
+        private readonly string _nsXmlNs;
+        private readonly string _nsXs;
+        private readonly string _nsXsi;
+        private readonly string _xsiType;
+        private readonly string _xsiNil;
+        private readonly string _xsdSchema;
+        private readonly string _xsiSchemaLocation;
+        private readonly string _xsiNoNamespaceSchemaLocation;
 
         // Underlying reader's IXmlLineInfo
         private IXmlLineInfo? _lineInfo;
@@ -135,7 +135,7 @@ namespace System.Xml
                 _manageNamespaces = true;
             }
 
-            _thisNSResolver = this as IXmlNamespaceResolver;
+            _thisNSResolver = this;
             _xmlResolver = xmlResolver;
             _processInlineSchema = (readerSettings.ValidationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) != 0;
 
@@ -242,7 +242,7 @@ namespace System.Xml
                 {
                     Debug.Assert(_cachedNode != null);
                     string? prefix = _validator.GetDefaultAttributePrefix(_cachedNode.Namespace);
-                    if (prefix != null && prefix.Length != 0)
+                    if (!string.IsNullOrEmpty(prefix))
                     {
                         return $"{prefix}:{_cachedNode.LocalName}";
                     }
@@ -1163,10 +1163,8 @@ namespace System.Xml
         // Gets the value of the attribute with the specified index.
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             if (i < _coreReaderAttributeCount)
             {
@@ -1273,10 +1271,8 @@ namespace System.Xml
         // Moves to the attribute with the specified index
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             _currentAttrIndex = i;
             if (i < _coreReaderAttributeCount)
@@ -1961,7 +1957,7 @@ namespace System.Xml
 
         // Internal / Private methods
 
-        private object GetStringValue()
+        private string GetStringValue()
         {
             return _coreReader.Value;
         }

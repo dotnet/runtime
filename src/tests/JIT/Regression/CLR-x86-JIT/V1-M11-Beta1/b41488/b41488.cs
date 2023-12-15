@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         bool[] m_abDummyField1;
         bool[] m_abDummyField2;
@@ -24,11 +25,11 @@ namespace Test
                 Method1(af[(int)m_uStatic + (iLocal - m_iStatic)]);
         }
 
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             try { Static1(); }
             catch (Exception) { }
-            return 100;
         }
     }
 }

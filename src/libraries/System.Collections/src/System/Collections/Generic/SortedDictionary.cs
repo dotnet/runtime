@@ -247,15 +247,11 @@ namespace System.Collections.Generic
             _set.CopyTo(array, index);
         }
 
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.KeyValuePair);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
-        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.KeyValuePair);
-        }
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<KeyValuePair<TKey, TValue>>() :
+            GetEnumerator();
 
         public bool Remove(TKey key)
         {
@@ -320,13 +316,11 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
+                ArgumentNullException.ThrowIfNull(key);
+                if (default(TValue) != null)
                 {
-                    throw new ArgumentNullException(nameof(key));
+                    ArgumentNullException.ThrowIfNull(value);
                 }
-
-                if (value == null && default(TValue) != null)
-                    throw new ArgumentNullException(nameof(value));
 
                 try
                 {
@@ -391,10 +385,7 @@ namespace System.Collections.Generic
             return (key is TKey);
         }
 
-        IDictionaryEnumerator IDictionary.GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.DictEntry);
-        }
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new Enumerator(this, Enumerator.DictEntry);
 
         void IDictionary.Remove(object key)
         {
@@ -414,10 +405,7 @@ namespace System.Collections.Generic
             get { return ((ICollection)_set).SyncRoot; }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this, Enumerator.KeyValuePair);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
@@ -543,29 +531,19 @@ namespace System.Collections.Generic
                 _dictionary = dictionary;
             }
 
-            public Enumerator GetEnumerator()
-            {
-                return new Enumerator(_dictionary);
-            }
+            public Enumerator GetEnumerator() => new Enumerator(_dictionary);
 
-            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator()
-            {
-                return new Enumerator(_dictionary);
-            }
+            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() =>
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TKey>() :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return new Enumerator(_dictionary);
-            }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TKey>)this).GetEnumerator();
 
             public void CopyTo(TKey[] array, int index)
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -589,10 +567,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -612,7 +587,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }
@@ -717,29 +692,19 @@ namespace System.Collections.Generic
                 _dictionary = dictionary;
             }
 
-            public Enumerator GetEnumerator()
-            {
-                return new Enumerator(_dictionary);
-            }
+            public Enumerator GetEnumerator() => new Enumerator(_dictionary);
 
-            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator()
-            {
-                return new Enumerator(_dictionary);
-            }
+            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() =>
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TValue>() :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return new Enumerator(_dictionary);
-            }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TValue>)this).GetEnumerator();
 
             public void CopyTo(TValue[] array, int index)
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -763,10 +728,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -786,7 +748,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }
@@ -931,6 +893,7 @@ namespace System.Collections.Generic
 
         internal TreeSet(TreeSet<T> set, IComparer<T>? comparer) : base(set, comparer) { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 
         internal override bool AddIfNotPresent(T item)

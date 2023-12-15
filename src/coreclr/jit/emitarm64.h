@@ -19,7 +19,16 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
+enum PredicateType
+{
+    PREDICATE_NONE = 0,
+    PREDICATE_MERGE,
+    PREDICATE_ZERO,
+};
+
+const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
+const char* emitPredicateRegName(regNumber reg);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
@@ -38,10 +47,14 @@ void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
+void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
+void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
+void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
+void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -70,6 +83,17 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                emitAttr         secondRetSize);
 
 /************************************************************************/
+/*   enum to allow instruction optimisation to specify register order   */
+/************************************************************************/
+
+enum RegisterOrder
+{
+    eRO_none = 0,
+    eRO_ascending,
+    eRO_descending
+};
+
+/************************************************************************/
 /*               Private helpers for instruction output                 */
 /************************************************************************/
 
@@ -82,11 +106,13 @@ bool emitInsIsVectorRightShift(instruction ins);
 bool emitInsIsVectorLong(instruction ins);
 bool emitInsIsVectorNarrow(instruction ins);
 bool emitInsIsVectorWide(instruction ins);
+bool emitInsDestIsOp2(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
 emitter::insFormat emitInsFormat(instruction ins);
 emitter::code_t emitInsCode(instruction ins, insFormat fmt);
+emitter::code_t emitInsCodeSve(instruction ins, insFormat fmt);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + index<<scale +
 // offset]
@@ -111,11 +137,49 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+
+// Methods to optimize a Ldr or Str with an alternative instruction.
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+RegisterOrder IsOptimizableLdrStrWithPair(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool ReplaceLdrStrWithPairInstr(instruction ins,
+                                emitAttr    reg1Attr,
+                                regNumber   reg1,
+                                regNumber   reg2,
+                                ssize_t     imm,
+                                emitAttr    size,
+                                insFormat   fmt,
+                                bool        localVar = false,
+                                int         varx     = -1,
+                                int         offs     = -1);
+bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+FORCEINLINE bool OptimizeLdrStr(instruction ins,
+                                emitAttr    reg1Attr,
+                                regNumber   reg1,
+                                regNumber   reg2,
+                                ssize_t     imm,
+                                emitAttr    size,
+                                insFormat   fmt,
+                                bool        localVar = false,
+                                int         varx     = -1,
+                                int offs = -1 DEBUG_ARG(bool useRsvdReg = false));
+
+emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
+{
+    assert(id->idIsLclVarPair());
+    if (id->idIsLargeCns())
+    {
+        return &(((instrDescLclVarPairCns*)id)->iiaLclVar2);
+    }
+    else
+    {
+        return &(((instrDescLclVarPair*)id)->iiaLclVar2);
+    }
+}
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
 */
 
@@ -141,7 +205,7 @@ static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that is listed as imm(i16,hw) and referred to as 'halfword immediate'
 */
 
@@ -192,7 +256,7 @@ static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emit
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that are use for FMOV immediate and referred to as 'float 8-bit immediate'
 */
 
@@ -217,7 +281,7 @@ static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
 /************************************************************************
 *
-*  This union is used to to encode/decode the cond, nzcv and imm5 values for
+*  This union is used to encode/decode the cond, nzcv and imm5 values for
 *   instructions that use them in the small constant immediate field
 */
 
@@ -261,6 +325,67 @@ static code_t insEncodeReg_Vm(regNumber reg);
 // Returns an encoding for the specified register used in the 'Va' position
 static code_t insEncodeReg_Va(regNumber reg);
 
+// Return an encoding for the specified 'V' register used in '4' thru '0' position.
+static code_t insEncodeReg_V_4_to_0(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '5' position.
+static code_t insEncodeReg_V_9_to_5(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '12' thru '10' position.
+static code_t insEncodeReg_P_12_to_10(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '21' thru '17' position.
+static code_t insEncodeReg_V_21_to_17(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '21' thru '17' position.
+static code_t insEncodeReg_R_21_to_17(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '9' thru '5' position.
+static code_t insEncodeReg_R_9_to_5(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '4' thru '0' position.
+static code_t insEncodeReg_R_4_to_0(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '20' thru '17' position.
+static code_t insEncodeReg_P_20_to_17(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '3' thru '0' position.
+static code_t insEncodeReg_P_3_to_0(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '8' thru '5' position.
+static code_t insEncodeReg_P_8_to_5(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '13' thru '10' position.
+static code_t insEncodeReg_P_13_to_10(regNumber reg);
+
+// Return an encoding for the specified 'R' register used in '18' thru '17' position.
+static code_t insEncodeReg_R_18_to_17(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '7' thru '5' position.
+static code_t insEncodeReg_P_7_to_5(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '3' thru '1' position.
+static code_t insEncodeReg_P_3_to_1(regNumber reg);
+
+// Return an encoding for the specified 'P' register used in '2' thru '0' position.
+static code_t insEncodeReg_P_2_to_0(regNumber reg);
+
+// Return an encoding for the specified predicate type used in '16' position.
+static code_t insEncodePredQualifier_16(bool merge);
+
+// Return an encoding for the specified 'V' register used in '19' thru '17' position.
+static code_t insEncodeReg_V_19_to_17(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '20' thru '17' position.
+static code_t insEncodeReg_V_20_to_17(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '6' position.
+static code_t insEncodeReg_V_9_to_6(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
+// This encoding requires that the register number be divisible by two.
+static code_t insEncodeReg_V_9_to_6_Times_Two(regNumber reg);
+
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
@@ -301,8 +426,14 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
+// Returns the encoding for a shift instruction, ready for insertion into an instruction.
+static code_t insEncodeShiftImmediate(emitAttr size, bool isRightShift, ssize_t shiftAmount);
+
 // Returns the encoding for ASIMD Shift instruction.
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
+static code_t insEncodeVectorShift(emitAttr size, bool isRightShift, ssize_t shiftAmount)
+{
+    return insEncodeShiftImmediate(size, isRightShift, shiftAmount) << 16;
+}
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
@@ -342,6 +473,17 @@ static code_t insEncodeExtendScale(ssize_t imm);
 
 // Returns the encoding to have the Rm register be auto scaled by the ld/st size
 static code_t insEncodeReg3Scale(bool isScaled);
+
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+static code_t insEncodeSveElemsize(emitAttr size);
+
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+
+// Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
+static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -442,8 +584,15 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+static emitAttr optGetSveElemsize(insOpts arrangement);
+
 //  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
 static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement'
+//  element.
+static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
@@ -492,6 +641,9 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
+
+// true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
+static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
 
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);
@@ -550,6 +702,11 @@ inline static bool isValidScalarDatasize(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
 
+inline static bool isValidScalableDatasize(emitAttr size)
+{
+    return ((size & EA_SCALABLE) == EA_SCALABLE);
+}
+
 inline static bool isValidVectorDatasize(emitAttr size)
 {
     return (size == EA_16BYTE) || (size == EA_8BYTE);
@@ -585,6 +742,21 @@ inline static bool isValidVectorElemsizeFloat(emitAttr size)
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
 
+inline static bool isValidVectorElemsizeSveFloat(emitAttr size)
+{
+    return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
+}
+
+inline static bool isValidVectorElemsizeWidening(emitAttr size)
+{
+    return (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
+}
+
+inline static bool isScalableVectorSize(emitAttr size)
+{
+    return (size == EA_SCALABLE);
+}
+
 inline static bool isGeneralRegister(regNumber reg)
 {
     return (reg >= REG_INT_FIRST) && (reg <= REG_LR);
@@ -608,6 +780,16 @@ inline static bool isVectorRegister(regNumber reg)
 inline static bool isFloatReg(regNumber reg)
 {
     return isVectorRegister(reg);
+}
+
+inline static bool isPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+}
+
+inline static bool isLowPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -704,6 +886,88 @@ inline static bool insOptsConvertFloatToInt(insOpts opt)
 inline static bool insOptsConvertIntToFloat(insOpts opt)
 {
     return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_D));
+}
+
+inline static bool insOptsScalable(insOpts opt)
+{
+    // Opt is any of the scalable types.
+    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
+            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
+            insOptsScalableWithPredicateMerge(opt));
+}
+
+inline static bool insOptsScalableSimple(insOpts opt)
+{
+    // `opt` is any of the standard scalable types.
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
+            (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWords(insOpts opt)
+{
+    // `opt` is any of the standard word and above scalable types.
+    return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableAtLeastHalf(insOpts opt)
+{
+    // `opt` is any of the standard half and above scalable types.
+    return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableFloat(insOpts opt)
+{
+    // `opt` is any of the standard scalable types that are valid for FP.
+    return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWide(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for widening to size D.
+    return ((opt == INS_OPTS_SCALABLE_WIDE_B) || (opt == INS_OPTS_SCALABLE_WIDE_H) ||
+            (opt == INS_OPTS_SCALABLE_WIDE_S));
+}
+
+inline static bool insOptsScalableWithSimdVector(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for conversion to an Advsimd SIMD Vector.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR));
+}
+
+inline static bool insOptsScalableWithSimdScalar(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for conversion to/from a scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
+}
+
+inline static bool insOptsScalableWithSimdFPScalar(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for conversion to/from a FP scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
+}
+
+inline static bool insOptsScalableWideningToSimdScalar(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for widening then conversion to a scalar in a SIMD register.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR));
+}
+
+inline static bool insOptsScalableWithScalar(insOpts opt)
+{
+    // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
+}
+
+inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
+{
+    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -812,6 +1076,19 @@ void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int o
 
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
+
+void emitIns_R_R_R_I_LdStPair(instruction ins,
+                              emitAttr    attr,
+                              emitAttr    attr2,
+                              regNumber   reg1,
+                              regNumber   reg2,
+                              regNumber   reg3,
+                              ssize_t     imm,
+                              int         varx1 = -1,
+                              int         varx2 = -1,
+                              int         offs1 = -1,
+                              int offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
+                                              DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
@@ -939,31 +1216,5 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
     return ((jmp->idInsFmt() == IF_LS_1A) || // ldr
             (jmp->idInsFmt() == IF_LARGELDC));
 }
-
-#if defined(FEATURE_SIMD)
-//-----------------------------------------------------------------------------------
-// emitStoreSIMD12ToLclOffset: store SIMD12 value from opReg to varNum+offset.
-//
-// Arguments:
-//     varNum - the variable on the stack to use as a base;
-//     offset - the offset from the varNum;
-//     opReg  - the src reg with SIMD12 value;
-//     tmpReg - a tmp reg to use for the write, can be general or float.
-//
-void emitStoreSIMD12ToLclOffset(unsigned varNum, unsigned offset, regNumber opReg, regNumber tmpReg)
-{
-    assert(varNum != BAD_VAR_NUM);
-    assert(isVectorRegister(opReg));
-
-    // store lower 8 bytes
-    emitIns_S_R(INS_str, EA_8BYTE, opReg, varNum, offset);
-
-    // Extract upper 4-bytes from data
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, opReg, 2);
-
-    // 4-byte write
-    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
-}
-#endif // FEATURE_SIMD
 
 #endif // TARGET_ARM64

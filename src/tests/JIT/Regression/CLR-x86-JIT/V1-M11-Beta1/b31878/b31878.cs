@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         float m_fField1 = 426.19f;
         static float Method1(ref object[] param1, int param2, ref bool[] param3, double[] param4)
@@ -20,7 +21,8 @@ namespace Test
             }
             return 0.0f;
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -40,8 +40,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            var array = items as T[];
-            if (array != null)
+            if (items is T[] array)
             {
                 return Create(items: array);
             }
@@ -53,8 +52,8 @@ namespace System.Collections.Immutable
                     return ImmutableQueue<T>.Empty;
                 }
 
-                var forwards = ImmutableStack.Create(e.Current);
-                var backwards = ImmutableStack<T>.Empty;
+                ImmutableStack<T> forwards = ImmutableStack.Create(e.Current);
+                ImmutableStack<T> backwards = ImmutableStack<T>.Empty;
 
                 while (e.MoveNext())
                 {
@@ -75,12 +74,23 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            if (items.Length == 0)
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable queue that contains the specified array of items.
+        /// </summary>
+        /// <typeparam name="T">The type of items in the immutable queue.</typeparam>
+        /// <param name="items">A span that contains the items to prepopulate the queue with.</param>
+        /// <returns>A new immutable queue that contains the specified items.</returns>
+        public static ImmutableQueue<T> Create<T>(ReadOnlySpan<T> items)
+        {
+            if (items.IsEmpty)
             {
                 return ImmutableQueue<T>.Empty;
             }
 
-            var forwards = ImmutableStack<T>.Empty;
+            ImmutableStack<T> forwards = ImmutableStack<T>.Empty;
 
             for (int i = items.Length - 1; i >= 0; i--)
             {

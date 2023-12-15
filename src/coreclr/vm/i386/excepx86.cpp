@@ -1029,7 +1029,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
 
-        g_exceptionCount++;
+        InterlockedIncrement((LONG*)&g_exceptionCount);
 
     } // End of case-1-or-3
 
@@ -3406,19 +3406,12 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_ENTRY_POINT;
 
-    LONG result = EXCEPTION_CONTINUE_SEARCH;
-
-    // This function can be called during the handling of a SO
-    //BEGIN_ENTRYPOINT_VOIDRET;
-
-    result = CLRVectoredExceptionHandler(pExceptionInfo);
+    LONG result = CLRVectoredExceptionHandler(pExceptionInfo);
 
     if (EXCEPTION_EXECUTE_HANDLER == result)
     {
         result = EXCEPTION_CONTINUE_SEARCH;
     }
-
-    //END_ENTRYPOINT_VOIDRET;
 
     return result;
 #else  // !FEATURE_EH_FUNCLETS
@@ -3445,10 +3438,10 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    VirtualCallStubManager::StubKind sk;
+    StubCodeBlockKind sk;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         if (*PTR_WORD(f_IP) != X86_INSTR_CMP_IND_ECX_IMM32)
         {
@@ -3457,7 +3450,7 @@ AdjustContextForVirtualStub(
         }
     }
     else
-    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         if (*PTR_WORD(f_IP) != X86_INSTR_MOV_EAX_ECX_IND)
         {
@@ -3493,7 +3486,7 @@ AdjustContextForVirtualStub(
     // set the ESP to what it would be after the call (remove pushed arguments)
 
     size_t stackArgumentsSize;
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 

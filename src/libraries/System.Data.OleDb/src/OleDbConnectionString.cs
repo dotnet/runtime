@@ -6,8 +6,8 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Runtime.Versioning;
+using System.Text;
 
 namespace System.Data.OleDb
 {
@@ -189,7 +189,7 @@ namespace System.Data.OleDb
             return sqlSupport;
         }
 
-        internal bool GetSupportIRow(OleDbConnection connection, OleDbCommand command)
+        internal bool GetSupportIRow(OleDbCommand command)
         {
             bool supportIRow = _supportIRow;
             if (!_hasSupportIRow)

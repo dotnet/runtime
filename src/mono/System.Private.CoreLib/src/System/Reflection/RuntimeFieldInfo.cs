@@ -25,10 +25,10 @@
 //
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -111,7 +111,9 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
+#pragma warning restore CS8500
             }
         }
 
@@ -125,7 +127,9 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
+#pragma warning restore CS8500
             }
         }
 
@@ -201,12 +205,9 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
 
             if (!IsLiteral)
@@ -217,7 +218,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return string.Format("{0} {1}", FieldType, name);
+            return $"{FieldType.FormatTypeName()} {name}";
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -228,26 +229,22 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
             if (IsLiteral)
-                throw new FieldAccessException("Cannot set a constant field");
+                throw new FieldAccessException(SR.Acc_ReadOnly);
 
             binder ??= Type.DefaultBinder;
             CheckGeneric();
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                ParameterCopyBackAction _ = default;
 
                 if (!ReferenceEquals(val.GetType(), fieldType))
                 {
-                    fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                    fieldType.CheckValue(ref val, binder, culture, invokeAttr);
                 }
             }
 
@@ -277,7 +274,7 @@ namespace System.Reflection
         {
             Type? declaringType = DeclaringType;
             if (declaringType != null && declaringType.ContainsGenericParameters)
-                throw new InvalidOperationException("Late bound operations cannot be performed on fields with types for which Type.ContainsGenericParameters is true.");
+                throw new InvalidOperationException(SR.Arg_UnboundGenField);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeFieldInfo>(other);
@@ -294,12 +291,16 @@ namespace System.Reflection
         internal static extern int get_metadata_token(RuntimeFieldInfo monoField);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Type[] GetTypeModifiers(bool optional);
+        private extern Type[] GetTypeModifiers(bool optional, int genericArgumentPosition = -1);
 
         public override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(true);
 
         public override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(false);
 
         private Type[] GetCustomModifiers(bool optional) => GetTypeModifiers(optional) ?? Type.EmptyTypes;
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedFieldType() => ModifiedType.Create(FieldType, this);
     }
 }

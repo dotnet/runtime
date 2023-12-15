@@ -13,6 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/hostmisc)
+include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 set(RESOURCES)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -38,20 +39,20 @@ function(set_common_libs TargetType)
     # Libraries used for exe projects
     if (${TargetType} STREQUAL "exe")
         if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
-            target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
+            target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE "pthread")
         endif()
-
-        target_link_libraries (${DOTNET_PROJECT_NAME} ${CMAKE_DL_LIBS})
     endif()
 
     if (NOT ${TargetType} STREQUAL "lib-static")
         # Specify the import library to link against for Arm32 build since the default set is minimal
         if (CLR_CMAKE_TARGET_ARCH_ARM)
             if (CLR_CMAKE_TARGET_WIN32)
-                target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib advapi32.lib)
+                target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE shell32.lib advapi32.lib)
             else()
-                target_link_libraries(${DOTNET_PROJECT_NAME} atomic.a)
+                target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE atomic.a)
             endif()
         endif()
+
+        target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
     endif()
 endfunction()

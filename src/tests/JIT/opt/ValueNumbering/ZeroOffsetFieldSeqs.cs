@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class ZeroOffsetFieldSeqs
+public class ZeroOffsetFieldSeqs
 {
     private static UnionStruct s_union;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (ProblemWithArrayUnions(new UnionStruct[] { default }))
         {

@@ -12,6 +12,8 @@ namespace System.Formats.Tar.Tests
 {
     public abstract partial class TarTestsBase : FileCleanupTestBase
     {
+        protected static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
+
         protected const string InitialEntryName = "InitialEntryName.ext";
         protected readonly string ModifiedEntryName = "ModifiedEntryName.ext";
 
@@ -208,11 +210,6 @@ namespace System.Formats.Tar.Tests
             // GNU formatted files. Format used by GNU tar versions up to 1.13.25.
             gnu
         }
-        protected static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
-
-        protected static bool IsUnixButNotSuperUser => !PlatformDetection.IsWindows && !PlatformDetection.IsSuperUser;
-
-        protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
 
         protected TarTestsBase()
         {
@@ -463,7 +460,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(expectedType, entry.GetType());
         }
 
-        protected TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
+        protected static TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
         {
             if (format is TarEntryFormat.V7)
             {
@@ -491,6 +488,14 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
                 _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
+
+        public static IEnumerable<object[]> GetTestTarFormats()
+        {
+            foreach (TestTarFormat testFormat in Enum.GetValues<TestTarFormat>())
+            {
+                yield return new object[] { testFormat };
+            }
+        }
 
         public static IEnumerable<object[]> GetFormatsAndLinks()
         {
@@ -575,7 +580,7 @@ namespace System.Formats.Tar.Tests
             }
             else
             {
-                Assert.True(false, "Unchecked entry type.");
+                Assert.Fail("Unchecked entry type.");
             }
 
             AssertFileModeEquals(destination, TestPermission1);

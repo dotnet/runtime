@@ -4,8 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.Caching
 {
@@ -23,10 +23,10 @@ namespace System.Runtime.Caching
 
         internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + (cacheName ?? throw new ArgumentNullException(nameof(cacheName))))
         {
-            InitDisposableMembers(cacheName);
+            InitDisposableMembers();
         }
 
-        private void InitDisposableMembers(string cacheName)
+        private void InitDisposableMembers()
         {
             bool dispose = true;
 
@@ -49,7 +49,7 @@ namespace System.Runtime.Caching
                 // to be one polling counter here, rather than the two-part perf counter. Still keeping array
                 // indexes and raw counter values consistent between NetFx and Core code though.
                 _counters[(int)CounterName.HitRatio] = new PollingCounter("hit-ratio", this,
-                    () =>((double)_counterValues[(int)CounterName.HitRatio]/(double)_counterValues[(int)CounterName.HitRatioBase]) * 100d)
+                    () => ((double)_counterValues[(int)CounterName.HitRatio] / (double)_counterValues[(int)CounterName.HitRatioBase]) * 100d)
                 {
                     DisplayName = "Cache Hit Ratio",
                 };
@@ -102,7 +102,7 @@ namespace System.Runtime.Caching
             Interlocked.Decrement(ref _counterValues[idx]);
         }
 #else
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         internal Counters(string cacheName)
         {
         }
@@ -118,7 +118,7 @@ namespace System.Runtime.Caching
         internal void Decrement(CounterName name)
         {
         }
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
 #endif
     }
 }

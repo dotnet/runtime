@@ -8,19 +8,19 @@ namespace System.Globalization
         internal static CultureInfo GetUserDefaultCulture()
         {
             if (GlobalizationMode.Invariant)
-                return CultureInfo.InvariantCulture;
+                return InvariantCulture;
 
             string? strDefault = UserDefaultLocaleName;
 
             return strDefault != null ?
                 GetCultureByName(strDefault) :
-                CultureInfo.InvariantCulture;
+                InvariantCulture;
         }
 
         private static unsafe CultureInfo GetUserDefaultUICulture()
         {
             if (GlobalizationMode.Invariant)
-                return CultureInfo.InvariantCulture;
+                return InvariantCulture;
 
             const uint MUI_LANGUAGE_NAME = 0x8;    // Use ISO language (culture) name convention
             uint langCount = 0;
@@ -45,7 +45,7 @@ namespace System.Globalization
 
         private static string? GetUserDefaultLocaleName() =>
             GlobalizationMode.Invariant ?
-                CultureInfo.InvariantCulture.Name :
+                InvariantCulture.Name :
                 CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
                 CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
     }

@@ -32,6 +32,28 @@ DumpWriter::OpenDump(const char* dumpFileName)
     return true;
 }
 
+bool
+DumpWriter::WriteDiagInfo(size_t size)
+{
+    // Write the diagnostics info header
+    SpecialDiagInfoHeader header = {
+        {SPECIAL_DIAGINFO_SIGNATURE},
+        SPECIAL_DIAGINFO_VERSION,
+        m_crashInfo.ExceptionRecord(),
+        m_crashInfo.RuntimeBaseAddress()
+    };
+    if (!WriteData(&header, sizeof(header))) {
+        return false;
+    }
+    size_t alignment = size - sizeof(header);
+    assert(alignment < sizeof(m_tempBuffer));
+    memset(m_tempBuffer, 0, alignment);
+    if (!WriteData(m_tempBuffer, alignment)) {
+        return false;
+    }
+    return true;
+}
+
 // Write all of the given buffer, handling short writes and EINTR. Return true iff successful.
 bool
 DumpWriter::WriteData(int fd, const void* buffer, size_t length)

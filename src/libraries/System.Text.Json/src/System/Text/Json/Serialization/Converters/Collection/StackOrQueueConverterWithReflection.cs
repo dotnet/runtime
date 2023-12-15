@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal override void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            jsonTypeInfo.AddMethodDelegate = JsonSerializerOptions.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
+            jsonTypeInfo.AddMethodDelegate = DefaultJsonTypeInfoResolver.MemberAccessor.CreateAddMethodDelegate<TCollection>();
         }
     }
 }

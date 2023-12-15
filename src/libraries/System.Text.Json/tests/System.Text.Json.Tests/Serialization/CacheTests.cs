@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Tests
             RemoteExecutor.Invoke(static () =>
             {
                 Func<JsonSerializerOptions, JsonSerializerOptions?> getCacheOptions = CreateCacheOptionsAccessor();
-                Func<JsonSerializerOptions, JsonSerializerOptions, bool> equalityComparer = CreateEqualityComparerAccessor();
+                IEqualityComparer<JsonSerializerOptions> equalityComparer = CreateEqualityComparerAccessor();
 
                 foreach (var args in GetJsonSerializerOptions())
                 {
@@ -279,7 +279,8 @@ namespace System.Text.Json.Serialization.Tests
 
                     JsonSerializerOptions originalCacheOptions = getCacheOptions(options);
                     Assert.NotNull(originalCacheOptions);
-                    Assert.True(equalityComparer(options, originalCacheOptions));
+                    Assert.True(equalityComparer.Equals(options, originalCacheOptions));
+                    Assert.Equal(equalityComparer.GetHashCode(options), equalityComparer.GetHashCode(originalCacheOptions));
 
                     for (int i = 0; i < 5; i++)
                     {
@@ -288,7 +289,8 @@ namespace System.Text.Json.Serialization.Tests
 
                         JsonSerializer.Serialize(42, options2);
 
-                        Assert.True(equalityComparer(options2, originalCacheOptions));
+                        Assert.True(equalityComparer.Equals(options2, originalCacheOptions));
+                        Assert.Equal(equalityComparer.GetHashCode(options2), equalityComparer.GetHashCode(originalCacheOptions));
                         Assert.Same(originalCacheOptions, getCacheOptions(options2));
                     }
                 }
@@ -324,7 +326,7 @@ namespace System.Text.Json.Serialization.Tests
             // - All public setters in JsonSerializerOptions
             //
             // If either of them changes, this test will need to be kept in sync.
-            Func<JsonSerializerOptions, JsonSerializerOptions, bool> equalityComparer = CreateEqualityComparerAccessor();
+            IEqualityComparer<JsonSerializerOptions> equalityComparer = CreateEqualityComparerAccessor();
 
             (PropertyInfo prop, object value)[] propertySettersAndValues = GetPropertiesWithSettersAndNonDefaultValues().ToArray();
 
@@ -334,16 +336,19 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Fail($"{nameof(GetPropertiesWithSettersAndNonDefaultValues)} missing property declaration for {prop.Name}, please update the method.");
             }
 
-            Assert.True(equalityComparer(JsonSerializerOptions.Default, JsonSerializerOptions.Default));
+            Assert.True(equalityComparer.Equals(JsonSerializerOptions.Default, JsonSerializerOptions.Default));
+            Assert.Equal(equalityComparer.GetHashCode(JsonSerializerOptions.Default), equalityComparer.GetHashCode(JsonSerializerOptions.Default));
 
             foreach ((PropertyInfo prop, object? value) in propertySettersAndValues)
             {
                 var options = new JsonSerializerOptions();
                 prop.SetValue(options, value);
 
-                Assert.True(equalityComparer(options, options));
+                Assert.True(equalityComparer.Equals(options, options));
+                Assert.Equal(equalityComparer.GetHashCode(options), equalityComparer.GetHashCode(options));
 
-                Assert.False(equalityComparer(JsonSerializerOptions.Default, options));
+                Assert.False(equalityComparer.Equals(JsonSerializerOptions.Default, options));
+                Assert.NotEqual(equalityComparer.GetHashCode(JsonSerializerOptions.Default), equalityComparer.GetHashCode(options));
             }
 
             static IEnumerable<(PropertyInfo, object)> GetPropertiesWithSettersAndNonDefaultValues()
@@ -355,6 +360,8 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreNullValues)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultIgnoreCondition)), JsonIgnoreCondition.WhenWritingDefault);
                 yield return (GetProp(nameof(JsonSerializerOptions.NumberHandling)), JsonNumberHandling.AllowReadingFromString);
+                yield return (GetProp(nameof(JsonSerializerOptions.PreferredObjectCreationHandling)), JsonObjectCreationHandling.Populate);
+                yield return (GetProp(nameof(JsonSerializerOptions.UnmappedMemberHandling)), JsonUnmappedMemberHandling.Disallow);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IncludeFields)), true);
@@ -389,14 +396,16 @@ namespace System.Text.Json.Serialization.Tests
             //
             // If either of them changes, this test will need to be kept in sync.
 
-            Func<JsonSerializerOptions, JsonSerializerOptions, bool> equalityComparer = CreateEqualityComparerAccessor();
+            IEqualityComparer<JsonSerializerOptions> equalityComparer = CreateEqualityComparerAccessor();
             var options1 = new JsonSerializerOptions { WriteIndented = true };
             var options2 = new JsonSerializerOptions { WriteIndented = true };
 
-            Assert.True(equalityComparer(options1, options2));
+            Assert.True(equalityComparer.Equals(options1, options2));
+            Assert.Equal(equalityComparer.GetHashCode(options1), equalityComparer.GetHashCode(options2));
 
             _ = new MyJsonContext(options1); // Associate copy with a JsonSerializerContext
-            Assert.False(equalityComparer(options1, options2));
+            Assert.False(equalityComparer.Equals(options1, options2));
+            Assert.NotEqual(equalityComparer.GetHashCode(options1), equalityComparer.GetHashCode(options2));
         }
 
         private class MyJsonContext : JsonSerializerContext
@@ -408,10 +417,11 @@ namespace System.Text.Json.Serialization.Tests
             protected override JsonSerializerOptions? GeneratedSerializerOptions => Options;
         }
 
-        public static Func<JsonSerializerOptions, JsonSerializerOptions, bool> CreateEqualityComparerAccessor()
+        public static IEqualityComparer<JsonSerializerOptions> CreateEqualityComparerAccessor()
         {
-            MethodInfo equalityComparerMethod = typeof(JsonSerializerOptions).GetMethod("AreEquivalentOptions", BindingFlags.NonPublic | BindingFlags.Static);
-            return (Func<JsonSerializerOptions, JsonSerializerOptions, bool>)Delegate.CreateDelegate(typeof(Func<JsonSerializerOptions, JsonSerializerOptions, bool>), equalityComparerMethod);
+            Type equalityComparerType = typeof(JsonSerializerOptions).GetNestedType("EqualityComparer", BindingFlags.NonPublic);
+            Assert.NotNull(equalityComparerType);
+            return (IEqualityComparer<JsonSerializerOptions>)Activator.CreateInstance(equalityComparerType, nonPublic: true);
         }
 
         public static IEnumerable<object[]> WriteSuccessCases

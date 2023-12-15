@@ -29,6 +29,12 @@ namespace System.Linq
         [DoesNotReturn]
         internal static void ThrowNotSupportedException() => throw new NotSupportedException();
 
+        [DoesNotReturn]
+        internal static bool ThrowNotSupportedException_Boolean() => throw new NotSupportedException();
+
+        [DoesNotReturn]
+        internal static void ThrowOverflowException() => throw new OverflowException();
+
         private static string GetArgumentString(ExceptionArgument argument)
         {
             switch (argument)
@@ -48,6 +54,7 @@ namespace System.Linq
                 case ExceptionArgument.predicate: return nameof(ExceptionArgument.predicate);
                 case ExceptionArgument.resultSelector: return nameof(ExceptionArgument.resultSelector);
                 case ExceptionArgument.second: return nameof(ExceptionArgument.second);
+                case ExceptionArgument.seedSelector: return nameof(ExceptionArgument.seedSelector);
                 case ExceptionArgument.selector: return nameof(ExceptionArgument.selector);
                 case ExceptionArgument.source: return nameof(ExceptionArgument.source);
                 case ExceptionArgument.third: return nameof(ExceptionArgument.third);
@@ -76,6 +83,7 @@ namespace System.Linq
         predicate,
         resultSelector,
         second,
+        seedSelector,
         selector,
         source,
         third,

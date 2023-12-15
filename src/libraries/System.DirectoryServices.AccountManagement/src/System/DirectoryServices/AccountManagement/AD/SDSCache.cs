@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
-using System.Globalization;
+using System.Diagnostics;
 using System.DirectoryServices;
+using System.Globalization;
 using System.Net;
 using System.Threading;
 
 namespace System.DirectoryServices.AccountManagement
 {
     /// <summary>
-    /// This is a class designed to cache DirectoryEntires instead of creating them every time.
+    /// This is a class designed to cache DirectoryEntries instead of creating them every time.
     /// </summary>
     internal sealed class SDSCache
     {

@@ -13,6 +13,7 @@ using System.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
@@ -81,7 +82,7 @@ internal sealed class WebServerStartup
         provider.Mappings[".cjs"] = "text/javascript";
         provider.Mappings[".mjs"] = "text/javascript";
 
-        foreach (string extn in new string[] { ".dll", ".pdb", ".dat", ".blat" })
+        foreach (string extn in new string[] { ".dll", ".pdb", ".dat", ".webcil" })
         {
             provider.Mappings[extn] = "application/octet-stream";
         }
@@ -91,8 +92,8 @@ internal sealed class WebServerStartup
         {
             app.Use((context, next) =>
             {
-                context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
-                context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+                context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
+                context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
                 return next();
             });
         }
@@ -167,42 +168,6 @@ internal sealed class WebServerStartup
             });
         });
 
-
-        applicationLifetime.ApplicationStarted.Register(() =>
-        {
-            TaskCompletionSource<ServerURLs> tcs = realUrlsAvailableTcs;
-            try
-            {
-                ICollection<string>? addresses = app.ServerFeatures
-                                                    .Get<IServerAddressesFeature>()
-                                                    ?.Addresses;
-
-                string? ipAddress = null;
-                string? ipAddressSecure = null;
-                if (addresses is not null)
-                {
-                    ipAddress = GetHttpServerAddress(addresses, secure: false);
-                    ipAddressSecure = GetHttpServerAddress(addresses, secure: true);
-                }
-
-                if (ipAddress == null)
-                    tcs.SetException(new InvalidOperationException("Failed to determine web server's IP address or port"));
-                else
-                    tcs.SetResult(new ServerURLs(ipAddress, ipAddressSecure));
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError($"Failed to get urls for the webserver: {ex}");
-                tcs.TrySetException(ex);
-                throw;
-            }
-
-            static string? GetHttpServerAddress(ICollection<string> addresses, bool secure)
-                => addresses?
-                        .Where(a => a.StartsWith(secure ? "https:" : "http:", StringComparison.InvariantCultureIgnoreCase))
-                        .Select(a => new Uri(a))
-                        .Select(uri => uri.ToString())
-                        .FirstOrDefault();
-        });
+        ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs);
     }
 }

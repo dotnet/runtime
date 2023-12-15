@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -155,34 +154,59 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Computes the leading ordinal case-insensitive substring in <paramref name="node"/>.</summary>
+        public static string? FindPrefixOrdinalCaseInsensitive(RegexNode node)
+        {
+            while (true)
+            {
+                // Search down the left side of the tree looking for a concatenation.  If we find one,
+                // ask it for any ordinal case-insensitive prefix it has.
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                    case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                        node = node.Child(0);
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString, consumeZeroWidthNodes: true);
+                        return caseInsensitiveString;
+
+                    default:
+                        return null;
+                }
+            }
+        }
+
         /// <summary>Finds sets at fixed-offsets from the beginning of the pattern/</summary>
         /// <param name="root">The RegexNode tree root.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
         /// <returns>The array of found sets, or null if there aren't any.</returns>
-        public static List<(char[]? Chars, string Set, int Distance)>? FindFixedDistanceSets(RegexNode root, bool thorough)
+        public static List<RegexFindOptimizations.FixedDistanceSet>? FindFixedDistanceSets(RegexNode root, bool thorough)
         {
             const int MaxLoopExpansion = 20; // arbitrary cut-off to avoid loops adding significant overhead to processing
             const int MaxFixedResults = 50; // arbitrary cut-off to avoid generating lots of sets unnecessarily
 
             // Find all fixed-distance sets.
-            var results = new List<(char[]? Chars, string Set, int Distance)>();
+            var results = new List<RegexFindOptimizations.FixedDistanceSet>();
             int distance = 0;
-            TryFindFixedSets(root, results, ref distance, thorough);
+            TryFindRawFixedSets(root, results, ref distance, thorough);
+#if DEBUG
+            results.ForEach(r => Debug.Assert(
+                !r.Negated && r.Chars is null && r.Range is null,
+                $"{nameof(TryFindRawFixedSets)} should have only populated {nameof(r.Set)} and {nameof(r.Distance)}"));
+#endif
 
             // Remove any sets that match everything; they're not helpful.  (This check exists primarily to weed
-            // out use of . in Singleline mode.)
-            bool hasAny = false;
+            // out use of . in Singleline mode, but also filters out explicit sets like [\s\S].)
             for (int i = 0; i < results.Count; i++)
             {
                 if (results[i].Set == RegexCharClass.AnyClass)
                 {
-                    hasAny = true;
+                    results.RemoveAll(s => s.Set == RegexCharClass.AnyClass);
                     break;
                 }
-            }
-            if (hasAny)
-            {
-                results.RemoveAll(s => s.Set == RegexCharClass.AnyClass);
             }
 
             // If we don't have any results, try harder to compute one for the starting character.
@@ -190,32 +214,39 @@ namespace System.Text.RegularExpressions
             // doesn't.
             if (results.Count == 0)
             {
-                string? charClass = FindFirstCharClass(root);
-                if (charClass is not null)
-                {
-                    results.Add((null, charClass, 0));
-                }
-
-                if (results.Count == 0)
+                if (FindFirstCharClass(root) is not string charClass ||
+                    charClass == RegexCharClass.AnyClass) // weed out match-all, same as above
                 {
                     return null;
                 }
+
+                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, charClass, 0));
             }
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
-            Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
+            // For any for which we couldn't get the small chars list, see if we can get other useful info.
+            Span<char> scratch = stackalloc char[128]; // limit based on what's currently efficiently handled by SearchValues
             for (int i = 0; i < results.Count; i++)
             {
-                (char[]? Chars, string Set, int Distance) result = results[i];
-                if (!RegexCharClass.IsNegated(result.Set))
+                RegexFindOptimizations.FixedDistanceSet result = results[i];
+                result.Negated = RegexCharClass.IsNegated(result.Set);
+
+                int count = RegexCharClass.GetSetChars(result.Set, scratch);
+                if (count > 0)
                 {
-                    int count = RegexCharClass.GetSetChars(result.Set, scratch);
-                    if (count != 0)
-                    {
-                        result.Chars = scratch.Slice(0, count).ToArray();
-                        results[i] = result;
-                    }
+                    result.Chars = scratch.Slice(0, count).ToArray();
                 }
+
+                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                if (thorough &&
+                    (result.Chars is null || result.Chars.Length > 2) &&
+                    RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
+                {
+                    result.Chars = null;
+                    result.Range = (lowInclusive, highInclusive);
+                }
+
+                results[i] = result;
             }
 
             return results;
@@ -225,8 +256,10 @@ namespace System.Text.RegularExpressions
             // is at a fixed distance, in which case distance will have been updated to include the full length
             // of the node.  If it returns false, the node isn't entirely fixed, in which case subsequent nodes
             // shouldn't be examined and distance should no longer be trusted.  However, regardless of whether it
-            // returns true or false, it may have populated results, and all populated results are valid.
-            static bool TryFindFixedSets(RegexNode node, List<(char[]? Chars, string Set, int Distance)> results, ref int distance, bool thorough)
+            // returns true or false, it may have populated results, and all populated results are valid. All
+            // FixedDistanceSet result will only have its Set string and Distance populated; the rest is left
+            // to be populated by FindFixedDistanceSets after this returns.
+            static bool TryFindRawFixedSets(RegexNode node, List<RegexFindOptimizations.FixedDistanceSet> results, ref int distance, bool thorough)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
@@ -244,7 +277,7 @@ namespace System.Text.RegularExpressions
                         if (results.Count < MaxFixedResults)
                         {
                             string setString = RegexCharClass.OneToStringClass(node.Ch);
-                            results.Add((null, setString, distance++));
+                            results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
                             return true;
                         }
                         return false;
@@ -256,7 +289,7 @@ namespace System.Text.RegularExpressions
                             int i = 0;
                             for (; i < minIterations && results.Count < MaxFixedResults; i++)
                             {
-                                results.Add((null, setString, distance++));
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
                             }
                             return i == node.M && i == node.N;
                         }
@@ -268,7 +301,7 @@ namespace System.Text.RegularExpressions
                             for (; i < s.Length && results.Count < MaxFixedResults; i++)
                             {
                                 string setString = RegexCharClass.OneToStringClass(s[i]);
-                                results.Add((null, setString, distance++));
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
                             }
                             return i == s.Length;
                         }
@@ -276,7 +309,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Set:
                         if (results.Count < MaxFixedResults)
                         {
-                            results.Add((null, node.Str!, distance++));
+                            results.Add(new RegexFindOptimizations.FixedDistanceSet(null, node.Str!, distance++));
                             return true;
                         }
                         return false;
@@ -287,7 +320,7 @@ namespace System.Text.RegularExpressions
                             int i = 0;
                             for (; i < minIterations && results.Count < MaxFixedResults; i++)
                             {
-                                results.Add((null, node.Str!, distance++));
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, node.Str!, distance++));
                             }
                             return i == node.M && i == node.N;
                         }
@@ -324,7 +357,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Group:
                     case RegexNodeKind.Capture:
-                        return TryFindFixedSets(node.Child(0), results, ref distance, thorough);
+                        return TryFindRawFixedSets(node.Child(0), results, ref distance, thorough);
 
                     case RegexNodeKind.Lazyloop or RegexNodeKind.Loop when node.M > 0:
                         // This effectively only iterates the loop once.  If deemed valuable,
@@ -333,7 +366,7 @@ namespace System.Text.RegularExpressions
                         // summed distance for all node.M iterations.  If node.M == node.N,
                         // this would then also allow continued evaluation of the rest of the
                         // expression after the loop.
-                        TryFindFixedSets(node.Child(0), results, ref distance, thorough);
+                        TryFindRawFixedSets(node.Child(0), results, ref distance, thorough);
                         return false;
 
                     case RegexNodeKind.Concatenate:
@@ -341,7 +374,7 @@ namespace System.Text.RegularExpressions
                             int childCount = node.ChildCount();
                             for (int i = 0; i < childCount; i++)
                             {
-                                if (!TryFindFixedSets(node.Child(i), results, ref distance, thorough))
+                                if (!TryFindRawFixedSets(node.Child(i), results, ref distance, thorough))
                                 {
                                     return false;
                                 }
@@ -356,12 +389,12 @@ namespace System.Text.RegularExpressions
                             int? sameDistance = null;
                             var combined = new Dictionary<int, (RegexCharClass Set, int Count)>();
 
-                            var localResults = new List<(char[]? Chars, string Set, int Distance)>();
+                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet>();
                             for (int i = 0; i < childCount; i++)
                             {
                                 localResults.Clear();
                                 int localDistance = 0;
-                                allSameSize &= TryFindFixedSets(node.Child(i), localResults, ref localDistance, thorough);
+                                allSameSize &= TryFindRawFixedSets(node.Child(i), localResults, ref localDistance, thorough);
 
                                 if (localResults.Count == 0)
                                 {
@@ -380,7 +413,7 @@ namespace System.Text.RegularExpressions
                                     }
                                 }
 
-                                foreach ((char[]? Chars, string Set, int Distance) fixedSet in localResults)
+                                foreach (RegexFindOptimizations.FixedDistanceSet fixedSet in localResults)
                                 {
                                     if (combined.TryGetValue(fixedSet.Distance, out (RegexCharClass Set, int Count) value))
                                     {
@@ -407,7 +440,7 @@ namespace System.Text.RegularExpressions
 
                                 if (pair.Value.Count == childCount)
                                 {
-                                    results.Add((null, pair.Value.Set.ToStringClass(), pair.Key + distance));
+                                    results.Add(new RegexFindOptimizations.FixedDistanceSet(null, pair.Value.Set.ToStringClass(), pair.Key + distance));
                                 }
                             }
 
@@ -428,48 +461,113 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Sorts a set of fixed-distance set results from best to worst quality.</summary>
-        public static void SortFixedDistanceSetsByQuality(List<(char[]? Chars, string Set, int Distance)> results) =>
+        public static void SortFixedDistanceSetsByQuality(List<RegexFindOptimizations.FixedDistanceSet> results) =>
             // Finally, try to move the "best" results to be earlier.  "best" here are ones we're able to search
             // for the fastest and that have the best chance of matching as few false positives as possible.
-            results.Sort((s1, s2) =>
+            results.Sort(static (s1, s2) =>
             {
-                if (s1.Chars is not null && s2.Chars is not null)
-                {
-                    // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
-                    // only an approximation, used as a tie-breaker when we'd otherwise effectively be picking randomly.  True
-                    // frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    int c = SumFrequencies(s1.Chars).CompareTo(SumFrequencies(s2.Chars));
-                    if (c != 0)
-                    {
-                        return c;
-                    }
+                char[]? s1Chars = s1.Chars;
+                char[]? s2Chars = s2.Chars;
+                int s1CharsLength = s1Chars?.Length ?? 0;
+                int s2CharsLength = s2Chars?.Length ?? 0;
+                bool s1Negated = s1.Negated;
+                bool s2Negated = s2.Negated;
+                int s1RangeLength = s1.Range is not null ? GetRangeLength(s1.Range.Value, s1Negated) : 0;
+                int s2RangeLength = s2.Range is not null ? GetRangeLength(s2.Range.Value, s2Negated) : 0;
 
-                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    static float SumFrequencies(char[] chars)
+                // If one set is negated and the other isn't, prefer the non-negated set. In general, negated
+                // sets are large and thus likely to match more frequently, making them slower to search for.
+                if (s1Negated != s2Negated)
+                {
+                    return s2Negated ? -1 : 1;
+                }
+
+                // If we extracted only a few chars and the sets are negated, they both represent very large
+                // sets that are difficult to compare for quality.
+                if (!s1Negated)
+                {
+                    Debug.Assert(!s2Negated);
+
+                    // If both have chars, prioritize the one with the smaller frequency for those chars.
+                    if (s1Chars is not null && s2Chars is not null)
                     {
-                        float sum = 0;
-                        foreach (char c in chars)
+                        // Prefer sets with less frequent values.  The frequency is only an approximation,
+                        // used as a tie-breaker when we'd otherwise effectively be picking randomly.
+                        // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
+                        float s1Frequency = SumFrequencies(s1Chars);
+                        float s2Frequency = SumFrequencies(s2Chars);
+
+                        if (s1Frequency != s2Frequency)
                         {
-                            // Lookup each character in the table.  For values > 255, this will end up truncating
-                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
-                            // and it is primarily meant for disambiguation of ASCII letters.
-                            sum += s_frequency[(byte)c];
+                            return s1Frequency.CompareTo(s2Frequency);
                         }
-                        return sum;
+
+                        if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                        {
+                            // Prefer the set with fewer values.
+                            return s1CharsLength.CompareTo(s2CharsLength);
+                        }
+
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        static float SumFrequencies(char[] chars)
+                        {
+                            float sum = 0;
+                            foreach (char c in chars)
+                            {
+                                // Lookup each character in the table.  Values >= 128 are ignored
+                                // and thus we'll get skew in the data.  It's already a gross approximation, though,
+                                // and it is primarily meant for disambiguation of ASCII letters.
+                                if (c < 128)
+                                {
+                                    sum += Frequency[c];
+                                }
+                            }
+                            return sum;
+                        }
+                    }
+
+                    // If one has chars and the other has a range, prefer the shorter set.
+                    if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
+                    {
+                        int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
+                        if (c != 0)
+                        {
+                            return c;
+                        }
+
+                        // If lengths are the same, prefer the chars.
+                        return s1CharsLength > 0 ? -1 : 1;
+                    }
+
+                    // If one has chars and the other doesn't, prioritize the one with chars.
+                    if ((s1CharsLength > 0) != (s2CharsLength > 0))
+                    {
+                        return s1CharsLength > 0 ? -1 : 1;
                     }
                 }
-                else if (s1.Chars is not null)
+
+                // If one has a range and the other doesn't, prioritize the one with a range.
+                if ((s1RangeLength > 0) != (s2RangeLength > 0))
                 {
-                    // If s1 has chars and s2 doesn't, then s1 has fewer chars.
-                    return -1;
-                }
-                else if (s2.Chars is not null)
-                {
-                    // If s2 has chars and s1 doesn't, then s2 has fewer chars.
-                    return 1;
+                    return s1RangeLength > 0 ? -1 : 1;
                 }
 
+                // If both have ranges, prefer the one that includes fewer characters.
+                if (s1RangeLength > 0)
+                {
+                    return s1RangeLength.CompareTo(s2RangeLength);
+                }
+
+                // As a tiebreaker, prioritize the earlier one.
                 return s1.Distance.CompareTo(s2.Distance);
+
+                static int GetRangeLength((char LowInclusive, char HighInclusive) range, bool negated)
+                {
+                    int length = range.HighInclusive - range.LowInclusive + 1;
+                    return negated ?
+                        char.MaxValue + 1 - length :
+                        length;
+                }
             });
 
         /// <summary>
@@ -678,7 +776,7 @@ namespace System.Text.RegularExpressions
         /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
         /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
         /// </summary>
-        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
+        public static (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
         {
             if ((node.Options & RegexOptions.RightToLeft) != 0)
             {
@@ -706,6 +804,10 @@ namespace System.Text.RegularExpressions
             // could also be made to support Oneloopatomic and Notoneloopatomic, but the scenarios for that are rare.
             Debug.Assert(node.ChildCount() >= 2);
             RegexNode firstChild = node.Child(0);
+            while (firstChild.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
+            {
+                firstChild = firstChild.Child(0);
+            }
             if (firstChild.Kind is not (RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy) || firstChild.N != int.MaxValue)
             {
                 return null;
@@ -718,37 +820,84 @@ namespace System.Text.RegularExpressions
             {
                 if (node.ChildCount() == 2)
                 {
+                    // If the UpdateBumpalong is the last node, nothing meaningful follows the set loop.
                     return null;
                 }
                 nextChild = node.Child(2);
             }
 
-            // If the subsequent node is a literal, we need to ensure it doesn't overlap with the prior set.
-            // If there's no overlap, we have a winner.
-            switch (nextChild.Kind)
+            // Is the set loop followed by a case-sensitive string we can search for?
+            if (FindPrefix(nextChild) is { Length: >= 1 } prefix)
             {
-                case RegexNodeKind.One when !RegexCharClass.CharInClass(nextChild.Ch, firstChild.Str!):
-                    return (firstChild, (nextChild.Ch, null, null));
+                // The literal can be searched for as either a single char or as a string.
+                // But we need to make sure that its starting character isn't part of the preceding
+                // set, as then we can't know for certain where the set loop ends.
+                return
+                    RegexCharClass.CharInClass(prefix[0], firstChild.Str!) ? null :
+                    prefix.Length == 1 ? (firstChild, (prefix[0], null, StringComparison.Ordinal, null)) :
+                    (firstChild, ('\0', prefix, StringComparison.Ordinal, null));
+            }
 
-                case RegexNodeKind.Multi when !RegexCharClass.CharInClass(nextChild.Str![0], firstChild.Str!):
-                    return (firstChild, ('\0', nextChild.Str, null));
+            // Is the set loop followed by an ordinal case-insensitive string we can search for? We could
+            // search for a string with at least one char, but if it has only one, we're better off just
+            // searching as a set, so we look for strings with at least two chars.
+            if (FindPrefixOrdinalCaseInsensitive(nextChild) is { Length: >= 2 } ordinalCaseInsensitivePrefix)
+            {
+                // The literal can be searched for as a case-insensitive string. As with ordinal above,
+                // though, we need to make sure its starting character isn't part of the previous set.
+                // If that starting character participates in case conversion, then we need to test out
+                // both casings (FindPrefixOrdinalCaseInsensitive will only return strings composed of
+                // characters that either are ASCII or that don't participate in case conversion).
+                Debug.Assert(
+                    !RegexCharClass.ParticipatesInCaseConversion(ordinalCaseInsensitivePrefix[0]) ||
+                    ordinalCaseInsensitivePrefix[0] < 128);
 
-                case RegexNodeKind.Set when !RegexCharClass.IsNegated(nextChild.Str!):
-                    Span<char> chars = stackalloc char[5]; // maximum number of chars optimized by IndexOfAny
-                    chars = chars.Slice(0, RegexCharClass.GetSetChars(nextChild.Str!, chars));
-                    if (!chars.IsEmpty)
+                if (RegexCharClass.ParticipatesInCaseConversion(ordinalCaseInsensitivePrefix[0]))
+                {
+                    if (RegexCharClass.CharInClass((char)(ordinalCaseInsensitivePrefix[0] | 0x20), firstChild.Str!) ||
+                        RegexCharClass.CharInClass((char)(ordinalCaseInsensitivePrefix[0] & ~0x20), firstChild.Str!))
                     {
-                        foreach (char c in chars)
-                        {
-                            if (RegexCharClass.CharInClass(c, firstChild.Str!))
-                            {
-                                return null;
-                            }
-                        }
-
-                        return (firstChild, ('\0', null, chars.ToArray()));
+                        return null;
                     }
-                    break;
+                }
+                else if (RegexCharClass.CharInClass(ordinalCaseInsensitivePrefix[0], firstChild.Str!))
+                {
+                    return null;
+                }
+
+                return (firstChild, ('\0', ordinalCaseInsensitivePrefix, StringComparison.OrdinalIgnoreCase, null));
+            }
+
+            // Is the set loop followed by a set we can search for? Whereas the above helpers will drill down into
+            // children as is appropriate, to examine a set here, we need to drill in ourselves. We can drill through
+            // atomic and capture nodes, as they don't affect flow control, and into the left-most node of a concatenate,
+            // as the first child is guaranteed next. We can also drill into a loop or lazy loop that has a guaranteed
+            // iteration, for the same reason as with concatenate.
+            while ((nextChild.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture or RegexNodeKind.Concatenate) ||
+                   (nextChild.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop && nextChild.M >= 1))
+            {
+                nextChild = nextChild.Child(0);
+            }
+
+            // If the resulting node is a set with at least one iteration, we can search for it.
+            if (nextChild.IsSetFamily &&
+                !RegexCharClass.IsNegated(nextChild.Str!) &&
+                (nextChild.Kind is RegexNodeKind.Set || nextChild.M >= 1))
+            {
+                Span<char> chars = stackalloc char[5]; // maximum number of chars optimized by IndexOfAny
+                chars = chars.Slice(0, RegexCharClass.GetSetChars(nextChild.Str!, chars));
+                if (!chars.IsEmpty)
+                {
+                    foreach (char c in chars)
+                    {
+                        if (RegexCharClass.CharInClass(c, firstChild.Str!))
+                        {
+                            return null;
+                        }
+                    }
+
+                    return (firstChild, ('\0', null, StringComparison.Ordinal, chars.ToArray()));
+                }
             }
 
             // Otherwise, we couldn't find the pattern of an atomic set loop followed by a literal.
@@ -866,8 +1015,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static readonly float[] s_frequency = new float[]
-        {
+        private static ReadOnlySpan<float> Frequency =>
+        [
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,
             0.000f /* '\x10' */, 0.000f /* '\x11' */, 0.000f /* '\x12' */, 0.000f /* '\x13' */, 0.003f /* '\x14' */, 0.000f /* '\x15' */, 0.000f /* '\x16' */, 0.000f /* '\x17' */,
@@ -884,23 +1033,7 @@ namespace System.Text.RegularExpressions
             1.024f /* '   h' */, 3.750f /* '   i' */, 0.286f /* '   j' */, 0.439f /* '   k' */, 2.913f /* '   l' */, 1.459f /* '   m' */, 3.908f /* '   n' */, 3.230f /* '   o' */,
             1.444f /* '   p' */, 0.231f /* '   q' */, 4.220f /* '   r' */, 3.924f /* '   s' */, 5.312f /* '   t' */, 2.112f /* '   u' */, 0.737f /* '   v' */, 0.573f /* '   w' */,
             0.992f /* '   x' */, 1.067f /* '   y' */, 0.181f /* '   z' */, 0.391f /* '   {' */, 0.056f /* '   |' */, 0.391f /* '   }' */, 0.002f /* '   ~' */, 0.000f /* '\x7F' */,
-            0.000f /* '\x80' */, 0.000f /* '\x81' */, 0.000f /* '\x82' */, 0.000f /* '\x83' */, 0.000f /* '\x84' */, 0.000f /* '\x85' */, 0.000f /* '\x86' */, 0.000f /* '\x87' */,
-            0.000f /* '\x88' */, 0.000f /* '\x89' */, 0.000f /* '\x8A' */, 0.000f /* '\x8B' */, 0.000f /* '\x8C' */, 0.000f /* '\x8D' */, 0.000f /* '\x8E' */, 0.000f /* '\x8F' */,
-            0.000f /* '\x90' */, 0.000f /* '\x91' */, 0.000f /* '\x92' */, 0.000f /* '\x93' */, 0.000f /* '\x94' */, 0.000f /* '\x95' */, 0.000f /* '\x96' */, 0.000f /* '\x97' */,
-            0.000f /* '\x98' */, 0.000f /* '\x99' */, 0.000f /* '\x9A' */, 0.000f /* '\x9B' */, 0.000f /* '\x9C' */, 0.000f /* '\x9D' */, 0.000f /* '\x9E' */, 0.000f /* '\x9F' */,
-            0.000f /* '\xA0' */, 0.000f /* '\xA1' */, 0.000f /* '\xA2' */, 0.000f /* '\xA3' */, 0.000f /* '\xA4' */, 0.000f /* '\xA5' */, 0.000f /* '\xA6' */, 0.000f /* '\xA7' */,
-            0.000f /* '\xA8' */, 0.000f /* '\xA9' */, 0.000f /* '\xAA' */, 0.000f /* '\xAB' */, 0.000f /* '\xAC' */, 0.000f /* '\xAD' */, 0.000f /* '\xAE' */, 0.000f /* '\xAF' */,
-            0.000f /* '\xB0' */, 0.000f /* '\xB1' */, 0.000f /* '\xB2' */, 0.000f /* '\xB3' */, 0.000f /* '\xB4' */, 0.000f /* '\xB5' */, 0.000f /* '\xB6' */, 0.000f /* '\xB7' */,
-            0.000f /* '\xB8' */, 0.000f /* '\xB9' */, 0.000f /* '\xBA' */, 0.000f /* '\xBB' */, 0.000f /* '\xBC' */, 0.000f /* '\xBD' */, 0.000f /* '\xBE' */, 0.000f /* '\xBF' */,
-            0.000f /* '\xC0' */, 0.000f /* '\xC1' */, 0.000f /* '\xC2' */, 0.000f /* '\xC3' */, 0.000f /* '\xC4' */, 0.000f /* '\xC5' */, 0.000f /* '\xC6' */, 0.000f /* '\xC7' */,
-            0.000f /* '\xC8' */, 0.000f /* '\xC9' */, 0.000f /* '\xCA' */, 0.000f /* '\xCB' */, 0.000f /* '\xCC' */, 0.000f /* '\xCD' */, 0.000f /* '\xCE' */, 0.000f /* '\xCF' */,
-            0.000f /* '\xD0' */, 0.000f /* '\xD1' */, 0.000f /* '\xD2' */, 0.000f /* '\xD3' */, 0.000f /* '\xD4' */, 0.000f /* '\xD5' */, 0.000f /* '\xD6' */, 0.000f /* '\xD7' */,
-            0.000f /* '\xD8' */, 0.000f /* '\xD9' */, 0.000f /* '\xDA' */, 0.000f /* '\xDB' */, 0.000f /* '\xDC' */, 0.000f /* '\xDD' */, 0.000f /* '\xDE' */, 0.000f /* '\xDF' */,
-            0.000f /* '\xE0' */, 0.000f /* '\xE1' */, 0.000f /* '\xE2' */, 0.000f /* '\xE3' */, 0.000f /* '\xE4' */, 0.000f /* '\xE5' */, 0.000f /* '\xE6' */, 0.000f /* '\xE7' */,
-            0.000f /* '\xE8' */, 0.000f /* '\xE9' */, 0.000f /* '\xEA' */, 0.000f /* '\xEB' */, 0.000f /* '\xEC' */, 0.000f /* '\xED' */, 0.000f /* '\xEE' */, 0.000f /* '\xEF' */,
-            0.000f /* '\xF0' */, 0.000f /* '\xF1' */, 0.000f /* '\xF2' */, 0.000f /* '\xF3' */, 0.000f /* '\xF4' */, 0.000f /* '\xF5' */, 0.000f /* '\xF6' */, 0.000f /* '\xF7' */,
-            0.000f /* '\xF8' */, 0.000f /* '\xF9' */, 0.000f /* '\xFA' */, 0.000f /* '\xFB' */, 0.000f /* '\xFC' */, 0.000f /* '\xFD' */, 0.000f /* '\xFE' */, 0.000f /* '\xFF' */,
-        };
+        ];
 
         // The above table was generated programmatically with the following.  This can be augmented to incorporate additional data sources,
         // though it is only intended to be a rough approximation use when tie-breaking and we'd otherwise be picking randomly, so, it's something.
@@ -926,10 +1059,10 @@ namespace System.Text.RegularExpressions
         // long total = counts.Sum(i => i.Value);
         //
         // Console.WriteLine("/// <summary>Percent occurrences in source text (100 * char count / total count).</summary>");
-        // Console.WriteLine("private static readonly float[] s_frequency = new float[]");
-        // Console.WriteLine("{");
+        // Console.WriteLine("private static ReadOnlySpan<float> Frequency =>");
+        // Console.WriteLine("[");
         // int i = 0;
-        // for (int row = 0; row < 32; row++)
+        // for (int row = 0; row < 16; row++)
         // {
         //     Console.Write("   ");
         //     for (int col = 0; col < 8; col++)
@@ -941,6 +1074,6 @@ namespace System.Text.RegularExpressions
         //     }
         //     Console.WriteLine();
         // }
-        // Console.WriteLine("};");
+        // Console.WriteLine("];");
     }
 }

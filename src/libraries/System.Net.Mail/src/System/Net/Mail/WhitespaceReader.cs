@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
@@ -166,7 +167,7 @@ namespace System.Net.Mail
                 }
                 // Check for valid characters within comments.  Allow Unicode, as we won't transmit any comments.
                 else if (commentDepth > 0
-                    && (data[index] > MailBnfHelper.Ascii7bitMaxValue || MailBnfHelper.Ctext[data[index]]))
+                    && (!Ascii.IsValid(data[index]) || MailBnfHelper.Ctext[data[index]]))
                 {
                     index--;
                 }

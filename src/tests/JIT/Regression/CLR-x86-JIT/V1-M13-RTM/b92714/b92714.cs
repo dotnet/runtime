@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal struct AA
+using Xunit;
+public struct AA
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         bool local3 = false;
         do
         {
             while (local3) { }
         } while (local3);
-        return 100;
     }
 }

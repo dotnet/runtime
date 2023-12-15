@@ -885,6 +885,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91582", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestParallelScheduler()
         {
             ParallelOptions parallelOptions = new ParallelOptions();
@@ -992,6 +993,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestInvokeDOPAndCancel()
         {
             ParallelOptions parallelOptions = null;
@@ -1211,6 +1213,7 @@ namespace System.Threading.Tasks.Tests
         /// Test to ensure that the task ID can be accessed from inside the task
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91583", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TaskIDFromExternalContextTest()
         {
             int? withinTaskId = int.MinValue;
@@ -1262,10 +1265,7 @@ namespace System.Threading.Tasks.Tests
                             {
                                 Interlocked.Increment(ref completedCount);
 
-                                if (!cancellationTokenSource.IsCancellationRequested)
-                                {
-                                    Task.Run(() => cancellationTokenSource.Cancel());
-                                }
+                                _ = cancellationTokenSource.CancelAsync();
                             }).IsCompleted;
                 }
                 catch (OperationCanceledException)
@@ -1299,10 +1299,7 @@ namespace System.Threading.Tasks.Tests
                             {
                                 Interlocked.Increment(ref completedCount);
 
-                                if (!cancellationTokenSource.IsCancellationRequested)
-                                {
-                                    Task.Run(() => cancellationTokenSource.Cancel());
-                                }
+                                _ = cancellationTokenSource.CancelAsync();
                             }).IsCompleted;
                 }
                 catch (OperationCanceledException)
@@ -1343,10 +1340,7 @@ namespace System.Threading.Tasks.Tests
                             {
                                 Interlocked.Increment(ref completedCount);
 
-                                if (!cancellationTokenSource.IsCancellationRequested)
-                                {
-                                    Task.Run(() => cancellationTokenSource.Cancel());
-                                }
+                                _ = cancellationTokenSource.CancelAsync();
                             }).IsCompleted;
                 }
                 catch (OperationCanceledException)

@@ -68,14 +68,14 @@ namespace Microsoft.Interop.JavaScript
             return argument;
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(ToManagedMethodRefOrOut(source)))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))

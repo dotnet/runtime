@@ -42,7 +42,6 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/coree.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -62,10 +61,14 @@
 #include "mini-runtime.h"
 #include "interp/interp.h"
 
+#if HOST_BROWSER
+#include "interp/jiterpreter.h"
+#endif
+
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#if TARGET_OSX
+#ifdef HAVE_SYS_RESOURCE_H
 #   include <sys/resource.h>
 #endif
 
@@ -1385,15 +1388,18 @@ typedef struct
 	char *aot_options;
 } MainThreadArgs;
 
-static void main_thread_handler (gpointer user_data)
+static void
+main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args = (MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
 
 	if (mono_compile_aot) {
 		int i, res;
-		gpointer *aot_state = NULL;
+		MonoAssembly **assemblies;
 
+		assemblies = g_new0 (MonoAssembly*, main_args->argc);
+		mono_set_failure_type (MONO_CLASS_LOADER_DEFERRED_FAILURE);
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
 			assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->argv [i]);
@@ -1407,40 +1413,34 @@ static void main_thread_handler (gpointer user_data)
 				MonoImage *img;
 
 				img = mono_image_open (main_args->argv [i], &status);
-				if (img && strcmp (img->name, assembly->image->name)) {
+				if (img && g_strcasecmp (img->name, assembly->image->name)) {
 					fprintf (stderr, "Error: Loaded assembly '%s' doesn't match original file name '%s'. Set MONO_PATH to the assembly's location.\n", assembly->image->name, img->name);
 					exit (1);
 				}
 			}
-			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options, &aot_state);
-			if (res != 0) {
-				fprintf (stderr, "AOT of image %s failed.\n", main_args->argv [i]);
-				exit (1);
-			}
+			assemblies [i] = assembly;
 		}
-		if (aot_state) {
-			res = mono_compile_deferred_assemblies (main_args->opts, main_args->aot_options, &aot_state);
-			if (res != 0) {
-				fprintf (stderr, "AOT of mode-specific deferred assemblies failed.\n");
-				exit (1);
-			}
-		}
-	} else {
-		assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
-		if (!assembly){
-			fprintf (stderr, "Can not open image %s\n", main_args->file);
+
+		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options);
+		if (res)
 			exit (1);
-		}
-
-		/*
-		 * This must be done in a thread managed by mono since it can invoke
-		 * managed code.
-		 */
-		if (main_args->opts & MONO_OPT_PRECOMP)
-			mono_precompile_assemblies ();
-
-		mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
+		return;
 	}
+
+	assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", main_args->file);
+		exit (1);
+	}
+
+	/*
+	 * This must be done in a thread managed by mono since it can invoke
+	 * managed code.
+	 */
+	if (main_args->opts & MONO_OPT_PRECOMP)
+		mono_precompile_assemblies ();
+
+	mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
 }
 
 static int
@@ -1611,11 +1611,9 @@ mini_usage (void)
 #ifdef TARGET_OSX
 		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
 #endif
-#ifdef HOST_WIN32
-	        "    --mixed-mode           Enable mixed-mode image support.\n"
-#endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
+		"    --path=DIR             Add DIR to the list of directories to search for assemblies.\n"
 	  );
 
 	g_print ("\nOptions:\n");
@@ -1687,7 +1685,6 @@ mono_get_version_info (void)
 #endif
 
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
-	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG
@@ -1843,6 +1840,9 @@ mono_jit_parse_options (int argc, char * argv[])
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
 			mini_add_profiler_argument (argv [i] + 10);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
+#if HOST_BROWSER
+		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mono_jiterp_parse_option (argv [i] + 2)) {
+#endif
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);
@@ -1905,23 +1905,28 @@ switch_gc (char* argv[], const char* target_gc)
 #endif
 }
 
-#ifdef TARGET_OSX
-
-/*
- * tries to increase the minimum number of files, if the number is below 1024
- */
 static void
-darwin_change_default_file_handles ()
+increase_descriptor_limit (void)
 {
+#if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
 	struct rlimit limit;
 
-	if (getrlimit (RLIMIT_NOFILE, &limit) == 0){
-		if (limit.rlim_cur < 1024){
-			limit.rlim_cur = MAX(1024,limit.rlim_cur);
-			setrlimit (RLIMIT_NOFILE, &limit);
-		}
+	if (getrlimit (RLIMIT_NOFILE, &limit) == 0) {
+		// Set our soft limit for file descriptors to be the same
+		// as the max limit.
+		limit.rlim_cur = limit.rlim_max;
+#ifdef __APPLE__
+		// Based on compatibility note in setrlimit(2) manpage for OSX,
+		// trim the limit to OPEN_MAX.
+		if (limit.rlim_cur > OPEN_MAX)
+			limit.rlim_cur = OPEN_MAX;
+#endif
+		setrlimit (RLIMIT_NOFILE, &limit);
 	}
+#endif
 }
+
+#ifdef TARGET_OSX
 
 static void
 switch_arch (char* argv[], const char* target_arch)
@@ -2021,11 +2026,12 @@ print_icall_table (void)
 
 	printf ("[\n{ \"klass\": \"\", \"icalls\": [");
 #define NOHANDLES(inner) inner
-#define HANDLES(id, name, func, ...)	printf ("\t,{ \"name\": \"%s\", \"func\": \"%s_raw\", \"handles\": true }\n", name, #func);
+#define NOHANDLES_FLAGS(inner,flags) inner
+#define HANDLES(id, name, func, ...)	printf ("\t,{ \"name\": \"%s\", \"func\": \"%s_raw\", \"handles\": true, \"flags\": \"%d\" }\n", name, #func, MONO_ICALL_FLAGS_USES_HANDLES);
 #define HANDLES_REUSE_WRAPPER		HANDLES
 #define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
 #define ICALL_TYPE(id,name,first) printf ("]},\n { \"klass\":\"%s\", \"icalls\": [{} ", name);
-#define ICALL(id,name,func) printf ("\t,{ \"name\": \"%s\", \"func\": \"%s\", \"handles\": false }\n", name, #func);
+#define ICALL(id,name,func) printf ("\t,{ \"name\": \"%s\", \"func\": \"%s\", \"handles\": false, \"flags\": \"0\" }\n", name, #func);
 #include <mono/metadata/icall-def.h>
 
 	printf ("]}\n]\n");
@@ -2060,11 +2066,9 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	GPtrArray *agents = NULL;
 	char *extra_bindings_config_file = NULL;
+	GList *paths = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
-#endif
-#ifdef HOST_WIN32
-	int mixed_mode = FALSE;
 #endif
 	ERROR_DECL (error);
 
@@ -2079,9 +2083,7 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-#if TARGET_OSX
-	darwin_change_default_file_handles ();
-#endif
+	increase_descriptor_limit ();
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
@@ -2188,10 +2190,6 @@ mono_main (int argc, char* argv[])
 				return 1;
 			}
 			++i;
-#ifdef HOST_WIN32
-		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
-			mixed_mode = TRUE;
-#endif
 #ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
@@ -2278,15 +2276,17 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **splitted;
+			char **split;
 
-			splitted = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*splitted) {
-				char *tmp = *splitted;
+			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
+			while (*split) {
+				char *tmp = *split;
 				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
 				g_free (tmp);
-				splitted++;
+				split++;
 			}
+		} else if (strncmp (argv [i], "--path=", 7) == 0) {
+			paths = g_list_append (paths, argv [i] + 7);
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;
 			recompilation_times = atoi (argv [i] + 14);
@@ -2496,6 +2496,16 @@ mono_main (int argc, char* argv[])
 	if (g_hasenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
 
+	if (paths) {
+		char **p = g_new0 (char *, g_list_length (paths) + 1);
+		int pindex = 0;
+		for (GList *l = paths; l; l = l->next)
+			p [pindex ++] = (char*)l->data;
+		g_list_free (paths);
+
+		mono_set_assemblies_path_direct (p);
+	}
+
 #ifdef MONO_CROSS_COMPILE
 	if (!mono_compile_aot) {
 		fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.\n");
@@ -2536,11 +2546,6 @@ mono_main (int argc, char* argv[])
 		return 1;
 	} else if (enable_debugging)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-
-#ifdef HOST_WIN32
-	if (mixed_mode)
-		mono_load_coree (argv [i]);
-#endif
 
 	mono_set_defaults (mini_verbose_level, opt);
 

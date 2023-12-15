@@ -4,8 +4,9 @@
 // Repro case for a bug involving byref-typed appearances of int-typed lclVars.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
-struct S
+public struct S
 {
     int i;
 
@@ -21,7 +22,8 @@ struct S
         return s;
     }
 
-    static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         S s;
         return Test(&s)->i;

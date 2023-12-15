@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Runtime.Serialization.DataContracts;
 using System.Globalization;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
 
 
 namespace System.Runtime.Serialization
@@ -269,7 +269,7 @@ namespace System.Runtime.Serialization
             WriteXmlnsAttribute(ns);
         }
 
-        private static Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static InvalidDataContractException CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType_Serialization, DataContract.GetClrTypeFullName(type)));
         }
@@ -352,7 +352,7 @@ namespace System.Runtime.Serialization
                     break;
             }
             if (!handled)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
+                throw CreateInvalidPrimitiveTypeException(valueType);
         }
 
         internal void WriteExtensionData(IDataNode dataNode)
@@ -433,7 +433,7 @@ namespace System.Runtime.Serialization
 
             if (!handled)
             {
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
+                throw CreateInvalidPrimitiveTypeException(valueType);
             }
         }
 

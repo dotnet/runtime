@@ -26,8 +26,12 @@
 #include <sys/sysmacros.h>
 #endif
 #include <sys/uio.h>
+#if HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
+#if HAVE_TERMIOS_H
 #include <termios.h>
+#endif
 #include <unistd.h>
 #include <limits.h>
 #if HAVE_FCOPYFILE
@@ -42,7 +46,7 @@
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
-#elif !HAVE_NON_LEGACY_STATFS // SunOS
+#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
 #include <sys/vfs.h>
@@ -70,7 +74,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 // Ensure FICLONE is defined for all Linux builds.
 #ifndef FICLONE
 #define FICLONE _IOW(0x94, 9, int)
-#endif
+#endif /* __linux__ */
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
@@ -97,11 +101,11 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #define stat_ stat64
 #define fstat_ fstat64
 #define lstat_ lstat64
-#else
+#else /* HAVE_STAT64 */
 #define stat_ stat
 #define fstat_ fstat
 #define lstat_ lstat
-#endif
+#endif  /* HAVE_STAT64 */
 
 // These numeric values are specified by POSIX.
 // Validate that our definitions match.
@@ -124,8 +128,10 @@ c_static_assert(PAL_S_ISGID == S_ISGID);
 // are common to our current targets.  If these static asserts fail,
 // ConvertFileStatus needs to be updated to twiddle mode bits
 // accordingly.
+#if !defined(TARGET_WASI)
 c_static_assert(PAL_S_IFMT == S_IFMT);
 c_static_assert(PAL_S_IFIFO == S_IFIFO);
+#endif /* TARGET_WASI */
 c_static_assert(PAL_S_IFBLK == S_IFBLK);
 c_static_assert(PAL_S_IFCHR == S_IFCHR);
 c_static_assert(PAL_S_IFDIR == S_IFDIR);
@@ -139,7 +145,7 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 // WebAssembly (BROWSER) has dirent d_type but is not correct
 // by returning UNKNOWN the managed code properly stats the file
 // to detect if entry is directory or not.
-#if defined(DT_UNKNOWN) || defined(TARGET_WASM)
+#if (defined(DT_UNKNOWN) || defined(TARGET_WASM)) && !defined(TARGET_WASI)
 c_static_assert((int)PAL_DT_UNKNOWN == (int)DT_UNKNOWN);
 c_static_assert((int)PAL_DT_FIFO == (int)DT_FIFO);
 c_static_assert((int)PAL_DT_CHR == (int)DT_CHR);
@@ -283,7 +289,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
             return -1;
     }
 
-    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC))
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_NOFOLLOW))
     {
         assert_msg(false, "Unknown Open flag", (int)flags);
         return -1;
@@ -301,6 +307,8 @@ static int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_TRUNC;
     if (flags & PAL_O_SYNC)
         ret |= O_SYNC;
+    if (flags & PAL_O_NOFOLLOW)
+        ret |= O_NOFOLLOW;
 
     assert(ret != -1);
     return ret;
@@ -341,10 +349,14 @@ intptr_t SystemNative_Dup(intptr_t oldfd)
     int result;
 #if HAVE_F_DUPFD_CLOEXEC
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD_CLOEXEC, 0)) < 0 && errno == EINTR);
-#else
+#elif HAVE_F_DUPFD
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD, 0)) < 0 && errno == EINTR);
     // do CLOEXEC here too
     fcntl(result, F_SETFD, FD_CLOEXEC);
+#else
+    // The main use cases for dup are setting up the classic Unix dance of setting up file descriptors in advance of performing a fork. Since WASI has no fork, these don't apply.
+    // https://github.com/bytecodealliance/wasmtime/blob/b2fefe77148582a9b8013e34fe5808ada82b6efc/docs/WASI-rationale.md#why-no-dup
+    result = oldfd;
 #endif
     return result;
 }
@@ -570,7 +582,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #if HAVE_PIPE2
     // If pipe2 is available, use it.  This will handle O_CLOEXEC if it was set.
     while ((result = pipe2(pipeFds, flags)) < 0 && errno == EINTR);
-#else
+#elif HAVE_PIPE
     // Otherwise, use pipe.
     while ((result = pipe(pipeFds)) < 0 && errno == EINTR);
 
@@ -595,7 +607,9 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
             errno = tmpErrno;
         }
     }
-#endif
+#else /* HAVE_PIPE */
+    result = -1;
+#endif /* HAVE_PIPE */
     return result;
 }
 
@@ -695,16 +709,28 @@ int32_t SystemNative_MkDir(const char* path, int32_t mode)
 
 int32_t SystemNative_ChMod(const char* path, int32_t mode)
 {
+#if HAVE_CHMOD
     int32_t result;
     while ((result = chmod(path, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
+#else /* HAVE_CHMOD */
+    (void)path; // unused
+    (void)mode; // unused
+    return EINTR;
+#endif /* HAVE_CHMOD */
 }
 
 int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 {
+#if HAVE_FCHMOD
     int32_t result;
     while ((result = fchmod(ToFileDescriptor(fd), (mode_t)mode)) < 0 && errno == EINTR);
     return result;
+#else /* HAVE_FCHMOD */
+    (void)fd; // unused
+    (void)mode; // unused
+    return EINTR;
+#endif /* HAVE_FCHMOD */
 }
 
 int32_t SystemNative_FSync(intptr_t fd)
@@ -725,7 +751,11 @@ int32_t SystemNative_FSync(intptr_t fd)
 int32_t SystemNative_FLock(intptr_t fd, int32_t operation)
 {
     int32_t result;
+#if !defined(TARGET_WASI)
     while ((result = flock(ToFileDescriptor(fd), operation)) < 0 && errno == EINTR);
+#else /* TARGET_WASI */
+    result = EINTR;
+#endif /* TARGET_WASI */
     return result;
 }
 
@@ -748,12 +778,15 @@ int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
         result =
 #if HAVE_LSEEK64
             lseek64(
-#else
-            lseek(
-#endif
                  ToFileDescriptor(fd),
                  (off_t)offset,
                  whence)) < 0 && errno == EINTR);
+#else
+            lseek(
+                 ToFileDescriptor(fd),
+                 (off_t)offset,
+                 whence)) < 0 && errno == EINTR);
+#endif
     return result;
 }
 
@@ -773,32 +806,50 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 
 void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
 {
+#if !defined(TARGET_WASI)
     dev_t castedDev = (dev_t)dev;
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
+#else /* TARGET_WASI */
+    dev_t castedDev = (dev_t)dev;
+    *majorNumber = 0;
+    *minorNumber = 0;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
+#if !defined(TARGET_WASI)
     dev_t dev = (dev_t)makedev(major, minor);
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
     return result;
+#else /* TARGET_WASI */
+    return EINTR;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
 {
+#if !defined(TARGET_WASI)
     int32_t result;
     while ((result = mkfifo(pathName, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
+#else /* TARGET_WASI */
+    return EINTR;
+#endif /* TARGET_WASI */
 }
 
 char* SystemNative_MkdTemp(char* pathTemplate)
 {
+#if !defined(TARGET_WASI)
     char* result = NULL;
     while ((result = mkdtemp(pathTemplate)) == NULL && errno == EINTR);
     return result;
+#else /* TARGET_WASI */
+    return NULL;
+#endif /* TARGET_WASI */
 }
 
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
@@ -840,6 +891,9 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
     {
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
+#elif TARGET_WASI
+    assert_msg(false, "Not supported on WASI", 0);
+    result = -1;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
 #endif
@@ -965,6 +1019,19 @@ int32_t SystemNative_MUnmap(void* address, uint64_t length)
     return munmap(address, (size_t)length);
 }
 
+int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
+{
+    if (length > SIZE_MAX)
+    {
+        errno =  ERANGE;
+        return -1;
+    }
+
+    protection = ConvertMMapProtection(protection);
+
+    return mprotect(address, (size_t)length, protection);
+}
+
 int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
 {
     if (length > SIZE_MAX)
@@ -976,7 +1043,7 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     switch (advice)
     {
         case PAL_MADV_DONTFORK:
-#ifdef MADV_DONTFORK
+#if defined(MADV_DONTFORK) && !defined(TARGET_WASI)
             return madvise(address, (size_t)length, MADV_DONTFORK);
 #else
             (void)address, (void)length, (void)advice;
@@ -1005,7 +1072,11 @@ int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
         return -1;
     }
 
+#if !defined(TARGET_WASI)
     return msync(address, (size_t)length, flags);
+#else
+    return -1;
+#endif
 }
 
 int64_t SystemNative_SysConf(int32_t name)
@@ -1145,7 +1216,9 @@ int32_t SystemNative_RmDir(const char* path)
 
 void SystemNative_Sync(void)
 {
+#if !defined(TARGET_WASI)
     sync();
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
@@ -1267,7 +1340,11 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     // Try copying data using a copy-on-write clone. This shares storage between the files.
     if (sourceLength != 0)
     {
+#if HAVE_IOCTL_WITH_INT_REQUEST
+        while ((ret = ioctl(outFd, (int)FICLONE, inFd)) < 0 && errno == EINTR);
+#else
         while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
+#endif
         copied = ret == 0;
     }
 #endif
@@ -1369,6 +1446,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         return -1;
     }
 
+#if HAVE_FCHMOD
     // Copy permissions.
     // Even though managed code created the file with permissions matching those of the source file,
     // we need to copy permissions because the open permissions may be filtered by 'umask'.
@@ -1377,6 +1455,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     {
         return -1;
     }
+#endif /* HAVE_FCHMOD */
 
     return 0;
 #endif // HAVE_FCOPYFILE
@@ -1458,9 +1537,14 @@ int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 char* SystemNative_RealPath(const char* path)
 {
     assert(path != NULL);
+#if !defined(TARGET_WASI)
     return realpath(path, NULL);
+#else /* TARGET_WASI */
+    return NULL;
+#endif /* TARGET_WASI */
 }
 
+#if !defined(TARGET_WASI)
 static int16_t ConvertLockType(int16_t managedLockType)
 {
     // the managed enum Interop.Sys.LockType has no 1:1 mapping with corresponding Unix values
@@ -1577,6 +1661,7 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     else if (strcmp(fileSystemName, "rootfs") == 0) result = 0x53464846;
     else if (strcmp(fileSystemName, "rpc_pipefs") == 0) result = 0x67596969;
     else if (strcmp(fileSystemName, "samba") == 0) result = 0x517B;
+    else if (strcmp(fileSystemName, "sdcardfs") == 0) result = 0x5DCA2DF5;
     else if (strcmp(fileSystemName, "securityfs") == 0) result = 0x73636673;
     else if (strcmp(fileSystemName, "selinux") == 0) result = 0xF97CFF8C;
     else if (strcmp(fileSystemName, "sffs") == 0) result = 0x786F4256;
@@ -1613,6 +1698,7 @@ static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
     return result;
 }
 #endif
+#endif /* TARGET_WASI */
 
 uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 {
@@ -1633,6 +1719,8 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     uint32_t result = (uint32_t)statfsArgs.f_type;
     return result;
 #endif
+#elif defined(TARGET_WASI)
+    return EINTR;
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
     struct statvfs statfsArgs;
@@ -1647,6 +1735,7 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+#if !defined(TARGET_WASI)
     int16_t unixLockType = ConvertLockType(lockType);
     if (offset < 0 || length < 0)
     {
@@ -1676,6 +1765,9 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     int32_t ret;
     while ((ret = fcntl (ToFileDescriptor(fd), command, &lockArgs)) < 0 && errno == EINTR);
     return ret;
+#else /* TARGET_WASI */
+    return EINTR;
+#endif /* TARGET_WASI */
 }
 
 int32_t SystemNative_LChflags(const char* path, uint32_t flags)

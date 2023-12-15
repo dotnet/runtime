@@ -10,17 +10,27 @@ set(APP_RESOURCES
 add_executable(
     %ProjectName%
     %MainSource%
-    runtime.h
-    runtime.m
-    %AotModulesSource%
     ${APP_RESOURCES}
+    util.h
+    util.m
 )
+
+if(NOT %UseNativeAOTRuntime%)
+    target_sources(
+        %ProjectName%
+        PRIVATE
+        %AotModulesSource%
+        runtime.h
+        runtime.m)
+endif()
 
 %AotSources%
 
 %Defines%
 
-include_directories("%MonoInclude%")
+if(NOT %UseNativeAOTRuntime%)
+    include_directories("%MonoInclude%")
+endif()
 
 set_target_properties(%ProjectName% %AotTargetsList% PROPERTIES
     XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
@@ -58,12 +68,19 @@ endif()
 
 target_link_libraries(
     %ProjectName%
+    PRIVATE
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
-    %FrameworksToLink%
     "-lz"
     "-lc++"
     "-liconv"
-%NativeLibrariesToLink%
+    %NativeLibrariesToLink%
+    %APP_LINK_LIBRARIES%
+)
+
+set_target_properties(
+    %ProjectName% 
+    PROPERTIES LINK_FLAGS
+    %EXTRA_LINKER_ARGS%
 )

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 namespace R3Contention
@@ -155,16 +156,16 @@ namespace R3Contention
     }
 
 
-    internal static class App
+    public static class App
     {
-        private static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             var layoutOptions = new LayoutOptions();
 
             layoutOptions.text = "Some text.";
 
             layoutOptions.GetPreferredSizeCore(Size.Empty);
-            return 100;
         }
     }
 }

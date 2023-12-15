@@ -88,8 +88,8 @@
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
-        <source>Insufficient hexadecimal digits.</source>
-        <target state="translated">Nicht genügend Hexadezimalziffern.</target>
+        <source>Insufficient or invalid hexadecimal digits.</source>
+        <target state="translated">Unzureichende oder ungültige Hexadezimalziffern.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -113,8 +113,8 @@
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
-        <source>Incomplete \\p{X} character escape.</source>
-        <target state="translated">Unvollständiges \\p{X}-Escape-Zeichen.</target>
+        <source>Incomplete \p{X} character escape.</source>
+        <target state="translated">Unvollständiges \p{X}-Escape-Zeichen.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -138,13 +138,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
-        <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="translated">Falsch formatierter \\k&lt;...&gt; benannter Rückverweis.</target>
+        <source>Malformed \k&lt;...&gt; named back reference.</source>
+        <target state="translated">Falsch formatierter \k&lt;...&gt; benannter Verweis.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
-        <source>Malformed \\p{X} character escape.</source>
-        <target state="translated">Falsch formatiertes \\p{X}-Escape-Zeichen.</target>
+        <source>Malformed \p{X} character escape.</source>
+        <target state="translated">Falsch formatiertes \p{X}-Escape-Zeichen.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -167,11 +167,6 @@
         <target state="translated">Das Ergebnis kann nicht für eine fehlgeschlagene Übereinstimmung aufgerufen werden.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegEx-Ersätze durch Austausch von Gruppen werden bei RegexOptions.NonBacktracking nicht unterstützt.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Die Sammlung ist schreibgeschützt.</target>
@@ -193,7 +188,7 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
         <target state="translated">Zeitüberschreitung des RegEx-Moduls beim Versuch, ein Muster mit einer Eingabezeichenfolge in Übereinstimmung zu bringen. Dies kann viele Ursachen haben, darunter sehr große Eingaben oder übermäßige Rückverfolgung aufgrund von geschachtelten Quantifizierern, Rückverweisen und anderen Faktoren.</target>
         <note />
       </trans-unit>
@@ -213,8 +208,8 @@
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
-        <source>Cannot include class \\{0} in character range.</source>
-        <target state="translated">Die Klasse \\{0} kann nicht in den Zeichenbereich eingeschlossen werden.</target>
+        <source>Cannot include class \{0} in character range.</source>
+        <target state="translated">Die Klasse \{0} kann nicht in den Zeichenbereich eingeschlossen werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -228,8 +223,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
-        <source>Illegal \\ at end of pattern.</source>
-        <target state="translated">Unzulässiger \\ am Ende des Musters.</target>
+        <source>Illegal \ at end of pattern.</source>
+        <target state="translated">Unzulässiger \ am Ende des Musters.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -238,8 +233,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">Unbekannte Escapesequenz \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="translated">Nicht erkannte Escapesequenz \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

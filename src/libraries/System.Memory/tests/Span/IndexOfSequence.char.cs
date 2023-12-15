@@ -172,12 +172,12 @@ namespace System.SpanTests
             yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111111211111111", -1, -1 };
             yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111211111111111111", -1, -1 };
             yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111211111121111111", -1, -1 };
-            yield return new object[] { "жжжжжжжжжжжжжж", "жжж", 0, 11 };
-            yield return new object[] { "жжжжжжжжжжжжжжжжжжжжжжжжжжжж", "ж0ж", -1, -1 };
-            yield return new object[] { "жжжжжаааааааааааааааччччс", "ччччс", 20, 20 };
-            yield return new object[] { "жжжжжаааааааааааааааччччсссссссчччч", "чччч", 20, 31 };
-            yield return new object[] { "жжжжжжжжжжжжжжжжжжжжжжжжжжжж", "1112", -1, -1 };
-            yield return new object[] { "0уза0оцущ0оаз0щцуоазщцуо0азщцуоазщоц0узозцуоазуоцз0щауцз0оазцо", "0оаз0", 9, 9 };
+            yield return new object[] { "\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436", "\u0436\u0436\u0436", 0, 11 };
+            yield return new object[] { "\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436", "\u04360\u0436", -1, -1 };
+            yield return new object[] { "\u0436\u0436\u0436\u0436\u0436\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0447\u0447\u0447\u0447\u0441", "\u0447\u0447\u0447\u0447\u0441", 20, 20 };
+            yield return new object[] { "\u0436\u0436\u0436\u0436\u0436\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0430\u0447\u0447\u0447\u0447\u0441\u0441\u0441\u0441\u0441\u0441\u0441\u0447\u0447\u0447\u0447", "\u0447\u0447\u0447\u0447", 20, 31 };
+            yield return new object[] { "\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436\u0436", "1112", -1, -1 };
+            yield return new object[] { "0\u0443\u0437\u04300\u043E\u0446\u0443\u04490\u043E\u0430\u04370\u0449\u0446\u0443\u043E\u0430\u0437\u0449\u0446\u0443\u043E0\u0430\u0437\u0449\u0446\u0443\u043E\u0430\u0437\u0449\u043E\u04460\u0443\u0437\u043E\u0437\u0446\u0443\u043E\u0430\u0437\u0443\u043E\u0446\u04370\u0449\u0430\u0443\u0446\u04370\u043E\u0430\u0437\u0446\u043E", "0\u043E\u0430\u04370", 9, 9 };
             yield return new object[] { "abababababababababababababababbc", "bb", 29, 29 };
             yield return new object[] { "abababababababababababababababb", "bb", 29, 29 };
             yield return new object[] { "abababababababababababababababbc", "bb", 29, 29 };
@@ -194,7 +194,7 @@ namespace System.SpanTests
             yield return new object[] { "bbbbabababababababababababababababc", "aaa", -1, -1 };
             yield return new object[] { "ababababababababababababababababbc", "abaa", -1, -1 };
             yield return new object[] { "babbbabababababababababababababababc", "babb", 0, 0 };
-            yield return new object[] { "babbbabababababababababababababababc", "сaсс", -1, -1 };
+            yield return new object[] { "babbbabababababababababababababababc", "\u0441a\u0441\u0441", -1, -1 };
             yield return new object[] { "babbbbbbbbbbbbb", "babbbbbbbbbbbb", 0, 0 };
             yield return new object[] { "babbbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbbbbbbb", 0, 15 };
             yield return new object[] { "babbbbbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbbbbbbb", 0, 17 };

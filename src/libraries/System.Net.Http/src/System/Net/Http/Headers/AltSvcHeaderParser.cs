@@ -56,7 +56,8 @@ namespace System.Net.Http.Headers
                 return idx - startIndex;
             }
 
-            if (idx == value.Length || value[idx++] != '=')
+            // Make sure we have at least 2 characters and first one being an '='.
+            if (idx + 1 >= value.Length || value[idx++] != '=')
             {
                 parsedValue = null;
                 return 0;
@@ -73,10 +74,10 @@ namespace System.Net.Http.Headers
             int? maxAge = null;
             bool persist = false;
 
-            while (idx != value.Length)
+            while (idx < value.Length)
             {
                 // Skip OWS before semicolon.
-                while (idx != value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
+                while (idx < value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
 
                 if (idx == value.Length)
                 {
@@ -102,7 +103,7 @@ namespace System.Net.Http.Headers
                 ++idx;
 
                 // Skip OWS after semicolon / before value.
-                while (idx != value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
+                while (idx < value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
 
                 // Get the parameter key length.
                 int tokenLength = HttpRuleParser.GetTokenLength(value, idx);
@@ -226,7 +227,7 @@ namespace System.Net.Http.Headers
                     }
                     break;
                 case 5:
-                    if (span.SequenceEqual("clear"))
+                    if (span is "clear")
                     {
                         result = "clear";
                         return true;
@@ -406,12 +407,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (HttpRuleParser.IsTokenChar(value[startIndex]))
+            int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
+            if (tokenLength > 0)
             {
                 // No reason for integers to be quoted, so this should be the hot path.
-
-                int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
-
                 readLength = tokenLength;
                 return HeaderUtilities.TryParseInt32(value, startIndex, tokenLength, out result);
             }
@@ -471,9 +470,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (HttpRuleParser.IsTokenChar(value[startIndex]))
+            int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
+            if (tokenLength > 0)
             {
-                readLength = HttpRuleParser.GetTokenLength(value, startIndex);
+                readLength = tokenLength;
                 return true;
             }
 

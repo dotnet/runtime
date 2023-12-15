@@ -4,114 +4,102 @@
 
 "use strict";
 
-#if USE_PTHREADS
-const usePThreads = `true`;
-const isPThread = `ENVIRONMENT_IS_PTHREAD`;
-#else
-const usePThreads = `false`;
-const isPThread = `false`;
-#endif
+// -- this javascript file is evaluated by emcc during compilation! --
 
-const DotnetSupportLib = {
-    $DOTNET: {},
-    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
-    // Emscripten uses require function for nodeJS even in ES6 module. We need https://nodejs.org/api/module.html#modulecreaterequirefilename
-    // We use dynamic import because there is no "module" module in the browser.
-    // This is async init of it, note it would become available only after first tick.
-    // Also fix of scriptDirectory would be delayed
-    // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
-    // We also replace implementation of fetch
-    $DOTNET__postset: `
-let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
-if (${usePThreads}) {
-    __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
-    __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
-    __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
-}
-let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
-if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
-}
-let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
-    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
-    __dotnet_replacements, __callbackAPI);
-updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
-var fetch = __dotnet_replacements.fetch;
-_scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
-if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise.then(someRequire => {
-        require = someRequire;
+// because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
+const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
+const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
+const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
+const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
+const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
+var methodIndexByName = undefined;
+var gitHash = undefined;
+
+function setup(linkerSetup) {
+    // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
+    #if USE_PTHREADS
+    const modulePThread = PThread;
+    #else
+    const modulePThread = {};
+    const ENVIRONMENT_IS_PTHREAD = false;
+    #endif
+    const dotnet_replacements = {
+        fetch: globalThis.fetch,
+        ENVIRONMENT_IS_WORKER,
+        require,
+        modulePThread,
+        scriptDirectory,
+    };
+
+    ENVIRONMENT_IS_WORKER = dotnet_replacements.ENVIRONMENT_IS_WORKER;
+    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
+    noExitRuntime = dotnet_replacements.noExitRuntime;
+    fetch = dotnet_replacements.fetch;
+    require = dotnet_replacements.require;
+    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
+    Module.__dotnet_runtime.passEmscriptenInternals({
+        isPThread: ENVIRONMENT_IS_PTHREAD,
+        quit_, ExitStatus,
+        updateMemoryViews,
+        getMemory: () => { return wasmMemory; },
+        getWasmIndirectFunctionTable: () => { return wasmTable; },
+        ...linkerSetup
     });
-}
-var noExitRuntime = __dotnet_replacements.noExitRuntime;
-if (${usePThreads}) {
-    PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
-    PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
-    PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
-}
-`,
-};
-
-// the methods would be visible to EMCC linker
-// --- keep in sync with exports.ts ---
-const linked_functions = [
-    // mini-wasm.c
-    "mono_set_timeout",
-
-    // mini-wasm-debugger.c
-    "mono_wasm_asm_loaded",
-    "mono_wasm_fire_debugger_agent_message",
-    "mono_wasm_debugger_log",
-    "mono_wasm_add_dbg_command_received",
-    "mono_wasm_set_entrypoint_breakpoint",
-
-    // mono-threads-wasm.c
-    "schedule_background_exec",
-
-    // driver.c
-    "mono_wasm_invoke_js_blazor",
-    "mono_wasm_trace_logger",
-    "mono_wasm_event_pipe_early_startup_callback",
-
-    // corebindings.c
-    "mono_wasm_invoke_js_with_args_ref",
-    "mono_wasm_get_object_property_ref",
-    "mono_wasm_set_object_property_ref",
-    "mono_wasm_get_by_index_ref",
-    "mono_wasm_set_by_index_ref",
-    "mono_wasm_get_global_object_ref",
-    "mono_wasm_create_cs_owned_object_ref",
-    "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array_ref",
-    "mono_wasm_typed_array_from_ref",
-    "mono_wasm_compile_function_ref",
-    "mono_wasm_bind_js_function",
-    "mono_wasm_invoke_bound_function",
-    "mono_wasm_invoke_import",
-    "mono_wasm_bind_cs_function",
-    "mono_wasm_marshal_promise",
-
-    // pal_icushim_static.c
-    "mono_wasm_load_icu_data",
-    "mono_wasm_get_icudt_name",
 
     #if USE_PTHREADS
-    /// mono-threads-wasm.c
-    "mono_wasm_pthread_on_pthread_attached",
-    // diagnostics_server.c
-    "mono_wasm_diagnostic_server_on_server_thread_created",
-    "mono_wasm_diagnostic_server_on_runtime_server_init",
-    "mono_wasm_diagnostic_server_stream_signal_work_available",
+    if (ENVIRONMENT_IS_PTHREAD) {
+        Module.config = {};
+        Module.__dotnet_runtime.configureWorkerStartup(Module);
+    } else {
+        #endif
+        Module.__dotnet_runtime.configureEmscriptenStartup(Module);
+        #if USE_PTHREADS
+    }
     #endif
-];
-
-// -- this javascript file is evaluated by emcc during compilation! --
-// we generate simple proxy for each exported function so that emcc will include them in the final output
-for (let linked_function of linked_functions) {
-    const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
-    DotnetSupportLib[linked_function] = new Function(fn_template);
 }
 
-autoAddDeps(DotnetSupportLib, "$DOTNET");
-mergeInto(LibraryManager.library, DotnetSupportLib);
+const DotnetSupportLib = {
+    $DOTNET: { setup },
+    icudt68_dat: function () { throw new Error('dummy link symbol') },
+};
+
+function createWasmImportStubsFrom(collection) {
+    for (let functionName in collection) {
+        if (functionName in DotnetSupportLib) throw new Error(`Function ${functionName} is already defined`);
+        const runtime_idx = collection[functionName]
+        const stub_fn = new Function(`return {runtime_idx:${runtime_idx}};//${functionName}`);
+        DotnetSupportLib[functionName] = stub_fn;
+    }
+}
+
+// the JS methods would be visible to EMCC linker and become imports of the WASM module
+// we generate simple stub for each exported function so that emcc will include them in the final output
+// we will replace them with the real implementation in replace_linker_placeholders
+function injectDependencies() {
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
+
+    #if USE_PTHREADS
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
+    #endif
+
+    if (!DISABLE_LEGACY_JS_INTEROP) {
+        createWasmImportStubsFrom(methodIndexByName.mono_wasm_legacy_interop_imports);
+    }
+
+    DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
+        `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
+        `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
+        `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
+        `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+        `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `gitHash: "${gitHash}", ` +
+        `});`;
+
+    autoAddDeps(DotnetSupportLib, "$DOTNET");
+    mergeInto(LibraryManager.library, DotnetSupportLib);
+}
+
+
+// var methodIndexByName wil be appended below by the MSBuild in wasm.proj

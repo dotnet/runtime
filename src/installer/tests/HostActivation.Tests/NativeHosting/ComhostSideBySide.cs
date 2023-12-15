@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             result.Should().Pass()
                 .And.HaveStdOutContaining("New instance of Server created")
                 .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
-                .And.HaveStdErrContaining($"Executing as a {(selfContained ? "self-contained" : "framework-dependent")} app");
+                .And.ExecuteSelfContained(selfContained);
         }
 
         public class SharedTestState : Comhost.SharedTestState
@@ -118,10 +118,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     }
                 }
 
-                string comsxsName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("comsxs");
+                string comsxsName = Binaries.GetExeFileNameForCurrentPlatform("comsxs");
                 ComSxsPath = Path.Combine(comsxsDirectory, comsxsName);
                 File.Copy(
-                    Path.Combine(RepoDirectories.Artifacts, "corehost_test", comsxsName),
+                    Path.Combine(RepoDirectories.HostTestArtifacts, comsxsName),
                     ComSxsPath);
 
                 ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)

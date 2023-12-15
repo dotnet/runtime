@@ -1,13 +1,14 @@
 using System;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace GitHub_21666
 {
     // CRC32 is a special instruction that has 4-byte opcode but does not use SSE38 or SSE3A encoding,
     // so the compiler backend needs to specially check its code size.
     // Test LZCNT as well to ensure that future changes do not impact 3-byte opcode instructions.
-    class GitHub_21666
+    public class GitHub_21666
     {
         const int Pass = 100;
         const int Fail = 0;
@@ -22,7 +23,8 @@ namespace GitHub_21666
         readonly static uint[] uintArray = new uint[10];
         readonly static ulong[] ulongArray = new ulong[10];
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             bool success = true;
             byteSF = 0;
@@ -34,7 +36,7 @@ namespace GitHub_21666
             success = success && TestUInt32Containment();
             success = success && TestUInt64Containment();
 
-            return success ? Pass : Fail;
+            Assert.True(success);
         }
 
         static unsafe bool TestByteContainment()

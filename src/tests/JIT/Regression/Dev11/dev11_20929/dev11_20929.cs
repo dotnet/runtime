@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal static class Repro
+public static class Repro
 {
     private struct foo
     {
         public int x, y;
     }
 
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
 
         foo f = new foo();
@@ -20,6 +22,5 @@ internal static class Repro
         Console.WriteLine(BitConverter.Int64BitsToDouble(unchecked((long)0x8000000000000000UL)));
 
         Console.WriteLine("PASS!");
-        return 100;
     }
 }

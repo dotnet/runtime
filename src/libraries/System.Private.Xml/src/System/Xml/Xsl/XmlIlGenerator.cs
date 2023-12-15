@@ -4,16 +4,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Xml.XPath;
 using System.Xml.Xsl.IlGen;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl
 {
@@ -49,6 +49,7 @@ namespace System.Xml.Xsl
     /// As visits to each node in the tree start and end, various Analyzers are invoked.  These Analyzers incrementally
     /// collect and store information that is later used to generate faster and smaller code.
     /// </remarks>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class XmlILGenerator
     {
         private QilExpression? _qil;

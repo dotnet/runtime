@@ -3,14 +3,16 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Text;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
 {
-    public sealed class IPAddressParsing_String : IPAddressParsing
+    public class IPAddressParsingFormatting_String : IPAddressParsingFormatting
     {
         public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString);
         public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString, out address);
+        public virtual string ToString(IPAddress address) => address.ToString();
 
         [Fact]
         public void Parse_Null_Throws()
@@ -20,9 +22,127 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.False(TryParse((string)null, out IPAddress ipAddress));
             Assert.Null(ipAddress);
         }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Addresses))]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void ToString_MatchesExpected(string addressString, string expected)
+        {
+            IPAddress address = Parse(addressString);
+            Assert.Equal(expected.ToLowerInvariant(), ToString(address));
+        }
     }
 
-    public abstract class IPAddressParsing
+    public class IPAddressParsingFormatting_Span : IPAddressParsingFormatting
+    {
+        public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString.AsSpan());
+        public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString.AsSpan(), out address);
+        public virtual bool TryFormat(IPAddress address, Span<char> destination, out int charsWritten) => address.TryFormat(destination, out charsWritten);
+        public virtual bool TryFormat(IPAddress address, Span<byte> utf8Destination, out int bytesWritten) => address.TryFormat(utf8Destination, out bytesWritten);
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Addresses))]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void TryFormat_ProvidedBufferTooSmall_Failure(string addressString, string expected)
+        {
+            _ = expected;
+            IPAddress address = Parse(addressString);
+
+            // UTF16
+            {
+                var result = new char[address.ToString().Length - 1];
+                Assert.False(TryFormat(address, new Span<char>(result), out int charsWritten));
+                Assert.Equal(0, charsWritten);
+            }
+
+            // UTF8
+            {
+                var result = new byte[address.ToString().Length - 1];
+                Assert.False(TryFormat(address, new Span<byte>(result), out int bytesWritten));
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Addresses))]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void TryFormat_ProvidedBufferExactRightSize_Success(string addressString, string expected)
+        {
+            IPAddress address = Parse(addressString);
+            int requiredLength = address.ToString().Length;
+
+            // UTF16
+            {
+                var exactRequired = new char[requiredLength];
+                Assert.True(TryFormat(address, new Span<char>(exactRequired), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    new string(exactRequired));
+            }
+
+            // UTF8
+            {
+                var exactRequired = new byte[requiredLength];
+                Assert.True(TryFormat(address, new Span<byte>(exactRequired), out int bytesWritten));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    Encoding.UTF8.GetString(exactRequired));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Addresses))]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void TryFormat_ProvidedBufferLargerThanNeeded_Success(string addressString, string expected)
+        {
+            IPAddress address = Parse(addressString);
+            int requiredLength = address.ToString().Length;
+
+            // UTF16
+            {
+                var largerThanRequired = new char[requiredLength + 1];
+                Assert.True(TryFormat(address, new Span<char>(largerThanRequired), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    new string(largerThanRequired, 0, charsWritten));
+            }
+
+            // UTF8
+            {
+                var largerThanRequired = new byte[requiredLength + 1];
+                Assert.True(TryFormat(address, new Span<byte>(largerThanRequired), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    Encoding.UTF8.GetString(largerThanRequired.AsSpan(0, charsWritten)));
+            }
+        }
+    }
+
+    public sealed class IPAddressParsingFormatting_IParsable_IFormattable : IPAddressParsingFormatting_String
+    {
+        public override IPAddress Parse(string ipString) => Parse<IPAddress>(ipString);
+        public override bool TryParse(string ipString, out IPAddress address) => TryParse<IPAddress>(ipString, out address);
+        public override string ToString(IPAddress address) => ((IFormattable)address).ToString(null, null);
+
+        private static T Parse<T>(string s) where T : IParsable<T> => T.Parse(s, null);
+        private static bool TryParse<T>(string s, out T result) where T : IParsable<T> => T.TryParse(s, null, out result);
+    }
+
+    public sealed class IPAddressParsingFormatting_ISpanParsable_ISpanFormattable : IPAddressParsingFormatting_Span
+    {
+        public override IPAddress Parse(string ipString) => Parse<IPAddress>(ipString);
+        public override bool TryParse(string ipString, out IPAddress address) => TryParse<IPAddress>(ipString, out address);
+        public override bool TryFormat(IPAddress address, Span<char> destination, out int charsWritten) => ((ISpanFormattable)address).TryFormat(destination, out charsWritten, default, null);
+
+        private static T Parse<T>(string s) where T : ISpanParsable<T> => T.Parse(s.AsSpan(), null);
+        private static bool TryParse<T>(string s, out T result) where T : ISpanParsable<T> => T.TryParse(s.AsSpan(), null, out result);
+    }
+
+    public abstract class IPAddressParsingFormatting
     {
         public abstract IPAddress Parse(string ipString);
         public abstract bool TryParse(string ipString, out IPAddress address);

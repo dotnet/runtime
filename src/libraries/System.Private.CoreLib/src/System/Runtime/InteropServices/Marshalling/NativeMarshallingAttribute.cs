@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </remarks>
     /// <seealso cref="LibraryImportAttribute" />
     /// <seealso cref="CustomMarshallerAttribute" />
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Delegate)]
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Interface | AttributeTargets.Delegate)]
     public sealed class NativeMarshallingAttribute : Attribute
     {
         /// <summary>

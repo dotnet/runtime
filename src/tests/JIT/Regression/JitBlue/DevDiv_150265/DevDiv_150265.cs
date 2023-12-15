@@ -3,18 +3,20 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     static bool flag;
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {            
         flag = true;
         return Test();
     }
 
-    public static int Test()
+    internal static int Test()
     {
         try
         {
@@ -64,7 +66,7 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ThrowException()
+    internal static void ThrowException()
     {
         if (flag)
         {

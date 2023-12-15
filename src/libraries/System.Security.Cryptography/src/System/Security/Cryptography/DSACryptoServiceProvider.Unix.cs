@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -47,8 +47,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("tvos")]
         public DSACryptoServiceProvider(int dwKeySize) : base()
         {
-            if (dwKeySize < 0)
-                throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(dwKeySize);
 
             // This class wraps DSA
             _impl = DSA.Create();
@@ -104,7 +103,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+            return CryptographicOperations.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -112,7 +111,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return HashOneShotHelpers.HashData(hashAlgorithm, data);
+            return CryptographicOperations.HashData(hashAlgorithm, data);
         }
 
         protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
@@ -120,7 +119,7 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+            return CryptographicOperations.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
         }
 
         public void ImportCspBlob(byte[] keyBlob)

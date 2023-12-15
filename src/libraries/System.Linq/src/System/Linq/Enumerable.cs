@@ -11,6 +11,17 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source) => source;
 
+        /// <summary>
+        /// Sets the <paramref name="list"/>'s <see cref="List{T}.Count"/> to be <paramref name="count"/>
+        /// and returns the relevant portion of the list's backing array as a span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Span<T> SetCountAndGetSpan<T>(List<T> list, int count)
+        {
+            CollectionsMarshal.SetCount(list, count);
+            return CollectionsMarshal.AsSpan(list);
+        }
+
         /// <summary>Validates that source is not null and then tries to extract a span from the source.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // fast type checks that don't add a lot of overhead
         private static bool TryGetSpan<TSource>(this IEnumerable<TSource> source, out ReadOnlySpan<TSource> span)

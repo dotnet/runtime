@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Point
 {
@@ -86,7 +87,8 @@ public class BringUpTest_StructInstMethod
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Point p = new Point(10, 20, 30);
         if (p.StructInstMethod()) return Fail;

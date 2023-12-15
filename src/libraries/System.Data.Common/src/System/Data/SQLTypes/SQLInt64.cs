@@ -3,11 +3,11 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -28,7 +28,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlInt64(bool fNull)
+        private SqlInt64(bool _)
         {
             m_fNotNull = false;
             m_value = 0;

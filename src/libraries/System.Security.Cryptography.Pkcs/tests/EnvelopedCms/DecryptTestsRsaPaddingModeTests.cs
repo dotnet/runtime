@@ -6,6 +6,8 @@ using System.Security.Cryptography.Pkcs.Tests;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
+using Test.Cryptography;
+
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public class DecryptTestsRsaPaddingMode : DecryptTests
@@ -16,7 +18,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsRC2Supported))]
         [MemberData(nameof(Roundtrip_RsaPaddingModes_TestData))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Roundtrip_RsaPaddingModes(RSAEncryptionPadding rsaEncryptionPadding)

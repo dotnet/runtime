@@ -14,9 +14,7 @@
 #ifndef __EVENTTRACEPRIV_H__
 #define __EVENTTRACEPRIV_H__
 
-#ifdef FEATURE_NATIVEAOT
 #include "holder.h"
-#endif // FEATURE_NATIVEAOT
 
 #ifndef _countof
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
@@ -107,13 +105,8 @@ public:
         return
             sizeof(fixedSizedData) +
             sizeof(cTypeParameters) +
-#ifdef FEATURE_NATIVEAOT
             sizeof(WCHAR) +                                 // No name in event, so just the null terminator
             cTypeParameters * sizeof(ULONGLONG);            // Type parameters
-#else
-            (sName.GetCount() + 1) * sizeof(WCHAR) +        // Size of name, including null terminator
-            rgTypeParameters.GetCount() * sizeof(ULONGLONG);// Type parameters
-#endif
     }
 
     EventStructBulkTypeFixedSizedData fixedSizedData;
@@ -121,24 +114,10 @@ public:
     // Below are the remainder of each struct in the bulk type event (i.e., the
     // variable-sized data). The var-sized fields are copied into the event individually
     // (not directly), so they don't need to have the same layout as in the ETW manifest
-
-    // This is really a denorm of the size already stored in rgTypeParameters, but we
-    // need a persistent place to stash this away so EventDataDescCreate & EventWrite
-    // have a reliable place to copy it from.  This is filled in at the last minute,
-    // when sending the event.
     ULONG cTypeParameters;
 
-#ifdef FEATURE_NATIVEAOT
-    // If > 1 type parameter, this is an array of their MethodTable*'s
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
-
-    // If exactly one type parameter, this is its MethodTable*.  (If != 1 type parameter,
-    // this is 0.)
+    // We expect only one type parameter. See the explanation at BulkTypeEventLogger::LogSingleType on generic parameters for additional details.
     ULONGLONG ullSingleTypeParameter;
-#else   // FEATURE_NATIVEAOT
-    StackSString sName;
-    StackSArray<ULONGLONG> rgTypeParameters;
-#endif // FEATURE_NATIVEAOT
 };
 
 // Encapsulates all the type event batching we need to do. This is used by
@@ -149,6 +128,9 @@ public:
 class BulkTypeEventLogger
 {
 private:
+
+    // The maximum event size, and the size of the buffer that we allocate to hold the event contents.
+    static const size_t kSizeOfEventBuffer = 65536;
 
     // Estimate of how many bytes we can squeeze in the event data for the value struct
     // array.  (Intentionally overestimate the size of the non-array parts to keep it safe.)
@@ -190,21 +172,28 @@ private:
     // List of types we've batched.
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
-#ifdef FEATURE_NATIVEAOT
+    BYTE *m_pBulkTypeEventBuffer;
+
     int LogSingleType(MethodTable * pEEType);
-#else
-    int LogSingleType(TypeHandle th);
-#endif
 
 public:
     BulkTypeEventLogger() :
         m_nBulkTypeValueCount(0),
         m_nBulkTypeValueByteCount(0)
+        , m_pBulkTypeEventBuffer(NULL)
     {
         LIMITED_METHOD_CONTRACT;
+
+        m_pBulkTypeEventBuffer = new (nothrow) BYTE[kSizeOfEventBuffer];
     }
 
-    void LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior);
+    ~BulkTypeEventLogger()
+    {
+        delete[] m_pBulkTypeEventBuffer;
+        m_pBulkTypeEventBuffer = NULL;
+    }
+
+    void LogTypeAndParameters(ULONGLONG thAsAddr);
     void FireBulkTypeEvent();
     void Cleanup();
 };

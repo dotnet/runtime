@@ -25,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
         public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {
-            SetHandle(preexistingHandle, ownsHandle);
+            SetHandle(preexistingHandle);
         }
     }
 }

@@ -6,10 +6,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public unsafe class Runtime_54956
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool succeeded = true;
 

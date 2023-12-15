@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         ulong[] m_aulField = null;
 
@@ -26,7 +27,8 @@ namespace Test
             );
         }
 
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             try
             {
@@ -36,7 +38,6 @@ namespace Test
                 Func4(ref bb, ref l, ref al);
             }
             catch (NullReferenceException) { }
-            return 100;
         }
     }
 }

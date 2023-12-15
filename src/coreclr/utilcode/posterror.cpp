@@ -149,7 +149,7 @@ static HRESULT FormatRuntimeErrorVA(
             hr = S_OK;
 
             // System messages contain a trailing \r\n, which we don't want normally.
-            size_t iLen = wcslen(rcMsg);
+            size_t iLen = u16_strlen(rcMsg);
             if (iLen > 3 && rcMsg[iLen - 2] == '\r' && rcMsg[iLen - 1] == '\n')
                 rcMsg[iLen - 2] = '\0';
         }
@@ -265,8 +265,6 @@ static HRESULT PostErrorVA(                      // Returned error.
     WCHAR      *rcMsg = (WCHAR*)alloca(cchMsg * sizeof(WCHAR));             // Error message.
     HRESULT     hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // Return warnings without text.
     if (!FAILED(hrRpt))
         goto ErrExit;
@@ -290,8 +288,6 @@ static HRESULT PostErrorVA(                      // Returned error.
     _ASSERTE(hr == S_OK);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
 
 #endif // FEATURE_COMINTEROP
 

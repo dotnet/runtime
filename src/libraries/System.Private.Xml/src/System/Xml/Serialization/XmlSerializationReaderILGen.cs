@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -12,7 +13,6 @@ using System.Security;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Schema;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -25,6 +25,9 @@ namespace System.Xml.Serialization
         private int _nextIdNumber;
 
         internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
+
+        private static readonly string[] s_checkTypeString = new string[] { "checkType" };
+        private static readonly Type[] s_boolType = new Type[] { typeof(bool) };
 
         private sealed class Member
         {
@@ -42,27 +45,27 @@ namespace System.Xml.Serialization
             private string? _paramsReadSource;
             private string? _checkSpecifiedSource;
 
-            internal Member(XmlSerializationReaderILGen outerClass, string source, string? arrayName, int i, MemberMapping mapping)
-                : this(outerClass, source, null, arrayName, i, mapping, false, null)
+            internal Member(string source, string? arrayName, int i, MemberMapping mapping)
+                : this(source, null, arrayName, i, mapping, false, null)
             {
             }
-            internal Member(XmlSerializationReaderILGen outerClass, string source, string? arrayName, int i, MemberMapping mapping, string? choiceSource)
-                : this(outerClass, source, null, arrayName, i, mapping, false, choiceSource)
+            internal Member(string source, string? arrayName, int i, MemberMapping mapping, string? choiceSource)
+                : this(source, null, arrayName, i, mapping, false, choiceSource)
             {
             }
-            internal Member(XmlSerializationReaderILGen outerClass, string source, string? arraySource, string? arrayName, int i, MemberMapping mapping)
-                : this(outerClass, source, arraySource, arrayName, i, mapping, false, null)
+            internal Member(string source, string? arraySource, string? arrayName, int i, MemberMapping mapping)
+                : this(source, arraySource, arrayName, i, mapping, false, null)
             {
             }
-            internal Member(XmlSerializationReaderILGen outerClass, string source, string? arraySource, string? arrayName, int i, MemberMapping mapping, string? choiceSource)
-                : this(outerClass, source, arraySource, arrayName, i, mapping, false, choiceSource)
+            internal Member(string source, string? arraySource, string? arrayName, int i, MemberMapping mapping, string? choiceSource)
+                : this(source, arraySource, arrayName, i, mapping, false, choiceSource)
             {
             }
-            internal Member(XmlSerializationReaderILGen outerClass, string source, string? arrayName, int i, MemberMapping mapping, bool multiRef)
-                : this(outerClass, source, null, arrayName, i, mapping, multiRef, null)
+            internal Member(string source, string? arrayName, int i, MemberMapping mapping, bool multiRef)
+                : this(source, null, arrayName, i, mapping, multiRef, null)
             {
             }
-            internal Member(XmlSerializationReaderILGen outerClass, string source, string? arraySource, string? arrayName, int i, MemberMapping mapping, bool multiRef, string? choiceSource)
+            internal Member(string source, string? arraySource, string? arrayName, int i, MemberMapping mapping, bool multiRef, string? choiceSource)
             {
                 _source = source;
                 _arrayName = string.Create(CultureInfo.InvariantCulture, $"{arrayName}_{i}");
@@ -87,7 +90,7 @@ namespace System.Xml.Serialization
                         string castString = $"({choiceTypeFullName}[])";
 
                         string init = $"{a} = {castString}EnsureArrayIndex({a}, {c}, {ReflectionAwareILGen.GetStringForTypeof(choiceTypeFullName)});";
-                        _choiceArraySource = init + ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++", mapping.ChoiceIdentifier.Mapping.TypeDesc);
+                        _choiceArraySource = init + ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++");
                     }
                     else
                     {
@@ -217,7 +220,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
-        internal void GenerateEnd(string[] methods, XmlMapping[] xmlMappings, Type[] types)
+        internal void GenerateEnd()
         {
             GenerateReferencedMethods();
             GenerateInitCallbacksMethod();
@@ -374,11 +377,11 @@ namespace System.Xml.Serialization
             return choiceSource!;
         }
 
-        private static string GetChoiceIdentifierSource(MemberMapping mapping, string parent, TypeDesc parentTypeDesc)
+        private static string GetChoiceIdentifierSource(MemberMapping mapping, string parent)
         {
             if (mapping.ChoiceIdentifier == null) return "";
             CodeIdentifier.CheckValidIdentifier(mapping.ChoiceIdentifier.MemberName);
-            return ReflectionAwareILGen.GetStringForMember(parent, mapping.ChoiceIdentifier.MemberName, parentTypeDesc);
+            return ReflectionAwareILGen.GetStringForMember(parent, mapping.ChoiceIdentifier.MemberName);
         }
 
         [RequiresUnreferencedCode("calls InitializeValueTypes")]
@@ -442,8 +445,8 @@ namespace System.Xml.Serialization
                     arraySource = $"(({mapping.TypeDesc!.CSharpName}){source})";
                 }
                 string choiceSource = GetChoiceIdentifierSource(mappings, mapping);
-                Member member = new Member(this, source, arraySource, "a", i, mapping, choiceSource);
-                Member anyMember = new Member(this, source, null, "a", i, mapping, choiceSource);
+                Member member = new Member(source, arraySource, "a", i, mapping, choiceSource);
+                Member anyMember = new Member(source, null, "a", i, mapping, choiceSource);
                 if (!mapping.IsSequence)
                     member.ParamsReadSource = $"paramsRead[{i}]";
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
@@ -503,7 +506,7 @@ namespace System.Xml.Serialization
                 MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                     "set_IsReturnValue",
                     CodeGenerator.InstanceBindingFlags,
-                    new Type[] { typeof(bool) }
+                    s_boolType
                     )!;
                 ilg.Ldarg(0);
                 ilg.Ldc(true);
@@ -648,7 +651,7 @@ namespace System.Xml.Serialization
             member.TypeDesc = mapping.TypeDesc;
             //member.ReadOnly = !mapping.TypeDesc.HasDefaultConstructor;
             member.Elements = new ElementAccessor[] { element };
-            Member[] members = new Member[] { new Member(this, "o", "o", "a", 0, member) };
+            Member[] members = new Member[] { new Member("o", "o", "a", 0, member) };
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
                 CodeGenerator.InstanceBindingFlags,
@@ -1256,7 +1259,7 @@ namespace System.Xml.Serialization
                             memberMapping.Elements = arrayMapping.Elements;
                             string aVar = "a";
                             string zVar = "z";
-                            Member member = new Member(this, aVar, zVar, 0, memberMapping);
+                            Member member = new Member(aVar, zVar, 0, memberMapping);
 
                             TypeDesc td = arrayMapping.TypeDesc;
                             LocalBuilder aLoc = ilg.DeclareLocal(arrayMapping.TypeDesc.Type!, aVar);
@@ -1268,7 +1271,7 @@ namespace System.Xml.Serialization
                                 ilg.Load(null);
                             ilg.Stloc(aLoc);
 
-                            WriteArray(member.Source, member.ArrayName, arrayMapping, false, false, -1, 0);
+                            WriteArray(member.Source, member.ArrayName, arrayMapping, false, false, 0);
                             ilg.Ldloc(aLoc);
                             ilg.Stloc(ilg.ReturnLocal);
                             ilg.Br(ilg.ReturnLabel);
@@ -1289,8 +1292,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 nullableMapping.TypeDesc!.Type!,
                 GetMethodBuilder(methodName!),
-                new Type[] { typeof(bool) },
-                new string[] { "checkType" },
+                s_boolType,
+                s_checkTypeString,
                 CodeGenerator.PrivateMethodAttributes);
 
             LocalBuilder oLoc = ilg.DeclareLocal(nullableMapping.TypeDesc.Type!, "o");
@@ -1525,7 +1528,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationReader_set_DecodeName = typeof(XmlSerializationReader).GetMethod(
                          "set_DecodeName",
                          CodeGenerator.InstanceBindingFlags,
-                         new Type[] { typeof(bool) }
+                         s_boolType
                          )!;
                     ilg.Ldarg(0);
                     ilg.Ldc(false);
@@ -1550,13 +1553,13 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping mapping = mappings[i];
                     CodeIdentifier.CheckValidIdentifier(mapping.Name);
-                    string source = ReflectionAwareILGen.GetStringForMember("o", mapping.Name, structMapping.TypeDesc);
-                    Member member = new Member(this, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o", structMapping.TypeDesc));
+                    string source = ReflectionAwareILGen.GetStringForMember("o", mapping.Name);
+                    Member member = new Member(source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o"));
                     if (!mapping.IsSequence)
                         member.ParamsReadSource = $"paramsRead[{i}]";
                     member.IsNullable = mapping.TypeDesc!.IsNullable;
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
-                        member.CheckSpecifiedSource = ReflectionAwareILGen.GetStringForMember("o", $"{mapping.Name}Specified", structMapping.TypeDesc);
+                        member.CheckSpecifiedSource = ReflectionAwareILGen.GetStringForMember("o", $"{mapping.Name}Specified");
                     if (mapping.Text != null)
                         anyText = member;
                     if (mapping.Attribute != null && mapping.Attribute.Any)
@@ -1566,7 +1569,7 @@ namespace System.Xml.Serialization
                         // find anyElement if present.
                         for (int j = 0; j < mapping.Elements!.Length; j++)
                         {
-                            if (mapping.Elements[j].Any && (mapping.Elements[j].Name == null || mapping.Elements[j].Name.Length == 0))
+                            if (mapping.Elements[j].Any && string.IsNullOrEmpty(mapping.Elements[j].Name))
                             {
                                 anyElement = member;
                                 break;
@@ -1581,7 +1584,7 @@ namespace System.Xml.Serialization
                     }
                     if (mapping.Attribute == null && mapping.Elements!.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping)
                     {
-                        Member arrayMember = new Member(this, source, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o", structMapping.TypeDesc));
+                        Member arrayMember = new Member(source, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o"));
                         arrayMember.CheckSpecifiedSource = member.CheckSpecifiedSource;
                         allMembersList.Add(arrayMember);
                     }
@@ -2231,7 +2234,7 @@ namespace System.Xml.Serialization
                 {
                     ElementAccessor e = elements[j];
                     string? ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
-                    if (e.Any && (e.Name == null || e.Name.Length == 0)) continue;
+                    if (e.Any && string.IsNullOrEmpty(e.Name)) continue;
 
                     if (!firstElement)
                         qnames += ", ";
@@ -2271,7 +2274,7 @@ namespace System.Xml.Serialization
             WriteMemberElementsIf(members, anyElement, elementElseString);
 
             if (anyText != null)
-                WriteMemberText(anyText, elseString);
+                WriteMemberText(anyText);
 
             ilg.Else();
             ILGenElseString(elseString);
@@ -2279,7 +2282,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteText")]
-        private void WriteMemberText(Member anyText, string elseString)
+        private void WriteMemberText(Member anyText)
         {
             ilg.InitElseIf();
             Label labelTrue = ilg.DefineLabel();
@@ -2337,7 +2340,7 @@ namespace System.Xml.Serialization
 
             if (text.Mapping is SpecialMapping special)
             {
-                WriteSourceBeginTyped(member.ArraySource, special.TypeDesc);
+                WriteSourceBeginTyped(member.ArraySource);
                 switch (special.TypeDesc!.Kind)
                 {
                     case TypeKind.Node:
@@ -2495,7 +2498,7 @@ namespace System.Xml.Serialization
                 {
                     ElementAccessor e = elements[j];
                     string? ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
-                    if (!isSequence && e.Any && (e.Name == null || e.Name.Length == 0)) continue;
+                    if (!isSequence && e.Any && string.IsNullOrEmpty(e.Name)) continue;
                     if (!firstElement || (!isSequence && count > 0))
                     {
                         ilg.InitElseIf();
@@ -2559,7 +2562,7 @@ namespace System.Xml.Serialization
                         MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                             "set_IsReturnValue",
                             CodeGenerator.InstanceBindingFlags,
-                            new Type[] { typeof(bool) }
+                            s_boolType
                             )!;
                         ilg.Ldarg(0);
                         ilg.Ldc(false);
@@ -2618,7 +2621,7 @@ namespace System.Xml.Serialization
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
                 init = $"{init}{a} = ({arrayTypeFullName}[])EnsureArrayIndex({a}, {c}, {ReflectionAwareILGen.GetStringForTypeof(arrayTypeFullName)});";
-                string arraySource = ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
+                string arraySource = ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++");
                 if (multiRef)
                 {
                     init = $"{init} soap[1] = {a};";
@@ -2628,7 +2631,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                return ReflectionAwareILGen.GetStringForMethod(arrayName, typeDesc.CSharpName, "Add");
+                return ReflectionAwareILGen.GetStringForMethod(arrayName, "Add");
             }
         }
 
@@ -2699,7 +2702,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteSourceBeginTyped(string source, TypeDesc? typeDesc)
+        private void WriteSourceBeginTyped(string source)
         {
             WriteSourceBegin(source);
         }
@@ -2872,7 +2875,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteMemberBegin")]
-        private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int fixupIndex, int elementIndex)
+        private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                 "ReadNull",
@@ -2893,7 +2896,7 @@ namespace System.Xml.Serialization
                 Debug.Assert(memberInfos.ContainsKey(source.Substring(3)));
                 memberMapping.MemberInfo = memberInfos[source.Substring(3)];
             }
-            Member member = new Member(this, source, arrayName, elementIndex, memberMapping, false);
+            Member member = new Member(source, arrayName, elementIndex, memberMapping, false);
             member.IsNullable = false; //Note, IsNullable is set to false since null condition (xsi:nil) is already handled by 'ReadNull()'
 
             Member[] members = new Member[] { member };
@@ -2998,7 +3001,7 @@ namespace System.Xml.Serialization
 
             if (element.Mapping is ArrayMapping)
             {
-                WriteArray(source, arrayName, (ArrayMapping)element.Mapping, readOnly, element.IsNullable, fixupIndex, elementIndex);
+                WriteArray(source, arrayName, (ArrayMapping)element.Mapping, readOnly, element.IsNullable, elementIndex);
             }
             else if (element.Mapping is NullableMapping)
             {
@@ -3015,7 +3018,7 @@ namespace System.Xml.Serialization
                     CodeGenerator.PrivateMethodAttributes,
                     // See WriteNullableMethod for different return type logic
                     element.Mapping.TypeDesc!.Type,
-                    new Type[] { typeof(bool) }
+                    s_boolType
                     );
                 ilg.Call(methodBuilder);
                 WriteSourceEnd(source, element.Mapping.TypeDesc.Type!);
@@ -3205,11 +3208,11 @@ namespace System.Xml.Serialization
                 {
                     case TypeKind.Node:
                         bool isDoc = special.TypeDesc.FullName == typeof(XmlDocument).FullName;
-                        WriteSourceBeginTyped(source, special.TypeDesc);
+                        WriteSourceBeginTyped(source);
                         MethodInfo XmlSerializationReader_ReadXmlXXX = typeof(XmlSerializationReader).GetMethod(
                               isDoc ? "ReadXmlDocument" : "ReadXmlNode",
                               CodeGenerator.InstanceBindingFlags,
-                              new Type[] { typeof(bool) }
+                              s_boolType
                               )!;
                         ilg.Ldarg(0);
                         ilg.Ldc(element.Any ? false : true);
@@ -3247,7 +3250,7 @@ namespace System.Xml.Serialization
                             ilg.MarkLabel(labelEnd);
                             ilg.If();
                         }
-                        WriteSourceBeginTyped(source, sm.TypeDesc!);
+                        WriteSourceBeginTyped(source);
                         bool isWrappedAny = !element.Any && IsWildcard(sm);
                         MethodInfo XmlSerializationReader_ReadSerializable = typeof(XmlSerializationReader).GetMethod(
                              "ReadSerializable",
@@ -3320,7 +3323,7 @@ namespace System.Xml.Serialization
                 {
                     if (head.Type!.IsAssignableFrom(derived.Type))
                     {
-                        WriteSourceBeginTyped(source, head.TypeDesc!);
+                        WriteSourceBeginTyped(source);
                         MethodInfo XmlSerializationReader_ReadSerializable = typeof(XmlSerializationReader).GetMethod(
                              "ReadSerializable",
                              CodeGenerator.InstanceBindingFlags,

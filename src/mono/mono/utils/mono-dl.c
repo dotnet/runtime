@@ -12,7 +12,6 @@
 #include "config.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-dl.h"
-#include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/mono-error-internals.h"
@@ -176,8 +175,9 @@ fix_libc_name (const char *name)
  * mono_dl_open_self:
  * \param error pointer to MonoError
  *
- * Returns a handle to the main program, on android x86 it's not possible to
- * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
+ * Returns a handle to the main program, on Android it's not possible to
+ * call dl_open(null) with RTLD_LAZY, it returns a null handle, so this
+ * function uses RTLD_NOW.
  * handle in this platform.
  * \p error points to MonoError where an error will be stored in
  * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
@@ -195,7 +195,7 @@ mono_dl_open_self (MonoError *error)
 		return NULL;
 	}
 	mono_refcount_init (module, NULL);
-	module->handle = RTLD_DEFAULT;
+	module->handle = dlopen(NULL, RTLD_NOW);
 	module->dl_fallback = NULL;
 	module->full_name = NULL;
 	return module;
@@ -597,75 +597,4 @@ mono_dl_fallback_unregister (MonoDlFallbackHandler *handler)
 
 	g_slist_remove (fallback_handlers, handler);
 	g_free (handler);
-}
-
-static MonoDl*
-try_load (const char *lib_name, char *dir, int flags, MonoError *error)
-{
-	gpointer iter;
-	MonoDl *runtime_lib;
-	char *path;
-	iter = NULL;
-	while ((path = mono_dl_build_path (dir, lib_name, &iter))) {
-		mono_error_cleanup (error);
-		error_init_reuse (error);
-		runtime_lib = mono_dl_open (path, flags, error);
-		g_free (path);
-		if (runtime_lib)
-			return runtime_lib;
-	}
-	return NULL;
-}
-
-MonoDl*
-mono_dl_open_runtime_lib (const char* lib_name, int flags, MonoError *error)
-{
-	MonoDl *runtime_lib = NULL;
-
-	char *resolvedname = minipal_getexepath();
-
-	if (!resolvedname) {
-		char *base;
-		char *name;
-		char *baseparent = NULL;
-		base = g_path_get_dirname (resolvedname);
-		name = g_strdup_printf ("%s/.libs", base);
-		runtime_lib = try_load (lib_name, name, flags, error);
-		g_free (name);
-		if (!runtime_lib)
-			baseparent = g_path_get_dirname (base);
-		if (!runtime_lib) {
-			mono_error_cleanup (error);
-			error_init_reuse (error);
-			name = g_strdup_printf ("%s/lib", baseparent);
-			runtime_lib = try_load (lib_name, name, flags, error);
-			g_free (name);
-		}
-#ifdef __MACH__
-		if (!runtime_lib) {
-			mono_error_cleanup (error);
-			error_init_reuse (error);
-			name = g_strdup_printf ("%s/Libraries", baseparent);
-			runtime_lib = try_load (lib_name, name, flags, error);
-			g_free (name);
-		}
-#endif
-		if (!runtime_lib) {
-			mono_error_cleanup (error);
-			error_init_reuse (error);
-			name = g_strdup_printf ("%s/profiler/.libs", baseparent);
-			runtime_lib = try_load (lib_name, name, flags, error);
-			g_free (name);
-		}
-		g_free (base);
-		g_free (resolvedname);
-		g_free (baseparent);
-	}
-	if (!runtime_lib) {
-		mono_error_cleanup (error);
-		error_init_reuse (error);
-		runtime_lib = try_load (lib_name, NULL, flags, error);
-	}
-
-	return runtime_lib;
 }

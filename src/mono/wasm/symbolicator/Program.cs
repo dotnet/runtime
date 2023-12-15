@@ -72,4 +72,4 @@ while (true)
 
 return 0;
 
-static void ShowUsage() => Console.WriteLine($"Usage: symbolicator <path/to/dotnet.js.symbols> [</path/to/patterns-file>] [-|<file-with-traces>]");
+static void ShowUsage() => Console.WriteLine($"Usage: symbolicator <path/to/dotnet.native.js.symbols> [</path/to/patterns-file>] [-|<file-with-traces>]");

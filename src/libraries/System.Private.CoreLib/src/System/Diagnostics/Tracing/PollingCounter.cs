@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
     /// </summary>
 #if !ES_BUILD_STANDALONE
 #if !FEATURE_WASM_PERFTRACING
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("browser")]
 #endif
 #endif
     public partial class PollingCounter : DiagnosticCounter
@@ -30,10 +30,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="metricProvider">The delegate to invoke to get the current metric value.</param>
         public PollingCounter(string name, EventSource eventSource, Func<double> metricProvider) : base(name, eventSource)
         {
-            if (metricProvider is null)
-            {
-                throw new ArgumentNullException(nameof(metricProvider));
-            }
+            ArgumentNullException.ThrowIfNull(metricProvider);
 
             _metricProvider = metricProvider;
             Publish();

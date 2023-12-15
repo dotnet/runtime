@@ -11,12 +11,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64     // Upper bound to let the code generator to loop unroll CpBlk
-  #define CPBLK_LCL_UNROLL_LIMIT   128    // Upper bound to let the code generator to loop unroll CpBlk (when both srcAddr and dstAddr point to the stack)
-  #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
-  #define INITBLK_LCL_UNROLL_LIMIT 128    // Upper bound to let the code generator to loop unroll InitBlk (when dstAddr points to the stack)
-  #define LCLHEAP_UNROLL_LIMIT     128    // Upper bound to let the code generator to loop unroll LclHeap (when zeroing is required)
-
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
@@ -56,6 +50,9 @@
   #define REG_FP_LAST              REG_V31
   #define FIRST_FP_ARGREG          REG_V0
   #define LAST_FP_ARGREG           REG_V15
+  #define REG_PREDICATE_FIRST      REG_P0
+  #define REG_PREDICATE_LAST       REG_P15
+  #define REG_PREDICATE_LOW_LAST   REG_P7  // Some instructions can only use the first half of the predicate registers.
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register

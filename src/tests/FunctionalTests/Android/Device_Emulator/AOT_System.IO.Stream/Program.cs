@@ -9,7 +9,7 @@ using System.IO;
 
 public static class Program
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         var stream = new DummyStream();
         var buffer = new byte[stream.Length];

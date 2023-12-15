@@ -6,11 +6,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
+#pragma warning disable IDE0060
+
 namespace System
 {
     internal sealed class NSLogStream : CachedConsoleStream
     {
-        public NSLogStream(Encoding encoding) : base(encoding) {}
+        public NSLogStream(Encoding encoding) : base(encoding) { }
 
         protected override unsafe void Print(ReadOnlySpan<char> line)
         {

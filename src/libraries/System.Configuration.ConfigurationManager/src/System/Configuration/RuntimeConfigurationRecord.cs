@@ -44,7 +44,7 @@ namespace System.Configuration
             RuntimeConfigurationFactory factory = (RuntimeConfigurationFactory)factoryRecord.Factory;
 
             // Use the factory to create a section.
-            object config = factory.CreateSection(inputIsTrusted, this, factoryRecord, sectionRecord, parentConfig,
+            object config = factory.CreateSection(this, factoryRecord, sectionRecord, parentConfig,
                 reader);
 
             return config;
@@ -135,7 +135,7 @@ namespace System.Configuration
                     if (xmlNode.NodeType == XmlNodeType.Element) CheckForLockAttributes(sectionName, child);
             }
 
-            internal object CreateSection(bool inputIsTrusted, RuntimeConfigurationRecord configRecord,
+            internal object CreateSection(RuntimeConfigurationRecord configRecord,
                 FactoryRecord factoryRecord, SectionRecord sectionRecord, object parentConfig, ConfigXmlReader reader)
             {
                 object config;

@@ -63,11 +63,52 @@ namespace System.Text.RegularExpressions.Symbolic
         /// unique. This ensures that reference equality can be used for syntactic equality and that all shared subexpressions
         /// are maximally shared.
         /// </summary>
-        internal readonly Dictionary<(SymbolicRegexNodeKind,
-            SymbolicRegexNode<TSet>?, // _left
-            SymbolicRegexNode<TSet>?, // _right
-            int, int, TSet,          // _lower, _upper, _set
-            SymbolicRegexInfo), SymbolicRegexNode<TSet>> _nodeCache = new();
+        internal readonly Dictionary<NodeCacheKey, SymbolicRegexNode<TSet>> _nodeCache = new();
+
+        /// <summary>Key for the <see cref="_nodeCache"/>.</summary>
+        /// <remarks>
+        /// Used instead of a ValueTuple`7 to avoid rooting that rarely used type that also
+        /// includes much more code an interface implementation.
+        /// </remarks>
+        internal readonly struct NodeCacheKey : IEquatable<NodeCacheKey>
+        {
+            public readonly SymbolicRegexNodeKind Kind;
+            public readonly SymbolicRegexNode<TSet>? Left;
+            public readonly SymbolicRegexNode<TSet>? Right;
+            public readonly int Lower;
+            public readonly int Upper;
+            public readonly TSet Set;
+            public readonly SymbolicRegexInfo Info;
+
+            public NodeCacheKey(
+                SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right,
+                int lower, int upper,
+                TSet set, SymbolicRegexInfo info)
+            {
+                Kind = kind;
+                Left = left;
+                Right = right;
+                Lower = lower;
+                Upper = upper;
+                Set = set;
+                Info = info;
+            }
+
+            public override int GetHashCode() =>
+                HashCode.Combine((int)Kind, Left, Right, Lower, Upper, Set, Info);
+
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is NodeCacheKey other && Equals(other);
+
+            public bool Equals(SymbolicRegexBuilder<TSet>.NodeCacheKey other) =>
+                Kind == other.Kind &&
+                Left == other.Left &&
+                Right == other.Right &&
+                Lower == other.Lower &&
+                Upper == other.Upper &&
+                EqualityComparer<TSet>.Default.Equals(Set, other.Set) &&
+                EqualityComparer<SymbolicRegexInfo>.Default.Equals(Info, other.Info);
+        }
 
         // The following dictionaries are used as caches for operations that recurse over the structure of SymbolicRegexNode.
         // These operations are called potentially on every step of the matching process, and they may do linear work in the

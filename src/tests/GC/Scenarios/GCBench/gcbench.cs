@@ -131,7 +131,7 @@ namespace DefaultNamespace {
 
         }
 
-        public static int Main(String [] args)
+        public static int Main()
         {
             Node    longLivedTree;
             Node    tempTree;

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -22,7 +22,7 @@ namespace System.Data
             _dataSet = ds;
             while (reader.LocalName == Keywords.SQL_BEFORE && reader.NamespaceURI == Keywords.DFFNS)
             {
-                ProcessDiffs(ds, reader);
+                ProcessDiffs(reader);
                 reader.Read(); // now the reader points to the error section
             }
 
@@ -58,7 +58,7 @@ namespace System.Data
 
             while (reader.LocalName == Keywords.SQL_BEFORE && reader.NamespaceURI == Keywords.DFFNS)
             {
-                ProcessDiffs(_tables, reader);
+                ProcessDiffs(reader);
                 reader.Read(); // now the reader points to the error section
             }
 
@@ -122,7 +122,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void ProcessDiffs(ArrayList tableList, XmlReader ssync)
+        internal void ProcessDiffs(XmlReader ssync)
         {
             DataTable? tableBefore;
             DataRow? row;

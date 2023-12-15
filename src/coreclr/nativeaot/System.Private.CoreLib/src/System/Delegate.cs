@@ -1,21 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Runtime;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Text;
+
 using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
@@ -218,7 +218,7 @@ namespace System
         }
 
         // This function is known to the compiler backend.
-        private void InitializeOpenStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
+        private void InitializeOpenStaticThunk(object _ /*firstParameter*/, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
@@ -287,7 +287,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return RuntimeAugments.Callbacks.GetDelegateMethod(this);
+            return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -353,20 +353,15 @@ namespace System
             return a.GetEETypePtr() == b.GetEETypePtr();
         }
 
-        // Returns a new delegate of the specified type whose implementation is provied by the
+        // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
         internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
-            EETypePtr delegateEEType;
-            if (!t.TryGetEEType(out delegateEEType))
-            {
-                throw new InvalidOperationException();
-            }
+            RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            if (!delegateEEType.IsDefType || delegateEEType.IsGenericTypeDefinition)
-            {
-                throw new InvalidOperationException();
-            }
+            EETypePtr delegateEEType = typeHandle.ToEETypePtr();
+            Debug.Assert(!delegateEEType.IsNull);
+            Debug.Assert(delegateEEType.IsCanonical);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
@@ -421,49 +416,6 @@ namespace System
                 }
             }
             return del;
-        }
-
-        private string GetTargetMethodsDescriptionForDebugger()
-        {
-            if (m_functionPointer == GetThunk(MulticastThunk))
-            {
-                // Multi-cast delegates return the Target of the last delegate in the list
-                Delegate[] invocationList = (Delegate[])m_helperObject;
-                int invocationCount = (int)m_extraFunctionPointerOrData;
-                StringBuilder builder = new StringBuilder();
-                for (int c = 0; c < invocationCount; c++)
-                {
-                    if (c != 0)
-                        builder.Append(", ");
-
-                    builder.Append(invocationList[c].GetTargetMethodsDescriptionForDebugger());
-                }
-
-                return builder.ToString();
-            }
-            else
-            {
-                RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
-                if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
-                {
-                    return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);
-                }
-                else
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* pointerDef = FunctionPointerOps.ConvertToGenericDescriptor(functionPointer);
-                        return DebuggerFunctionPointerFormattingHook(pointerDef->InstantiationArgument, typeOfFirstParameterIfInstanceDelegate);
-                    }
-                }
-            }
-        }
-
-        private static string DebuggerFunctionPointerFormattingHook(IntPtr functionPointer, RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
-        {
-            // This method will be hooked by the debugger and the debugger will cause it to return a description for the function pointer
-            throw new NotSupportedException();
         }
     }
 }

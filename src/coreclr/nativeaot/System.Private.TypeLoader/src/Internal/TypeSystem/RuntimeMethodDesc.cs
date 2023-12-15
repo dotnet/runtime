@@ -3,6 +3,7 @@
 
 
 using System;
+
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 
@@ -52,7 +53,8 @@ namespace Internal.TypeSystem.NoMetadata
                         TypeDesc[] genericParameters = new TypeDesc[genericArgCount];
                         for (int i = 0; i < genericParameters.Length; i++)
                         {
-                            genericParameters[i] = Context.GetSignatureVariable(i, true);
+                            var newGenericParameter = new RuntimeGenericParameterDesc(GenericParameterKind.Method, i, this, GenericVariance.None);
+                            genericParameters[i] = newGenericParameter;
                         }
                         _instantiation = new Instantiation(genericParameters);
                     }

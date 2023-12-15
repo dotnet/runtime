@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int[] an = new int[2];
             bool b = false;
@@ -24,7 +26,6 @@ namespace Test
                 }
             }
             while (b) { }
-            return 100;
         }
     }
 }

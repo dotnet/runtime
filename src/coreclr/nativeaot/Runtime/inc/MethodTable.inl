@@ -9,20 +9,6 @@ inline uint32_t MethodTable::GetHashCode()
     return m_uHashCode;
 }
 
-//-----------------------------------------------------------------------------------------------------------
-inline PTR_Code MethodTable::get_Slot(uint16_t slotNumber)
-{
-    ASSERT(slotNumber < m_usNumVtableSlots);
-    return *get_SlotPtr(slotNumber);
-}
-
-//-----------------------------------------------------------------------------------------------------------
-inline PTR_PTR_Code MethodTable::get_SlotPtr(uint16_t slotNumber)
-{
-    ASSERT(slotNumber < m_usNumVtableSlots);
-    return dac_cast<PTR_PTR_Code>(dac_cast<TADDR>(this) + offsetof(MethodTable, m_VTable)) + slotNumber;
-}
-
 #ifdef DACCESS_COMPILE
 inline bool MethodTable::DacVerify()
 {
@@ -60,10 +46,7 @@ inline bool MethodTable::DacVerifyWorker(MethodTable* pThis)
         // Now on to the next type in the hierarchy.
         //
 
-        if (pCurrentType->IsRelatedTypeViaIAT())
-            pCurrentType = *dac_cast<PTR_PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_ppBaseTypeViaIAT));
-        else
-            pCurrentType = dac_cast<PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_pBaseType));
+        pCurrentType = dac_cast<PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_pBaseType));
 
         if (pCurrentType == NULL)
             break;
@@ -109,13 +92,8 @@ __forceinline uint32_t MethodTable::GetFieldOffset(EETypeField eField)
     // First part of MethodTable consists of the fixed portion followed by the vtable.
     uint32_t cbOffset = offsetof(MethodTable, m_VTable) + (sizeof(UIntTarget) * m_usNumVtableSlots);
 
-    // Then we have the interface map.
-    if (eField == ETF_InterfaceMap)
-    {
-        ASSERT(GetNumInterfaces() > 0);
-        return cbOffset;
-    }
-    cbOffset += sizeof(EEInterfaceInfo) * GetNumInterfaces();
+    // Followed by interface list
+    cbOffset += sizeof(MethodTable*) * GetNumInterfaces();
 
     const uint32_t relativeOrFullPointerOffset =
 #if USE_PORTABLE_HELPERS

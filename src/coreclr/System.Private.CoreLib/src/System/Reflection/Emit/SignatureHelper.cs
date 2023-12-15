@@ -223,6 +223,8 @@ namespace System.Reflection.Emit
 
             if (m_module == null && mod != null)
                 throw new ArgumentException(SR.NotSupported_MustBeModuleBuilder);
+
+            AssemblyBuilder.EnsureDynamicCodeSupported();
         }
 
         [MemberNotNull(nameof(m_signature))]
@@ -287,7 +289,7 @@ namespace System.Reflection.Emit
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
 
-                    int token = m_module!.GetTypeToken(t);
+                    int token = m_module!.GetTypeMetadataToken(t);
                     Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
@@ -309,7 +311,7 @@ namespace System.Reflection.Emit
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
-                    int token = m_module!.GetTypeToken(t);
+                    int token = m_module!.GetTypeMetadataToken(t);
                     Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
@@ -343,9 +345,8 @@ namespace System.Reflection.Emit
                 foreach (Type t in args)
                     AddOneArgTypeHelper(t);
             }
-            else if (clsArgument is TypeBuilder)
+            else if (clsArgument is RuntimeTypeBuilder clsBuilder)
             {
-                TypeBuilder clsBuilder = (TypeBuilder)clsArgument;
                 int tkType;
 
                 if (clsBuilder.Module.Equals(m_module))
@@ -354,7 +355,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tkType = m_module!.GetTypeToken(clsArgument);
+                    tkType = m_module!.GetTypeMetadataToken(clsArgument);
                 }
 
                 if (clsArgument.IsValueType)
@@ -366,18 +367,18 @@ namespace System.Reflection.Emit
                     InternalAddTypeToken(tkType, CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
-            else if (clsArgument is EnumBuilder)
+            else if (clsArgument is RuntimeEnumBuilder reBuilder)
             {
-                TypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
+                RuntimeTypeBuilder rtBuilder = reBuilder.m_typeBuilder;
                 int tkType;
 
-                if (clsBuilder.Module.Equals(m_module))
+                if (rtBuilder.Module.Equals(m_module))
                 {
-                    tkType = clsBuilder.TypeToken;
+                    tkType = rtBuilder.TypeToken;
                 }
                 else
                 {
-                    tkType = m_module!.GetTypeToken(clsArgument);
+                    tkType = m_module!.GetTypeMetadataToken(clsArgument);
                 }
 
                 if (clsArgument.IsValueType)
@@ -451,11 +452,11 @@ namespace System.Reflection.Emit
                 }
                 else if (clsArgument.IsValueType)
                 {
-                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ELEMENT_TYPE_VALUETYPE);
+                    InternalAddTypeToken(m_module.GetTypeMetadataToken(clsArgument), CorElementType.ELEMENT_TYPE_VALUETYPE);
                 }
                 else
                 {
-                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ELEMENT_TYPE_CLASS);
+                    InternalAddTypeToken(m_module.GetTypeMetadataToken(clsArgument), CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
         }

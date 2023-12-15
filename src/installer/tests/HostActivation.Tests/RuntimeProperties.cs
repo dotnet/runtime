@@ -115,6 +115,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdErrContaining($"Duplicate runtime property found: {name}");
         }
 
+        [Fact]
+        public void SpecifiedInConfigAndDevConfig_ConfigWins()
+        {
+            var fixture = sharedState.RuntimePropertiesFixture
+                .Copy();
+
+            RuntimeConfig.FromFile(fixture.TestProject.RuntimeDevConfigJson)
+                .WithProperty(sharedState.AppTestPropertyName, "VALUE_FROM_DEV_CONFIG")
+                .Save();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+            dotnet.Exec(appDll, sharedState.AppTestPropertyName)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrContaining($"Property {sharedState.AppTestPropertyName} = {sharedState.AppTestPropertyValue}")
+                .And.HaveStdOutContaining($"AppContext.GetData({sharedState.AppTestPropertyName}) = {sharedState.AppTestPropertyValue}");
+        }
+
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture RuntimePropertiesFixture { get; }

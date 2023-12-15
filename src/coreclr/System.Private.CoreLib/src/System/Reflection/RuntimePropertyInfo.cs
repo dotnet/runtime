@@ -13,16 +13,16 @@ namespace System.Reflection
     internal sealed unsafe class RuntimePropertyInfo : PropertyInfo
     {
         #region Private Data Members
-        private int m_token;
+        private readonly int m_token;
         private string? m_name;
-        private void* m_utf8name;
-        private PropertyAttributes m_flags;
-        private RuntimeTypeCache m_reflectedTypeCache;
-        private RuntimeMethodInfo? m_getterMethod;
-        private RuntimeMethodInfo? m_setterMethod;
-        private MethodInfo[]? m_otherMethod;
-        private RuntimeType m_declaringType;
-        private BindingFlags m_bindingFlags;
+        private readonly void* m_utf8name;
+        private readonly PropertyAttributes m_flags;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeMethodInfo? m_getterMethod;
+        private readonly RuntimeMethodInfo? m_setterMethod;
+        private readonly MethodInfo[]? m_otherMethod;
+        private readonly RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
         private ParameterInfo[]? m_parameters;
         #endregion
@@ -79,7 +79,7 @@ namespace System.Reflection
         {
             // @Asymmetry - Legacy policy is to remove duplicate properties, including hidden properties.
             //             The comparison is done by name and by sig. The EqualsSig comparison is expensive
-            //             but forutnetly it is only called when an inherited property is hidden by name or
+            //             but fortunately it is only called when an inherited property is hidden by name or
             //             when an interfaces declare properies with the same signature.
             //             Note that we intentionally don't resolve generic arguments so that we don't treat
             //             signatures that only match in certain instantiations as duplicates. This has the
@@ -182,7 +182,10 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             ReferenceEquals(this, obj) ||
-            (MetadataUpdater.IsSupported && CacheEquals(obj));
+            (MetadataUpdater.IsSupported && obj is RuntimePropertyInfo rpi &&
+                rpi.m_token == m_token &&
+                ReferenceEquals(rpi.m_declaringType, m_declaringType) &&
+                ReferenceEquals(rpi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
             HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
@@ -201,6 +204,8 @@ namespace System.Reflection
         {
             return Signature.GetCustomModifiers(0, false);
         }
+
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);
 
         internal object GetConstantValue(bool raw)
         {
@@ -256,23 +261,10 @@ namespace System.Reflection
             return m_setterMethod;
         }
 
-        public override ParameterInfo[] GetIndexParameters()
-        {
-            ParameterInfo[] indexParams = GetIndexParametersNoCopy();
+        public override ParameterInfo[] GetIndexParameters() =>
+            GetIndexParametersSpan().ToArray();
 
-            int numParams = indexParams.Length;
-
-            if (numParams == 0)
-                return indexParams;
-
-            ParameterInfo[] ret = new ParameterInfo[numParams];
-
-            Array.Copy(indexParams, ret, numParams);
-
-            return ret;
-        }
-
-        internal ParameterInfo[] GetIndexParametersNoCopy()
+        internal ReadOnlySpan<ParameterInfo> GetIndexParametersSpan()
         {
             // @History - Logic ported from RTM
 
@@ -280,14 +272,14 @@ namespace System.Reflection
             if (m_parameters == null)
             {
                 int numParams = 0;
-                ParameterInfo[]? methParams = null;
+                ReadOnlySpan<ParameterInfo> methParams = default;
 
                 // First try to get the Get method.
                 RuntimeMethodInfo? m = GetGetMethod(true);
                 if (m != null)
                 {
                     // There is a Get method so use it.
-                    methParams = m.GetParametersNoCopy();
+                    methParams = m.GetParametersAsSpan();
                     numParams = methParams.Length;
                 }
                 else
@@ -297,7 +289,7 @@ namespace System.Reflection
 
                     if (m != null)
                     {
-                        methParams = m.GetParametersNoCopy();
+                        methParams = m.GetParametersAsSpan();
                         numParams = methParams.Length - 1;
                     }
                 }
@@ -326,26 +318,26 @@ namespace System.Reflection
         #endregion
 
         #region Dynamic
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj, object?[]? index)
         {
             return GetValue(obj, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
                 null, index, null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             RuntimeMethodInfo? m = GetGetMethod(true);
             if (m == null)
-                throw new ArgumentException(System.SR.Arg_GetMethNotFnd);
+                throw new ArgumentException(SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, object?[]? index)
         {
             SetValue(obj,
@@ -356,18 +348,18 @@ namespace System.Reflection
                     null);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             RuntimeMethodInfo? m = GetSetMethod(true);
 
             if (m == null)
-                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
+                throw new ArgumentException(SR.Arg_SetMethNotFnd);
 
             if (index is null)
             {
-                m.InvokeOneParameter(obj, invokeAttr, binder, value, culture);
+                m.InvokePropertySetter(obj, invokeAttr, binder, value, culture);
             }
             else
             {

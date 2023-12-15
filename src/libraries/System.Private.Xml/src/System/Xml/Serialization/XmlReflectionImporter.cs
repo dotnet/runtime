@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System;
-using System.Xml.Schema;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
-using System.Threading;
 using System.Diagnostics;
-using System.Xml;
-using System.Xml.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace System.Xml.Serialization
 {
@@ -207,7 +207,7 @@ namespace System.Xml.Serialization
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();
-            element.Name = elementName == null || elementName.Length == 0 ? elementName : XmlConvert.EncodeLocalName(elementName);
+            element.Name = string.IsNullOrEmpty(elementName) ? elementName : XmlConvert.EncodeLocalName(elementName);
             element.Namespace = ns;
 
             MembersMapping membersMapping = ImportMembersMapping(members, ns, hasWrapperElement, rpc, openModel, new RecursionLimiter());
@@ -358,17 +358,17 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.Format(SR.XmlCannotReconcileAccessor, accessor.Name, accessor.Namespace, GetMappingName(existing.Mapping!), GetMappingName(accessor.Mapping!)));
         }
 
-        private static Exception CreateReflectionException(string context, Exception e)
+        private static InvalidOperationException CreateReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }
 
-        private static Exception CreateTypeReflectionException(string context, Exception e)
+        private static InvalidOperationException CreateTypeReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlTypeReflectionError, context), e);
         }
 
-        private static Exception CreateMemberReflectionException(FieldModel model, Exception e)
+        private static InvalidOperationException CreateMemberReflectionException(FieldModel model, Exception e)
         {
             return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
@@ -454,7 +454,7 @@ namespace System.Xml.Serialization
                             if (a.XmlFlags != 0) throw InvalidAttributeUseException(model.Type);
                         }
                         if (model.TypeDesc.IsSpecial)
-                            return ImportSpecialMapping(model.Type, model.TypeDesc, ns, context, limiter);
+                            return ImportSpecialMapping(model.Type, model.TypeDesc, ns, context);
                         throw UnsupportedException(model.TypeDesc, context);
                 }
             }
@@ -491,7 +491,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls IncludeTypes")]
-        private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string? ns, ImportContext context, RecursionLimiter limiter)
+        private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string? ns, ImportContext context)
         {
             _specials ??= new Hashtable();
             SpecialMapping? mapping = (SpecialMapping?)_specials[type];
@@ -604,12 +604,12 @@ namespace System.Xml.Serialization
                 _ => throw new ArgumentException(SR.XmlInternalError, nameof(context)),
             };
 
-        private static Exception InvalidAttributeUseException(Type type)
+        private static InvalidOperationException InvalidAttributeUseException(Type type)
         {
             return new InvalidOperationException(SR.Format(SR.XmlInvalidAttributeUse, type.FullName));
         }
 
-        private static Exception UnsupportedException(TypeDesc typeDesc, ImportContext context)
+        private static InvalidOperationException UnsupportedException(TypeDesc typeDesc, ImportContext context)
         {
             return new InvalidOperationException(SR.Format(SR.XmlIllegalTypeContext, typeDesc.FullName, GetContextName(context)));
         }
@@ -696,7 +696,7 @@ namespace System.Xml.Serialization
         private TypeMapping? GetTypeMapping(string? typeName, string? ns, TypeDesc typeDesc, NameTable typeLib, Type? type)
         {
             TypeMapping? mapping;
-            if (typeName == null || typeName.Length == 0)
+            if (string.IsNullOrEmpty(typeName))
                 mapping = type == null ? null : (TypeMapping?)_anonymous[type];
             else
                 mapping = (TypeMapping?)typeLib[typeName, ns];
@@ -1078,7 +1078,7 @@ namespace System.Xml.Serialization
 
             _savedArrayItemAttributes ??= new XmlArrayItemAttributes();
             if (CountAtLevel(_savedArrayItemAttributes, _arrayNestingLevel) == 0)
-                _savedArrayItemAttributes.Add(CreateArrayItemAttribute(_typeScope.GetTypeDesc(model.Element.Type), _arrayNestingLevel));
+                _savedArrayItemAttributes.Add(CreateArrayItemAttribute(_arrayNestingLevel));
             CreateArrayElementsFromAttributes(mapping, _savedArrayItemAttributes, model.Element.Type, _savedArrayNamespace ?? ns, limiter);
             SetArrayMappingType(mapping, ns, model.Type);
 
@@ -1312,7 +1312,7 @@ namespace System.Xml.Serialization
             {
                 if (typeDesc.IsArrayLike)
                 {
-                    XmlArrayAttribute xmlArray = CreateArrayAttribute(typeDesc);
+                    XmlArrayAttribute xmlArray = CreateArrayAttribute();
                     xmlArray.ElementName = xmlReflectionMember.MemberName;
                     xmlArray.Namespace = rpc ? null : ns;
                     xmlArray.Form = form;
@@ -1520,7 +1520,7 @@ namespace System.Xml.Serialization
             XmlAttributeFlags flags = a.XmlFlags;
             accessor.Ignore = a.XmlIgnore;
             if (rpc)
-                CheckTopLevelAttributes(a, accessorName);
+                CheckTopLevelAttributes(a);
             else
                 CheckAmbiguousChoice(a, accessorType, accessorName);
 
@@ -1711,9 +1711,9 @@ namespace System.Xml.Serialization
                     }
 
                     TypeDesc arrayElementTypeDesc = _typeScope.GetTypeDesc(arrayElementType);
-                    a.XmlArray ??= CreateArrayAttribute(accessor.TypeDesc);
+                    a.XmlArray ??= CreateArrayAttribute();
                     if (CountAtLevel(a.XmlArrayItems, _arrayNestingLevel) == 0)
-                        a.XmlArrayItems.Add(CreateArrayItemAttribute(arrayElementTypeDesc, _arrayNestingLevel));
+                        a.XmlArrayItems.Add(CreateArrayItemAttribute(_arrayNestingLevel));
                     ElementAccessor arrayElement = new ElementAccessor();
                     arrayElement.Name = XmlConvert.EncodeLocalName(a.XmlArray.ElementName.Length == 0 ? accessorName : a.XmlArray.ElementName);
                     arrayElement.Namespace = rpc ? null : a.XmlArray.Namespace ?? ns;
@@ -2017,7 +2017,7 @@ namespace System.Xml.Serialization
         }
 
 
-        private static void CheckTopLevelAttributes(XmlAttributes a, string accessorName)
+        private static void CheckTopLevelAttributes(XmlAttributes a)
         {
             XmlAttributeFlags flags = a.XmlFlags;
 
@@ -2138,14 +2138,14 @@ namespace System.Xml.Serialization
             return a.XmlDefaultValue;
         }
 
-        private static XmlArrayItemAttribute CreateArrayItemAttribute(TypeDesc typeDesc, int nestingLevel)
+        private static XmlArrayItemAttribute CreateArrayItemAttribute(int nestingLevel)
         {
             XmlArrayItemAttribute xmlArrayItem = new XmlArrayItemAttribute();
             xmlArrayItem.NestingLevel = nestingLevel;
             return xmlArrayItem;
         }
 
-        private static XmlArrayAttribute CreateArrayAttribute(TypeDesc typeDesc)
+        private static XmlArrayAttribute CreateArrayAttribute()
         {
             XmlArrayAttribute xmlArrayItem = new XmlArrayAttribute();
             return xmlArrayItem;

@@ -4,84 +4,50 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 
 namespace System.Reflection
 {
-    [ReflectionBlocked]
-    public sealed class EnumInfo
+    public abstract class EnumInfo
     {
-        public EnumInfo(Type underlyingType, object[] rawValues, string[] names, bool isFlags)
+        private protected EnumInfo(Type underlyingType, string[] names, bool isFlags)
         {
-            Debug.Assert(rawValues.Length == names.Length);
-
             UnderlyingType = underlyingType;
-
-            int numValues = rawValues.Length;
-            ulong[] values = new ulong[numValues];
-            for (int i = 0; i < numValues; i++)
-            {
-                object rawValue = rawValues[i];
-
-                ulong rawUnboxedValue;
-                if (rawValue is ulong)
-                {
-                    rawUnboxedValue = (ulong)rawValue;
-                }
-                else
-                {
-                    // This conversion is this way for compatibility: do a value-preseving cast to long - then store (and compare) as ulong. This affects
-                    // the order in which the Enum apis return names and values.
-                    rawUnboxedValue = (ulong)(((IConvertible)rawValue).ToInt64(null));
-                }
-                values[i] = rawUnboxedValue;
-            }
-
-            // Need to sort the `names` and `rawValues` arrays according to the `values` array
-            ulong[] valuesCopy = (ulong[])values.Clone();
-            Array.Sort(keys: valuesCopy, items: rawValues, comparer: Comparer<ulong>.Default);
-            Array.Sort(keys: values, items: names, comparer: Comparer<ulong>.Default);
-
             Names = names;
-            Values = values;
-
-            // Create the unboxed version of values for the Values property to return. (We didn't do this earlier because
-            // declaring "rawValues" as "Array" would prevent us from using the generic overload of Array.Sort()).
-            //
-            // The array element type is the underlying type, not the enum type. (The enum type could be an open generic.)
-            ValuesAsUnderlyingType = Type.GetTypeCode(UnderlyingType) switch
-            {
-                TypeCode.Byte => new byte[numValues],
-                TypeCode.SByte => new sbyte[numValues],
-                TypeCode.UInt16 => new ushort[numValues],
-                TypeCode.Int16 => new short[numValues],
-                TypeCode.UInt32 => new uint[numValues],
-                TypeCode.Int32 => new int[numValues],
-                TypeCode.UInt64 => new ulong[numValues],
-                TypeCode.Int64 => new long[numValues],
-                _ => throw new NotSupportedException(),
-            };
-            Array.Copy(rawValues, ValuesAsUnderlyingType, numValues);
-
             HasFlagsAttribute = isFlags;
-
-            ValuesAreSequentialFromZero = true;
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (values[i] != (ulong)i)
-                {
-                    ValuesAreSequentialFromZero = false;
-                    break;
-                }
-            }
         }
 
         internal Type UnderlyingType { get; }
         internal string[] Names { get; }
-        internal ulong[] Values { get; }
-        internal Array ValuesAsUnderlyingType { get; }
         internal bool HasFlagsAttribute { get; }
+    }
+
+    public sealed class EnumInfo<TStorage> : EnumInfo
+        where TStorage : struct, INumber<TStorage>
+    {
+        public EnumInfo(Type underlyingType, TStorage[] values, string[] names, bool isFlags) :
+            base(underlyingType, names, isFlags)
+        {
+            Debug.Assert(values.Length == names.Length);
+            Debug.Assert(Enum.AreSorted(values));
+
+            Values = values;
+            ValuesAreSequentialFromZero = Enum.AreSequentialFromZero(values);
+        }
+
+        internal TStorage[] Values { get; }
         internal bool ValuesAreSequentialFromZero { get; }
+
+        /// <summary>Create a copy of <see cref="Values"/>.</summary>
+        public unsafe TResult[] CloneValues<TResult>() where TResult : struct
+        {
+            Debug.Assert(sizeof(TStorage) == sizeof(TResult));
+            return MemoryMarshal.Cast<TStorage, TResult>(Values).ToArray();
+        }
     }
 }

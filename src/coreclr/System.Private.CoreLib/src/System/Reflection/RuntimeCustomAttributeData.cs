@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -92,7 +93,7 @@ namespace System.Reflection
             return pcas.Count > 0 ? GetCombinedList(cad, ref pcas) : cad;
         }
 
-        private static IList<CustomAttributeData> GetCombinedList(IList<CustomAttributeData> customAttributes, ref RuntimeType.ListBuilder<Attribute> pseudoAttributes)
+        private static ReadOnlyCollection<CustomAttributeData> GetCombinedList(IList<CustomAttributeData> customAttributes, ref RuntimeType.ListBuilder<Attribute> pseudoAttributes)
         {
             Debug.Assert(pseudoAttributes.Count != 0);
 
@@ -113,7 +114,7 @@ namespace System.Reflection
             if (type == typeof(int))
                 return CustomAttributeEncoding.Int32;
 
-            if (type.IsEnum)
+            if (type.IsActualEnum)
                 return CustomAttributeEncoding.Enum;
 
             if (type == typeof(string))
@@ -171,7 +172,7 @@ namespace System.Reflection
             if (type.IsInterface)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsValueType)
+            if (type.IsActualValueType)
                 return CustomAttributeEncoding.Undefined;
 
             throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA, nameof(type));
@@ -277,7 +278,7 @@ namespace System.Reflection
                 m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
-            ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
             if (parameters.Length != 0)
             {
                 m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
@@ -411,7 +412,7 @@ namespace System.Reflection
             // Ensure there is only a single constructor for 'pca', so it is safe to suppress IL2075
             ConstructorInfo[] allCtors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Debug.Assert(allCtors.Length == 1);
-            Debug.Assert(allCtors[0].GetParameters().Length == 0);
+            Debug.Assert(allCtors[0].GetParametersAsSpan().Length == 0);
 #endif
 
             m_ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
@@ -567,12 +568,8 @@ namespace System.Reflection
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
-            RuntimeType type = RuntimeTypeHandle.GetTypeByNameUsingCARules(typeName, scope);
-
-            if (type is null)
-                throw new InvalidOperationException(
-                    SR.Format(SR.Arg_CATypeResolutionFailed, typeName));
-
+            RuntimeType type = TypeNameParser.GetTypeReferencedByCustomAttribute(typeName, scope);
+            Debug.Assert(type is not null);
             return type;
         }
         #endregion
@@ -931,7 +928,7 @@ namespace System.Reflection
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
-            if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
+            if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
                 object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
@@ -973,7 +970,7 @@ namespace System.Reflection
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...
             // ... however if the attribute is sealed we can rely on the attribute usage
-            if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
+            if (!inherit || (caType.IsSealed && !GetAttributeUsage(caType).Inherited))
             {
                 object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, pcas.Count, caType);
                 if (pcas.Count > 0) pcas.CopyTo(attributes, attributes.Length - pcas.Count);
@@ -1244,9 +1241,9 @@ namespace System.Reflection
                                 }
                             }
 
-                            PropertyInfo? property = type is null ?
+                            RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                 attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes);
+                                attributeType.GetProperty(name, type, Type.EmptyTypes));
 
                             // Did we get a valid property reference?
                             if (property is null)
@@ -1254,7 +1251,7 @@ namespace System.Reflection
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             }
 
-                            MethodInfo setMethod = property.GetSetMethod(true)!;
+                            RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 
                             // Public properties may have non-public setter methods
                             if (!setMethod.IsPublic)
@@ -1262,7 +1259,7 @@ namespace System.Reflection
                                 continue;
                             }
 
-                            setMethod.Invoke(attribute, BindingFlags.Default, null, new object?[] { value }, null);
+                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
                         }
                         else
                         {
@@ -1480,7 +1477,7 @@ namespace System.Reflection
             {
                 useAttributeArray = true;
             }
-            else if (caType.IsValueType)
+            else if (caType.IsActualValueType)
             {
                 useObjectArray = true;
             }
@@ -1607,11 +1604,13 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType))
                 return;
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(SerializableAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Serializable) != 0)
                     pcas.Add(new SerializableAttribute());
             }
+#pragma warning restore SYSLIB0050
             if (all || caType == typeof(ComImportAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Import) != 0)
@@ -1624,11 +1623,13 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType!))
                 return false;
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(SerializableAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Serializable) != 0)
                     return true;
             }
+#pragma warning restore SYSLIB0050
             if (all || caType == typeof(ComImportAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Import) != 0)
@@ -1755,11 +1756,13 @@ namespace System.Reflection
                 pca = GetFieldOffsetCustomAttribute(field);
                 if (pca is not null) pcas.Add(pca);
             }
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(NonSerializedAttribute))
             {
                 if ((field.Attributes & FieldAttributes.NotSerialized) != 0)
                     pcas.Add(new NonSerializedAttribute());
             }
+#pragma warning restore SYSLIB0050
         }
         internal static bool IsDefined(RuntimeFieldInfo field, RuntimeType? caType)
         {
@@ -1775,11 +1778,13 @@ namespace System.Reflection
             {
                 if (GetFieldOffsetCustomAttribute(field) is not null) return true;
             }
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(NonSerializedAttribute))
             {
                 if ((field.Attributes & FieldAttributes.NotSerialized) != 0)
                     return true;
             }
+#pragma warning restore SYSLIB0050
 
             return false;
         }
@@ -1858,12 +1863,12 @@ namespace System.Reflection
                 out int sizeConst, out string? marshalTypeName, out string? marshalCookie, out int iidParamIndex);
 
             RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                RuntimeTypeHandle.GetTypeByNameUsingCARules(safeArrayUserDefinedTypeName, scope);
+                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : RuntimeTypeHandle.GetTypeByNameUsingCARules(marshalTypeName, scope);
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {

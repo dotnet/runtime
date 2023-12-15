@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,9 +9,11 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 using System.Threading;
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using static System.Security.Principal.Win32;
 using CultureInfo = System.Globalization.CultureInfo;
 using Luid = Interop.Advapi32.LUID;
-using static System.Security.Principal.Win32;
 
 namespace System.Security.AccessControl
 {
@@ -87,10 +87,8 @@ namespace System.Security.AccessControl
             {
                 privilegeLock.EnterReadLock();
 
-                if (luids.ContainsKey(privilege))
+                if (luids.TryGetValue(privilege, out luid))
                 {
-                    luid = luids[privilege];
-
                     privilegeLock.ExitReadLock();
                 }
                 else
@@ -134,9 +132,8 @@ namespace System.Security.AccessControl
 
                 if (privilegeLock.IsWriteLockHeld)
                 {
-                    if (!luids.ContainsKey(privilege))
+                    if (luids.TryAdd(privilege, luid))
                     {
-                        luids[privilege] = luid;
                         privileges[luid] = privilege;
                     }
 

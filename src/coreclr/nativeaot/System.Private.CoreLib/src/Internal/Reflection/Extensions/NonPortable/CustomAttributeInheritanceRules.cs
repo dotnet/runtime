@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 
 using Internal.Reflection.Augments;
 
@@ -72,8 +72,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     return EventCustomAttributeSearcher.Default.GetMatchingCustomAttributes(eventInfo, optionalAttributeTypeFilter, inherit, skipTypeValidation: skipTypeValidation);
             }
 
-            if (element == null)
-                throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(element);
 
             throw new NotSupportedException(); // Shouldn't get here.
         }
@@ -236,7 +235,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                 if (e.Position >= 0)
                 {
-                    return methodParent.GetParametersNoCopy()[e.Position];
+                    return methodParent.GetParametersAsSpan()[e.Position];
                 }
                 else
                 {

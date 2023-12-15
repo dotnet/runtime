@@ -3,13 +3,13 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
-using System.Xml.Schema;
-using System.ServiceModel.Channels;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.ServiceModel.Channels;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace System.ServiceModel.Syndication
 {
@@ -600,7 +600,11 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
+#if NET8_0_OR_GREATER
+            if (dateTime.TotalOffsetMinutes == 0)
+#else
             if (dateTime.Offset == TimeSpan.Zero)
+#endif // NET8_0_OR_GREATER
             {
                 return dateTime.ToUniversalTime().ToString(Rfc3339UTCDateTimeFormat, CultureInfo.InvariantCulture);
             }

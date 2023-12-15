@@ -201,7 +201,11 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
+#if NET8_0_OR_GREATER
+            if (dateTime.TotalOffsetMinutes == 0)
+#else
             if (dateTime.Offset == TimeSpan.Zero)
+#endif // NET8_0_OR_GREATER
             {
                 return dateTime.ToUniversalTime().ToString(Rfc822OutputUtcDateTimeFormat, CultureInfo.InvariantCulture);
             }
@@ -374,7 +378,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 bool isPermalink = true;
                                 string permalinkString = reader.GetAttribute(Rss20Constants.IsPermaLinkTag, Rss20Constants.Rss20Namespace);
-                                if ((permalinkString != null) && (permalinkString.ToUpperInvariant() == "FALSE"))
+                                if (permalinkString != null && permalinkString.Equals("FALSE", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     isPermalink = false;
                                 }

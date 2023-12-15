@@ -1,7 +1,8 @@
 <Project>
+
   <Import Project="..\..\Directory.Build.targets" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' != 'true'">
     <_DebugSymbolToMove Include="@(DebugSymbolsProjectOutputGroupOutput->Metadata('FinalOutputPath'))"
                         FolderName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
     <_DebugSymbolToMoveToExclude Include="@(_DebugSymbolToMove->WithMetadataValue('FolderName', 'aotsdk'))" />
@@ -28,5 +29,6 @@
 
   <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
   <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib' or '$(IsNativeAotProject)' == 'true'" Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
 
 </Project>

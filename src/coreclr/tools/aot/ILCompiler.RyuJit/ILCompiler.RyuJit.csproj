@@ -15,7 +15,6 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -65,11 +64,11 @@
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\TypeString.cs">
-      <Link>JitInterface\TypeString.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\JitTypeNameFormatter.cs">
+      <Link>JitInterface\JitTypeNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\CorInfoBase.cs">
-      <Link>JitInterface\CorInfoBase.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\CorInfoImpl_generated.cs">
+      <Link>JitInterface\CorInfoImpl_generated.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>
@@ -88,6 +87,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
       <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
+      <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>

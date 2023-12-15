@@ -47,14 +47,8 @@ namespace System.Diagnostics.Tracing
             uint loggingLevel,
             string? filterData)
         {
-            if (string.IsNullOrEmpty(providerName))
-            {
-                throw new ArgumentNullException(nameof(providerName));
-            }
-            if (loggingLevel > 5) // 5 == Verbose, the highest value in EventPipeLoggingLevel.
-            {
-                throw new ArgumentOutOfRangeException(nameof(loggingLevel));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(providerName);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(loggingLevel, 5u); // 5 == Verbose, the highest value in EventPipeLoggingLevel.
             m_providerName = providerName;
             m_keywords = keywords;
             m_loggingLevel = loggingLevel;

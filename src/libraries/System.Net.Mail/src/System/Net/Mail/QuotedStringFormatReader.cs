@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
@@ -185,7 +186,7 @@ namespace System.Net.Mail
         // non-whitespace control characters as well as all remaining ASCII chars except backslash and double quote.
         private static bool IsValidQtext(bool allowUnicode, char ch)
         {
-            if (ch > MailBnfHelper.Ascii7bitMaxValue)
+            if (!Ascii.IsValid(ch))
             {
                 return allowUnicode;
             }

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -20,66 +20,60 @@ namespace Microsoft.Interop.JavaScript
         private readonly JSSignatureContext _signatureContext;
 
         public JSExportCodeGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             JSExportData attributeData,
             JSSignatureContext signatureContext,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
+            GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory)
         {
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
+            NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier)
+            {
+                CodeEmitOptions = new(SkipInit: true)
+            };
             _context = new JSExportCodeContext(attributeData, innerContext);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+
+            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
+
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
+
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
+                innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
+                {
+                    CodeEmitOptions = new(SkipInit: true)
+                };
                 _context = new JSExportCodeContext(attributeData, innerContext);
-                _marshallers = new BoundGenerators(argTypes, CreateGenerator);
             }
 
             // validate task + span mix
             if (_marshallers.ManagedReturnMarshaller.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSTaskTypeInfo))
             {
-                BoundGenerator spanArg = _marshallers.AllMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
+                BoundGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
-                    marshallingNotSupportedCallback(spanArg.TypeInfo, new MarshallingNotSupportedException(spanArg.TypeInfo, _context)
+                    diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });
-                }
-            }
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new EmptyJSGenerator();
                 }
             }
         }
 
         public BlockSyntax GenerateJSExportBody()
         {
-            StatementSyntax invoke = InvokeSyntax();
+            List<StatementSyntax> invoke = InvokeSyntax();
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
-            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
             SetupSyntax(setupStatements);
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
+                setupStatements.Add(SyntaxFactoryExtensions.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
             setupStatements.AddRange(declarations.Initializations);
@@ -89,9 +83,9 @@ namespace Microsoft.Interop.JavaScript
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Unmarshal);
 
-            tryStatements.Add(invoke);
+            tryStatements.AddRange(invoke);
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(InvokeSucceededIdentifier),
@@ -103,47 +97,65 @@ namespace Microsoft.Interop.JavaScript
             tryStatements.AddRange(statements.Marshal);
 
             List<StatementSyntax> allStatements = setupStatements;
+
+            // Wrap unmarshall, invocation and return value marshalling in try-catch.
+            // In case of exception, marshal exception instead of return value.
+            var tryInvokeAndMarshal = TryStatement(SingletonList(CatchClause()
+                        .WithDeclaration(CatchDeclaration(IdentifierName(Constants.ExceptionGlobal)).WithIdentifier(Identifier("ex")))
+                        .WithBlock(Block(SingletonList<StatementSyntax>(
+                            ExpressionStatement(InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(Constants.ArgumentException), IdentifierName(Constants.ToJSMethod)))
+                            .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(IdentifierName("ex")))))))))))
+                .WithBlock(Block(tryStatements));
+
             List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
+                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal.Concat(statements.CleanupCalleeAllocated))));
             }
 
-            finallyStatements.AddRange(statements.Cleanup);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
+
             if (finallyStatements.Count > 0)
             {
-                allStatements.Add(
-                    TryStatement(Block(tryStatements), default, FinallyClause(Block(finallyStatements))));
+                tryInvokeAndMarshal = TryStatement(Block(tryInvokeAndMarshal), default, FinallyClause(Block(finallyStatements)));
             }
-            else
-            {
-                allStatements.AddRange(tryStatements);
-            }
+
+            allStatements.Add(tryInvokeAndMarshal);
 
             return Block(allStatements);
         }
 
-        public BlockSyntax GenerateJSExportRegistration()
+        public static StatementSyntax[] GenerateJSExportArchitectureCheck()
         {
-            var registrationStatements = new List<StatementSyntax>();
-            registrationStatements.Add(IfStatement(
-                BinaryExpression(SyntaxKind.NotEqualsExpression,
-                    IdentifierName(Constants.OSArchitectureGlobal),
-                    IdentifierName(Constants.ArchitectureWasmGlobal)),
-                ReturnStatement()));
+            return new StatementSyntax[]{
+                IfStatement(
+                    BinaryExpression(SyntaxKind.LogicalOrExpression,
+                        IdentifierName("initialized"),
+                        BinaryExpression(SyntaxKind.NotEqualsExpression,
+                            IdentifierName(Constants.OSArchitectureGlobal),
+                            IdentifierName(Constants.ArchitectureWasmGlobal))),
+                    ReturnStatement()),
+                ExpressionStatement(
+                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName("initialized"),
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression))),
+            };
+        }
 
-            var signatureArgs = new List<ArgumentSyntax>();
+        public StatementSyntax GenerateJSExportRegistration()
+        {
+            var signatureArgs = new List<ArgumentSyntax>
+            {
+                Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_signatureContext.QualifiedMethodName))),
+                Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_signatureContext.TypesHash))),
+                CreateSignaturesSyntax()
+            };
 
-            signatureArgs.Add(Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_signatureContext.QualifiedMethodName))));
-            signatureArgs.Add(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_signatureContext.TypesHash))));
-
-            signatureArgs.Add(CreateSignaturesSyntax());
-
-            registrationStatements.Add(ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                 IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName(Constants.BindCSFunctionMethod)))
-                .WithArgumentList(ArgumentList(SeparatedList(signatureArgs)))));
-
-            return Block(List(registrationStatements));
+                .WithArgumentList(ArgumentList(SeparatedList(signatureArgs))));
         }
 
         private ArgumentSyntax CreateSignaturesSyntax()
@@ -177,7 +189,7 @@ namespace Microsoft.Interop.JavaScript
                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))))))));
         }
 
-        private StatementSyntax InvokeSyntax()
+        private List<StatementSyntax> InvokeSyntax()
         {
             var statements = new List<StatementSyntax>();
             var arguments = new List<ArgumentSyntax>();
@@ -207,22 +219,14 @@ namespace Microsoft.Interop.JavaScript
                      IdentifierName(nativeIdentifier), invocation));
 
                 statements.Add(statement);
-                statements.AddRange(_marshallers.ManagedReturnMarshaller.Generator.Generate(_marshallers.ManagedReturnMarshaller.TypeInfo, _context with { CurrentStage = StubCodeContext.Stage.Marshal }));
             }
-            return TryStatement(SingletonList(CatchClause()
-                        .WithDeclaration(CatchDeclaration(IdentifierName(Constants.ExceptionGlobal)).WithIdentifier(Identifier("ex")))
-                        .WithBlock(Block(SingletonList<StatementSyntax>(
-                            ExpressionStatement(InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName(Constants.ArgumentException), IdentifierName(Constants.ToJSMethod)))
-                            .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(IdentifierName("ex")))))))))))
-                .WithBlock(Block(statements));
+            return statements;
 
         }
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
         {
-            return _marshallers.GenerateTargetMethodSignatureData();
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }

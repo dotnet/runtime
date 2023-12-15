@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization;
-using System.Xml;
-using System.Security;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.Security;
 using System.Text;
+using System.Xml;
 
 
 namespace System.Runtime.Serialization.Json
@@ -19,9 +19,6 @@ namespace System.Runtime.Serialization.Json
         public static readonly int DataContractXsdBaseNamespaceLength = Globals.DataContractXsdBaseNamespace.Length;
         public static readonly long unixEpochTicks = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
         public static readonly SecurityException SecurityException = new SecurityException();
-        public static readonly UnicodeEncoding ValidatingBEUTF16 = new UnicodeEncoding(true, false, true);
-        public static readonly UnicodeEncoding ValidatingUTF16 = new UnicodeEncoding(false, false, true);
-        public static readonly UTF8Encoding ValidatingUTF8 = new UTF8Encoding(false, true);
         public const string PositiveInf = "INF";
         public const string NegativeInf = "-INF";
         public const string typeString = "type";

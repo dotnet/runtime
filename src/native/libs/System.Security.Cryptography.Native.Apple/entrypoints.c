@@ -26,6 +26,8 @@
 
 static const Entry s_cryptoAppleNative[] =
 {
+    DllImportEntry(AppleCryptoNative_AesGcmEncrypt)
+    DllImportEntry(AppleCryptoNative_AesGcmDecrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Encrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Decrypt)
     DllImportEntry(AppleCryptoNative_DigestFree)
@@ -61,6 +63,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SslRead)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnCertRequested)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnClientAuth)
+    DllImportEntry(AppleCryptoNative_SslSetBreakOnClientHello)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnServerAuth)
     DllImportEntry(AppleCryptoNative_SslSetIoCallbacks)
     DllImportEntry(AppleCryptoNative_SslWrite)
@@ -89,6 +92,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SslSetCertificate)
     DllImportEntry(AppleCryptoNative_SslSetCertificateAuthorities)
     DllImportEntry(AppleCryptoNative_SslSetTargetName)
+    DllImportEntry(AppleCryptoNative_SSLSetALPNProtocol)
     DllImportEntry(AppleCryptoNative_SSLSetALPNProtocols)
     DllImportEntry(AppleCryptoNative_SslGetAlpnSelected)
     DllImportEntry(AppleCryptoNative_SslHandshake)

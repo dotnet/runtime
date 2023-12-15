@@ -8,15 +8,11 @@
 
 
 // Metadata version: v4.0.30319
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 7:0:0:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
 .assembly Runtime_70259
 {
 }
-.module Runtime_70259.dll
 // MVID: {78ECA09B-26A9-44BB-9FD2-D94B639A44D5}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000
@@ -29,7 +25,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Runtime_70259
+.class public auto ansi beforefieldinit Runtime_70259
        extends [System.Runtime]System.Object
 {
   .class interface abstract auto ansi nested private IFace
@@ -66,9 +62,12 @@
 
   } // end of class C
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       31 (0x1f)
     .maxstack  8

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // This test is used to try out very large decrementing loop strides.  The strides cannot be negated if the integer
 // is too large.  For example, a stride of 0xA0000000 cannot be turned into a signed number.  For the most
@@ -10,7 +11,8 @@ using System;
 
 public class StrideTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
         pass &= Test1();

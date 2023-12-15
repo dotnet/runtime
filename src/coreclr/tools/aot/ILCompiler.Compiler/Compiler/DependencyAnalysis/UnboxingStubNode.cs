@@ -13,27 +13,21 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public partial class UnboxingStubNode : AssemblyStubNode, IMethodNode, ISymbolDefinitionNode
     {
-        private readonly TargetDetails _targetDetails;
-
         public MethodDesc Method { get; }
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                return _targetDetails.IsWindows ?
-                    ObjectNodeSection.UnboxingStubWindowsContentSection :
-                    ObjectNodeSection.UnboxingStubUnixContentSection;
-            }
+            return factory.Target.IsWindows ?
+                ObjectNodeSection.UnboxingStubWindowsContentSection :
+                ObjectNodeSection.UnboxingStubUnixContentSection;
         }
         public override bool IsShareable => true;
 
-        public UnboxingStubNode(MethodDesc target, TargetDetails targetDetails)
+        public UnboxingStubNode(MethodDesc target)
         {
             Debug.Assert(target.GetCanonMethodTarget(CanonicalFormKind.Specific) == target);
             Debug.Assert(target.OwningType.IsValueType);
             Method = target;
-            _targetDetails = targetDetails;
         }
 
         private ISymbolNode GetUnderlyingMethodEntrypoint(NodeFactory factory)

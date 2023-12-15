@@ -241,7 +241,7 @@ newobj instance void [mscorlib]System.Exception::.ctor()
 throw
 a0104:
 ret}
-.method static int32 Main(string[] args){.entrypoint .maxstack  5
+.method public static int32 Main(){.entrypoint .maxstack  5
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

@@ -4,6 +4,9 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
+export PATH="$HOME/.jsvu/bin:$PATH"
+export PATH=$PREPEND_PATH:$PATH
+
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
 	SCENARIO=$3
@@ -32,11 +35,13 @@ if [[ -z "$XHARNESS_COMMAND" ]]; then
 fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
-	if [[ -z "$JS_ENGINE" ]]; then
+	if [[ -z "$JS_ENGINE_ARGS" ]]; then
+		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+		if [[ "$SCENARIO" != "WasmTestOnNodeJS" && "$SCENARIO" != "wasmtestonnodejs" ]]; then
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--module"
+		fi
 		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
-			JS_ENGINE="--engine=NodeJS"
-		else
-			JS_ENGINE="--engine=V8"
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS  --engine-arg=--experimental-wasm-eh"
 		fi
 	fi
 
@@ -44,8 +49,15 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		MAIN_JS="--js-file=test-main.js"
 	fi
 
-	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+	if [[ -z "$JS_ENGINE" ]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+			JS_ENGINE="--engine=NodeJS"
+		else
+			JS_ENGINE="--engine=V8"
+			if [[ -n "$V8_PATH_FOR_TESTS" ]]; then
+				JS_ENGINE_ARGS="$JS_ENGINE_ARGS --js-engine-path=$V8_PATH_FOR_TESTS"
+			fi
+		fi
 	fi
 fi
 
@@ -53,6 +65,7 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+echo PATH=$PATH
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT

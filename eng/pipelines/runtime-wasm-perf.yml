@@ -4,29 +4,45 @@
 
 trigger: none
 
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/runtime-wasm-perf.yml
+    - eng/pipelines/coreclr/perf*.yml
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/coreclr/templates/run-scenarios-job.yml
+    - eng/testing/performance/*
+    - eng/testing/ChromeVersions.props
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
+    stages:
+    - stage: Build
+      jobs:
 
-    #
-    # Evaluate paths
-    #
-    #- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-      #- template: /eng/pipelines/common/evaluate-default-paths.yml
+      #
+      # Evaluate paths
+      #
+      #- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+        #- template: /eng/pipelines/common/evaluate-default-paths.yml
 
-    - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-      parameters:
-        runProfile: 'v8'
-        collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-        onlySanityCheck: true
-        #perfForkToUse:
-          #url: https://github.com/radical/performance
-          #branch: fix-build
-        #downloadSpecificBuild:
-          #buildId: '1878694'
-          #pipeline: 'perf-wasm'
-          #branchName: 'refs/pull/72119/head'
+      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+        parameters:
+          runProfile: 'v8'
+          collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+          onlySanityCheck: true
+          #perfForkToUse: - dummy change
+            #url: https://github.com/radical/performance
+            #branch: fix-build
+          #downloadSpecificBuild:
+            #buildId: '1878694'
+            #pipeline: 'perf-wasm'
+            #branchName: 'refs/pull/72119/head'

@@ -227,7 +227,7 @@ namespace System.Transactions
         private static OletxTransactionManager CheckTransactionManager(string? nodeName)
         {
             OletxTransactionManager tm = DistributedTransactionManager;
-            if (!((tm.NodeName == null && (nodeName == null || nodeName.Length == 0)) ||
+            if (!((tm.NodeName == null && string.IsNullOrEmpty(nodeName)) ||
                   (tm.NodeName != null && tm.NodeName.Equals(nodeName))))
             {
                 throw new ArgumentException(SR.InvalidRecoveryInformation, "recoveryInformation");
@@ -373,10 +373,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultMaximumTimeout");
                 }
 
-                if (value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero);
 
                 s_cachedMaxTimeout = true;
                 s_maximumTimeout = value;
@@ -535,10 +532,7 @@ namespace System.Transactions
         /// </param>
         internal static TimeSpan ValidateTimeout(TimeSpan transactionTimeout)
         {
-            if (transactionTimeout < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(transactionTimeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(transactionTimeout, TimeSpan.Zero);
 
             if (MaximumTimeout != TimeSpan.Zero)
             {

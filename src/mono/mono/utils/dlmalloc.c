@@ -3311,7 +3311,9 @@ static void add_segment(mstate m, char* tbase, size_t tsize, flag_t mmapped) {
   msegmentptr ss = (msegmentptr)(chunk2mem(sp));
   mchunkptr tnext = chunk_plus_offset(sp, ssize);
   mchunkptr p = tnext;
+#ifdef DEBUG
   int nfences = 0;
+#endif
 
   /* reset top to new space */
   init_top(m, (mchunkptr)tbase, tsize - TOP_FOOT_SIZE);
@@ -3329,7 +3331,9 @@ static void add_segment(mstate m, char* tbase, size_t tsize, flag_t mmapped) {
   for (;;) {
     mchunkptr nextp = chunk_plus_offset(p, SIZE_T_SIZE);
     p->head = FENCEPOST_HEAD;
+#ifdef DEBUG
     ++nfences;
+#endif
     if ((char*)(&(nextp->head)) < old_end)
       p = nextp;
     else

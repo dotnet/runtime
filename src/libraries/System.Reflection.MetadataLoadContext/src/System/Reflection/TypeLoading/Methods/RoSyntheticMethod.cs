@@ -65,8 +65,6 @@ namespace System.Reflection.TypeLoading
             return sig;
         }
 
-        protected sealed override MethodSig<RoType> ComputeCustomModifiers() => new MethodSig<RoType>(_parameterTypes.Length);
-
         public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is RoSyntheticMethod other))

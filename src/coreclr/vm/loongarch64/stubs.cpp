@@ -952,12 +952,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
-void RedirectForThreadAbort()
-{
-    // ThreadAbort is not supported in .net core
-    throw "NYI";
-}
-
 #if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
@@ -985,10 +979,9 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
         {
@@ -997,7 +990,7 @@ AdjustContextForVirtualStub(
         }
     }
     else
-    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
         {
@@ -1506,8 +1499,8 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xffffff0f/*badcode*/; p += 4; }\
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
+    ClrFlushInstructionCache(pStartRX, cbAligned); \
+    return (PCODE)pStartRX
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
@@ -1658,7 +1651,7 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
     *(DWORD*)p = 0x18000015;// pcaddi  $r21,0
     p += 4;
-    *(DWORD*)p = 0x28c042a4;// ld.d  $v0,$r21,16
+    *(DWORD*)p = 0x28c042a4;// ld.d  $a0,$r21,16
     p += 4;
     *(DWORD*)p = 0x4c000020;// jirl  $r0,$ra,0
     p += 4;
@@ -1681,11 +1674,11 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 
     *(DWORD*)p = 0x18000015;// pcaddi  $r21,0
     p += 4;
-    *(DWORD*)p = 0x28c062a4;// ld.d  $v0,$r21,24
+    *(DWORD*)p = 0x28c062a4;// ld.d  $a0,$r21,24
     p += 4;
-    *(DWORD*)p = 0x28c00084;// ld.d  $v0,$v0,0
+    *(DWORD*)p = 0x28c00084;// ld.d  $a0,$a0,0
     p += 4;
-    *(DWORD*)p = 0x02c00084 | ((offset & 0xfff)<<10);// addi.d  $v0,$v0,offset
+    *(DWORD*)p = 0x02c00084 | ((offset & 0xfff)<<10);// addi.d  $a0,$a0,offset
     p += 4;
     *(DWORD*)p = 0x4c000020;// jirl  $r0,$ra,0
     p += 4;
@@ -1800,11 +1793,13 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->offsets[i] >= 0);
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                codeSize += (pLookup->sizeOffset > 2047 ? 24 : 16);
+                // if( > 2047) (4*5 bytes) else 4*4 bytes for instructions.
+                codeSize += (pLookup->sizeOffset > 2047 ? 20 : 16);
                 indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
             }
 
-            codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4); // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4);
             indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
 
@@ -1836,9 +1831,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         if (indirectionsDataSize)
         {
+            _ASSERTE(indirectionsDataSize < 2047);
+            _ASSERTE(dataOffset < 0x80000);
+
+            // get the first dataOffset's addr.
             // pcaddi  $r21,0
-            *(DWORD*)p = 0x18000015;
+            *(DWORD*)p = 0x18000015 | (dataOffset << 3); // dataOffset is 4byte aligned.
             p += 4;
+            dataOffset = 0;
         }
 
         if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
@@ -1858,47 +1858,41 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
                 if (pLookup->sizeOffset > 2047)
                 {
-                    // pcaddi  $r21,0
-                    *(DWORD*)p = 0x18000015; p += 4;
-                    // ld.d  $t4,$r21, #dataOffset
-                    *(DWORD*)p = 0x28c002b0 | (dataOffset << 10); p += 4;
+                    // ld.wu  $t4,$r21,0
+                    *(DWORD*)p = 0x2a8002b0 | (dataOffset << 10); p += 4;
                     // ldx.d  $t5,$a0,$t4
                     *(DWORD*)p = 0x380c4091; p += 4;
 
                     // move to next indirection offset data
-                    dataOffset = dataOffset - 12 + 4; // subtract 12 as we have moved PC by 12 and add 4 as next data is at 4 bytes from previous data
+                    dataOffset += 4;
                 }
                 else
                 {
                     // ld.d $t5, $a0, #(pLookup->sizeOffset)
                     *(DWORD*)p = 0x28c00091 | ((UINT32)pLookup->sizeOffset << 10); p += 4;
-                    dataOffset -= 4; // subtract 4 as we have moved PC by 4
                 }
 
                 // lu12i.w $t4, (slotOffset&0xfffff000)>>12
                 *(DWORD*)p = 0x14000010 | ((((UINT32)slotOffset & 0xfffff000) >> 12) << 5); p += 4;
                 // ori $t4, $t4, slotOffset&0xfff
                 *(DWORD*)p = 0x03800210 | (((UINT32)slotOffset & 0xfff) << 10); p += 4;
-                dataOffset -= 8;
 
                 // bge $t4,$t5, // CALL HELPER:
                 pBLECall = p;       // Offset filled later
                 *(DWORD*)p = 0x64000211; p += 4;
-                dataOffset -= 4;
             }
 
             if(pLookup->offsets[i] > 2047)
             {
-                _ASSERTE(dataOffset < 2047);
                 // ld.wu  $t4,$r21,0
-                *(DWORD*)p = 0x2a8002b0 | (dataOffset<<10);
+                *(DWORD*)p = 0x2a8002b0 | (dataOffset << 10);
                 p += 4;
                 // ldx.d  $a0,$a0,$t4
                 *(DWORD*)p = 0x380c4084;
                 p += 4;
 
                 // move to next indirection offset data
-                dataOffset = dataOffset - 8 + 4; // subtract 8 as we have moved PC by 8 and add 4 as next data is at 4 bytes from previous data
+                dataOffset += 4;
             }
             else
             {
@@ -1908,9 +1902,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // ld.d  $a0,$a0,pLookup->offsets[i]
                 *(DWORD*)p = 0x28c00084 | ((pLookup->offsets[i] & 0xfff)<<10);
                 p += 4;
-                dataOffset -= 4; // subtract 4 as we have moved PC by 4
             }
         }
+
+        _ASSERTE(indirectionsDataSize == dataOffset);
 
         // No null test required
         if (!pLookup->testForNull)

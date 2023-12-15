@@ -1,0 +1,6 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Can*" />
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace*" />
+  </assembly>
+</linker>

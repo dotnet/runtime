@@ -1,23 +1,25 @@
-project(mini)
+project(mini C)
+
+if(ENABLE_LLVM OR ENABLE_LLVM_RUNTIME OR HOST_BROWSER OR (HAVE_SYS_ICU AND NOT HOST_WASI))
+  enable_language(CXX)
+endif()
 
 include(FindPython3)
 
 include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
-  ${PROJECT_BINARY_DIR}/../../mono/eglib
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
-  ${PROJECT_SOURCE_DIR}/../eglib
-  ${PROJECT_SOURCE_DIR}/../sgen)
+  )
 
 if(HOST_DARWIN)
   set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
-  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "maccatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_TVOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
 set(OS_LIBS m dl log)
@@ -29,15 +31,13 @@ elseif(HOST_SOLARIS)
   set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
 elseif(HOST_FREEBSD)
   set(OS_LIBS pthread m)
+elseif(HOST_HAIKU)
+  set(OS_LIBS network)
 endif()
 
 #
 # SUBDIRS
 #
-include(../eglib/CMakeLists.txt)
-include(../utils/CMakeLists.txt)
-include(../metadata/CMakeLists.txt)
-include(../sgen/CMakeLists.txt)
 include(../component/CMakeLists.txt)
 
 if(HOST_WIN32)
@@ -46,7 +46,7 @@ if(HOST_WIN32)
 endif()
 
 # ICU
-if(HAVE_SYS_ICU AND NOT HOST_WASI)
+if(HAVE_SYS_ICU)
   if(STATIC_ICU)
     set(pal_icushim_sources_base
         pal_icushim_static.c)
@@ -60,6 +60,7 @@ if(HAVE_SYS_ICU AND NOT HOST_WASI)
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
+      pal_common.c
       pal_idna.c
       pal_locale.c
       pal_localeNumberData.c
@@ -69,21 +70,35 @@ if(HAVE_SYS_ICU AND NOT HOST_WASI)
       entrypoints.c
       ${pal_icushim_sources_base})
 
+  addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
+
   if (TARGET_DARWIN)
-    set(icu_shim_sources_base
-        ${icu_shim_sources_base}
-        pal_locale.m)
+    set(icu_shim_darwin_sources_base
+        pal_locale.m
+        pal_collation.m
+        pal_casing.m
+        pal_calendarData.m
+        pal_normalization.m
+        pal_timeZoneInfo.m)
+
+    addprefix(icu_shim_darwin_sources "${ICU_SHIM_PATH}" "${icu_shim_darwin_sources_base}")
+    set(icu_shim_sources ${icu_shim_sources} ${icu_shim_darwin_sources})
   endif()
 
-  addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I\"${ICU_INCLUDEDIR}\" -I\"${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native/\" -I\"${CLR_SRC_NATIVE_DIR}/libs/Common/\" ${ICU_FLAGS}")
+  if(TARGET_DARWIN)
+    set_property(SOURCE ${icu_shim_darwin_sources} APPEND_STRING PROPERTY COMPILE_FLAGS " -fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
+  endif()
   if(TARGET_WIN32)
       set_source_files_properties(${icu_shim_sources} PROPERTIES LANGUAGE CXX)
   endif()
   if(ICU_LIBDIR)
     set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
   endif()
+
+  add_library(icu_shim_objects OBJECT "${icu_shim_sources}")
+  set(HAVE_ICU_SHIM 1)
 endif()
 
 #
@@ -268,7 +283,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD)
+elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD OR HOST_HAIKU)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
@@ -284,19 +299,30 @@ set(interp_sources
     interp/mintops.c
     interp/transform.c
     interp/tiering.h
-    interp/tiering.c)
+    interp/tiering.c
+    interp/jiterpreter.c
+    interp/interp-pgo.c)
+set(interp_simd_sources
+    interp/interp-simd.c)
 set(interp_stub_sources
     interp-stubs.c)
 
 if(NOT DISABLE_INTERPRETER)
-set(mini_interp_sources ${interp_sources})
+  if(HOST_WASM)
+    set(mini_interp_sources ${interp_sources})
+  else()
+    set(mini_interp_sources ${interp_sources} ${interp_simd_sources})
+  endif()
 else()
 set(mini_interp_sources ${interp_stub_sources})
 endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
-target_link_libraries(mono-ee-interp monoapi)
+target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
+target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
 install(TARGETS mono-ee-interp LIBRARY)
 if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 # Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
@@ -325,7 +351,13 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
+if(TARGET_BROWSER AND MONO_CROSS_COMPILE)
+set(profiler_sources ../profiler/browser.c)
+else()
+set(profiler_sources "")
+endif()
+
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
@@ -333,23 +365,31 @@ endif()
 
 if(HOST_WIN32)
 set(mini_sources "${mini_sources};${VERSION_FILE_RC_PATH}") # this is generated by GenerateNativeVersionFile in Arcade
-elseif(NOT HOST_BROWSER)
+elseif(NOT HOST_BROWSER AND NOT HOST_WASI)
 set(mini_sources "${mini_sources};${VERSION_FILE_PATH}") # this is generated by GenerateNativeVersionFile in Arcade
 endif()
 
-if(HOST_WIN32)
-set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
+set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIB_COMPILE_DEFINITIONS}")
+set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIB_COMPILE_OPTIONS}")
+
+set(monosgen-sources "${mini_sources};${ZLIB_SOURCES}")
+
+if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
+  add_library(monosgen-objects_shared OBJECT "${monosgen-sources}")
+  target_compile_definitions(monosgen-objects_shared PRIVATE -DMONO_DLL_EXPORT)
+  target_link_libraries (monosgen-objects_shared PRIVATE monoapi eglib_api utils_objects_shared sgen_objects_shared metadata_objects_shared)
 endif()
 
-set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
-
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-target_link_libraries (monosgen-objects PRIVATE monoapi)
-add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_OBJECTS:eglib_objects>)
-target_link_libraries (monosgen-static PRIVATE monoapi)
+target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
+if(NOT HOST_WIN32)
+    target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
+endif()
+
+add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
-if(DISABLE_COMPONENTS)
+if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
   target_sources(monosgen-static PRIVATE "${mono-components-stub-objects}")
 endif()
@@ -359,15 +399,27 @@ if(NOT DISABLE_LIBS)
 endif()
 if(NOT DISABLE_SHARED_LIBS)
   if(HOST_WIN32)
-    add_library(monosgen-shared SHARED "mini-windows-dllmain.c;${monosgen-sources}")
-    target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
+    add_library(monosgen-shared SHARED "mini-windows-dllmain.c" $<TARGET_OBJECTS:monosgen-objects_shared>)
   else()
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
-    target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
-  target_sources(monosgen-shared PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+  target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
+    target_link_libraries(monosgen-shared PRIVATE ucontext)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
-  target_link_libraries (monosgen-shared PRIVATE monoapi)
+  if(MONO_SET_RPATH_ORIGIN)
+    set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
+  endif()
+  if(HOST_WIN32)
+    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects_shared sgen_objects_shared metadata_objects_shared)
+  else()
+    target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+  endif()
+  if(HAVE_ICU_SHIM)
+    target_link_libraries(monosgen-shared PRIVATE icu_shim_objects)
+  endif()
   target_include_directories (monosgen-shared PRIVATE monoapi)
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
@@ -399,10 +451,10 @@ if(NOT DISABLE_SHARED_LIBS)
     # if components are disabled, link the fallback stubs into the runtime
     target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
   endif()
-  install(TARGETS monosgen-shared LIBRARY)
+  install_with_stripped_symbols(monosgen-shared TARGETS lib)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
-    target_link_libraries(monosgen-shared-dac monoapi)
+    target_link_libraries(monosgen-shared-dac PRIVATE monoapi eglib_api)
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
 
@@ -424,8 +476,12 @@ if(NOT DISABLE_SHARED_LIBS)
         endif()
         add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
         target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
-        target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+        target_link_libraries(${frameworkconfig} PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+        if(HAVE_ICU_SHIM)
+          target_link_libraries(${frameworkconfig} PRIVATE icu_shim_objects)
+        endif()
         target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+
         if(ICU_LDFLAGS)
           set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
         endif()
@@ -440,24 +496,39 @@ if(NOT DISABLE_SHARED_LIBS)
           FRAMEWORK_VERSION C
           MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
         )
-        install(TARGETS ${frameworkconfig}
-          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+        install_with_stripped_symbols(${frameworkconfig} TARGETS ${CMAKE_INSTALL_LIBDIR})
       endforeach()
     endif()
   endif()
 endif()
 
-if(HOST_WASM AND NOT HOST_WASI)
-# Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
-# This is the only source file which contains a c++ throw or catch
-add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
-target_link_libraries (mono-wasm-eh-js PRIVATE monoapi)
-install(TARGETS mono-wasm-eh-js LIBRARY)
-add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
-target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
-set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
-install(TARGETS mono-wasm-eh-wasm LIBRARY)
+if(HOST_BROWSER)
+  # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
+  # This is the only source file which contains a c++ throw or catch
+  add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
+  target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-eh-js PROPERTIES COMPILE_FLAGS "-fexceptions")
+  set_target_properties(mono-wasm-eh-js PROPERTIES LINK_FLAGS "-fexceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
+  install(TARGETS mono-wasm-eh-js LIBRARY)
+
+  add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
+  target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
+  install(TARGETS mono-wasm-eh-wasm LIBRARY)
+endif()
+
+if(HOST_BROWSER OR HOST_WASI)
+  add_library(mono-wasm-simd STATIC interp/interp-simd.c)
+  target_link_libraries (mono-wasm-simd PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-simd PROPERTIES COMPILE_FLAGS "-msimd128")
+  install(TARGETS mono-wasm-simd LIBRARY)
+endif()
+
+if(HOST_BROWSER OR HOST_WASI OR TARGET_WASM)
+  add_library(mono-wasm-nosimd STATIC interp/interp-nosimd.c)
+  target_link_libraries (mono-wasm-nosimd PRIVATE monoapi eglib_api)
+  install(TARGETS mono-wasm-nosimd LIBRARY)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -521,12 +592,28 @@ if(NOT DISABLE_EXECUTABLES)
   set(main_sources "main.c")
   if(HOST_WIN32)
     set(sgen_sources "${main_sources};${VERSION_FILE_RC_PATH}")
+  else()
+    set(sgen_sources "${main_sources}")
   endif()
-  add_executable(mono-sgen "${main_sources}")
+  add_executable(mono-sgen "${sgen_sources}")
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
+    if(MONO_SET_RPATH_ORIGIN)
+      set_target_properties(mono-sgen PROPERTIES INSTALL_RPATH "$ORIGIN")
+    endif()
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
+  if (HOST_WASM)
+    target_link_libraries(mono-sgen PRIVATE mono-wasm-nosimd)
+  endif()
+  if(HAVE_ICU_SHIM)
+    target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
+  endif()
+  target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
+    target_link_libraries(mono-sgen PRIVATE ucontext)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")
@@ -549,8 +636,5 @@ if(NOT DISABLE_EXECUTABLES)
     target_sources(mono-sgen PRIVATE ${mono_validate_apis_source})
   endif()
 
-  install(TARGETS mono-sgen RUNTIME)
-  if(HOST_WIN32)
-    install(FILES $<TARGET_PDB_FILE:mono-sgen> DESTINATION bin OPTIONAL)
-  endif()
+  install_with_stripped_symbols(mono-sgen TARGETS bin)
 endif()

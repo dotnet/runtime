@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         // SigGen.txt
 #if NETCOREAPP
         [Fact]
-        public static void ValidateNistP256Sha256()
+        public void ValidateNistP256Sha256()
         {
             byte[] msg = (
                 "5905238877c77421f73e43ee3da6f2d9e2ccad5fc942dcec0cbd25482935faaf" +
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP256Sha384()
+        public void ValidateNistP256Sha384()
         {
             byte[] msg = (
                 "e0b8596b375f3306bbc6e77a0b42f7469d7e83635990e74aa6d713594a3a2449" +
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP384Sha256()
+        public void ValidateNistP384Sha256()
         {
             byte[] msg = (
                 "663b12ebf44b7ed3872b385477381f4b11adeb0aec9e0e2478776313d536376d" +
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP384Sha512()
+        public void ValidateNistP384Sha512()
         {
             byte[] msg = (
                 "67d9eb88f289454d61def4764d1573db49b875cfb11e139d7eacc4b7a79d3db3" +
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP521Sha384()
+        public void ValidateNistP521Sha384()
         {
             byte[] msg = (
                 "dbc094402c5b559d53168c6f0c550d827499c6fb2186ae2db15b89b4e6f46220" +
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP521Sha512()
+        public void ValidateNistP521Sha512()
         {
             byte[] msg = (
                 "9ecd500c60e701404922e58ab20cc002651fdee7cbc9336adda33e4c1088fab1" +
@@ -244,6 +244,112 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 msg,
                 signature,
                 HashAlgorithmName.SHA512);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        public void ValidateNistP256Sha3_256()
+        {
+            // From https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/P256_SHA3-256.pdf
+            byte[] msg = "4578616d706c65206f66204543445341207769746820502d323536".HexToByteArray();
+
+            ECParameters parameters = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP256,
+                Q = new ECPoint
+                {
+                    X = "b7e08afdfe94bad3f1dc8c734798ba1c62b3a0ad1e9ea2a38201cd0889bc7a19".HexToByteArray(),
+                    Y = "3603f747959dbf7a4bb226e41928729063adc7ae43529e61b563bbc606cc5e09".HexToByteArray(),
+                },
+                D = "c477f9f65c22cce20657faa5b2d1d8122336f851a508a1ed04e479c34985bf96".HexToByteArray(),
+            };
+
+            byte[] signature = (
+                // r
+                "2b42f576d07f4165ff65d1f3b1500f81e44c316f1f0b3ef57325b69aca46104f" +
+                // s
+                "0a861c2526900245c73bacb9adaec1a5acb3ba1f7114a3c334fdcd5b7690dadd"
+                ).HexToByteArray();
+
+            Validate(
+                parameters,
+                EccTestData.GetNistP256ExplicitCurve(),
+                msg,
+                signature,
+                HashAlgorithmName.SHA3_256);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        public void ValidateNistP384Sha3_384()
+        {
+            // From https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/P384_SHA3-384.pdf
+            byte[] msg = "4578616d706c65206f66204543445341207769746820502d333834".HexToByteArray();
+
+            ECParameters parameters = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP384,
+                Q = new ECPoint
+                {
+                    X = ("3bf701bc9e9d36b4d5f1455343f09126f2564390f2b48736" +
+                        "5071243c61e6471fb9d2ab74657b82f9086489d9ef0f5cb5").HexToByteArray(),
+                    Y = ("d1a358eafbf952e68d533855ccbdaa6ff75b137a51014431" +
+                        "99325583552a6295ffe5382d00cfcda30344a9b5b68db855").HexToByteArray(),
+                },
+                D = ("f92c02ed629e4b48c0584b1c6ce3a3e3b4faae4afc6acb04" +
+                    "55e73dfc392e6a0ae393a8565e6b9714d1224b57d83f8a08").HexToByteArray(),
+            };
+
+            byte[] signature = (
+                // r
+                "30ea514fc0d38d8208756f068113c7cada9f66a3b40ea3b3" +
+                "13d040d9b57dd41a332795d02cc7d507fcef9faf01a27088" +
+                // s
+                "691b9d4969451a98036d53aa725458602125de74881bbc33" +
+                "3012ca4fa55bde39d1bf16a6aae3fe4992c567c6e7892337"
+                ).HexToByteArray();
+
+            Validate(
+                parameters,
+                EccTestData.GetNistP384ExplicitCurve(),
+                msg,
+                signature,
+                HashAlgorithmName.SHA3_384);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        public void ValidateNistP521Sha3_512()
+        {
+            // From https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/P521_SHA3-512.pdf
+            byte[] msg = "4578616d706c65206f66204543445341207769746820502d353231".HexToByteArray();
+
+            ECParameters parameters = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP521,
+                Q = new ECPoint
+                {
+                    X = ("0098e91eef9a68452822309c52fab453f5f117c1da8ed796b255e9ab8f6410cca1" +
+                        "6e59df403a6bdc6ca467a37056b1e54b3005d8ac030decfeb68df18b171885d5c4").HexToByteArray(),
+                    Y = ("0164350c321aecfc1cca1ba4364c9b15656150b4b78d6a48d7d28e7f31985ef17b" +
+                        "e8554376b72900712c4b83ad668327231526e313f5f092999a4632fd50d946bc2e").HexToByteArray(),
+                },
+                D = ("0100085f47b8e1b8b11b7eb33028c0b2888e304bfc98501955b45bba1478dc184e" +
+                    "eedf09b86a5f7c21994406072787205e69a63709fe35aa93ba333514b24f961722").HexToByteArray(),
+            };
+
+            byte[] signature = (
+                // r
+                "0140c8edca57108ce3f7e7a240ddd3ad74d81e2de62451fc1d558fdc79269adacd" +
+                "1c2526eeeef32f8c0432a9d56e2b4a8a732891c37c9b96641a9254ccfe5dc3e2ba" +
+                // s
+                "00b25188492d58e808edebd7bf440ed20db771ca7c618595d5398e1b1c0098e300" +
+                "d8c803ec69ec5f46c84fc61967a302d366c627fcfa56f87f241ef921b6e627adbf"
+                ).HexToByteArray();
+
+            Validate(
+                parameters,
+                EccTestData.GetNistP521ExplicitCurve(),
+                msg,
+                signature,
+                HashAlgorithmName.SHA3_512);
         }
 
         private static void Validate(

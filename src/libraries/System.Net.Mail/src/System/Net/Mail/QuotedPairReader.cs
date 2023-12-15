@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
@@ -52,7 +53,7 @@ namespace System.Net.Mail
             }
             else
             {
-                if (!permitUnicodeEscaping && data[index] > MailBnfHelper.Ascii7bitMaxValue)
+                if (!permitUnicodeEscaping && !Ascii.IsValid(data[index]))
                 {
                     if (throwExceptionIfFail)
                     {

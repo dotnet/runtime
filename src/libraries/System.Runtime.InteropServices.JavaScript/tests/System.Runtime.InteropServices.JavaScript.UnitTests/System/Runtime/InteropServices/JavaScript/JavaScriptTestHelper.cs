@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         public static void Optimized1V(int a1)
         {
-            optimizedReached+= a1;
+            optimizedReached += a1;
         }
         [JSImport("invoke1V", "JavaScriptTestHelper")]
         public static partial void invoke1V(int a1);
@@ -85,8 +85,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         public static int Optimized2R(int a1, int a2)
         {
-            optimizedReached += a1+ a2;
-            return a1 + a2 +1;
+            optimizedReached += a1 + a2;
+            return a1 + a2 + 1;
         }
         [JSImport("invoke2R", "JavaScriptTestHelper")]
         public static partial int invoke2R(int a1, int a2);
@@ -108,6 +108,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("throw0fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Discard>]
         internal static partial void throw0();
+
+        [JSImport("returnError", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Any>]
+        internal static partial object returnError();
 
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Void>>]
@@ -307,6 +311,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+        internal static partial Task<string> echopromise_String([JSMarshalAs<JSType.String>] string value);
         #endregion String
 
         #region Object
@@ -333,6 +341,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        internal static partial Task<object> echopromise_Object([JSMarshalAs<JSType.Any>] object value);
         #endregion Object
 
         #region Exception
@@ -359,6 +371,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Error>>]
+        internal static partial Task<Exception> echopromise_Exception([JSMarshalAs<JSType.Error>] Exception value);
         #endregion Exception
 
         #region Task
@@ -967,10 +982,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Object>>]
+        internal static partial Task<JSObject> echopromise_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
         #endregion JSObject
 
         [JSImport("setup", "JavaScriptTestHelper")]
         internal static partial Task Setup();
+
+        [JSImport("INTERNAL.forceDisposeProxies")]
+        internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
 
         static JSObject _module;
         public static async Task InitializeAsync()
@@ -978,10 +1000,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (_module == null)
             {
                 // Log("JavaScriptTestHelper.mjs importing");
-                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
                 await Setup();
                 // Log("JavaScriptTestHelper.mjs imported");
             }
+
+            // this gives browser chance to serve UI thread event loop before every test
+            await Task.Yield();
+        }
+
+        public static Task DisposeAsync()
+        {
+            _module.Dispose();
+            _module = null;
+            return Task.CompletedTask;
         }
     }
 }
@@ -991,17 +1023,17 @@ namespace JavaScriptTestHelperNamespace
     public partial class JavaScriptTestHelper
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) 
+        public static string EchoString(string message)
         {
             return message + "11";
         }
 
-        public partial class NestedClass
+        private partial class NestedClass
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
-        
-            public partial class DoubleNestedClass
+
+            private partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]
                 public static string EchoString(string message) => message + "13";

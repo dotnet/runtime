@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class RuntimeServiceProviderEngine : ServiceProviderEngine
     {
         public static RuntimeServiceProviderEngine Instance { get; } = new RuntimeServiceProviderEngine();

@@ -60,7 +60,7 @@ public static partial class MountHelper
         // Reduce the risk we accidentally stop running these altogether
         // on Windows, due to a bug in CreateSymbolicLink
         if (!success && PlatformDetection.IsWindows)
-            Assert.True(!PlatformDetection.IsWindowsAndElevated);
+            Assert.False(PlatformDetection.IsPrivilegedProcess);
 
         return success;
     });

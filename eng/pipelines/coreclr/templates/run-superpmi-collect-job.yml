@@ -46,14 +46,8 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
-
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
-
+      - ${{insert}}: ${{ variable }}
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
     - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
@@ -61,10 +55,12 @@ jobs:
     - CollectionName: ${{ parameters.collectionName }}
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonSetupScript
+        value: 'py -3 -m venv $(Build.SourcesDirectory)\venv'
       - name: PythonScript
-        value: 'py -3'
+        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe'
       - name: PipScript
-        value: 'py -3 -m pip'
+        value: '$(Build.SourcesDirectory)\venv\Scripts\python.exe -m pip'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
@@ -76,10 +72,12 @@ jobs:
       - name: PayloadLocation
         value: '$(Build.SourcesDirectory)\payload'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonSetupScript
+        value: 'python3 -m venv $(Build.SourcesDirectory)/venv'
       - name: PythonScript
-        value: 'python3'
+        value: '$(Build.SourcesDirectory)/venv/bin/python3'
       - name: PipScript
-        value: 'pip3'
+        value: '$(Build.SourcesDirectory)/venv/bin/pip3'
       - name: Core_Root_Dir
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation
@@ -97,12 +95,18 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'realworld') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'    
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
     - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+    - ${{ if eq(parameters.collectionName, 'smoke_tests') }}:
+      - name: InputDirectory
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Managed/nativeaot/SmokeTests'
 
     workspace:
       clean: all
@@ -111,7 +115,10 @@ jobs:
     container: ${{ parameters.container }}
     steps:
     - ${{ parameters.steps }}
-  
+
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
+
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
@@ -165,8 +172,15 @@ jobs:
         artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
 
+    # Add authenticated pip feed
+    - task: PipAuthenticate@1
+      displayName: 'Pip Authenticate'
+      inputs:
+        artifactFeeds: public/dotnet-public-pypi
+        onlyAddExtraIndex: false
+
     # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+    - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall
       displayName: Upgrade Pip to latest and install azure-storage-blob Python package
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
@@ -187,12 +201,14 @@ jobs:
       displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
-        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
       condition: always()
+      continueOnError: true

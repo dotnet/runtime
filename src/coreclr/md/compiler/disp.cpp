@@ -65,7 +65,6 @@ Disp::DefineScope(
     HRESULT     hr = S_OK;
     PathString szFileName(PathString::Literal, W("file:"));
     PathString szFileNameSuffix;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     RegMeta     *pMeta = 0;
     OptionValue optionForNewScope = m_OptionValue;
@@ -115,7 +114,6 @@ ErrExit:
             delete pMeta;
         *ppIUnk = NULL;
     }
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 #else //!FEATURE_METADATA_EMIT
@@ -129,14 +127,7 @@ ErrExit:
 //*****************************************************************************
 static HRESULT DeliverScope(IMDCommon *pMDCommon, REFIID riid, DWORD dwOpenFlags, IUnknown **ppIUnk)
 {
-    HRESULT     hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    IfFailGo(pMDCommon->QueryInterface(riid, (void**)ppIUnk));
-
-  ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return pMDCommon->QueryInterface(riid, (void**)ppIUnk);
 }
 
 //*****************************************************************************
@@ -149,8 +140,6 @@ HRESULT Disp::OpenScope(                // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope(%S, 0x%08x, 0x%08x, 0x%08x)\n", MDSTR(szFileName), dwOpenFlags, riid, ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
 
@@ -164,7 +153,7 @@ HRESULT Disp::OpenScope(                // Return code.
  ErrExit:
     if (pMDCommon)
         pMDCommon->Release();
-    END_ENTRYPOINT_NOTHROW;
+
     return hr;
 }
 
@@ -181,8 +170,6 @@ Disp::OpenRawScope(
     IUnknown **ppIUnk)          // [out] Return interface on success.
 {
     HRESULT hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     _ASSERTE(szFileName != NULL);
     _ASSERTE(ppIUnk != NULL);
@@ -217,7 +204,6 @@ Disp::OpenRawScope(
             else
             {
                 pMeta->Release(); // Give back refcount from QI
-                LOG((LOGMD, "{%08x} Found in cache '%S'\n", pMeta, MDSTR(szFileName)));
             }
 
             goto ErrExit;
@@ -251,8 +237,6 @@ Disp::OpenRawScope(
     //  the "other" copy will be released.
     IfFailGo(pMeta->AddToCache());
 
-    LOG((LOGMD, "{%08x} Successfully opened '%S'\n", pMeta, MDSTR(szFileName)));
-
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
@@ -270,8 +254,6 @@ ErrExit:
         *ppIUnk = NULL;
     }
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // Disp::OpenScope
 
@@ -287,7 +269,6 @@ HRESULT Disp::OpenScopeOnMemory(        // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
     LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnMemory(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pData, cbData, dwOpenFlags, riid, ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
@@ -301,7 +282,7 @@ HRESULT Disp::OpenScopeOnMemory(        // Return code.
  ErrExit:
     if (pMDCommon)
         pMDCommon->Release();
-    END_ENTRYPOINT_NOTHROW;
+
     return hr;
 }
 
@@ -316,8 +297,6 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     RegMeta     *pMeta = 0;
 
@@ -356,8 +335,6 @@ ErrExit:
         *ppIUnk = 0;
     }
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // Disp::OpenScopeOnMemory
 
@@ -389,9 +366,6 @@ HRESULT Disp::FindAssembly(             // S_OK or error
     ULONG       cchName,                // [IN] the name buffer's size
     ULONG       *pcName)                // [OUT] the number of characters returned in the buffer
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 } // Disp::FindAssembly
 
@@ -405,9 +379,6 @@ HRESULT Disp::FindAssemblyModule(           // S_OK or error
     ULONG       cchName,                    // [IN]  the name buffer's size
     ULONG       *pcName)                    // [OUT] the number of characters returned in the buffer
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 } // Disp::FindAssemblyModule
 
@@ -420,9 +391,6 @@ HRESULT Disp::OpenScopeOnITypeInfo(     // Return code.
     REFIID      riid,                   // [in] The interface desired.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 } // Disp::OpenScopeOnITypeInfo
 
@@ -445,8 +413,6 @@ Disp::DefinePortablePdbScope(
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT     hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     RegMeta* pMeta = 0;
     OptionValue optionForNewScope = m_OptionValue;
@@ -492,7 +458,6 @@ ErrExit:
             delete pMeta;
         *ppIUnk = NULL;
     }
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 #else //!FEATURE_METADATA_EMIT
@@ -514,7 +479,6 @@ HRESULT Disp::OpenScopeOnCustomDataSource(  // S_OK or error
     IUnknown             **ppIUnk)       // [out] Return interface on success.
 {
     HRESULT     hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
     LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnCustomDataSource(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pCustomSource, dwOpenFlags, riid, ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
@@ -528,7 +492,7 @@ HRESULT Disp::OpenScopeOnCustomDataSource(  // S_OK or error
 ErrExit:
     if (pMDCommon)
         pMDCommon->Release();
-    END_ENTRYPOINT_NOTHROW;
+
     return hr;
 }
 
@@ -543,8 +507,6 @@ HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     RegMeta     *pMeta = 0;
 
@@ -583,8 +545,6 @@ ErrExit:
         if (pMeta) delete pMeta;
         *ppIUnk = 0;
     }
-
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 } // Disp::OpenRawScopeOnCustomDataSource
@@ -663,7 +623,6 @@ Disp::SetOption(
     const VARIANT *pvalue)      // [in] Value to which the option is to be set.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     LOG((LF_METADATA, LL_INFO10, "Disp::SetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
 
@@ -819,7 +778,6 @@ Disp::SetOption(
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // Disp::SetOption
 
@@ -834,7 +792,6 @@ HRESULT Disp::GetOption(                // Return code.
     VARIANT *pvalue)                    // [out] Value to which the option is currently set.
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     LOG((LF_METADATA, LL_INFO10, "Disp::GetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
 
@@ -885,8 +842,6 @@ HRESULT Disp::GetOption(                // Return code.
         IfFailGo(E_INVALIDARG);
     }
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // Disp::GetOption
 

@@ -69,7 +69,22 @@ gboolean
 mono_is_sre_method_on_tb_inst (MonoClass *klass);
 
 gboolean
+mono_is_sre_method_builder (MonoClass *klass);
+
+gboolean
 mono_is_sre_ctor_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_field_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_property_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_assembly_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_module_builder (MonoClass *klass);
 
 gboolean
 mono_is_sre_ctor_on_tb_inst (MonoClass *klass);

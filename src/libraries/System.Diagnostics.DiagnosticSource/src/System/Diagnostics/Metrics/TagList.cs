@@ -3,9 +3,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -24,9 +24,6 @@ namespace System.Diagnostics
     /// Using more than eight tags will cause allocating memory to store the tags.
     /// Public static (Shared in Visual Basic) members of this type are thread safe. Any instance members are not guaranteed to be thread safe.
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     [StructLayout(LayoutKind.Sequential)]
     public struct TagList : IList<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>
     {
@@ -413,7 +410,7 @@ namespace System.Diagnostics
         /// Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.TagList" />.
         /// </summary>
         /// <returns>Returns an enumerator that iterates through the <see cref="T:System.Diagnostics.TagList" />.</returns>
-        readonly IEnumerator IEnumerable.GetEnumerator()  => new Enumerator(in this);
+        readonly IEnumerator IEnumerable.GetEnumerator() => new Enumerator(in this);
 
         /// <summary>
         /// Searches for the specified tag and returns the zero-based index of the first occurrence within the entire <see cref="T:System.Diagnostics.TagList" />.

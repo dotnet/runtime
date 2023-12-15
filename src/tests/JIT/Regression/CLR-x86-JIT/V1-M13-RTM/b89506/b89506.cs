@@ -3,10 +3,16 @@
 //
 
 using System;
+using Xunit;
 public class AA
 {
-    public static int Main() { Main1(); return 100; }
-    public static void Main1()
+    [Fact]
+    public static void TestEntryPoint()
+    {
+        Main1();
+    }
+
+    internal static void Main1()
     {
         (new float[1, 1, 1, 1])[0, 0, 0, 0] -= (new float[1, 1])[0, 0];
     }

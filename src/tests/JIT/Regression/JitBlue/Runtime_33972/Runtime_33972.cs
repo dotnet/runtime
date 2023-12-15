@@ -5,10 +5,11 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-class Program
+public class Program
 {
-    // CompareEqual  
+    // CompareEqual
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector64<byte> AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte> left)
@@ -178,19 +179,14 @@ class Program
     {
         Vector128<float> result = default;
         var asVar = Vector128.Create(0f, 0f, 0f, 0f);
-        // 'asVar' should be propagated.
-        // 'AdvSimd.CompareEqual' should be hoisted out of the loops.
-        // ARM64-FULL-LINE: fcmeq {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, #0.0
-        // ARM64: blt
-        // ARM64-NOT: fcmeq
+
         for (var i = 0; i < 4; i++)
         {
             result = AdvSimd.CompareEqual(left, asVar);
             result = AdvSimd.CompareEqual(left, asVar);
             result = AdvSimd.CompareEqual(left, asVar);
             result = AdvSimd.CompareEqual(left, asVar);
-            // ARM64: blt
-            // ARM64-NOT: fcmeq
+
             for (var j = 0; j < 4; j++)
             {
                 result = AdvSimd.CompareEqual(left, asVar);
@@ -209,18 +205,11 @@ class Program
         Vector128<long> asVar = Vector128.Create((long)0);
         Vector128<nint> asVar2 = Vector128.Create((nint)0);
         Vector128<long> asVar3 = asVar2.AsInt64();
-        // 'asVar' should be propagated.
-        // 'asVar2' should be propagated.
-        // 'asVar3' should be propagated.
-        // 'AdvSimd.CompareEqual' should be hoisted out of the loops.
-        // ARM64-FULL-LINE: cmeq {{v[0-9]+}}.2d, {{v[0-9]+}}.2d, #0
-        // ARM64: blt
-        // ARM64-NOT: cmeq
+
         for (var i = 0; i < 4; i++)
         {
             result = AdvSimd.Arm64.CompareEqual(left, asVar);
-            // ARM64: blt
-            // ARM64-NOT: cmeq
+
             for (var j = 0; j < 4; j++)
             {
                 result = AdvSimd.Arm64.CompareEqual(left, asVar3);
@@ -936,7 +925,8 @@ class Program
         return result;
     }
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         var result = 100;
 

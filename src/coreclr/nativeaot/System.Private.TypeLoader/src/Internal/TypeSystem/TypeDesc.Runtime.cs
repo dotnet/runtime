@@ -3,14 +3,16 @@
 
 
 using System;
-using Internal.TypeSystem;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
-using Debug = System.Diagnostics.Debug;
-using Internal.NativeFormat;
-using System.Collections.Generic;
+using Internal.TypeSystem;
 using Internal.TypeSystem.NoMetadata;
-using System.Reflection.Runtime.General;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -46,26 +48,6 @@ namespace Internal.TypeSystem
             return RuntimeTypeHandle;
         }
 
-        private NativeLayoutFieldDesc[] _nativeLayoutFields;
-        /// <summary>
-        /// The native layout fields of a type. This property is for the use of the NativeLayoutFieldAlgorithm,
-        /// DefType.GetFieldByNativeLayoutOrdinal, TypeBuilderState.PrepareStaticGCLayout and DefType.GetDiagnosticFields
-        /// only. Other uses should use the more general purpose GetFields api or similar.
-        /// </summary>
-        internal NativeLayoutFieldDesc[] NativeLayoutFields
-        {
-            get
-            {
-                return _nativeLayoutFields;
-            }
-            set
-            {
-                Debug.Assert(_nativeLayoutFields == null);
-                Debug.Assert(value != null);
-                _nativeLayoutFields = value;
-            }
-        }
-
         internal TypeBuilderState TypeBuilderState { get; set; }
 
 #if DEBUG
@@ -88,32 +70,6 @@ namespace Internal.TypeSystem
             {
                 TypeDesc typeDefinition = typeAsDefType.GetTypeDefinition();
                 RuntimeTypeHandle typeDefHandle = typeDefinition.RuntimeTypeHandle;
-                if (typeDefHandle.IsNull())
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    NativeFormat.NativeFormatType mdType = typeDefinition as NativeFormat.NativeFormatType;
-                    if (mdType != null)
-                    {
-                        // Look up the runtime type handle in the module metadata
-                        if (TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(new QTypeDefinition(mdType.MetadataReader, mdType.Handle), out typeDefHandle))
-                        {
-                            typeDefinition.SetRuntimeTypeHandleUnsafe(typeDefHandle);
-                        }
-                    }
-#endif
-#if ECMA_METADATA_SUPPORT
-                    Ecma.EcmaType ecmaType = typeDefinition as Ecma.EcmaType;
-                    if (ecmaType != null)
-                    {
-                        // Look up the runtime type handle in the module metadata
-                        if (TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(new QTypeDefinition(ecmaType.MetadataReader, ecmaType.Handle), out typeDefHandle))
-                        {
-                            typeDefinition.SetRuntimeTypeHandleUnsafe(typeDefHandle);
-                        }
-                    }
-#endif
-                }
-
                 if (!typeDefHandle.IsNull())
                 {
                     Instantiation instantiation = typeAsDefType.Instantiation;
@@ -123,23 +79,16 @@ namespace Internal.TypeSystem
                         // Generic type. First make sure we have type handles for the arguments, then check
                         // the instantiation.
                         bool argumentsRegistered = true;
-                        bool arrayArgumentsFound = false;
                         for (int i = 0; i < instantiation.Length; i++)
                         {
                             if (!instantiation[i].RetrieveRuntimeTypeHandleIfPossible())
                             {
                                 argumentsRegistered = false;
-                                arrayArgumentsFound = arrayArgumentsFound || (instantiation[i] is ArrayType);
                             }
                         }
 
                         RuntimeTypeHandle rtth;
-
-                        // If at least one of the arguments is not known to the runtime, we take a slower
-                        // path to compare the current type we need a handle for to the list of generic
-                        // types statically available, by loading them as DefTypes and doing a DefType comparaison
-                        if ((argumentsRegistered && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.HandleBasedGenericTypeLookup(typeAsDefType), out rtth)) ||
-                            (arrayArgumentsFound && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup(typeAsDefType), out rtth)))
+                        if (argumentsRegistered && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.GenericTypeLookupData(typeAsDefType), out rtth))
                         {
                             typeAsDefType.SetRuntimeTypeHandleUnsafe(rtth);
                             return true;
@@ -159,12 +108,11 @@ namespace Internal.TypeSystem
                 {
                     RuntimeTypeHandle rtth;
                     if ((type is ArrayType &&
-                          (TypeLoaderEnvironment.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
-                           TypeLoaderEnvironment.Instance.TryGetArrayTypeHandleForNonDynamicArrayTypeFromTemplateTable(type as ArrayType, out rtth)))
+                          TypeLoaderEnvironment.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth))
                            ||
-                        (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
+                        (type is PointerType && TypeLoaderEnvironment.TryGetPointerTypeForTargetType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
                            ||
-                        (type is ByRefType && TypeSystemContext.ByRefTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
+                        (type is ByRefType && TypeLoaderEnvironment.TryGetByRefTypeForTargetType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
                     {
                         typeAsParameterType.SetRuntimeTypeHandleUnsafe(rtth);
                         return true;
@@ -174,6 +122,37 @@ namespace Internal.TypeSystem
             else if (type is SignatureVariable)
             {
                 // SignatureVariables do not have RuntimeTypeHandles
+            }
+            else if (type is FunctionPointerType functionPointerType)
+            {
+                MethodSignature sig = functionPointerType.Signature;
+                if (sig.ReturnType.RetrieveRuntimeTypeHandleIfPossible())
+                {
+                    RuntimeTypeHandle[] parameterHandles = new RuntimeTypeHandle[sig.Length];
+                    bool handlesAvailable = true;
+                    for (int i = 0; i < parameterHandles.Length; i++)
+                    {
+                        if (sig[i].RetrieveRuntimeTypeHandleIfPossible())
+                        {
+                            parameterHandles[i] = sig[i].RuntimeTypeHandle;
+                        }
+                        else
+                        {
+                            handlesAvailable = false;
+                            break;
+                        }
+                    }
+
+                    if (handlesAvailable
+                        && TypeLoaderEnvironment.Instance.TryLookupFunctionPointerTypeForComponents(
+                            sig.ReturnType.RuntimeTypeHandle, parameterHandles,
+                            isUnmanaged: (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0,
+                            out RuntimeTypeHandle rtth))
+                    {
+                        functionPointerType.SetRuntimeTypeHandleUnsafe(rtth);
+                        return true;
+                    }
+                }
             }
             else
             {

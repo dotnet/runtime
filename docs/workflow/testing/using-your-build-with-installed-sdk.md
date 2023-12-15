@@ -93,7 +93,7 @@ dotnet publish --self-contained
 </configuration>
 ```
 
-After you publish successfully, you will find all the binaries needed to run your application under `bin\Debug\net7.0\win-x64\publish`. You might be wondering why `net7.0` if we are using an `8.0.100` SDK. At the time of writing, we are still preparing all that's needed to fully migrate development to .NET 8. In the not so distant future, the path should be `net8.0` as you might expect, and this doc will be updated accordingly.
+After you publish successfully, you will find all the binaries needed to run your application under `bin\Debug\net8.0\win-x64\publish`.
 
 **But we are not done yet, you need to replace the published runtime files with the files from your local build!**
 
@@ -105,12 +105,12 @@ The publishing step described above creates a directory that has all the files n
 * `System.Private.CoreLib.dll`: If you modified managed C# code, it will end up here.
 * `clrjit.dll`: The JIT compiler. It is also required you copy this one to your published app.
 
-Now, here comes the main deal to test your build. Once you have your self-contained app published, and CoreCLR built, you will replace the binaries listed above with the generated artifacts. Copy them from `artifacts/bin/coreclr/<OS>.<arch>.<configuration>/` to your app's publication directory, which by default is `your-app-folder/bin/<configuration>/net7.0/<os-code>-<arch>/publish`.
+Now, here comes the main deal to test your build. Once you have your self-contained app published, and CoreCLR built, you will replace the binaries listed above with the generated artifacts. Copy them from `artifacts/bin/coreclr/<OS>.<arch>.<configuration>/` to your app's publication directory, which by default is `your-app-folder/bin/<configuration>/net8.0/<os-code>-<arch>/publish`.
 
 In our previous example this would be:
 
 * From: `artifacts/bin/coreclr/windows.x64.Debug/`
-* To: `HelloWorld/bin/Debug/net7.0/win-x64/publish/`
+* To: `HelloWorld/bin/Debug/net8.0/win-x64/publish/`
 
 ## Confirm that the app used your new runtime (Optional)
 
@@ -130,7 +130,7 @@ That should tell you the version, and which user and machine built the assembly,
 
 ```text
 Core Runtime Info: 8.0.0-dev
-System.Private.CoreLib.dll is located at: /path/to/your/app/bin/Debug/net7.0/win-x64/publish/System.Private.CoreLib.dll
+System.Private.CoreLib.dll is located at: /path/to/your/app/bin/Debug/net8.0/win-x64/publish/System.Private.CoreLib.dll
 ```
 
 What you are looking for here is that the core runtime used is labelled as `-dev`. This means it is indeed using the one you built in the runtime repo. Also, ensure that the picked _System.Private.CoreLib.dll_ is indeed the one in your `publish` folder.
@@ -144,7 +144,7 @@ Here are a few very common errors you might encounter, and how to fix them.
 Make sure you are running the executable directly.
 
 ```cmd
-.\bin\Debug\net7.0\win-x64\publish\HelloWorld.exe
+.\bin\Debug\net8.0\win-x64\publish\HelloWorld.exe
 ```
 
 If you use `dotnet run` it will overwrite your custom binaries before executing the app.

@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Tests
             options.EnableDynamicTypes();
 
             // Guid (string)
-            string GuidJson = $"{DynamicTests.MyGuid.ToString("D")}";
+            string GuidJson = $"{DynamicTests.MyGuid:D}";
             string GuidJsonWithQuotes = $"\"{GuidJson}\"";
 
             dynamic dynamicString = new JsonDynamicString(GuidJson, options);
@@ -345,7 +345,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
-            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
+            options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             dynamic obj = JsonSerializer.Deserialize<dynamic>(Json, options);
 

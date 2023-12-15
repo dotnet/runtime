@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../imports";
-import { wrap_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
-import { MonoArray, MonoObjectRef, MonoObject } from "../types";
+import { MonoArray, MonoObjectRef, MonoObject } from "../types/internal";
 import { Int32Ptr, TypedArray } from "../types/emscripten";
 import { js_to_mono_obj_root } from "./js-to-cs";
+import { localHeapViewU8 } from "../memory";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mono_wasm_typed_array_from_ref(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
@@ -15,6 +15,7 @@ export function mono_wasm_typed_array_from_ref(pinned_array: MonoArray, begin: n
         const res = typed_array_from(pinned_array, begin, end, bytes_per_element, type);
         // returns JS typed array like Int8Array, to be wraped with JSObject proxy
         js_to_mono_obj_root(res, resultRoot, true);
+        wrap_no_error_root(is_exception);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {
@@ -54,7 +55,7 @@ function typed_array_from(pinned_array: MonoArray, begin: number, end: number, b
         case 14:
             newTypedArray = new Float64Array(end - begin);
             break;
-        case 15:  // This is a special case because the typed array is also byte[]
+        case 15: // This is a special case because the typed array is also byte[]
             newTypedArray = new Uint8ClampedArray(end - begin);
             break;
         default:
@@ -97,7 +98,7 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
         // offset index into the view
         const offset = begin * bytes_per_element;
         // Set view bytes to value from HEAPU8
-        typedarrayBytes.set(Module.HEAPU8.subarray(<any>pinned_array + offset, <any>pinned_array + offset + num_of_bytes));
+        typedarrayBytes.set(localHeapViewU8().subarray(<any>pinned_array + offset, <any>pinned_array + offset + num_of_bytes));
         return num_of_bytes;
     }
     else {

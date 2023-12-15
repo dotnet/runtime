@@ -235,7 +235,7 @@ decode_eht_entry(const uint32_t* data, size_t* off, size_t* len) {
   } else {
     // 6.3: ARM Compact Model
     //
-    // EHT entries here correspond to the __aeabi_unwind_cpp_pr[012] PRs indeded
+    // EHT entries here correspond to the __aeabi_unwind_cpp_pr[012] PRs indeed
     // by format:
     Descriptor::Format format =
         static_cast<Descriptor::Format>((*data & 0x0f000000) >> 24);
@@ -432,10 +432,11 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
       uint32_t sp;
       uint32_t pac;
       _Unwind_VRS_Get(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp);
-      _Unwind_VRS_Get(context, _UVRSC_PSEUDO, UNW_ARM_RA_AUTH_CODE,
-                      _UVRSD_UINT32, &pac);
+      _Unwind_VRS_Get(context, _UVRSC_PSEUDO, 0, _UVRSD_UINT32, &pac);
       __asm__ __volatile__("autg %0, %1, %2" : : "r"(pac), "r"(lr), "r"(sp) :);
     }
+#else
+    (void)hasReturnAddrAuthCode;
 #endif
     _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_IP, _UVRSD_UINT32, &lr, NULL);
   }
@@ -1138,8 +1139,7 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
       }
       uint32_t pac = *sp++;
       _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp);
-      return _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_RA_AUTH_CODE,
-                             _UVRSD_UINT32, &pac);
+      return _Unwind_VRS_Set(context, _UVRSC_PSEUDO, 0, _UVRSD_UINT32, &pac);
     }
   }
   _LIBUNWIND_ABORT("unsupported register class");
@@ -1195,6 +1195,7 @@ _Unwind_DeleteException(_Unwind_Exception *exception_object) {
 extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code
 __gnu_unwind_frame(_Unwind_Exception *exception_object,
                    struct _Unwind_Context *context) {
+  (void)exception_object;
   unw_cursor_t *cursor = (unw_cursor_t *)context;
   switch (__unw_step(cursor)) {
   case UNW_STEP_SUCCESS:

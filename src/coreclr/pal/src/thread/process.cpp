@@ -33,6 +33,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
+#include <generatedumpflags.h>
 #include <clrconfignocache.h>
 
 #include <errno.h>
@@ -206,6 +207,9 @@ LPWSTR g_lpwstrAppDir = NULL;
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
+// Id of thread generating a core dump
+Volatile<LONG> g_crashingThreadId = 0;
+
 // Process and session ID of this process.
 DWORD gPID = (DWORD) -1;
 DWORD gSID = (DWORD) -1;
@@ -235,6 +239,9 @@ static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
+
+// Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
+Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 std::vector<const char*> g_argvCreateDump;
@@ -1190,7 +1197,10 @@ ExitProcess(
            Update: [TODO] PROCSuspendOtherThreads has been removed. Can this
            code be changed? */
         WARN("termination already started from another thread; blocking.\n");
-        poll(NULL, 0, INFTIM);
+        while (true)
+        {
+            poll(NULL, 0, INFTIM);
+        }
     }
 
     /* ExitProcess may be called even if PAL is not initialized.
@@ -1370,6 +1380,25 @@ PAL_SetShutdownCallback(
 {
     _ASSERTE(g_shutdownCallback == nullptr);
     g_shutdownCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetCreateDumpCallback
+
+Abstract:
+  Sets a callback that is executed when create dump is launched to create a crash dump.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetCreateDumpCallback(
+    IN PCREATEDUMP_CALLBACK callback) 
+{
+    _ASSERTE(g_createdumpCallback == nullptr);
+    g_createdumpCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -2009,7 +2038,27 @@ PROCFormatInt(ULONG32 value)
     return buffer;
 }
 
-static const INT UndefinedDumpType = 0;
+/*++
+Function:
+    PROCFormatInt64
+
+    Helper function to format an ULONG64 as a string.
+
+--*/
+char*
+PROCFormatInt64(ULONG64 value)
+{
+    char* buffer = (char*)InternalMalloc(128);
+    if (buffer != nullptr)
+    {
+        if (sprintf_s(buffer, 128, "%lld", value) == -1)
+        {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return buffer;
+}
 
 /*++
 Function
@@ -2075,15 +2124,18 @@ PROCBuildCreateDumpCommandLine(
 
     switch (dumpType)
     {
-        case 1: argv.push_back("--normal");
+        case DumpTypeNormal:
+            argv.push_back("--normal");
             break;
-        case 2: argv.push_back("--withheap");
+        case DumpTypeWithHeap:
+            argv.push_back("--withheap");
             break;
-        case 3: argv.push_back("--triage");
+        case DumpTypeTriage:
+            argv.push_back("--triage");
             break;
-        case 4: argv.push_back("--full");
+        case DumpTypeFull:
+            argv.push_back("--full");
             break;
-        case UndefinedDumpType:
         default:
             break;
     }
@@ -2129,19 +2181,39 @@ PROCBuildCreateDumpCommandLine(
 Function:
   PROCCreateCrashDump
 
-  Creates crash dump of the process. Can be called from the
-  unhandled native exception handler.
+  Creates crash dump of the process. Can be called from the unhandled
+  native exception handler. Allows only one thread to generate the core
+  dump if serialize is true.
 
-(no return value)
+Return:
+  TRUE - succeeds, FALSE - fails
 --*/
 BOOL
 PROCCreateCrashDump(
     std::vector<const char*>& argv,
     LPSTR errorMessageBuffer,
-    INT cbErrorMessageBuffer)
+    INT cbErrorMessageBuffer,
+    bool serialize)
 {
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
+
+    if (serialize)
+    {
+        size_t currentThreadId = THREADSilentGetCurrentThreadId();
+        size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
+        if (previousThreadId != 0)
+        {
+            // Should never reenter or recurse
+            _ASSERTE(previousThreadId != currentThreadId);
+
+            // The first thread generates the crash info and any other threads are blocked
+            while (true)
+            {
+                poll(NULL, 0, INFTIM);
+            }
+        }
+    }
 
     int pipe_descs[2];
     if (pipe(pipe_descs) == -1)
@@ -2180,11 +2252,22 @@ PROCCreateCrashDump(
         {
             dup2(child_pipe, STDERR_FILENO);
         }
-        // Execute the createdump program
-        if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+        if (g_createdumpCallback != nullptr)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-            exit(-1);
+            // Remove the signal handlers inherited from the runtime process
+            SEHCleanupSignals();
+
+            // Call the statically linked createdump code
+            g_createdumpCallback(argv.size(), argv.data());
+        }
+        else
+        {
+            // Execute the createdump program
+            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+            {
+                fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+                exit(-1);
+            }
         }
     }
     else
@@ -2230,7 +2313,7 @@ PROCCreateCrashDump(
         else
         {
 #ifdef _DEBUG
-            fprintf(stderr, "[createdump] waitpid() returned successfully (wstatus %08x)\n", wstatus);
+            fprintf(stderr, "waitpid() returned successfully (wstatus %08x) WEXITSTATUS %x WTERMSIG %x\n", wstatus, WEXITSTATUS(wstatus), WTERMSIG(wstatus));
 #endif
             return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
         }
@@ -2266,13 +2349,13 @@ PROCAbortInitialize()
         const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
 
         CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
-        DWORD dumpType = UndefinedDumpType;
+        DWORD dumpType = DumpTypeUnknown;
         if (dmpTypeCfg.IsSet())
         {
             (void)dmpTypeCfg.TryAsInteger(10, dumpType);
-            if (dumpType < 1 || dumpType > 4)
+            if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
             {
-                dumpType = UndefinedDumpType;
+                dumpType = DumpTypeUnknown;
             }
         }
 
@@ -2343,7 +2426,7 @@ PAL_GenerateCoreDump(
 {
     std::vector<const char*> argvCreateDump;
 
-    if (dumpType < 1 || dumpType > 4)
+    if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
         return FALSE;
     }
@@ -2356,7 +2439,7 @@ PAL_GenerateCoreDump(
     BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
-        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
+        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, false);
     }
     free(program);
     free(pidarg);
@@ -2372,11 +2455,13 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled(int signal)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
@@ -2384,13 +2469,16 @@ PROCCreateCrashDumpIfEnabled(int signal)
         std::vector<const char*> argv(g_argvCreateDump);
         char* signalArg = nullptr;
         char* crashThreadArg = nullptr;
+        char* signalCodeArg = nullptr;
+        char* signalErrnoArg = nullptr;
+        char* signalAddressArg = nullptr;
 
         if (signal != 0)
         {
             // Remove the terminating nullptr
             argv.pop_back();
 
-            // Add the Windows exception code to the command line
+            // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
             if (signalArg != nullptr)
             {
@@ -2405,13 +2493,39 @@ PROCCreateCrashDumpIfEnabled(int signal)
                 argv.push_back("--crashthread");
                 argv.push_back(crashThreadArg);
             }
+
+            if (siginfo != nullptr)
+            {
+                signalCodeArg = PROCFormatInt(siginfo->si_code);
+                if (signalCodeArg != nullptr)
+                {
+                    argv.push_back("--code");
+                    argv.push_back(signalCodeArg);
+                }
+                signalErrnoArg = PROCFormatInt(siginfo->si_errno);
+                if (signalErrnoArg != nullptr)
+                {
+                    argv.push_back("--errno");
+                    argv.push_back(signalErrnoArg);
+                }
+                signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
+                if (signalAddressArg != nullptr)
+                {
+                    argv.push_back("--address");
+                    argv.push_back(signalAddressArg);
+                }
+            }
+
             argv.push_back(nullptr);
         }
 
-        PROCCreateCrashDump(argv, nullptr, 0);
+        PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
         free(signalArg);
         free(crashThreadArg);
+        free(signalCodeArg);
+        free(signalErrnoArg);
+        free(signalAddressArg);
     }
 }
 
@@ -2429,15 +2543,16 @@ Parameters:
 --*/
 PAL_NORETURN
 VOID
-PROCAbort(int signal)
+PROCAbort(int signal, siginfo_t* siginfo)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
 
-    // Restore the SIGABORT handler to prevent recursion
-    SEHCleanupAbort();
+    // Restore all signals; the SIGABORT handler to prevent recursion and
+    // the others to prevent multiple core dumps from being generated.
+    SEHCleanupSignals();
 
     // Abort the process after waiting for the core dump to complete
     abort();
@@ -3135,7 +3250,10 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
            TerminateProcess won't call DllMain, so there's no danger to get
            caught in an infinite loop */
         WARN("termination already started from another thread; blocking.\n");
-        poll(NULL, 0, INFTIM);
+        while (true)
+        {
+            poll(NULL, 0, INFTIM);
+        }
     }
 
     /* Try to lock the initialization count to prevent multiple threads from
@@ -3417,8 +3535,7 @@ getFileName(
                                             NULL, 0, NULL, NULL);
 
         /* if only a file name is specified, prefix it with "./" */
-        if ((*lpApplicationName != '.') && (*lpApplicationName != '/') &&
-            (*lpApplicationName != '\\'))
+        if ((*lpApplicationName != '.') && (*lpApplicationName != '/'))
         {
             length += 2;
             lpTemp = lpPathFileName.OpenStringBuffer(length);
@@ -3447,9 +3564,6 @@ getFileName(
         }
 
         lpPathFileName.CloseBuffer(length -1);
-
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpTemp);
 
         return TRUE;
     }
@@ -3521,8 +3635,6 @@ getFileName(
         /* restore last character */
         *lpEnd = wcEnd;
 
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpFileName);
         if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
@@ -3657,6 +3769,7 @@ buildArgv(
         (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
     {
         ERROR("strcpy_s/strcat_s failed!\n");
+        free(lpAsciiCmdLine);
         return NULL;
     }
 

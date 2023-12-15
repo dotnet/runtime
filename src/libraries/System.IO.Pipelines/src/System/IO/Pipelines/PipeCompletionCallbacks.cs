@@ -27,13 +27,10 @@ namespace System.IO.Pipelines
 
             List<Exception>? exceptions = null;
 
-            if (_callbacks != null)
+            for (int i = 0; i < count; i++)
             {
-                for (int i = 0; i < count; i++)
-                {
-                    var callback = _callbacks[i];
-                    Execute(callback, ref exceptions);
-                }
+                var callback = _callbacks[i];
+                Execute(callback, ref exceptions);
             }
 
             if (exceptions != null)

@@ -19,6 +19,15 @@
     </type>
   </assembly>
 
+  <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="true">
+    <!-- Enables the .NET COM host (.NET 8.0+) to load a COM component. -->
+    <type fullname="Internal.Runtime.InteropServices.ComActivator" >
+      <method name="GetClassFactoryForTypeInContext" />
+      <method name="RegisterClassForTypeInContext" />
+      <method name="UnregisterClassForTypeInContext" />
+    </type>
+  </assembly>
+
   <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.EnableCppCLIHostActivation" featurevalue="true">
     <!-- Enables the .NET IJW host (.NET 7.0+) to load an in-memory module as a .NET assembly. -->
     <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">

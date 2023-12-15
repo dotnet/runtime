@@ -1050,11 +1050,9 @@ Thread* WINAPI CreateThreadBlockThrow()
     // We want to throw an exception for reverse p-invoke, and our assertion may fire if
     // a unmanaged caller does not setup an exception handler.
     CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-    Thread* pThread = NULL;
-    BEGIN_ENTRYPOINT_THROWS;
 
     HRESULT hr = S_OK;
-    pThread = SetupThreadNoThrow(&hr);
+    Thread* pThread = SetupThreadNoThrow(&hr);
     if (pThread == NULL)
     {
         // Creating Thread failed, and we need to throw an exception to report status.
@@ -1062,7 +1060,6 @@ Thread* WINAPI CreateThreadBlockThrow()
         ULONG_PTR arg = hr;
         RaiseException(EXCEPTION_EXX, 0, 1, &arg);
     }
-    END_ENTRYPOINT_THROWS;
 
     return pThread;
 }
@@ -1117,11 +1114,11 @@ extern "C" void *JIT_WriteBarrier_Loc;
 void *JIT_WriteBarrier_Loc = 0;
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1185,17 +1182,17 @@ void InitThreadManager()
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
         JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
-#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     }
     else
@@ -1219,10 +1216,10 @@ void InitThreadManager()
 #else
         JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
         JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
 #ifndef TARGET_UNIX
@@ -1508,6 +1505,7 @@ Thread::Thread()
 #endif  // TRACK_SYNC
 
     m_PreventAsync = 0;
+    m_PreventAbort = 0;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -2168,7 +2166,7 @@ void ParseDefaultStackSize(LPCWSTR valueStr)
     {
         LPWSTR end;
         errno = 0;
-        unsigned long value = wcstoul(valueStr, &end, 16); // Base 16 without a prefix
+        unsigned long value = u16_strtoul(valueStr, &end, 16); // Base 16 without a prefix
 
         if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
             || (valueStr == end)  // No characters parsed
@@ -2529,7 +2527,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
             CONTRACT_VIOLATION(ModeViolation);
 
             // Clear the handle and leave the lock.
-            // We do not have to to DisablePreemptiveGC here, because
+            // We do not have to DisablePreemptiveGC here, because
             // we just want to put NULL into a handle.
             StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
 
@@ -3171,6 +3169,7 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
         BOOL waitAll;
         DWORD millis;
         WaitMode mode;
+        void *associatedObjectForMonitorWait;
         DWORD dwRet;
     } param;
     param.pThis = this;
@@ -3179,10 +3178,11 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     param.waitAll = waitAll;
     param.millis = millis;
     param.mode = mode;
+    param.associatedObjectForMonitorWait = syncState != NULL ? syncState->m_Object : NULL;
     param.dwRet = (DWORD) -1;
 
     EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->countHandles, pParam->handles, pParam->waitAll, pParam->millis, pParam->mode);
+        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->countHandles, pParam->handles, pParam->waitAll, pParam->millis, pParam->mode, pParam->associatedObjectForMonitorWait);
     }
     EE_FINALLY {
         if (syncState) {
@@ -3385,7 +3385,7 @@ void UnMarkOSAlertableWait()
 // style of Wait.
 //--------------------------------------------------------------------
 DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                      DWORD millis, WaitMode mode)
+                                      DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait)
 {
     CONTRACTL {
         THROWS;
@@ -3458,6 +3458,47 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
 
     ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
 
+    bool sendWaitEvents =
+        millis != 0 &&
+        (mode & WaitMode_Alertable) != 0 &&
+        ETW_TRACING_CATEGORY_ENABLED(
+            MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+            TRACE_LEVEL_VERBOSE,
+            CLR_WAITHANDLE_KEYWORD);
+
+    // Monitor.Wait is typically a blocking wait. For other waits, when sending the wait events try a nonblocking wait first
+    // such that the events sent are more likely to represent blocking waits.
+    bool tryNonblockingWaitFirst = sendWaitEvents && associatedObjectForMonitorWait == NULL;
+    if (tryNonblockingWaitFirst)
+    {
+        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, 0 /* timeout */, mode);
+        if (ret == WAIT_TIMEOUT)
+        {
+            // Do a full wait and send the wait events
+            tryNonblockingWaitFirst = false;
+        }
+        else if (ret != WAIT_IO_COMPLETION && ret != WAIT_FAILED)
+        {
+            // The nonblocking wait was successful, don't send the wait events
+            sendWaitEvents = false;
+        }
+    }
+
+    if (sendWaitEvents)
+    {
+        if (associatedObjectForMonitorWait != NULL)
+        {
+            FireEtwWaitHandleWaitStart(
+                ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
+                associatedObjectForMonitorWait,
+                GetClrInstanceId());
+        }
+        else
+        {
+            FireEtwWaitHandleWaitStart(ETW::WaitHandleLog::WaitHandleStructs::Unknown, NULL, GetClrInstanceId());
+        }
+    }
+
     ULONGLONG dwStart = 0, dwEnd;
 retry:
     if (millis != INFINITE)
@@ -3465,7 +3506,15 @@ retry:
         dwStart = CLRGetTickCount64();
     }
 
-    ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, millis, mode);
+    if (tryNonblockingWaitFirst)
+    {
+        // We have a final wait result from the nonblocking wait above
+        tryNonblockingWaitFirst = false;
+    }
+    else
+    {
+        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, millis, mode);
+    }
 
     if (ret == WAIT_IO_COMPLETION)
     {
@@ -3481,7 +3530,7 @@ retry:
         if (millis != INFINITE)
         {
             dwEnd = CLRGetTickCount64();
-            if (dwEnd >= dwStart + millis)
+            if (dwEnd - dwStart >= millis)
             {
                 ret = WAIT_TIMEOUT;
                 goto WaitCompleted;
@@ -3566,7 +3615,7 @@ retry:
             dwEnd = CLRGetTickCount64();
             if (millis != INFINITE)
             {
-                if (dwEnd >= dwStart + millis)
+                if (dwEnd - dwStart >= millis)
                 {
                     ret = WAIT_TIMEOUT;
                     goto WaitCompleted;
@@ -3611,6 +3660,11 @@ retry:
 WaitCompleted:
 
     _ASSERTE((ret != WAIT_TIMEOUT) || (millis != INFINITE));
+
+    if (sendWaitEvents)
+    {
+        FireEtwWaitHandleWaitStop(GetClrInstanceId());
+    }
 
     return ret;
 }
@@ -3952,30 +4006,6 @@ DWORD Thread::Wait(CLREvent *pEvent, INT32 timeOut, PendingSync *syncInfo)
              (dwResult == WAIT_TIMEOUT));
 
     return dwResult;
-}
-
-void Thread::Wake(SyncBlock *psb)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CLREvent* hEvent = NULL;
-    WaitEventLink *walk = &m_WaitEventLink;
-    while (walk->m_Next) {
-        if (walk->m_Next->m_WaitSB == psb) {
-            hEvent = walk->m_Next->m_EventWait;
-            // We are guaranteed that only one thread can change walk->m_Next->m_WaitSB
-            // since the thread is helding the syncblock.
-            walk->m_Next->m_WaitSB = (SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB | 1);
-            break;
-        }
-#ifdef _DEBUG
-        else if ((SyncBlock*)((DWORD_PTR)walk->m_Next & ~1) == psb) {
-            _ASSERTE (!"Can not wake a thread on the same SyncBlock more than once");
-        }
-#endif
-    }
-    PREFIX_ASSUME (hEvent != NULL);
-    hEvent->Set();
 }
 
 #define WAIT_INTERRUPT_THREADABORT 0x1
@@ -5560,6 +5590,7 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
             }
 
             unsigned exposedObjectGeneration = gcHeap->WhichGeneration(exposedObject);
+            _ASSERTE(exposedObjectGeneration != INT32_MAX);
             SIZE_T newDeadThreadGenerationCount = ++s_DeadThreadGenerationCounts[exposedObjectGeneration];
             if (exposedObjectGeneration > gcGenerationToTrigger && newDeadThreadGenerationCount >= generationCountThreshold)
             {
@@ -6550,7 +6581,6 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
         LOG_FLAG(uState, MEM_FREE);
         LOG_FLAG(uState, MEM_PRIVATE);
         LOG_FLAG(uState, MEM_MAPPED);
-        LOG_FLAG(uState, MEM_RESET);
         LOG_FLAG(uState, MEM_TOP_DOWN);
         LOG_FLAG(uState, MEM_WRITE_WATCH);
         LOG_FLAG(uState, MEM_PHYSICAL);
@@ -7310,11 +7340,11 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             //
             // Without unwind_and_continue_handler below, the exception will fly up the stack to
             // this point, where it will be rethrown and thus leak out.
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
             EX_RETHROW;
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
     EX_END_CATCH(SwallowAllExceptions);
@@ -8232,7 +8262,7 @@ void Thread::InitializeSpecialUserModeApc()
     WRAPPER_NO_CONTRACT;
     static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
 
-    HMODULE hKernel32 = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hKernel32 = WszLoadLibrary(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
     // See if QueueUserAPC2 exists
     QueueUserAPC2Proc pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
@@ -8259,16 +8289,18 @@ void Thread::InitializeSpecialUserModeApc()
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
 #if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 {
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     DWORD64 ssp = GetSSP(ContextRecord);
+    __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
 #else
+    __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif

@@ -69,7 +69,6 @@ mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
 extern void mono_gc_init (void);
 MONO_COMPONENT_API extern void mono_gc_base_init (void);
-extern void mono_gc_base_cleanup (void);
 extern void mono_gc_init_icalls (void);
 
 /*
@@ -154,9 +153,6 @@ mono_gc_alloc_handle_array (MonoVTable *vtable, gsize size, gsize max_length, gs
 MonoString*
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len);
 
-MonoStringHandle
-mono_gc_alloc_handle_string (MonoVTable *vtable, gsize size, gint32 len);
-
 MonoObject*
 mono_gc_alloc_mature (MonoVTable *vtable, size_t size);
 
@@ -172,15 +168,13 @@ mono_gc_register_object_with_weak_fields (MonoObjectHandle obj);
 typedef void (*MonoFinalizationProc)(gpointer, gpointer); // same as SGenFinalizationProc, GC_finalization_proc
 
 void  mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_data);
-void  mono_gc_add_memory_pressure (gint64 value);
+void  mono_gc_add_memory_pressure (guint64 value);
+void  mono_gc_remove_memory_pressure (guint64 value);
+
 MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 MONO_COMPONENT_API void  mono_gc_deregister_root (char* addr);
 void  mono_gc_finalize_domain (MonoDomain *domain);
 void  mono_gc_run_finalize (void *obj, void *data);
-void  mono_gc_clear_domain (MonoDomain * domain);
-/* Signal early termination of finalizer processing inside the gc */
-void  mono_gc_suspend_finalizers (void);
-
 
 /*
  * Register a root which can only be written using a write barrier.

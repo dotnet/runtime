@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -32,13 +33,16 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetKeylogCallback")]
+        internal static unsafe partial void SslCtxSetKeylogCallback(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, char*, void> callback);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
         internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, int contextIdLength, Span<byte> contextId, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
-        internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, X509Certificate2[] chain)
+        internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, ReadOnlyCollection<X509Certificate2> chain)
         {
             // send pre-computed list of intermediates.
-            for (int i = 0; i < chain.Length; i++)
+            for (int i = 0; i < chain.Count; i++)
             {
                 SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
@@ -134,7 +138,7 @@ namespace Microsoft.Win32.SafeHandles
             if (!string.IsNullOrEmpty(targetName))
             {
                 // We do this only for lookup in RemoveSession.
-                // Since this is part of chache manipulation and no function impact it is done here.
+                // Since this is part of cache manipulation and no function impact it is done here.
                 // This will use strdup() so it is safe to pass in raw pointer.
                 Interop.Ssl.SessionSetHostname(session, namePtr);
 
@@ -158,7 +162,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal void RemoveSession(IntPtr namePtr)
         {
             Debug.Assert(_sslSessions != null);
 

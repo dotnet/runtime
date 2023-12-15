@@ -12,6 +12,10 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public class HostBuilderContext
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="HostBuilderContext"/>.
+        /// </summary>
+        /// <param name="properties">A non-null <see cref="IDictionary{TKey, TValue}"/> for sharing state between components during the host building process.</param>
         public HostBuilderContext(IDictionary<object, object> properties)
         {
             ThrowHelper.ThrowIfNull(properties);

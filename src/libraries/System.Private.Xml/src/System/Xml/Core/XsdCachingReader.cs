@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -279,10 +279,8 @@ namespace System.Xml
         // Gets the value of the attribute with the specified index.
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             return _attributeEvents[i].RawValue;
         }
@@ -354,10 +352,8 @@ namespace System.Xml
         // Moves to the attribute with the specified index.
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
             _currentAttrIndex = i;
             _cachedNode = _attributeEvents[i];
         }

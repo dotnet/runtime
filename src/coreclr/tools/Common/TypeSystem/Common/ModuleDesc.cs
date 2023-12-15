@@ -3,6 +3,10 @@
 
 using System.Collections.Generic;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
     public abstract partial class ModuleDesc : TypeSystemEntity

@@ -389,10 +389,10 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 for (int i = 0; i < _allStats.Count; i++)
                 {
-                    if (_allStats[i].TryGetTarget(out Stats? stats) && stats == current)
+                    if (!_allStats[i].TryGetTarget(out Stats? stats))
                     {
                         _allStats.RemoveAt(i);
-                        break;
+                        i--;
                     }
                 }
 
@@ -483,7 +483,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 long lowWatermark = sizeLimit - (long)(sizeLimit * _options.CompactionPercentage);
                 if (currentSize > lowWatermark)
                 {
-                     Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
+                    Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
                 }
             }
 
@@ -587,11 +587,16 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             Dispose(true);
         }
 
+        /// <summary>
+        /// Dispose the cache and clear all entries.
+        /// </summary>
+        /// <param name="disposing">Dispose the object resources if true; otherwise, take no action.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)

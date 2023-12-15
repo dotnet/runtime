@@ -14,11 +14,11 @@ namespace System.Net
             X509Chain chain,
             X509Certificate2? remoteCertificate,
             bool checkCertName,
-            bool isServer,
+            bool _ /*isServer*/,
             string? hostName)
         {
             if (remoteCertificate == null)
-                return  SslPolicyErrors.RemoteCertificateNotAvailable;
+                return SslPolicyErrors.RemoteCertificateNotAvailable;
 
             SslPolicyErrors errors = chain.Build(remoteCertificate)
                 ? SslPolicyErrors.None
@@ -89,6 +89,16 @@ namespace System.Net
             }
 
             return cert;
+        }
+
+        // Check if the local certificate has been sent to the peer during the handshake.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _, SafeDeleteContext? securityContext)
+        {
+            SafeSslHandle? sslContext = ((SafeDeleteSslContext?)securityContext)?.SslContext;
+            if (sslContext == null)
+                return false;
+
+            return Interop.AndroidCrypto.SSLStreamIsLocalCertificateUsed(sslContext);
         }
 
         //

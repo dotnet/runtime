@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 class TestException : Exception
 {
@@ -14,7 +15,7 @@ class TestException : Exception
     public TestException(string _y) { y = _y; }
 }
 
-class TestCases
+public class TestCases
 {
     static void Throw() => throw new TestException();
     static void Throw(int x) => throw new TestException(x);
@@ -41,7 +42,7 @@ class TestCases
         return x;
     }
 
-    public static void OneThrowHelperTail(int x)
+    internal static void OneThrowHelperTail(int x)
     {
         if (x > 0) 
         {
@@ -106,7 +107,7 @@ class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_IfOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_IfOneTail(int x)
     {
         if (x == 0) 
         {
@@ -120,7 +121,7 @@ class TestCases
         }
     }
 
-    public static void TwoIdenticalThrowHelpers_IfTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_IfTwoTail(int x)
     {
         if (x == 0) 
         {
@@ -135,7 +136,7 @@ class TestCases
         }
     }
 
-    public static int ThreeIdenticalThrowHelpers_If(int x)
+    internal static int ThreeIdenticalThrowHelpers_If(int x)
     {
         if (x == 0) 
         {
@@ -155,7 +156,7 @@ class TestCases
         return x;
     }
 
-    public static void ThreeIdenticalThrowHelpers_IfOneTail(int x)
+    internal static void ThreeIdenticalThrowHelpers_IfOneTail(int x)
     {
         if (x == 0) 
         {
@@ -174,7 +175,7 @@ class TestCases
         }
     }
 
-    public static void ThreeIdenticalThrowHelpers_IfTwoTail(int x)
+    internal static void ThreeIdenticalThrowHelpers_IfTwoTail(int x)
     {
         if (x == 0) 
         {
@@ -194,7 +195,7 @@ class TestCases
         }
     }
 
-    public static void ThreeIdenticalThrowHelpers_IfThreeTail(int x)
+    internal static void ThreeIdenticalThrowHelpers_IfThreeTail(int x)
     {
         if (x == 0) 
         {
@@ -236,7 +237,7 @@ class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_GotoOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_GotoOneTail(int x)
     {
         if (x == 0) 
         {
@@ -256,7 +257,7 @@ class TestCases
         Throw();
     }
 
-    public static void TwoIdenticalThrowHelpers_GotoTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_GotoTwoTail(int x)
     {
         if (x == 0) 
         {
@@ -297,7 +298,7 @@ class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchOneTail(int x)
     {
         switch (x)
         {
@@ -315,7 +316,7 @@ class TestCases
         }
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchTwoTail(int x)
     {
         switch (x)
         {
@@ -358,7 +359,7 @@ class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchGotoOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchGotoOneTail(int x)
     {
         switch (x)
         {
@@ -381,7 +382,7 @@ class TestCases
         Throw();
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchGotoTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchGotoTwoTail(int x)
     {
         switch (x)
         {
@@ -505,7 +506,8 @@ class TestCases
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Try(OneThrowHelper);
         Try(OneThrowHelperTail);

@@ -263,7 +263,9 @@ namespace System.IO.Pipelines.Tests
 
             stream.WaitForReadTask.TrySetResult(null);
 
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
+            Assert.IsType<OperationCanceledException>(oce.InnerException);
             reader.Complete();
         }
 

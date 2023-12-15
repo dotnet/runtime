@@ -55,6 +55,10 @@ namespace System.ComponentModel.Composition
     public partial class CompositionContractMismatchException : System.Exception
     {
         public CompositionContractMismatchException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected CompositionContractMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CompositionContractMismatchException(string? message) { }
         public CompositionContractMismatchException(string? message, System.Exception? innerException) { }
@@ -141,6 +145,10 @@ namespace System.ComponentModel.Composition
     public partial class ImportCardinalityMismatchException : System.Exception
     {
         public ImportCardinalityMismatchException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ImportCardinalityMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ImportCardinalityMismatchException(string? message) { }
         public ImportCardinalityMismatchException(string? message, System.Exception? innerException) { }
@@ -535,12 +543,20 @@ namespace System.ComponentModel.Composition.Primitives
     public partial class ComposablePartException : System.Exception
     {
         public ComposablePartException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ComposablePartException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ComposablePartException(string? message) { }
         public ComposablePartException(string? message, System.ComponentModel.Composition.Primitives.ICompositionElement? element) { }
         public ComposablePartException(string? message, System.ComponentModel.Composition.Primitives.ICompositionElement? element, System.Exception? innerException) { }
         public ComposablePartException(string? message, System.Exception? innerException) { }
         public System.ComponentModel.Composition.Primitives.ICompositionElement? Element { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class ContractBasedImportDefinition : System.ComponentModel.Composition.Primitives.ImportDefinition

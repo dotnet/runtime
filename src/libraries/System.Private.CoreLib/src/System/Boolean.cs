@@ -1,17 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: The boolean class serves as a wrapper for the primitive
-** type boolean.
-**
-**
-===========================================================*/
-
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,9 +8,17 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a boolean (<see langword="true"/> or <see langword="false"/>) value.
+    /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Boolean : IComparable, IConvertible, IComparable<bool>, IEquatable<bool>
+    public readonly struct Boolean
+        : IComparable,
+          IConvertible,
+          IComparable<bool>,
+          IEquatable<bool>,
+          ISpanParsable<bool>
     {
         //
         // Member Variables
@@ -102,7 +99,7 @@ namespace System
                 if (destination.Length > 3)
                 {
                     ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720054ul : 0x54007200750065ul; // "True"
-                    MemoryMarshal.Write<ulong>(MemoryMarshal.AsBytes(destination), ref true_val);
+                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in true_val);
                     charsWritten = 4;
                     return true;
                 }
@@ -112,7 +109,7 @@ namespace System
                 if (destination.Length > 4)
                 {
                     ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
-                    MemoryMarshal.Write<ulong>(MemoryMarshal.AsBytes(destination), ref fals_val);
+                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in fals_val);
                     destination[4] = 'e';
                     charsWritten = 5;
                     return true;
@@ -189,6 +186,11 @@ namespace System
 
         // Custom string compares for early application use by config switches, etc
         //
+#if MONO
+        // We have to keep these implementations for Mono here because MemoryExtensions.Equals("True", OrdinalIgnoreCase)
+        // triggers CompareInfo static initialization which is not desired when we parse configs on start.
+        // TODO: Remove once Mono aligns its behavior with CoreCLR around .beforefieldinit
+        // https://github.com/dotnet/runtime/issues/77513
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
@@ -205,6 +207,18 @@ namespace System
                    (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
                     ((value[4] | 0x20) == 'e'));
         }
+#else
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // JIT inlines and unrolls this, see https://github.com/dotnet/runtime/pull/77398
+            return value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+#endif
 
         // Determines whether a String represents true or false.
         //
@@ -215,8 +229,14 @@ namespace System
             return Parse(value.AsSpan());
         }
 
-        public static bool Parse(ReadOnlySpan<char> value) =>
-            TryParse(value, out bool result) ? result : throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
+        public static bool Parse(ReadOnlySpan<char> value)
+        {
+            if (!TryParse(value, out bool result))
+            {
+                ThrowHelper.ThrowFormatException_BadBoolean(value);
+            }
+            return result;
+        }
 
         // Determines whether a String represents true or false.
         //
@@ -246,6 +266,7 @@ namespace System
 
             return TryParseUncommon(value, out result);
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static bool TryParseUncommon(ReadOnlySpan<char> value, out bool result)
             {
                 // With "true" being 4 characters, even if we trim something from <= 4 chars,
@@ -381,5 +402,21 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+        //
+        // IParsable
+        //
+
+        static bool IParsable<bool>.Parse(string s, IFormatProvider? provider) => Parse(s);
+
+        static bool IParsable<bool>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out bool result) => TryParse(s, out result);
+
+        //
+        // ISpanParsable
+        //
+
+        static bool ISpanParsable<bool>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+
+        static bool ISpanParsable<bool>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out bool result) => TryParse(s, out result);
     }
 }

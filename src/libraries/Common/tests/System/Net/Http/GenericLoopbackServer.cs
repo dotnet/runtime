@@ -8,9 +8,11 @@ using System.Threading.Tasks;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
+using System.Net.Http.Functional.Tests;
 
 namespace System.Net.Test.Common
 {
@@ -19,8 +21,12 @@ namespace System.Net.Test.Common
 
     public abstract class LoopbackServerFactory
     {
+        // Use a timeout that is a bit higher than PassingTestTimeout so that the client/server callbacks
+        // have a chance to report more specific exception information in case they use the same timeout value.
+        public const int LoopbackServerTimeoutMilliseconds = (int)(TestHelper.PassingTestTimeoutMilliseconds * 1.2);
+
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
-        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
+        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds, GenericLoopbackOptions options = null);
 
         public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null);
 
@@ -28,7 +34,7 @@ namespace System.Net.Test.Common
 
         // Common helper methods
 
-        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds, GenericLoopbackOptions options = null)
         {
             return CreateServerAsync(async (server, uri) =>
             {
@@ -42,6 +48,8 @@ namespace System.Net.Test.Common
 
     public abstract class GenericLoopbackServer : IDisposable
     {
+        public const int LoopbackServerTimeoutMilliseconds = LoopbackServerFactory.LoopbackServerTimeoutMilliseconds;
+
         public virtual Uri Address { get; }
 
         // Accept a new connection, process a single request and send the specified response, and gracefully close the connection.
@@ -85,6 +93,9 @@ namespace System.Net.Test.Common
             _socket?.Close();
             CloseWebSocket();
         }
+
+        public EndPoint? LocalEndPoint => _socket?.LocalEndPoint;
+        public EndPoint? RemoteEndPoint => _socket?.RemoteEndPoint;
 
         public async Task WaitForCloseAsync(CancellationToken cancellationToken)
         {
@@ -174,6 +185,9 @@ namespace System.Net.Test.Common
                 SslProtocols.Tls12;
 
         public int ListenBacklog { get; set; } = 1;
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
+        public SslStreamCertificateContext? CertificateContext { get; set; }
+#endif
     }
 
     public struct HttpHeaderData

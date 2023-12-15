@@ -107,13 +107,19 @@ namespace ILCompiler.DependencyAnalysis
                 layout.EnsureEntry(_lookupSignature);
 
                 if ((_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase) &&
-                    factory.PreinitializationManager.HasLazyStaticConstructor((TypeDesc)_target))
+                    TriggersLazyStaticConstructor(factory))
                 {
                     // If the type has a lazy static constructor, we also need the non-GC static base
                     // because that's where the class constructor context is.
                     layout.EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
                 }
             }
+        }
+
+        private bool TriggersLazyStaticConstructor(NodeFactory factory)
+        {
+            TypeDesc type = (TypeDesc)_target;
+            return factory.PreinitializationManager.HasLazyStaticConstructor(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
@@ -129,13 +135,11 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // If the type has a lazy static constructor, we also need the non-GC static base
                         // because that's where the class constructor context is.
-                        TypeDesc type = (TypeDesc)_target;
-
-                        if (factory.PreinitializationManager.HasLazyStaticConstructor(type))
+                        if (TriggersLazyStaticConstructor(factory))
                         {
                             result.Add(
                                 new DependencyListEntry(
-                                    factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, lookupContext),
+                                    factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext),
                                     "Dictionary dependency"));
                         }
                     }
@@ -250,7 +254,7 @@ namespace ILCompiler.DependencyAnalysis
                 // a template dictionary node.
                 TypeDesc type = (TypeDesc)_target;
                 Debug.Assert(templateLayout != null);
-                if (factory.PreinitializationManager.HasLazyStaticConstructor(type))
+                if (TriggersLazyStaticConstructor(factory))
                 {
                     GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
                     conditionalDependencies.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),

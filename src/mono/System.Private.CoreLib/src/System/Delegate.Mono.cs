@@ -210,7 +210,7 @@ namespace System
             if (invoke is null)
                 return null;
 
-            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> delargs = invoke.GetParametersAsSpan();
             Type[] delargtypes = new Type[delargs.Length];
 
             for (int i = 0; i < delargs.Length; i++)
@@ -250,8 +250,8 @@ namespace System
                 return false;
             }
 
-            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
-            ParameterInfo[] args = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> delargs = invoke.GetParametersAsSpan();
+            ReadOnlySpan<ParameterInfo> args = method.GetParametersAsSpan();
 
             bool argLengthMatch;
 
@@ -427,7 +427,7 @@ namespace System
 
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
-            MethodInfo _method = Method ?? throw new NullReferenceException ("method_info is null");
+            MethodInfo method = Method;
 
             object? target = _target;
 
@@ -437,7 +437,7 @@ namespace System
             MethodInfo? invoke = GetType().GetMethod("Invoke");
             if (invoke != null && args != null)
             {
-                ParameterInfo[] delegateParameters = invoke.GetParameters();
+                ReadOnlySpan<ParameterInfo> delegateParameters = invoke.GetParametersAsSpan();
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] == Type.Missing)
@@ -451,7 +451,7 @@ namespace System
                 }
             }
 
-            if (_method.IsStatic)
+            if (method.IsStatic)
             {
                 //
                 // The delegate is bound to _target
@@ -482,7 +482,7 @@ namespace System
                 }
             }
 
-            return _method.Invoke(target, args);
+            return method.Invoke(target, args);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

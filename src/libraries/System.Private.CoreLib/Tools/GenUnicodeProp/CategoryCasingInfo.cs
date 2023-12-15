@@ -62,9 +62,9 @@ namespace GenUnicodeProp
             _data.isWhitespace = codePoint.Flags.HasFlag(CodePointFlags.White_Space);
         }
 
-        public override bool Equals(object obj) => Equals(obj as CategoryCasingInfo);
+        public override bool Equals(object? obj) => Equals(obj as CategoryCasingInfo);
 
-        public bool Equals(CategoryCasingInfo other)
+        public bool Equals(CategoryCasingInfo? other)
         {
             return !(other is null) && this._data.Equals(other._data);
         }

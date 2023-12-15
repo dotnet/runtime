@@ -1,69 +1,32 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class FrozenStringNode : FrozenObjectNode
     {
         private string _data;
-        private int _syncBlockSize;
+        private readonly DefType _stringType;
 
-        public FrozenStringNode(string data, TargetDetails target)
+        public FrozenStringNode(string data, CompilerTypeSystemContext context)
         {
             _data = data;
-            _syncBlockSize = target.PointerSize;
+            _stringType = context.GetWellKnownType(WellKnownType.String);
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__Str_").Append(nameMangler.GetMangledStringName(_data));
         }
 
-        public override bool StaticDependenciesAreComputed => true;
+        protected override int ContentSize => _stringType.Context.Target.PointerSize + sizeof(int) + (_data.Length + 1) * sizeof(char);
 
-        int ISymbolNode.Offset => 0;
-
-        int ISymbolDefinitionNode.Offset
+        public override void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            get
-            {
-                // The frozen string symbol points at the MethodTable portion of the object, skipping over the sync block
-                return OffsetFromBeginningOfArray + _syncBlockSize;
-            }
-        }
-
-        private static IEETypeNode GetEETypeNode(NodeFactory factory)
-        {
-            DefType systemStringType = factory.TypeSystemContext.GetWellKnownType(WellKnownType.String);
-
-            //
-            // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
-            // binary, it must be cloned into this one.
-            //
-            IEETypeNode stringSymbol = factory.ConstructedTypeSymbol(systemStringType);
-
-            if (stringSymbol.RepresentsIndirectionCell)
-            {
-                return factory.ConstructedClonedTypeSymbol(systemStringType);
-            }
-            else
-            {
-                return stringSymbol;
-            }
-        }
-
-        public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
-        {
-            int initialOffset = dataBuilder.CountBytes;
-
-            dataBuilder.EmitZeroPointer(); // Sync block
-
-            dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
+            dataBuilder.EmitPointerReloc(factory.ConstructedTypeSymbol(ObjectType));
 
             dataBuilder.EmitInt(_data.Length);
 
@@ -74,29 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
             // Null-terminate for friendliness with interop
             dataBuilder.EmitShort(0);
-
-            int objectSize = dataBuilder.CountBytes - initialOffset;
-            int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
-            if (objectSize < minimumObjectSize)
-            {
-                dataBuilder.EmitZeros(minimumObjectSize - objectSize);
-            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            return new DependencyListEntry[]
-            {
-                new DependencyListEntry(GetEETypeNode(factory), "Frozen string literal MethodTable"),
-            };
-        }
-
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.FrozenSegmentRegion.AddEmbeddedObject(this);
-        }
 
         public override int ClassCode => -1733946122;
 
@@ -104,6 +47,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             return string.CompareOrdinal(_data, ((FrozenStringNode)other)._data);
         }
+
+        public string Data => _data;
+
+        public override int? ArrayLength => _data.Length;
+
+        public override bool IsKnownImmutable => true;
+
+        public override TypeDesc ObjectType => _stringType;
 
         public override string ToString() => $"\"{_data}\"";
     }

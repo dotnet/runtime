@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class CscBench
 {
@@ -98,7 +99,7 @@ public static class CscBench
     public static bool DataflowBench()
     {
         var text = @"
-class C {
+public class C {
     public void F(int x)
     {
         int a;
@@ -142,7 +143,8 @@ class C {
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = true;
         if (!FindMscorlib())

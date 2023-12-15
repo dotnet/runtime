@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     if (!relocsOnly)
                     {
-                        // movz T0=R12, #index
+                        // ori T0=R12, R0, #index
                         int index = _containingImportSection.IndexFromBeginningOfArray;
                         instructionEncoder.EmitMOV(Register.R12, checked((ushort)index));
                     }
