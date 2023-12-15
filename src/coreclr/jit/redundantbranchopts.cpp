@@ -95,7 +95,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
     optReachableBitVecTraits = nullptr;
     OptRedundantBranchesDomTreeVisitor visitor(this);
-    visitor.WalkTree(fgSsaDomTree);
+    visitor.WalkTree(m_domTree);
 
 #if DEBUG
     if (verbose && visitor.madeChanges)
@@ -779,36 +779,39 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         return false;
     }
 
-    // If block is a loop header, skip jump threading.
-    //
-    // This is an artificial limitation to ensure that subsequent loop table valididity
-    // checking can pass. We do not expect a loop entry to have multiple non-loop predecessors.
-    //
-    // This only blocks jump threading in a small number of cases.
-    // Revisit once we can ensure that loop headers are not critical blocks.
-    //
-    // Likewise we can't properly update the loop table if we thread the entry block.
-    // Not clear how much impact this has.
-    //
-    for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
+    if (optLoopTableValid)
     {
-        const LoopDsc& loop = optLoopTable[loopNum];
-
-        if (loop.lpIsRemoved())
+        // If block is a loop header, skip jump threading.
+        //
+        // This is an artificial limitation to ensure that subsequent loop table valididity
+        // checking can pass. We do not expect a loop entry to have multiple non-loop predecessors.
+        //
+        // This only blocks jump threading in a small number of cases.
+        // Revisit once we can ensure that loop headers are not critical blocks.
+        //
+        // Likewise we can't properly update the loop table if we thread the entry block.
+        // Not clear how much impact this has.
+        //
+        for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
         {
-            continue;
-        }
+            const LoopDsc& loop = optLoopTable[loopNum];
 
-        if (block == loop.lpHead)
-        {
-            JITDUMP(FMT_BB " is the header for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-            return false;
-        }
+            if (loop.lpIsRemoved())
+            {
+                continue;
+            }
 
-        if (block == loop.lpEntry)
-        {
-            JITDUMP(FMT_BB " is the entry for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-            return false;
+            if (block == loop.lpHead)
+            {
+                JITDUMP(FMT_BB " is the header for " FMT_LP "; no threading\n", block->bbNum, loopNum);
+                return false;
+            }
+
+            if (block == loop.lpEntry)
+            {
+                JITDUMP(FMT_BB " is the entry for " FMT_LP "; no threading\n", block->bbNum, loopNum);
+                return false;
+            }
         }
     }
 
@@ -821,7 +824,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     {
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (m_dfsTree->Contains(predBlock) && !fgSsaDomTree->Dominates(domBlock, predBlock))
+            if (m_dfsTree->Contains(predBlock) && !m_domTree->Dominates(domBlock, predBlock))
             {
                 JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
                         predBlock->bbNum);
