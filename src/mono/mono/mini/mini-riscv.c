@@ -778,6 +778,8 @@ add_arg (CallInfo *cinfo, ArgInfo *ainfo, int size, gboolean sign)
 		ainfo->storage = ArgOnStack;
 		ainfo->slot_size = size;
 		ainfo->is_signed = sign;
+		ainfo->offset = cinfo->stack_usage;
+		cinfo->stack_usage += size;
 	}
 }
 
@@ -1021,7 +1023,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	}
 
 	// other general Arguments
-	guint32 argStack = 0;
 	for (pindex = paramStart; pindex < sig->param_count; ++pindex) {
 		ArgInfo *ainfo = cinfo->args + sig->hasthis + pindex;
 
@@ -1030,12 +1031,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			NOT_IMPLEMENTED;
 
 		add_param (cinfo, ainfo, sig->params [pindex]);
-
-		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4 || ainfo->storage == ArgOnStackR8) {
-			ainfo->offset = argStack;
-			cinfo->stack_usage += ainfo->slot_size;
-			argStack += ainfo->slot_size;
-		}
 	}
 
 	/* Handle the case where there are no implicit arguments */
