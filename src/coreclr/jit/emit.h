@@ -2202,8 +2202,8 @@ public:
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(insGroup* ig, instrDesc* id) const;
-    UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum) const;
+    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
 /************************************************************************/
 /*        Members and methods used to issue (encode) instructions.      */

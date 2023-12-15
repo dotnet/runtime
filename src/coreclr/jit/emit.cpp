@@ -7664,7 +7664,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
  *  instruction number for this instruction
  */
 
-unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch) const
+unsigned emitter::emitFindInsNum(const insGroup* ig, const instrDesc* idMatch) const
 {
     instrDesc* id = emitFirstInstrDesc(ig->igData);
 
@@ -7700,7 +7700,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch) const
  *  to find the true offset by looking for the instruction within the group.
  */
 
-UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum) const
+UNATIVE_OFFSET emitter::emitFindOffset(const insGroup* ig, unsigned insNum) const
 {
     instrDesc*     id = emitFirstInstrDesc(ig->igData);
     UNATIVE_OFFSET of = 0;

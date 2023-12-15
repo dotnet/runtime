@@ -2963,7 +2963,7 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2) const
     return true;
 }
 
-void emitter::emitDispBranchOffset(instrDesc* id, insGroup*  ig) const
+void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const
 {
     static const auto signFn = [](int offset) { return offset >= 0 ? "+" : ""; };
 
@@ -2973,10 +2973,10 @@ void emitter::emitDispBranchOffset(instrDesc* id, insGroup*  ig) const
         printf("pc%s%d instructions", signFn(instrCount), instrCount);
         return;
     }
-    unsigned insNum = emitFindInsNum(ig, id);
+    unsigned       insNum  = emitFindInsNum(ig, id);
     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
-    ssize_t relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(dstOffs));
+    ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(dstOffs));
     printf("pc%s%d (%d instructions)", signFn(relOffs), static_cast<int>(relOffs), instrCount);
 }
 
@@ -2989,11 +2989,8 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
-bool emitter::emitDispBranch(unsigned         opcode2,
-                             const char*      register1Name,
-                             const char*      register2Name,
-                            instrDesc* id,
-                            insGroup*  ig) const
+bool emitter::emitDispBranch(
+    unsigned opcode2, const char* register1Name, const char* register2Name, const instrDesc* id, const insGroup* ig) const
 {
     if (!emitDispBranchInstrType(opcode2))
     {
@@ -3043,12 +3040,14 @@ static const char* const RegNames[] =
 //    doffs - Flag informing whether the instruction's offset should be displayed.
 //    insOffset - The instruction's offset.
 //    id   - The instrDesc of the code if needed.
+//    ig   - The insGroup of the code if needed
 //
 // Note:
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id, insGroup* ig)
+void emitter::emitDispInsName(
+    code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
