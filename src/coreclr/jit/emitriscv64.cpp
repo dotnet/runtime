@@ -2191,7 +2191,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12)
+/*static*/ emitter::code_t emitter::insEncodeSTypeInstr(
+    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12)
 {
     static constexpr unsigned kLoMask = 0x1f; // 0b00011111
     static constexpr unsigned kHiMask = 0x7f; // 0b01111111
@@ -2238,22 +2239,26 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13)
+/*static*/ emitter::code_t emitter::insEncodeBTypeInstr(
+    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13)
 {
-    static constexpr unsigned kLoMask = 0x0f; // 0b00001111
-    static constexpr unsigned kHiMask = 0x3f; // 0b00111111
-    static constexpr unsigned kBitMask = 0x01;
+    static constexpr unsigned kLoSectionMask = 0x0f; // 0b00001111
+    static constexpr unsigned kHiSectionMask = 0x3f; // 0b00111111
+    static constexpr unsigned kBitMask       = 0x01;
 
     assertCodeLength(opcode, 7);
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
     assertCodeLength(imm13, 13);
-    imm13 >>= 1;
-    unsigned imm13Lo = ((imm13 & kLoMask) << 1) | ((imm13 >> 10) & kBitMask);
-    unsigned imm13Hi = ((imm13 >> 4) & kHiMask) | (((imm13 >> 11) & kBitMask) << 6);
+    unsigned imm12          = imm13 >> 1;
+    unsigned imm12LoSection = imm12 & kLoSectionMask;
+    unsigned imm12LoBit     = (imm12 >> 10) & kBitMask;
+    unsigned imm12HiSection = (imm12 >> 4) & kHiSectionMask;
+    unsigned imm12HiBit     = (imm12 >> 11) & kBitMask;
 
-    return opcode | (imm13Lo << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (imm13Hi << 25);
+    return opcode | (imm12LoBit << 7) | (imm12LoSection << 8) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) |
+           (imm12HiSection << 25) | (imm12HiBit << 31);
 }
 
 /*****************************************************************************
@@ -2270,18 +2275,19 @@ static void assertCodeLength(unsigned code, uint8_t size)
 /*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21)
 {
     static constexpr unsigned kSectionMask = 0x3ff; // 0b1111111111
-    static constexpr unsigned kBitMask = 0x01;
+    static constexpr unsigned kBitMask     = 0x01;
 
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
     assertCodeLength(imm21, 21);
-    unsigned imm20 = imm21 >> 1;
+    unsigned imm20          = imm21 >> 1;
     unsigned imm20HiSection = imm20 & kSectionMask;
-    unsigned imm20HiBit = (imm20 >> 19) & kBitMask;
+    unsigned imm20HiBit     = (imm20 >> 19) & kBitMask;
     unsigned imm20LoSection = (imm20 >> 11) & kSection;
-    unsigned imm20LoBit = (imm20 >> 10) & kBitMask;
+    unsigned imm20LoBit     = (imm20 >> 10) & kBitMask;
 
-    return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) | (imm20HiBit << 31);
+    return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) |
+           (imm20HiBit << 31);
 }
 
 /*****************************************************************************
