@@ -364,6 +364,28 @@ DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
     pCrst->Enter();
 }
 
+DEBUG_NOINLINE BOOL ClrTryEnterCriticalSection(CRITSEC_COOKIE cookie) {
+
+    // Entering a critical section has many different contracts
+    // depending on the flags used to initialize the critical section.
+    // See CrstBase::Enter() for the actual contract. It's much too
+    // complex to repeat here.
+
+    CONTRACTL
+    {
+        WRAPPER(THROWS);
+        WRAPPER(GC_TRIGGERS);
+    }
+    CONTRACTL_END;
+
+    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
+
+    Crst *pCrst = CookieToCrst(cookie);
+    _ASSERTE(pCrst);
+
+    return pCrst->TryEnter();
+}
+
 DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
 {
     CONTRACTL

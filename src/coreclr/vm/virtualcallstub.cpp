@@ -611,7 +611,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
 
     // Hot  memory, Writable, No-Execute, infrequent writes
     NewHolder<LoaderHeap> indcell_heap_holder(
-                               new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
+                               new LoaderHeap(1, 0, indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
                                               NULL, UnlockedLoaderHeap::HeapKind::Data));
 
@@ -619,7 +619,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
 
     // Hot  memory, Writable, No-Execute, infrequent writes
     NewHolder<LoaderHeap> cache_entry_heap_holder(
-                               new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
+                               new LoaderHeap(1, 0, cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
                                               &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
 

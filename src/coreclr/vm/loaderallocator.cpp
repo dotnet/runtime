@@ -1143,11 +1143,17 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         _ASSERTE((dwVSDHeapReserveSize == 0) && (m_pVSDHeapInitialAlloc == NULL));
     }
 
+    uint8_t heapCount;
+    void* pHeapData;
+
     if (dwLowFrequencyHeapReserveSize != 0)
     {
         _ASSERTE(!IsCollectible());
 
-        m_pLowFrequencyHeap = new (&m_LowFreqHeapInstance) LoaderHeap(LOW_FREQUENCY_HEAP_RESERVE_SIZE,
+
+        pHeapData = GetLowFrequencyHeapInstance(&heapCount);
+        m_pLowFrequencyHeap = new (pHeapData) LoaderHeap(heapCount, 0,
+                                                                      LOW_FREQUENCY_HEAP_RESERVE_SIZE,
                                                                       LOW_FREQUENCY_HEAP_COMMIT_SIZE,
                                                                       initReservedMem,
                                                                       dwLowFrequencyHeapReserveSize);
@@ -1158,7 +1164,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     {
         _ASSERTE(!IsCollectible());
 
-        m_pExecutableHeap = new (pExecutableHeapMemory) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
+        m_pExecutableHeap = new (pExecutableHeapMemory) LoaderHeap(1, 0, STUB_HEAP_RESERVE_SIZE,
                                                                       STUB_HEAP_COMMIT_SIZE,
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
@@ -1168,7 +1174,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         initReservedMem += dwExecutableHeapReserveSize;
     }
 
-    m_pHighFrequencyHeap = new (&m_HighFreqHeapInstance) LoaderHeap(HIGH_FREQUENCY_HEAP_RESERVE_SIZE,
+    pHeapData = GetHighFrequencyHeapInstance(&heapCount);
+    m_pHighFrequencyHeap = new (pHeapData) LoaderHeap(heapCount, 1, HIGH_FREQUENCY_HEAP_RESERVE_SIZE,
                                                                     HIGH_FREQUENCY_HEAP_COMMIT_SIZE,
                                                                     initReservedMem,
                                                                     dwHighFrequencyHeapReserveSize);
@@ -1181,7 +1188,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_pHighFrequencyHeap->m_fPermitStubsWithUnwindInfo = TRUE;
 #endif
 
-    m_pStubHeap = new (&m_StubHeapInstance) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
+    pHeapData = GetStubHeapInstance(&heapCount);
+    m_pStubHeap = new (pHeapData) LoaderHeap(heapCount, 2, STUB_HEAP_RESERVE_SIZE,
                                                        STUB_HEAP_COMMIT_SIZE,
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
@@ -1196,7 +1204,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
 
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+    pHeapData = GetNewStubPrecodeHeapInstance(&heapCount);
+    m_pNewStubPrecodeHeap = new (pHeapData) LoaderHeap(heapCount, 3, 2 * GetStubCodePageSize(),
                                                                            2 * GetStubCodePageSize(),
                                                                            &m_stubPrecodeRangeList,
                                                                            UnlockedLoaderHeap::HeapKind::Interleaved,
@@ -1204,7 +1213,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                                            StubPrecode::GenerateCodePage,
                                                                            StubPrecode::CodeSize);
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+    pHeapData = GetFixupPrecodeHeapInstance(&heapCount);
+    m_pFixupPrecodeHeap = new (pHeapData) LoaderHeap(heapCount, 4, 2 * GetStubCodePageSize(),
                                                                        2 * GetStubCodePageSize(),
                                                                        &m_fixupPrecodeRangeList,
                                                                        UnlockedLoaderHeap::HeapKind::Interleaved,

@@ -8,6 +8,8 @@
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 
+thread_local uint8_t LoaderHeap::s_CurrentHeap[LoaderHeap::s_MaxHeapTypeIndex];
+
 #ifndef DACCESS_COMPILE
 
 INDEBUG(DWORD UnlockedLoaderHeap::s_dwNumInstancesOfLoaderHeaps = 0;)

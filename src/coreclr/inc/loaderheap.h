@@ -608,10 +608,15 @@ class LoaderHeap : public UnlockedLoaderHeap, public ILoaderHeapBackout
 {
 private:
     CRITSEC_COOKIE    m_CriticalSection;
+    uint8_t               m_heapCount;
+    uint8_t               m_heapTypeIndex;
+    static constexpr  int s_MaxHeapTypeIndex = 5;
+    static thread_local uint8_t s_CurrentHeap[s_MaxHeapTypeIndex];
 
 #ifndef DACCESS_COMPILE
 public:
-    LoaderHeap(DWORD dwReserveBlockSize,
+    LoaderHeap(uint8_t heapCount, uint8_t heapTypeIndex,
+               DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                RangeList *pRangeList = NULL,
                UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
@@ -626,13 +631,22 @@ public:
                            kind,
                            codePageGenerator,
                            dwGranularity),
-        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
+        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock()),
+        m_heapCount(heapCount),
+        m_heapTypeIndex(heapTypeIndex)
     {
-        WRAPPER_NO_CONTRACT;
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(m_heapTypeIndex < s_MaxHeapTypeIndex);
+        for (uint8_t heapIndex = 1; heapIndex < heapCount; heapIndex++)
+        {
+            _ASSERTE(!fUnlocked);
+            new(this + heapIndex) LoaderHeap(1, heapTypeIndex, dwReserveBlockSize, dwCommitBlockSize, NULL, 0, pRangeList, kind, fUnlocked, codePageGenerator, dwGranularity);
+        }
     }
 
 public:
-    LoaderHeap(DWORD dwReserveBlockSize,
+    LoaderHeap(uint8_t heapCount, uint8_t heapTypeIndex,
+               DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
@@ -649,9 +663,17 @@ public:
                            pRangeList,
                            kind,
                            codePageGenerator, dwGranularity),
-        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
+        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock()),
+        m_heapCount(heapCount),
+        m_heapTypeIndex(heapTypeIndex)
     {
-        WRAPPER_NO_CONTRACT;
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(m_heapTypeIndex < s_MaxHeapTypeIndex);
+        for (uint8_t heapIndex = 1; heapIndex < heapCount; heapIndex++)
+        {
+            _ASSERTE(!fUnlocked);
+            new(this + heapIndex) LoaderHeap(1, heapTypeIndex, dwReserveBlockSize, dwCommitBlockSize, NULL, 0, pRangeList, kind, fUnlocked, codePageGenerator, dwGranularity);
+        }
     }
 
 #endif // DACCESS_COMPILE
@@ -659,6 +681,7 @@ public:
     virtual ~LoaderHeap()
     {
         WRAPPER_NO_CONTRACT;
+        _ASSERTE(m_heapCount == 1);
 
 #ifndef DACCESS_COMPILE
         if (m_CriticalSection != NULL)
@@ -721,6 +744,44 @@ public:
     }
 private:
 
+    CRITSEC_COOKIE LockAndAcquireLoaderHeap(LoaderHeap **ppHeap)
+    {
+        if (m_heapCount > 1)
+        {
+            LoaderHeap *pLoaderHeap1 = (this + s_CurrentHeap[m_heapTypeIndex]);
+            
+            if (ClrTryEnterCriticalSection(pLoaderHeap1->m_CriticalSection))
+            {
+                *ppHeap = pLoaderHeap1;
+                return pLoaderHeap1->m_CriticalSection;
+            }
+            else
+            {
+                uint8_t nextHeapIndex = (s_CurrentHeap[m_heapTypeIndex] + 1) % m_heapCount;
+                LoaderHeap *pLoaderHeap2 = (this + nextHeapIndex);
+                if (ClrTryEnterCriticalSection(pLoaderHeap2->m_CriticalSection))
+                {
+                    *ppHeap = pLoaderHeap2;
+                    s_CurrentHeap[m_heapTypeIndex] = nextHeapIndex;
+                    return pLoaderHeap2->m_CriticalSection;
+                }
+                else
+                {
+                    ClrEnterCriticalSection(pLoaderHeap1->m_CriticalSection);
+                    *ppHeap = pLoaderHeap1;
+                    return pLoaderHeap1->m_CriticalSection;
+                }
+            }
+        }
+        else
+        {
+            if (m_CriticalSection != NULL)
+                ClrEnterCriticalSection(m_CriticalSection);
+            *ppHeap = this;
+            return m_CriticalSection;
+        }
+    }
+
     TaggedMemAllocPtr RealAllocMemUnsafe(size_t dwSize
 #ifdef _DEBUG
                                   ,_In_ _In_z_ const char *szFile
@@ -732,9 +793,9 @@ private:
 
         void *pResult;
         TaggedMemAllocPtr tmap;
-
-        CRITSEC_Holder csh(m_CriticalSection);
-        pResult = UnlockedAllocMem(dwSize
+        LoaderHeap *pHeap;
+        CRITSEC_LeaveHolder csh(LockAndAcquireLoaderHeap(&pHeap));
+        pResult = pHeap->UnlockedAllocMem(dwSize
 #ifdef _DEBUG
                                  , szFile
                                  , lineNum
@@ -742,7 +803,7 @@ private:
                                  );
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = dwSize;
-        tmap.m_pHeap            = this;
+        tmap.m_pHeap            = pHeap;
         tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -764,9 +825,10 @@ private:
         void *pResult;
         TaggedMemAllocPtr tmap;
 
-        CRITSEC_Holder csh(m_CriticalSection);
+        LoaderHeap *pHeap;
+        CRITSEC_LeaveHolder csh(LockAndAcquireLoaderHeap(&pHeap));
 
-        pResult = UnlockedAllocMem_NoThrow(dwSize
+        pResult = pHeap->UnlockedAllocMem_NoThrow(dwSize
 #ifdef _DEBUG
                                            , szFile
                                            , lineNum
@@ -775,7 +837,7 @@ private:
 
         tmap.m_pMem             = pResult;
         tmap.m_dwRequestedSize  = dwSize;
-        tmap.m_pHeap            = this;
+        tmap.m_pHeap            = pHeap;
         tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -806,14 +868,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        CRITSEC_Holder csh(m_CriticalSection);
-
+        LoaderHeap *pHeap;
+        CRITSEC_LeaveHolder csh(LockAndAcquireLoaderHeap(&pHeap));
 
         TaggedMemAllocPtr tmap;
         void *pResult;
         size_t dwExtra;
 
-        pResult = UnlockedAllocAlignedMem(dwRequestedSize
+        pResult = pHeap->UnlockedAllocAlignedMem(dwRequestedSize
                                          ,dwAlignment
                                          ,&dwExtra
 #ifdef _DEBUG
@@ -824,7 +886,7 @@ public:
 
         tmap.m_pMem             = (void*)(((BYTE*)pResult) - dwExtra);
         tmap.m_dwRequestedSize  = dwRequestedSize + dwExtra;
-        tmap.m_pHeap            = this;
+        tmap.m_pHeap            = pHeap;
         tmap.m_dwExtra          = dwExtra;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;
@@ -845,14 +907,14 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        CRITSEC_Holder csh(m_CriticalSection);
-
+        LoaderHeap *pHeap;
+        CRITSEC_LeaveHolder csh(LockAndAcquireLoaderHeap(&pHeap));
 
         TaggedMemAllocPtr tmap;
         void *pResult;
         size_t dwExtra;
 
-        pResult = UnlockedAllocAlignedMem_NoThrow(dwRequestedSize
+        pResult = pHeap->UnlockedAllocAlignedMem_NoThrow(dwRequestedSize
                                                  ,dwAlignment
                                                  ,&dwExtra
 #ifdef _DEBUG
@@ -865,7 +927,7 @@ public:
 
         tmap.m_pMem             = (void*)(((BYTE*)pResult) - dwExtra);
         tmap.m_dwRequestedSize  = dwRequestedSize + dwExtra;
-        tmap.m_pHeap            = this;
+        tmap.m_pHeap            = pHeap;
         tmap.m_dwExtra          = dwExtra;
 #ifdef _DEBUG
         tmap.m_szFile           = szFile;

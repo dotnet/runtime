@@ -355,7 +355,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 
     _ASSERTE(m_heap == nullptr);
 
-    LoaderHeap *heap = new LoaderHeap(0, 0, &m_heapRangeList, UnlockedLoaderHeap::HeapKind::Interleaved, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
+    LoaderHeap *heap = new LoaderHeap(1, 0, 0, 0, &m_heapRangeList, UnlockedLoaderHeap::HeapKind::Interleaved, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
     m_heap = heap;
     return heap;
 }

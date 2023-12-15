@@ -4097,7 +4097,7 @@ LoaderHeap *Module::GetThunkHeap()
 
     if (!m_pThunkHeap)
     {
-        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+        LoaderHeap *pNewHeap = new LoaderHeap(1, 0, VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
             0,                                 // DWORD dwCommitBlockSize
             ThunkHeapStubManager::g_pManager->GetRangeList(),
             UnlockedLoaderHeap::HeapKind::Executable);

@@ -78,6 +78,7 @@ extern int RFS_HashStack();
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType type, CrstFlags flags);
 void ClrDeleteCriticalSection(CRITSEC_COOKIE cookie);
 void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
+BOOL ClrTryEnterCriticalSection(CRITSEC_COOKIE cookie);
 void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
 
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable);
@@ -87,6 +88,7 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable);
 // either on exception or on return.
 
 typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection, NULL> CRITSEC_Holder;
+typedef Holder<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, ClrLeaveCriticalSection, NULL> CRITSEC_LeaveHolder;
 
 // Use this holder to manage CRITSEC_COOKIE allocation to ensure it will be released if anything goes wrong
 FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }

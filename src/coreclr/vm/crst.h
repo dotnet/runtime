@@ -121,6 +121,7 @@ friend class ListLockBase;
 template <typename ELEMENT>
 friend class ListLockEntryBase;
 friend struct SavedExceptionInfo;
+friend BOOL ClrTryEnterCriticalSection(CRITSEC_COOKIE cookie);
 friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
 friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
 friend class CodeVersionManager;
@@ -178,6 +179,7 @@ private:
     //
     // For obvious reasons, this parameter must never be made public.
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
+    BOOL TryEnter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
 
     void SpinEnter();

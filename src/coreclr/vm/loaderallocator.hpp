@@ -300,12 +300,14 @@ protected:
 
     DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
-    BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
+
+    virtual BYTE* GetLowFrequencyHeapInstance(uint8_t *pCount) = 0;
+    virtual BYTE* GetHighFrequencyHeapInstance(uint8_t *pCount) = 0;
+    virtual BYTE* GetStubHeapInstance(uint8_t *pCount) = 0;
+    virtual BYTE* GetFixupPrecodeHeapInstance(uint8_t *pCount) = 0;
+    virtual BYTE* GetNewStubPrecodeHeapInstance(uint8_t *pCount) = 0;
+
     BYTE                m_PrecodeHeapInstance[sizeof(CodeFragmentHeap)];
-    BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
@@ -850,7 +852,20 @@ class GlobalLoaderAllocator : public LoaderAllocator
     // Associate memory regions with loader allocator objects
     LockedRangeList     m_memoryAssociations;
 
+    static constexpr int s_HeapCount = 4;
+    BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap) * s_HeapCount];
+    BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap) * s_HeapCount];
+    BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap) * s_HeapCount];
+    BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap) * s_HeapCount];
+
 protected:
+    virtual BYTE* GetLowFrequencyHeapInstance(uint8_t *pCount) override { *pCount = sizeof(m_LowFreqHeapInstance)/sizeof(LoaderHeap); return m_LowFreqHeapInstance; };
+    virtual BYTE* GetHighFrequencyHeapInstance(uint8_t *pCount) override { *pCount = sizeof(m_HighFreqHeapInstance)/sizeof(LoaderHeap); return m_HighFreqHeapInstance; };
+    virtual BYTE* GetStubHeapInstance(uint8_t *pCount) override { *pCount = sizeof(m_StubHeapInstance)/sizeof(LoaderHeap); return m_StubHeapInstance; };
+    virtual BYTE* GetFixupPrecodeHeapInstance(uint8_t *pCount) override { *pCount = sizeof(m_FixupPrecodeHeapInstance)/sizeof(LoaderHeap); return m_FixupPrecodeHeapInstance; };
+    virtual BYTE* GetNewStubPrecodeHeapInstance(uint8_t *pCount) override { *pCount = sizeof(m_NewStubPrecodeHeapInstance)/sizeof(LoaderHeap); return m_NewStubPrecodeHeapInstance; };
+
     LoaderAllocatorID m_Id;
 
 public:
@@ -873,6 +888,19 @@ protected:
     DAC_ALIGNAS(LoaderAllocator) // Align the first member to the alignment of the base class
     LoaderAllocatorID  m_Id;
     ShuffleThunkCache* m_pShuffleThunkCache;
+
+    BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
+
+    virtual BYTE* GetLowFrequencyHeapInstance(uint8_t *pCount) override { *pCount = 0; return NULL; };
+    virtual BYTE* GetHighFrequencyHeapInstance(uint8_t *pCount) override { *pCount = 1; return m_HighFreqHeapInstance; };
+    virtual BYTE* GetStubHeapInstance(uint8_t *pCount) override { *pCount = 1; return m_StubHeapInstance; };
+    virtual BYTE* GetFixupPrecodeHeapInstance(uint8_t *pCount) override { *pCount = 1; return m_FixupPrecodeHeapInstance; };
+    virtual BYTE* GetNewStubPrecodeHeapInstance(uint8_t *pCount) override { *pCount = 1; return m_NewStubPrecodeHeapInstance; };
+
 public:
     virtual LoaderAllocatorID* Id();
     AssemblyLoaderAllocator() : LoaderAllocator(true), m_Id(LAT_Assembly), m_pShuffleThunkCache(NULL)

@@ -331,6 +331,141 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     }
 }
 
+BOOL CrstBase::TryEnter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
+{
+    //-------------------------------------------------------------------------------------------
+    // What, no CONTRACT?
+    //
+    // We can't put an actual CONTRACT here as PostEnter() makes unscoped changes to the GC_NoTrigger
+    // counter. But we do perform the equivalent checks manually.
+    //
+    // What's worse, the implied contract differs for different flavors of crst.
+    //
+    // THROWS/FAULT
+    //
+    //     A crst can be HOST_BREAKBALE or not. A HOST_BREAKABLE crst can throw on an attempt to enter
+    //     (due to deadlock breaking by the host.) A non-breakable crst will never
+    //     throw or OOM or fail an enter.
+    //
+    //
+    //
+    //
+    // GC/MODE
+    //     Orthogonally, a crst can be one of the following flavors. We only want to see the
+    //     "normal" type used in new code. Other types, kept for legacy reasons, are listed in
+    //     order from least objectionable to most objectionable.
+    //
+    //         normal - This is the preferred type of crst. Enter() will force-switch your thread
+    //            into preemptive mode if it isn't already. Thus, the effective contract is:
+    //
+    //            MODE_ANY
+    //            GC_TRIGGERS
+    //
+    //
+    //
+    //         CRST_UNSAFE_COOPGC - You can only attempt to acquire this crst if you're already
+    //            in coop mode. It is guaranteed no GC will occur while waiting to acquire the lock.
+    //            While you hold the lock, your thread is in a GCFORBID state.
+    //
+    //            MODE_COOP
+    //            GC_NOTRIGGER
+    //
+    //
+    //
+    //         CRST_UNSAFE_ANYMODE - You can attempt to acquire this in either mode. Entering the
+    //            crst will not change your thread mode but it will increment the GCNoTrigger count.
+    //
+    //            MODE_ANY
+    //            GC_NOTRIGGER
+    //------------------------------------------------------------------------------------------------
+
+#ifdef ENABLE_CONTRACTS_IMPL
+    ClrDebugState *pClrDebugState = CheckClrDebugState();
+    if (pClrDebugState)
+    {
+        if (m_dwFlags & CRST_HOST_BREAKABLE)
+        {
+            if (pClrDebugState->IsFaultForbid() &&
+                !(pClrDebugState->ViolationMask() & (FaultViolation|FaultNotFatal|BadDebugState)))
+            {
+                CONTRACT_ASSERT("You cannot enter a HOST_BREAKABLE lock in a FAULTFORBID region.",
+                                Contract::FAULT_Forbid,
+                                Contract::FAULT_Mask,
+                                __FUNCTION__,
+                                __FILE__,
+                                __LINE__);
+            }
+
+            if (!(pClrDebugState->CheckOkayToThrowNoAssert()))
+            {
+                CONTRACT_ASSERT("You cannot enter a HOST_BREAKABLE lock in a NOTHROW region.",
+                                Contract::THROWS_No,
+                                Contract::THROWS_Mask,
+                                __FUNCTION__,
+                                __FILE__,
+                                __LINE__);
+            }
+        }
+
+        // The mode checks and enforcement of GC_NOTRIGGER during the lock are done in CrstBase::PostEnter().
+
+    }
+#endif  //ENABLE_CONTRACTS_IMPL
+
+
+
+    SCAN_IGNORE_THROW;
+    SCAN_IGNORE_FAULT;
+    SCAN_IGNORE_TRIGGER;
+    STATIC_CONTRACT_CAN_TAKE_LOCK;
+
+    _ASSERTE(IsCrstInitialized());
+
+    // Is Critical Section entered?
+    // We could have perhaps used m_criticalsection.LockCount, but
+    // while spinning, we want to fire the ETW event only once
+    BOOL fIsCriticalSectionEnteredAfterFailingOnce = FALSE;
+
+    Thread * pThread;
+
+    pThread = GetThreadNULLOk();
+
+    _ASSERTE(noLevelCheckFlag == CRST_NO_LEVEL_CHECK || IsSafeToTake() || g_fEEShutDown);
+
+    // Check for both rare case using one if-check
+    if (m_dwFlags & (CRST_TAKEN_DURING_SHUTDOWN | CRST_DEBUGGER_THREAD))
+    {
+        if (m_dwFlags & CRST_TAKEN_DURING_SHUTDOWN)
+        {
+            // increment the usage count of locks that can be taken during shutdown
+            InterlockedIncrement(&g_ShutdownCrstUsageCount);
+        }
+
+        // If this is a debugger lock, bump up the "Can't-Stop" count.
+        // We'll bump it down when we release the lock.
+        if (m_dwFlags & CRST_DEBUGGER_THREAD)
+        {
+            IncCantStopCount();
+        }
+    }
+
+    if (TryEnterCriticalSection(&m_criticalsection))
+    {
+    #ifdef _DEBUG
+        PostEnter();
+    #endif
+        return TRUE;
+    }
+    else
+    {
+        if (m_dwFlags & CRST_DEBUGGER_THREAD)
+        {
+            DecCantStopCount();
+        }
+        return FALSE;
+    }
+}
+
 //-----------------------------------------------------------------
 // Release the lock.
 //-----------------------------------------------------------------
