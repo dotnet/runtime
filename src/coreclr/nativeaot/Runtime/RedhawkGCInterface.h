@@ -10,12 +10,9 @@
 
 #include "forward_declarations.h"
 
-
-class MethodInfo;
 struct REGDISPLAY;
 enum GCRefKind : unsigned char;
 class ICodeManager;
-
 
 class RedhawkGCInterface
 {

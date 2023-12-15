@@ -15,7 +15,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
-#include "RedhawkGCInterface.h"
 #include "shash.h"
 #include "rhbinder.h"
 #include "Crst.h"

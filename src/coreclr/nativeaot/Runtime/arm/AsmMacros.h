@@ -278,6 +278,6 @@ $Name
         EXTERN RhRethrow
 
 #ifdef FEATURE_GC_STRESS
-        EXTERN $STRESSGC
+        EXTERN $RhpStressGc
         EXTERN $THREAD__HIJACKFORGCSTRESS
 #endif ;; FEATURE_GC_STRESS

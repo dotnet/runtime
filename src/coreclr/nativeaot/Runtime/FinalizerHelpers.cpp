@@ -9,7 +9,6 @@
 #include "gcheaputilities.h"
 
 #include "slist.h"
-#include "RedhawkGCInterface.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
 

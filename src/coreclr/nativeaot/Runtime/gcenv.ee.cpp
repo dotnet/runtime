@@ -11,6 +11,7 @@
 #include "RestrictedCallouts.h"
 
 #include "RhConfig.h"
+#include "RedhawkGCInterface.h"
 
 #include "thread.h"
 #include "threadstore.h"

@@ -18,7 +18,6 @@
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
-#include "RedhawkGCInterface.h"
 #include "varint.h"
 #include "StackFrameIterator.h"
 #include "thread.h"

@@ -18,7 +18,6 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
-#include "RedhawkGCInterface.h"
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"

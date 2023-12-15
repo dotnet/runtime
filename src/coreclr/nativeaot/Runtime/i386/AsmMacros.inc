@@ -199,7 +199,7 @@ EXTERN RhRethrow                                : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
-EXTERN STRESSGC                                 : PROC
+EXTERN RhpStressGc                              : PROC
 endif ;; FEATURE_GC_STRESS
 
 EXTERN G_LOWEST_ADDRESS : DWORD

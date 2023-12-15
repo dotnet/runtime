@@ -12,7 +12,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "RedhawkGCInterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -28,6 +27,7 @@
 #include "stressLog.h"
 #include "RhConfig.h"
 #include "RhVolatile.h"
+#include "RedhawkGCInterface.h"
 
 #ifndef DACCESS_COMPILE
 

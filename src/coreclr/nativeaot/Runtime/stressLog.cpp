@@ -21,7 +21,6 @@
 #include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "RedhawkGCInterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"

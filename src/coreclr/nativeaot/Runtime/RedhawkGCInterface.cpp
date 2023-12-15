@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-
 #include "gcenv.h"
-#include "gcenv.ee.h"
 #include "gcheaputilities.h"
-#include "gchandleutilities.h"
 
 #include "RedhawkGCInterface.h"
 
@@ -16,13 +13,6 @@
 #include "thread.inl"
 
 #include "regdisplay.h"
-
-#include "daccess.h"
-
-#ifndef DACCESS_COMPILE
-
-
-#endif // !DACCESS_COMPILE
 
 void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcEnumRef, ScanContext* pSc)
 {
