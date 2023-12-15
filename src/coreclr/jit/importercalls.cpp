@@ -5296,13 +5296,6 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     // calls (see InlinedCallFrame::GetActualInteropMethodDesc and related stackwalking code).
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
-        // This does not apply to the raw pinvoke call that is inside the no marshalling R2R compiled
-        // pinvoke ILStub. In this case, we have to inline the raw pinvoke call into the stub, otherwise
-        // we would end up with a stub that recursively calls itself, and end up with a stack overflow.
-        if (opts.IsReadyToRun())
-        {
-            return true;
-        }
         return false;
     }
 
@@ -5418,6 +5411,12 @@ void Compiler::impCheckForPInvokeCall(
 
         // PInvoke CALLI in IL stubs must be inlined
     }
+    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.IsReadyToRun())
+    {
+        // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
+        // be inlined into the stub, otherwise we would end up with a stub that recursively calls
+        // itself, and end up with a stack overflow.
+    }
     else
     {
         // Check legality
@@ -5430,25 +5429,17 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in NativeAOT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+            if (!impCanPInvokeInline())
             {
-                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
-                // recursive calls to the stub.
+                return;
             }
-            else
-            {
-                if (!impCanPInvokeInline())
-                {
-                    return;
-                }
 
-                // Size-speed tradeoff: don't use inline pinvoke at rarely
-                // executed call sites.  The non-inline version is more
-                // compact.
-                if (block->isRunRarely())
-                {
-                    return;
-                }
+            // Size-speed tradeoff: don't use inline pinvoke at rarely
+            // executed call sites.  The non-inline version is more
+            // compact.
+            if (block->isRunRarely())
+            {
+                return;
             }
         }
 
