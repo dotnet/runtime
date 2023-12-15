@@ -2133,8 +2133,14 @@ ssize_t emitter::emitOutputInstrJumpSize(BYTE const*     destination,
     BYTE const* const destinationAddress = emitOffsetToPtr(destinationOffset);
     ssize_t           jumpSize           = static_cast<ssize_t>(destinationAddress - sourceAddress);
 
-    if (destinationOffset <= sourceOffset)
+    if (destinationOffset > sourceOffset)
     {
+        // This is a forward jump
+
+        emitFwdJumps = true;
+
+        // The target offset will be closer by at least 'emitOffsAdj', but only if this
+        // jump doesn't cross the hot-cold boundary.
         if (!emitJumpCrossHotColdBoundary(sourceOffset, destinationOffset))
         {
             jumpSize -= emitOffsAdj;
