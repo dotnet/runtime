@@ -2210,10 +2210,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 {
                     ins = INS_remuw;
                 }
-
-                // TODO-RISCV64: here is just for signed-extension ?
-                emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dividendReg, dividendReg, 0);
-                emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, divisorReg, divisorReg, 0);
             }
             else
             {
