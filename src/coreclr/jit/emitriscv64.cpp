@@ -2119,10 +2119,10 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
     return sizeof(code_t);
 }
 
-ssize_t emitter::emitOutputInstrJumpSize(BYTE const* const         destination,
-                                         BYTE const* const         source,
-                                         insGroup const* const     instructionGroup,
-                                         instrDescJmp const* const jumpDescription)
+ssize_t emitter::emitOutputInstrJumpSize(BYTE const*     destination,
+                                         BYTE const*     source,
+                                         insGroup const* instructionGroup,
+                                         instrDescJmp*   jumpDescription)
 {
     UNATIVE_OFFSET    sourceOffset  = emitCurCodeOffs(source);
     BYTE const* const sourceAddress = emitOffsetToPtr(sourceOffset);
