@@ -810,5 +810,38 @@ namespace Test
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
+
+        [Fact]
+        public static void NoCrashWithNonNameUsingAlias()
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+                using Point = (int x, int y);
+
+                namespace Test
+                {
+                    [JsonSerializable(typeof(C))]
+                    public partial class JsonContext : JsonSerializerContext { }
+
+                    public class C
+                    {
+                        [JsonIgnore]
+                        public string @event { get; set; }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out _, generator);
+            ImmutableArray<Diagnostic> generatorDiags = newCompilation.GetDiagnostics();
+
+            // No diagnostics expected.
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
     }
 }
