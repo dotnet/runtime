@@ -1216,7 +1216,31 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			}
 			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL: {
 				MonoMethodSignature *sig = decode_signature_with_target (module, NULL, p, &p);
-				ref->method = mono_marshal_get_runtime_invoke_for_sig (sig);
+
+				/*
+				 * Its hard to reconstruct these wrappers, the ones returned by
+				 * mono_marshal_get_runtime_invoke_for_sig () work the same, but they
+				 * are not the same since they are cached in a different hash. So if the target is set,
+				 * compare the signature.
+				 */
+				if (target) {
+					WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (target);
+					g_assert (wrapper_info);
+
+					if (wrapper_info->subtype != subtype) {
+						g_free (sig);
+						return FALSE;
+					}
+					g_assert (wrapper_info->d.runtime_invoke.sig);
+					const gboolean same_sig = mono_metadata_signature_equal (sig, wrapper_info->d.runtime_invoke.sig);
+					g_free (sig);
+					if (same_sig)
+						ref->method = target;
+					else
+						return FALSE;
+				} else {
+					ref->method = mono_marshal_get_runtime_invoke_for_sig (sig);
+				}
 				break;
 			}
 			default:
