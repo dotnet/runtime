@@ -17,6 +17,7 @@
 #include "Crst.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 //
 // -----------------------------------------------------------------------------------------------------------

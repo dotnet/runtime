@@ -22,6 +22,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 #include "stressLog.h"
 #include "rhbinder.h"
 #include "MethodTable.h"

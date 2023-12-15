@@ -26,7 +26,6 @@
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
-#include "RhVolatile.h"
 #include "GcEnum.h"
 
 #ifndef DACCESS_COMPILE
@@ -85,7 +84,7 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag
-        VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
+        VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
     }
     while (ThreadStore::IsTrapThreadsRequested());
 
@@ -156,7 +155,7 @@ void Thread::DisablePreemptiveMode()
     ASSERT(ThreadStore::GetCurrentThread() == this);
 
     // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
 
     if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
@@ -182,14 +181,6 @@ void Thread::SetDeferredTransitionFrameForNativeHelperThread()
     }
 }
 #endif // !DACCESS_COMPILE
-
-bool Thread::IsCurrentThreadInCooperativeMode()
-{
-#ifndef DACCESS_COMPILE
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-#endif // !DACCESS_COMPILE
-    return (m_pTransitionFrame == NULL);
-}
 
 //
 // This is used by the EH system to find the place where execution left managed code when an exception leaks out of a
@@ -992,11 +983,6 @@ void Thread::ClearState(ThreadStateFlags flags)
     PalInterlockedAnd(&m_ThreadStateFlags, ~flags);
 }
 
-bool Thread::IsStateSet(ThreadStateFlags flags)
-{
-    return ((m_ThreadStateFlags & flags) == (uint32_t) flags);
-}
-
 bool Thread::IsSuppressGcStressSet()
 {
     return IsStateSet(TSF_SuppressGcStress);
@@ -1104,11 +1090,6 @@ COOP_PINVOKE_HELPER(void, RhpValidateExInfoPop, (Thread * pThread, ExInfo * pExI
     pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
 
-bool Thread::IsDoNotTriggerGcSet()
-{
-    return IsStateSet(TSF_DoNotTriggerGc);
-}
-
 void Thread::SetDoNotTriggerGc()
 {
     ASSERT(!IsStateSet(TSF_DoNotTriggerGc));
@@ -1177,49 +1158,6 @@ EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL
 }
 #endif // TARGET_UNIX
 
-FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame)
-{
-    // remember the current transition frame, so it will be restored when we return from reverse pinvoke
-    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
-
-    // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in
-    // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
-    // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
-    // methods on interfaces passed to native.
-    // We will allow threads in DoNotTriggerGc mode to do reverse PInvoke regardless of their coop state.
-    if (IsDoNotTriggerGcSet())
-    {
-        // We expect this scenario only when EE is stopped.
-        ASSERT(ThreadStore::IsTrapThreadsRequested());
-        // no need to do anything
-        return true;
-    }
-
-    // Do we need to attach the thread?
-    if (!IsStateSet(TSF_Attached))
-        return false; // thread is not attached
-
-    if (IsCurrentThreadInCooperativeMode())
-        return false; // bad transition
-
-    // this is an ordinary transition to managed code
-    // GC threads should not do that
-    ASSERT(!IsGCSpecial());
-
-    // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
-
-    // now check if we need to trap the thread
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        // put the previous frame back (sets us back to preemptive mode)
-        m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
-        return false; // need to trap the thread
-    }
-
-    return true;
-}
-
 EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
     g_RuntimeInitializationCallback = fPtr;
@@ -1251,7 +1189,7 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
     // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
 
     // now check if we need to trap the thread
     if (ThreadStore::IsTrapThreadsRequested())
@@ -1276,30 +1214,6 @@ void Thread::EnsureRuntimeInitialized()
     }
 
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
-}
-
-FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
-{
-    // set our mode to preemptive
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame->m_savedPInvokeTransitionFrame);
-}
-
-FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
-{
-    ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
-    pFrame->m_pThread = this;
-    // set our mode to preemptive
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
-}
-
-FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
-{
-    // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        RhpWaitForGC2(pFrame);
-    }
 }
 
 Object * Thread::GetThreadAbortException()
