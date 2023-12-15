@@ -25,6 +25,10 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
+#include "gcdesc.h"
+
+#define RH_LARGE_OBJECT_SIZE 85000
+
 EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
@@ -292,7 +296,7 @@ COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (RH_GH_MEMORY_INFO* pData, int kind))
 
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
 {
-    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - Thread::GetDeadThreadsNonAllocBytes();
 
     // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
     static uint64_t high_watermark;
@@ -350,7 +354,7 @@ EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 
     GCToEEInterface::SuspendEE(SUSPEND_REASON::SUSPEND_FOR_GC);
 
-    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - Thread::GetDeadThreadsNonAllocBytes();
 
     FOREACH_THREAD(pThread)
     {
@@ -364,7 +368,132 @@ EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-extern Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t cbSize, Thread* pThread);
+static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
+{
+    ASSERT(!pThread->IsDoNotTriggerGcSet());
+    ASSERT(pThread->IsCurrentThreadInCooperativeMode());
+
+    size_t cbSize = pEEType->GetBaseSize();
+
+    if (pEEType->HasComponentSize())
+    {
+        // Impose limits on maximum array length to prevent corner case integer overflow bugs
+        // Keep in sync with Array.MaxLength in BCL.
+        if (pEEType->IsSzArray()) // multi-dimensional arrays are checked up-front
+        {
+            const int MaxArrayLength = 0x7FFFFFC7;
+            if (numElements > MaxArrayLength)
+                return NULL;
+        }
+
+#ifndef HOST_64BIT
+        // if the element count is <= 0x10000, no overflow is possible because the component size is
+        // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
+        if (numElements > 0x10000)
+        {
+            // Perform the size computation using 64-bit integeres to detect overflow
+            uint64_t size64 = (uint64_t)cbSize + ((uint64_t)numElements * (uint64_t)pEEType->RawGetComponentSize());
+            size64 = (size64 + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
+
+            cbSize = (size_t)size64;
+            if (cbSize != size64)
+            {
+                return NULL;
+            }
+        }
+        else
+#endif // !HOST_64BIT
+        {
+            cbSize = cbSize + ((size_t)numElements * (size_t)pEEType->RawGetComponentSize());
+            cbSize = ALIGN_UP(cbSize, sizeof(uintptr_t));
+        }
+    }
+    else
+    {
+        ASSERT(numElements == 0);
+    }
+
+    if ((cbSize >= RH_LARGE_OBJECT_SIZE) && (cbSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold()))
+    {
+        uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+
+#ifdef HOST_64BIT
+        const size_t max_object_size = (INT64_MAX - 7 - min_obj_size);
+#else
+        const size_t max_object_size = (INT32_MAX - 7 - min_obj_size);
+#endif
+
+        if (cbSize >= max_object_size)
+            return NULL;
+    }
+
+    // Save the MethodTable for instrumentation purposes.
+    Thread::SetLastAllocEEType(pEEType);
+
+    Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    if (pObject == NULL)
+        return NULL;
+
+    pObject->set_EEType(pEEType);
+    if (pEEType->HasComponentSize())
+    {
+        ASSERT(numElements == (uint32_t)numElements);
+        ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
+    }
+
+    if (uFlags & GC_ALLOC_USER_OLD_HEAP)
+        GCHeapUtilities::GetGCHeap()->PublishObject((uint8_t*)pObject);
+
+#ifdef _DEBUG
+    // We assume that the allocation quantum is never big enough for LARGE_OBJECT_SIZE.
+    gc_alloc_context* acontext = pThread->GetAllocContext();
+    ASSERT(acontext->alloc_limit - acontext->alloc_ptr <= RH_LARGE_OBJECT_SIZE);
+#endif
+
+    return pObject;
+}
+
+// Allocate an object on the GC heap.
+//  pEEType         -  type of the object
+//  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
+//  numElements     -  number of array elements
+//  pTransitionFrame-  transition frame to make stack crawlable
+// Returns a pointer to the object allocated or NULL on failure.
+
+COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame))
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+
+    // The allocation fast path is an asm helper that runs in coop mode and handles most allocation cases.
+    // The helper can also be tail-called. That is desirable for the fast path.
+    //
+    // Here we are on the slow(er) path when we need to call into GC. The fast path pushes a frame and calls here.
+    // In extremely rare cases the caller of the asm helper is hijacked and the helper is tail-called.
+    // As a result the asm helper may capture a hijacked return address into the transition frame.
+    // We do not want to put the burden of preventing such scenario on the fast path. Instead we will
+    // check for "hijacked frame" here and un-hijack m_RIP.
+    // We do not need to re-hijack when we are done, since m_RIP is discarded in POP_COOP_PINVOKE_FRAME
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (Thread::IsHijackTarget(pTransitionFrame->m_RIP))
+    {
+        ASSERT(pThread->IsHijacked());
+        pTransitionFrame->m_RIP = pThread->GetHijackedReturnAddress();
+    }
+#else
+
+    // NOTE: The x64 fixup above would not be sufficient on ARM64 and similar architectures since
+    //       m_RIP is used to restore LR in POP_COOP_PINVOKE_FRAME.
+    //       However, this entire scenario is not a problem on architectures where the return address is
+    //       in a register as that makes tail-calling methods not hijackable.
+    //       (see:GetReturnAddressHijackInfo for detailed reasons in the context of ARM64)
+    ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
+
+#endif
+
+    pThread->SetDeferredTransitionFrame(pTransitionFrame);
+
+    return GcAllocInternal(pEEType, uFlags, numElements, pThread);
+}
 
 EXTERN_C NATIVEAOT_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult)
 {
@@ -418,3 +547,71 @@ COOP_PINVOKE_HELPER(void, RhUnregisterForGCReporting, (GCFrameRegistration* pReg
     ASSERT(pThread == ThreadStore::GetCurrentThread());
     pThread->PopGCFrameRegistration(pRegistration);
 }
+
+EXTERN_C NATIVEAOT_API void* __cdecl RhRegisterFrozenSegment(void* pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
+{
+    ASSERT(allocSize <= commitSize);
+    ASSERT(commitSize <= reservedSize);
+
+#ifdef FEATURE_BASICFREEZE
+    segment_info seginfo;
+
+    seginfo.pvMem = pSection;
+    seginfo.ibFirstObject = sizeof(ObjHeader);
+    seginfo.ibAllocated = allocSize;
+    seginfo.ibCommit = commitSize;
+    seginfo.ibReserved = reservedSize;
+
+    return GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
+#else // FEATURE_BASICFREEZE
+    return NULL;
+#endif // FEATURE_BASICFREEZE
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
+{
+    ASSERT(allocated <= committed);
+
+    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment((segment_handle)pSegmentHandle, allocated, committed);
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl RhUnregisterFrozenSegment(void* pSegmentHandle)
+{
+    GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)pSegmentHandle);
+}
+
+COOP_PINVOKE_HELPER(uint32_t, RhGetGCDescSize, (MethodTable* pMT))
+{
+    if (!pMT->ContainsPointersOrCollectible())
+        return 0;
+
+    return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();
+}
+
+#ifdef FEATURE_GC_STRESS
+
+// static
+EXTERN_C UInt32_BOOL g_fGcStressStarted;
+UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
+
+// static
+EXTERN_C void RhpStressGc()
+{
+    // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the GC operation;
+    int32_t lastErrorOnEntry = PalGetLastError();
+
+    if (g_fGcStressStarted && !ThreadStore::GetCurrentThread()->IsSuppressGcStressSet() && !ThreadStore::GetCurrentThread()->IsDoNotTriggerGcSet())
+    {
+        GCHeapUtilities::GetGCHeap()->GarbageCollect();
+    }
+
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
+}
+
+COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
+{
+    g_fGcStressStarted = UInt32_TRUE;
+}
+#endif // FEATURE_GC_STRESS

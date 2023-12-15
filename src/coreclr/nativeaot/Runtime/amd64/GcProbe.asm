@@ -183,7 +183,7 @@ NESTED_ENTRY RhpGcStressProbe, _TEXT
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        STRESSGC
 
         POP_PROBE_FRAME
         ret

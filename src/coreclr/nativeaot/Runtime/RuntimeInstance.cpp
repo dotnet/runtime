@@ -339,11 +339,6 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 #endif // FEATURE_GC_STRESS
 }
 
-COOP_PINVOKE_HELPER(uint32_t, RhGetGCDescSize, (MethodTable* pEEType))
-{
-    return RedhawkGCInterface::GetGCDescSize(pEEType);
-}
-
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 EXTERN_C void RhpInitialDynamicInterfaceDispatch();
 

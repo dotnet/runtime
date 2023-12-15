@@ -197,7 +197,7 @@ ifdef FEATURE_GC_STRESS
 ;;
 StressGC macro
         mov         [ebx + OFFSETOF__Thread__m_pDeferredTransitionFrame], esp
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        STRESSGC
 endm
 
 ;;

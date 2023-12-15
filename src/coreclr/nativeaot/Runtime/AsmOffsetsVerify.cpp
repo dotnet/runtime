@@ -3,6 +3,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "GCMemoryHelpers.inl"
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include "gcenv.h"
+#include "gcheaputilities.h"
+
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -16,7 +19,6 @@
 #include "thread.h"
 #include "holder.h"
 #include "Crst.h"
-#include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -80,7 +82,7 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         ClearState(TSF_Redirected);
 #endif //FEATURE_SUSPEND_REDIRECTION
 
-        RedhawkGCInterface::WaitForGCCompletion();
+        GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
@@ -357,9 +359,27 @@ bool Thread::IsCurrentThread()
     return m_threadId.IsCurrentThread();
 }
 
+uint64_t Thread::s_DeadThreadsNonAllocBytes = 0;
+
+/* static*/
+uint64_t Thread::GetDeadThreadsNonAllocBytes()
+{
+#ifdef HOST_64BIT
+    return s_DeadThreadsNonAllocBytes;
+#else
+    // As it could be noticed we read 64bit values that may be concurrently updated.
+    // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
+    return PalInterlockedCompareExchange64((int64_t*)&s_DeadThreadsNonAllocBytes, 0, 0);
+#endif
+}
+
 void Thread::Detach()
 {
-    RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    // clean up the alloc context
+    gc_alloc_context* context = GetAllocContext();
+    s_DeadThreadsNonAllocBytes += context->alloc_limit - context->alloc_ptr;
+    GCHeapUtilities::GetGCHeap()->FixAllocContext(context, NULL, NULL);
+
     SetDetached();
 }
 
@@ -383,6 +403,18 @@ void Thread::Destroy()
 #endif //FEATURE_SUSPEND_REDIRECTION
 
     ASSERT(m_pGCFrameRegistrations == NULL);
+}
+
+/* static*/
+MethodTable* Thread::GetLastAllocEEType()
+{
+    return ThreadStore::GetCurrentThread()->m_LastAllocationEEType;
+}
+
+/* static*/
+void Thread::SetLastAllocEEType(MethodTable* pEEType)
+{
+    ThreadStore::GetCurrentThread()->m_LastAllocationEEType = pEEType;
 }
 
 #ifdef HOST_WASM
