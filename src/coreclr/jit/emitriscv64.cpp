@@ -2119,18 +2119,17 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
     return sizeof(code_t);
 }
 
-void emitter::emitOutputInstrJumpSizeHelper(
-                                const insGroup* ig,
-                                instrDescJmp*   jmp,
-                                UNATIVE_OFFSET& dstOffs,
-                                const BYTE*& dstAddr) const
+void emitter::emitOutputInstrJumpSizeHelper(const insGroup* ig,
+                                            instrDescJmp*   jmp,
+                                            UNATIVE_OFFSET& dstOffs,
+                                            const BYTE*&    dstAddr) const
 {
     // bug
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         assert(ig != nullptr);
-        int instrCount = jmp->idAddr()->iiaGetInstrCount();
-        unsigned insNum = emitFindInsNum(ig, jmp);
+        int      instrCount = jmp->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, jmp);
         if (instrCount < 0)
         {
             // Backward branches using instruction count must be within the same instruction group.
@@ -2144,21 +2143,18 @@ void emitter::emitOutputInstrJumpSizeHelper(
     dstAddr = emitOffsetToPtr(dstOffs);
 }
 
-ssize_t emitter::emitOutputInstrJumpSize(const BYTE*     dst,
-                                const BYTE*     src,
-                                const insGroup* ig,
-                                instrDescJmp*   jmp)
+ssize_t emitter::emitOutputInstrJumpSize(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
 {
-    UNATIVE_OFFSET    srcOffs  = emitCurCodeOffs(src);
-    const BYTE*       srcAddr = emitOffsetToPtr(srcOffs);
+    UNATIVE_OFFSET srcOffs = emitCurCodeOffs(src);
+    const BYTE*    srcAddr = emitOffsetToPtr(srcOffs);
 
     assert(!jmp->idAddr()->iiaIsJitDataOffset()); // not used by riscv64 impl
 
-    UNATIVE_OFFSET    dstOffs{};
-    const BYTE*       dstAddr = nullptr;
+    UNATIVE_OFFSET dstOffs{};
+    const BYTE*    dstAddr = nullptr;
     emitOutputInstrJumpSizeHelper(ig, jmp, dstOffs, dstAddr);
-;
-    ssize_t           distVal           = static_cast<ssize_t>(dstAddr - srcAddr);
+    ;
+    ssize_t distVal = static_cast<ssize_t>(dstAddr - srcAddr);
 
     if (dstOffs > srcOffs)
     {
@@ -3016,8 +3012,11 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
-bool emitter::emitDispBranch(
-    unsigned opcode2, const char* register1Name, const char* register2Name, const instrDesc* id, const insGroup* ig) const
+bool emitter::emitDispBranch(unsigned         opcode2,
+                             const char*      register1Name,
+                             const char*      register2Name,
+                             const instrDesc* id,
+                             const insGroup*  ig) const
 {
     if (!emitDispBranchInstrType(opcode2))
     {

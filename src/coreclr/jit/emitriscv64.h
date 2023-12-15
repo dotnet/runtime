@@ -60,10 +60,14 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
-void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
+void emitDispInsName(
+    code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
-bool emitDispBranch(
-    unsigned opcode2, const char* register1Name, const char* register2Name, const instrDesc* id, const insGroup* ig) const;
+bool emitDispBranch(unsigned         opcode2,
+                    const char*      register1Name,
+                    const char*      register2Name,
+                    const instrDesc* id,
+                    const insGroup*  ig) const;
 void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2) const;
@@ -77,15 +81,11 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 //  Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
-ssize_t emitOutputInstrJumpSize(const BYTE*     dst,
-                                const BYTE*     src,
-                                const insGroup* ig,
-                                instrDescJmp*   jmp);
-void emitOutputInstrJumpSizeHelper(
-                                const insGroup* ig,
-                                instrDescJmp*   jmp,
-                                UNATIVE_OFFSET& dstOffs,
-                                const BYTE*& dstAddr) const;
+ssize_t emitOutputInstrJumpSize(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
+void emitOutputInstrJumpSizeHelper(const insGroup* ig,
+                                   instrDescJmp*   jmp,
+                                   UNATIVE_OFFSET& dstOffs,
+                                   const BYTE*&    dstAddr) const;
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
