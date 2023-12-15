@@ -2975,12 +2975,23 @@ namespace System.Text.Json.Tests
         public static void CustomIndentCharacter_ValidCharacter_ShouldSucceed(char indentChar)
         {
             var options = new JsonWriterOptions { Indented = true, IndentCharacter = indentChar };
+            char effectiveIndentChar = indentChar == '\0' ? ' ' : indentChar;
+
             var output = new ArrayBufferWriter<byte>();
             using var writer = new Utf8JsonWriter(output, options);
 
             writer.WriteStartObject();
             writer.WriteString("property"u8, "value"u8);
             writer.WriteEndObject();
+
+            string indentation = new string(effectiveIndentChar, 2);
+            string expected = $$"""
+{
+{{indentation}}"property": "value"
+}
+""";
+
+            JsonTestHelper.AssertContents(expected, output);
         }
 
         [Theory]
@@ -2991,12 +3002,23 @@ namespace System.Text.Json.Tests
         public static void CustomIndentSize_SizeWithinLimit_ShouldSucceed(int indentSize)
         {
             var options = new JsonWriterOptions { Indented = true, IndentSize = indentSize };
+            int effectiveIndentSize = indentSize == 0 ? 2 : indentSize;
+
             var output = new ArrayBufferWriter<byte>();
             using var writer = new Utf8JsonWriter(output, options);
 
             writer.WriteStartObject();
             writer.WriteString("property"u8, "value"u8);
             writer.WriteEndObject();
+
+            string indentation = new string(' ', effectiveIndentSize);
+            string expected = $$"""
+{
+{{indentation}}"property": "value"
+}
+""";
+
+            JsonTestHelper.AssertContents(expected, output);
         }
 
         [Theory]
