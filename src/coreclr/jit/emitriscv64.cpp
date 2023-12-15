@@ -2119,21 +2119,48 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
     return sizeof(code_t);
 }
 
-ssize_t emitter::emitOutputInstrJumpSize(BYTE const*     destination,
-                                         BYTE const*     source,
-                                         insGroup const* instructionGroup,
-                                         instrDescJmp*   jumpDescription)
+void emitter::emitOutputInstrJumpSizeHelper(
+                                const insGroup* ig,
+                                instrDescJmp*   jmp,
+                                UNATIVE_OFFSET& dstOffs,
+                                const BYTE*& dstAddr) const
 {
-    UNATIVE_OFFSET    sourceOffset  = emitCurCodeOffs(source);
-    BYTE const* const sourceAddress = emitOffsetToPtr(sourceOffset);
+    // bug
+    if (jmp->idAddr()->iiaHasInstrCount())
+    {
+        assert(ig != nullptr);
+        int instrCount = jmp->idAddr()->iiaGetInstrCount();
+        unsigned insNum = emitFindInsNum(ig, jmp);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
+        dstAddr = emitOffsetToPtr(dstOffs);
+        return;
+    }
+    dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
+    dstAddr = emitOffsetToPtr(dstOffs);
+}
 
-    assert(!jumpDescription->idAddr()->iiaHasInstrCount()); // not used by riscv64 impl
+ssize_t emitter::emitOutputInstrJumpSize(const BYTE*     dst,
+                                const BYTE*     src,
+                                const insGroup* ig,
+                                instrDescJmp*   jmp)
+{
+    UNATIVE_OFFSET    srcOffs  = emitCurCodeOffs(src);
+    const BYTE*       srcAddr = emitOffsetToPtr(srcOffs);
 
-    UNATIVE_OFFSET    destinationOffset  = jumpDescription->idAddr()->iiaIGlabel->igOffs;
-    BYTE const* const destinationAddress = emitOffsetToPtr(destinationOffset);
-    ssize_t           jumpSize           = static_cast<ssize_t>(destinationAddress - sourceAddress);
+    assert(!jmp->idAddr()->iiaIsJitDataOffset()); // not used by riscv64 impl
 
-    if (destinationOffset > sourceOffset)
+    UNATIVE_OFFSET    dstOffs{};
+    const BYTE*       dstAddr = nullptr;
+    emitOutputInstrJumpSizeHelper(ig, jmp, dstOffs, dstAddr);
+;
+    ssize_t           distVal           = static_cast<ssize_t>(dstAddr - srcAddr);
+
+    if (dstOffs > srcOffs)
     {
         // This is a forward jump
 
@@ -2141,18 +2168,18 @@ ssize_t emitter::emitOutputInstrJumpSize(BYTE const*     destination,
 
         // The target offset will be closer by at least 'emitOffsAdj', but only if this
         // jump doesn't cross the hot-cold boundary.
-        if (!emitJumpCrossHotColdBoundary(sourceOffset, destinationOffset))
+        if (!emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
         {
-            jumpSize -= emitOffsAdj;
-            destinationOffset -= emitOffsAdj;
+            distVal -= emitOffsAdj;
+            dstOffs -= emitOffsAdj;
         }
-        jumpDescription->idjOffs = destinationOffset;
-        if (jumpDescription->idjOffs != destinationOffset)
+        jmp->idjOffs = dstOffs;
+        if (jmp->idjOffs != dstOffs)
         {
             IMPL_LIMITATION("Method is too large");
         }
     }
-    return jumpSize;
+    return distVal;
 }
 
 /*****************************************************************************

@@ -77,10 +77,15 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 //  Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
-ssize_t emitOutputInstrJumpSize(BYTE const*     destination,
-                                BYTE const*     source,
-                                insGroup const* instructionGroup,
-                                instrDescJmp*   jumpDescription);
+ssize_t emitOutputInstrJumpSize(const BYTE*     dst,
+                                const BYTE*     src,
+                                const insGroup* ig,
+                                instrDescJmp*   jmp);
+void emitOutputInstrJumpSizeHelper(
+                                const insGroup* ig,
+                                instrDescJmp*   jmp,
+                                UNATIVE_OFFSET& dstOffs,
+                                const BYTE*& dstAddr) const;
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
