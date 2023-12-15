@@ -424,10 +424,23 @@ namespace System.Net
             {
                 if (_channelBinding != null)
                 {
-                    IntPtr cbtData = _channelBinding.DangerousGetHandle();
-                    int cbtDataSize = _channelBinding.Size;
-                    int written = MD5.HashData(new Span<byte>((void*)cbtData, cbtDataSize), hashBuffer);
-                    Debug.Assert(written == MD5.HashSizeInBytes);
+                    int appDataOffset = sizeof(SecChannelBindings);
+                    IntPtr cbtData = (nint)_channelBinding.DangerousGetHandle() + appDataOffset;
+                    int cbtDataSize = _channelBinding.Size - appDataOffset;
+
+                    // Channel bindings are calculated according to RFC 4121, section 4.1.1.2,
+                    // so we need to include zeroed initiator fields and length prefix for the
+                    // application data.
+                    Span<byte> prefix = stackalloc byte[sizeof(uint) * 5];
+                    prefix.Clear();
+                    BinaryPrimitives.WriteInt32LittleEndian(prefix.Slice(sizeof(uint) * 4), cbtDataSize);
+                    using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
+                    {
+                        md5.AppendData(prefix);
+                        md5.AppendData(new Span<byte>((void*)cbtData, cbtDataSize));
+                        int written = md5.GetHashAndReset(hashBuffer);
+                        Debug.Assert(written == MD5.HashSizeInBytes);
+                    }
                 }
                 else
                 {

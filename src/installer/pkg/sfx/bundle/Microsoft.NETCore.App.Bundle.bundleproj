@@ -5,7 +5,7 @@
       Name, used to generate the bundle upgrade code. Must stay the same to allow bundles in a given
       product band to upgrade in place.
     -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
     <IsShipping Condition="'$(PgoInstrument)' == 'true'">false</IsShipping>
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
@@ -25,8 +25,8 @@
 
   <ItemGroup>
     <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
-    <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" />
-    <BundleComponentReference Include="../installers/dotnet-host.proj" />
+    <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" Condition="'$(TestReadyToRun)' != 'true'" />
+    <BundleComponentReference Include="../installers/dotnet-host.proj" Condition="'$(TestReadyToRun)' != 'true'" />
   </ItemGroup>
 
   <Target Name="PublishToDisk">

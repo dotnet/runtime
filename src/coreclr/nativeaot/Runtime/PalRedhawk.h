@@ -686,7 +686,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
+REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
