@@ -6662,7 +6662,6 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         // Look for an insert location:
         // 1. We want blocks that don't end with a fall through,
         // 2. Also, when blk equals nearBlk we may want to insert here.
-        // const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->HasInitializedTarget() && blk->JumpsToNext();
         if (!blk->bbFallsThrough() || (blk == nearBlk))
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
