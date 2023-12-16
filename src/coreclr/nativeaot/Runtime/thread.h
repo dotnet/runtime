@@ -112,10 +112,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
-    // The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
-    // It may statistically correlate with the most allocated type on the given stack/thread.
-    MethodTable*            m_LastAllocationEEType;
 };
 
 struct ReversePInvokeFrame
@@ -206,8 +202,6 @@ private:
 public:
 
     static uint64_t GetDeadThreadsNonAllocBytes();
-    static MethodTable* GetLastAllocEEType();
-    static void SetLastAllocEEType(MethodTable* pEEType);
 
     // First phase of thread destructor, disposes stuff related to GC.
     // Executed with thread store lock taken so GC cannot happen.

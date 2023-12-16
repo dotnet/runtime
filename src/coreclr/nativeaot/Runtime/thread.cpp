@@ -396,18 +396,6 @@ void Thread::Destroy()
     ASSERT(m_pGCFrameRegistrations == NULL);
 }
 
-/* static*/
-MethodTable* Thread::GetLastAllocEEType()
-{
-    return ThreadStore::GetCurrentThread()->m_LastAllocationEEType;
-}
-
-/* static*/
-void Thread::SetLastAllocEEType(MethodTable* pEEType)
-{
-    ThreadStore::GetCurrentThread()->m_LastAllocationEEType = pEEType;
-}
-
 #ifdef HOST_WASM
 extern OBJECTREF * t_pShadowStackTop;
 extern OBJECTREF * t_pShadowStackBottom;

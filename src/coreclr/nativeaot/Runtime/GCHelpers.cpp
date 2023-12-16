@@ -188,7 +188,6 @@ COOP_PINVOKE_HELPER(int64_t, RhGetLastGCPercentTimeInGC, ())
     return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
 }
 
-
 COOP_PINVOKE_HELPER(int32_t, RhGetGcLatencyMode, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
@@ -361,6 +360,17 @@ COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (RH_GH_MEMORY_INFO* pData, int kind))
         kind);
 }
 
+
+// The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
+// It may statistically correlate with the most allocated type on the given stack/thread.
+DECLSPEC_THREAD
+MethodTable* tls_pLastAllocationEEType = NULL;
+
+MethodTable* GetLastAllocEEType()
+{
+    return tls_pLastAllocationEEType;
+}
+
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
 {
     uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - Thread::GetDeadThreadsNonAllocBytes();
@@ -495,7 +505,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     }
 
     // Save the MethodTable for instrumentation purposes.
-    Thread::SetLastAllocEEType(pEEType);
+    tls_pLastAllocationEEType = pEEType;
 
     Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
     if (pObject == NULL)
