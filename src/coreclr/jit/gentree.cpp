@@ -16932,6 +16932,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
             if ((user != nullptr) && (user->OperIs(GT_COMMA)) && (user->AsOp()->gtGetOp1() == node))
             {
+                // If this is `op1` is a GT_COMMA node, make sure to extract the side-effects of it.
                 flags &= ~GTF_IS_IN_CSE;
             }
 
