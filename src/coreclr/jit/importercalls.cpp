@@ -5420,6 +5420,7 @@ void Compiler::impCheckForPInvokeCall(
         // This only works correctly because the no marshalling ILStubs have no exception handling.
         assert(!block->hasTryIndex());
         assert(!block->hasHndIndex());
+        assert(!compIsForInlining());
     }
     else
     {
