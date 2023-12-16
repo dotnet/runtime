@@ -3245,8 +3245,9 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		int load_opcode = OP_LOADI8_MEMBASE;
 		int store_opcode = OP_STOREI8_MEMBASE_REG;
 		int size = 8;
-		for (i = 0; i < ainfo->size; ++i) {
-			int left = ainfo->size - i;
+		int offset = 0;
+		while (offset < ainfo->size) {
+			int left = ainfo->size - offset;
 			if (left < 8) {
 				switch (left) {
 				case 7:
@@ -3276,10 +3277,10 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_INST_NEW (cfg, load, load_opcode);
 			load->dreg = mono_alloc_ireg (cfg);
 			load->inst_basereg = src->dreg;
-			load->inst_offset = i;
+			load->inst_offset = offset;
 			MONO_ADD_INS (cfg->cbb, load);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ARMREG_SP, ainfo->offset + i, load->dreg);
-			i += size;
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ARMREG_SP, ainfo->offset + offset, load->dreg);
+			offset += size;
 		}
 		break;
 	}
