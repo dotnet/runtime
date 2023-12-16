@@ -379,14 +379,57 @@ workers/queue-service:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)core/workers/queue-service/bin/Debug/net8.0/App.QueueService.dll
 	
-workers/scoped-service:
+# workers/scoped-service:
+# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+# 	$(TEST_PATH)core/workers/scoped-service/bin/Debug/net8.0/App.ScopedService.dll
+
+workers/timer-service:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	$(TEST_PATH)core/workers/scoped-service/bin/Debug/net8.0/App.ScopedService.dll
+	$(TEST_PATH)/core/workers/timer-service/bin/Debug/net8.0/App.TimerHostedService.dll
 
+# parallel/ComputePi:
+# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+# 	$(TEST_PATH)/csharp/parallel/ComputePi/bin/Debug/net8.0/ComputePi.dll
 
+parallel/EditDistance:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/parallel/EditDistance/bin/Debug/net8.0/EditDistance.dll
 
+parallel/PLINQ:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/parallel/PLINQ/bin/Debug/net8.0/PLINQ.dll
 
+safe-efficient-code/ref-readonly-struct:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/safe-efficient-code/ref-readonly-struct/bin/Debug/net8.0/ref-readonly-struct.dll
 
+unit-testing/XUnit.TestProject:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/unit-testing/XUnit.TestProject/bin/Debug/net8.0/XUnit.Project.dll
+
+unit-testing/NUnit.TestProject:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/unit-testing/NUnit.TestProject/bin/Debug/net8.0/NUnit.Project.dll
+
+unit-testing/MSTest.Project:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/unit-testing/MSTest.Project/bin/Debug/net8.0/MSTest.Project.dll
+
+unit-testing-code-coverage:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/unit-testing-code-coverage/XUnit.Coverlet.Collector/bin/Debug/net8.0/XUnit.Coverlet.Collector.dll
+
+roslyn-sdk/Tutorials:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/roslyn-sdk/Tutorials/MakeConstTestProject/MakeConstTestProject/bin/Debug/net8.0/MakeConstTestProject.dll
+
+roslyn-sdk/HelloSyntaxTree:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/roslyn-sdk/SyntaxQuickStart/HelloSyntaxTree/bin/Debug/net8.0/HelloSyntaxTree.dll 
+
+roslyn-sdk/SyntaxWalker:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/roslyn-sdk/SyntaxQuickStart/SyntaxWalker/bin/Debug/net8.0/SyntaxWalker.dll
 
 
 test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart \
@@ -395,4 +438,5 @@ versioning-override fibonacci-msbuild classes-quickstart console-linq console-we
 DllMapDemo AppWithPlugin AssemblyLoading cyrillic-to-latin linker linq/aggregate linq/concatenation linq/conversion linq/customsequence \
 linq/element linq/equality linq/generation linq/grouping linq/join linq/ordering linq/partitioning linq/quantifier linq/queryexecution \
 linq/restriction linq/setoperators logging/console-formatter-custom logging/console-formatter-simple logging/console-formatter-systemd \
-logging/logger-message-generator whats-new
+logging/logger-message-generator whats-new safe-efficient-code/ref-readonly-struct unit-testing/XUnit.TestProject unit-testing/NUnit.TestProject \
+unit-testing/MSTest.Project unit-testing-code-coverage roslyn-sdk/Tutorials roslyn-sdk/HelloSyntaxTree roslyn-sdk/SyntaxWalker
