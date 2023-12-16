@@ -88,7 +88,7 @@ extern "C" volatile GSCookie __security_cookie = 0;
 static RhConfig g_sRhConfig;
 RhConfig* g_pRhConfig = &g_sRhConfig;
 
-bool InitializeSubsystems();
+bool InitializeGC();
 
 static bool InitDLL(HANDLE hPalInstance)
 {
@@ -150,7 +150,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    if (!InitializeSubsystems())
+    if (!InitializeGC())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);

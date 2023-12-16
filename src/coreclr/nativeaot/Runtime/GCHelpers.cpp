@@ -38,10 +38,9 @@ GPTR_IMPL(Thread, g_pFinalizerThread);
 
 bool RhInitializeFinalization();
 
-// Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcrhenv.
-// The boolean parameter should be true if a server GC is required and false for workstation. Returns true on
-// success or false if a subsystem failed to initialize.
-bool InitializeSubsystems()
+// Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcenv.ee.
+// Returns true on success or false if a subsystem failed to initialize.
+bool InitializeGC()
 {
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
