@@ -320,7 +320,7 @@ bool TargetOS::OSSettingConfigured = false;
 bool TargetOS::IsWindows = false;
 bool TargetOS::IsUnix    = false;
 #endif
-bool TargetOS::IsMacOS = false;
+bool TargetOS::IsAppleOS = false;
 #endif
 
 /*****************************************************************************
@@ -330,10 +330,10 @@ bool TargetOS::IsMacOS = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS = os == CORINFO_MACOS;
+    TargetOS::IsAppleOS = os == CORINFO_APPLE;
 #ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
                                          // runtimedetermined
-    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_APPLE);
     TargetOS::IsWindows = os == CORINFO_WINNT;
 #endif
     TargetOS::OSSettingConfigured = true;

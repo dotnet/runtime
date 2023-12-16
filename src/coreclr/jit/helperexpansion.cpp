@@ -599,7 +599,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     }
-    else if (TargetOS::IsMacOS)
+    else if (TargetOS::IsAppleOS)
     {
         // For OSX x64/arm64, we need to get the address of relevant __thread_vars section of
         // the thread local variable `t_ThreadStatics`. Address of `tlv_get_address` is stored
