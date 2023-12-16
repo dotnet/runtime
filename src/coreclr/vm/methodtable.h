@@ -1244,18 +1244,11 @@ public:
              // Virtual slots live in chunks pointed to by vtable indirections
             return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
         }
-        else if (HasSingleNonVirtualSlot())
-        {
-            // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member,
-            // except when there is only one in which case it lives in the optional member itself
-            _ASSERTE(slotNum == GetNumVirtuals());
-            return dac_cast<PTR_PCODE>(GetNonVirtualSlotsPtr());
-        }
         else
         {
-            // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableWriteableData. The array grows backwards
             _ASSERTE(HasNonVirtualSlotsArray());
-            return GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals());
+            return GetNonVirtualSlotsArray() - (1 + (slotNum - GetNumVirtuals()));
         }
     }
 
@@ -1367,45 +1360,24 @@ public:
     inline BOOL HasNonVirtualSlots()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_HasNonVirtualSlots);
-    }
-
-    inline BOOL HasSingleNonVirtualSlot()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_HasSingleNonVirtualSlot);
+        return GetNumNonVirtualSlots() != 0;
     }
 
     inline BOOL HasNonVirtualSlotsArray()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return HasNonVirtualSlots() && !HasSingleNonVirtualSlot();
+        return HasNonVirtualSlots();
     }
 
-    TADDR GetNonVirtualSlotsPtr();
-
+    // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
+    // To access, use a construct like... GetNonVirtualSlotsArray()[-(1 + index)]
     inline PTR_PCODE GetNonVirtualSlotsArray()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
-        return *dac_cast<PTR_PTR_PCODE>(GetNonVirtualSlotsPtr());
+        _ASSERTE(HasNonVirtualSlots());
+        return dac_cast<PTR_PCODE>(dac_cast<TADDR>(GetWriteableDataForWrite()) + sizeof(MethodTableWriteableData));
     }
-
-#ifndef DACCESS_COMPILE
-    inline void SetNonVirtualSlotsArray(PCODE *slots)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasNonVirtualSlotsArray());
-
-        *(PCODE **)GetNonVirtualSlotsPtr() = slots;
-    }
-
-    inline void SetHasSingleNonVirtualSlot()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetFlag(enum_flag_HasSingleNonVirtualSlot);
-    }
-#endif
 
     inline unsigned GetNonVirtualSlotsArraySize()
     {
@@ -2241,11 +2213,6 @@ public:
     // dispatch pItfMT methods on this class if one knows how to dispatch them on pParentMT.
     BOOL ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, MethodTable *pParentMT);
 
-    // Determines whether all methods in the given interface have their final implementation
-    // in a parent class. I.e. if this returns TRUE, this class behaves the same as pParentMT
-    // when it comes to dispatching pItfMT methods.
-    BOOL HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, MethodTable *pParentMT);
-
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
     MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
@@ -2742,7 +2709,7 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker);
+    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, WORD nonVirtualSlots = 0);
 #endif
 
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
@@ -3418,7 +3385,9 @@ private:
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
-        enum_flag_Unused_1                    = 0x00800000,
+#ifdef FEATURE_64BIT_ALIGNMENT
+        enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
+#endif
 
         enum_flag_ContainsPointers            = 0x01000000,
 
@@ -3459,32 +3428,18 @@ private:
 
         // The following bits describe usage of optional slots. They have to stay
         // together because of we index using them into offset arrays.
-        enum_flag_MultipurposeSlotsMask     = 0x001F,
+        enum_flag_MultipurposeSlotsMask     = 0x0007,
         enum_flag_HasPerInstInfo            = 0x0001,
         enum_flag_HasInterfaceMap           = 0x0002,
         enum_flag_HasDispatchMapSlot        = 0x0004,
-        enum_flag_HasNonVirtualSlots        = 0x0008,
 
-        // unused                           = 0x0010,
-        // unused                           = 0x0020,
-        // unused                           = 0x0040,
+        enum_flag_HasBoxedRegularStatics    = 0x0008, // GetNumBoxedRegularStatics() != 0
+        enum_flag_HasModuleDependencies     = 0x0010,
+        enum_flag_IsIntrinsicType           = 0x0020,
+        enum_flag_HasCctor                  = 0x0040,
+        enum_flag_HasVirtualStaticMethods   = 0x0080,
 
-        enum_flag_HasModuleDependencies     = 0x0080,
-
-        enum_flag_IsIntrinsicType           = 0x0100,
-
-        // unused                           = 0x0200,
-
-        enum_flag_HasCctor                  = 0x0400,
-        enum_flag_HasVirtualStaticMethods   = 0x0800,
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-        enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
-#endif
-
-        enum_flag_HasBoxedRegularStatics    = 0x2000, // GetNumBoxedRegularStatics() != 0
-
-        enum_flag_HasSingleNonVirtualSlot   = 0x4000,
+        // unused                           = 0x4000,
 
         // unused                           = 0x8000,
     };  // enum WFLAGS2_ENUM
@@ -3734,7 +3689,6 @@ private:
     struct MultipurposeSlotOffset;
 
     static const BYTE c_DispatchMapSlotOffsets[];
-    static const BYTE c_NonVirtualSlotsOffsets[];
 
     static const BYTE c_OptionalMembersStartOffsets[]; // total sizes of optional slots
 

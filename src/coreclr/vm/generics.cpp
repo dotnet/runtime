@@ -304,9 +304,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     pMT->m_pParentMethodTable = NULL;
 
-    // Non non-virtual slots
-    pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);
-
     pMT->SetBaseSize(pOldMT->GetBaseSize());
     pMT->SetParentMethodTable(pOldMT->GetParentMethodTable());
     pMT->SetCanonicalMethodTable(pOldMT);

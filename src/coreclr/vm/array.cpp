@@ -270,7 +270,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Parent class is the top level array
     // The vtable will have all of top level class's methods, plus any methods we have for array classes
     DWORD numVirtuals = pParentClass->GetNumVirtuals();
-    DWORD numNonVirtualSlots = numCtors + 3; // 3 for the proper rank Get, Set, Address
+    DWORD numNonVirtualSlots = (pCanonMT == NULL) ? numCtors + 3: 0; // 3 for the proper rank Get, Set, Address
 
     size_t cbMT = sizeof(MethodTable);
     cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(MethodTable::VTableIndir_t);
@@ -291,8 +291,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     DWORD dwMultipurposeSlotsMask = 0;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
-    if (pCanonMT == NULL)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasNonVirtualSlots;
 
     // Allocate space for optional members
     // We always have a non-virtual slot array, see assert at end
@@ -311,15 +309,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
 
-    // Canonical methodtable has an array of non virtual slots pointed to by the optional member
-    size_t offsetOfNonVirtualSlots = 0;
     size_t cbArrayClass = 0;
 
     if (pCanonMT == NULL)
     {
-        offsetOfNonVirtualSlots = cbMT;
-        cbMT += numNonVirtualSlots * sizeof(PCODE);
-
         // Allocate ArrayClass (including space for packed fields), MethodTable, and class name in one alloc.
         // Remember to pad allocation size for ArrayClass portion to ensure MethodTable is pointer aligned.
         cbArrayClass = ALIGN_UP(sizeof(ArrayClass) + sizeof(EEClassPackedFields), sizeof(void*));
@@ -349,7 +342,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateWriteableData(pAllocator, this, pamTracker);
+    pMT->AllocateWriteableData(pAllocator, this, pamTracker, static_cast<WORD>(numNonVirtualSlots));
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 
@@ -466,9 +459,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             // Share the parent chunk
             it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
         }
-
-        if (pClass != NULL)
-            pMT->SetNonVirtualSlotsArray((PTR_PCODE)(pMemory+cbArrayClass+offsetOfNonVirtualSlots));
     }
 
 #ifdef _DEBUG
