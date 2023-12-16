@@ -25,7 +25,7 @@ namespace System.DirectoryServices.Protocols.Tests
 #if NETCOREAPP
                 if (!_isLibLdapInstalled.HasValue)
                 {
-                    if (PlatformDetection.IsOSXLike)
+                    if (PlatformDetection.IsApplePlatform)
                     {
                         _isLibLdapInstalled = NativeLibrary.TryLoad("libldap.dylib", out _);
                     }
