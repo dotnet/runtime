@@ -373,6 +373,9 @@ static code_t insEncodeReg_P_2_to_0(regNumber reg);
 // Return an encoding for the specified 'V' register used in '18' thru '16' position.
 static code_t insEncodeReg_V_18_to_16(regNumber reg);
 
+// Return an encoding for the specified predicate type used in '16' position.
+static code_t insEncodePredQualifier_16(bool merge);
+
 // Return an encoding for the specified 'V' register used in '19' thru '16' position.
 static code_t insEncodeReg_V_19_to_16(regNumber reg);
 
@@ -423,8 +426,14 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
+// Returns the encoding for a shift instruction, ready for insertion into an instruction.
+static code_t insEncodeShiftImmediate(emitAttr size, bool isRightShift, ssize_t shiftAmount);
+
 // Returns the encoding for ASIMD Shift instruction.
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
+static code_t insEncodeVectorShift(emitAttr size, bool isRightShift, ssize_t shiftAmount)
+{
+    return insEncodeShiftImmediate(size, isRightShift, shiftAmount) << 16;
+}
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
@@ -466,11 +475,15 @@ static code_t insEncodeExtendScale(ssize_t imm);
 static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
-static code_t insEncodeSveElemsize(insOpts opt);
+static code_t insEncodeSveElemsize(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+
+// Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
+static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -879,7 +892,8 @@ inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
     return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
-            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)));
+            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
+            insOptsScalableWithPredicateMerge(opt));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -947,6 +961,13 @@ inline static bool insOptsScalableWithScalar(insOpts opt)
     // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
     return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
             (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
+}
+
+inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
+{
+    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
 }
 
 static bool isValidImmCond(ssize_t imm);

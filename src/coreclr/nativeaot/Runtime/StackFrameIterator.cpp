@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
+#include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -9,7 +10,6 @@
 #include "RedhawkWarnings.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -205,12 +205,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     if (pFrame->m_Flags & PTFF_R0_IS_GCREF)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pR0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF) m_RegDisplay.pR0;
         m_HijackedReturnValueKind = GCRK_Object;
     }
     if (pFrame->m_Flags & PTFF_R0_IS_BYREF)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pR0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF) m_RegDisplay.pR0;
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
@@ -258,7 +258,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pX0;
         m_HijackedReturnValueKind = retValueKind;
     }
 
@@ -292,7 +292,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pRax;
+        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pRax;
         m_HijackedReturnValueKind = retValueKind;
     }
 
@@ -1701,7 +1701,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     m_dwFlags |= MethodStateCalculated;
 }
 
-bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind)
+bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind)
 {
     if (GCRK_Unknown == m_HijackedReturnValueKind)
         return false;
@@ -1762,11 +1762,11 @@ bool StackFrameIterator::HasStackRangeToReportConservatively()
     return IsValid() && (m_pConservativeStackRangeUpperBound != NULL);
 }
 
-void StackFrameIterator::GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound)
+void StackFrameIterator::GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound)
 {
     ASSERT(HasStackRangeToReportConservatively());
-    *ppLowerBound = (PTR_RtuObjectRef)m_pConservativeStackRangeLowerBound;
-    *ppUpperBound = (PTR_RtuObjectRef)m_pConservativeStackRangeUpperBound;
+    *ppLowerBound = (PTR_OBJECTREF)m_pConservativeStackRangeLowerBound;
+    *ppUpperBound = (PTR_OBJECTREF)m_pConservativeStackRangeUpperBound;
 }
 
 PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)

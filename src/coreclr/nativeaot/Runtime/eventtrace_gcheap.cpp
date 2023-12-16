@@ -19,6 +19,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "eventtrace_etw.h"
 #include "eventtracebase.h"
@@ -461,7 +462,9 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     Thread* pThread = ThreadStore::GetCurrentThread();
 
     // While doing the GC, much code assumes & asserts the thread doing the GC is in
-    // cooperative mode.
+    // cooperative mode (but DisablePreemptiveMode cannot be used until a valid deferred
+    // transition frame is put into place).
+    pThread->SetDeferredTransitionFrameForNativeHelperThread();
     pThread->DisablePreemptiveMode();
 
     hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(
@@ -981,7 +984,7 @@ namespace
         ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
     }
 
-    void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+    void GcScanRootsForETW(ScanFunc* fn, int condemned, int max_gen, ScanContext* sc)
     {
         UNREFERENCED_PARAMETER(condemned);
         UNREFERENCED_PARAMETER(max_gen);
@@ -996,7 +999,7 @@ namespace
 
             sc->thread_under_crawl = pThread;
             sc->dwEtwRootKind = kEtwGCRootKindStack;
-            pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
+            pThread->GcScanRoots(fn, sc);
             sc->dwEtwRootKind = kEtwGCRootKindOther;
         }
         END_FOREACH_THREAD

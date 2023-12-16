@@ -237,7 +237,7 @@ __PPF_ThreadReg SETS "r2"
     NESTED_ENTRY RhpGcStressProbe
         PROLOG_PROBE_FRAME r2, r3, r12
 
-        bl          $REDHAWKGCINTERFACE__STRESSGC
+        bl          RhpStressGc
 
         EPILOG_PROBE_FRAME
     NESTED_END RhpGcStressProbe

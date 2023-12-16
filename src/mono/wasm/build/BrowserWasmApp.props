@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <TargetOS>browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <WasmGenerateAppBundleTarget>_WasmGenerateAppBundle</WasmGenerateAppBundleTarget>
+    <WasmIsWorkloadAvailable Condition="'$(WasmNativeWorkload)' == 'true'">true</WasmIsWorkloadAvailable>
+  </PropertyGroup>
+
+  <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.props" />
+</Project>

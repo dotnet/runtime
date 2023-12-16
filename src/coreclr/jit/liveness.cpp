@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->GetJumpKind())
+            switch (block->GetKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -886,28 +886,24 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+            case BBJ_CALLFINALLY:
+                VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
                 break;
 
-            case BBJ_CALLFINALLY:
-                if (!block->HasFlag(BBF_RETLESS_CALL))
-                {
-                    assert(block->isBBCallAlwaysPair());
-                    PREFIX_ASSUME(!block->IsLast());
-                    VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                }
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+            case BBJ_CALLFINALLYRET:
+                VarSetOps::UnionD(this, initVars, block->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetFinallyContinuation()->bbScope);
                 break;
 
             case BBJ_COND:
                 PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                VarSetOps::UnionD(this, initVars, block->GetJumpDest()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetFalseTarget()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetTrueTarget()->bbScope);
                 break;
 
             case BBJ_SWITCH:
@@ -930,7 +926,7 @@ void Compiler::fgExtendDbgLifetimes()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 
