@@ -17093,10 +17093,10 @@ void emitter::emitDispInsHelp(
 
         // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
         case IF_SVE_AM_2A: // ........xx...... ...gggxxiiiddddd -- SVE bitwise shift by immediate (predicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
-            emitDispLowPredicateReg(id->idReg2(), PREDICATE_MERGE, true); // ggg
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);           // ddddd
-            emitDispImm(emitGetInsSC(id), false);                         // iiii
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                           // ddddd
+            emitDispLowPredicateReg(id->idReg2(), PREDICATE_MERGE, id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                           // ddddd
+            emitDispImm(emitGetInsSC(id), false);                                         // iiii
             break;
 
         // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
