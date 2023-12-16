@@ -370,11 +370,11 @@ static code_t insEncodeReg_P_3_to_1(regNumber reg);
 // Return an encoding for the specified 'P' register used in '2' thru '0' position.
 static code_t insEncodeReg_P_2_to_0(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '18' thru '16' position.
-static code_t insEncodeReg_V_18_to_16(regNumber reg);
-
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
+
+// Return an encoding for the specified 'V' register used in '18' thru '16' position.
+static code_t insEncodeReg_V_18_to_16(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '19' thru '16' position.
 static code_t insEncodeReg_V_19_to_16(regNumber reg);

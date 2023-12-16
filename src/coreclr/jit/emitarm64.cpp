@@ -11745,7 +11745,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '18' thru '16' position.
+ *  Return an encoding for the specified predicate type used in '16' position.
  */
 
 /*static*/ emitter::code_t emitter::insEncodePredQualifier_16(bool merge)
@@ -11755,6 +11755,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Return an encoding for the specified 'V' register used in '18' thru '16' position.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeReg_V_18_to_16(regNumber reg)
