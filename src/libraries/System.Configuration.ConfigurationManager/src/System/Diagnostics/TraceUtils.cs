@@ -205,7 +205,7 @@ namespace System.Diagnostics
         internal static void CopyStringDictionary(StringDictionary source, StringDictionary dest)
         {
             dest.Clear();
-            foreach (string key in source)
+            foreach (string key in source.Keys)
             {
                 dest[key] = source[key];
             }
