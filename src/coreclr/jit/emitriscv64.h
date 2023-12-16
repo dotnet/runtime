@@ -27,8 +27,6 @@ struct CnsVal
 
 const char* emitFPregName(unsigned reg, bool varName = true);
 const char* emitVectorRegName(regNumber reg);
-
-void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
@@ -61,6 +59,10 @@ private:
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+
+void emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id);
+
+void emitDispInsInstrNum(const instrDesc* id) const;
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
@@ -104,6 +106,12 @@ static bool isValidUimm12(ssize_t value)
 static bool isValidUimm11(ssize_t value)
 {
     return (0 == (value >> 11));
+}
+
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding.
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 == (value >> 5));
 }
 
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
@@ -188,6 +196,9 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE);

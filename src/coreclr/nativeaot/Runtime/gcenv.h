@@ -35,7 +35,6 @@
 #include "ObjectLayout.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
 #include "slist.h"

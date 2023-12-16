@@ -5550,7 +5550,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->TrueTargetIs(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5558,7 +5558,7 @@ public:
             {
                 // Scenario where next block and conditional block, both point to the same block.
                 // In such case, intersect the assertions present on both the out edges of predBlock.
-                assert(predBlock->NextIs(block));
+                assert(predBlock->FalseTargetIs(block));
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
                 if (VerboseDataflow())
@@ -5728,7 +5728,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
                 if (jumpDestAssertionIndex != NO_ASSERTION_INDEX)
                 {
-                    // Update jumpDestValueGen if we have an assertion for the bbJumpDest edge
+                    // Update jumpDestValueGen if we have an assertion for the bbTarget edge
                     optImpliedAssertions(jumpDestAssertionIndex, jumpDestValueGen);
                     BitVecOps::AddElemD(apTraits, jumpDestValueGen, jumpDestAssertionIndex - 1);
                 }
@@ -5755,7 +5755,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             optPrintAssertionIndices(block->bbAssertionGen);
             if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetTrueTarget()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6315,7 +6315,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
+                printf(" " FMT_BB " = ", block->GetTrueTarget()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

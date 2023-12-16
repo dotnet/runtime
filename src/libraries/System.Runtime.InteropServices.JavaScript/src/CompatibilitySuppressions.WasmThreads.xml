@@ -2,7 +2,7 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.JavaScript.WebWorker</Target>
+    <Target>T:System.Runtime.InteropServices.JavaScript.JSWebWorker</Target>
     <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
   </Suppression>

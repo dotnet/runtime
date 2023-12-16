@@ -21,6 +21,15 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsMdArray || factory.Target.Abi == TargetAbi.CppCodegen);
         }
 
+        protected override void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            for (int i = 0; i < _type.RuntimeInterfaces.Length; i++)
+            {
+                // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
+                objData.EmitZeroPointer();
+            }
+        }
+
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;

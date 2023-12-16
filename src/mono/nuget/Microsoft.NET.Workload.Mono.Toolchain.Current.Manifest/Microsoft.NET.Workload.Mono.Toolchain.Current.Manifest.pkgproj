@@ -18,6 +18,7 @@
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
       <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
+      <WorkloadManifestWasmFeaturesPath>$(MSBuildThisFileDirectory)WasmFeatures.props</WorkloadManifestWasmFeaturesPath>
       <WorkloadManifestTelemetryTargetsPath>$(MSBuildThisFileDirectory)WorkloadTelemetry.targets</WorkloadManifestTelemetryTargetsPath>
     </PropertyGroup>
 
@@ -25,6 +26,7 @@
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestWasiTargetsPath)" TargetPath="data" />
+      <PackageFile Include="$(WorkloadManifestWasmFeaturesPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTelemetryTargetsPath)" TargetPath="data" />
     </ItemGroup>
 
@@ -54,17 +56,17 @@
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.json.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestPath)" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.targets.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestTargetsPath)" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.Wasi.targets.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestWasiTargetsPath)" />
   </Target>
 

@@ -27,8 +27,6 @@ FWD_DECL(PAL_EnterHolder)
 FWD_DECL(PAL_LeaveHolder)
 FWD_DECL(SpinLock)
 FWD_DECL(RCOBJECTHANDLEHolder)
-FWD_DECL(RedhawkGCInterface)
-FWD_DECL(RtuObjectRef)
 FWD_DECL(RuntimeInstance)
 FWD_DECL(StackFrameIterator)
 FWD_DECL(SyncClean)
@@ -49,3 +47,9 @@ namespace rh {
 // inc
 FWD_DECL(MethodTable)
 
+typedef Object* OBJECTREF;
+typedef DPTR(OBJECTREF) PTR_OBJECTREF;
+
+struct gc_alloc_context;
+struct ScanContext;
+typedef void ScanFunc(Object**, ScanContext*, unsigned);

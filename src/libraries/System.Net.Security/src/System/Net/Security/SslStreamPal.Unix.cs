@@ -34,25 +34,23 @@ namespace System.Net.Security
         }
 
 #pragma warning disable IDE0060
-        public static SecurityStatusPal AcceptSecurityContext(
+        public static ProtocolToken AcceptSecurityContext(
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
-            ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(
+        public static ProtocolToken InitializeSecurityContext(
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
-            ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
@@ -60,19 +58,21 @@ namespace System.Net.Security
             return null;
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int _ /*headerSize*/, int _1 /*trailerSize*/, ref byte[] output, out int resultSize)
+        public static ProtocolToken EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int _ /*headerSize*/, int _1 /*trailerSize*/)
         {
+            ProtocolToken token = default;
+            token.RentBuffer = true;
             try
             {
-                resultSize = Interop.OpenSsl.Encrypt((SafeSslHandle)securityContext, input.Span, ref output, out Interop.Ssl.SslErrorCode errorCode);
-
-                return MapNativeErrorCode(errorCode);
+                Interop.Ssl.SslErrorCode errorCode = Interop.OpenSsl.Encrypt((SafeSslHandle)securityContext, input.Span, ref token);
+                token.Status = MapNativeErrorCode(errorCode);
             }
             catch (Exception ex)
             {
-                resultSize = 0;
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
+                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
+
+            return token;
         }
 
         public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, Span<byte> buffer, out int offset, out int count)
@@ -134,20 +134,18 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
-        public static SecurityStatusPal Renegotiate(
+        public static ProtocolToken Renegotiate(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext context,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            out byte[]? outputBuffer)
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
             SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate((SafeSslHandle)context, out _);
 
-            outputBuffer = Array.Empty<byte>();
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                return status;
+                return default;
             }
-            return HandshakeInternal(ref context!, null, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(ref context!, null, sslAuthenticationOptions);
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext? _ /*securityContext*/, out StreamSizes streamSizes)
@@ -170,12 +168,11 @@ namespace System.Net.Security
             return true;
         }
 
-         private static SecurityStatusPal HandshakeInternal(ref SafeDeleteSslContext? context,
-            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+         private static ProtocolToken HandshakeInternal(ref SafeDeleteSslContext? context,
+            ReadOnlySpan<byte> inputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            byte[]? output = null;
-            int outputSize = 0;
-
+            ProtocolToken token = default;
+            token.RentBuffer = true;
             try
             {
                 if ((null == context) || context.IsInvalid)
@@ -183,20 +180,21 @@ namespace System.Net.Security
                     context = Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
                 }
 
-                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out output, out outputSize);
+                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, ref token);
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
                     // this should happen only for clients
                     Debug.Assert(sslAuthenticationOptions.IsClient);
-                    return new SecurityStatusPal(errorCode);
+                    token.Status = new SecurityStatusPal(errorCode);
+                    return token;
                 }
 
                 // sometimes during renegotiation processing message does not yield new output.
                 // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
-                if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
+                if (token.Size == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
                 {
-                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, out output, out outputSize);
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
                 }
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
@@ -208,26 +206,18 @@ namespace System.Net.Security
                     && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0
                     && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
                 {
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
+                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
+                    return token;
                 }
 
-                outputBuffer =
-                    outputSize == 0 ? null :
-                    outputSize == output!.Length ? output :
-                    new Span<byte>(output, 0, outputSize).ToArray();
-
-                return new SecurityStatusPal(errorCode);
+                token.Status = new SecurityStatusPal(errorCode);
             }
             catch (Exception exc)
             {
-                // Even if handshake failed we may have Alert to sent.
-                if (outputSize > 0)
-                {
-                    outputBuffer = outputSize == output!.Length ? output : new Span<byte>(output, 0, outputSize).ToArray();
-                }
-
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
+                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
+
+            return token;
         }
 
         public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)

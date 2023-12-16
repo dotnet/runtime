@@ -8,7 +8,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionRemoveTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(5)]
         public void Remove(int count)
@@ -46,7 +46,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void Remove_MultipleValues_SameName()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();

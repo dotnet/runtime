@@ -8,7 +8,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Xunit;
 
-public class RunInALC
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public class SameNameDifferentAssembly
 {
     [Fact]
     public static int TestEntryPoint()

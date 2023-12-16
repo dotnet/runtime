@@ -551,6 +551,49 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [Fact]
+        public async Task ConnectWithCertificate_MissingTargetHost_Succeeds()
+        {
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost");
+            try
+            {
+                var quicOptions = new QuicListenerOptions()
+                {
+                    // loopback may resolve to IPv6
+                    ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+                await using QuicListener listener = await CreateQuicListener(quicOptions);
+
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(new DnsEndPoint("localhost", listener.LocalEndPoint.Port));
+                // Do not set target host on client options, it should be taken from remote endpoint and used for both ClientHello SNI and Server cert validation
+                clientOptions.ClientAuthenticationOptions.TargetHost = null;
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    return true;
+                };
+
+                await CreateQuicConnection(clientOptions);
+            }
+            finally
+            {
+                foreach (X509Certificate2 cert in chain)
+                {
+                    cert.Dispose();
+                }
+                certificate.Dispose();
+            }
+        }
+
         [ConditionalTheory]
         [InlineData("127.0.0.1", true)]
         [InlineData("::1", true)]
