@@ -10339,8 +10339,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasDispatchMapSlot;
-    if (dwNonVirtualSlots != 0)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasNonVirtualSlots;
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
@@ -10386,14 +10384,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         }
     }
 
-    // Add space for the non-virtual slots array (pointed to by an optional member) if required
-    // If there is only one non-virtual slot, we store it directly in the optional member and need no array
-    S_SIZE_T offsetOfNonVirtualSlots = cbTotalSize;
-    if (dwNonVirtualSlots > 1)
-    {
-        cbTotalSize += S_SIZE_T(dwNonVirtualSlots) * S_SIZE_T(sizeof(PCODE));
-    }
-
     BYTE *pData = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbTotalSize));
 
     _ASSERTE(IS_ALIGNED(pData, TARGET_POINTER_SIZE));
@@ -10404,8 +10394,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     MethodTable* pMT = (MethodTable*)(pData + dwGCSize);
 
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
-
-    pMT->AllocateWriteableData(pAllocator, pamTracker);
+    pMT->AllocateWriteableData(pAllocator, pamTracker, static_cast<WORD>(dwNonVirtualSlots));
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
@@ -10420,7 +10409,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!offsetOfUnsharedVtableChunks.IsOverflow());
-    _ASSERTE(!offsetOfNonVirtualSlots.IsOverflow());
     _ASSERTE(!offsetOfInterfaceMap.IsOverflow());
     _ASSERTE(!offsetOfInstAndDict.IsOverflow());
 
@@ -10485,18 +10473,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     if (fDynamicStatics)
     {
         pMT->SetDynamicStatics(fHasGenericsStaticsInfo);
-    }
-
-    if (dwNonVirtualSlots > 0)
-    {
-        if (dwNonVirtualSlots > 1)
-        {
-            pMT->SetNonVirtualSlotsArray((PTR_PCODE)(pData+offsetOfNonVirtualSlots.Value()));
-        }
-        else
-        {
-            pMT->SetHasSingleNonVirtualSlot();
-        }
     }
 
     // the dictionary pointers follow the interface map

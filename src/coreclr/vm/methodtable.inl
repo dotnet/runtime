@@ -111,7 +111,7 @@ inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
 inline WORD MethodTable::GetNumNonVirtualSlots()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return HasNonVirtualSlots() ? GetClass()->GetNumNonVirtualSlots() : 0;
+    return IsCanonicalMethodTable() ? GetClass()->GetNumNonVirtualSlots() : 0;
 }
 
 //==========================================================================================
