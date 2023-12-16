@@ -772,20 +772,27 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public static void NoCrashWithNonNameUsingAlias()
         {
-            string source = """
-                using System;
+            string source = $$"""
+                using System.Collections.Generic;
+                using System.Text.Json;
                 using System.Text.Json.Serialization;
                 using Point = (int x, int y);
+                #nullable enable
 
-                namespace Test
+                namespace HelloWorld
                 {
-                    [JsonSerializable(typeof(C))]
-                    public partial class JsonContext : JsonSerializerContext { }
-
-                    public class C
+                    public static class MyClass
                     {
-                        [JsonIgnore]
-                        public string @event { get; set; }
+                        public static string Test()
+                        {
+                            Dictionary<int, string?> values = new();
+                            return JsonSerializer.Serialize(values, JsonContext.Default.DictionaryInt32String);
+                        }
+                    }
+
+                    [JsonSerializable(typeof(Dictionary<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
                     }
                 }
                 """;
