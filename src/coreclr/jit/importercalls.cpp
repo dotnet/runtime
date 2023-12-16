@@ -5411,7 +5411,8 @@ void Compiler::impCheckForPInvokeCall(
 
         // PInvoke CALLI in IL stubs must be inlined
     }
-    else if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.IsReadyToRun())
+    else if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+             opts.IsReadyToRun())
     {
         // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
         // be inlined into the stub, otherwise we would end up with a stub that recursively calls
