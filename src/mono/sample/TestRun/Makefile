@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/getting-started/console-teleprompter/bin/Debug/net8.0/console-teleprompter.dll 
+ANY_PATH= /home/wuxinlong/workspace/samples/csharp/roslyn-sdk/SemanticQuickStart/bin/Debug/net8.0/SemanticQuickStart.dll
 
 GitHubKey=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
 
@@ -90,6 +90,7 @@ debug-any:
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(ANY_PATH) &\
 	gdb-multiarch -ex 'target remote localhost:12345'  \
+	-iex "add-auto-load-safe-path /home/wuxinlong/workspace/runtime/src/mono/sample/TestRun/" \
 	-ex "set sysroot $(TOP).tools/rootfs/riscv64" \
 	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
 	-ex "b mini.c:2156" \
@@ -107,18 +108,21 @@ debug-any-baseline:
 
 clean:
 	rm -f *.exe *.exe.mdb
-# mini-riscv.c:1512
-# 42
-# Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.LanguageParser:ParseClassOrStructOrInterfaceDeclaration
-# 1146 +0x170 +0x880
-# <ParseClassOrStructOrInterfaceDeclaration>g__constructTypeDeclaration|54_1
-# +0x1ac
 
-# AFTER LOWER-VTYPE-OPTS  15
-# BASIC BLOCK 15 (after lowering)
-#Method Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.TypeDeclarationSyntax Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.LanguageParser:<ParseClassOrStructOrInterfaceDeclaration>g__constructTypeDeclaration|54_1 (Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.ContextAwareSyntax,Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList`1<Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.AttributeListSyntax>,Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxListBuilder,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.TypeParameterListSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.ParameterListSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.BaseListSyntax,Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxLis
+# System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException
+# 1248 +0xd4
+# System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetException
+# +0x118
 
-# 
+# System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Create
+# 311
+
+# TeleprompterConsole.Program/<ShowTeleprompter>d__2:MoveNext ()
+# 322 +0xec
+
+# TeleprompterConsole.Program:ShowTeleprompter
+# 319 +0xcc
+
 
 # Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxListBuilder:ToListNode
 # 829 
@@ -243,9 +247,9 @@ console-linq:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)csharp/getting-started/console-linq/bin/Debug/net8.0/console-linq.dll 
 
-# console-teleprompter:
-# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-# 	$(TEST_PATH)csharp/getting-started/console-teleprompter/bin/Debug/net8.0/console-teleprompter.dll 
+console-teleprompter:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)csharp/getting-started/console-teleprompter/bin/Debug/net8.0/console-teleprompter.dll 
 
 console-webapiclient:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
@@ -359,9 +363,9 @@ logging/logger-message-generator:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)core/logging/logger-message-generator/bin/Debug/net8.0/logger-message-generator.dll
 
-# logging/worker-service-options:
-# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-# 	$(TEST_PATH)core/logging/worker-service-options/bin/Debug/net8.0/worker-service-options.dll
+logging/worker-service-options:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/logging/worker-service-options/bin/Debug/net8.0/worker-service-options.dll
 
 whats-new:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
@@ -379,17 +383,17 @@ workers/queue-service:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)core/workers/queue-service/bin/Debug/net8.0/App.QueueService.dll
 	
-# workers/scoped-service:
-# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-# 	$(TEST_PATH)core/workers/scoped-service/bin/Debug/net8.0/App.ScopedService.dll
+workers/scoped-service:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/workers/scoped-service/bin/Debug/net8.0/App.ScopedService.dll
 
 workers/timer-service:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)/core/workers/timer-service/bin/Debug/net8.0/App.TimerHostedService.dll
 
-# parallel/ComputePi:
-# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-# 	$(TEST_PATH)/csharp/parallel/ComputePi/bin/Debug/net8.0/ComputePi.dll
+parallel/ComputePi:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/parallel/ComputePi/bin/Debug/net8.0/ComputePi.dll
 
 parallel/EditDistance:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
@@ -431,6 +435,18 @@ roslyn-sdk/SyntaxWalker:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)/csharp/roslyn-sdk/SyntaxQuickStart/SyntaxWalker/bin/Debug/net8.0/SyntaxWalker.dll
 
+roslyn-sdk/SemanticQuickStart:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/roslyn-sdk/SemanticQuickStart/bin/Debug/net8.0/SemanticQuickStart.dll
+
+roslyn-sdk/ConstructionCS:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/roslyn-sdk/SyntaxTransformationQuickStart/ConstructionCS/bin/Debug/net8.0/ConstructionCS.dll
+
+roslyn-sdk/TransformationCS:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)/csharp/roslyn-sdk/SyntaxTransformationQuickStart/TransformationCS/bin/Debug/net8.0/TransformationCS.dll
+	
 
 test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart \
 events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching versioning-new \
