@@ -2202,8 +2202,8 @@ public:
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(insGroup* ig, instrDesc* id);
-    UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum);
+    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
 /************************************************************************/
 /*        Members and methods used to issue (encode) instructions.      */
@@ -2222,7 +2222,7 @@ public:
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
 
-    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst)
+    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst) const
     {
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
@@ -2241,7 +2241,7 @@ public:
         return (UNATIVE_OFFSET)distance;
     }
 
-    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset)
+    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset) const
     {
         if (offset < emitTotalHotCodeSize)
         {
@@ -2297,8 +2297,8 @@ public:
     unsigned int emitCounts_INS_OPTS_J;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-    instrDesc* emitFirstInstrDesc(BYTE* idData);
-    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
+    instrDesc* emitFirstInstrDesc(BYTE* idData) const;
+    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
@@ -2712,8 +2712,8 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(insGroup* ig);
-    const char* emitLabelString(insGroup* ig);
+    void emitPrintLabel(const insGroup* ig) const;
+    const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
