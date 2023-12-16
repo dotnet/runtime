@@ -513,6 +513,25 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     if (TargetOS::IsWindows)
     {
 #ifdef TARGET_64BIT
+        // prevBb (BBJ_NONE):                                               [weight: 1.0]
+        //      ...
+        //
+        // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
+        //      fastPathValue = [tlsRootAddress]
+        //      if (fastPathValue != nullptr)
+        //          goto fastPathBb;
+        //
+        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+        //      tlsRoot = HelperCall();
+        //      goto block;
+        //
+        // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
+        //      tlsRoot = fastPathValue;
+        //
+        // block (...):                                                     [weight: 1.0]
+        //      use(tlsRoot);
+        // ...
+
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
         GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
         tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
@@ -585,7 +604,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         fgAddRefPred(block, fallbackBb);
         fgAddRefPred(block, fastPathBb);
 
-        tlsRootNullCondBB->SetTarget(fastPathBb);
+        tlsRootNullCondBB->SetTrueTarget(fastPathBb);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
