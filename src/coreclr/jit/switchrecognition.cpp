@@ -342,9 +342,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     fgRemoveRefPred(blockToRemove, firstBlock);
     while (!lastBlock->NextIs(blockToRemove))
     {
-        BasicBlock* nextBlock = blockToRemove->Next();
-        fgRemoveBlock(blockToRemove, true);
-        blockToRemove = nextBlock;
+        blockToRemove = fgRemoveBlock(blockToRemove, true);
     }
 
     const auto jumpCount = static_cast<unsigned>(maxValue - minValue + 1);

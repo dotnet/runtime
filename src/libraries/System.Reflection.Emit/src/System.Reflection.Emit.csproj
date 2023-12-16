@@ -14,6 +14,7 @@
     <Compile Include="System\Reflection\Emit\CustomAttributeWrapper.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\EnumBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\EventBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\FieldBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ILGeneratorImpl.cs" />

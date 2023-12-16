@@ -18,7 +18,6 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"
@@ -337,11 +336,6 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
     UNREFERENCED_PARAMETER(CallsiteIP);
     return false;
 #endif // FEATURE_GC_STRESS
-}
-
-COOP_PINVOKE_HELPER(uint32_t, RhGetGCDescSize, (MethodTable* pEEType))
-{
-    return RedhawkGCInterface::GetGCDescSize(pEEType);
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH

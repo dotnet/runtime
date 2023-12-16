@@ -4297,11 +4297,20 @@ void emitter::emitDispJumpList()
                 printf(" -> %s", getRegName(jmp->idReg1()));
             }
             else
+#endif // TARGET_ARM64
             {
                 printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
             }
-#else
-            printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+
+            if (jmp->idjShort)
+            {
+                printf(" (short)");
+            }
+
+            if (jmp->idjKeepLong)
+            {
+                printf(" (long)");
+            }
 
 #if defined(TARGET_XARCH)
             if (jmp->idjIsRemovableJmpCandidate)
@@ -4309,7 +4318,13 @@ void emitter::emitDispJumpList()
                 printf(" ; removal candidate");
             }
 #endif // TARGET_XARCH
-#endif // !TARGET_ARM64
+
+#if defined(TARGET_AMD64)
+            if (jmp->idjIsAfterCallBeforeEpilog)
+            {
+                printf(" ; after call before epilog");
+            }
+#endif // TARGET_AMD64
         }
         printf("\n");
         jmpCount += 1;

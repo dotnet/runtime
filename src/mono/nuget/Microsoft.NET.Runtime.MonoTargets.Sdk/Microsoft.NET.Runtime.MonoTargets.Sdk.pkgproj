@@ -28,7 +28,7 @@
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/MonoTargetsTasks.props.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(MonoTargetsTasksPropsPath)" />
 
     <ItemGroup>

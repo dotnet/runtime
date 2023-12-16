@@ -12197,7 +12197,7 @@ void Compiler::impImport()
 //
 // Notes:
 //   These edges were not added during the initial pred list computation,
-//   because the initial flow graph does not contain the callfinally/always
+//   because the initial flow graph does not contain the callfinally
 //   block pairs; those blocks are added during importation.
 //
 //   We rely on handler blocks being lexically contiguous between begin and last.
@@ -12238,7 +12238,7 @@ void Compiler::impFixPredLists()
                     {
                         // We only care about preds that are callfinallies.
                         //
-                        if (!predBlock->isBBCallAlwaysPair())
+                        if (!predBlock->KindIs(BBJ_CALLFINALLY))
                         {
                             continue;
                         }
@@ -12262,7 +12262,7 @@ void Compiler::impFixPredLists()
                     {
                         // We only care about preds that are callfinallies.
                         //
-                        if (!predBlock->isBBCallAlwaysPair())
+                        if (!predBlock->KindIs(BBJ_CALLFINALLY))
                         {
                             continue;
                         }
