@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/roslyn-sdk/SyntaxQuickStart/SyntaxWalker/bin/Debug/net8.0/SyntaxWalker.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/csharp/getting-started/console-teleprompter/bin/Debug/net8.0/console-teleprompter.dll 
 
 GitHubKey=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
 
@@ -16,8 +16,8 @@ GitHubKey=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
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = ""
-MONO_ENV_RUN_OPTIONS = "--trace=all"
+MONO_ENV_DEBUG_OPTIONS = "-v --trace=all"
+MONO_ENV_RUN_OPTIONS = ""
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -92,8 +92,7 @@ debug-any:
 	gdb-multiarch -ex 'target remote localhost:12345'  \
 	-ex "set sysroot $(TOP).tools/rootfs/riscv64" \
 	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
-	-ex "b *0x40027f1800" \
-	-ex "b mono_handle_exception_internal" \
+	-ex "b mini.c:2156" \
 	-ex "handle SIG35 print nostop ignore" \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
 
@@ -108,6 +107,16 @@ debug-any-baseline:
 
 clean:
 	rm -f *.exe *.exe.mdb
+# mini-riscv.c:1512
+# 42
+# Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.LanguageParser:ParseClassOrStructOrInterfaceDeclaration
+# 1146 +0x170 +0x880
+# <ParseClassOrStructOrInterfaceDeclaration>g__constructTypeDeclaration|54_1
+# +0x1ac
+
+# AFTER LOWER-VTYPE-OPTS  15
+# BASIC BLOCK 15 (after lowering)
+#Method Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.TypeDeclarationSyntax Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.LanguageParser:<ParseClassOrStructOrInterfaceDeclaration>g__constructTypeDeclaration|54_1 (Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.ContextAwareSyntax,Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList`1<Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.AttributeListSyntax>,Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxListBuilder,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.TypeParameterListSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.ParameterListSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax.BaseListSyntax,Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxLis
 
 # 
 
@@ -222,6 +231,168 @@ serialization:
 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
 	$(TEST_PATH)csharp/serialization/bin/Debug/net8.0/serialization.dll
 
+string_format:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)csharp/api/string.format/bin/Debug/net8.0/string.format.examples.dll
+
+classes-quickstart:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)csharp/classes-quickstart/bin/Debug/net8.0/classes.dll
+
+console-linq:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)csharp/getting-started/console-linq/bin/Debug/net8.0/console-linq.dll 
+
+# console-teleprompter:
+# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+# 	$(TEST_PATH)csharp/getting-started/console-teleprompter/bin/Debug/net8.0/console-teleprompter.dll 
+
+console-webapiclient:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)csharp/getting-started/console-webapiclient/bin/Debug/net8.0/webapiclient.dll 
+
+MetadataLoadContext:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/assembly/MetadataLoadContext/bin/Debug/net8.0/MetadataLoadContextSample.dll 
+
+HelloMsBuild:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/console-apps/HelloMsBuild/bin/Debug/net8.0/Hello.dll 
+
+DllMapDemo:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/extensions/DllMapDemo/bin/Debug/net8.0/Demo.dll 
+
+AppWithPlugin:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/extensions/AppWithPlugin/AppWithPlugin/bin/Debug/net8.0/AppWithPlugin.dll
+
+AssemblyLoading:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/extensions/AssemblyLoading/AssemblyLoading/bin/Debug/net8.0/AssemblyLoading.dll 
+
+cyrillic-to-latin:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/encoding/cyrillic-to-latin/cs/bin/Debug/net8.0/CyrillicToLatin.dll 
+
+linker:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linker/TrimmedWithAdditionalRoots/bin/Debug/net8.0/TrimmedWithAdditionalRoots.dll
+
+linq/aggregate:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/aggregate/bin/Debug/net8.0/aggregate.dll
+
+linq/concatenation:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/concatenation/bin/Debug/net8.0/concatenation.dll
+
+linq/conversion:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/conversion/bin/Debug/net8.0/conversion.dll
+	
+linq/customsequence:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/customsequence/bin/Debug/net8.0/customsequence.dll
+
+linq/element:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/element/bin/Debug/net8.0/element.dll
+
+linq/equality:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/equality/bin/Debug/net8.0/equality.dll
+
+linq/generation:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/generation/bin/Debug/net8.0/generation.dll
+
+linq/grouping:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/grouping/bin/Debug/net8.0/grouping.dll
+
+linq/join:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/join/bin/Debug/net8.0/join.dll
+
+linq/ordering:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/ordering/bin/Debug/net8.0/ordering.dll
+
+linq/partitioning:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/partitioning/bin/Debug/net8.0/partitioning.dll
+
+linq/quantifier:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/quantifier/bin/Debug/net8.0/quantifier.dll
+
+linq/queryexecution:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/queryexecution/bin/Debug/net8.0/queryexecution.dll
+
+linq/restriction:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/restriction/bin/Debug/net8.0/restriction.dll
+
+linq/setoperators:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/linq/csharp/setoperators/bin/Debug/net8.0/setoperators.dll
+
+logging/console-formatter-custom:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/logging/console-formatter-custom/bin/Debug/net8.0/console-formatter-custom.dll
+
+logging/console-formatter-custom-with-config:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/logging/console-formatter-custom-with-config/bin/Debug/net8.0/console-formatter-custom-with-config.dll	
+
+logging/console-formatter-simple:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/logging/console-formatter-simple/bin/Debug/net8.0/console-formatter-simple.dll
+
+logging/console-formatter-systemd:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/logging/console-formatter-systemd/bin/Debug/net8.0/console-formatter-systemd.dll
+
+logging/logger-message-generator:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/logging/logger-message-generator/bin/Debug/net8.0/logger-message-generator.dll
+
+# logging/worker-service-options:
+# 	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+# 	$(TEST_PATH)core/logging/worker-service-options/bin/Debug/net8.0/worker-service-options.dll
+
+whats-new:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/whats-new/whats-new-in-21/cs/bin/Debug/net8.0/whats-new.dll
+
+workers/background-service:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/workers/background-service/bin/Debug/net8.0/App.WorkerService.dll
+
+workers/cloud-service:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/workers/cloud-service/bin/Debug/net8.0/App.CloudService.dll
+
+workers/queue-service:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/workers/queue-service/bin/Debug/net8.0/App.QueueService.dll
+	
+workers/scoped-service:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)core/workers/scoped-service/bin/Debug/net8.0/App.ScopedService.dll
+
+
+
+
+
+
 
 test: customer-relationship exploration toll-calculator mixins-with-interfaces delegates-and-events branches-quickstart \
-events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching versioning-new versioning-override fibonacci-msbuild
+events expression-trees indexers list-quickstart NullableIntroduction numbers-quickstart PatternMatching versioning-new \
+versioning-override fibonacci-msbuild classes-quickstart console-linq console-webapiclient MetadataLoadContext HelloMsBuild \
+DllMapDemo AppWithPlugin AssemblyLoading cyrillic-to-latin linker linq/aggregate linq/concatenation linq/conversion linq/customsequence \
+linq/element linq/equality linq/generation linq/grouping linq/join linq/ordering linq/partitioning linq/quantifier linq/queryexecution \
+linq/restriction linq/setoperators logging/console-formatter-custom logging/console-formatter-simple logging/console-formatter-systemd \
+logging/logger-message-generator whats-new
