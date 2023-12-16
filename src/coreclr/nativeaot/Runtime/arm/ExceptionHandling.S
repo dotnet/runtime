@@ -243,7 +243,7 @@ NESTED_END RhpRethrow, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallCatchFunclet(RtuObjectRef exceptionObj,
+// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj,
 //                                    void* pHandlerIP,
 //                                    REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
@@ -463,7 +463,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallFilterFunclet(RtuObjectRef exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  R0:  exception object
 //         R1:  filter funclet address

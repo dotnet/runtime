@@ -10,12 +10,12 @@ set(COMMON_RUNTIME_SOURCES
     EHHelpers.cpp
     event.cpp
     FinalizerHelpers.cpp
+    GcEnum.cpp
     GCHelpers.cpp
     gctoclreventsink.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
-    gcrhenv.cpp
-    gcrhscan.cpp
+    gcenv.ee.cpp
     GcStressControl.cpp
     HandleTableHelpers.cpp
     MathHelpers.cpp
