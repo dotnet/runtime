@@ -209,6 +209,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
+                    // this will pop interop operation in MT
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }
@@ -219,6 +220,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
 #if FEATURE_WASM_THREADS
             JSProxyContext.AssertIsInteropThread();
+            JSProxyContext.SealSkipPushes();
 #endif
 
             if (signature.IsAsync)
@@ -235,6 +237,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
+                    // this will pop interop operation in MT
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }
@@ -293,6 +296,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
+                    // this will pop interop operation in MT
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }

@@ -72,6 +72,7 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
+        /// <remarks>In multi-threading build, this will pop interop operation</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowException(ref JSMarshalerArgument arg)
         {

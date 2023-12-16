@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public sealed class PromiseHolder
         {
-            public nint GCHandle; // could be also virtual GCVHandle
+            public readonly nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
             public JSProxyContext ProxyContext;
 #if FEATURE_WASM_THREADS

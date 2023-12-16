@@ -12,7 +12,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- this unit test depends on JavaScript interop and doesn't need heavy threading. So we can run it in UI thread. TODO: Drop this when we have automatic JSInterop dispatch to UI thread. -->
     <_XUnitBackgroundExec>false</_XUnitBackgroundExec>
-    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />

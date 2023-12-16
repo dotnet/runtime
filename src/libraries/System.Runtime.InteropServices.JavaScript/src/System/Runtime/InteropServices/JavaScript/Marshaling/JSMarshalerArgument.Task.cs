@@ -55,6 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (arguments_buffer == null)
                     {
 #if FEATURE_WASM_THREADS
+                        // when we arrive here, we are called from CompleteTask, with will PushOperationWithCurrentThreadContext
                         JSProxyContext.PopOperation();
 #endif
                         tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
@@ -66,6 +67,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         arg_2.ToManaged(out Exception? fail);
 #if FEATURE_WASM_THREADS
+                        // when we arrive here, we are called from CompleteTask, with will PushOperationWithCurrentThreadContext
                         JSProxyContext.PopOperation();
 #endif
                         tcs.SetException(fail!);
@@ -73,6 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     else
                     {
 #if FEATURE_WASM_THREADS
+                        // when we arrive here, we are called from CompleteTask, with will PushOperationWithCurrentThreadContext
                         JSProxyContext.PopOperation();
 #endif
                         tcs.SetResult();
@@ -113,6 +116,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (arguments_buffer == null)
                     {
 #if FEATURE_WASM_THREADS
+                        // when we arrive here, we are called from CompleteTask, with will PushOperationWithCurrentThreadContext
                         JSProxyContext.PopOperation();
 #endif
                         tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
@@ -125,6 +129,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         arg_2.ToManaged(out Exception? fail);
 #if FEATURE_WASM_THREADS
+                        // when we arrive here, we are called from CompleteTask, with will PushOperationWithCurrentThreadContext
                         JSProxyContext.PopOperation();
 #endif
                         if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
@@ -134,6 +139,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         marshaler(ref arg_3, out T result);
 #if FEATURE_WASM_THREADS
+                        // when we arrive here, we are called from CompleteTask, with will PushOperationWithCurrentThreadContext
                         JSProxyContext.PopOperation();
 #endif
                         tcs.SetResult(result);

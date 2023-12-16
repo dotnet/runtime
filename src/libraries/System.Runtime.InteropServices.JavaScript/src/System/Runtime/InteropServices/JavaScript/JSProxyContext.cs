@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
@@ -83,8 +84,8 @@ namespace System.Runtime.InteropServices.JavaScript
         private sealed class PendingOperation
         {
             public JSProxyContext? CapturedContext;
-            public bool Called;
-            public bool Multiple;
+            public bool PopScheduled;
+            public bool SkipAdditionalPushes;
         }
 
         [ThreadStatic]
@@ -100,46 +101,34 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void PushOperationUnknownContext()
         {
-            var stack = OperationStack;
-            // for SchedulePopOperation()
-            if (stack.Count > 0 && stack[stack.Count - 1].Called)
-            {
-                PopOperation();
-            }
+            // for SchedulePopOperation
+            var stack = PopScheduledOperation();
+
             // because this is called multiple times for each JSImport
-            if (stack.Count > 0 && stack[stack.Count - 1].Multiple)
+            if (SkipPushes(stack))
             {
                 return;
             }
 
-            stack.Add(new PendingOperation() { Multiple = true });
+            stack.Add(new PendingOperation() { SkipAdditionalPushes = true });
         }
 
         public static void PushOperationWithContext(JSProxyContext knownContext)
         {
-            var stack = OperationStack;
-            // for SchedulePopOperation()
-            if (stack.Count > 0 && stack[stack.Count - 1].Called)
-            {
-                PopOperation();
-            }
-            // because this is called multiple times for each JSImport
-            if (stack.Count > 0 && stack[stack.Count - 1].Multiple)
-            {
-                return;
-            }
+            // for SchedulePopOperation
+            var stack = PopScheduledOperation();
 
-            stack.Add(new PendingOperation() { CapturedContext = knownContext, Multiple = true });
+            if (SkipPushes(stack)) Environment.FailFast("PushOperationWithContext should not be used with SkipAdditionalPushes");
+
+            stack.Add(new PendingOperation() { CapturedContext = knownContext });
         }
 
         public static JSProxyContext PushOperationWithCurrentThreadContext()
         {
-            var stack = OperationStack;
-            // for SchedulePopOperation()
-            if (stack.Count > 0 && stack[stack.Count - 1].Called)
-            {
-                PopOperation();
-            }
+            // for SchedulePopOperation
+            var stack = PopScheduledOperation();
+
+            if (SkipPushes(stack)) Environment.FailFast("PushOperationWithCurrentThreadContext should not be used with SkipAdditionalPushes");
 
             var current = AssertIsInteropThread();
             stack.Add(new PendingOperation { CapturedContext = current });
@@ -159,21 +148,44 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var stack = OperationStack;
             var op = stack[stack.Count - 1];
-            if (op.Called) Environment.FailFast("SchedulePopOperation called twice");
-            op.Called = true;
+            if (op.PopScheduled) Environment.FailFast("SchedulePopOperation called twice");
+            op.PopScheduled = true;
+            op.SkipAdditionalPushes = false;
+        }
+
+        // for SchedulePopOperation
+        private static List<PendingOperation> PopScheduledOperation()
+        {
+            var stack = OperationStack;
+            if (stack.Count > 0 && stack[stack.Count - 1].PopScheduled)
+            {
+                PopOperation();
+            }
+            Debug.Assert(stack.Count == 0 || !stack[stack.Count - 1].PopScheduled);
+            return stack;
+        }
+
+        private static bool SkipPushes(List<PendingOperation> stack)
+        {
+            return stack.Count > 0 && stack[stack.Count - 1].SkipAdditionalPushes;
+        }
+
+        public static void SealSkipPushes()
+        {
+            var stack = OperationStack;
+            if (stack.Count < 1) Environment.FailFast("Unbalanced PopOperation");// there is no recovery
+            stack[stack.Count - 1].SkipAdditionalPushes = false;
         }
 
         public static void AssertOperationStack(int expected)
         {
-            var stack = OperationStack;
-            if (stack.Count > 0 && stack[stack.Count - 1].Called)
-            {
-                PopOperation();
-            }
+            // for SchedulePopOperation
+            var stack = PopScheduledOperation();
+
             var actual = stack.Count;
-            var multiple = stack.Count > 0 ? stack[stack.Count - 1].Multiple : false;
-            var called = stack.Count > 0 ? stack[stack.Count - 1].Called : false;
-            if (actual != expected) Environment.FailFast($"Unexpected OperationStack size expected: {expected} actual: {actual} called:{called} multiple:{multiple}");
+            var skipAdditionalPushes = stack.Count > 0 ? stack[stack.Count - 1].SkipAdditionalPushes : false;
+            var popScheduled = stack.Count > 0 ? stack[stack.Count - 1].PopScheduled : false;
+            if (actual != expected) Environment.FailFast($"Unexpected OperationStack size expected: {expected} actual: {actual} popScheduled:{popScheduled} skipAdditionalPushes:{skipAdditionalPushes}");
         }
 
         // TODO: sort generated ToJS() calls to make the capture context before we need to use it
@@ -182,6 +194,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var stack = OperationStack;
             if (stack.Count < 1) Environment.FailFast("CaptureContextFromParameter could be only used during pending operation.");
             var pendingOperation = stack[stack.Count - 1];
+            if (pendingOperation.PopScheduled) Environment.FailFast("CaptureContextFromParameter could be only used during pending operation.");
             var capturedContext = pendingOperation.CapturedContext;
             if (capturedContext != null && parameterContext != capturedContext)
             {
@@ -357,11 +370,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 PromiseHolder? holder;
                 if (IsGCVHandle(holderGCHandle))
                 {
-                    if (ThreadJsOwnedHolders.Remove(holderGCHandle, out holder))
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                    }
-                    else
+                    if (!ThreadJsOwnedHolders.Remove(holderGCHandle, out holder))
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder " + holderGCHandle);
                     }
@@ -373,7 +382,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (target is PromiseHolder holder2)
                     {
                         holder = holder2;
-                        holder.GCHandle = IntPtr.Zero;
                     }
                     else
                     {
@@ -391,11 +399,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (IsGCVHandle(gcHandle))
                 {
-                    if (ThreadJsOwnedHolders.Remove(gcHandle, out holder))
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                    }
-                    else
+                    if (!ThreadJsOwnedHolders.Remove(gcHandle, out holder))
                     {
                         throw new InvalidOperationException("ReleaseJSOwnedObjectByGCHandle expected in ThreadJsOwnedHolders");
                     }
@@ -407,7 +411,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (target is PromiseHolder holder2)
                     {
                         holder = holder2;
-                        holder.GCHandle = IntPtr.Zero;
                     }
                     else
                     {
@@ -557,8 +560,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     _OperationStack = null;
 #endif
 
-                    // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                    foreach (var jsObjectWeak in ThreadCsOwnedObjects.Values)
+                    List<WeakReference<JSObject>> copy = new(ThreadCsOwnedObjects.Values);
+                    foreach (var jsObjectWeak in copy)
                     {
                         if (jsObjectWeak.TryGetTarget(out var jso))
                         {
@@ -583,12 +586,13 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                     }
 
+                    ThreadCsOwnedObjects.Clear();
+                    ThreadJsOwnedObjects.Clear();
+                    JSVHandleFreeList.Clear();
+                    NextJSVHandle = IntPtr.Zero;
+
                     if (disposing)
                     {
-                        ThreadCsOwnedObjects.Clear();
-                        ThreadJsOwnedObjects.Clear();
-                        JSVHandleFreeList.Clear();
-                        NextJSVHandle = IntPtr.Zero;
 #if FEATURE_WASM_THREADS
                         SynchronizationContext.Dispose();
 #endif
