@@ -283,5 +283,19 @@ namespace System.Runtime.InteropServices.JavaScript
 
             return signature;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
+        {
+            fixed (JSMarshalerArgument* ptr = arguments)
+            {
+                Interop.Runtime.ResolveOrRejectPromise(ptr);
+                ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                if (exceptionArg.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exceptionArg);
+                }
+            }
+        }
     }
 }

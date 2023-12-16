@@ -52,7 +52,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
         {
             SynchronizationContext = synchronizationContext;
-            Interop.Runtime.InstallWebWorkerInterop();
             NativeTID = GetNativeThreadId();
             ManagedTID = Thread.CurrentThread.ManagedThreadId;
             IsMainThread = isMainThread;
@@ -322,23 +321,67 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
+        public PromiseHolder CreatePromiseHolder()
+        {
+            lock (this)
+            {
+                return new PromiseHolder(this);
+            }
+        }
+
         public PromiseHolder GetPromiseHolder(nint gcHandle)
         {
-            PromiseHolder holder;
-            if (IsGCVHandle(gcHandle))
+            lock (this)
             {
-                lock (this)
+                PromiseHolder? holder;
+                if (IsGCVHandle(gcHandle))
                 {
-                    holder = new PromiseHolder(this, gcHandle);
-                    ThreadJsOwnedHolders.Add(gcHandle, holder);
+                    if (!ThreadJsOwnedHolders.TryGetValue(gcHandle, out holder))
+                    {
+                        holder = new PromiseHolder(this, gcHandle);
+                        ThreadJsOwnedHolders.Add(gcHandle, holder);
+                    }
+                }
+                else
+                {
+                    holder = (PromiseHolder)((GCHandle)gcHandle).Target!;
+                }
+                return holder;
+            }
+        }
+
+        public unsafe void ReleasePromiseHolder(nint holderGCHandle)
+        {
+            lock (this)
+            {
+                PromiseHolder? holder;
+                if (IsGCVHandle(holderGCHandle))
+                {
+                    if (ThreadJsOwnedHolders.Remove(holderGCHandle, out holder))
+                    {
+                        holder.GCHandle = IntPtr.Zero;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder " + holderGCHandle);
+                    }
+                }
+                else
+                {
+                    GCHandle handle = (GCHandle)holderGCHandle;
+                    var target = handle.Target!;
+                    if (target is PromiseHolder holder2)
+                    {
+                        holder = holder2;
+                        holder.GCHandle = IntPtr.Zero;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder" + holderGCHandle);
+                    }
+                    handle.Free();
                 }
             }
-            else
-            {
-                holder = (PromiseHolder)((GCHandle)gcHandle).Target!;
-            }
-            return holder;
         }
 
         public unsafe void ReleaseJSOwnedObjectByGCHandle(nint gcHandle)
@@ -380,44 +423,6 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 holder.Callback!(null);
             }
-        }
-
-        public PromiseHolder? ReleasePromiseHolder(nint holderGCHandle)
-        {
-            PromiseHolder? holder = null;
-            lock (this)
-            {
-                if (IsGCVHandle(holderGCHandle))
-                {
-                    if (ThreadJsOwnedHolders.Remove(holderGCHandle, out holder))
-                    {
-                        holder.GCHandle = IntPtr.Zero;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("ReleasePromiseHolder expected to find handle in ThreadJsOwnedHolders");
-                    }
-                }
-                else
-                {
-                    GCHandle handle = (GCHandle)holderGCHandle;
-                    var target = handle.Target!;
-                    if (target is PromiseHolder holder2)
-                    {
-                        holder = holder2;
-                        holder.GCHandle = IntPtr.Zero;
-                    }
-                    else
-                    {
-                        if (!ThreadJsOwnedObjects.Remove(target))
-                        {
-                            throw new InvalidOperationException("ReleasePromiseHolder expected to find handle in ThreadJsOwnedObjects");
-                        }
-                    }
-                    handle.Free();
-                }
-            }
-            return holder;
         }
 
         public JSObject CreateCSOwnedProxy(nint jsHandle)
@@ -473,7 +478,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#endregion
+        #endregion
 
         #region Legacy
 

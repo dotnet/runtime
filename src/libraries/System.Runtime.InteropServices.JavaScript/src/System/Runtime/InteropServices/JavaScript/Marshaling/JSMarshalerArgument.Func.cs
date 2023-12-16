@@ -27,8 +27,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
@@ -62,8 +62,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
 
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
                 Arg1Marshaler(ref args_arg1, arg1);
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
@@ -99,8 +99,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
 
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
@@ -140,8 +140,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
                 ref JSMarshalerArgument args_arg3 = ref arguments[4];
 
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
@@ -253,8 +253,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
@@ -292,8 +292,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
 
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
                 Arg1Marshaler(ref args_arg1, arg1);
 
                 JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
@@ -334,8 +334,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
 
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
@@ -380,8 +380,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
                 ref JSMarshalerArgument args_arg3 = ref arguments[4];
 
-                args_exception.Initialize();
-                args_return.Initialize();
+                args_exception.InitializeImpl();
+                args_return.InitializeImpl();
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);

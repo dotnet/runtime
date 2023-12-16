@@ -45,36 +45,47 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = JSProxyContext.CurrentOperationContext.GetPromiseHolder(slot.GCHandle);
-            TaskCompletionSource tcs = new TaskCompletionSource(holder);
-            ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
+            var ctx = JSProxyContext.CurrentOperationContext;
+            lock (ctx)
             {
-                if (arguments_buffer == null)
+                PromiseHolder holder = ctx.GetPromiseHolder(slot.GCHandle);
+                TaskCompletionSource tcs = new TaskCompletionSource(holder);
+                ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
-                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
-                    return;
-                }
-                ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
-                // arg_3 set by caller when this is SetResult call, un-used here
-                if (arg_2.slot.Type != MarshalerType.None)
-                {
-                    arg_2.ToManaged(out Exception? fail);
+                    if (arguments_buffer == null)
+                    {
 #if FEATURE_WASM_THREADS
-                    JSProxyContext.PopOperation();
+                        JSProxyContext.PopOperation();
 #endif
-                    tcs.SetException(fail!);
-                }
-                else
-                {
+                        tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                        return;
+                    }
+                    ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
+                                                                             // arg_3 set by caller when this is SetResult call, un-used here
+                    if (arg_2.slot.Type != MarshalerType.None)
+                    {
+                        arg_2.ToManaged(out Exception? fail);
 #if FEATURE_WASM_THREADS
-                    JSProxyContext.PopOperation();
+                        JSProxyContext.PopOperation();
 #endif
-                    tcs.SetResult();
-                }
-                // eventual exception is handled by caller
-            };
-            holder.Callback = callback;
-            value = tcs.Task;
+                        tcs.SetException(fail!);
+                    }
+                    else
+                    {
+#if FEATURE_WASM_THREADS
+                        JSProxyContext.PopOperation();
+#endif
+                        tcs.SetResult();
+                    }
+                    // eventual exception is handled by caller
+                };
+                holder.Callback = callback;
+                value = tcs.Task;
+#if FEATURE_WASM_THREADS
+                // if the other thread created it, signal that it's ready
+                holder.CallbackReady?.Set();
+#endif
+            }
         }
 
         /// <summary>
@@ -92,39 +103,50 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = JSProxyContext.CurrentOperationContext.GetPromiseHolder(slot.GCHandle);
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
-            ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
+            var ctx = JSProxyContext.CurrentOperationContext;
+            lock (ctx)
             {
-                if (arguments_buffer == null)
+                var holder = ctx.GetPromiseHolder(slot.GCHandle);
+                TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
+                ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
-                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
-                    return;
-                }
+                    if (arguments_buffer == null)
+                    {
+#if FEATURE_WASM_THREADS
+                        JSProxyContext.PopOperation();
+#endif
+                        tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                        return;
+                    }
 
-                ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
-                ref JSMarshalerArgument arg_3 = ref arguments_buffer[4]; // set by caller when this is SetResult call
-                if (arg_2.slot.Type != MarshalerType.None)
-                {
-                    arg_2.ToManaged(out Exception? fail);
+                    ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
+                    ref JSMarshalerArgument arg_3 = ref arguments_buffer[4]; // set by caller when this is SetResult call
+                    if (arg_2.slot.Type != MarshalerType.None)
+                    {
+                        arg_2.ToManaged(out Exception? fail);
 #if FEATURE_WASM_THREADS
-                    JSProxyContext.PopOperation();
+                        JSProxyContext.PopOperation();
 #endif
-                    if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
-                    tcs.SetException(fail);
-                }
-                else
-                {
-                    marshaler(ref arg_3, out T result);
+                        if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
+                        tcs.SetException(fail);
+                    }
+                    else
+                    {
+                        marshaler(ref arg_3, out T result);
 #if FEATURE_WASM_THREADS
-                    JSProxyContext.PopOperation();
+                        JSProxyContext.PopOperation();
 #endif
-                    tcs.SetResult(result);
-                }
-                // eventual exception is handled by caller
-            };
-            holder.Callback = callback;
-            value = tcs.Task;
+                        tcs.SetResult(result);
+                    }
+                    // eventual exception is handled by caller
+                };
+                holder.Callback = callback;
+                value = tcs.Task;
+#if FEATURE_WASM_THREADS
+                // if the other thread created it, signal that it's ready
+                holder.CallbackReady?.Set();
+#endif
+            }
         }
 
 
@@ -365,8 +387,8 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-            exc.Initialize();
-            res.Initialize();
+            exc.InitializeImpl();
+            res.InitializeImpl();
 
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskRejected;
@@ -378,10 +400,12 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
+#if !FEATURE_WASM_THREADS
             // order of operations with DisposeImpl matters
-            JavaScriptImports.ResolveOrRejectPromise(args);
-
-#if FEATURE_WASM_THREADS
+            JSFunctionBinding.ResolveOrRejectPromise(args);
+#else
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(args);
             JSProxyContext.PopOperation();
 #endif
         }
@@ -400,8 +424,8 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-            exc.Initialize();
-            res.Initialize();
+            exc.InitializeImpl();
+            res.InitializeImpl();
 
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskResolved;
@@ -412,10 +436,12 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
+#if !FEATURE_WASM_THREADS
             // order of operations with DisposeImpl matters
-            JavaScriptImports.ResolveOrRejectPromise(args);
-
-#if FEATURE_WASM_THREADS
+            JSFunctionBinding.ResolveOrRejectPromise(args);
+#else
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(args);
             JSProxyContext.PopOperation();
 #endif
         }
@@ -424,7 +450,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             holder.AssertNotDisposed();
 #if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
             JSProxyContext.PushOperationWithContext(holder.ProxyContext);
 #endif
 
@@ -434,8 +459,8 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-            exc.Initialize();
-            res.Initialize();
+            exc.InitializeImpl();
+            res.InitializeImpl();
 
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskResolved;
@@ -447,10 +472,12 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
+#if !FEATURE_WASM_THREADS
             // order of operations with DisposeImpl matters
-            JavaScriptImports.ResolveOrRejectPromise(args);
-
-#if FEATURE_WASM_THREADS
+            JSFunctionBinding.ResolveOrRejectPromise(args);
+#else
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(args);
             JSProxyContext.PopOperation();
 #endif
         }

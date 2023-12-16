@@ -63,12 +63,18 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Initialize()
         {
-            slot.Type = MarshalerType.None;
+            InitializeImpl();
 #if FEATURE_WASM_THREADS
             // we know that this is at the start of some JSImport call, but we don't know yet what would be the target thread
             // also this is called multiple times
             JSProxyContext.PushOperationUnknownContext();
 #endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe void InitializeImpl()
+        {
+            slot.Type = MarshalerType.None;
         }
     }
 }

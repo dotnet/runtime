@@ -243,14 +243,29 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 // when we arrive here, we could assume that all proxies are owned by calling thread
                 var ctx = JSProxyContext.PushOperationWithCurrentThreadContext();
+                var holder = ctx.GetPromiseHolder(arg_1.slot.GCHandle);
 
-                var holder = ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
-                if (holder != null)
+#if FEATURE_WASM_THREADS
+                lock (ctx)
                 {
-                    // arg_2, arg_3 are processed by the callback
-                    // JSProxyContext.PopOperation() is called by the callback
-                    holder.Callback!(arguments_buffer);
+                    if (holder.Callback == null)
+                    {
+                        holder.CallbackReady = new ManualResetEventSlim(false);
+                    }
                 }
+                if (holder.CallbackReady != null)
+                {
+#pragma warning disable CA1416 // Validate platform compatibility
+                    holder.CallbackReady?.Wait();
+#pragma warning restore CA1416 // Validate platform compatibility
+                }
+#endif
+                var callback = holder.Callback!;
+                ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+
+                // arg_2, arg_3 are processed by the callback
+                // JSProxyContext.PopOperation() is called by the callback
+                callback!(arguments_buffer);
             }
             catch (Exception ex)
             {

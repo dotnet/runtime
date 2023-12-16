@@ -223,6 +223,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             ctx.AwaitNewData();
+
+            Interop.Runtime.InstallWebWorkerInterop();
         }
 
         public static void UninstallWebWorkerInterop()

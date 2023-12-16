@@ -14,7 +14,10 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             public nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
-            internal JSProxyContext ProxyContext;
+            public JSProxyContext ProxyContext;
+#if FEATURE_WASM_THREADS
+            public ManualResetEventSlim? CallbackReady;
+#endif
 
             public PromiseHolder(JSProxyContext targetContext)
             {
