@@ -146,7 +146,7 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 }
 
 // Reference to mini-arm64, should be the namber of Parameter Regs
-#define MAX_ARCH_DELEGATE_PARAMS 7
+#define MAX_ARCH_DELEGATE_PARAMS 8
 
 static gpointer
 get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *code_size)
@@ -282,7 +282,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		static guint8 *cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
 
 		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
-			NOT_IMPLEMENTED;
+			return NULL;
 		for (int i = 0; i < sig->param_count; ++i)
 			if (!mono_is_regsize_var (sig->params [i]))
 				return NULL;
@@ -1611,7 +1611,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgVtypeInIReg:
 		case ArgVtypeByRef:
 		case ArgVtypeOnStack:
-		case ArgVtypeInMixed: {
+		case ArgVtypeInMixed: 
+		case ArgVtypeByRefOnStack:{
 			MonoInst *ins;
 			guint32 align;
 			guint32 size;
@@ -1698,7 +1699,8 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, ainfo->offset, load->dreg);
 		break;
 	}
-	case ArgVtypeByRef: {
+	case ArgVtypeByRef: 
+	case ArgVtypeByRefOnStack: {
 		MonoInst *vtaddr, *arg;
 		/* Pass the vtype address in a reg/on the stack */
 		// if (ainfo->gsharedvt) {
@@ -2023,6 +2025,21 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += sizeof (host_mgreg_t) * 2;
 			ins->inst_offset = -offset;
 			break;
+		case ArgVtypeByRefOnStack: {
+			MonoInst *vtaddr;
+
+			/* The vtype address is in the parent frame */
+			g_assert (ainfo->offset >= 0);
+			MONO_INST_NEW (cfg, vtaddr, 0);
+			vtaddr->opcode = OP_REGOFFSET;
+			vtaddr->inst_basereg = RISCV_FP;
+			vtaddr->inst_offset = ainfo->offset;
+
+			/* Need an indirection */
+			ins->opcode = OP_VTARG_ADDR;
+			ins->inst_left = vtaddr;
+			break;
+		}
 		case ArgVtypeByRef: {
 			MonoInst *vtaddr;
 
@@ -2798,7 +2815,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
 				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
-				           ins->next->opcode == OP_LOADI8_MEMBASE || ins->next->opcode == OP_ICONST) {
+				           ins->next->opcode == OP_LOADI8_MEMBASE || ins->next->opcode == OP_ICONST ||
+						   ins->next->opcode == OP_I8CONST) {
 					/**
 					 * there is compare without branch OP followed
 					 *
@@ -3609,6 +3627,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				break;
 			case ArgOnStack:
 			case ArgVtypeOnStack:
+			case ArgVtypeByRefOnStack:
 				break;
 			default:
 				g_print ("can't process Storage type %d\n", ainfo->storage);
