@@ -331,11 +331,6 @@ uint64_t Thread::GetPalThreadIdForLogging()
     return m_threadId;
 }
 
-bool Thread::IsCurrentThread()
-{
-    return m_threadId == PalGetCurrentOSThreadId();
-}
-
 void Thread::Detach()
 {
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
