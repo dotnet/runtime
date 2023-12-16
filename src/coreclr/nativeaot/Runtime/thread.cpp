@@ -277,7 +277,7 @@ void Thread::Construct()
     m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
     m_hPalThread = INVALID_HANDLE_VALUE;
 
-    m_threadId.SetToCurrentThread();
+    m_threadId = PalGetCurrentOSThreadId();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
     HANDLE curThreadPseudo  = PalGetCurrentThread();
@@ -342,12 +342,7 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return *(uint64_t*)&m_threadId;
-}
-
-bool Thread::IsCurrentThread()
-{
-    return m_threadId.IsCurrentThread();
+    return m_threadId;
 }
 
 uint64_t Thread::s_DeadThreadsNonAllocBytes = 0;

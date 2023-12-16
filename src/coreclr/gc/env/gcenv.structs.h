@@ -15,14 +15,7 @@ struct GCSystemInfo
 
 typedef void * HANDLE;
 
-// Across all platforms, NativeAOT Thread::GetPalThreadIdForLogging assumes that the thread
-// ID is stored in the first 8 bytes of this structure.
-
 #ifdef TARGET_UNIX
-
-#ifdef FEATURE_NATIVEAOT
-static_assert(sizeof(pthread_t) == sizeof(uint64_t), "EEThreadId layout mismatch");
-#endif
 
 class EEThreadId
 {
