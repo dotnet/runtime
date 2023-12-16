@@ -92,11 +92,6 @@ namespace System.Net.Http
             }
         }
 
-        private static void SeekStreamToTheBeginning(Stream stream)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-        }
-
         /// <summary>Disposes the source stream.</summary>
         private static void DisposeSource(Stream source)
         {
