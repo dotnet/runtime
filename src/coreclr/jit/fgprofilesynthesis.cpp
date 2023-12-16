@@ -812,7 +812,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
     //
     if (capped && (loop->ExitEdges().size() > 0))
     {
-        // Figure out how much flow exits the loop with the capped probablility
+        // Figure out how much flow exits the loop with the capped probability
         // and current block frequencies and exit likelihoods.
         //
         weight_t cappedExitWeight = 0.0;

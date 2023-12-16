@@ -4544,6 +4544,8 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
     {
         JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
     }
+
+    JITDUMPEXEC(Dump(loops));
 #endif
 
     return loops;
@@ -4618,6 +4620,181 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, Ar
 
     return true;
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::Dump: print one loops to the JitDump
+//
+/* static */
+void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
+{
+    if (loop == nullptr)
+    {
+        printf("loop is nullptr");
+        return;
+    }
+
+    BitVecTraits loopTraits(loop->GetDfsTree()->PostOrderTraits());
+    BitVec       outputBlocks(BitVecOps::MakeEmpty(&loopTraits));
+
+    // Display: LOOP# (old LOOP#) / header / parent loop# / blocks / entry edges / exit edges / back edges
+    // Blocks can compacted be "[top .. bottom]" if lexically adjacent and no non-loop blocks in
+    // the range. Otherwise, print a verbose list of blocks.
+
+    Compiler* comp = loop->GetDfsTree()->GetCompiler();
+    printf(FMT_LP, loop->GetIndex());
+
+    // We might want to print out the old loop number using something like:
+    //
+    // if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
+    // {
+    //   printf(" (old: " FMT_LP ")", (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
+    // }
+    //
+    // However, not all callers of FlowGraphNaturalLoops::Find update m_newToOldLoop -- only
+    // Compiler::optFindNewLoops() does that. This dumper should work with any construction of
+    // FlowGraphNaturalLoops.
+
+    printf(" header: " FMT_BB, loop->GetHeader()->bbNum);
+    if (loop->GetParent() != nullptr)
+    {
+        printf(" parent: " FMT_LP, loop->GetParent()->GetIndex());
+    }
+
+    // Dump the set of blocks in the loop. There are three cases:
+    // 1. If there is only one block in the loop, display it.
+    // 2. If the blocks happen to be lexically dense and without non-loop blocks in the range,
+    //    then use a shortcut of `[BBtop .. BBbottom]`.
+    // 3. Otherwise, display the entire list of blocks.
+    //
+    // Lexicality depends on properly renumbered blocks, which we might not have when dumping.
+
+    printf("\n  Members (%u): ", loop->NumLoopBlocks());
+
+    const unsigned numBlocks = loop->NumLoopBlocks();
+    if (numBlocks == 0)
+    {
+        // This should never happen?
+        printf("NONE?");
+    }
+    else if (numBlocks == 1)
+    {
+        // Should be able to assume the only block is the header, but just in case, use the normal visitor.
+        loop->VisitLoopBlocksReversePostOrder([](BasicBlock* block) {
+            printf(FMT_BB " ", block->bbNum);
+            return BasicBlockVisit::Continue;
+        });
+    }
+    else
+    {
+        BasicBlock* lexicalTopBlock     = loop->GetLexicallyTopMostBlock();
+        BasicBlock* lexicalBottomBlock  = loop->GetLexicallyBottomMostBlock();
+        BasicBlock* lexicalEndIteration = lexicalBottomBlock->Next();
+
+        // Add all the loop blocks to a set, then check all the blocks in the identified lexical range.
+        // If there are non-loop blocks found, or if we don't find all the loop blocks in the lexical walk
+        // (meaning the bbNums might not be properly ordered), we fail.
+        loop->VisitLoopBlocks([&](BasicBlock* loopBlock) {
+            BitVecOps::AddElemD(&loopTraits, outputBlocks, loopBlock->bbNewPostorderNum);
+            return BasicBlockVisit::Continue;
+        });
+        bool lexicallyDense = true; // assume the best
+        for (BasicBlock* block = lexicalTopBlock; (block != nullptr) && (block != lexicalEndIteration);
+             block             = block->Next())
+        {
+            if (!loop->ContainsBlock(block))
+            {
+                lexicallyDense = false;
+                break;
+            }
+            BitVecOps::RemoveElemD(&loopTraits, outputBlocks, block->bbNewPostorderNum);
+        }
+        if (!BitVecOps::IsEmpty(&loopTraits, outputBlocks))
+        {
+            lexicallyDense = false;
+        }
+
+        if (lexicallyDense)
+        {
+            printf("[" FMT_BB ".." FMT_BB "]", lexicalTopBlock->bbNum, lexicalBottomBlock->bbNum);
+        }
+        else
+        {
+            bool firstMember = true;
+            loop->VisitLoopBlocksReversePostOrder([&firstMember](BasicBlock* block) {
+                printf("%s" FMT_BB, firstMember ? "" : ";", block->bbNum);
+                firstMember = false;
+                return BasicBlockVisit::Continue;
+            });
+        }
+    }
+
+    // Dump Entry Edges, Back Edges, Exit Edges
+
+    printf("\n  Entry: ");
+    bool first = true;
+    for (FlowEdge* const edge : loop->EntryEdges())
+    {
+        printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum, loop->GetHeader()->bbNum);
+        first = false;
+    }
+
+    printf("\n  Exit: ");
+    first = true;
+    for (FlowEdge* const edge : loop->ExitEdges())
+    {
+        BasicBlock* const exitBlock = edge->getSourceBlock();
+        printf("%s" FMT_BB " ->", first ? "" : "; ", exitBlock->bbNum);
+        exitBlock->VisitRegularSuccs(comp, [=](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ))
+            {
+                printf(" " FMT_BB, succ->bbNum);
+            }
+            return BasicBlockVisit::Continue;
+        });
+        first = false;
+    }
+
+    printf("\n  Back: ");
+    first = true;
+    for (FlowEdge* const edge : loop->BackEdges())
+    {
+        printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum, loop->GetHeader()->bbNum);
+        first = false;
+    }
+
+    printf("\n");
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::Dump: print the loops to the JitDump
+//
+/* static */
+void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
+{
+    printf("\n***************  (New) Natural loop graph\n");
+
+    if (loops == nullptr)
+    {
+        printf("loops is nullptr\n");
+    }
+    else if (loops->NumLoops() == 0)
+    {
+        printf("No loops\n");
+    }
+    else
+    {
+        for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
+        {
+            FlowGraphNaturalLoop::Dump(loop);
+        }
+    }
+
+    printf("\n");
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitDefs: Visit all definitions contained in the
