@@ -41,21 +41,6 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>Copies the source stream from its current position to the destination stream at its current position and seeks destination stream to the beginning position.</summary>
-        /// <param name="source">The source stream from which to copy.</param>
-        /// <param name="destination">The destination stream to which to copy.</param>
-        /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated. If zero, use the default buffer size.</param>
-        /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
-        public static void CopyAndSeekToTheBeginning(Stream source, Stream destination, int bufferSize, bool disposeSource)
-        {
-            Copy(source, destination, bufferSize, disposeSource);
-
-            if (destination.CanSeek)
-            {
-                SeekStreamToTheBeginning(destination);
-            }
-        }
-
         /// <summary>Copies the source stream from its current position to the destination stream at its current position.</summary>
         /// <param name="source">The source stream from which to copy.</param>
         /// <param name="destination">The destination stream to which to copy.</param>
@@ -104,42 +89,6 @@ namespace System.Net.Http
                 // For compatibility with the previous implementation, catch everything (including arg exceptions) and
                 // store errors into the task rather than letting them propagate to the synchronous caller.
                 return Task.FromException(e);
-            }
-        }
-
-        /// <summary>Copies the source stream from its current position to the destination stream at its current position and seeks destination stream to the beginning position.</summary>
-        /// <param name="source">The source stream from which to copy.</param>
-        /// <param name="destination">The destination stream to which to copy.</param>
-        /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated. If zero, use the default buffer size.</param>
-        /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
-        /// <param name="cancellationToken">CancellationToken used to cancel the copy operation.</param>
-        public static Task CopyAndSeekToTheBeginningAsync(Stream source, Stream destination, int bufferSize, bool disposeSource, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task copyTask = CopyAsync(source, destination, bufferSize, disposeSource, cancellationToken);
-
-            if (!destination.CanSeek)
-            {
-                return copyTask;
-            }
-
-            switch (copyTask.Status)
-            {
-                case TaskStatus.RanToCompletion:
-                    SeekStreamToTheBeginning(destination);
-                    return Task.CompletedTask;
-
-                case TaskStatus.Faulted:
-                case TaskStatus.Canceled:
-                    return copyTask;
-
-                default:
-                    return SeekToTheBeginningOfDestinationStreamAsync(copyTask, destination);
-
-                    static async Task SeekToTheBeginningOfDestinationStreamAsync(Task copyTask, Stream destination)
-                    {
-                        await copyTask.ConfigureAwait(false);
-                        SeekStreamToTheBeginning(destination);
-                    }
             }
         }
 

@@ -153,34 +153,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task CopyToAsyncShouldRewindOffset()
-        {
-            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
-            using (StreamContent streamContent = new StreamContent(textMemoryStream))
-            {
-                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
-                {
-                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
-                    Assert.Equal(0, copyToDestinationMemoryStream.Position);
-                }
-            }
-        }
-
-        [Fact]
-        public void CopyToShouldRewindOffset()
-        {
-            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
-            using (StreamContent streamContent = new StreamContent(textMemoryStream))
-            {
-                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
-                {
-                    streamContent.CopyTo(copyToDestinationMemoryStream, null, default);
-                    Assert.Equal(0, copyToDestinationMemoryStream.Position);
-                }
-            }
-        }
-
-        [Fact]
         public void TryComputeLength_RetrieveContentLength_ComputeLengthShouldBeCalled()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
