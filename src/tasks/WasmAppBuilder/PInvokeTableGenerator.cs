@@ -42,24 +42,17 @@ internal sealed class PInvokeTableGenerator
         foreach (var module in pinvokeModules)
             modules[module] = module;
 
-        string tmpFileName = Path.GetTempFileName();
-        try
+        using TempFileName tmpFileName = new();
+        using (var w = File.CreateText(tmpFileName.Path))
         {
-            using (var w = File.CreateText(tmpFileName))
-            {
-                EmitPInvokeTable(w, modules, pinvokes);
-                EmitNativeToInterp(w, callbacks);
-            }
+            EmitPInvokeTable(w, modules, pinvokes);
+            EmitNativeToInterp(w, callbacks);
+        }
 
-            if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-                Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{outputPath}'.");
-            else
-                Log.LogMessage(MessageImportance.Low, $"PInvoke table in {outputPath} is unchanged.");
-        }
-        finally
-        {
-            File.Delete(tmpFileName);
-        }
+        if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{outputPath}'.");
+        else
+            Log.LogMessage(MessageImportance.Low, $"PInvoke table in {outputPath} is unchanged.");
 
         return signatures;
     }

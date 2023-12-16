@@ -1,5 +1,4 @@
 <Project>
-  <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
   <Import Project="..\Directory.Build.targets" />
 
   <PropertyGroup>

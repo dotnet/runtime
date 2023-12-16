@@ -4530,6 +4530,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
+    // Convert BBJ_CALLFINALLY/BBJ_ALWAYS pairs to BBJ_CALLFINALLY/BBJ_CALLFINALLYRET.
+    // Temporary: eventually, do this immediately in impImportLeave
+    //
+    DoPhase(this, PHASE_UPDATE_CALLFINALLY, &Compiler::fgUpdateCallFinally);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4833,9 +4838,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
-        // Clear loop table info that is not used after this point, and might become invalid.
+        // Compute dominators and exceptional entry blocks
         //
-        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
+        DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
+
+        // The loop table is no longer valid.
+        optLoopTableValid = false;
+        optLoopTable      = nullptr;
+        optLoopCount      = 0;
+
+        // Old dominators and reachability sets are no longer valid.
+        fgDomsComputed         = false;
+        fgCompactRenumberQuirk = true;
     }
 
 #ifdef DEBUG
@@ -5019,15 +5033,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
             ResetOptAnnotations();
-            RecomputeLoopInfo();
+            RecomputeFlowGraphAnnotations();
         }
     }
 
-    // Dominator and reachability sets are no longer valid.
-    // The loop table is no longer valid.
-    fgDomsComputed            = false;
-    optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
+    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5342,7 +5353,7 @@ void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockT
             if (top->Prev()->KindIs(BBJ_CALLFINALLY))
             {
                 // It must be a retless BBJ_CALLFINALLY if we get here.
-                assert(!top->Prev()->isBBCallAlwaysPair());
+                assert(!top->Prev()->isBBCallFinallyPair());
 
                 // If the block before the loop start is a retless BBJ_CALLFINALLY
                 // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
@@ -5355,10 +5366,10 @@ void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockT
             }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            if (top->Prev()->isBBCallAlwaysPairTail())
+            if (top->Prev()->isBBCallFinallyPairTail())
             {
-                // If the previous block is the BBJ_ALWAYS of a
-                // BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we can't add alignment
+                // If the previous block is the BBJ_CALLFINALLYRET of a
+                // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
                 // because we can't add instructions in that block. In the
                 // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
                 // reported EH, as above.
@@ -5472,9 +5483,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
-            !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump (which isn't to the next block)
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->HasFlag(BBF_NONE_QUIRK))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5881,14 +5891,14 @@ void Compiler::ResetOptAnnotations()
 }
 
 //------------------------------------------------------------------------
-// RecomputeLoopInfo: Recompute loop annotations between opt-repeat iterations.
+// RecomputeLoopInfo: Recompute flow graph annotations between opt-repeat iterations.
 //
 // Notes:
-//    The intent of this method is to update loop structure annotations, and those
-//    they depend on; these annotations may have become stale during optimization,
-//    and need to be up-to-date before running another iteration of optimizations.
+//    The intent of this method is to update all annotations computed on the flow graph
+//    these annotations may have become stale during optimization, and need to be
+//    up-to-date before running another iteration of optimizations.
 //
-void Compiler::RecomputeLoopInfo()
+void Compiler::RecomputeFlowGraphAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
@@ -5897,13 +5907,20 @@ void Compiler::RecomputeLoopInfo()
     fgDomsComputed = false;
     fgComputeReachability();
     optSetBlockWeights();
-    // Rebuild the loop tree annotations themselves
-    // But don't leave the iter info lying around.
     optFindLoops();
-    optClearLoopIterInfo();
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+
+    // Dominators and the loop table are computed above for old<->new loop
+    // crossreferencing, but they are not actually used for optimization
+    // anymore.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    optLoopCount      = 0;
+    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/

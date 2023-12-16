@@ -23,14 +23,13 @@
       _WasmGenerateNodeScripts;
     </WasmGenerateAppBundleDependsOn>
 
-    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
-    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
-
     <SelfContained Condition="'$(IsWasiProject)' == 'true'">true</SelfContained>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
     <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+
+    <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
     <!--<WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>-->
     <!-- FIXME: rename to WasmHost?? -->
@@ -112,8 +111,6 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-link.rsp'))</_WasmDefaultLinkFlagsRsp>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
@@ -193,6 +190,8 @@
       <_WasiClangCFlags Include="&quot;-I%(_WasmCommonIncludePaths.Identity)&quot;" />
       <_WasiClangCFlags Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir.Replace('\', '/'))include&quot;" />
 
+      <_WasiClangCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+
       <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedDeclarations)' != ''"
                          Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;@(WasiAfterRuntimeLoadedDeclarations, ' ')&quot;" />
       <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedCalls)' != ''"
@@ -209,6 +208,8 @@
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)pinvoke.c"
                                Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"
+                               Dependencies="@(_DriverCDependencies)" />
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)runtime.c"
                                Dependencies="@(_DriverCDependencies)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)main.c" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)stubs.c" />
@@ -237,6 +238,7 @@
     </ItemGroup>
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
+    <Error Condition="'$(WasmSingleFileBundle)' == 'true' and '$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) is not set" />
   </Target>
 
   <Target Name="_WasiWriteCompileRsp" BeforeTargets="_WasmWriteRspForCompilingNativeSourceFiles">
@@ -320,21 +322,21 @@
 
       <_WasmLinkDependencies Include="@(_WasiFilePathForFixup)" />
 
-      <_WasiSdkClangArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
-      <_WasiSdkClangArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
+      <_WasiLinkStepArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
+      <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
-      <_WasiSdkClangArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
+      <_WasiLinkStepArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
-      <_WasiSdkClangArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
-      <_WasiSdkClangArgs Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'"/>
+      <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
+      <_WasiLinkStepArgs Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'"/>
 
-      <_WasiSdkClangArgs Include="&quot;@$(_WasmDefaultLinkFlagsRsp.Replace('\', '/'))&quot;" />
-      <_WasiSdkClangArgs Include="@(_WasiClangXLinkerFlags -> '-Xlinker %(Identity)', ' ')" />
-      <_WasiSdkClangArgs Include="@(_WasiClangLDFlags)" />
+      <_WasiLinkStepArgs Include="&quot;@$(_WasmDefaultLinkFlagsRsp.Replace('\', '/'))&quot;" />
+      <_WasiLinkStepArgs Include="@(_WasiClangXLinkerFlags -> '-Xlinker %(Identity)', ' ')" />
+      <_WasiLinkStepArgs Include="@(_WasiClangLDFlags)" />
 
-      <_WasiSdkClangArgs Include="-o &quot;$(_WasiOutputFileName.Replace('\', '/'))&quot;" />
+      <_WasiLinkStepArgs Include="-o &quot;$(_WasiOutputFileName.Replace('\', '/'))&quot;" />
 
-      <_WasmLinkStepArgs Include="@(_WasiSdkClangArgs)" />
+      <_WasmLinkStepArgs Include="@(_WasiLinkStepArgs)" />
     </ItemGroup>
   </Target>
 
@@ -349,6 +351,8 @@
 
     <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; &quot;$(_WasmLinkRsp)&quot;" />
     <Exec Command="&quot;$(WasiClang)&quot; &quot;@$(_WasmLinkRsp)&quot;" />
+
+    <CallTarget Targets="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'" />
 
     <!-- FIXME: this will be done by the bundler -->
     <Copy SourceFiles="$(_WasiOutputFileName)" DestinationFolder="$(WasmAppDir)" />
@@ -368,9 +372,7 @@
     <Error Condition="'$(_WasiOutputFileName)' == ''" Text="Could not determine $(_WasiOutputFileName)" />
   </Target>
 
-  <Target Name="_CheckToolchainIsExpectedVersion">
-    <Message Text="** TODO: Implement wasiclang version check target" Importance="High" />
-  </Target>
+  <Target Name="_CheckToolchainIsExpectedVersion" />
 
   <Target Name="_GenerateRunWasmtimeScript">
     <PropertyGroup>

@@ -15,12 +15,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         internal System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn AuthSafe;
         internal System.Security.Cryptography.Asn1.Pkcs12.MacData? MacData;
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 
