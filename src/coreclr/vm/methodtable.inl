@@ -1076,8 +1076,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 
 //==========================================================================================
 inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask,
-                                                           BOOL needsGenericsStaticsInfo,
-                                                           BOOL needsTokenOverflow)
+                                                           BOOL needsGenericsStaticsInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1086,8 +1085,6 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
     if (needsGenericsStaticsInfo)
         size += sizeof(GenericsStaticsInfo);
     if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
-        size += sizeof(UINT_PTR);
-    if (needsTokenOverflow)
         size += sizeof(UINT_PTR);
 
     return size;

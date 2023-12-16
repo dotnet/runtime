@@ -10261,8 +10261,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                      fHasGenericsStaticsInfo,
-                                                      RidFromToken(GetCl()) >= METHODTABLE_TOKEN_OVERFLOW);
+                                                      fHasGenericsStaticsInfo);
 
     // Interface map starts here
     S_SIZE_T offsetOfInterfaceMap = cbTotalSize;

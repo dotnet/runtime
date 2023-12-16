@@ -816,7 +816,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_dwFlags = pOldMT->m_dwFlags;
-        m_wFlags2 = pOldMT->m_wFlags2;
+        m_dwFlags2 = pOldMT->m_dwFlags2;
     }
 
     // Init the m_dwFlags field for an array
@@ -2535,7 +2535,11 @@ public:
 
 
     // Get the RID/token for the metadata for the corresponding type declaration
-    unsigned GetTypeDefRid();
+    unsigned GetTypeDefRid()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_dwFlags2 >> 8;
+    }
 
     inline mdTypeDef GetCl()
     {
@@ -2544,19 +2548,6 @@ public:
     }
 
     void SetCl(mdTypeDef token);
-
-#ifdef _DEBUG
-// Make this smaller in debug builds to exercise the overflow codepath
-#define METHODTABLE_TOKEN_OVERFLOW 0xFFF
-#else
-#define METHODTABLE_TOKEN_OVERFLOW 0xFFFF
-#endif
-
-    BOOL HasTokenOverflow()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wToken == METHODTABLE_TOKEN_OVERFLOW;
-    }
 
     // Get the MD Import for the metadata for the corresponding type declaration
     IMDInternalImport* GetMDImport();
@@ -3439,9 +3430,7 @@ private:
         enum_flag_HasCctor                  = 0x0040,
         enum_flag_HasVirtualStaticMethods   = 0x0080,
 
-        // unused                           = 0x4000,
-
-        // unused                           = 0x8000,
+        enum_flag_TokenMask                 = 0xFFFFFF00,
     };  // enum WFLAGS2_ENUM
 
     __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)
@@ -3487,20 +3476,20 @@ private:
 
     __forceinline void ClearFlag(WFLAGS2_ENUM flag)
     {
-        m_wFlags2 &= ~flag;
+        m_dwFlags2 &= ~flag;
     }
     __forceinline void SetFlag(WFLAGS2_ENUM flag)
     {
-        m_wFlags2 |= flag;
+        m_dwFlags2 |= flag;
     }
     __forceinline DWORD GetFlag(WFLAGS2_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_wFlags2 & flag;
+        return m_dwFlags2 & flag;
     }
     __forceinline BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
     {
-        return (m_wFlags2 & (DWORD)mask) == (DWORD)flag;
+        return (m_dwFlags2 & (DWORD)mask) == (DWORD)flag;
     }
 
 private:
@@ -3512,10 +3501,7 @@ private:
     DWORD           m_BaseSize;
 
     // See WFLAGS2_ENUM for values.
-    WORD            m_wFlags2;
-
-    // Class token if it fits into 16-bits. If this is (WORD)-1, the class token is stored in the TokenOverflow optional member.
-    WORD            m_wToken;
+    DWORD           m_dwFlags2;
 
     // <NICE> In the normal cases we shouldn't need a full word for each of these </NICE>
     WORD            m_wNumVirtuals;
@@ -3610,14 +3596,8 @@ private:
     /* Accessing this member efficiently is currently performance critical for static field accesses               */ \
     /* in generic classes, so place it early in the list. */                                                          \
     METHODTABLE_OPTIONAL_MEMBER(GenericsStaticsInfo,    GenericsStaticsInfo,            GetGenericsStaticsInfo      ) \
-    /* Accessed during x-domain transition only, so place it late in the list. */                                     \
-    METHODTABLE_REMOTING_OPTIONAL_MEMBERS()                                                                           \
     /* Accessed during certain generic type load operations only, so low priority */                                  \
     METHODTABLE_OPTIONAL_MEMBER(ExtraInterfaceInfo,     TADDR,                          GetExtraInterfaceInfoPtr    ) \
-    /* TypeDef token for assemblies with more than 64k types. Never happens in real world. */                         \
-    METHODTABLE_OPTIONAL_MEMBER(TokenOverflow,          TADDR,                          GetTokenOverflowPtr         ) \
-
-#define METHODTABLE_REMOTING_OPTIONAL_MEMBERS()
 
     enum OptionalMemberId
     {
@@ -3663,8 +3643,7 @@ private:
 
     inline static DWORD GetOptionalMembersAllocationSize(
                                                   DWORD dwMultipurposeSlotsMask,
-                                                  BOOL needsGenericsStaticsInfo,
-                                                  BOOL needsTokenOverflow);
+                                                  BOOL needsGenericsStaticsInfo);
     inline DWORD GetOptionalMembersSize();
 
     // The PerInstInfo is a (possibly empty) array of pointers to
@@ -3697,8 +3676,8 @@ private:
     void SetMultipurposeSlotsMask(DWORD dwMask)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE((m_wFlags2 & enum_flag_MultipurposeSlotsMask) == 0);
-        m_wFlags2 |= (WORD)dwMask;
+        _ASSERTE((m_dwFlags2 & enum_flag_MultipurposeSlotsMask) == 0);
+        m_dwFlags2 |= (WORD)dwMask;
     }
 
 public:
