@@ -5416,6 +5416,10 @@ void Compiler::impCheckForPInvokeCall(
         // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
         // be inlined into the stub, otherwise we would end up with a stub that recursively calls
         // itself, and end up with a stack overflow.
+
+        // This only works correctly because the no marshalling ILStubs have no exception handling.
+        assert(!block->hasTryIndex());
+        assert(!block->hasHndIndex());
     }
     else
     {
