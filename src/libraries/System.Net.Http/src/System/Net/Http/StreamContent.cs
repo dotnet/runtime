@@ -48,7 +48,7 @@ namespace System.Net.Http
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
-            TrySeekToTheStart();
+            PrepareContent();
             // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
             StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);
         }
@@ -65,7 +65,7 @@ namespace System.Net.Http
         private Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
-            TrySeekToTheStart();
+            PrepareContent();
             return StreamToStreamCopy.CopyAsync(
                 _content,
                 stream,
@@ -99,13 +99,13 @@ namespace System.Net.Http
 
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
-            PrepareContent();
+            TrySeekToTheStart();
             return new ReadOnlyStream(_content);
         }
 
         protected override Task<Stream> CreateContentReadStreamAsync()
         {
-            PrepareContent();
+            TrySeekToTheStart();
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
