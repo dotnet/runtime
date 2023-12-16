@@ -46,7 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var comp = CSharpCompilation.Create (
 				assemblyName: Guid.NewGuid ().ToString ("N"),
 				syntaxTrees: sources,
-				references: (await TestCaseUtils.GetNet6References ()).Add (mdRef).AddRange (additionalReferences),
+				references: (await TestCaseUtils.GetDotNetReferences ()).Add (mdRef).AddRange (additionalReferences),
 				new CSharpCompilationOptions (consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
 			var analyzerOptions = new AnalyzerOptions (
 				additionalFiles: additionalFiles?.ToImmutableArray () ?? ImmutableArray<AdditionalText>.Empty,
