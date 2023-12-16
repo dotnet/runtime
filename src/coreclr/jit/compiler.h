@@ -4149,7 +4149,7 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
 
 #if defined(TARGET_64BIT)
-        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
+        assert(compAppleArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.

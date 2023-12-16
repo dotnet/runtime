@@ -308,10 +308,10 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Returns True if compiling for OSX family of operating systems.
+        /// Returns True if compiling for Apple family of operating systems.
         /// Currently including OSX, MacCatalyst, iOS, iOSSimulator, tvOS and tvOSSimulator
         /// </summary>
-        public bool IsOSXLike
+        public bool IsApplePlatform
         {
             get
             {

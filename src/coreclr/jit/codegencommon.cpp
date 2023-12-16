@@ -1786,7 +1786,7 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" - Windows");
         }
-        else if (TargetOS::IsAppleOS)
+        else if (TargetOS::IsApplePlatform)
         {
             printf(" - Apple");
         }

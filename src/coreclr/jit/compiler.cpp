@@ -6063,7 +6063,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
-    if (TargetOS::IsAppleOS)
+    if (TargetOS::IsApplePlatform)
     {
         info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_APPLE);
     }

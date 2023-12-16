@@ -665,7 +665,7 @@ namespace ILCompiler.DependencyAnalysis
                 byte[] blobSymbolName = _sb.ToUtf8String().UnderlyingArray;
                 EmitSymbolDef(blobSymbolName);
 
-                if (_targetPlatform.IsOSXLike &&
+                if (_targetPlatform.IsApplePlatform &&
                     TryGetCompactUnwindEncoding(blob, out uint compactEncoding))
                 {
                     _offsetToCfiCompactEncoding[start] = compactEncoding;
@@ -771,7 +771,7 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Assert(false);
                 }
 
-                if (_targetPlatform.IsOSXLike)
+                if (_targetPlatform.IsApplePlatform)
                 {
                     // Emit a symbol for beginning of the frame. This is workaround for ld64
                     // linker bug which would produce DWARF with incorrect pcStart offsets for
@@ -850,7 +850,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void AppendExternCPrefix(Utf8StringBuilder sb)
         {
-            if (_targetPlatform.IsOSXLike)
+            if (_targetPlatform.IsApplePlatform)
             {
                 // On OSX-like systems, we need to prefix an extra underscore to account for correct linkage of
                 // extern "C" functions.
@@ -966,7 +966,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_isSingleFileCompilation)
                 return false;
 
-            if (_targetPlatform.IsOSXLike)
+            if (_targetPlatform.IsApplePlatform)
                 return false;
 
             if (!(node is ISymbolNode))
