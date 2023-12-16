@@ -32,7 +32,6 @@ try {
         // It is preferred to use specific 'with***' methods instead in all other cases.
         .withConfig({
             startupMemoryCache: true,
-            maxParallelDownloads: 1,
             resources: {
                 modulesAfterConfigLoaded: {
                     "advanced-sample.lib.module.js": ""
