@@ -173,7 +173,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 		code = mono_riscv_emit_load_regarray (code, 0xffffffff, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, fregs), TRUE);
 
 	/* Load fp */
-	code = mono_riscv_emit_load (code, RISCV_FP, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, gregs) + (RISCV_FP * sizeof (host_mgreg_t)), 0);
+	// code = mono_riscv_emit_load (code, RISCV_FP, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, gregs) + (RISCV_FP * sizeof (host_mgreg_t)), 0);
 
 	/* Make the call */
 	riscv_jalr (code, RISCV_RA, RISCV_A1, 0);
@@ -184,12 +184,12 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	/* Load ctx */
 	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -ctx_offset, 0);
-	/* Save registers back to ctx */
+	/* Save registers back to ctx, except FP*/
 	/* This isn't strictly necessary since we don't allocate variables used in eh clauses to registers */
-	code = mono_riscv_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_T0, MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+	code = mono_riscv_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS ^ (1 << RISCV_FP), RISCV_T0, MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
 
 	/* Restore regs */
-	code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS | (1 << RISCV_FP), RISCV_FP, -gregs_offset, FALSE);
+	code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_FP, -gregs_offset, FALSE);
 	/* Restore fregs */
 	if (riscv_stdext_f || riscv_stdext_d)
 		code = mono_riscv_emit_load_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
@@ -421,6 +421,9 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [RISCV_F18 + i]);
 
 		gpointer ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
+
+		// printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);
+		// mono_print_unwind_info (unwind_info, unwind_info_len);
 
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 		                                      (guint8 *)ji->code_start + ji->code_size, (guint8 *)ip, NULL, regs,
