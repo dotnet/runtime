@@ -209,7 +209,6 @@ public:
 
 #ifndef DACCESS_COMPILE
     uint64_t            GetPalThreadIdForLogging();
-    bool                IsCurrentThread();
 
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);
 #else
