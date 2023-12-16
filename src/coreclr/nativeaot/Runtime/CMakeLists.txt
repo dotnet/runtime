@@ -10,6 +10,7 @@ set(COMMON_RUNTIME_SOURCES
     EHHelpers.cpp
     event.cpp
     FinalizerHelpers.cpp
+    GcEnum.cpp
     GCHelpers.cpp
     gctoclreventsink.cpp
     gcheaputilities.cpp
@@ -23,7 +24,6 @@ set(COMMON_RUNTIME_SOURCES
     ObjectLayout.cpp
     portable.cpp
     RestrictedCallouts.cpp
-    GcEnum.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
     StackFrameIterator.cpp

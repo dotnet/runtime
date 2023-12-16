@@ -101,15 +101,7 @@ void GCToEEInterface::GcScanRoots(ScanFunc* fn, int condemned, int max_gen, Scan
         if (pThread->IsGCSpecial())
             continue;
 
-#if !defined (ISOLATED_HEAPS)
-        if (!GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(),
-            sc->thread_number))
-        {
-            // STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "{ Scan of Thread %p (ID = %x) declined by this heap\n",
-            //             pThread, pThread->GetThreadId());
-        }
-        else
-#endif
+        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), sc->thread_number))
         {
             InlinedThreadStaticRoot* pRoot = pThread->GetInlinedThreadStaticList();
             while (pRoot != NULL)
@@ -137,7 +129,7 @@ void GCToEEInterface::GcScanRoots(ScanFunc* fn, int condemned, int max_gen, Scan
     }
     END_FOREACH_THREAD
 
-        sc->thread_under_crawl = NULL;
+    sc->thread_under_crawl = NULL;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)

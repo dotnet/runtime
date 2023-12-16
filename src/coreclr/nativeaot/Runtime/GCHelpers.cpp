@@ -89,7 +89,6 @@ bool InitializeSubsystems()
 // should be marked as not containing any references. The rest of the fields don't matter: the GC does not
 // query them and the rest of the runtime will never hold a reference to free object.
 
-
 void MethodTable::InitializeAsGcFreeType()
 {
     m_uFlags = ParameterizedEEType | HasComponentSizeFlag;

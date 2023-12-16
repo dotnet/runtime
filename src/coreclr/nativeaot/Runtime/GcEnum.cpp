@@ -58,9 +58,9 @@ static void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Obj
 }
 
 void EnumGcRefsInRegionConservatively(PTR_OBJECTREF pLowerBound,
-                                                          PTR_OBJECTREF pUpperBound,
-                                                          ScanFunc* pfnEnumCallback,
-                                                          ScanContext* pvCallbackData)
+                                      PTR_OBJECTREF pUpperBound,
+                                      ScanFunc* pfnEnumCallback,
+                                      ScanContext* pvCallbackData)
 {
     GcEnumObjectsConservatively(pLowerBound, pUpperBound, pfnEnumCallback, pvCallbackData);
 }
