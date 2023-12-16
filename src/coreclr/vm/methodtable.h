@@ -2334,12 +2334,6 @@ public:
         return GetGenericsStaticsInfo()->m_pFieldDescs;
     }
 
-    BOOL HasCrossModuleGenericStaticsInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TestFlagWithMask(enum_flag_StaticsMask, enum_flag_StaticsMask_CrossModuleGenerics);
-    }
-
     PTR_Module GetGenericsStaticsModuleAndID(DWORD * pID);
 
     WORD GetNumHandleRegularStatics();
@@ -3288,9 +3282,6 @@ private:
         enum_flag_StaticsMask_NonDynamic    = 0x00000000,
         enum_flag_StaticsMask_Dynamic       = 0x00000008,   // dynamic statics (EnC, reflection.emit)
         enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x0000000C, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000008, // helper constant to get rid of unnecessary check
-
 
         enum_flag_GenericsMask              = 0x00000030,
         enum_flag_GenericsMask_NonGeneric   = 0x00000000,   // no instantiation
