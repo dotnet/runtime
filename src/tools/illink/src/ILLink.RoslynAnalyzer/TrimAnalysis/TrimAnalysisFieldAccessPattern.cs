@@ -13,10 +13,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisFieldAccessPattern
 	{
-		public IFieldSymbol Field { init; get; }
-		public IFieldReferenceOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
-		public FeatureContext FeatureContext { init; get; }
+		public IFieldSymbol Field { get; init; }
+		public IFieldReferenceOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisFieldAccessPattern (
 			IFieldSymbol field,

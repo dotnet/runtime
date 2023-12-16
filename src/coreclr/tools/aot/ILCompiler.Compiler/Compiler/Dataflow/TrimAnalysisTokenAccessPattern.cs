@@ -11,8 +11,8 @@ namespace ILCompiler.Dataflow
 {
     public readonly record struct TrimAnalysisTokenAccessPattern
     {
-        public TypeSystemEntity Entity { init; get; }
-        public MessageOrigin Origin { init; get; }
+        public TypeSystemEntity Entity { get; init; }
+        public MessageOrigin Origin { get; init; }
 
         internal TrimAnalysisTokenAccessPattern(TypeSystemEntity entity, MessageOrigin origin)
         {
