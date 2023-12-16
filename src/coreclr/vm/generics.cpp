@@ -245,8 +245,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // We need space for the optional members.
     DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                      fHasGenericsStaticsInfo,
-                                                      pOldMT->HasTokenOverflow());
+                                                      fHasGenericsStaticsInfo);
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
     DWORD cbPerInst = sizeof(GenericsDictInfo) + pOldMT->GetPerInstInfoSize();

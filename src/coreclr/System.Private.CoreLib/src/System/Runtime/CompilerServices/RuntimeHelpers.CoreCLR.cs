@@ -444,8 +444,7 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
 
         // See additional native members in methodtable.h, not needed here yet.
-        // 0x8: m_wFlags2 (additional flags)
-        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
 
         /// <summary>
