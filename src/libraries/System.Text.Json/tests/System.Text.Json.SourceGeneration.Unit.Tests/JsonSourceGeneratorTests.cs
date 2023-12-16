@@ -797,7 +797,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp12));
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
     }
