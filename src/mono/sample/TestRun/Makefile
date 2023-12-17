@@ -8,7 +8,7 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/samples/csharp/roslyn-sdk/SemanticQuickStart/bin/Debug/net8.0/SemanticQuickStart.dll
+ANY_PATH= /home/wuxinlong/workspace/samples/orleans/HelloWorld/bin/Debug/net8.0/HelloWorld.dll
 
 GitHubKey=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
 
@@ -16,8 +16,8 @@ GitHubKey=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
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = "-v --trace=all"
-MONO_ENV_RUN_OPTIONS = ""
+MONO_ENV_DEBUG_OPTIONS = "-v"
+MONO_ENV_RUN_OPTIONS = "--trace=all"
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -97,6 +97,15 @@ debug-any:
 	-ex "handle SIG35 print nostop ignore" \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
 
+remote_gdb:
+	gdb-multiarch -ex 'target remote localhost:12345'  \
+	-iex "add-auto-load-safe-path /home/wuxinlong/workspace/runtime/src/mono/sample/TestRun/" \
+	-ex "set sysroot $(TOP).tools/rootfs/riscv64" \
+	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
+	-ex "b mono_break" \
+	-ex "handle SIG35 print nostop ignore" \
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
+
 debug-any-baseline:
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
@@ -108,6 +117,7 @@ debug-any-baseline:
 
 clean:
 	rm -f *.exe *.exe.mdb
+# 0x4015437b1a
 
 # System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException
 # 1248 +0xd4

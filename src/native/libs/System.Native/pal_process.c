@@ -237,12 +237,12 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     sigset_t signal_set;
     sigset_t old_signal_set;
 
-#if HAVE_PTHREAD_SETCANCELSTATE
-    int thread_cancel_state;
+// #if HAVE_PTHREAD_SETCANCELSTATE
+//     int thread_cancel_state;
 
-    // None of this code can be canceled without leaking handles, so just don't allow it
-    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
-#endif
+//     // None of this code can be canceled without leaking handles, so just don't allow it
+//     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
+// #endif
 
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != stdinFd &&
             NULL != stdoutFd && NULL != stderrFd && NULL != childPid &&
@@ -498,10 +498,10 @@ done:;
         errno = priorErrno;
     }
 
-#if HAVE_PTHREAD_SETCANCELSTATE
-    // Restore thread cancel state
-    pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
-#endif
+// #if HAVE_PTHREAD_SETCANCELSTATE
+//     // Restore thread cancel state
+//     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
+// #endif
 
     free(getGroupsBuffer);
 
