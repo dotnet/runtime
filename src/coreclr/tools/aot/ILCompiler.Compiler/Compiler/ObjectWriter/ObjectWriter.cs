@@ -46,7 +46,7 @@ namespace ILCompiler.ObjectWriter
             _nodeFactory = factory;
             _options = options;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
-            _usesSubsectionsViaSymbols = factory.Target.IsOSXLike;
+            _usesSubsectionsViaSymbols = factory.Target.IsApplePlatform;
 
             // Padding byte for code sections (NOP for x86/x64)
             _insPaddingByte = factory.Target.Architecture switch
@@ -516,7 +516,7 @@ namespace ILCompiler.ObjectWriter
             else
             {
                 ObjectWriter objectWriter =
-                    factory.Target.IsOSXLike ? new MachObjectWriter(factory, options) :
+                    factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
                     factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
                     new ElfObjectWriter(factory, options);
                 objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
