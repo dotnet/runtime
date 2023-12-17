@@ -58,7 +58,7 @@ namespace System.IO.Strategies
 
         internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
         {
-            if (OperatingSystem.IsOSXLike() || OperatingSystem.IsFreeBSD())
+            if (OperatingSystem.IsApplePlatform() || OperatingSystem.IsFreeBSD())
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }
@@ -68,7 +68,7 @@ namespace System.IO.Strategies
 
         internal static void Unlock(SafeFileHandle handle, long position, long length)
         {
-            if (OperatingSystem.IsOSXLike() || OperatingSystem.IsFreeBSD())
+            if (OperatingSystem.IsApplePlatform() || OperatingSystem.IsFreeBSD())
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }

@@ -8,8 +8,8 @@ using System.Linq;
 
 internal static class IOInputs
 {
-    public static bool SupportsSettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsOSXLike;
-    public static bool SupportsGettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsOSXLike;
+    public static bool SupportsSettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform;
+    public static bool SupportsGettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform;
 
     // Max path length (minus trailing \0). Unix values vary system to system; just using really long values here likely to be more than on the average system.
     public static readonly int MaxPath = OperatingSystem.IsWindows() ? 259 : 10000;

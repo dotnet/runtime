@@ -32,11 +32,9 @@ namespace System
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
 
         // OSX family
-        public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
+        public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
-        public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
-        public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
         public static bool IsMacOsAppleSilicon => IsOSX && IsArm64Process;
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
         public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
@@ -50,12 +48,12 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
+        public static Version OpenSslVersion => !IsApplePlatform && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
         private static readonly Version s_openssl3Version = new Version(3, 0, 0);
-        public static bool IsOpenSsl3 => !IsOSXLike && !IsWindows && !IsAndroid && !IsBrowser ?
+        public static bool IsOpenSsl3 => !IsApplePlatform && !IsWindows && !IsAndroid && !IsBrowser ?
             GetOpenSslVersion() >= s_openssl3Version :
             false;
 
