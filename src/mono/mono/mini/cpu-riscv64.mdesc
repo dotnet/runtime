@@ -38,7 +38,7 @@ seq_point: len:0
 check_this: src1:b len:4
 get_ex_obj: dest:i len:4
 gc_safe_point: src1:i len:12 clob:c
-start_handler: len:8 clob:c
+start_handler: len:16 clob:c
 call_handler: len:4 clob:c
 endfinally: len:32
 endfilter: src1:i len:32

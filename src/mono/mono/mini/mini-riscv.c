@@ -1866,17 +1866,25 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IREM_UN_IMM:
 
 	case OP_ICONV_TO_OVF_U1:
+	case OP_ICONV_TO_OVF_U1_UN:
 	case OP_ICONV_TO_OVF_U2:
+	case OP_ICONV_TO_OVF_U2_UN:
+	case OP_ICONV_TO_OVF_U4:
+	case OP_ICONV_TO_OVF_U4_UN:
+	case OP_ICONV_TO_OVF_U8:
+	case OP_ICONV_TO_OVF_U8_UN:
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
 	case OP_LCONV_TO_OVF_U1:
+	case OP_LCONV_TO_OVF_U1_UN:
 	case OP_LCONV_TO_OVF_U2:
+	case OP_LCONV_TO_OVF_U2_UN:
 	case OP_LCONV_TO_OVF_I4:
 	case OP_LCONV_TO_OVF_I4_UN:
 	case OP_LCONV_TO_OVF_U4:
 	case OP_LCONV_TO_OVF_U4_UN:
-	case OP_ICONV_TO_OVF_U8:
 	case OP_LCONV_TO_OVF_U8:
+	case OP_LCONV_TO_OVF_U8_UN:
 
 	case OP_LADD_OVF:
 	case OP_LADD_OVF_UN:
@@ -2699,12 +2707,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_LT) {
+				} else if (ins->next->opcode == OP_COND_EXC_LT || ins->next->opcode == OP_COND_EXC_ILT) {
 					ins->next->opcode = OP_RISCV_EXC_BLT;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_LT_UN) {
+				} else if (ins->next->opcode == OP_COND_EXC_LT_UN || ins->next->opcode == OP_COND_EXC_ILT_UN) {
 					ins->next->opcode = OP_RISCV_EXC_BLTU;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
@@ -2816,7 +2824,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
 				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
 				           ins->next->opcode == OP_LOADI8_MEMBASE || ins->next->opcode == OP_ICONST ||
-						   ins->next->opcode == OP_I8CONST) {
+						   ins->next->opcode == OP_I8CONST || ins->next->opcode == OP_ADD_IMM) {
 					/**
 					 * there is compare without branch OP followed
 					 *
