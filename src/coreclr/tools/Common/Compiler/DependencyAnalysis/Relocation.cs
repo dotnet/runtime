@@ -426,6 +426,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
                 case RelocType.IMAGE_REL_BASED_REL32:
+                case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:

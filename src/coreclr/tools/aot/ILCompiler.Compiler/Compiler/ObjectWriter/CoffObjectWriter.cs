@@ -191,15 +191,9 @@ namespace ILCompiler.ObjectWriter
             if (relocType is IMAGE_REL_BASED_RELPTR32)
             {
                 addend += 4;
-                if (addend != 0)
-                {
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        (int)addend);
-                }
             }
-            else if (addend != 0)
+
+            if (addend != 0)
             {
                 fixed (byte *pData = data)
                 {
