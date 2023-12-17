@@ -1609,8 +1609,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgVtypeInIReg:
 		case ArgVtypeByRef:
 		case ArgVtypeOnStack:
-		case ArgVtypeInMixed: 
-		case ArgVtypeByRefOnStack:{
+		case ArgVtypeInMixed:
+		case ArgVtypeByRefOnStack: {
 			MonoInst *ins;
 			guint32 align;
 			guint32 size;
@@ -1697,7 +1697,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, ainfo->offset, load->dreg);
 		break;
 	}
-	case ArgVtypeByRef: 
+	case ArgVtypeByRef:
 	case ArgVtypeByRefOnStack: {
 		MonoInst *vtaddr, *arg;
 		/* Pass the vtype address in a reg/on the stack */
@@ -2824,7 +2824,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
 				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
 				           ins->next->opcode == OP_LOADI8_MEMBASE || ins->next->opcode == OP_ICONST ||
-						   ins->next->opcode == OP_I8CONST || ins->next->opcode == OP_ADD_IMM) {
+				           ins->next->opcode == OP_I8CONST || ins->next->opcode == OP_ADD_IMM) {
 					/**
 					 * there is compare without branch OP followed
 					 *
@@ -2874,7 +2874,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_ISUB;
 			MonoInst *branch_ins = ins->next;
 			if (branch_ins) {
-				if (branch_ins->opcode == OP_COND_EXC_OV || ins->next->opcode == OP_COND_EXC_IOV){
+				if (branch_ins->opcode == OP_COND_EXC_OV || ins->next->opcode == OP_COND_EXC_IOV) {
 					// bne t1, t2, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
 					branch_ins->sreg1 = mono_alloc_ireg (cfg);
@@ -2891,8 +2891,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					temp->dreg = branch_ins->sreg2;
 					temp->sreg1 = ins->dreg;
 					temp->sreg2 = ins->sreg1;
-				}
-				else{
+				} else {
 					mono_print_ins (branch_ins);
 					g_assert_not_reached ();
 				}
@@ -2914,7 +2913,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * slt t4,t0,t1
 			 * bne t3, t4, overflow
 			 */
-			 
+
 #ifdef TARGET_RISCV64
 			if (ins->opcode == OP_ADDCC)
 				ins->opcode = OP_LADD;
@@ -4099,13 +4098,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_riscv_patch (branch_label, code, MONO_R_RISCV_BNE);
 			break;
 		}
-		case OP_BREAK: 
+		case OP_BREAK:
 			/*
 			 * gdb does not like encountering the hw breakpoint ins in the debugged code.
 			 * So instead of emitting a trap, we emit a call a C function and place a
 			 * breakpoint there.
 			 */
-			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
+			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+			                             GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
 			break;
 
 		case OP_NOP:
