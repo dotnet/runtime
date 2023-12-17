@@ -18,13 +18,13 @@ public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
                 Config: options.Config,
                 IsPublish: options.IsPublish,
                 TargetFramework: options.TargetFramework,
-                BinFrameworkDir: FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework),
-                GlobalizationMode: GlobalizationMode.Sharded,
-                PredefinedIcudt: null,
+                BinFrameworkDir: options.BinFrameworkDir ?? FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework),
+                GlobalizationMode: options.GlobalizationMode,
+                PredefinedIcudt: options.PredefinedIcudt,
                 ExpectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
                 ExpectedFileType: options.ExpectedFileType,
                 RuntimeType: options.RuntimeType,
-                AssertIcuAssets: false, // FIXME: this is broken right now
+                AssertIcuAssets: true,
                 AssertSymbolsFile: false // FIXME: not supported yet
             ));
 }

@@ -5,9 +5,15 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
 
+#if !HOST_MODEL
 using ILCompiler.DependencyAnalysis;
+#endif
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     public unsafe partial class ResourceData
     {
@@ -81,9 +87,15 @@ namespace ILCompiler.Win32Resources
                 CodePage = blobReader.ReadUInt32();
                 Reserved = blobReader.ReadUInt32();
             }
-
+#if HOST_MODEL
+            public static void Write(ref ObjectDataBuilder dataBuilder, int sectionBase, int offsetFromSymbol, int sizeOfData)
+#else
             public static void Write(ref ObjectDataBuilder dataBuilder, ISymbolNode node, int offsetFromSymbol, int sizeOfData)
+#endif
             {
+#if HOST_MODEL
+                dataBuilder.EmitInt(sectionBase + offsetFromSymbol);
+#else
                 dataBuilder.EmitReloc(node,
 #if READYTORUN
                     RelocType.IMAGE_REL_BASED_ADDR32NB,
@@ -91,6 +103,7 @@ namespace ILCompiler.Win32Resources
                     RelocType.IMAGE_REL_BASED_ABSOLUTE,
 #endif
                     offsetFromSymbol);
+#endif
                 dataBuilder.EmitInt(sizeOfData);
                 dataBuilder.EmitInt(1252);  // CODEPAGE = DEFAULT_CODEPAGE
                 dataBuilder.EmitInt(0); // RESERVED

@@ -41,6 +41,10 @@ bool getMethodInfo(
           CORINFO_METHOD_INFO* info,
           CORINFO_CONTEXT_HANDLE context) override;
 
+bool haveSameMethodDefinition(
+          CORINFO_METHOD_HANDLE meth1Hnd,
+          CORINFO_METHOD_HANDLE meth2Hnd) override;
+
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd) override;

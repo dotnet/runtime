@@ -297,7 +297,7 @@ internal sealed class JObjectValueCreator
         }
         else
         {
-            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId, BindingFlags.DeclaredOnly, token);
+            var toString = await _sdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId, BindingFlags.DeclaredOnly, invokeToStringInObject: false, token);
             if (toString != null)
                 description = toString;
         }
@@ -317,6 +317,10 @@ internal sealed class JObjectValueCreator
         var isBoxed = retDebuggerCmdReader.ReadByte() == 1;
         var typeId = retDebuggerCmdReader.ReadInt32();
         var className = await _sdbAgent.GetTypeName(typeId, token);
+        var inlineArraySize = -1;
+        (int MajorVersion, int MinorVersion) = await _sdbAgent.GetVMVersion(token);
+        if (MajorVersion == 2 && MinorVersion >= 65)
+            inlineArraySize = retDebuggerCmdReader.ReadInt32();
         var numValues = retDebuggerCmdReader.ReadInt32();
 
         if (className.StartsWith("System.Nullable<", StringComparison.Ordinal)) //should we call something on debugger-agent to check???
@@ -347,6 +351,7 @@ internal sealed class JObjectValueCreator
                                                     typeId,
                                                     isEnum,
                                                     includeStatic,
+                                                    inlineArraySize,
                                                     token);
         _valueTypes[valueType.Id.Value] = valueType;
         return await valueType.ToJObject(_sdbAgent, forDebuggerDisplayAttribute, token);
@@ -360,7 +365,7 @@ internal sealed class JObjectValueCreator
     public bool TryGetValueTypeById(int valueTypeId, out ValueTypeClass vt) => _valueTypes.TryGetValue(valueTypeId, out vt);
     public PointerValue GetPointerValue(int pointerId) => _pointerValues.TryGetValue(pointerId, out PointerValue pv) ? pv : null;
 
-    private static JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true);
+    private static JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true, className: typeof(T).Name);
 
     private static JObject CreateJObjectForChar(int value)
     {

@@ -128,5 +128,11 @@ namespace Microsoft.Interop
         /// The diagnostic can be resolved by adding the System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute to the assembly
         /// </summary>
         public const string AddDisableRuntimeMarshallingAttribute = nameof(AddDisableRuntimeMarshallingAttribute);
+
+        /// <summary>
+        /// The diagnostic can be resolved by adding the System.Runtime.InteropServices.MarshalAsAttribute to the element with one of the UnmanagedType values
+        /// specified in the comma-separated list of values specified in the value of this property.
+        /// </summary>
+        public const string AddMarshalAsAttribute = nameof(AddMarshalAsAttribute);
     }
 }

@@ -42,10 +42,10 @@ public:
 			for (uint32_t i = 0; i < providerConfigsLen; ++i) {
 				ep_provider_config_init (
 					&m_providerConfigs[i],
-					ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].providerName), -1),
+					ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].providerName)),
 					providerConfigs[i].keywords,
 					static_cast<EventPipeEventLevel>(providerConfigs[i].loggingLevel),
-					ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].filterData), -1));
+					ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].filterData)));
 			}
 		}
 	}
@@ -213,7 +213,7 @@ public:
 
 		ep_char8_t *outputPathUTF8 = NULL;
 		if (outputPath)
-			outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputPath), -1);
+			outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputPath));
 		EventPipeSessionID result = ep_enable (
 			outputPathUTF8,
 			circularBufferSizeInMB,
@@ -318,7 +318,7 @@ public:
 		ep_add_provider_to_session (provider, session);
 	}
 
-	static inline EventPipeProvider * CreateProvider(const SString &providerName, EventPipeCallback callback, void* callbackContext = nullptr)
+	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr)
 	{
 		CONTRACTL
 		{
@@ -328,7 +328,7 @@ public:
 		}
 		CONTRACTL_END;
 
-		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName.GetUnicode ()), -1);
+		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
 		EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, callbackContext);
 		ep_rt_utf8_string_free (providerNameUTF8);
 		return provider;
@@ -360,7 +360,7 @@ public:
 		if (!providerName)
 			return NULL;
 
-		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
+		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
 		EventPipeProvider * provider = ep_get_provider (providerNameUTF8);
 		ep_rt_utf8_string_free(providerNameUTF8);
 		return provider;

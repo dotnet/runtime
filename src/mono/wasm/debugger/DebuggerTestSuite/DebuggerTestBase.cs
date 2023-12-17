@@ -39,7 +39,12 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
-
+        public static bool ReleaseRuntime
+#if RELEASE_RUNTIME
+            => true;
+#else
+            => false;
+#endif
         public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
@@ -47,6 +52,7 @@ namespace DebuggerTests
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
         public static bool RunningOnChromeAndLinux => RunningOn == WasmHost.Chrome && PlatformDetection.IsLinux;
+        public static bool IsRunningInContainer { get; private set; }
 
         public const int FirefoxProxyPort = 6002;
 
@@ -68,7 +74,7 @@ namespace DebuggerTests
 
         public int Id { get; set; }
         public string driver;
-        
+
         public static string DebuggerTestAppPath
         {
             get
@@ -131,6 +137,12 @@ namespace DebuggerTests
         {
             if (Directory.Exists(TempPath))
                 Directory.Delete(TempPath, recursive: true);
+
+            if (File.Exists("/.dockerenv"))
+            {
+                Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
+                IsRunningInContainer = true;
+            }
         }
 
         public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string _driver = "debugger-driver.html")
@@ -1296,7 +1308,7 @@ namespace DebuggerTests
             if (expected?.Equals(actual) == true)
                 return;
 
-            throw new AssertActualExpectedException(
+            throw EqualException.ForMismatchedValues(
                 expected, actual,
                 $"[{label}]\n");
         }

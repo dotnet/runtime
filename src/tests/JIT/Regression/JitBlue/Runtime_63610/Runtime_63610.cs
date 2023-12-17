@@ -34,11 +34,10 @@ public class Runtime_63610
     private static void Callee3() {}
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // Make sure it doesn't assert 
         // https://github.com/dotnet/runtime/issues/63610
         Test(new int[42]);
-        return 100;
     }
 }

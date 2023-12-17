@@ -621,6 +621,38 @@ public:
     bool EvaluateReplacement(
         Compiler* comp, unsigned lclNum, const Access& access, unsigned inducedCount, weight_t inducedCountWtd)
     {
+        // Verify that this replacement has proper GC ness compared to the
+        // layout. While reinterpreting GC fields to integers can be considered
+        // UB, there are scenarios where it can happen safely:
+        //
+        // * The user code could have guarded the access with a dynamic check
+        //   that it doesn't contain a GC pointer, so that the access is actually
+        //   in dead code. This happens e.g. in span functions in SPC.
+        //
+        // * For byrefs, reinterpreting as an integer could be ok in a
+        //   restricted scope due to pinning.
+        //
+        // In theory we could allow these promotions in the restricted scope,
+        // but currently physical promotion works on a function-wide basis.
+
+        LclVarDsc*   lcl    = comp->lvaGetDesc(lclNum);
+        ClassLayout* layout = lcl->GetLayout();
+        if (layout->IntersectsGCPtr(access.Offset, genTypeSize(access.AccessType)))
+        {
+            if (((access.Offset % TARGET_POINTER_SIZE) != 0) ||
+                (layout->GetGCPtrType(access.Offset / TARGET_POINTER_SIZE) != access.AccessType))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (varTypeIsGC(access.AccessType))
+            {
+                return false;
+            }
+        }
+
         unsigned countOverlappedCallArg        = 0;
         unsigned countOverlappedStoredFromCall = 0;
 
@@ -678,9 +710,8 @@ public:
 
         // Now look at the overlapping struct uses that promotion will make more expensive.
 
-        unsigned   countReadBacks    = 0;
-        weight_t   countReadBacksWtd = 0;
-        LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
+        unsigned countReadBacks    = 0;
+        weight_t countReadBacksWtd = 0;
         // For parameters or OSR locals we always need one read back.
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
@@ -771,14 +802,27 @@ public:
         if ((cycleImprovementPerInvoc > 0) &&
             ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
         {
-            JITDUMP("  Promoting replacement\n\n");
+            JITDUMP("  Promoting replacement (cycle improvement)\n\n");
+            return true;
+        }
+
+        // Similarly, even for a cycle-wise regression, if we see a large size
+        // wise improvement we may want to promote. The main case is where all
+        // uses are in blocks with bbWeight=0, but we still estimate a
+        // size-wise improvement.
+        const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
+
+        if ((sizeImprovement > 0) &&
+            ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovementPerInvoc))
+        {
+            JITDUMP("  Promoting replacement (size improvement)\n\n");
             return true;
         }
 
 #ifdef DEBUG
         if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
-            JITDUMP("  Promoting replacement due to stress\n\n");
+            JITDUMP("  Promoting replacement (stress)\n\n");
             return true;
         }
 #endif
@@ -1198,19 +1242,18 @@ public:
             }
 #endif
 
-            StructSegments unpromotedParts =
-                m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
             {
-                unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
-            DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
+            DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
             StructSegments::Segment unpromotedSegment;
-            if (unpromotedParts.CoveringSegment(&unpromotedSegment))
+            if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
                 agg->UnpromotedMax = unpromotedSegment.End;
@@ -1465,6 +1508,31 @@ bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
 }
 
 //------------------------------------------------------------------------
+// Intersects:
+//   Check if this segment intersects another segment.
+//
+// Parameters:
+//   other - The other segment.
+//
+// Returns:
+//    True if so.
+//
+bool StructSegments::Segment::Intersects(const Segment& other) const
+{
+    if (End <= other.Start)
+    {
+        return false;
+    }
+
+    if (other.End <= Start)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // Contains:
 //   Check if this segment contains another segment.
 //
@@ -1555,7 +1623,7 @@ void StructSegments::Subtract(const Segment& segment)
         return;
     }
 
-    assert(m_segments[index].IntersectsOrAdjacent(segment));
+    assert(m_segments[index].Intersects(segment));
 
     if (m_segments[index].Contains(segment))
     {
@@ -1645,6 +1713,46 @@ bool StructSegments::CoveringSegment(Segment* result)
 
     result->Start = m_segments[0].Start;
     result->End   = m_segments[m_segments.size() - 1].End;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// Intersects:
+//   Check if a segment intersects with any segment in this segment tree.
+//
+// Parameters:
+//   segment - The segment.
+//
+// Returns:
+//   True if the input segment intersects with any segment in the tree;
+//   otherwise false.
+//
+bool StructSegments::Intersects(const Segment& segment)
+{
+    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+    }
+    else
+    {
+        // Start == segment[index].End, which makes it non-interesting.
+        index++;
+    }
+
+    if (index >= m_segments.size())
+    {
+        return false;
+    }
+
+    // Here we know Start < segment[index].End. Do they not intersect at all?
+    if (m_segments[index].Start >= segment.End)
+    {
+        // Does not intersect any segment.
+        return false;
+    }
+
+    assert(m_segments[index].Intersects(segment));
     return true;
 }
 
@@ -2309,8 +2417,36 @@ void ReplaceVisitor::ReadBackAfterCall(GenTreeCall* call, GenTree* user)
 //
 //   If the remainder of the struct local is dying, then we expect that this
 //   entire struct local is now dying, since all field accesses are going to be
-//   replaced with other locals. The exception is if there is a queued read
-//   back for any of the fields.
+//   replaced with other locals.
+//
+//   There are two exceptions to the above:
+//
+//     1) If there is a queued readback for any of the fields, then there is
+//     live state in the struct local, so it is not dying.
+//
+//     2) If there are further uses of the local in the same statement then we cannot
+//     actually act on the last-use information we would provide here. That's because
+//     uses of locals occur at the user and we do not model that here. In the real model
+//     there are cases where we do not have any place to insert any IR between the two uses.
+//     For example, consider:
+//
+//       ▌  CALL      void   Program:Foo(Program+S,Program+S)
+//       ├──▌  LCL_VAR   struct<Program+S, 4> V01 loc0
+//       └──▌  LCL_VAR   struct<Program+S, 4> V01 loc0
+//
+//     If V01 is promoted fully then both uses of V01 are last uses here; but
+//     replacing the IR with
+//
+//       ▌  CALL      void   Program:Foo(Program+S,Program+S)
+//       ├──▌  LCL_VAR   struct<Program+S, 4> V01 loc0          (last use)
+//       └──▌  COMMA     struct
+//          ├──▌  STORE_LCL_FLD int    V01 loc0         [+0]
+//          │  └──▌  LCL_VAR   int    V02 tmp0
+//          └──▌  LCL_VAR   struct<Program+S, 4> V01 loc0          (last use)
+//
+//     would be illegal since the created store overlaps with the first local,
+//     and does not take into account that both uses occur simultaneously at
+//     the position of the CALL node.
 //
 bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
 {
@@ -2326,6 +2462,15 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
     for (Replacement& rep : agg->Replacements)
     {
         if (rep.NeedsReadBack)
+        {
+            return false;
+        }
+    }
+
+    for (GenTree* cur = lcl->gtNext; cur != nullptr; cur = cur->gtNext)
+    {
+        assert(cur->OperIsAnyLocal());
+        if (cur->TypeIs(TYP_STRUCT) && (cur->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
         {
             return false;
         }
@@ -2546,7 +2691,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 
         GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
         Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, stmt->GetID());
+        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, m_currentStmt->GetID());
         DISPSTMT(stmt);
         m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
         ClearNeedsWriteBack(rep);

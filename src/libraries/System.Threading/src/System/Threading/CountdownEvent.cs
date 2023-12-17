@@ -22,7 +22,7 @@ namespace System.Threading
     /// completed, and Reset, which should only be used when no other threads are
     /// accessing the event.
     /// </remarks>
-    [DebuggerDisplay("Initial Count={InitialCount}, Current Count={CurrentCount}")]
+    [DebuggerDisplay("InitialCount = {InitialCount}, CurrentCount = {CurrentCount}")]
     public class CountdownEvent : IDisposable
     {
         // CountdownEvent is a simple synchronization primitive used for fork/join parallelism. We create a

@@ -18,23 +18,23 @@ declare interface Int32Ptr extends NativePointer {
     __brand: "Int32Ptr";
 }
 declare interface EmscriptenModule {
-    /** @deprecated Please use growableHeapI8() instead.*/
+    /** @deprecated Please use localHeapViewI8() instead.*/
     HEAP8: Int8Array;
-    /** @deprecated Please use growableHeapI16() instead.*/
+    /** @deprecated Please use localHeapViewI16() instead.*/
     HEAP16: Int16Array;
-    /** @deprecated Please use growableHeapI32() instead. */
+    /** @deprecated Please use localHeapViewI32() instead. */
     HEAP32: Int32Array;
-    /** @deprecated Please use growableHeapI64() instead. */
+    /** @deprecated Please use localHeapViewI64() instead. */
     HEAP64: BigInt64Array;
-    /** @deprecated Please use growableHeapU8() instead. */
+    /** @deprecated Please use localHeapViewU8() instead. */
     HEAPU8: Uint8Array;
-    /** @deprecated Please use growableHeapU16() instead. */
+    /** @deprecated Please use localHeapViewU16() instead. */
     HEAPU16: Uint16Array;
-    /** @deprecated Please use growableHeapU32() instead */
+    /** @deprecated Please use localHeapViewU32() instead */
     HEAPU32: Uint32Array;
-    /** @deprecated Please use growableHeapF32() instead */
+    /** @deprecated Please use localHeapViewF32() instead */
     HEAPF32: Float32Array;
-    /** @deprecated Please use growableHeapF64() instead. */
+    /** @deprecated Please use localHeapViewF64() instead. */
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
@@ -130,6 +130,18 @@ type MonoConfig = {
      */
     cacheBootResources?: boolean;
     /**
+     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
+     */
+    cachedResourcesPurgeDelay?: number;
+    /**
+     * Configures use of the `integrity` directive for fetching assets
+     */
+    disableIntegrityCheck?: boolean;
+    /**
+     * Configures use of the `no-cache` directive for fetching assets
+     */
+    disableNoCacheFetch?: boolean;
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean;
@@ -147,6 +159,16 @@ type MonoConfig = {
      * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
      */
     startupMemoryCache?: boolean;
+    /**
+     * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
+     *  on future runs of the application
+     */
+    interpreterPgo?: boolean;
+    /**
+     * Configures how long to wait before saving the interpreter PGO list. If your application takes
+     *  a while to start you should adjust this value.
+     */
+    interpreterPgoSaveDelay?: number;
     /**
      * application environment
      */
@@ -169,6 +191,15 @@ type MonoConfig = {
     extensions?: {
         [name: string]: any;
     };
+    /**
+     * This is initial working directory for the runtime on the virtual file system. Default is "/".
+     */
+    virtualWorkingDirectory?: string;
+    /**
+     * This is the arguments to the Main() method of the program when called with dotnet.run() Default is [].
+     * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
+     */
+    applicationArguments?: string[];
 };
 type ResourceExtensions = {
     [extensionName: string]: ResourceList;
@@ -212,18 +243,28 @@ type ResourceList = {
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
 type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
-interface ResourceRequest {
-    name: string;
-    behavior: AssetBehaviors;
-    resolvedUrl?: string;
-    hash?: string | null | "";
-}
 interface LoadingResource {
     name: string;
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry extends ResourceRequest {
+interface AssetEntry {
+    /**
+     * the name of the asset, including extension.
+     */
+    name: string;
+    /**
+     * determines how the asset will be handled once loaded
+     */
+    behavior: AssetBehaviors;
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * the integrity hash of the asset (if any)
+     */
+    hash?: string | null | "";
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
      */
@@ -244,7 +285,12 @@ interface AssetEntry extends ResourceRequest {
      * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
-    buffer?: ArrayBuffer;
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>;
     /**
      * It's metadata + fetch-like Promise<Response>
      * If provided, the runtime doesn't have to initiate the download. It would just await the response.
@@ -342,8 +388,8 @@ type DotnetModuleConfig = {
     exports?: string[];
 } & Partial<EmscriptenModule>;
 type APIType = {
-    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
-    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>;
+    runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>;
+    runMainAndExit: (mainAssemblyName: string, args?: string[]) => Promise<number>;
     setEnvironmentVariable: (name: string, value: string) => void;
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;
@@ -442,4 +488,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

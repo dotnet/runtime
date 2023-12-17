@@ -21,7 +21,7 @@ namespace Microsoft.Interop.Analyzers
         private const string Category = "Interoperability";
 
         public static readonly DiagnosticDescriptor ConvertToLibraryImport =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConvertToLibraryImport,
                 GetResourceString(nameof(SR.ConvertToLibraryImportTitle)),
                 GetResourceString(nameof(SR.ConvertToLibraryImportMessage)),
@@ -60,15 +60,13 @@ namespace Microsoft.Interop.Analyzers
 
                     StubEnvironment env = new StubEnvironment(
                         context.Compilation,
-                        targetFramework.TargetFramework,
-                        targetFramework.Version,
-                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata));
+                        context.Compilation.GetEnvironmentFlags());
 
-                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env), SymbolKind.Method);
+                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env, targetFramework), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType, StubEnvironment env)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType, StubEnvironment env, TargetFrameworkSettings tf)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -114,14 +112,19 @@ namespace Microsoft.Interop.Analyzers
             // later user work.
             GeneratorDiagnosticsBag diagnostics = new(new DiagnosticDescriptorProvider(), new MethodSignatureDiagnosticLocations((MethodDeclarationSyntax)method.DeclaringSyntaxReferences[0].GetSyntax()), SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
-            SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
+            SignatureContext targetSignatureContext = SignatureContext.Create(
+                method,
+                LibraryImportGeneratorHelpers.CreateMarshallingInfoParser(env, tf, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute),
+                env,
+                new CodeEmitOptions(SkipInit: tf.TargetFramework == TargetFramework.Net),
+                typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
-            var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
+            var factory = LibraryImportGeneratorHelpers.CreateGeneratorFactory(tf, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions), env.EnvironmentFlags);
 
             bool mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+            var stubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
@@ -137,7 +140,7 @@ namespace Microsoft.Interop.Analyzers
                     anyExplicitlyUnsupportedInfo = true;
                     return ResolvedGenerator.Resolved(forwarder);
                 }
-                return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
+                return factory.Create(info, stubCodeContext);
             }), stubCodeContext, forwarder, out var bindingFailures);
 
             mayRequireAdditionalWork |= bindingFailures.Any(d => d.IsFatal);

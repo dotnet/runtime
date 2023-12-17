@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
         <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <target state="translated">Generátor zdroje nepodporuje vlastní atribut „{0}“ odvozený od atributu JsonConverterAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
         <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <target state="translated">Zdrojový generátor nepodporuje atributy odvozené od atributu JsonConverterAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="needs-review-translation">Existuje několik typů s názvem {0}. Zdroj se vygeneroval pro první zjištěný typ. Tuto kolizi vyřešíte pomocí JsonSerializableAttribute.TypeInfoPropertyName.</target>
+        <target state="translated">Existuje více typů s názvem „{0}“. Zdroj byl vygenerován pro první zjištěný zdroj. K vyřešení této kolize použijte JsonSerializableAttribute.TypeInfoPropertyName.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
@@ -94,12 +94,12 @@
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
         <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
-        <target state="new">The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</target>
+        <target state="translated">Typ „{0}“ byl anotován atributem JsonSerializableAttribute, ale není odvozen od třídy JsonSerializerContext. Nebude vygenerován žádný zdrojový kód.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
         <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
-        <target state="new">Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</target>
+        <target state="translated">Typy anotované atributem JsonSerializableAttribute musí být třídy odvozené od třídy JsonSerializerContext.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
@@ -113,8 +113,8 @@
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
-        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
-        <target state="translated">Zdrojový generátor System.Text.Json není k dispozici v jazyce C#{0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
+        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Zdrojový generátor System.Text.Json není k dispozici v jazyce C# {0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionTitle">

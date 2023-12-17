@@ -137,11 +137,10 @@ struct Big100000DW
 public class Test_hugestruct
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Big100000DW b = new Big100000DW();
         b.b10.b10.b10.b10.i5 = 0;
         GC.Collect();
-        return 100;
     }
 }

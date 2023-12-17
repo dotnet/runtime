@@ -612,17 +612,6 @@ extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule
     END_QCALL;
 }
 
-static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (fileName.EndsWithCaseInsensitive(pwzOldSuffix))
-    {
-        COUNT_T oldSuffixLen = (COUNT_T)u16_strlen(pwzOldSuffix);
-        fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, pwzNewSuffix);
-    }
-}
-
 /*============================GetFullyQualifiedName=============================
 **Action:
 **Returns:
@@ -640,9 +629,12 @@ extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandl
     if (pModule->IsPEFile())
     {
         LPCWSTR fileName = pModule->GetPath();
-        if (*fileName != 0) {
-                retString.Set(fileName);
-        } else {
+        if (*fileName != W('\0'))
+        {
+            retString.Set(fileName);
+        }
+        else
+        {
             retString.Set(W("<Unknown>"));
         }
     }

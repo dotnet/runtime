@@ -2525,7 +2525,7 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"TokenType = {DebugTokenType} (TokenStartIndex = {TokenStartIndex}) Consumed = {BytesConsumed}";
+        private string DebuggerDisplay => $"TokenType = {DebugTokenType}, TokenStartIndex = {TokenStartIndex}, Consumed = {BytesConsumed}";
 
         // Using TokenType.ToString() (or {TokenType}) fails to render in the debug window. The
         // message "The runtime refused to evaluate the expression at this time." is shown. This

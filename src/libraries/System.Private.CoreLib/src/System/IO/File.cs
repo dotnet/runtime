@@ -689,6 +689,62 @@ namespace System.IO
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
         }
 
+        /// <summary>
+        /// Appends the specified byte array to the end of the file at the given path.
+        /// If the file doesn't exist, this method creates a new file.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="path"/> is a zero-length string, contains only white space, or contains one more invalid characters defined by the <see cref="System.IO.Path.GetInvalidPathChars"/> method.
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
+        /// </exception>
+        public static void AppendAllBytes(string path, byte[] bytes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            long fileOffset = RandomAccess.GetLength(fileHandle);
+            RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
+        }
+
+        /// <summary>
+        /// Asynchronously appends the specified byte array to the end of the file at the given path.
+        /// If the file doesn't exist, this method creates a new file. If the operation is canceled, the task will return in a canceled state.
+        /// </summary>
+        /// <param name="path">The file to append to.</param>
+        /// <param name="bytes">The bytes to append to the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
+        /// <exception cref="System.ArgumentException">
+        /// <paramref name="path"/> is a zero-length string, contains only white space, or contains one more invalid characters defined by the <see cref="System.IO.Path.GetInvalidPathChars"/> method.
+        /// </exception>
+        /// <exception cref="System.ArgumentNullException">
+        /// Either <paramref name="path"/> or <paramref name="bytes"/> is null.
+        /// </exception>
+        /// <exception cref="T:System.OperationCanceledException">
+        /// The cancellation token was canceled. This exception is stored into the returned task.
+        /// </exception>
+        public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Core(path, bytes, cancellationToken);
+
+            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
+            {
+                using SafeFileHandle fileHandle = OpenHandle(path, FileMode.Append, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
+                long fileOffset = RandomAccess.GetLength(fileHandle);
+                await RandomAccess.WriteAtOffsetAsync(fileHandle, bytes, fileOffset, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         public static string[] ReadAllLines(string path)
             => ReadAllLines(path, Encoding.UTF8);
 

@@ -427,7 +427,7 @@ HRESULT CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoi
     return hr;
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 //-----------------------------------------------------------------------------
 // CordbFunction::MakeOld
 // Internal method to do any cleanup necessary when a Function is no longer
@@ -501,7 +501,7 @@ HRESULT CordbFunction::GetCurrentVersionNumber(ULONG32 *pnCurrentVersion)
 
     *pnCurrentVersion = (ULONG32)(curFunc->m_dwEnCVersionNumber);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     _ASSERTE( *pnCurrentVersion >= this->m_dwEnCVersionNumber );
 #else
     _ASSERTE(*pnCurrentVersion == CorDB_DEFAULT_ENC_FUNCTION_VERSION);
@@ -536,7 +536,7 @@ HRESULT CordbFunction::GetVersionNumber(ULONG32 *pnVersion)
 
     *pnVersion = (ULONG32)m_dwEnCVersionNumber;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     _ASSERTE(*pnVersion >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
 #else
     _ASSERTE(*pnVersion == CorDB_DEFAULT_ENC_FUNCTION_VERSION);
@@ -616,7 +616,7 @@ HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBr
 //   Triggers a new JIT so the next time the function is called, it will be unoptimized.
 //
 // Parameters
-//   
+//
 //
 // Returns:
 //   S_OK on success.
@@ -656,7 +656,7 @@ HRESULT CordbFunction::DisableOptimizations()
 //
 // Parameters:
 //   BOOL *pOptimizationsDisabled
-//   
+//
 //
 // Returns:
 //   S_OK on success.

@@ -1060,7 +1060,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;
-    var_types              retType         = JITtype2varType(sig->retType);
+    var_types              retType         = genActualType(JITtype2varType(sig->retType));
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
 
@@ -1071,9 +1071,53 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            // We don't have generic multireg APIs
             assert(sizeBytes == 0);
         }
+
+#ifdef TARGET_ARM64
+        else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
+        {
+            CorInfoType pSimdBaseJitType = CORINFO_TYPE_UNDEF;
+            var_types   retFieldType     = impNormStructType(sig->retTypeSigClass, &pSimdBaseJitType);
+
+            if (retFieldType == TYP_STRUCT)
+            {
+                CORINFO_CLASS_HANDLE structType;
+                unsigned int         sizeBytes = 0;
+
+                // LoadAndInsertScalar that returns 2,3 or 4 vectors
+                assert(pSimdBaseJitType == CORINFO_TYPE_UNDEF);
+                unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
+                assert(fieldCount > 1);
+                CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
+                CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
+                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x2
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2;
+                        break;
+                    case 3:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x3
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3;
+                        break;
+                    case 4:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x4
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
+                        break;
+                    default:
+                        assert("unsupported");
+                }
+            }
+            else
+            {
+                assert((retFieldType == TYP_SIMD8) || (retFieldType == TYP_SIMD16));
+                assert(isSupportedBaseType(intrinsic, simdBaseJitType));
+                retType = getSIMDTypeForSize(sizeBytes);
+            }
+        }
+#endif
         else
         {
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
@@ -1130,7 +1174,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
 #ifdef TARGET_ARM64
     if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
-        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+        ((intrinsic >= NI_AdvSimd_LoadAndInsertScalar) && (intrinsic <= NI_AdvSimd_LoadAndInsertScalarVector64x4)) ||
+        ((intrinsic >= NI_AdvSimd_Arm64_LoadAndInsertScalar) &&
+         (intrinsic <= NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4)))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
@@ -1380,6 +1426,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
+                    case NI_AVX2_BroadcastVector128ToVector256:
+                    case NI_AVX512F_BroadcastVector128ToVector512:
+                    case NI_AVX512F_BroadcastVector256ToVector512:
                     {
                         // These intrinsics have both pointer and vector overloads
                         // We want to be able to differentiate between them so lets

@@ -56,8 +56,7 @@
 #endif
 
 #ifdef TARGET_APPLE
-#include <minipal/getexepath.h>
-#include <mach-o/getsect.h>
+#include <mach/mach.h>
 #endif
 
 using std::nullptr_t;
@@ -70,10 +69,6 @@ using std::nullptr_t;
 #define PAGE_READWRITE          0x04
 #define PAGE_EXECUTE_READ       0x20
 #define PAGE_EXECUTE_READWRITE  0x40
-#define MEM_COMMIT              0x1000
-#define MEM_RESERVE             0x2000
-#define MEM_DECOMMIT            0x4000
-#define MEM_RELEASE             0x8000
 
 #define WAIT_OBJECT_0           0
 #define WAIT_TIMEOUT            258
@@ -520,59 +515,61 @@ extern "C" bool PalDetachThread(void* thread)
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
-#ifdef TARGET_APPLE
-static const struct section_64 *thunks_section;
-static const struct section_64 *thunks_data_section;
-#endif
-
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
 #ifdef TARGET_APPLE
-    int f;
-    Dl_info info;
+    vm_address_t addr, taddr;
+    vm_prot_t prot, max_prot;
+    kern_return_t ret;
 
-    int st = dladdr((const void*)hTemplateModule, &info);
-    if (st == 0)
+    // Allocate two contiguous ranges of memory: the first range will contain the trampolines
+    // and the second range will contain their data.
+    do
+    {
+        ret = vm_allocate(mach_task_self(), &addr, templateSize * 2, VM_FLAGS_ANYWHERE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
     {
         return UInt32_FALSE;
     }
 
-    f = open(info.dli_fname, O_RDONLY);
-    if (f < 0)
+    do
     {
+        ret = vm_remap(
+            mach_task_self(), &addr, templateSize, 0, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE,
+            mach_task_self(), ((vm_address_t)hTemplateModule + templateRva), FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+    } while (ret == KERN_ABORTED);
+
+    if (ret != KERN_SUCCESS)
+    {
+        do
+        {
+            ret = vm_deallocate(mach_task_self(), addr, templateSize * 2);
+        } while (ret == KERN_ABORTED);
+
         return UInt32_FALSE;
     }
 
-    // NOTE: We ignore templateRva since we would need to convert it to file offset
-    // and templateSize is useless too. Instead we read the sections from the
-    // executable and determine the size from them.
-    if (thunks_section == NULL)
-    {
-        const struct mach_header_64 *hdr = (const struct mach_header_64 *)hTemplateModule;
-        thunks_section = getsectbynamefromheader_64(hdr, "__THUNKS", "__thunks");
-        thunks_data_section = getsectbynamefromheader_64(hdr, "__THUNKS_DATA", "__thunks");
-    }
+    *newThunksOut = (void*)addr;
 
-    *newThunksOut = mmap(
-        NULL,
-        thunks_section->size + thunks_data_section->size,
-        PROT_READ | PROT_EXEC,
-        MAP_PRIVATE,
-        f,
-        thunks_section->offset);
-    close(f);
-
-    return *newThunksOut == NULL ? UInt32_FALSE : UInt32_TRUE;
+    return UInt32_TRUE;
 #else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
 {
 #ifdef TARGET_APPLE
-    int ret = munmap(pBaseAddress, thunks_section->size + thunks_data_section->size);
-    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
+    kern_return_t ret;
+
+    do
+    {
+        ret = vm_deallocate(mach_task_self(), (vm_address_t)pBaseAddress, templateSize * 2);
+    } while (ret == KERN_ABORTED);
+
+    return ret == KERN_SUCCESS ? UInt32_TRUE : UInt32_FALSE;
 #else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
@@ -764,6 +761,16 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return copy.Extract();
 }
 
+REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
+{
+    return dlopen(moduleName, RTLD_LAZY);
+}
+
+REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+{
+    return dlsym(module, functionName);
+}
+
 static int W32toUnixAccessControl(uint32_t flProtect)
 {
     int prot = 0;
@@ -792,79 +799,25 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     return prot;
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, size_t size, uint32_t allocationType, uint32_t protect)
+REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(size_t size, uint32_t protect)
 {
-    // TODO: thread safety!
-
-    if ((allocationType & ~(MEM_RESERVE | MEM_COMMIT)) != 0)
-    {
-        // TODO: Implement
-        return NULL;
-    }
-
-    ASSERT(((size_t)pAddress & (OS_PAGE_SIZE - 1)) == 0);
-
-    // Align size to whole pages
-    size = (size + (OS_PAGE_SIZE - 1)) & ~(OS_PAGE_SIZE - 1);
     int unixProtect = W32toUnixAccessControl(protect);
 
-    if (allocationType & (MEM_RESERVE | MEM_COMMIT))
-    {
-        // For Windows compatibility, let the PalVirtualAlloc reserve memory with 64k alignment.
-        static const size_t Alignment = 64 * 1024;
-
-        size_t alignedSize = size + (Alignment - OS_PAGE_SIZE);
-        int flags = MAP_ANON | MAP_PRIVATE;
+    int flags = MAP_ANON | MAP_PRIVATE;
 
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
-        if (unixProtect & PROT_EXEC)
-        {
-            flags |= MAP_JIT;
-        }
+    if (unixProtect & PROT_EXEC)
+    {
+        flags |= MAP_JIT;
+    }
 #endif
 
-        void * pRetVal = mmap(pAddress, alignedSize, unixProtect, flags, -1, 0);
-
-        if (pRetVal != MAP_FAILED)
-        {
-            void * pAlignedRetVal = (void *)(((size_t)pRetVal + (Alignment - 1)) & ~(Alignment - 1));
-            size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
-            if (startPadding != 0)
-            {
-                int ret = munmap(pRetVal, startPadding);
-                ASSERT(ret == 0);
-            }
-
-            size_t endPadding = alignedSize - (startPadding + size);
-            if (endPadding != 0)
-            {
-                int ret = munmap((void *)((size_t)pAlignedRetVal + size), endPadding);
-                ASSERT(ret == 0);
-            }
-
-            pRetVal = pAlignedRetVal;
-        }
-
-        return pRetVal;
-    }
-
-    if (allocationType & MEM_COMMIT)
-    {
-        int ret = mprotect(pAddress, size, unixProtect);
-        return (ret == 0) ? pAddress : NULL;
-    }
-
-    return NULL;
+    return mmap(NULL, size, unixProtect, flags, -1, 0);
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size, uint32_t freeType)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)
 {
-    ASSERT(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
-    ASSERT((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
-    ASSERT(freeType != 0);
-
-    // UNIXTODO: Implement this function
-    return UInt32_TRUE;
+    munmap(pAddress, size);
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)

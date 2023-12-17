@@ -812,7 +812,7 @@ namespace Internal.JitInterface
     {
         CORINFO_WINNT,
         CORINFO_UNIX,
-        CORINFO_MACOS,
+        CORINFO_APPLE,
     }
 
     public enum CORINFO_RUNTIME_ABI
@@ -1365,6 +1365,9 @@ namespace Internal.JitInterface
 
         // token comes from devirtualizing a method
         CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+        // token comes from resolved static virtual method
+        CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

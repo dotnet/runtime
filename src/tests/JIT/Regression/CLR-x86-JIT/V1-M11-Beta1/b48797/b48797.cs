@@ -14,7 +14,7 @@ namespace Test
         static void Method1(float param1, double[] ad) { }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             float[] local3 = new float[2];
             try
@@ -28,7 +28,6 @@ namespace Test
             {
                 Method1(local3[0], (double[])m_xForward2);
             }
-            return 100;
         }
     }
 }

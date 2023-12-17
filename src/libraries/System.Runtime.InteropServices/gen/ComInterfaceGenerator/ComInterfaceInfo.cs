@@ -123,7 +123,7 @@ namespace Microsoft.Interop
                         stringMarshallingDiagnostic = DiagnosticInfo.Create(
                             GeneratorDiagnostics.StringMarshallingCustomTypeNotAccessibleByGeneratedCode,
                             syntax.Identifier.GetLocation(),
-                            attrInfo.StringMarshallingCustomType.FullTypeName.Replace("global::", ""),
+                            attrInfo.StringMarshallingCustomType.FullTypeName.Replace(TypeNames.GlobalAlias, ""),
                             details);
                         return false;
                     }

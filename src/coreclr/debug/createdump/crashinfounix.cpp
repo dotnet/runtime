@@ -8,6 +8,7 @@
 #endif
 
 extern CrashInfo* g_crashInfo;
+extern uint8_t g_debugHeaderCookie[4];
 
 int g_readProcessMemoryErrno = 0;
 
@@ -372,12 +373,33 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_runtimeBaseAddress = baseAddress;
 
                     // explicit initialization for old gcc support; instead of just runtimeInfo { }
-                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { } };
+                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
                     if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                         {
                             TRACE("Found valid single-file runtime info\n");
+                        }
+                    }
+                }
+            }
+        }
+        else if (m_appModel == AppModelType::NativeAOT)
+        {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
+                uint64_t symbolOffset;
+                if (TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+                {
+                    m_coreclrPath = GetDirectory(moduleName);
+                    m_runtimeBaseAddress = baseAddress;
+
+                    uint8_t cookie[sizeof(g_debugHeaderCookie)];
+                    if (ReadMemory((void*)(baseAddress + symbolOffset), cookie, sizeof(cookie)))
+                    {
+                        if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
+                        {
+                            TRACE("Found valid NativeAOT runtime module\n");
                         }
                     }
                 }
@@ -494,7 +516,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
         assert(m_fdMem != -1);
-        *read = pread64(m_fdMem, buffer, size, (off64_t)address);
+        *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
     if (*read == (size_t)-1)

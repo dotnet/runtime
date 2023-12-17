@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.Cli.Build;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -38,7 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class CoreClr
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("coreclr");
-            public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
+            public static string FilePath = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, FileName);
 
             public static string MockName = GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
             public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
@@ -80,6 +84,29 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             public static string FileName = GetExeFileNameForCurrentPlatform("singlefilehost");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
+        }
+
+        public static (IEnumerable<string> Assemblies, IEnumerable<string> NativeLibraries) GetRuntimeFiles()
+        {
+            var runtimePackDir = TestContext.BuiltDotNet.GreatestVersionSharedFxPath;
+            var assemblies = Directory.GetFiles(runtimePackDir, "*.dll").Where(f => IsAssembly(f));
+
+            (string prefix, string suffix) = Binaries.GetSharedLibraryPrefixSuffix();
+            var nativeLibraries = Directory.GetFiles(runtimePackDir, $"{prefix}*{suffix}").Where(f => !IsAssembly(f) && Path.GetExtension(f) != ".json");
+
+            return (assemblies, nativeLibraries);
+
+            static bool IsAssembly(string filePath)
+            {
+                if (Path.GetExtension(filePath) != ".dll")
+                    return false;
+
+                using (var fs = File.OpenRead(filePath))
+                using (var peReader = new System.Reflection.PortableExecutable.PEReader(fs))
+                {
+                    return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
+                }
+            }
         }
     }
 }

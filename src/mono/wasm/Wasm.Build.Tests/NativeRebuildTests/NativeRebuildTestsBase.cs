@@ -108,5 +108,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             return ExpandBuildArgs(buildArgs, propertiesBuilder.ToString());
         }
 
+        // appending UTF-8 char makes sure project build&publish under all types of paths is supported
+        protected string GetTestProjectPath(string prefix, string config, bool appendUnicode=true) =>
+            appendUnicode ? $"{prefix}_{config}_{s_unicodeChar}" : $"{prefix}_{config}";
+
     }
 }

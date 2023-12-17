@@ -229,9 +229,217 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if NETCOREAPP
-        [OuterLoop]
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         public async Task BrowserHttpHandler_Streaming()
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp2Server.BaseUri + "echobody.ashx");
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            byte[] body = new byte[1024 * 1024];
+            Random.Shared.NextBytes(body);
+
+            int readOffset = 0;
+            req.Content = new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
+                readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                {
+                    await Task.Delay(1);
+                    if (readOffset < body.Length)
+                    {
+                        int send = Math.Min(body.Length - readOffset, count);
+                        body.AsSpan(readOffset, send).CopyTo(buffer.AsSpan(offset, send));
+                        readOffset += send;
+                        return send;
+                    }
+                    return 0;
+                }));
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            // we need to switch off Response buffering of default ResponseContentRead option
+            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                // Streaming requests can't set Content-Length
+                Assert.False(response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
+                // Streaming response uses StreamContent
+                Assert.Equal(typeof(StreamContent), response.Content.GetType());
+
+                var stream = await response.Content.ReadAsStreamAsync();
+                Assert.Equal("ReadOnlyStream", stream.GetType().Name);
+                var buffer = new byte[1024 * 1024];
+                int totalCount = 0;
+                int fetchedCount = 0;
+                do
+                {
+                    fetchedCount = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    Assert.True(body.AsSpan(totalCount, fetchedCount).SequenceEqual(buffer.AsSpan(0, fetchedCount)));
+                    totalCount += fetchedCount;
+                } while (fetchedCount != 0);
+                Assert.Equal(body.Length, totalCount);
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingRequest()
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteVerifyUploadServer);
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+
+            int size = 1500 * 1024 * 1024;
+            int multipartOverhead = 125 + 4 /* "test" */;
+            int remaining = size;
+            var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
+                readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                {
+                    if (remaining > 0)
+                    {
+                        int send = Math.Min(remaining, count);
+                        buffer.AsSpan(offset, send).Fill(65);
+                        remaining -= send;
+                        return Task.FromResult(send);
+                    }
+                    return Task.FromResult(0);
+                })), "test");
+            req.Content = content;
+
+            req.Content.Headers.Add("Content-MD5-Skip", "browser");
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            using (HttpResponseMessage response = await client.SendAsync(req))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal((size + multipartOverhead).ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
+                // Streaming requests can't set Content-Length
+                Assert.False(response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
+            }
+        }
+
+        // Duplicate of PostAsync_ThrowFromContentCopy_RequestFails using remote server
+        [OuterLoop]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BrowserHttpHandler_StreamingRequest_ThrowFromContentCopy_RequestFails(bool syncFailure)
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer);
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+
+            Exception error = new FormatException();
+            req.Content = new StreamContent(new DelegateStream(
+                canSeekFunc: () => true,
+                lengthFunc: () => 12345678,
+                positionGetFunc: () => 0,
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
+                readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            {
+                Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.SendAsync(req)));
+            }
+        }
+
+        public static TheoryData CancelRequestReadFunctions
+            => new TheoryData<bool, Func<Task<int>>>
+            {
+                { false, () => Task.FromResult(0) },
+                { true, () => Task.FromResult(0) },
+                { false, () => Task.FromResult(1) },
+                { true, () => Task.FromResult(1) },
+                { false, () => throw new FormatException() },
+                { true, () => throw new FormatException() },
+            };
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [MemberData(nameof(CancelRequestReadFunctions))]
+        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(bool cancelAsync, Func<Task<int>> readFunc)
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer);
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+
+            using var cts = new CancellationTokenSource();
+            var token = cts.Token;
+            int readNotCancelledCount = 0, readCancelledCount = 0;
+            req.Content = new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
+                readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                {
+                    if (cancelAsync) await Task.Delay(1);
+                    Assert.Equal(token.IsCancellationRequested, cancellationToken.IsCancellationRequested);
+                    if (!token.IsCancellationRequested)
+                    {
+                        readNotCancelledCount++;
+                        cts.Cancel();
+                    }
+                    else
+                    {
+                        readCancelledCount++;
+                    }
+                    return await readFunc();
+                }));
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            {
+                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.SendAsync(req, token));
+                Assert.Equal(token, ex.CancellationToken);
+                Assert.Equal(1, readNotCancelledCount);
+                Assert.Equal(0, readCancelledCount);
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingRequest_Http1Fails()
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+
+            var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp11Server.BaseUri);
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+
+            int readCount = 0;
+            req.Content = new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
+                readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                {
+                    readCount++;
+                    return Task.FromResult(1);
+                }));
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server))
+            {
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(req));
+                Assert.Equal("TypeError: Failed to fetch", ex.Message);
+                Assert.Equal(1, readCount);
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingResponse()
         {
             var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
@@ -244,6 +452,7 @@ namespace System.Net.Http.Functional.Tests
             // we need to switch off Response buffering of default ResponseContentRead option
             using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
             {
+                // Streaming response uses StreamContent
                 Assert.Equal(typeof(StreamContent), response.Content.GetType());
 
                 Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);

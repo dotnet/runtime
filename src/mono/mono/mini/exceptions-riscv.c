@@ -254,7 +254,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 		code = mono_riscv_emit_store (code, RISCV_A1, RISCV_FP, -gregs_offset + (RISCV_RA * sizeof (host_mgreg_t)), 0);
 
 	/* Save previous fp/sp */
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -2 * sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -2 * (gint32)sizeof (host_mgreg_t), 0);
 	code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -gregs_offset + (RISCV_FP * sizeof (host_mgreg_t)), 0);
 	// current fp is previous sp
 	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_FP, -gregs_offset + (RISCV_SP * sizeof (host_mgreg_t)), 0);
@@ -272,7 +272,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 		if (llvm)
 			NOT_IMPLEMENTED;
 	} else
-		code = mono_riscv_emit_load (code, RISCV_A1, RISCV_FP, -sizeof (host_mgreg_t), 0);
+		code = mono_riscv_emit_load (code, RISCV_A1, RISCV_FP, -(gint32)sizeof (host_mgreg_t), 0);
 	/* Arg 3 = gregs */
 	riscv_addi (code, RISCV_A2, RISCV_FP, -gregs_offset);
 	/* Arg 4 = fregs */

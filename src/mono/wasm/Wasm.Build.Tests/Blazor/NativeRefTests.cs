@@ -62,35 +62,16 @@ public class NativeTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
     [InlineData("Release")]
-    public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)
+    public void BlazorWasm_CannotAOT_WithNoTrimming(string config)
     {
         string id = $"blazorwasm_{config}_aot_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
-
-        // We don't want to emcc compile, and link ~180 assemblies!
-        // So, stop once `mono-aot-cross` part of the build is done
-        string target = @"<Target Name=""StopAfterWasmAOT"" AfterTargets=""_WasmAotCompileApp"">
-            <Error Text=""Stopping after AOT"" Condition=""'$(WasmBuildingForNestedPublish)' == 'true'"" />
-        </Target>
-        ";
         AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
                                     extraItems: null,
-                                    extraProperties: null,
-                                    atTheEnd: target);
+                                    extraProperties: "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>");
 
-        string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-        CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!)
-                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .ExecuteWithCapturedOutput("publish",
-                                                               $"-bl:{publishLogPath}",
-                                                               "-p:RunAOTCompilation=true",
-                                                               "-p:PublishTrimmed=false",
-                                                               $"-p:Configuration={config}");
-
-        Assert.True(res.ExitCode != 0, "Expected publish to fail");
-        Assert.Contains("Stopping after AOT", res.Output);
+        (CommandResult res, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+        Assert.Contains("AOT is not supported without IL trimming", res.Output);
     }
 }

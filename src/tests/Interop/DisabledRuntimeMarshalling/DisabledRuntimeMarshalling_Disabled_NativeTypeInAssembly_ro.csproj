@@ -1,17 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Run the same test suite with optimizations on to validate that inlined IL stubs with the disabled marshalling behavior work correctly. -->
     <DebugType>None</DebugType>
     <Optimize>true</Optimize>
+    <DefineConstants>DISABLE_RUNTIME_MARSHALLING;$(DefineConstants)</DefineConstants>
 
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/84402 -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
-    <Compile Include="*.cs" />
-    <Compile Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative.cs" />
+    <Compile Include="AutoLayout.cs" />
+    <Compile Include="FunctionPointers.cs" />
+    <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
+    <Compile Include="DisabledRuntimeMarshallingNative.cs" />
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

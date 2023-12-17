@@ -14,7 +14,6 @@ namespace System.Tests.Types
         private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void TypeMembers()
         {
             // Get an arbitrary function pointer
@@ -116,7 +115,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void NonFunctionPointerThrows()
         {
             Assert.Throws<InvalidOperationException>(() => typeof(int).GetFunctionPointerCallingConventions());
@@ -125,7 +123,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void TestToString()
         {
             // Function pointer types are inline in metadata and can't be loaded independently so they do not support the
@@ -146,7 +143,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void FunctionPointerReturn()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -163,7 +159,6 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void RequiredModifiers()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -178,6 +173,22 @@ namespace System.Tests.Types
             Assert.Equal(typeof(Runtime.InteropServices.OutAttribute).Project(), parameters[1].GetRequiredCustomModifiers()[0]);
         }
 
+        [Fact]
+        public static unsafe void GenericFunctionPointer()
+        {
+            Type t = typeof(FunctionPointerHolder).Project();
+
+            MethodInfo m1 = t.GetMethod(nameof(FunctionPointerHolder.GenericReturnValue), Bindings);
+            Type fcnPtr1 = m1.ReturnType;
+            Assert.True(fcnPtr1.IsFunctionPointer);
+            Assert.True(fcnPtr1.ContainsGenericParameters);
+
+            MethodInfo m2 = t.GetMethod(nameof(FunctionPointerHolder.GenericArgument), Bindings);
+            Type fcnPtr2 = m2.GetParameters()[1].ParameterType;
+            Assert.True(fcnPtr2.IsFunctionPointer);
+            Assert.True(fcnPtr2.ContainsGenericParameters);
+        }
+
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue1),
             "MethodReturnValue1()",
@@ -188,7 +199,6 @@ namespace System.Tests.Types
             "Double",
             "System.Double(System.String, System.Boolean*&, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyStruct&)",
             "String", "Boolean*&", "MyClass", "MyStruct&")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void MethodInfo(
             string methodName,
             string methodToStringPostfix,
@@ -216,7 +226,6 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Prop_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Prop_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void Property(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -235,7 +244,6 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Field_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Field_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         public static unsafe void Field(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -285,6 +293,9 @@ namespace System.Tests.Types
 
             public delegate* unmanaged[Stdcall, MemberFunction]<string, ref bool*, MyClass, in MyStruct, double> SeveralArguments() => default;
             public delegate*<in int, out int, void> RequiredModifiers() => default;
+
+            public delegate*<T> GenericReturnValue<T>() => default;
+            public bool GenericArgument<T>(int x, delegate*<T[], void> fptr) => default;
 
             public class MyClass { }
             public struct MyStruct { }

@@ -53,19 +53,10 @@ GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , GenTreeOp          ,0,0,GTK_UNOP)
-GTNODE(NOP              , GenTree            ,0,0,GTK_UNOP|DBK_NOCONTAIN)
+GTNODE(NOP              , GenTree            ,0,1,GTK_LEAF|DBK_NOCONTAIN)
 GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
-
-GTNODE(LOCKADD          , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)
-GTNODE(MEMORYBARRIER    , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE)
-
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
 
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
@@ -78,6 +69,14 @@ GTNODE(CKFINITE         , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // Che
 GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
+
+GTNODE(MEMORYBARRIER    , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE)
+GTNODE(LOCKADD          , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)
 
 GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                                 // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
@@ -300,7 +299,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //  Nodes used only within the code generator:
 //-----------------------------------------------------------------------------
 
-GTNODE(CLS_VAR_ADDR     , GenTreeClsVar      ,0,0,GTK_LEAF|DBK_NOTHIR)              // static data member address
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
 GTNODE(EMITNOP          , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // emitter-placed nop
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // pinvoke prolog seq

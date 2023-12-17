@@ -41,11 +41,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestTypeOverloadWith5ParametersWithIgnoreCase ();
 			TestTypeOverloadWith5ParametersWithoutIgnoreCase ();
 			TestInvalidTypeName ();
-			TestUnkownIgnoreCase3Params (1);
-			TestUnkownIgnoreCase5Params (1);
+			TestUnknownIgnoreCase3Params (1);
+			TestUnknownIgnoreCase5Params (1);
 			TestGenericTypeWithAnnotations ();
 
 			BaseTypeInterfaces.Test ();
+
+
+			TestInvalidTypeCombination ();
 		}
 
 		[Kept]
@@ -327,8 +330,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class OverloadWith5ParametersWithIgnoreCase { }
 
 		[Kept]
-		// Small difference in formatting between analyzer/linker
+		// Small difference in formatting between analyzer/NativeAOT/linker
 		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
 		static void TestTypeOverloadWith5ParametersWithIgnoreCase ()
 		{
@@ -371,7 +375,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Boolean, Boolean)'")]
-		static void TestUnkownIgnoreCase3Params (int num)
+		static void TestUnknownIgnoreCase3Params (int num)
 		{
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			bool unknownValue = num + 1 == 1;
@@ -379,10 +383,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		// Small difference in formatting between analyzer/linker
+		// Small difference in formatting between analyzer/NativeAOT/linker
 		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func`2<AssemblyName,Assembly>,Func`4<Assembly,String,Boolean,Type>,Boolean,Boolean)'", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
-		static void TestUnkownIgnoreCase5Params (int num)
+		static void TestUnknownIgnoreCase5Params (int num)
 		{
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			bool unknownValue = num + 1 == 1;
@@ -399,9 +404,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		public class GenericTypeWithAnnotations_InnerType
 		{
-			[Kept]
+			// NativeAOT: https://github.com/dotnet/runtime/issues/95140
+			[Kept (By = Tool.Trimmer)]
 			[KeptBackingField]
-			private static bool PrivateProperty { [Kept] get; [Kept] set; }
+			private static bool PrivateProperty { [Kept (By = Tool.Trimmer)] get; [Kept (By = Tool.Trimmer)] set; }
 
 			private static void PrivateMethod () { }
 		}
@@ -421,7 +427,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			interface ITest
 			{
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				void Method ();
 			}
 
@@ -449,6 +455,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				t.Method ();
 				typeof (DerivedType).GetInterfaces ();
 			}
+		}
+
+		[Kept]
+		static void TestInvalidTypeCombination ()
+		{
+			try {
+				// It's invalid to create an array of Span
+				// This should throw at runtime, but should not warn nor fail the compilation
+				Console.WriteLine (Type.GetType ("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime"));
+			} catch (Exception e) { }
 		}
 	}
 }

@@ -16,9 +16,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;                           // for XmlReader/Writer
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml;                           // for XmlReader/Writer
 
 namespace System.IO.Packaging
 {

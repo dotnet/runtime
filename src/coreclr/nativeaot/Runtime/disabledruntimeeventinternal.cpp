@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "eventpipeadapter.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "PalRedhawk.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -78,7 +80,15 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOPack
 {
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult)
+{
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+{
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
 {
 }
 

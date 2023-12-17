@@ -2817,7 +2817,7 @@ public class Test_b19679
         return 100;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         (new Test_b19679()).RunTest0_Inline();
 
@@ -3621,7 +3621,6 @@ public class Test_b19679
 
         (new Test_b19679()).RunTest400_NoInline();
 
-        return 100;
     }
 }
 

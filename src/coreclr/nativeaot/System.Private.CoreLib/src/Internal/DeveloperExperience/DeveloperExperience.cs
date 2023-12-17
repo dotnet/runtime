@@ -18,23 +18,9 @@ namespace Internal.DeveloperExperience
 {
     public class DeveloperExperience
     {
-        /// <summary>
-        /// Check the AppCompat switch 'Diagnostics.DisableMetadataStackTraceResolution'.
-        /// Some customers use DIA-based tooling to translate stack traces in the raw format
-        /// (module)+RVA - for them, stack trace and reflection metadata-based resolution
-        /// constitutes technically a regression because these two resolution methods today cannot
-        /// provide file name and line number information; PDB-based tooling can easily do that
-        /// based on the RVA information.
-        /// </summary>
-        private static bool IsMetadataStackTraceResolutionDisabled()
+        public virtual string CreateStackTraceString(IntPtr ip, bool includeFileInfo, out bool isStackTraceHidden)
         {
-            AppContext.TryGetSwitch("Diagnostics.DisableMetadataStackTraceResolution", out bool disableMetadata);
-            return disableMetadata;
-        }
-
-        public virtual string CreateStackTraceString(IntPtr ip, bool includeFileInfo)
-        {
-            string methodName = GetMethodName(ip, out IntPtr methodStart);
+            string methodName = GetMethodName(ip, out IntPtr methodStart, out isStackTraceHidden);
             if (methodName != null)
             {
                 if (ip != methodStart)
@@ -58,21 +44,19 @@ namespace Internal.DeveloperExperience
             return $"{fileNameWithoutExtension}!<BaseAddress>+0x{rva:x}";
         }
 
-        internal static string GetMethodName(IntPtr ip, out IntPtr methodStart)
+        internal static string GetMethodName(IntPtr ip, out IntPtr methodStart, out bool isStackTraceHidden)
         {
             methodStart = IntPtr.Zero;
-            if (!IsMetadataStackTraceResolutionDisabled())
+            StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
+            if (stackTraceCallbacks != null)
             {
-                StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
-                if (stackTraceCallbacks != null)
+                methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
+                if (methodStart != IntPtr.Zero)
                 {
-                    methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
-                    if (methodStart != IntPtr.Zero)
-                    {
-                        return stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
-                    }
+                    return stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart, out isStackTraceHidden);
                 }
             }
+            isStackTraceHidden = false;
             return null;
         }
 
@@ -86,27 +70,6 @@ namespace Internal.DeveloperExperience
         public virtual void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
         {
             ilOffset = StackFrame.OFFSET_UNKNOWN;
-        }
-
-        /// <summary>
-        /// Makes reasonable effort to get the MethodBase reflection info. Returns null if it can't.
-        /// </summary>
-        public virtual void TryGetMethodBase(IntPtr methodStartAddress, out MethodBase method)
-        {
-            ReflectionExecutionDomainCallbacks reflectionCallbacks = RuntimeAugments.CallbacksIfAvailable;
-            method = null;
-            if (reflectionCallbacks != null)
-            {
-                method = reflectionCallbacks.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
-            }
-        }
-
-        public virtual bool OnContractFailure(string? stackTrace, ContractFailureKind contractFailureKind, string? displayMessage, string userMessage, string conditionText, Exception innerException)
-        {
-            Debug.WriteLine("Assertion failed: " + (displayMessage ?? ""));
-            if (Debugger.IsAttached)
-                Debugger.Break();
-            return false;
         }
 
         public static DeveloperExperience Default

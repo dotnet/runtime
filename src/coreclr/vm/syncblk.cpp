@@ -992,11 +992,11 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
 #endif // !TARGET_UNIX
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // clean up EnC info
     if (psb->m_pEnCInfo)
         psb->m_pEnCInfo->Cleanup();
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // Destruct the SyncBlock, but don't reclaim its memory.  (Overridden
     // operator delete).
@@ -2850,6 +2850,7 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     PendingSync   syncState(walk);
 
     OBJECTREF     obj = m_Monitor.GetOwningObject();
+    syncState.m_Object = OBJECTREFToObject(obj);
 
     m_Monitor.IncrementTransientPrecious();
 
@@ -2930,7 +2931,7 @@ bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
                                                 NULL) == NULL);
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 // Store information about fields added to this object by EnC
 // This must be called from a thread in the AppDomain of this object instance
 void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
@@ -2944,7 +2945,7 @@ void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
     _ASSERTE( m_pEnCInfo == NULL );
     m_pEnCInfo = pEnCInfo;
 }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 #endif // !DACCESS_COMPILE
 
 #if defined(HOST_64BIT) && defined(_DEBUG)

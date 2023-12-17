@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             SharedState = sharedState;
 
             string exeDotNetPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(sharedState.BaseDir, "exe"));
-            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, sharedState.BuiltDotNet.BinPath, null);
+            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, TestContext.BuiltDotNet.BinPath, null);
             ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
@@ -1051,8 +1051,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             private readonly RepoDirectoriesProvider RepoDirectories;
 
-            public DotNetCli BuiltDotNet { get; }
-
             public string BaseDir { get; }
 
             public string CurrentWorkingDir { get; }
@@ -1072,13 +1070,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
                 //     All dirs will be placed inside the base folder
 
-                BuiltDotNet = new DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
-
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 // Executable location is created per test as each test adds a different set of SDK versions
 
-                var currentWorkingSdk = new DotNetBuilder(BaseDir, BuiltDotNet.BinPath, "current")
+                var currentWorkingSdk = new DotNetBuilder(BaseDir, TestContext.BuiltDotNet.BinPath, "current")
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;

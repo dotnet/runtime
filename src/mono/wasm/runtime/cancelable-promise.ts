@@ -3,7 +3,7 @@
 
 import { _lookup_js_owned_object } from "./gc-handles";
 import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
-import { TaskCallbackHolder } from "./marshal-to-cs";
+import { PromiseHolder } from "./marshal-to-cs";
 import { ControllablePromise, GCHandle } from "./types/internal";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
@@ -22,12 +22,17 @@ export function wrap_as_cancelable_promise<T>(fn: () => Promise<T>): Controllabl
     return promise;
 }
 
+export function wrap_as_cancelable<T>(inner: Promise<T>): ControllablePromise<T> {
+    const { promise, promise_control } = createPromiseController<T>();
+    inner.then((data) => promise_control.resolve(data)).catch((reason) => promise_control.reject(reason));
+    return promise;
+}
+
 export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
-    const holder = _lookup_js_owned_object(task_holder_gc_handle) as TaskCallbackHolder;
-    if (!holder) return; // probably already GC collected
+    const holder = _lookup_js_owned_object(task_holder_gc_handle) as PromiseHolder;
+    mono_assert(!!holder, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
 
     const promise = holder.promise;
-    mono_assert(!!promise, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
     loaderHelpers.assertIsControllablePromise(promise);
     const promise_control = loaderHelpers.getPromiseController(promise);
     promise_control.reject(new Error("OperationCanceledException"));

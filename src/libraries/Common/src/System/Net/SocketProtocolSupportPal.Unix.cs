@@ -8,6 +8,8 @@ namespace System.Net
 {
     internal static partial class SocketProtocolSupportPal
     {
+        private const int DgramSocketType = 2;
+
         private static unsafe bool IsSupported(AddressFamily af)
         {
             // Check for AF_UNIX on iOS/tvOS. The OS claims to support this, but returns EPERM on bind.

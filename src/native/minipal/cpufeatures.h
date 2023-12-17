@@ -8,7 +8,7 @@
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 //
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 enum XArchIntrinsicConstants
 {
     XArchIntrinsicConstants_Aes = 0x0001,
@@ -41,9 +41,9 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_VectorT256 = 0x8000000,
     XArchIntrinsicConstants_VectorT512 = 0x10000000,
 };
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // HOST_X86 || HOST_AMD64
 
-#if defined(TARGET_ARM64)
+#if defined(HOST_ARM64)
 enum ARM64IntrinsicConstants
 {
     ARM64IntrinsicConstants_AdvSimd = 0x0001,
@@ -56,6 +56,8 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Atomics = 0x0080,
     ARM64IntrinsicConstants_Rcpc = 0x0100,
     ARM64IntrinsicConstants_VectorT128 = 0x0200,
+    ARM64IntrinsicConstants_Rcpc2 = 0x0400,
+    ARM64IntrinsicConstants_Sve = 0x0800,
 };
 
 #include <assert.h>
@@ -64,7 +66,7 @@ enum ARM64IntrinsicConstants
 #define ARM64_ATOMICS_FEATURE_FLAG_BIT 7
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
-#endif // TARGET_ARM64
+#endif // HOST_ARM64
 
 #ifdef __cplusplus
 extern "C"

@@ -135,25 +135,32 @@ namespace System.Runtime.Loader
         {
             RaiseUnloadEvent();
 
+            InternalState previousState;
+
             // When in Unloading state, we are not supposed to be called on the finalizer
             // as the native side is holding a strong reference after calling Unload
             lock (_unloadLock)
             {
-                Debug.Assert(_state == InternalState.Alive);
+                previousState = _state;
+                if (previousState == InternalState.Alive)
+                {
+                    var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
+                    var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
+                    // The underlying code will transform the original weak handle
+                    // created by InitializeLoadContext to a strong handle
+                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
 
-                var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-                var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
-                // The underlying code will transform the original weak handle
-                // created by InitializeLoadContext to a strong handle
-                PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
-
-                _state = InternalState.Unloading;
+                    _state = InternalState.Unloading;
+                }
             }
 
-            Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
-            lock (allContexts)
+            if (previousState == InternalState.Alive)
             {
-                allContexts.Remove(_id);
+                Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
+                lock (allContexts)
+                {
+                    allContexts.Remove(_id);
+                }
             }
         }
 
@@ -778,7 +785,7 @@ namespace System.Runtime.Loader
 
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
             if (parentDirectory == null)
-                 return null;
+                return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 

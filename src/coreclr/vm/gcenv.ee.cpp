@@ -10,6 +10,28 @@
  *
  */
 
+#include "common.h"
+#include "gcenv.h"
+#include "../gc/env/gcenv.ee.h"
+#include "threadsuspend.h"
+#include "interoplibinterface.h"
+
+#ifdef FEATURE_COMINTEROP
+#include "runtimecallablewrapper.h"
+#include "comcallablewrapper.h"
+#endif // FEATURE_COMINTEROP
+
+#include "gctoclreventsink.h"
+#include "configuration.h"
+#include "genanalysis.h"
+#include "eventpipeadapter.h"
+
+// Finalizes a weak reference directly.
+extern void FinalizeWeakReference(Object* obj);
+
+extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+extern bool g_gcHeapHardLimitInfoSpecified;
+
 #include <generatedumpflags.h>
 #include "gcrefmap.h"
 
@@ -115,16 +137,28 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
+#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_FEF)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
-    if ((pTopFrame != ((Frame*)-1))
-        && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
-        // It is an InlinedCallFrame. Get SP from it.
+    if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
+    {
+        // It is an InlinedCallFrame with active call. Get SP from it.
         InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
+#endif // FEATURE_CONSERVATIVE_GC || USE_FEF
 
+#ifdef USE_FEF
+    // We only set the stack_limit when FEF (FaultingExceptionFrame) is enabled, because without the
+    // FEF, the code above would have to check if hardware exception is being handled and get the limit
+    // from the exception frame. Since the stack_limit is strictly necessary only on Unix and FEF is
+    // not enabled on Window x86 only, it is sufficient to keep the stack_limit set to 0 in this case.
+    // See the comment on the stack_limit usage in the PromoteCarefully function for more details.
     sc->stack_limit = (uintptr_t)topStack;
+#else // USE_FEF
+    // It should be set to 0 in the ScanContext constructor
+    _ASSERTE(sc->stack_limit == 0);
+#endif // USE_FEF
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
@@ -1187,12 +1221,6 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (strcmp(privateKey, "GCLOHThreshold") == 0)
-    {
-        *value = g_pConfig->GetGCLOHThreshold();
-        return true;
-    }
-
     if (g_gcHeapHardLimitInfoSpecified)
     {
         if ((g_gcHeapHardLimitInfo.heapHardLimit != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }
@@ -1699,7 +1727,7 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // To do this, we manaully check for events that are enabled via different provider/keywords/level.
     // Ex 1. GCJoin_V2 is what we use to check whether the GC keyword is enabled in verbose level in the public provider
     // Ex 2. SetGCHandle is what we use to check whether the GCHandle keyword is enabled in informational level in the public provider
-    // Refer to the comments in src/vm/gcenv.ee.h next to the EXTERN C definitions to see which events are enabled.
+    // Refer to the comments in src/gc/gcevents.h see which events are enabled.
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
     BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();

@@ -20,8 +20,8 @@ namespace System.Net.Http.Functional.Tests
         {
             for (int i = 0; i < count; i++)
             {
-                await _wrapped.WriteAsync(buffer, offset + i, 1);
-                await _wrapped.FlushAsync();
+                await _wrapped.WriteAsync(buffer, offset + i, 1, cancellationToken);
+                await _wrapped.FlushAsync(cancellationToken);
                 await Task.Yield(); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
             }
         }

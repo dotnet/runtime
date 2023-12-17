@@ -41,7 +41,7 @@ namespace System.Runtime.CompilerServices
     // NOTE: It is ok if TKey contains references, but we want it to be a struct,
     //       so that equality is devirtualized.
     internal unsafe struct GenericCache<TKey, TValue>
-        where TKey: struct, IEquatable<TKey>
+        where TKey : struct, IEquatable<TKey>
     {
         private struct Entry
         {
@@ -230,7 +230,7 @@ namespace System.Runtime.CompilerServices
             ref Entry tableData = ref TableData(table);
 
             // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
-            byte shift = (byte)BitOperations.LeadingZeroCount(size - 1);
+            byte shift = (byte)BitOperations.LeadingZeroCount((nuint)(size - 1));
             HashShift(table) = shift;
 
             return table;

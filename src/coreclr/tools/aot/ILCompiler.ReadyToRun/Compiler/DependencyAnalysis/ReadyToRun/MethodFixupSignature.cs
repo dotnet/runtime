@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             compilerContext.EnsureLoadableMethod(method.Method);
             compilerContext.EnsureLoadableType(_method.OwningType);
 
-            if (method.ConstrainedType != null)
+            if (method.ConstrainedType != null && !method.ConstrainedType.IsRuntimeDeterminedSubtype)
                 compilerContext.EnsureLoadableType(method.ConstrainedType);
         }
 
@@ -45,6 +45,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => 150063499;
 
         public bool IsUnboxingStub => _method.Unboxing;
+
+        public TypeDesc ConstrainedType => _method.ConstrainedType;
+
+        public bool NeedsInstantiationArg => _method.ConstrainedType?.IsCanonicalSubtype(CanonicalFormKind.Any) ?? false;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

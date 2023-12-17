@@ -257,7 +257,7 @@ namespace System.Reflection.Emit
             manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new RuntimeModuleBuilder[] { manifest_module };
 
-            AssemblyLoadContext.InvokeAssemblyLoadEvent (this);
+            AssemblyLoadContext.InvokeAssemblyLoadEvent(this);
         }
 
         public override bool ReflectionOnly
@@ -322,7 +322,7 @@ namespace System.Reflection.Emit
         internal static Type MakeGenericType(Type gtd, Type[] typeArguments) =>
             new TypeBuilderInstantiation(gtd, typeArguments);
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);

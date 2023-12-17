@@ -19,6 +19,7 @@ namespace SharedTypes.ComInterfaces
         [PreserveSig]
         StatefulFinallyType ReturnPreserveSig();
     }
+
     [GeneratedComClass]
     internal partial class StatefulFinallyMarshalling : IStatefulFinallyMarshalling
     {

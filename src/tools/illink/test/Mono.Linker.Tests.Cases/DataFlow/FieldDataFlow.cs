@@ -33,6 +33,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteUnknownValue ();
 
 			WriteCapturedField.Test ();
+			WriteFieldOfCapturedInstance.Test ();
 
 			_ = _annotationOnWrongType;
 
@@ -189,6 +190,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestNullCoalesce ();
 				TestNullCoalescingAssignment ();
 				TestNullCoalescingAssignmentComplex ();
+			}
+		}
+
+		class WriteFieldOfCapturedInstance
+		{
+			class ClassWithAnnotatedField
+			{
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				public Type field;
+			}
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (ClassWithAnnotatedField.field))]
+			static void TestNullCoalesce ()
+			{
+				ClassWithAnnotatedField? instance = null;
+				(instance ?? new ClassWithAnnotatedField ()).field = GetUnknownType ();
+			}
+
+			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (ClassWithAnnotatedField.field))]
+			static void TestNullCoalescingAssignment ()
+			{
+				ClassWithAnnotatedField? instance = null;
+				(instance ??= new ClassWithAnnotatedField ()).field = GetUnknownType ();
+			}
+
+			public static void Test ()
+			{
+				TestNullCoalesce ();
+				TestNullCoalescingAssignment ();
 			}
 		}
 

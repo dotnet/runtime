@@ -27,14 +27,13 @@ namespace Test
             } while (flag3);
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
                 AA.Static3();
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

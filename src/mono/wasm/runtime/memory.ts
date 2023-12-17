@@ -394,14 +394,42 @@ export function localHeapViewF64(): Float64Array {
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews() {
     if (!MonoWasmThreads) return;
-    if (Module.wasmMemory!.buffer != Module.HEAPU8.buffer) {
+    const memory = runtimeHelpers.getMemory();
+    if (memory.buffer !== Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
 }
 
 const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
 export function isSharedArrayBuffer(buffer: any): buffer is SharedArrayBuffer {
-    if (!MonoWasmThreads) return false;
     // this condition should be eliminated by rollup on non-threading builds
+    if (!MonoWasmThreads) return false;
+    // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
+    // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
+    // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
     return sharedArrayBufferDefined && buffer[Symbol.toStringTag] === "SharedArrayBuffer";
+}
+
+/*
+Problem: When WebWorker is suspended in the browser, the other running threads could `grow` the linear memory in the meantime. 
+After the thread is un-suspended C code may to try to de-reference pointer which is beyond it's known view. 
+This is likely V8 bug. We don't have direct evidence, just failed debugger unit tests with MT runtime.
+*/
+export function forceThreadMemoryViewRefresh() {
+    // this condition should be eliminated by rollup on non-threading builds and it would become empty method.
+    if (!MonoWasmThreads) return;
+
+    const wasmMemory = runtimeHelpers.getMemory();
+
+    /*
+    Normally when wasm memory grows in v8, this size change is broadcast to other web workers via an 'interrupt', which works by setting a thread-local flag that needs to be checked. 
+    It's possible that at this point in execution the flag has not been checked yet (because this worker was suspended by the debugger in an unknown location), 
+    which means the size change has not taken effect in this worker. 
+    wasmMemory.grow's implementation in v8 checks to see whether other workers have already grown the buffer, 
+    and will update the current worker's knowledge of the buffer's size. 
+    After that we should be able to safely updateMemoryViews and get a correctly sized view. 
+    This only works because their implementation does not skip doing work even when you ask to grow by 0 pages.
+    */
+    wasmMemory.grow(0);
+    runtimeHelpers.updateMemoryViews();
 }

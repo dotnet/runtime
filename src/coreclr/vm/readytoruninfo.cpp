@@ -429,7 +429,8 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
     fflush(r2rLogFile);
 }
 
@@ -1904,7 +1905,7 @@ uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input,
     uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
     if (count > 2)
         foundResult = false;
-    
+
     if (!foundResult)
     {
         HENUMInternalHolder hEnumTyPars(pImport);
@@ -1922,7 +1923,7 @@ HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef 
     uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
     if (count > 2)
         foundResult = false;
-    
+
     if (!foundResult)
     {
         HENUMInternalHolder hEnumTyPars(pImport);

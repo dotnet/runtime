@@ -122,13 +122,11 @@ namespace System
         private const ulong TicksPer6Hours = TicksPerHour * 6;
         private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
-        internal static ReadOnlySpan<uint> DaysToMonth365 => new uint[] {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        internal static ReadOnlySpan<uint> DaysToMonth366 => new uint[] {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+        internal static ReadOnlySpan<uint> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+        internal static ReadOnlySpan<uint> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
-        private static ReadOnlySpan<byte> DaysInMonth365 => new byte[] { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-        private static ReadOnlySpan<byte> DaysInMonth366 => new byte[] { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+        private static ReadOnlySpan<byte> DaysInMonth365 => [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        private static ReadOnlySpan<byte> DaysInMonth366 => [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
         public static readonly DateTime MinValue;
         public static readonly DateTime MaxValue = new DateTime(MaxTicks, DateTimeKind.Unspecified);
@@ -171,7 +169,7 @@ namespace System
             this._dateData = dateData;
         }
 
-        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong) ticks);
+        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong)ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
@@ -1387,7 +1385,7 @@ namespace System
             // y100 = number of whole 100-year periods since 3/1/0000
             // r1 = (day number within 100-year period) * 4
             (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
-            ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+            ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
             ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
             int n3 = 2141 * daySinceMarch1 + 197913;
             year = (int)(100 * y100 + (uint)(u2 >> 32));
@@ -1449,7 +1447,7 @@ namespace System
             {
                 // r1 = (day number within 100-year period) * 4
                 uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
-                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
                 ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
                 int n3 = 2141 * daySinceMarch1 + 197913;
                 // Return 1-based day-of-month
@@ -1526,7 +1524,7 @@ namespace System
             {
                 // r1 = (day number within 100-year period) * 4
                 uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
-                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
                 ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
                 int n3 = 2141 * daySinceMarch1 + 197913;
                 return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);

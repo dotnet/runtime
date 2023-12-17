@@ -256,7 +256,7 @@ namespace System.Xml.Tests
             CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "Exceptions.xml"), assembly, _output);
             if (!handler.VerifyException(ex, res, strParams))
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -269,7 +269,7 @@ namespace System.Xml.Tests
             CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "Exceptions.xml"), assembly, _output);
             if (!handler.VerifyException(ex, res, strParams, lInfo))
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

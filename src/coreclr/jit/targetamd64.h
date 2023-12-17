@@ -303,6 +303,9 @@
   /* NOTE: Sync with variable name defined in compiler.h */
   #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+
+  // For SysV we have more volatile registers so we do not save any callee saves for EnC.
+  #define RBM_ENC_CALLEE_SAVED     0
 #else // !UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (7 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (7)
@@ -314,6 +317,9 @@
   /* NOTE: Sync with variable name defined in compiler.h */
   #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+
+  // Callee-preserved registers we always save and allow use of for EnC code, since there are quite few volatile registers.
+  #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
 #endif // !UNIX_AMD64_ABI
 
   #define CNT_CALLEE_TRASH_FLOAT   get_CNT_CALLEE_TRASH_FLOAT()
@@ -326,9 +332,6 @@
 
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)
-
-  // callee-preserved registers we always save and allow use of for EnC code
-  #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
 
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX

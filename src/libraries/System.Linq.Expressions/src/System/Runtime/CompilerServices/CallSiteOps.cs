@@ -3,6 +3,8 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 
 namespace System.Runtime.CompilerServices
 {
@@ -151,6 +153,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="args">Arguments to the call site.</param>
         /// <returns>The new call site target.</returns>
         [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public static T Bind<T>(CallSiteBinder binder, CallSite<T> site, object[] args) where T : class
         {
             return binder.BindCore(site, args);

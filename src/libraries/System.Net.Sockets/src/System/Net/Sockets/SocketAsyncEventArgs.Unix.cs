@@ -196,7 +196,7 @@ namespace System.Net.Sockets
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress!, out isIPv4, out isIPv6);
 
-            int socketAddressSize = _socketAddress!.Size;
+            int socketAddressSize = _socketAddress!.Buffer.Length;
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
@@ -336,7 +336,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
+        private SocketError FinishOperationAccept(SocketAddress remoteSocketAddress)
         {
             new ReadOnlySpan<byte>(_acceptBuffer, 0, _acceptAddressBufferCount).CopyTo(remoteSocketAddress.Buffer.Span);
             remoteSocketAddress.Size = _acceptAddressBufferCount;
@@ -366,12 +366,9 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        private void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
+        private void UpdateReceivedSocketAddress(SocketAddress socketAddress)
         {
-            if (_socketAddressSize > 0)
-            {
-                socketAddress.Size = _socketAddressSize;
-            }
+            socketAddress.Size = _socketAddressSize;
         }
 
         partial void FinishOperationReceiveMessageFrom();

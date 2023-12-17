@@ -1,10 +1,12 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">
-    <WasiNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true' and '$(WasiNativeWorkload)' == 'net8.0'">true</WasiNativeWorkloadAvailable>
+  <PropertyGroup>
+    <WasiNativeWorkloadAvailable Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0')) and '$(WasiNativeWorkload)' == 'net9.0'">true</WasiNativeWorkloadAvailable>
+    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
+    <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <UsingWasiRuntimeWorkload Condition="'$(UsingWasiRuntimeWorkload)' == ''">$(WasiNativeWorkloadAvailable)</UsingWasiRuntimeWorkload>
   </PropertyGroup>
 </Project>

@@ -12,8 +12,6 @@ namespace System.Net.Http.Json
 {
     internal static class JsonHelpers
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         internal static JsonTypeInfo GetJsonTypeInfo(Type type, JsonSerializerOptions? options)
@@ -22,19 +20,8 @@ namespace System.Net.Http.Json
 
             // Resolves JsonTypeInfo metadata using the appropriate JsonSerializerOptions configuration,
             // following the semantics of the JsonSerializer reflection methods.
-            options ??= s_defaultSerializerOptions;
-
-            if (options.TypeInfoResolver is null)
-            {
-                // Public STJ APIs have no way of configuring TypeInfoResolver
-                // instances in a thread-safe manner. Let STJ do it for us by
-                // running a simple reflection-based serialization operation.
-                // TODO remove once https://github.com/dotnet/runtime/issues/89934 is implemented.
-                JsonSerializer.Deserialize<int>("0"u8, options);
-            }
-
-            Debug.Assert(options.TypeInfoResolver != null);
-            Debug.Assert(options.IsReadOnly);
+            options ??= JsonSerializerOptions.Web;
+            options.MakeReadOnly(populateMissingResolver: true);
             return options.GetTypeInfo(type);
         }
 

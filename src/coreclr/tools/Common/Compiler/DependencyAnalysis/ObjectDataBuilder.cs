@@ -9,6 +9,8 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    // There is small set of ObjectDataBuilder in at src/installer/managed/Microsoft.NET.HostModel/ObjectDataBuilder.cs
+    // only for ResourceData.WriteResources
     public struct ObjectDataBuilder
 #if !READYTORUN
         : Internal.Runtime.ITargetBinaryWriter

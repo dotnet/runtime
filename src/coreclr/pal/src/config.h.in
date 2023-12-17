@@ -22,6 +22,10 @@
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_SYS_PTRACE_H
+#cmakedefine01 HAVE_SYS_UCONTEXT_H
+#cmakedefine01 HAVE_SYS_USER_H
+#cmakedefine01 HAVE_SYS_MOUNT_H
+#cmakedefine01 HAVE_UCONTEXT_H
 #cmakedefine01 HAVE_GETAUXVAL
 
 #cmakedefine01 HAVE_KQUEUE
@@ -45,7 +49,6 @@
 #cmakedefine01 HAVE_SYSCTL
 #cmakedefine01 HAVE_SYSCTLBYNAME
 #cmakedefine01 HAVE_SYSCONF
-#cmakedefine01 HAVE_SYSINFO
 #cmakedefine01 HAVE_GMTIME_R
 #cmakedefine01 HAVE_TIMEGM
 #cmakedefine01 HAVE_POLL
@@ -68,12 +71,9 @@
 #cmakedefine HAVE_UNW_GET_SAVE_LOC
 #cmakedefine HAVE_UNW_GET_ACCESSORS
 #cmakedefine HAVE_UNW_AARCH64_X19
-#cmakedefine01 HAVE_XSWDEV
-#cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT
 #cmakedefine01 HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
 #cmakedefine01 HAVE_PR_SET_PTRACER
-#cmakedefine01 HAVE_SWAPCTL
 
 #cmakedefine01 HAVE_STAT_TIMESPEC
 #cmakedefine01 HAVE_STAT_TIM
@@ -89,7 +89,6 @@
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T
 #cmakedefine01 HAVE_PRWATCH_T
 #cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
-#cmakedefine01 HAVE_DIRENT_D_TYPE
 #cmakedefine01 HAVE_FPREGS_WITH_CW
 
 #cmakedefine01 HAVE_YIELD_SYSCALL

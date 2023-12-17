@@ -89,6 +89,16 @@ bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE  ftn,    /* IN  */
     return temp;
 }
 
+bool interceptor_ICJI::haveSameMethodDefinition(
+    CORINFO_METHOD_HANDLE methHnd1,
+    CORINFO_METHOD_HANDLE methHnd2)
+{
+    bool result = original_ICorJitInfo->haveSameMethodDefinition(methHnd1, methHnd2);
+    mc->recHaveSameMethodDefinition(methHnd1, methHnd2, result);
+
+    return result;
+}
+
 // Decides if you have any limitations for inlining. If everything's OK, it will return
 // INLINE_PASS.
 //

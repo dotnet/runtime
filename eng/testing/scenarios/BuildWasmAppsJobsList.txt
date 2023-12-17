@@ -3,6 +3,7 @@ Wasm.Build.NativeRebuild.Tests.NoopNativeRebuildTest
 Wasm.Build.NativeRebuild.Tests.OptimizationFlagChangeTests
 Wasm.Build.NativeRebuild.Tests.ReferenceNewAssemblyRebuildTest
 Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
+Wasm.Build.Templates.Tests.InterpPgoTests
 Wasm.Build.Templates.Tests.NativeBuildTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.Blazor.BuildPublishTests
@@ -13,6 +14,9 @@ Wasm.Build.Tests.Blazor.MiscTests2
 Wasm.Build.Tests.Blazor.MiscTests3
 Wasm.Build.Tests.Blazor.NativeTests
 Wasm.Build.Tests.Blazor.NoopNativeRebuildTest
+Wasm.Build.Tests.Blazor.WorkloadRequiredTests
+Wasm.Build.Tests.Blazor.IcuTests
+Wasm.Build.Tests.Blazor.IcuShardingTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.HybridGlobalizationTests

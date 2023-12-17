@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -475,9 +475,12 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        bool result = SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress.Span, out int socketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
-                        SocketAddress = SocketAddress.Slice(0, socketAddressLen);
-                        return result;
+                        bool completed = SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress.Span, out int socketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                        if (completed && ErrorCode == SocketError.Success)
+                        {
+                            SocketAddress = SocketAddress.Slice(0, socketAddressLen);
+                        }
+                        return completed;
                     }
                 }
             }
@@ -508,7 +511,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool completed = SocketPal.TryCompleteReceiveFrom(context._socket, default(Span<byte>), Buffers, Flags, SocketAddress.Span, out int socketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
-                if (ErrorCode == SocketError.Success)
+                if (completed && ErrorCode == SocketError.Success)
                 {
                     SocketAddress = SocketAddress.Slice(0, socketAddressLen);
                 }
@@ -542,7 +545,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool completed = SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress.Span, out int socketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
-                if (ErrorCode == SocketError.Success)
+                if (completed && ErrorCode == SocketError.Success)
                 {
                     SocketAddress = SocketAddress.Slice(0, socketAddressLen);
                 }
@@ -569,7 +572,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool completed = SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer.Span, Buffers, Flags, SocketAddress, out int socketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
-                if (ErrorCode == SocketError.Success)
+                if (completed && ErrorCode == SocketError.Success)
                 {
                     SocketAddress = SocketAddress.Slice(0, socketAddressLen);
                 }
@@ -599,7 +602,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool completed = SocketPal.TryCompleteReceiveMessageFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress!, out int socketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
-                if (ErrorCode == SocketError.Success)
+                if (completed && ErrorCode == SocketError.Success)
                 {
                     SocketAddress = SocketAddress.Slice(0, socketAddressLen);
                 }

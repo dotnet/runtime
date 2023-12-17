@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "jitstd/algorithm.h"
 
 #ifdef DEBUG
 
@@ -47,7 +48,7 @@ void ArrIndex::PrintBoundsCheckNodes(unsigned dim /* = -1 */)
 #endif // DEBUG
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an arrLen operation into a gentree node.
+// ToGenTree - Convert an arrLen operation into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -111,7 +112,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an "identifier" into a gentree node.
+// ToGenTree - Convert an "identifier" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -170,7 +171,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an "expression" into a gentree node.
+// ToGenTree - Convert an "expression" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -195,7 +196,7 @@ GenTree* LC_Expr::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert a "condition" into a gentree node.
+// ToGenTree - Convert a "condition" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -784,67 +785,93 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
 #endif
 
 //--------------------------------------------------------------------------------------------------
+// GetLoopIterInfo: Get the analyzed loop iteration for a loop.
+//
+// Arguments:
+//   loopNum - Index of loop, as returned by FlowGraphNaturalLoop::GetIndex().
+//
+// Returns:
+//   The info, or nullptr if the loop iteration structure could not be
+//   analyzed.
+//
+NaturalLoopIterInfo* LoopCloneContext::GetLoopIterInfo(unsigned loopNum)
+{
+    return iterInfo[loopNum];
+}
+
+//--------------------------------------------------------------------------------------------------
+// SetLoopIterInfo: Set the analyzed loop iteration for a loop.
+//
+// Arguments:
+//   loopNum - Index of loop, as returned by FlowGraphNaturalLoop::GetIndex().
+//   info    - Info to store
+//
+void LoopCloneContext::SetLoopIterInfo(unsigned loopNum, NaturalLoopIterInfo* info)
+{
+    iterInfo[loopNum] = info;
+}
+
+//--------------------------------------------------------------------------------------------------
 // CondToStmtInBlock: Convert an array of conditions to IR. Evaluate them into a JTRUE stmt and add it to
 // a new block after `insertAfter`.
 //
 // Arguments:
-//      comp        Compiler instance
-//      conds       Array of conditions to evaluate into a JTRUE stmt
-//      slowHead    Branch here on condition failure
-//      insertAfter Insert the conditions in a block after this block
+//      comp          - Compiler instance
+//      conds         - Array of conditions to evaluate into a JTRUE stmt
+//      slowPreheader - Branch here on condition failure
+//      insertAfter   - Insert the conditions in a block after this block
 //
 // Notes:
-//      If any condition fails, branch to the `slowHead` block. There are two options here:
+//      If any condition fails, branch to the `slowPreheader` block. There are two options here:
 //      1. Generate all the conditions in a single block using bitwise `&` to merge them, e.g.:
-//            jmpTrue(cond1 & cond2 ... == 0) => slowHead
+//            jmpTrue(cond1 & cond2 ... == 0) => slowPreheader
 //         In this form, we always execute all the conditions (there is no short-circuit evaluation).
 //         Since we expect that in the usual case all the conditions will fail, and we'll execute the
 //         loop fast path, the lack of short-circuit evaluation is not a problem. If the code is smaller
 //         and faster, this would be preferable.
 //      2. Generate each condition in a separate block, e.g.:
-//            jmpTrue(!cond1) => slowHead
-//            jmpTrue(!cond2) => slowHead
+//            jmpTrue(!cond1) => slowPreheader
+//            jmpTrue(!cond2) => slowPreheader
 //            ...
 //         If this code is smaller/faster, this can be preferable. Also, the flow graph is more normal,
 //         and amenable to downstream flow optimizations.
 //
 //      Which option we choose is currently compile-time determined.
 //
-//      We assume that `insertAfter` is a fall-through block, and we add it to the predecessors list
-//      of the first newly added block. `insertAfter` is also assumed to be in the same loop (we can
-//      clone its loop number).
+//      We assume that `insertAfter` is in the same loop (we can clone its loop
+//      number). If `insertAfter` is a fallthrough block then a predecessor
+//      link is added.
 //
 // Return Value:
 //      Last block added
 //
 BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                          comp,
                                                 JitExpandArrayStack<LC_Condition>& conds,
-                                                BasicBlock*                        slowHead,
+                                                BasicBlock*                        slowPreheader,
                                                 BasicBlock*                        insertAfter)
 {
     noway_assert(conds.Size() > 0);
-    assert(slowHead != nullptr);
-    assert(insertAfter->KindIs(BBJ_NONE, BBJ_COND));
+    assert(slowPreheader != nullptr);
 
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
 
     if (generateOneConditionPerBlock)
     {
-        BasicBlock* newBlk = nullptr;
-
         for (unsigned i = 0; i < conds.Size(); ++i)
         {
-            newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
+            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
             newBlk->inheritWeight(insertAfter);
             newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
-            newBlk->bbJumpDest   = slowHead;
 
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->bbJumpDest->bbNum);
-            comp->fgAddRefPred(newBlk->bbJumpDest, newBlk);
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
+            comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
 
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-            comp->fgAddRefPred(newBlk, insertAfter);
+            if (insertAfter->bbFallsThrough())
+            {
+                JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+                comp->fgAddRefPred(newBlk, insertAfter);
+            }
 
             JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
 
@@ -863,20 +890,22 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
             insertAfter = newBlk;
         }
 
-        return newBlk;
+        return insertAfter;
     }
     else
     {
-        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
         newBlk->inheritWeight(insertAfter);
         newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
-        newBlk->bbJumpDest   = slowHead;
 
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->bbJumpDest->bbNum);
-        comp->fgAddRefPred(newBlk->bbJumpDest, newBlk);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
+        comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
 
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-        comp->fgAddRefPred(newBlk, insertAfter);
+        if (insertAfter->bbFallsThrough())
+        {
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+            comp->fgAddRefPred(newBlk, insertAfter);
+        }
 
         JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
 
@@ -1057,8 +1086,8 @@ LC_ArrayDeref* LC_ArrayDeref::Find(JitExpandArrayStack<LC_ArrayDeref*>* children
 // optDeriveLoopCloningConditions: Derive loop cloning conditions.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which conditions are derived.
-//     context     -  data structure where all loop cloning info is kept.
+//     loop    -  the current loop for which conditions are derived.
+//     context -  data structure where all loop cloning info is kept.
 //
 // Return Value:
 //     "false" if conditions cannot be obtained. "true" otherwise.
@@ -1077,13 +1106,12 @@ LC_ArrayDeref* LC_ArrayDeref::Find(JitExpandArrayStack<LC_ArrayDeref*>* children
 //      Callers should assume AND operation is used i.e., if all conditions are
 //      true, then take the fast path.
 //
-bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context)
+bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
     JITDUMP("------------------------------------------------------------\n");
-    JITDUMP("Deriving cloning conditions for " FMT_LP "\n", loopNum);
+    JITDUMP("Deriving cloning conditions for " FMT_LP "\n", loop->GetIndex());
 
-    LoopDsc*                         loop     = &optLoopTable[loopNum];
-    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
     assert(optInfos->Size() > 0);
 
     // We only need to check for iteration behavior if we have array checks.
@@ -1106,8 +1134,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 LC_Ident           objDeref    = LC_Ident::CreateIndirOfLocal(ttInfo->lclNum, 0);
                 LC_Ident           methodTable = LC_Ident::CreateClassHandle(ttInfo->clsHnd);
                 LC_Condition       cond(GT_EQ, LC_Expr(objDeref), LC_Expr(methodTable));
-                context->EnsureObjDerefs(loopNum)->Push(objDeref);
-                context->EnsureConditions(loopNum)->Push(cond);
+                context->EnsureObjDerefs(loop->GetIndex())->Push(objDeref);
+                context->EnsureConditions(loop->GetIndex())->Push(cond);
                 break;
             }
 
@@ -1128,8 +1156,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 
                 LC_Condition cond(GT_EQ, LC_Expr(objDeref), LC_Expr(methAddr));
 
-                context->EnsureObjDerefs(loopNum)->Push(objDeref);
-                context->EnsureConditions(loopNum)->Push(cond);
+                context->EnsureObjDerefs(loop->GetIndex())->Push(objDeref);
+                context->EnsureConditions(loop->GetIndex())->Push(cond);
                 break;
             }
 
@@ -1144,27 +1172,28 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         // No array conditions here, so we're done
         //
         JITDUMP("Conditions: ");
-        DBEXEC(verbose, context->PrintConditions(loopNum));
+        DBEXEC(verbose, context->PrintConditions(loop->GetIndex()));
         JITDUMP("\n");
         return true;
     }
 
+    NaturalLoopIterInfo* iterInfo = context->GetLoopIterInfo(loop->GetIndex());
     // Note we see cases where the test oper is NE (array.Len) which we could handle
     // with some extra care.
     //
-    if (!GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
+    if (!GenTree::StaticOperIs(iterInfo->TestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
     {
         // We can't reason about how this loop iterates
         return false;
     }
 
-    const bool isIncreasingLoop = loop->lpIsIncreasingLoop();
-    assert(isIncreasingLoop || loop->lpIsDecreasingLoop());
+    const bool isIncreasingLoop = iterInfo->IsIncreasingLoop();
+    assert(isIncreasingLoop || iterInfo->IsDecreasingLoop());
 
     // We already know that this is either increasing or decreasing loop and the
     // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
     // is beyond the limit.
-    int stride = abs(loop->lpIterConst());
+    int stride = abs(iterInfo->IterConst());
 
     if (stride >= 58)
     {
@@ -1178,27 +1207,27 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 
     LC_Ident ident;
     // Init conditions
-    if (loop->lpFlags & LPFLG_CONST_INIT)
+    if (iterInfo->HasConstInit)
     {
         // Only allowing non-negative const init at this time.
         // This is because the variable initialized with this constant will be used as an array index,
         // and array indices must be non-negative.
-        if (loop->lpConstInit < 0)
+        if (iterInfo->ConstInitValue < 0)
         {
-            JITDUMP("> Init %d is invalid\n", loop->lpConstInit);
+            JITDUMP("> Init %d is invalid\n", iterInfo->ConstInitValue);
             return false;
         }
 
         if (!isIncreasingLoop)
         {
             // For decreasing loop, the init value needs to be checked against the array length
-            ident = LC_Ident::CreateConst(static_cast<unsigned>(loop->lpConstInit));
+            ident = LC_Ident::CreateConst(static_cast<unsigned>(iterInfo->ConstInitValue));
         }
     }
     else
     {
         // iterVar >= 0
-        const unsigned initLcl = loop->lpIterVar();
+        const unsigned initLcl = iterInfo->IterVar;
         if (!genActualTypeIsInt(lvaGetDesc(initLcl)))
         {
             JITDUMP("> Init var V%02u not compatible with TYP_INT\n", initLcl);
@@ -1216,13 +1245,13 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             ident  = LC_Ident::CreateVar(initLcl);
             geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident::CreateConst(0u)));
         }
-        context->EnsureConditions(loopNum)->Push(geZero);
+        context->EnsureConditions(loop->GetIndex())->Push(geZero);
     }
 
     // Limit Conditions
-    if (loop->lpFlags & LPFLG_CONST_LIMIT)
+    if (iterInfo->HasConstLimit)
     {
-        int limit = loop->lpConstLimit();
+        int limit = iterInfo->ConstLimit();
         if (limit < 0)
         {
             JITDUMP("> limit %d is invalid\n", limit);
@@ -1235,9 +1264,9 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             ident = LC_Ident::CreateConst(static_cast<unsigned>(limit));
         }
     }
-    else if (loop->lpFlags & LPFLG_VAR_LIMIT)
+    else if (iterInfo->HasInvariantLocalLimit)
     {
-        const unsigned limitLcl = loop->lpVarLimit();
+        const unsigned limitLcl = iterInfo->VarLimit();
         if (!genActualTypeIsInt(lvaGetDesc(limitLcl)))
         {
             JITDUMP("> Limit var V%02u not compatible with TYP_INT\n", limitLcl);
@@ -1256,12 +1285,12 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident::CreateVar(limitLcl)), LC_Expr(LC_Ident::CreateConst(0u)));
         }
 
-        context->EnsureConditions(loopNum)->Push(geZero);
+        context->EnsureConditions(loop->GetIndex())->Push(geZero);
     }
-    else if (loop->lpFlags & LPFLG_ARRLEN_LIMIT)
+    else if (iterInfo->HasArrayLengthLimit)
     {
         ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
-        if (!loop->lpArrLenLimit(this, index))
+        if (!iterInfo->ArrLenLimit(this, index))
         {
             JITDUMP("> ArrLen not matching\n");
             return false;
@@ -1270,7 +1299,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 
         // Ensure that this array must be dereference-able, before executing the actual condition.
         LC_Array array(LC_Array::Jagged, index, LC_Array::None);
-        context->EnsureArrayDerefs(loopNum)->Push(array);
+        context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
     }
     else
     {
@@ -1286,7 +1315,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     // GT_GT loop test: (end > start) ==> (end <= arrLen)
     // GT_GE loop test: (end >= start) ==> (end < arrLen)
     genTreeOps opLimitCondition;
-    switch (loop->lpTestOper())
+    switch (iterInfo->TestOper())
     {
         case GT_LT:
         case GT_GT:
@@ -1311,11 +1340,11 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 LC_Array     arrLen(LC_Array::Jagged, &arrIndexInfo->arrIndex, arrIndexInfo->dim, LC_Array::ArrLen);
                 LC_Ident     arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
                 LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
-                context->EnsureConditions(loopNum)->Push(cond);
+                context->EnsureConditions(loop->GetIndex())->Push(cond);
 
                 // Ensure that this array must be dereference-able, before executing the actual condition.
                 LC_Array array(LC_Array::Jagged, &arrIndexInfo->arrIndex, arrIndexInfo->dim, LC_Array::None);
-                context->EnsureArrayDerefs(loopNum)->Push(array);
+                context->EnsureArrayDerefs(loop->GetIndex())->Push(array);
             }
             break;
             case LcOptInfo::LcMdArray:
@@ -1325,7 +1354,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                                          mdArrInfo->dim, LC_Array::None));
                 LC_Ident     arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
                 LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
-                context->EnsureConditions(loopNum)->Push(cond);
+                context->EnsureConditions(loop->GetIndex())->Push(cond);
 
                 // TODO: ensure array is dereference-able?
             }
@@ -1341,7 +1370,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     }
 
     JITDUMP("Conditions: ");
-    DBEXEC(verbose, context->PrintConditions(loopNum));
+    DBEXEC(verbose, context->PrintConditions(loop->GetIndex()));
     JITDUMP("\n");
 
     return true;
@@ -1351,8 +1380,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 // optComputeDerefConditions: Derive loop cloning conditions for dereferencing arrays.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which conditions are derived.
-//     context     -  data structure where all loop cloning info is kept.
+//     loop    - the current loop for which conditions are derived.
+//     context - data structure where all loop cloning info is kept.
 //
 // Return Value:
 //     "false" if conditions cannot be obtained. "true" otherwise.
@@ -1452,11 +1481,11 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 //
 //      and so on.
 //
-bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* context)
+bool Compiler::optComputeDerefConditions(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
     // Get the dereference-able arrays and objects.
-    JitExpandArrayStack<LC_Array>* const arrayDeref = context->EnsureArrayDerefs(loopNum);
-    JitExpandArrayStack<LC_Ident>* const objDeref   = context->EnsureObjDerefs(loopNum);
+    JitExpandArrayStack<LC_Array>* const arrayDeref = context->EnsureArrayDerefs(loop->GetIndex());
+    JitExpandArrayStack<LC_Ident>* const objDeref   = context->EnsureObjDerefs(loop->GetIndex());
 
     // We currently expect to have at least one of these.
     //
@@ -1547,7 +1576,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 
         // Derive conditions into an 'array of level x array of conditions' i.e., levelCond[levels][conds]
         JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond =
-            context->EnsureBlockConditions(loopNum, condBlocks);
+            context->EnsureBlockConditions(loop->GetIndex(), condBlocks);
         for (unsigned i = 0; i < arrayDerefNodes.Size(); ++i)
         {
             arrayDerefNodes[i]->DeriveLevelConditions(levelCond);
@@ -1556,7 +1585,8 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 
     if (objDeref->Size() > 0)
     {
-        JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = context->EnsureBlockConditions(loopNum, 1);
+        JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond =
+            context->EnsureBlockConditions(loop->GetIndex(), 1);
 
         for (unsigned i = 0; i < objDeref->Size(); ++i)
         {
@@ -1568,7 +1598,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         }
     }
 
-    DBEXEC(verbose, context->PrintBlockConditions(loopNum));
+    DBEXEC(verbose, context->PrintBlockConditions(loop->GetIndex()));
 
     return true;
 }
@@ -1599,11 +1629,11 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      candidates gathered during the cloning phase.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which the optimizations are performed.
-//     context     -  data structure where all loop cloning info is kept.
-//     dynamicPath -  If true, the optimization is performed in the fast path among the
-//                    cloned loops. If false, it means this is the only path (i.e.,
-//                    there is no slow path.)
+//     loop        - the current loop for which the optimizations are performed.
+//     context     - data structure where all loop cloning info is kept.
+//     dynamicPath - If true, the optimization is performed in the fast path among the
+//                   cloned loops. If false, it means this is the only path (i.e.,
+//                   there is no slow path.)
 //
 // Operation:
 //      Perform the optimizations on the fast path i.e., the path in which the
@@ -1617,9 +1647,10 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      performs the optimizations assuming that the path in which the candidates
 //      were collected is the fast path in which the optimizations will be performed.
 //
-void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool dynamicPath))
+void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop* loop,
+                                             LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
-    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
     assert(optInfos != nullptr);
     for (unsigned i = 0; i < optInfos->Size(); ++i)
     {
@@ -1705,7 +1736,8 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                 JITDUMP("Updating flags on GDV guard inside hot loop. Before:\n");
                 DISPSTMT(stmt);
 
-                indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
+                indir->gtFlags |= GTF_IND_NONFAULTING;
+                indir->SetHasOrderingSideEffect();
                 indir->gtFlags &= ~GTF_EXCEPT;
                 assert(fgNodeThreading == NodeThreading::None);
                 gtUpdateStmtSideEffects(stmt);
@@ -1726,7 +1758,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
 // Arguments:
-//      loopInd     loop index which needs to be checked if it can be cloned.
+//      loop - loop index which needs to be checked if it can be cloned.
 //
 // Return Value:
 //      Returns true if the loop can be cloned. If it returns false,
@@ -1736,20 +1768,14 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
 // return blocks in the loop that will be cloned. (REVIEW: this 'predicate' function
 // doesn't seem like the right place to do this change.)
 //
-bool Compiler::optIsLoopClonable(unsigned loopInd)
+bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
-    const LoopDsc& loop            = optLoopTable[loopInd];
-    const bool     requireIterable = !doesMethodHaveGuardedDevirtualization();
+    const bool           requireIterable = !doesMethodHaveGuardedDevirtualization();
+    NaturalLoopIterInfo* iterInfo        = context->GetLoopIterInfo(loop->GetIndex());
 
-    if (requireIterable && !(loop.lpFlags & LPFLG_ITER))
+    if (requireIterable && (iterInfo == nullptr))
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". No LPFLG_ITER flag.\n", loopInd);
-        return false;
-    }
-
-    if (loop.lpIsRemoved())
-    {
-        JITDUMP("Loop cloning: rejecting removed loop " FMT_LP ".\n", loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Could not analyze iteration.\n", loop->GetIndex());
         return false;
     }
 
@@ -1762,34 +1788,39 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     // TODO: this limitation could be removed if we do the work to insert new EH regions in the exception table,
     // for the cloned loop (and its embedded EH regions).
     //
-    // Also, count the number of return blocks within the loop for future use.
-    unsigned loopRetCount = 0;
-    for (BasicBlock* const blk : loop.LoopBlocks())
-    {
-        if (blk->bbJumpKind == BBJ_RETURN)
-        {
-            loopRetCount++;
-        }
+    BasicBlockVisit result = loop->VisitLoopBlocks([=](BasicBlock* blk) {
+        assert(!blk->KindIs(BBJ_RETURN));
         if (bbIsTryBeg(blk))
         {
-            JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It has a `try` begin.\n", loopInd);
-            return false;
+            JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It has a `try` begin.\n", loop->GetIndex());
+            return BasicBlockVisit::Abort;
         }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    if (result == BasicBlockVisit::Abort)
+    {
+        return false;
     }
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.
-    if (bbIsHandlerBeg(loop.lpEntry))
+    if (bbIsHandlerBeg(loop->GetHeader()))
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Entry block is a handler start.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Header block is a handler start.\n", loop->GetIndex());
         return false;
     }
 
+    // Loop canonicalization should have ensured that there is a unique preheader.
+    assert(loop->EntryEdges().size() == 1);
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+
     // If the head and entry are in different EH regions, reject.
-    if (!BasicBlock::sameEHRegion(loop.lpHead, loop.lpEntry))
+    if (!BasicBlock::sameEHRegion(preheader, loop->GetHeader()))
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Head and entry blocks are in different EH regions.\n",
-                loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Preheader and header blocks are in different EH regions.\n",
+                loop->GetIndex());
         return false;
     }
 
@@ -1799,29 +1830,29 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     // that block; this is one of those cases.  This could be fixed fairly easily; for example,
     // we could add a dummy nop block after the (cloned) loop bottom, in the same handler scope as the
     // loop.  This is just a corner to cut to get this working faster.
-    BasicBlock* bbAfterLoop = loop.lpBottom->bbNext;
+    // TODO-Quirk: Should rework this to avoid the lexically bottom most block here.
+    BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
+
+    BasicBlock* bbAfterLoop = bottom->Next();
     if (bbAfterLoop != nullptr && bbIsHandlerBeg(bbAfterLoop))
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Next block after bottom is a handler start.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Next block after bottom is a handler start.\n",
+                loop->GetIndex());
         return false;
     }
 
-    // Reject cloning if this is a mid-entry loop and the entry has non-loop predecessors other than its head.
-    // This loop may be part of a larger looping construct that we didn't recognize.
+    // TODO-Quirk: Reject loops that with the old loop cloning would put us
+    // above max number of returns. Return blocks are not considered part of
+    // loops in the new loop finding since they are never part of the SCC (and
+    // they aren't present inside try-regions).
     //
-    // We should really fix this in optCanonicalizeLoop.
-    //
-    if (!loop.lpIsTopEntry())
+    LoopDsc* oldLoop      = m_newToOldLoop[loop->GetIndex()];
+    unsigned loopRetCount = 0;
+    for (BasicBlock* const blk : oldLoop->LoopBlocks())
     {
-        for (BasicBlock* const entryPred : loop.lpEntry->PredBlocks())
+        if (blk->KindIs(BBJ_RETURN))
         {
-            if ((entryPred != loop.lpHead) && !loop.lpContains(entryPred))
-            {
-                JITDUMP("Loop cloning: rejecting loop " FMT_LP
-                        ". Is not top entry, and entry has multiple non-loop preds.\n",
-                        loopInd);
-                return false;
-            }
+            loopRetCount++;
         }
     }
 
@@ -1837,78 +1868,61 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It has %d returns;"
                 " if added to previously existing %d returns, it would exceed the limit of %d.\n",
-                loopInd, loopRetCount, fgReturnCount, epilogLimit);
+                loop->GetIndex(), loopRetCount, fgReturnCount, epilogLimit);
+        return false;
+    }
+
+    assert(!requireIterable || !lvaVarAddrExposed(iterInfo->IterVar));
+
+    // TODO-Quirk: These conditions are unnecessary.
+    BasicBlock* oldLoopTop    = oldLoop->lpTop;
+    BasicBlock* oldLoopBottom = oldLoop->lpBottom;
+
+    if (!oldLoopBottom->KindIs(BBJ_COND))
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Couldn't find termination test.\n", loop->GetIndex());
+        return false;
+    }
+
+    if (!oldLoopBottom->TrueTargetIs(oldLoopTop))
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n",
+                loop->GetIndex());
         return false;
     }
 
     if (requireIterable)
     {
-        const unsigned ivLclNum = loop.lpIterVar();
-        if (lvaVarAddrExposed(ivLclNum))
-        {
-            JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Rejected V%02u as iter var because is address-exposed.\n",
-                    loopInd, ivLclNum);
-            return false;
-        }
-    }
-
-    BasicBlock* top    = loop.lpTop;
-    BasicBlock* bottom = loop.lpBottom;
-
-    if (bottom->bbJumpKind != BBJ_COND)
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Couldn't find termination test.\n", loopInd);
-        return false;
-    }
-
-    if (bottom->bbJumpDest != top)
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n", loopInd);
-        return false;
-    }
-
-    if (requireIterable)
-    {
-        if ((loop.lpFlags & LPFLG_CONST_LIMIT) == 0 && (loop.lpFlags & LPFLG_VAR_LIMIT) == 0 &&
-            (loop.lpFlags & LPFLG_ARRLEN_LIMIT) == 0)
-        {
-            JITDUMP("Loop cloning: rejecting loop " FMT_LP
-                    ". Loop limit is neither constant, variable or array length.\n",
-                    loopInd);
-            return false;
-        }
+        assert(iterInfo->HasConstLimit || iterInfo->HasInvariantLocalLimit || iterInfo->HasArrayLengthLimit);
 
         // TODO-CQ: Handle other loops like:
         // - The ones whose limit operator is "==" or "!="
         // - The incrementing operator is multiple and divide
         // - The ones that are inverted are not handled here for cases like "i *= 2" because
         //   they are converted to "i + i".
-        if (!(loop.lpIsIncreasingLoop() || loop.lpIsDecreasingLoop()))
+        if (!iterInfo->IsIncreasingLoop() && !iterInfo->IsDecreasingLoop())
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP
                     ". Loop test (%s) doesn't agree with the direction (%s) of the loop.\n",
-                    loopInd, GenTree::OpName(loop.lpTestOper()), GenTree::OpName(loop.lpIterOper()));
+                    loop->GetIndex(), GenTree::OpName(iterInfo->TestOper()), GenTree::OpName(iterInfo->IterOper()));
             return false;
         }
 
-        if (!loop.lpTestTree->OperIsCompare() || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
+        if (!iterInfo->TestTree->OperIsCompare() || ((iterInfo->TestTree->gtFlags & GTF_RELOP_ZTT) == 0))
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP
                     ". Loop inversion NOT present, loop test [%06u] may not protect "
                     "entry from head.\n",
-                    loopInd, loop.lpTestTree->gtTreeID);
+                    loop->GetIndex(), iterInfo->TestTree->gtTreeID);
             return false;
         }
 
 #ifdef DEBUG
-        const unsigned ivLclNum = loop.lpIterVar();
-        GenTree* const op1      = loop.lpIterator();
+        const unsigned ivLclNum = iterInfo->IterVar;
+        GenTree* const op1      = iterInfo->Iterator();
         assert((op1->gtOper == GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
 #endif
     }
-
-    // Otherwise, we're going to add those return blocks.
-    fgReturnCount += loopRetCount;
 
     return true;
 }
@@ -1917,10 +1931,10 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
 // optInsertLoopChoiceConditions: Insert the loop conditions for a loop after the loop head.
 //
 // Arguments:
-//      context     loop cloning context variable
-//      loopNum     the loop index
-//      slowHead    the slow path loop head, where the condition failures branch
-//      insertAfter insert the conditions after this block
+//      context       - loop cloning context variable
+//      loop          - the loop
+//      slowPreheader - the slow path loop preheader, where the condition failures branch
+//      insertAfter   - insert the conditions after this block
 //
 // Return Value:
 //      The last condition block added.
@@ -1928,41 +1942,41 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
 // Operation:
 //      Create the following structure.
 //
-//      h (fall through)
-//      !cond0        -?> slowHead
-//      !cond1        -?> slowHead
+//      [insertAfter]
+//      !cond0        -?> slowPreheader
+//      !cond1        -?> slowPreheader
 //      ...
-//      !condn        -?> slowHead
-//      h2/entry (fast)
+//      !condn        -?> slowPreheader
 //      ...
-//      slowHead      -?> e2 (slowHead) branch or fall-through to e2
+//      slowPreheader --> slowHeader
 //
-BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
-                                                    unsigned          loopNum,
-                                                    BasicBlock*       slowHead,
-                                                    BasicBlock*       insertAfter)
+BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext*     context,
+                                                    FlowGraphNaturalLoop* loop,
+                                                    BasicBlock*           slowPreheader,
+                                                    BasicBlock*           insertAfter)
 {
-    JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loopNum);
-    assert(context->HasBlockConditions(loopNum));
-    assert(slowHead != nullptr);
-    assert(insertAfter->bbJumpKind == BBJ_NONE);
+    JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loop->GetIndex());
+    assert(context->HasBlockConditions(loop->GetIndex()));
+    assert(slowPreheader != nullptr);
 
-    if (context->HasBlockConditions(loopNum))
+    if (context->HasBlockConditions(loop->GetIndex()))
     {
-        JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = context->GetBlockConditions(loopNum);
+        JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond =
+            context->GetBlockConditions(loop->GetIndex());
         for (unsigned i = 0; i < levelCond->Size(); ++i)
         {
-            JITDUMP("Adding loop " FMT_LP " level %u block conditions\n    ", loopNum, i);
+            JITDUMP("Adding loop " FMT_LP " level %u block conditions\n    ", loop->GetIndex(), i);
             DBEXEC(verbose, context->PrintBlockLevelConditions(i, (*levelCond)[i]));
-            insertAfter = context->CondToStmtInBlock(this, *((*levelCond)[i]), slowHead, insertAfter);
+            insertAfter = context->CondToStmtInBlock(this, *((*levelCond)[i]), slowPreheader, insertAfter);
         }
     }
 
     // Finally insert cloning conditions after all deref conditions have been inserted.
-    JITDUMP("Adding loop " FMT_LP " cloning conditions\n    ", loopNum);
-    DBEXEC(verbose, context->PrintConditions(loopNum));
+    JITDUMP("Adding loop " FMT_LP " cloning conditions\n    ", loop->GetIndex());
+    DBEXEC(verbose, context->PrintConditions(loop->GetIndex()));
     JITDUMP("\n");
-    insertAfter = context->CondToStmtInBlock(this, *(context->GetConditions(loopNum)), slowHead, insertAfter);
+    insertAfter =
+        context->CondToStmtInBlock(this, *(context->GetConditions(loop->GetIndex())), slowPreheader, insertAfter);
 
     return insertAfter;
 }
@@ -1971,21 +1985,25 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
 // optCloneLoop: Perform the mechanical cloning of the specified loop
 //
 // Arguments:
-//    loopInd - loop index of loop to clone
+//    loop    - The loop to clone
 //    context - data structure where all loop cloning info is kept.
 //
-void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
+void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
-    assert(loopInd < optLoopCount);
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nCloning loop " FMT_LP " with blocks:\n", loop->GetIndex());
 
-    LoopDsc& loop = optLoopTable[loopInd];
-
-    JITDUMP("\nCloning loop " FMT_LP ": [head: " FMT_BB ", top: " FMT_BB ", entry: " FMT_BB ", bottom: " FMT_BB
-            ", child: " FMT_LP "].\n",
-            loopInd, loop.lpHead->bbNum, loop.lpTop->bbNum, loop.lpEntry->bbNum, loop.lpBottom->bbNum, loop.lpChild);
+        loop->VisitLoopBlocksReversePostOrder([](BasicBlock* block) {
+            printf("  " FMT_BB "\n", block->bbNum);
+            return BasicBlockVisit::Continue;
+        });
+    }
+#endif
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned depth         = optLoopDepth(loopInd);
+    unsigned depth         = optLoopDepth((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable));
     weight_t ambientWeight = 1;
     for (unsigned j = 0; j < depth; j++)
     {
@@ -1994,9 +2012,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         assert(ambientWeight > lastWeight);
     }
 
-    // If we're in a non-natural loop, the ambient weight might be higher than we computed above.
-    // Be safe by taking the max with the head block's weight.
-    ambientWeight = max(ambientWeight, loop.lpHead->bbWeight);
+    assert(loop->EntryEdges().size() == 1);
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+    // The ambient weight might be higher than we computed above. Be safe by
+    // taking the max with the head block's weight.
+    ambientWeight = max(ambientWeight, preheader->bbWeight);
 
     // We assume that the fast path will run 99% of the time, and thus should get 99% of the block weights.
     // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
@@ -2007,116 +2027,103 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // This is the containing loop, if any -- to label any blocks we create that are outside
     // the loop being cloned.
-    unsigned char ambientLoop = loop.lpParent;
+    unsigned char ambientLoop = m_newToOldLoop[loop->GetIndex()]->lpParent;
 
     // We're going to transform this loop:
     //
-    // H --> E    (if T == E, H falls through to T/E)
-    // T
-    // E
-    // B ?-> T
-    // X
+    // preheader --> header
     //
     // to this pair of loops:
     //
-    // H ?-> H3   (all loop failure conditions branch to new slow path loop head)
-    // H2 --> E   (if T == E, H2 will fall through to T/E)
-    // T
-    // E
-    // B  ?-> T
-    // X2 --> X   (only need this if B -> is conditional, not BBJ_ALWAYS)
-    // H3 --> E2  (aka slowHead. Or, H3 falls through to T2 == E2)
-    // T2
-    // E2
-    // B2 ?-> T2
-    // X
+    // preheader ?-> slow preheader (all loop failure conditions branch to new slow path loop preheader)
+    // fast preheader --> header (fast loop)
+    // ...
+    // slow preheader --> slow header
 
-    BasicBlock* h = loop.lpHead;
-    assert((h->bbFlags & BBF_LOOP_PREHEADER) != 0);
+    assert(preheader->HasFlag(BBF_LOOP_PREHEADER));
 
-    // Make a new pre-header block 'h2' for the loop. 'h' will fall through to 'h2'.
-    JITDUMP("Create new header block for loop\n");
+    // Make a new pre-header block for the fast loop.
+    JITDUMP("Create new preheader block for fast loop\n");
 
-    BasicBlock* h2 = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
-    h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    h2->bbNatLoopNum = ambientLoop;
-    h2->bbFlags |= BBF_LOOP_PREHEADER;
+    BasicBlock* fastPreheader =
+        fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
+    fastPreheader->bbWeight     = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    fastPreheader->bbNatLoopNum = ambientLoop;
+    fastPreheader->SetFlags(BBF_LOOP_PREHEADER);
 
-    if (h->bbJumpKind != BBJ_NONE)
+    if (fastPreheader->JumpsToNext())
     {
-        assert(h->bbJumpKind == BBJ_ALWAYS);
-        assert(h->bbJumpDest == loop.lpEntry);
-        h2->bbJumpKind = BBJ_ALWAYS;
-        h2->bbJumpDest = loop.lpEntry;
+        fastPreheader->SetFlags(BBF_NONE_QUIRK);
     }
 
-    fgReplacePred(loop.lpEntry, h, h2);
-    JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", h->bbNum, loop.lpEntry->bbNum,
-            h2->bbNum, loop.lpEntry->bbNum);
+    assert(preheader->KindIs(BBJ_ALWAYS));
+    assert(preheader->TargetIs(loop->GetHeader()));
 
-    // 'h' is no longer the loop head; 'h2' is!
-    h->bbFlags &= ~BBF_LOOP_PREHEADER;
-    optUpdateLoopHead(loopInd, h, h2);
+    fgReplacePred(loop->GetHeader(), preheader, fastPreheader);
+    JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", preheader->bbNum,
+            loop->GetHeader()->bbNum, fastPreheader->bbNum, loop->GetHeader()->bbNum);
 
-    // Make 'h' fall through to 'h2' (if it didn't already).
-    // Don't add the h->h2 edge because we're going to insert the cloning conditions between 'h' and 'h2', and
-    // optInsertLoopChoiceConditions() will add the edge.
-    h->bbJumpKind = BBJ_NONE;
-    h->bbJumpDest = nullptr;
+    // 'preheader' is no longer the loop preheader; 'fastPreheader' is!
+    preheader->RemoveFlags(BBF_LOOP_PREHEADER);
+    optUpdateLoopHead((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable), preheader, fastPreheader);
 
-    // Make X2 after B, if necessary.  (Not necessary if B is a BBJ_ALWAYS.)
-    // "newPred" will be the predecessor of the blocks of the cloned loop.
-    BasicBlock* b       = loop.lpBottom;
-    BasicBlock* newPred = b;
-    if (b->bbJumpKind != BBJ_ALWAYS)
+    // We are going to create blocks after the lexical last block. If it falls
+    // out of the loop then insert an explicit jump and insert after that
+    // instead.
+    // bottom [lexically last block of loop, fallthrough]
+    // bottomNext
+    // ... slow cloned loop (not yet inserted)
+    //    =>
+    // bottom [lexically last block of loop, fallthrough]
+    // bottomRedirBlk [BBJ_ALWAYS --> bottomNext]
+    // ... slow cloned loop (not yet inserted)
+    // bottomNext
+    BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* newPred = bottom;
+    if (bottom->bbFallsThrough())
     {
-        assert(b->bbJumpKind == BBJ_COND);
+        // Once bbFalseTarget can diverge from bbNext, BBJ_COND blocks will "fall through"
+        // only if bbFalseTarget is still the next block
+        assert(!bottom->KindIs(BBJ_COND) || bottom->NextIs(bottom->GetFalseTarget()));
+        BasicBlock* bottomNext = bottom->Next();
+        JITDUMP("Create branch around cloned loop\n");
+        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
+        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
+        bottomRedirBlk->bbWeight = bottomRedirBlk->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
 
-        BasicBlock* x = b->bbNext;
-        if (x != nullptr)
-        {
-            JITDUMP("Create branch around cloned loop\n");
-            BasicBlock* x2 = fgNewBBafter(BBJ_ALWAYS, b, /*extendRegion*/ true);
-            JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", x2->bbNum, b->bbNum);
-            x2->bbWeight = x2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+        // This is in the scope of a surrounding loop, if one exists -- the parent of the loop we're cloning.
+        bottomRedirBlk->bbNatLoopNum = ambientLoop;
 
-            // This is in the scope of a surrounding loop, if one exists -- the parent of the loop we're cloning.
-            x2->bbNatLoopNum = ambientLoop;
+        fgAddRefPred(bottomRedirBlk, bottom);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
+        fgReplacePred(bottomNext, bottom, bottomRedirBlk);
+        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomNext->bbNum,
+                bottomRedirBlk->bbNum, bottomNext->bbNum);
 
-            x2->bbJumpDest = x;
-            BlockSetOps::Assign(this, x2->bbReach, h->bbReach);
-
-            fgAddRefPred(x2, b); // Add b->x2 pred edge
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", b->bbNum, x2->bbNum);
-            fgReplacePred(x, b, x2); // The pred of x is now x2, not the fall-through of COND b.
-            JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", b->bbNum, x->bbNum, x2->bbNum,
-                    x->bbNum);
-
-            newPred = x2;
-        }
+        newPred = bottomRedirBlk;
     }
 
-    // Create a new loop head for the slow loop immediately before the slow loop itself. All failed
-    // conditions will branch to the slow head. The slow head will either fall through or unconditionally
-    // branch to the slow path entry. The slowHead will be a loop pre-header, however we don't put the slow loop
-    // in the loop table, so it isn't marked as a pre-header (if we re-built the loop table after cloning, slowHead
-    // would end up in the loop table as a pre-header without creating any new pre-header block). This puts the
-    // slow loop in the canonical loop form.
-    JITDUMP("Create unique head block for slow path loop\n");
-    BasicBlock* slowHead = fgNewBBafter(BBJ_NONE, newPred, /*extendRegion*/ true);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, newPred->bbNum);
-    slowHead->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowHead->scaleBBWeight(slowPathWeightScaleFactor);
-    slowHead->bbNatLoopNum = ambientLoop;
-    newPred                = slowHead;
+    // Create a new preheader for the slow loop immediately before the slow
+    // loop itself. All failed conditions will branch to the slow preheader.
+    // The slow preheader will unconditionally branch to the slow loop header.
+    // This puts the slow loop in the canonical loop form.
+    JITDUMP("Create unique preheader for slow path loop\n");
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
+    slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowPreheader->scaleBBWeight(slowPathWeightScaleFactor);
+    slowPreheader->bbNatLoopNum = ambientLoop;
+    newPred                     = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
-    for (BasicBlock* const blk : loop.LoopBlocks())
-    {
-        BasicBlock* newBlk = fgNewBBafter(blk->bbJumpKind, newPred, /*extendRegion*/ true);
+
+    loop->VisitLoopBlocksLexical([=, &newPred](BasicBlock* blk) {
+        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
+        // with BasicBlock::CopyTarget().
+        BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
 
         // Call CloneBlockState to make a copy of the block's statements (and attributes), and assert that it
@@ -2132,72 +2139,100 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         newBlk->scaleBBWeight(slowPathWeightScaleFactor);
         blk->scaleBBWeight(fastPathWeightScaleFactor);
 
-// TODO: scale the pred edges of `blk`?
-
-#if FEATURE_LOOP_ALIGN
-        // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
-        // rare scenario. Additionally, having to align cloned loop will force us to disable some VEX prefix encoding
-        // and adding compensation for over-estimated instructions.
-        if (newBlk->isLoopAlign())
-        {
-            newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
-            JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
-        }
-#endif
+        // TODO: scale the pred edges of `blk`?
 
         // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
         // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
         // we don't add the slow loop or its child loops to the loop table. It would be simplest to
         // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
-        if ((newBlk->bbFlags & BBF_LOOP_PREHEADER) != 0)
+        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
         {
             JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->bbFlags &= ~BBF_LOOP_PREHEADER;
+            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
         }
 
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
         // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
         // loop, if one exists -- the parent of the loop we're cloning.
-        newBlk->bbNatLoopNum = loop.lpParent;
+        newBlk->bbNatLoopNum = ambientLoop;
 
         newPred = newBlk;
         blockMap->Set(blk, newBlk);
-    }
+
+        // If the block falls through to a block outside the loop then we may
+        // need to insert a new block to redirect.
+        // Skip this for the bottom block; we duplicate the slow loop such that
+        // the bottom block will fall through to the bottom's original next.
+        if ((blk != bottom) && blk->bbFallsThrough() && !loop->ContainsBlock(blk->Next()))
+        {
+            if (blk->KindIs(BBJ_COND))
+            {
+                // TODO-Quirk: We see a lot of these cases and some of them cause diffs.
+                BasicBlock* targetBlk = blk->GetFalseTarget();
+                assert(blk->NextIs(targetBlk));
+                if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
+                    targetBlk = targetBlk->GetTarget();
+
+                // Need to insert a block.
+                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
+                newRedirBlk->copyEHRegion(newPred);
+                newRedirBlk->bbNatLoopNum = ambientLoop;
+                newRedirBlk->bbWeight     = blk->Next()->bbWeight;
+                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
+                newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
+
+                // TODO-Quirk: This next block is not part of the loop and
+                // should not be scaled down, especially once we get rid of the
+                // other quirk above.
+                blk->Next()->scaleBBWeight(fastPathWeightScaleFactor);
+
+                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
+                        blk->Next()->bbNum, newRedirBlk->bbNum);
+                // This block isn't part of the loop, so below loop won't add
+                // refs for it.
+                fgAddRefPred(targetBlk, newRedirBlk);
+                newPred = newRedirBlk;
+            }
+            else
+            {
+                assert(!"Cannot handle fallthrough");
+            }
+        }
+
+        return BasicBlockVisit::Continue;
+    });
 
     // Perform the static optimizations on the fast path.
-    optPerformStaticOptimizations(loopInd, context DEBUGARG(true));
+    optPerformStaticOptimizations(loop, context DEBUGARG(true));
 
     // Now go through the new blocks, remapping their jump targets within the loop
     // and updating the preds lists.
-    for (BasicBlock* const blk : loop.LoopBlocks())
-    {
+    loop->VisitLoopBlocks([=](BasicBlock* blk) {
         BasicBlock* newblk = nullptr;
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
 
-        assert(blk->bbJumpKind == newblk->bbJumpKind);
+        // Jump target should not be set yet
+        assert(!newblk->HasInitializedTarget());
 
         // First copy the jump destination(s) from "blk".
-        optCopyBlkDest(blk, newblk);
+        newblk->CopyTarget(this, blk);
 
         // Now redirect the new block according to "blockMap".
         optRedirectBlock(newblk, blockMap);
 
         // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newblk->bbJumpKind)
+        switch (newblk->GetKind())
         {
-            case BBJ_NONE:
-                fgAddRefPred(newblk->bbNext, newblk);
-                break;
-
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgAddRefPred(newblk->bbJumpDest, newblk);
+            case BBJ_CALLFINALLYRET:
+                fgAddRefPred(newblk->GetTarget(), newblk);
                 break;
 
             case BBJ_COND:
-                fgAddRefPred(newblk->bbNext, newblk);
-                fgAddRefPred(newblk->bbJumpDest, newblk);
+                fgAddRefPred(newblk->GetFalseTarget(), newblk);
+                fgAddRefPred(newblk->GetTrueTarget(), newblk);
                 break;
 
             case BBJ_SWITCH:
@@ -2210,13 +2245,14 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
             default:
                 break;
         }
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 
 #ifdef DEBUG
     // Display the preds for the new blocks, after all the new blocks have been redirected.
     JITDUMP("Preds after loop copy:\n");
-    for (BasicBlock* const blk : loop.LoopBlocks())
-    {
+    loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* blk) {
         BasicBlock* newblk = nullptr;
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
@@ -2226,77 +2262,82 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
             JITDUMP(" " FMT_BB, predBlock->bbNum);
         }
         JITDUMP("\n");
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 #endif // DEBUG
 
     // Insert the loop choice conditions. We will create the following structure:
     //
-    //      h (fall through)
-    //      !cond0        -?> slowHead
-    //      !cond1        -?> slowHead
+    //      [preheader]
+    //      !cond0        -?> slowPreheader
+    //      !cond1        -?> slowPreheader
     //      ...
-    //      !condn        -?> slowHead
-    //      h2            -?> e (fast loop pre-header branch or fall-through to e)
+    //      !condn        -?> slowPreheader
+    //      fastPreheader --> fastHeader
     //      ...
-    //      slowHead      -?> e2 (slow loop pre-header branch or fall-through to e2)
+    //      slowPreheader --> slowHeader
     //
     // We should always have block conditions.
 
-    assert(context->HasBlockConditions(loopInd));
-    assert(h->bbJumpKind == BBJ_NONE);
-    assert(h->bbNext == h2);
+    assert(context->HasBlockConditions(loop->GetIndex()));
 
-    // If any condition is false, go to slowHead (which branches or falls through to e2).
-    BasicBlock* e2      = nullptr;
-    bool        foundIt = blockMap->Lookup(loop.lpEntry, &e2);
-    assert(foundIt && e2 != nullptr);
+    // If any condition is false, go to slowPreheader (which branches or falls through to header of the slow loop).
+    BasicBlock* slowHeader = nullptr;
+    bool        foundIt    = blockMap->Lookup(loop->GetHeader(), &slowHeader);
+    assert(foundIt && (slowHeader != nullptr));
 
-    if (slowHead->bbNext != e2)
-    {
-        // We can't just fall through to the slow path entry, so make it an unconditional branch.
-        assert(slowHead->bbJumpKind == BBJ_NONE); // This is how we created it above.
-        slowHead->bbJumpKind = BBJ_ALWAYS;
-        slowHead->bbJumpDest = e2;
-    }
+    // We haven't set the jump target yet
+    assert(slowPreheader->KindIs(BBJ_ALWAYS));
+    assert(!slowPreheader->HasInitializedTarget());
+    slowPreheader->SetTarget(slowHeader);
 
-    fgAddRefPred(e2, slowHead);
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowHead->bbNum, e2->bbNum);
+    fgAddRefPred(slowHeader, slowPreheader);
+    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowPreheader->bbNum, slowHeader->bbNum);
 
-    BasicBlock* condLast = optInsertLoopChoiceConditions(context, loopInd, slowHead, h);
+    BasicBlock* condLast = optInsertLoopChoiceConditions(context, loop, slowPreheader, preheader);
 
-    // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
-    // or H2 if branch to E of fast path).
-    assert(condLast->bbJumpKind == BBJ_COND);
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);
-    fgAddRefPred(condLast->bbNext, condLast);
+    // Now redirect the old preheader to jump to the first new condition that
+    // was inserted by the above function.
+    assert(preheader->KindIs(BBJ_ALWAYS));
+    preheader->SetTarget(preheader->Next());
+    fgAddRefPred(preheader->Next(), preheader);
+    preheader->SetFlags(BBF_NONE_QUIRK);
+
+    // And make sure we insert a pred link for the final fallthrough into the fast preheader.
+    assert(condLast->NextIs(fastPreheader));
+    fgAddRefPred(fastPreheader, condLast);
 
     // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
     // initialize the loop counter immediately before entering the loop, but we've left a shared
     // initialization of the loop counter up above the test that determines which version of the
     // loop to take.
-    loop.lpFlags |= LPFLG_DONT_UNROLL;
+    m_newToOldLoop[loop->GetIndex()]->lpFlags |= LPFLG_DONT_UNROLL;
 }
 
 //-------------------------------------------------------------------------
 //  optIsStackLocalInvariant: Is stack local invariant in loop.
 //
 //  Arguments:
-//      loopNum      The loop in which the variable is tested for invariance.
-//      lclNum       The local that is tested for invariance in the loop.
+//      loop   - The loop in which the variable is tested for invariance.
+//      lclNum - The local that is tested for invariance in the loop.
 //
 //  Return Value:
 //      Returns true if the variable is loop invariant in loopNum.
 //
-bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
+bool Compiler::optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum)
 {
     if (lvaVarAddrExposed(lclNum))
     {
         return false;
     }
-    if (optIsVarAssgLoop(loopNum, lclNum))
+
+    // TODO: Cache this invariance information
+    if (loop->HasDef(lclNum))
     {
         return false;
     }
+
     return true;
 }
 
@@ -2640,22 +2681,24 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 #endif
 
         // Check that the array object local variable is invariant within the loop body.
-        if (!optIsStackLocalInvariant(info->loopNum, arrIndex.arrLcl))
+        if (!optIsStackLocalInvariant(info->loop, arrIndex.arrLcl))
         {
             JITDUMP("V%02d is not loop invariant\n", arrIndex.arrLcl);
             return WALK_SKIP_SUBTREES;
         }
 
+        NaturalLoopIterInfo* iterInfo = info->context->GetLoopIterInfo(info->loop->GetIndex());
+
         // Walk the dimensions and see if iterVar of the loop is used as index.
         for (unsigned dim = 0; dim < arrIndex.rank; ++dim)
         {
             // Is index variable also used as the loop iter var?
-            if (arrIndex.indLcls[dim] == optLoopTable[info->loopNum].lpIterVar())
+            if (arrIndex.indLcls[dim] == iterInfo->IterVar)
             {
                 // Check the previous indices are all loop invariant.
                 for (unsigned dim2 = 0; dim2 < dim; ++dim2)
                 {
-                    if (optIsVarAssgLoop(info->loopNum, arrIndex.indLcls[dim2]))
+                    if (!optIsStackLocalInvariant(info->loop, arrIndex.indLcls[dim2]))
                     {
                         JITDUMP("V%02d is assigned in loop\n", arrIndex.indLcls[dim2]);
                         return WALK_SKIP_SUBTREES;
@@ -2664,19 +2707,18 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Loop " FMT_LP " can be cloned for ArrIndex ", info->loopNum);
+                    printf("Loop " FMT_LP " can be cloned for ArrIndex ", info->loop->GetIndex());
                     arrIndex.Print();
                     printf(" on dim %d\n", dim);
                 }
 #endif
                 // Update the loop context.
-                info->context->EnsureLoopOptInfo(info->loopNum)
+                info->context->EnsureLoopOptInfo(info->loop->GetIndex())
                     ->Push(new (this, CMK_LoopOpt) LcJaggedArrayOptInfo(arrIndex, dim, info->stmt));
             }
             else
             {
-                JITDUMP("Induction V%02d is not used as index on dim %d\n", optLoopTable[info->loopNum].lpIterVar(),
-                        dim);
+                JITDUMP("Induction V%02d is not used as index on dim %d\n", iterInfo->IterVar, dim);
             }
         }
         return WALK_SKIP_SUBTREES;
@@ -2738,7 +2780,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
             JITDUMP("... right form for type test with local V%02u\n", lclNum);
 
-            if (!optIsStackLocalInvariant(info->loopNum, lclNum))
+            if (!optIsStackLocalInvariant(info->loop, lclNum))
             {
                 JITDUMP("... but not invariant\n");
                 return WALK_CONTINUE;
@@ -2746,8 +2788,8 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
             // Looks like we found an invariant type test.
             //
-            JITDUMP("Loop " FMT_LP " has invariant type test [%06u] on V%02u\n", info->loopNum, dspTreeID(tree),
-                    lclNum);
+            JITDUMP("Loop " FMT_LP " has invariant type test [%06u] on V%02u\n", info->loop->GetIndex(),
+                    dspTreeID(tree), lclNum);
 
             if (optCheckLoopCloningGDVTestProfitable(relop->AsOp(), info))
             {
@@ -2757,7 +2799,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)relopOp2->AsIntConCommon()->IconValue();
 
                 assert(compCurBB->lastStmt() == info->stmt);
-                info->context->EnsureLoopOptInfo(info->loopNum)
+                info->context->EnsureLoopOptInfo(info->loop->GetIndex())
                     ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(info->stmt, indir, lclNum, clsHnd));
             }
         }
@@ -2821,13 +2863,13 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 return WALK_CONTINUE;
             }
 
-            if (!optIsStackLocalInvariant(info->loopNum, lclNum))
+            if (!optIsStackLocalInvariant(info->loop, lclNum))
             {
                 JITDUMP("... but not invariant\n");
                 return WALK_CONTINUE;
             }
 
-            JITDUMP("Loop " FMT_LP " has invariant method address test [%06u] on V%02u\n", info->loopNum,
+            JITDUMP("Loop " FMT_LP " has invariant method address test [%06u] on V%02u\n", info->loop->GetIndex(),
                     dspTreeID(tree), lclNum);
 
             if (optCheckLoopCloningGDVTestProfitable(relop->AsOp(), info))
@@ -2842,7 +2884,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                     LcMethodAddrTestOptInfo(info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
                                             relopOp2 != iconHandle DEBUG_ARG(
                                                             (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
-                info->context->EnsureLoopOptInfo(info->loopNum)->Push(optInfo);
+                info->context->EnsureLoopOptInfo(info->loop->GetIndex())->Push(optInfo);
             }
         }
     }
@@ -2887,16 +2929,15 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
     // (3) the test is frequently hit during the loop iteration
     // (4) the test is biased and highly likely to succeed
     //
-    const LoopDsc&    loopDsc           = optLoopTable[info->loopNum];
-    BasicBlock* const loopEntry         = loopDsc.lpEntry;
-    BasicBlock* const typeTestBlock     = compCurBB;
-    double const      loopFrequency     = 0.50;
-    double const      typeTestFrequency = 0.50;
-    double const      typeTestBias      = 0.05;
+    FlowGraphNaturalLoop* loop              = info->loop;
+    BasicBlock* const     typeTestBlock     = compCurBB;
+    double const          loopFrequency     = 0.50;
+    double const          typeTestFrequency = 0.50;
+    double const          typeTestBias      = 0.05;
 
     // Check for (1)
     //
-    if (!loopEntry->hasProfileWeight() || !typeTestBlock->hasProfileWeight())
+    if (!loop->GetHeader()->hasProfileWeight() || !typeTestBlock->hasProfileWeight())
     {
         JITDUMP("  No; loop does not have profile data.\n");
         return WALK_CONTINUE;
@@ -2904,7 +2945,7 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (2)
     //
-    if (loopEntry->getBBWeight(this) < (loopFrequency * BB_UNITY_WEIGHT))
+    if (loop->GetHeader()->getBBWeight(this) < (loopFrequency * BB_UNITY_WEIGHT))
     {
         JITDUMP("  No; loop does not iterate often enough.\n");
         return WALK_CONTINUE;
@@ -2912,7 +2953,7 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (3)
     //
-    if (typeTestBlock->bbWeight < (typeTestFrequency * loopEntry->bbWeight))
+    if (typeTestBlock->bbWeight < (typeTestFrequency * loop->GetHeader()->bbWeight))
     {
         JITDUMP("  No; guard does not execute often enough within the loop.\n");
         return WALK_CONTINUE;
@@ -2920,8 +2961,10 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (4)
     //
-    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->bbJumpDest : typeTestBlock->bbNext;
-    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->bbNext : typeTestBlock->bbJumpDest;
+    BasicBlock* const hotSuccessor =
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetTrueTarget() : typeTestBlock->GetFalseTarget();
+    BasicBlock* const coldSuccessor =
+        guard->OperIs(GT_EQ) ? typeTestBlock->GetFalseTarget() : typeTestBlock->GetTrueTarget();
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {
@@ -2962,8 +3005,8 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pT
 // Also, check if the loop is suitable for the optimizations performed.
 //
 // Arguments:
-//     loopNum     -  the current loop index for which conditions are derived.
-//     context     -  data structure where all loop cloning candidates will be updated.
+//     loop    -  Loop being analyzed
+//     context -  data structure where all loop cloning candidates will be updated.
 //
 // Return Value:
 //     If the loop is not suitable for the optimizations, return false - context
@@ -2975,16 +3018,15 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pT
 //      optimization candidates and update the "context" parameter with all the
 //      contextual information necessary to perform the optimization later.
 //
-bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* context)
+bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
-    const LoopDsc& loop = optLoopTable[loopNum];
-    const bool     canCloneForArrayBounds =
-        ((optMethodFlags & OMF_HAS_ARRAYREF) != 0) && ((loop.lpFlags & LPFLG_ITER) != 0);
-    const bool canCloneForTypeTests = ((optMethodFlags & OMF_HAS_GUARDEDDEVIRT) != 0);
+    NaturalLoopIterInfo* iterInfo               = context->GetLoopIterInfo(loop->GetIndex());
+    const bool           canCloneForArrayBounds = ((optMethodFlags & OMF_HAS_ARRAYREF) != 0) && (iterInfo != nullptr);
+    const bool           canCloneForTypeTests   = ((optMethodFlags & OMF_HAS_GUARDEDDEVIRT) != 0);
 
     if (!canCloneForArrayBounds && !canCloneForTypeTests)
     {
-        JITDUMP("Not checking loop " FMT_LP " -- no array bounds or type tests in this method\n", loopNum);
+        JITDUMP("Not checking loop " FMT_LP " -- no array bounds or type tests in this method\n", loop->GetIndex());
         return false;
     }
 
@@ -2995,12 +3037,13 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
     shouldCloneForGdvTests &= JitConfig.JitCloneLoopsWithGdvTests() != 0;
 #endif
 
-    JITDUMP("Checking loop " FMT_LP " for optimization candidates%s%s\n", loopNum,
+    JITDUMP("Checking loop " FMT_LP " for optimization candidates%s%s\n", loop->GetIndex(),
             shouldCloneForArrayBounds ? " (array bounds)" : "", shouldCloneForGdvTests ? " (GDV tests)" : "");
 
-    LoopCloneVisitorInfo info(context, loopNum, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
-    for (BasicBlock* const block : loop.LoopBlocks())
-    {
+    LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
+
+    // TODO-Quirk: Switch this to VisitLoopBlocks
+    loop->VisitLoopBlocksLexical([=, &info](BasicBlock* block) {
         compCurBB = block;
         for (Statement* const stmt : block->Statements())
         {
@@ -3010,7 +3053,9 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
             fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
                           computeStack);
         }
-    }
+
+        return BasicBlockVisit::Continue;
+    });
 
     return true;
 }
@@ -3032,13 +3077,22 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     bool result = false;
     for (unsigned i = 0; i < optLoopCount; i++)
     {
-        JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", i);
-        if (optIsLoopClonable(i))
+        FlowGraphNaturalLoop* loop = m_oldToNewLoop[i];
+        JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
+        NaturalLoopIterInfo iterInfo;
+        // TODO-Quirk: Remove
+        if ((optLoopTable[i].lpFlags & LPFLG_ITER) != 0)
         {
-            if (optIdentifyLoopOptInfo(i, context))
+            if (loop->AnalyzeIteration(&iterInfo))
             {
-                result = true;
+                INDEBUG(optCrossCheckIterInfo(iterInfo, optLoopTable[i]));
+                context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
             }
+        }
+
+        if (optIsLoopClonable(loop, context) && optIdentifyLoopOptInfo(loop, context))
+        {
+            result = true;
         }
         JITDUMP("------------------------------------------------------------\n");
     }
@@ -3088,7 +3142,7 @@ PhaseStatus Compiler::optCloneLoops()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    LoopCloneContext context(optLoopCount, getAllocator(CMK_LoopClone));
+    LoopCloneContext context((unsigned)m_loops->NumLoops(), getAllocator(CMK_LoopClone));
 
     // Obtain array optimization candidates in the context.
     if (!optObtainLoopCloningOpts(&context))
@@ -3101,38 +3155,40 @@ PhaseStatus Compiler::optCloneLoops()
     unsigned optStaticallyOptimizedLoops = 0;
 
     // For each loop, derive cloning conditions for the optimization candidates.
-    for (unsigned i = 0; i < optLoopCount; ++i)
+    for (unsigned i = 0; i < optLoopCount; i++)
     {
-        JitExpandArrayStack<LcOptInfo*>* optInfos = context.GetLoopOptInfo(i);
+        FlowGraphNaturalLoop* loop = m_oldToNewLoop[i];
+
+        JitExpandArrayStack<LcOptInfo*>* optInfos = context.GetLoopOptInfo(loop->GetIndex());
         if (optInfos == nullptr)
         {
             continue;
         }
 
-        if (!optDeriveLoopCloningConditions(i, &context) || !optComputeDerefConditions(i, &context))
+        if (!optDeriveLoopCloningConditions(loop, &context) || !optComputeDerefConditions(loop, &context))
         {
             JITDUMP("> Conditions could not be obtained\n");
-            context.CancelLoopOptInfo(i);
+            context.CancelLoopOptInfo(loop->GetIndex());
         }
         else
         {
             bool allTrue  = false;
             bool anyFalse = false;
-            context.EvaluateConditions(i, &allTrue, &anyFalse DEBUGARG(verbose));
+            context.EvaluateConditions(loop->GetIndex(), &allTrue, &anyFalse DEBUGARG(verbose));
             if (anyFalse)
             {
-                context.CancelLoopOptInfo(i);
+                context.CancelLoopOptInfo(loop->GetIndex());
             }
             else if (allTrue)
             {
                 // Perform static optimizations on the fast path since we always
                 // have to take the cloned path.
-                optPerformStaticOptimizations(i, &context DEBUGARG(false));
+                optPerformStaticOptimizations(loop, &context DEBUGARG(false));
 
                 ++optStaticallyOptimizedLoops;
 
                 // No need to clone.
-                context.CancelLoopOptInfo(i);
+                context.CancelLoopOptInfo(loop->GetIndex());
             }
         }
     }
@@ -3167,12 +3223,13 @@ PhaseStatus Compiler::optCloneLoops()
     assert(optLoopsCloned == 0); // It should be initialized, but not yet changed.
     for (unsigned i = 0; i < optLoopCount; ++i)
     {
-        if (context.GetLoopOptInfo(i) != nullptr)
+        FlowGraphNaturalLoop* loop = m_oldToNewLoop[i];
+        if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
             optLoopsCloned++;
-            context.OptimizeConditions(i DEBUGARG(verbose));
-            context.OptimizeBlockConditions(i DEBUGARG(verbose));
-            optCloneLoop(i, &context);
+            context.OptimizeConditions(loop->GetIndex() DEBUGARG(verbose));
+            context.OptimizeBlockConditions(loop->GetIndex() DEBUGARG(verbose));
+            optCloneLoop(loop, &context);
         }
     }
 
@@ -3181,6 +3238,9 @@ PhaseStatus Compiler::optCloneLoops()
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
         // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+
+        m_dfsTree = fgComputeDfs();
+        optFindNewLoops();
     }
 
 #ifdef DEBUG

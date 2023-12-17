@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <DefineConstants>$(DefineConstants);V2</DefineConstants>
-    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\fieldgetter.ilproj" />

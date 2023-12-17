@@ -74,7 +74,7 @@ internal sealed class BrowserHost
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
-        string[] urls = envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls)
+        string[] urls = (envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls) && aspnetUrls.Length > 0)
                             ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
@@ -167,7 +167,7 @@ internal sealed class BrowserHost
                 devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
 
             if (devServerOptions == null)
-                throw new CommandLineException("Please, provide mainAssembly in hostProperties of runtimeconfig");
+                throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
         }
 
         return devServerOptions;
@@ -183,7 +183,7 @@ internal sealed class BrowserHost
     );
 
     private static string? FindFirstFileWithExtension(string directory, string extension)
-        => Directory.EnumerateFiles(directory, "*" + extension).First();
+        => Directory.EnumerateFiles(directory, "*" + extension).FirstOrDefault();
 
     private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
     {

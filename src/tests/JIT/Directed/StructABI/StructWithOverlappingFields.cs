@@ -67,7 +67,9 @@ namespace Opt_Error
 
     public class Program
     {
-        static void TestClass(int initVal)
+        [Theory]
+        [InlineData(2)]
+        public static void TestClass(int initVal)
         {
             FourByteClass fb = new FourByteClass(initVal);
             fb.fval = 0;
@@ -93,7 +95,9 @@ namespace Opt_Error
             Debug.Assert(cse_val_2 == 52);
         }
 
-        static void TestStruct(int initVal)
+        [Theory]
+        [InlineData(2)]
+        public static void TestStruct(int initVal)
         {
             FourByteStruct fb = new FourByteStruct(initVal);
             fb.fval = 0;
@@ -117,14 +121,6 @@ namespace Opt_Error
             Debug.Assert(cseb0_2 == 23);
             Debug.Assert(cse_uval_2 == 7);
             Debug.Assert(cse_val_2 == 52);
-        }
-
-        [Fact]
-        public static int TestEntryPoint()
-        {
-            TestClass(2);
-            TestStruct(2);
-            return 100;
         }
     }
 }

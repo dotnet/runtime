@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class DllImportSearchPathsTest
 {
     private static string Subdirectory => Path.Combine(NativeLibraryToLoad.GetDirectory(), "subdirectory");
@@ -39,6 +40,13 @@ public class DllImportSearchPathsTest
         Assert.Equal(3, sum);
     }
 
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void AssemblyDirectoryAot_Found()
+    {
+        int sum = NativeLibraryPInvokeAot.Sum(1, 2);
+        Assert.Equal(3, sum);
+    }
+
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void AssemblyDirectory_Fallback_Found()
@@ -68,5 +76,20 @@ public class NativeLibraryPInvoke
 
     [DllImport(NativeLibraryToLoad.Name)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    static extern int NativeSum(int arg1, int arg2);
+}
+
+public class NativeLibraryPInvokeAot
+{
+    public static int Sum(int a, int b)
+    {
+        return NativeSum(a, b);
+    }
+
+    // For NativeAOT, validate the case where the native library is next to the AOT application.
+    // The passing of DllImportSearchPath.System32 is done to ensure on Windows the runtime won't fallback
+    // and try to search the application directory by default.
+    [DllImport(NativeLibraryToLoad.Name + "-in-native")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
 }

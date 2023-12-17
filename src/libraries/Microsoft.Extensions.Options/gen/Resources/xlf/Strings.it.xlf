@@ -122,6 +122,16 @@
         <target state="translated">Tipo di validator Null specificato per gli attributi 'ValidateObjectMembersAttribute' o 'ValidateEnumeratedItemsAttribute'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Il generatore di origine di convalida delle opzioni non è disponibile in C# {0}. Usare la versione del linguaggio {1} o successiva.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Versione del linguaggio C# non supportata dal generatore di origine.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">Il tipo {0} include annotazioni di convalida, ma il membro {1} non specifica [ValidateEnumeratedItems] che potrebbe essere una supervisione.</target>
@@ -140,6 +150,16 @@
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
         <target state="translated">Il membro potrebbe non avere una convalida transitiva.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">L'attributo {0} di convalida deve essere applicato solo alle proprietà di tipo stringa, matrice o ICollection. L'uso con il tipo {1} potrebbe causare errori di runtime.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">L'attributo di convalida è applicabile solo alle proprietà di tipo stringa, matrice o ICollection; non può essere usato con altri tipi.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">

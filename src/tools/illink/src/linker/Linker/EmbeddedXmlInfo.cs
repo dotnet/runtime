@@ -10,7 +10,7 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
-	public static class EmbeddedXmlInfo
+	public class EmbeddedXmlInfo
 	{
 		static EmbeddedResource? GetEmbeddedXml (AssemblyDefinition assembly, Func<Resource, bool> predicate)
 		{
@@ -22,7 +22,7 @@ namespace Mono.Linker
 				.SingleOrDefault () as EmbeddedResource;
 		}
 
-		public static void ProcessDescriptors (AssemblyDefinition assembly, LinkContext context)
+		public void ProcessDescriptors (AssemblyDefinition assembly, LinkContext context)
 		{
 			if (context.Annotations.GetAction (assembly) == AssemblyAction.Skip)
 				return;
@@ -43,7 +43,7 @@ namespace Mono.Linker
 			marker?.Mark ();
 		}
 
-		public static SubstitutionInfo? ProcessSubstitutions (AssemblyDefinition assembly, LinkContext context)
+		public SubstitutionInfo? ProcessSubstitutions (AssemblyDefinition assembly, LinkContext context)
 		{
 			if (context.Annotations.GetAction (assembly) == AssemblyAction.Skip)
 				return null;
@@ -68,7 +68,7 @@ namespace Mono.Linker
 			return substitutionInfo;
 		}
 
-		public static AttributeInfo? ProcessAttributes (AssemblyDefinition assembly, LinkContext context)
+		public AttributeInfo? ProcessAttributes (AssemblyDefinition assembly, LinkContext context)
 		{
 			if (context.Annotations.GetAction (assembly) == AssemblyAction.Skip)
 				return null;
@@ -121,17 +121,17 @@ namespace Mono.Linker
 			}
 		}
 
-		static DescriptorMarker GetExternalResolveStep (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
+		protected virtual DescriptorMarker GetExternalResolveStep (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
 		{
 			return new DescriptorMarker (context, resource.GetResourceStream (), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
-		static BodySubstitutionParser GetExternalSubstitutionParser (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
+		protected virtual BodySubstitutionParser GetExternalSubstitutionParser (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
 		{
 			return new BodySubstitutionParser (context, resource.GetResourceStream (), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
-		static LinkAttributesParser GetExternalLinkAttributesParser (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
+		protected virtual LinkAttributesParser GetExternalLinkAttributesParser (LinkContext context, EmbeddedResource resource, AssemblyDefinition assembly)
 		{
 			return new LinkAttributesParser (context, resource.GetResourceStream (), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}

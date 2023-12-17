@@ -63,10 +63,10 @@ private:
     void BackgroundWorkerStart();
 
 private:
-    bool IsTieringDelayActive();
     bool TryDeactivateTieringDelay();
 
 public:
+    bool IsTieringDelayActive();
     void AsyncCompleteCallCounting();
 
 private:

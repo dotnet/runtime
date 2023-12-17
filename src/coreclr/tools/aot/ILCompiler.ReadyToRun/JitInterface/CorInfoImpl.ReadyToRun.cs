@@ -280,6 +280,15 @@ namespace Internal.JitInterface
                                 currentType = currentType.BaseType;
                             }
 
+                            foreach (DefType interfaceType in methodTargetOwner.RuntimeInterfaces)
+                            {
+                                if (interfaceType == instantiatedOwningType ||
+                                    interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) == canonicalizedOwningType)
+                                {
+                                    return methodTargetOwner;
+                                }
+                            }
+
                             Debug.Assert(false);
                             throw new Exception();
                         }
@@ -931,7 +940,23 @@ namespace Internal.JitInterface
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
             MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
             Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
-            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pTargetMethod.tokenContext));
+
+            var typeOrMethodContext = (pTargetMethod.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((void*)pTargetMethod.tokenContext);
+
+            TypeDesc constrainedType = null;
+            if (targetConstraint != 0)
+            {
+                MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                constrainedType = (TypeDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, targetConstraint);
+            }
+
+            MethodWithToken targetMethod = new MethodWithToken(
+                targetMethodDesc,
+                HandleToModuleToken(ref pTargetMethod),
+                constrainedType: constrainedType,
+                unboxing: false,
+                context: typeOrMethodContext);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -1232,6 +1257,8 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
+                case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
@@ -1330,7 +1357,15 @@ namespace Internal.JitInterface
                 }
             }
 
-            context = entityFromContext(pResolvedToken.tokenContext);
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod)
+            {
+                context = null;
+            }
+            else
+            {
+                context = entityFromContext(pResolvedToken.tokenContext);
+            }
+
             return HandleToModuleToken(ref pResolvedToken);
         }
 
@@ -1845,22 +1880,21 @@ namespace Internal.JitInterface
             }
 
             callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;
+            bool isCallVirt = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0;
+            bool isLdftn = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0;
+            bool isStaticVirtual = (originalMethod.Signature.IsStatic && originalMethod.IsVirtual);
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
             // can't have the exact same signature as instance methods, a lookup that found
             // a static method would have never found an instance method.
-            if (originalMethod.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
+            if (originalMethod.Signature.IsStatic && isCallVirt)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
+                ThrowHelper.ThrowMissingMethodException("?");
             }
 
             exactType = type;
 
-            constrainedType = null;
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && pConstrainedResolvedToken != null)
-            {
-                constrainedType = HandleToObject(pConstrainedResolvedToken->hClass);
-            }
+            constrainedType = (pConstrainedResolvedToken != null ? HandleToObject(pConstrainedResolvedToken->hClass) : null);
 
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
@@ -1887,7 +1921,19 @@ namespace Internal.JitInterface
                     originalMethod = methodOnUnderlyingType;
                 }
 
-                MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup);
+                MethodDesc directMethod;
+                if (isStaticVirtual)
+                {
+                    directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod);
+                    if (directMethod != null && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
+                    {
+                        directMethod = null;
+                    }
+                }
+                else
+                {
+                    directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, originalMethod, out forceUseRuntimeLookup);
+                }
                 if (directMethod != null)
                 {
                     // Either
@@ -1909,6 +1955,15 @@ namespace Internal.JitInterface
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
                     exactType = constrainedType;
+                    if (isStaticVirtual)
+                    {
+                        pResolvedToken.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod;
+                        constrainedType = null;
+                    }
+                }
+                else if (isStaticVirtual)
+                {
+                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
                 }
                 else if (constrainedType.IsValueType)
                 {
@@ -1925,16 +1980,17 @@ namespace Internal.JitInterface
             //
 
             targetMethod = methodAfterConstraintResolution;
+            bool constrainedTypeNeedsRuntimeLookup = (constrainedType != null && constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any));
 
             if (targetMethod.HasInstantiation)
             {
                 pResult->contextHandle = contextFromMethod(targetMethod);
-                pResult->exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
+                pResult->exactContextNeedsRuntimeLookup = constrainedTypeNeedsRuntimeLookup || targetMethod.IsSharedByGenericInstantiations;
             }
             else
             {
                 pResult->contextHandle = contextFromType(exactType);
-                pResult->exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+                pResult->exactContextNeedsRuntimeLookup = constrainedTypeNeedsRuntimeLookup || exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
 
                 // Use main method as the context as long as the methods are called on the same type
                 if (pResult->exactContextNeedsRuntimeLookup &&
@@ -1959,18 +2015,21 @@ namespace Internal.JitInterface
             bool resolvedCallVirt = false;
             bool callVirtCrossingVersionBubble = false;
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            if (isStaticVirtual && !resolvedConstraint)
+            {
+                // Don't use direct calls for static virtual method calls unresolved at compile time
+            }
+            else if (isLdftn)
             {
                 PrepareForUseAsAFunctionPointer(targetMethod);
                 directCall = true;
             }
-            else
-            if (targetMethod.Signature.IsStatic)
+            else if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
                 directCall = true;
             }
-            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
+            else if (!isCallVirt || resolvedConstraint)
             {
                 directCall = true;
             }
@@ -2029,15 +2088,40 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                bool isVirtualBehaviorUnresolved = (isCallVirt && !resolvedCallVirt || isStaticVirtual && !resolvedConstraint);
+
                 // Direct calls to abstract methods are not allowed
                 if (targetMethod.IsAbstract &&
                     // Compensate for always treating delegates as direct calls above
-                    !(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0) && ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && !resolvedCallVirt))
+                    !(isLdftn && isVirtualBehaviorUnresolved))
                 {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, targetMethod);
                 }
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
+
+                // If the target method is resolved via constrained static virtual dispatch
+                // And it requires an instParam, we do not have the generic dictionary infrastructure
+                // to load the correct generic context arg via EmbedGenericHandle.
+                // Instead, force the call to go down the CORINFO_CALL_CODE_POINTER code path
+                // which should have somewhat inferior performance. This should only actually happen in the case
+                // of shared generic code calling a shared generic implementation method, which should be rare.
+                //
+                // An alternative design would be to add a new generic dictionary entry kind to hold the MethodDesc
+                // of the constrained target instead, and use that in some circumstances; however, implementation of 
+                // that design requires refactoring variuos parts of the JIT interface as well as
+                // TryResolveConstraintMethodApprox. In particular we would need to be abled to embed a constrained lookup
+                // via EmbedGenericHandle, as well as decide in TryResolveConstraintMethodApprox if the call can be made
+                // via a single use of CORINFO_CALL_CODE_POINTER, or would be better done with a CORINFO_CALL + embedded
+                // constrained generic handle, or if there is a case where we would want to use both a CORINFO_CALL and
+                // embedded constrained generic handle. Given the current expected high performance use case of this feature
+                // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
+                // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
+                // sensitive.
+                if (isStaticVirtual && pResult->exactContextNeedsRuntimeLookup)
+                {
+                    allowInstParam = false;
+                }
 
                 if (!allowInstParam && canonMethod != null && canonMethod.RequiresInstArg())
                 {
@@ -2085,10 +2169,15 @@ namespace Internal.JitInterface
                     {
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
-                        // For reference types, the constrained type does not affect method resolution
-                        DictionaryEntryKind entryKind = (constrainedType != null && constrainedType.IsValueType
+                        // For reference types, the constrained type does not affect instance virtual method resolution
+                        DictionaryEntryKind entryKind = (constrainedType != null && (constrainedType.IsValueType || !isCallVirt)
                             ? DictionaryEntryKind.ConstrainedMethodEntrySlot
                             : DictionaryEntryKind.MethodEntrySlot);
+
+                        if (isStaticVirtual && exactType.HasInstantiation)
+                        {
+                            useInstantiatingStub = true;
+                        }
 
                         ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, ref pResult->codePointerOrStubLookup);
                     }
@@ -2110,6 +2199,33 @@ namespace Internal.JitInterface
                     }
                 }
                 pResult->nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (isStaticVirtual)
+            {
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult->nullInstanceCheck = false;
+
+                // Always use an instantiating stub for unresolved constrained SVM calls as we cannot
+                // always tell at compile time that a given SVM resolves to a method on a generic base
+                // class and not requesting the instantiating stub makes the runtime transform the
+                // owning type to its canonical equivalent that would need different codegen
+                // (supplying the instantiation argument).
+                if (!resolvedConstraint)
+                {
+                    if (pResult->exactContextNeedsRuntimeLookup)
+                    {
+                        throw new RequiresRuntimeJitException("EmbedGenericHandle currently doesn't support propagation of RUNTIME_LOOKUP or pConstrainedResolvedToken from ComputeRuntimeLookupForSharedGenericToken");
+                        // ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, ref pResult->codePointerOrStubLookup);
+                        // useInstantiatingStub = false;
+                    }
+                    else
+                    {
+                        throw new RequiresRuntimeJitException("CanInline currently doesn't support propagation of constrained type so that we cannot reliably tell whether a SVM call can be inlined");
+                        // Even if we decided to support SVMs unresolved at compile time, we'd still need to force the use of instantiating stub
+                        // as we can't tell in advance whether the method will be runtime-resolved to a canonical representation.
+                        // useInstantiatingStub = true;
+                    }
+                }
             }
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
@@ -2250,13 +2366,6 @@ namespace Internal.JitInterface
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 && pConstrainedResolvedToken != null)
-            {
-                // Defer constrained call / ldftn instructions used for static virtual methods
-                // to runtime resolution.
-                throw new RequiresRuntimeJitException("SVM");
-            }
-
             MethodDesc methodToCall;
             MethodDesc targetMethod;
             TypeDesc constrainedType;

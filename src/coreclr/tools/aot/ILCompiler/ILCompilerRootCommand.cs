@@ -38,7 +38,11 @@ namespace ILCompiler
         public CliOption<bool> SplitExeInitialization { get; } =
             new("--splitinit") { Description = "Split initialization of an executable between the library entrypoint and a main entrypoint" };
         public CliOption<string> ExportsFile { get; } =
-            new("--exportsfile") { Description = "File to write exported method definitions" };
+            new("--exportsfile") { Description = "File to write exported symbol and method definitions" };
+        public CliOption<bool> ExportUnmanagedEntryPoints { get; } =
+            new("--export-unmanaged-entrypoints") { Description = "Controls whether the named UnmanagedCallersOnly methods are exported" };
+        public CliOption<string[]> ExportDynamicSymbols { get; } =
+            new("--export-dynamic-symbol") { Description = "Add dynamic export symbol to exports file" };
         public CliOption<string> DgmlLogFileName { get; } =
             new("--dgmllog") { Description = "Save result of dependency analysis as DGML" };
         public CliOption<bool> GenerateFullDgmlLog { get; } =
@@ -176,6 +180,8 @@ namespace ILCompiler
             Options.Add(NativeLib);
             Options.Add(SplitExeInitialization);
             Options.Add(ExportsFile);
+            Options.Add(ExportDynamicSymbols);
+            Options.Add(ExportUnmanagedEntryPoints);
             Options.Add(DgmlLogFileName);
             Options.Add(GenerateFullDgmlLog);
             Options.Add(ScanDgmlLogFileName);
@@ -298,9 +304,9 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext _)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             yield return _ =>
@@ -354,6 +360,7 @@ namespace ILCompiler
                 Console.WriteLine();
                 Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
+                return true;
             };
         }
 

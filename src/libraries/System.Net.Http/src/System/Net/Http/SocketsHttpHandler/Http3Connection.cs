@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
-using System.Net.Quic;
-using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Quic;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -33,6 +33,7 @@ namespace System.Net.Http
 
         // Our control stream.
         private QuicStream? _clientControl;
+        private Task _sendSettingsTask;
 
         // Server-advertised SETTINGS_MAX_FIELD_SECTION_SIZE
         // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
@@ -88,7 +89,7 @@ namespace System.Net.Http
             }
 
             // Errors are observed via Abort().
-            _ = SendSettingsAsync();
+            _sendSettingsTask = SendSettingsAsync();
 
             // This process is cleaned up when _connection is disposed, and errors are observed via Abort().
             _ = AcceptStreamsAsync();
@@ -150,6 +151,7 @@ namespace System.Net.Http
 
                     if (_clientControl != null)
                     {
+                        await _sendSettingsTask.ConfigureAwait(false);
                         await _clientControl.DisposeAsync().ConfigureAwait(false);
                         _clientControl = null;
                     }
@@ -386,6 +388,13 @@ namespace System.Net.Http
 
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
+            {
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
+            }
             catch (Exception ex)
             {
                 Abort(ex);
@@ -486,7 +495,7 @@ namespace System.Net.Http
 
                     if (bytesRead == 0)
                     {
-                        // https://quicwg.org/base-drafts/draft-ietf-quic-http.html#name-unidirectional-streams
+                        // https://www.rfc-editor.org/rfc/rfc9114.html#name-unidirectional-streams
                         // A sender can close or reset a unidirectional stream unless otherwise specified. A receiver MUST
                         // tolerate unidirectional streams being closed or reset prior to the reception of the unidirectional
                         // stream header.
@@ -574,6 +583,13 @@ namespace System.Net.Http
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
                 // ignore the exception, we have already closed the connection
+            }
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
+            {
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
             }
             catch (Exception ex)
             {

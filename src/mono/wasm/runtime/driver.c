@@ -33,32 +33,20 @@
 #include <mono/jit/mono-private-unstable.h>
 
 #include "wasm-config.h"
-#include "pinvoke.h"
+#include "runtime.h"
 
-#ifdef GEN_PINVOKE
-#include "wasm_m2n_invoke.g.h"
-#endif
 #include "gc-common.h"
 
 void bindings_initialize_internals ();
 
-
-void mono_wasm_enable_debugging (int);
-void mono_ee_interp_init (const char *opts);
-void mono_marshal_ilgen_init (void);
-void mono_method_builder_ilgen_init (void);
-void mono_sgen_mono_ilgen_init (void);
-void mono_icall_table_init (void);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
-int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
 #ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
-static void mono_wasm_init_finalizer_thread (void);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
 extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
@@ -122,25 +110,10 @@ static int resolved_datetime_class = 0,
 
 #endif /* DISABLE_LEGACY_JS_INTEROP */
 
-int mono_wasm_enable_gc = 1;
-
-/* Not part of public headers */
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
-
-typedef struct {
-	int version;
-	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *flags);
-	const char* (*lookup_icall_symbol) (void* func);
-} MonoIcallTableCallbacks;
-
 int
 mono_string_instance_is_interned (MonoString *str_raw);
 
-void
-mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
-
 int mono_regression_test_step (int verbose_level, char *image, char *method_name);
-void mono_trace_init (void);
 
 #define g_new(type, size)  ((type *) malloc (sizeof (type) * (size)))
 #define g_new0(type, size) ((type *) calloc (sizeof (type), (size)))
@@ -182,10 +155,6 @@ mono_wasm_deregister_root (char *addr)
 	mono_gc_deregister_root (addr);
 	MONO_EXIT_GC_UNSAFE;
 }
-
-#ifdef DRIVER_GEN
-#include "driver-gen.c"
-#endif
 
 static void
 bundled_resources_free_func (void *resource, void *free_data)
@@ -260,159 +229,6 @@ mono_wasm_getenv (const char *name)
 	return monoeg_g_getenv (name); // JS must free
 }
 
-static void *sysglobal_native_handle;
-
-static void*
-wasm_dl_load (const char *name, int flags, char **err, void *user_data)
-{
-	void* handle = wasm_dl_lookup_pinvoke_table (name);
-	if (handle)
-		return handle;
-
-	if (!strcmp (name, "System.Globalization.Native"))
-		return sysglobal_native_handle;
-
-#if WASM_SUPPORTS_DLOPEN
-	return dlopen(name, flags);
-#endif
-
-	return NULL;
-}
-
-static void*
-wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
-{
-	if (handle == sysglobal_native_handle)
-		assert (0);
-
-#if WASM_SUPPORTS_DLOPEN
-	if (!wasm_dl_is_pinvoke_tables (handle)) {
-		return dlsym (handle, name);
-	}
-#endif
-
-	PinvokeImport *table = (PinvokeImport*)handle;
-	for (int i = 0; table [i].name; ++i) {
-		if (!strcmp (table [i].name, name))
-			return table [i].func;
-	}
-	return NULL;
-}
-
-#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
-#define NEED_INTERP 1
-#ifndef LINK_ICALLS
-// FIXME: llvm+interp mode needs this to call icalls
-#define NEED_NORMAL_ICALL_TABLES 1
-#endif
-#endif
-
-#ifdef LINK_ICALLS
-
-#include "icall-table.h"
-
-static int
-compare_int (const void *k1, const void *k2)
-{
-	return *(int*)k1 - *(int*)k2;
-}
-
-static void*
-icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
-{
-	uint32_t token = mono_method_get_token (method);
-	assert (token);
-	assert ((token & MONO_TOKEN_METHOD_DEF) == MONO_TOKEN_METHOD_DEF);
-	uint32_t token_idx = token - MONO_TOKEN_METHOD_DEF;
-
-	int *indexes = NULL;
-	int indexes_size = 0;
-	uint8_t *flags = NULL;
-	void **funcs = NULL;
-
-	*out_flags = 0;
-
-	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
-
-#if defined(ICALL_TABLE_corlib)
-	if (!strcmp (image_name, "System.Private.CoreLib")) {
-		indexes = corlib_icall_indexes;
-		indexes_size = sizeof (corlib_icall_indexes) / 4;
-		flags = corlib_icall_flags;
-		funcs = corlib_icall_funcs;
-		assert (sizeof (corlib_icall_indexes [0]) == 4);
-	}
-#endif
-#ifdef ICALL_TABLE_System
-	if (!strcmp (image_name, "System")) {
-		indexes = System_icall_indexes;
-		indexes_size = sizeof (System_icall_indexes) / 4;
-		flags = System_icall_flags;
-		funcs = System_icall_funcs;
-	}
-#endif
-	assert (indexes);
-
-	void *p = bsearch (&token_idx, indexes, indexes_size, 4, compare_int);
-	if (!p) {
-		return NULL;
-		printf ("wasm: Unable to lookup icall: %s\n", mono_method_get_name (method));
-		exit (1);
-	}
-
-	uint32_t idx = (int*)p - indexes;
-	*out_flags = flags [idx];
-
-	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
-
-	return funcs [idx];
-}
-
-static const char*
-icall_table_lookup_symbol (void *func)
-{
-	assert (0);
-	return NULL;
-}
-
-#endif
-
-/*
- * get_native_to_interp:
- *
- *   Return a pointer to a wasm function which can be used to enter the interpreter to
- * execute METHOD from native code.
- * EXTRA_ARG is the argument passed to the interp entry functions in the runtime.
- */
-void*
-get_native_to_interp (MonoMethod *method, void *extra_arg)
-{
-	void *addr;
-
-	MONO_ENTER_GC_UNSAFE;
-	MonoClass *klass = mono_method_get_class (method);
-	MonoImage *image = mono_class_get_image (klass);
-	MonoAssembly *assembly = mono_image_get_assembly (image);
-	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
-	const char *name = mono_assembly_name_get_name (aname);
-	const char *class_name = mono_class_get_name (klass);
-	const char *method_name = mono_method_get_name (method);
-	char key [128];
-	int len;
-
-	assert (strlen (name) < 100);
-	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	len = strlen (key);
-	for (int i = 0; i < len; ++i) {
-		if (key [i] == '.')
-			key [i] = '_';
-	}
-
-	addr = wasm_dl_get_native_to_interp (key, extra_arg);
-	MONO_EXIT_GC_UNSAFE;
-	return addr;
-}
-
 void mono_wasm_link_icu_shim (void);
 
 void
@@ -431,9 +247,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_link_icu_shim ();
 #endif
 
-	// We should enable this as part of the wasm build later
 #ifndef DISABLE_THREADS
-	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
 	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
@@ -447,7 +261,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // corlib assemblies.
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
-	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
+	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
 	const char *appctx_keys[2];
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
@@ -475,167 +289,13 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	monovm_initialize (2, appctx_keys, appctx_values);
 
-	mini_parse_debug_option ("top-runtime-invoke-unhandled");
-
 #ifndef INVARIANT_TIMEZONE
 	mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
-	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
-	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
-#ifdef GEN_PINVOKE
-	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
-#endif
-
-#ifdef ENABLE_AOT
-	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
-
-	// Defined in driver-gen.c
-	register_aot_modules ();
-#ifdef EE_MODE_LLVMONLY_INTERP
-	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
-#else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
-#endif
-#else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-
-	/*
-	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
-	 * debug_level == 0 disables debugging and enables interpreter optimizations
-	 * debug_level < 0 enabled debugging and disables debug logging.
-	 *
-	 * Note: when debugging is enabled interpreter optimizations are disabled.
-	 */
-	if (debug_level) {
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		mono_wasm_enable_debugging (debug_level);
-	}
-
-#endif
-
-#ifdef LINK_ICALLS
-	/* Link in our own linked icall table */
-	static const MonoIcallTableCallbacks mono_icall_table_callbacks =
-	{
-		MONO_ICALL_TABLE_CALLBACKS_VERSION,
-		icall_table_lookup,
-		icall_table_lookup_symbol
-	};
-	mono_install_icall_table_callbacks (&mono_icall_table_callbacks);
-#endif
-
-#ifdef NEED_NORMAL_ICALL_TABLES
-	mono_icall_table_init ();
-#endif
-#ifdef NEED_INTERP
-	mono_ee_interp_init (interp_opts);
-	mono_marshal_ilgen_init();
-	mono_method_builder_ilgen_init ();
-	mono_sgen_mono_ilgen_init ();
-#endif
-
-	mono_trace_init ();
-	mono_trace_set_log_handler (wasm_trace_logger, NULL);
-	root_domain = mono_jit_init_version ("mono", NULL);
+	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
-
-	mono_thread_set_main (mono_thread_current ());
-
-	// TODO: we can probably delay starting the finalizer thread even longer - maybe from JS
-	// once we're done with loading and are about to begin running some managed code.
-	mono_wasm_init_finalizer_thread ();
-}
-
-EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_assembly_load (const char *name)
-{
-	assert (name);
-	MonoImageOpenStatus status;
-	MonoAssemblyName* aname = mono_assembly_name_new (name);
-
-	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
-	mono_assembly_name_free (aname);
-
-	return res;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_get_corlib (void)
-{
-	MonoAssembly* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_image_get_assembly (mono_get_corlib());
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoClass*
-mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
-{
-	assert (assembly);
-	MonoClass *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
-{
-	assert (assembly);
-	MonoError error;
-	MONO_ENTER_GC_UNSAFE;
-	MonoImage *image = mono_assembly_get_image (assembly);
-    if (!mono_runtime_run_module_cctor(image, &error)) {
-        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
-    }
-	MONO_EXIT_GC_UNSAFE;
-}
-
-
-EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
-{
-	assert (klass);
-	MonoMethod* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_method_from_name (klass, name, arguments);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void *params[], MonoObject **_out_exc, MonoObject **out_result)
-{
-	PPVOLATILE(MonoObject) out_exc = _out_exc;
-	PVOLATILE(MonoObject) temp_exc = NULL;
-	if (out_exc)
-		*out_exc = NULL;
-	else
-		out_exc = &temp_exc;
-
-	MONO_ENTER_GC_UNSAFE;
-	if (out_result) {
-		*out_result = NULL;
-		PVOLATILE(MonoObject) invoke_result = mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-		store_volatile(out_result, invoke_result);
-	} else {
-		mono_runtime_invoke (method, this_arg_in ? *this_arg_in : NULL, params, (MonoObject **)out_exc);
-	}
-
-	if (*out_exc && out_result) {
-		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile(out_result, (MonoObject*)mono_object_to_string (*out_exc, (MonoObject **)&exc2));
-		if (exc2)
-			store_volatile(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
-	}
-	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -651,7 +311,7 @@ mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArgum
 
 	// this failure is unlikely because it would be runtime error, not application exception.
 	// the application exception is passed inside JSMarshalerArguments `args`
-	if (temp_exc) {
+	if (temp_exc && out_exc) {
 		PVOLATILE(MonoObject) exc2 = NULL;
 		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
 		if (exc2)
@@ -971,6 +631,34 @@ mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
+// this will return bool value if the object is a bool, otherwise it will return -1 or error
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
+
+	int result = -1;
+
+	MONO_ENTER_GC_UNSAFE;
+
+	MonoClass *klass = mono_object_get_class (obj);
+	if (!klass) {
+		goto end;
+	}
+
+	MonoType *type = mono_class_get_type (klass);
+	if (!type) {
+		goto end;
+	}
+
+	int mono_type = mono_type_get_type (type);
+	if (MONO_TYPE_BOOLEAN == mono_type) {
+		result = ((signed char*)mono_object_unbox (obj) == 0 ? 0 : 1);
+	}
+
+	end:
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 // This code runs inside a gc unsafe region
 static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
@@ -1186,7 +874,9 @@ EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
 	mono_jit_cleanup (root_domain);
-	exit (exit_code);
+	fflush (stdout);
+	fflush (stderr);
+	emscripten_force_exit (exit_code);
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -1296,12 +986,11 @@ mono_wasm_profiler_init_browser (const char *desc)
 
 #endif
 
-static void
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {
-	// At this time we don't use a dedicated thread for finalization even if threading is enabled.
-	// Finalizers periodically run on the main thread
-#if 0
+	// in the single threaded build, finalizers periodically run on the main thread instead.
+#ifndef DISABLE_THREADS
 	mono_gc_init_finalizer_thread ();
 #endif
 }

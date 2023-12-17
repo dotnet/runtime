@@ -4,8 +4,8 @@
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -303,16 +303,7 @@ namespace System.Net
                     {
                         // Abandon the optimistic path and restart with a new mechanism
                         _optimisticMechanism?.Dispose();
-                        _mechanism = NegotiateAuthenticationPal.Create(new NegotiateAuthenticationClientOptions
-                        {
-                            Package = requestedPackage,
-                            Credential = _clientOptions.Credential,
-                            TargetName = _clientOptions.TargetName,
-                            Binding = _clientOptions.Binding,
-                            RequiredProtectionLevel = _clientOptions.RequiredProtectionLevel,
-                            RequireMutualAuthentication = _clientOptions.RequireMutualAuthentication,
-                            AllowedImpersonationLevel = _clientOptions.AllowedImpersonationLevel,
-                        });
+                        _mechanism = CreateMechanismForPackage(requestedPackage);
                     }
 
                     _optimisticMechanism = null;

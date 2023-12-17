@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)Target;
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
-                        if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
+                        if (index is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
                             if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                             {
@@ -307,7 +307,7 @@ namespace ILCompiler.DependencyAnalysis
                 encoder.EmitJE(getInlinedThreadStaticBaseSlow);
                 encoder.EmitRET();
             }
-            else if (factory.Target.IsOSXLike)
+            else if (factory.Target.IsApplePlatform)
             {
                 // movq _\Var @TLVP(% rip), % rdi
                 // callq * (% rdi)

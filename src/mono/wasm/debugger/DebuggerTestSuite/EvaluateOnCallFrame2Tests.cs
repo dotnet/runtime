@@ -457,49 +457,63 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                   ("test.GetByte()", TNumber(1)),
-                   ("test.GetSByte()", TNumber(1)),
-                   ("test.GetByteNullable()", TNumber(1)),
-                   ("test.GetSByteNullable()", TNumber(1)),
+                    ("test.GetByte()", TNumber(1)),
+                    ("test.GetSByte()", TNumber(1)),
+                    ("test.GetByteNullable()", TNumber(1)),
+                    ("test.GetSByteNullable()", TNumber(1)),
 
-                   ("test.GetInt16()", TNumber(1)),
-                   ("test.GetUInt16()", TNumber(1)),
-                   ("test.GetInt16Nullable()", TNumber(1)),
-                   ("test.GetUInt16Nullable()", TNumber(1)),
+                    ("test.GetInt16()", TNumber(1)),
+                    ("test.GetUInt16()", TNumber(1)),
+                    ("test.GetInt16Nullable()", TNumber(1)),
+                    ("test.GetUInt16Nullable()", TNumber(1)),
 
-                   ("test.GetInt32()", TNumber(1)),
-                   ("test.GetUInt32()", TNumber(1)),
-                   ("test.GetInt32Nullable()", TNumber(1)),
-                   ("test.GetUInt32Nullable()", TNumber(1)),
+                    ("test.GetInt32()", TNumber(1)),
+                    ("test.GetUInt32()", TNumber(1)),
+                    ("test.GetInt32Nullable()", TNumber(1)),
+                    ("test.GetUInt32Nullable()", TNumber(1)),
 
-                   ("test.GetInt64()", TNumber(1)),
-                   ("test.GetUInt64()", TNumber(1)),
-                   ("test.GetInt64Nullable()", TNumber(1)),
-                   ("test.GetUInt64Nullable()", TNumber(1)),
+                    ("test.GetInt64()", TNumber(1)),
+                    ("test.GetUInt64()", TNumber(1)),
+                    ("test.GetInt64Nullable()", TNumber(1)),
+                    ("test.GetUInt64Nullable()", TNumber(1)),
 
-                   ("test.GetChar()", TChar('T')),
-                   ("test.GetCharNullable()", TChar('T')),
-                   ("test.GetUnicodeChar()", TChar('\u0105')),
+                    ("test.GetChar()", TChar('T')),
+                    ("test.GetCharNullable()", TChar('T')),
+                    ("test.GetUnicodeChar()", TChar('\u0105')),
 
-                   ("test.GetString()", TString("1.23")),
-                   ("test.GetUnicodeString()", TString("\u017C\u00F3\u0142\u0107")),
-                   ("test.GetString(null)", TString(null)),
-                   ("test.GetStringNullable()", TString("1.23")),
+                    ("test.GetString()", TString("1.23")),
+                    ("test.GetUnicodeString()", TString("\u017C\u00F3\u0142\u0107")),
+                    ("test.GetString(null)", TString(null)),
+                    ("test.GetStringNullable()", TString("1.23")),
 
-                   ("test.GetSingle()", TNumber("1.23", isDecimal: true)),
-                   ("test.GetDouble()",  TNumber("1.23", isDecimal: true)),
-                   ("test.GetSingleNullable()",  TNumber("1.23", isDecimal: true)),
-                   ("test.GetDoubleNullable()",  TNumber("1.23", isDecimal: true)),
+                    ("test.GetSingle()", TNumber("1.23", isDecimal: true)),
+                    ("test.GetDouble()",  TNumber("1.23", isDecimal: true)),
+                    ("test.GetSingleNullable()",  TNumber("1.23", isDecimal: true)),
+                    ("test.GetDoubleNullable()",  TNumber("1.23", isDecimal: true)),
 
-                   ("test.GetBool()", TBool(true)),
-                   ("test.GetBoolNullable()", TBool(true)),
-                   ("test.GetNull()", TBool(true)),
+                    ("test.GetBool()", TBool(true)),
+                    ("test.GetBoolNullable()", TBool(true)),
+                    ("test.GetNull()", TBool(true)),
 
-                   ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
-                   ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
-                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
-                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
-                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
+                    ("test.SumDefaultAndRequiredParam(2)", TNumber(5)),
+                    ("test.SumDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(3, +2)", TNumber(5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(-3, -2)", TNumber(-5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(-3)", TNumber(-6)), // default: -3
+                    ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l, -2l)", TNumber(-3)),
+                    ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l)", TNumber(-124)), // default: -123l
+                    ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f, -1.1f)", TNumber("-2.2", isDecimal: true)),
+                    ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f)", TNumber("-4.4", isDecimal: true)), // default: -3.3f
+                    ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1, -0.2)", TNumber("-0.30000000000000004", isDecimal: true)), // expected result for doubles copied from coreclr response
+                    ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1)", TNumber("-3.3000000000000003", isDecimal: true)), // default: -3.2
+                    // https://github.com/dotnet/runtime/issues/93057
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1, -120)", TNumber(-121)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1)", TNumber(-124)), // default: -123
+                    // ("test.GetDefaultNegativeShortInt(-123)", TNumber(-123)),
+                    ("test.GetDefaultNegativeShortInt()", TNumber(-123)), // default: -123
+                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
+                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
+                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
@@ -710,6 +724,97 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                    ("EvaluateStaticGetterInValueType.A", TNumber(5))
                 );
+           });
+
+        [Fact]
+        public async Task EvaluateSumBetweenObjectAndString() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.SumObjectAndString", "run", 7, "DebuggerTests.SumObjectAndString.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.SumObjectAndString:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd")),
+                   ("dt+\"asd\"", TString("1/1/0001 12:00:00 AMasd")),
+                   ("myClass+\"asd\"", TString("OverridenToStringasd")),
+                   ("listNull+\"asd\"", TString("asd"))
+                );
+                await CheckEvaluateFail(id,
+                    ("myClass+dt", "Cannot evaluate '(myClass+dt\n)': (3,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'object'"),
+                    ("myClass+1", "Cannot evaluate '(myClass+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'"),
+                    ("dt+1", "Cannot evaluate '(dt+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'")
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateMethodsOnEnum() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.EvaluateMethodsOnEnum", "run", 2, "DebuggerTests.EvaluateMethodsOnEnum.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodsOnEnum:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("s_valueTypeEnum.ToString()", TString("no")),
+                   ("mc.valueTypeEnum.ToString()", TString("yes"))
+                //    ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: https://github.com/dotnet/runtime/issues/92262
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateObjectIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("c[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("c[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("c[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("c[cc.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("c[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("c[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
+                   ("c[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
+                ); 
+           });
+
+        [Fact]
+        public async Task EvaluateValueTypeIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("s[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("s[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("s[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("s[cc.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("s[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("s[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
+                   ("s[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
+                ); 
+           });
+
+        
+        [Fact]
+        public async Task EvaluateMethodsWithObjectParams() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.FastCheck", "run", 6, "DebuggerTests.FastCheck.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.FastCheck:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("mc.Method(number)", TNumber(-123)),
+                    ("mc.Method(ic)", TNumber(123)),
+                    ("mc.Method(ic.number)", TNumber(123)),
+                    ("mc.Method(DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.StaticField)", TNumber(20)),
+                    ("mc.Method(EvaluateStaticFieldsInInstanceClass.StaticField)", TNumber(70)),
+                    ("mc.Method(instance.StaticField)", TNumber(70)),
+                    ("mc.Method(instance2.propInt)", TNumber(12))
+                ); 
            });
     }
 }

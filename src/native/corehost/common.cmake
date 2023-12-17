@@ -13,6 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/hostmisc)
+include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 set(RESOURCES)
 if (CLR_CMAKE_TARGET_WIN32)

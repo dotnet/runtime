@@ -162,6 +162,11 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     }
     else
     {
+        // Create a new edge
+        //
+        // We may be disallowing edge creation, except for edges targeting special blocks.
+        //
+        assert(fgSafeFlowEdgeCreation || block->HasFlag(BBF_CAN_ADD_PRED));
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
@@ -341,80 +346,27 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
     PREFIX_ASSUME(block != nullptr);
 
-    BasicBlock* bNext;
-
-    switch (block->bbJumpKind)
+    switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
-            if (!(block->bbFlags & BBF_RETLESS_CALL))
-            {
-                assert(block->isBBCallAlwaysPair());
-
-                /* The block after the BBJ_CALLFINALLY block is not reachable */
-                bNext = block->bbNext;
-
-                /* bNext is an unreachable BBJ_ALWAYS block */
-                noway_assert(bNext->bbJumpKind == BBJ_ALWAYS);
-
-                while (bNext->countOfInEdges() > 0)
-                {
-                    fgRemoveRefPred(bNext, bNext->bbPreds->getSourceBlock());
-                }
-            }
-            fgRemoveRefPred(block->bbJumpDest, block);
-            break;
-
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-            fgRemoveRefPred(block->bbJumpDest, block);
-            break;
-
-        case BBJ_NONE:
-            fgRemoveRefPred(block->bbNext, block);
+        case BBJ_EHFILTERRET:
+            fgRemoveRefPred(block->GetTarget(), block);
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->bbJumpDest, block);
-            fgRemoveRefPred(block->bbNext, block);
-            break;
-
-        case BBJ_EHFILTERRET:
-
-            block->bbJumpDest->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
-            fgRemoveRefPred(block->bbJumpDest, block);
+            fgRemoveRefPred(block->GetTrueTarget(), block);
+            fgRemoveRefPred(block->GetFalseTarget(), block);
             break;
 
         case BBJ_EHFINALLYRET:
-        {
-            /* Remove block as the predecessor of the bbNext of all
-               BBJ_CALLFINALLY blocks calling this finally. No need
-               to look for BBJ_CALLFINALLY for fault handlers. */
-
-            unsigned  hndIndex = block->getHndIndex();
-            EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
-
-            if (ehDsc->HasFinallyHandler())
+            for (BasicBlock* const succ : block->EHFinallyRetSuccs())
             {
-                BasicBlock* begBlk;
-                BasicBlock* endBlk;
-                ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-                BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
-                {
-                    if ((bcall->bbFlags & BBF_REMOVED) || bcall->bbJumpKind != BBJ_CALLFINALLY ||
-                        bcall->bbJumpDest != finBeg)
-                    {
-                        continue;
-                    }
-
-                    assert(bcall->isBBCallAlwaysPair());
-                    fgRemoveRefPred(bcall->bbNext, block);
-                }
+                fgRemoveRefPred(succ, block);
             }
-        }
-        break;
+            break;
 
         case BBJ_EHFAULTRET:
         case BBJ_THROW:
@@ -429,69 +381,14 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         default:
-            noway_assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            noway_assert(!"Block doesn't have a valid bbKind!!!!");
             break;
     }
 }
 
-unsigned Compiler::fgNSuccsOfFinallyRet(BasicBlock* block)
-{
-    BasicBlock* bb;
-    unsigned    res;
-    fgSuccOfFinallyRetWork(block, ~0, &bb, &res);
-    return res;
-}
-
-BasicBlock* Compiler::fgSuccOfFinallyRet(BasicBlock* block, unsigned i)
-{
-    BasicBlock* bb;
-    unsigned    res;
-    fgSuccOfFinallyRetWork(block, i, &bb, &res);
-    return bb;
-}
-
-void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock** bres, unsigned* nres)
-{
-    assert(block->hasHndIndex()); // Otherwise, endfinally outside a finally block?
-
-    unsigned  hndIndex = block->getHndIndex();
-    EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
-
-    assert(ehDsc->HasFinallyHandler()); // Otherwise, endfinally outside a finally block.
-
-    *bres            = nullptr;
-    unsigned succNum = 0;
-
-    BasicBlock* begBlk;
-    BasicBlock* endBlk;
-    ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-    BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
-    {
-        if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
-        {
-            continue;
-        }
-
-        assert(bcall->isBBCallAlwaysPair());
-
-        if (succNum == i)
-        {
-            *bres = bcall->bbNext;
-            return;
-        }
-        succNum++;
-    }
-
-    assert(i == ~0u);
-    *nres = succNum;
-}
-
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
-    assert(switchBlk->bbJumpKind == BBJ_SWITCH);
+    assert(switchBlk->KindIs(BBJ_SWITCH));
     BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
     SwitchUniqueSuccSet   res;
     if (switchMap->Lookup(switchBlk, &res))
@@ -546,7 +443,7 @@ void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
                                                  BasicBlock*   from,
                                                  BasicBlock*   to)
 {
-    assert(switchBlk->bbJumpKind == BBJ_SWITCH); // Precondition.
+    assert(switchBlk->KindIs(BBJ_SWITCH)); // Precondition.
 
     // Is "from" still in the switch table (because it had more than one entry before?)
     bool fromStillPresent = false;

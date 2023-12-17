@@ -4,6 +4,7 @@
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -125,15 +126,16 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void NullReference_Fail()
+        public static async Task NullReference_Fail()
         {
             Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize<JsonNode>((string)null));
             Assert.Throws<ArgumentNullException>(() => JsonNode.Parse((string)null));
             Assert.Throws<ArgumentNullException>(() => JsonNode.Parse((Stream)null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => JsonNode.ParseAsync(null));
         }
 
         [Fact]
-        public static void NullLiteral()
+        public static async Task NullLiteral()
         {
             Assert.Null(JsonSerializer.Deserialize<JsonNode>("null"));
             Assert.Null(JsonNode.Parse("null"));
@@ -141,11 +143,13 @@ namespace System.Text.Json.Nodes.Tests
             using (MemoryStream stream = new MemoryStream("null"u8.ToArray()))
             {
                 Assert.Null(JsonNode.Parse(stream));
+                stream.Position = 0;
+                Assert.Null(await JsonNode.ParseAsync(stream));
             }
         }
 
         [Fact]
-        public static void InternalValueFields()
+        public static async Task InternalValueFields()
         {
             // Use reflection to inspect the internal state of the 3 fields that hold values.
             // There is not another way to verify, and using a debug watch causes nodes to be created.
@@ -196,20 +200,63 @@ namespace System.Text.Json.Nodes.Tests
                     Assert.Equal(SimpleTestClass.s_json.StripWhitespace(), actual);
                 }
             }
+
+            using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
+            {
+                // Only JsonElement is present.
+                JsonNode node = await JsonNode.ParseAsync(stream);
+                object jsonDictionary = jsonDictionaryField.GetValue(node);
+                Assert.Null(jsonDictionary); // Value is null until converted from JsonElement.
+                Assert.NotNull(elementField.GetValue(node));
+                Test();
+
+                // Cause the single JsonElement to expand into individual JsonElement nodes.
+                Assert.Equal(1, node.AsObject()["MyInt16"].GetValue<int>());
+                Assert.Null(elementField.GetValue(node));
+
+                jsonDictionary = jsonDictionaryField.GetValue(node);
+                Assert.NotNull(jsonDictionary);
+
+                Assert.NotNull(listField.GetValue(jsonDictionary));
+                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
+                Test();
+
+                void Test()
+                {
+                    string actual = node.ToJsonString();
+
+                    // Replace the escaped "+" sign used with DateTimeOffset.
+                    actual = actual.Replace("\\u002B", "+");
+
+                    Assert.Equal(SimpleTestClass.s_json.StripWhitespace(), actual);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadSimpleObjectWithTrailingTrivia()
+        public static async Task ReadSimpleObjectWithTrailingTrivia()
         {
             byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_json + " /* Multi\r\nLine Comment */\t");
+
+            var options = new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip
+            };
+
             using (MemoryStream stream = new MemoryStream(data))
             {
-                var options = new JsonDocumentOptions
-                {
-                    CommentHandling = JsonCommentHandling.Skip
-                };
-
                 JsonNode node = JsonNode.Parse(stream, nodeOptions: null, options);
+
+                string actual = node.ToJsonString();
+                // Replace the escaped "+" sign used with DateTimeOffset.
+                actual = actual.Replace("\\u002B", "+");
+
+                Assert.Equal(SimpleTestClass.s_json.StripWhitespace(), actual);
+            }
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                JsonNode node = await JsonNode.ParseAsync(stream, nodeOptions: null, options);
 
                 string actual = node.ToJsonString();
                 // Replace the escaped "+" sign used with DateTimeOffset.
@@ -220,11 +267,17 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void ReadPrimitives()
+        public static async Task ReadPrimitives()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1")))
             {
                 int i = JsonNode.Parse(stream).AsValue().GetValue<int>();
+                Assert.Equal(1, i);
+            }
+
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1")))
+            {
+                int i = (await JsonNode.ParseAsync(stream)).AsValue().GetValue<int>();
                 Assert.Equal(1, i);
             }
         }

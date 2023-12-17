@@ -6,7 +6,6 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[IgnoreDescriptors (false)]
 
 	[SetupCompileResource ("Dependencies/NonLinkerEmbeddedResourceHasNoImpact.xml", "ILLink.Descriptors.xml")]
-	[SkipPeVerify]
 	[KeptResource ("ILLink.Descriptors.xml")]
 	public class NonLinkerEmbeddedResourceHasNoImpact
 	{

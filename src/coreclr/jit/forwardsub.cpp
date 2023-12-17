@@ -442,6 +442,10 @@ private:
 //    true if statement computation was forwarded.
 //    caller is responsible for removing the now-dead statement.
 //
+// Remarks:
+//    This requires locals to be linked (fgNodeThreading == AllLocals) and
+//    liveness information to be up-to-date (specifically GTF_VAR_DEATH).
+//
 bool Compiler::fgForwardSubStatement(Statement* stmt)
 {
     // Is this tree a def of a single use, unaliased local?
@@ -466,10 +470,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         JITDUMP(" pinned local\n");
         return false;
     }
-
-    // Cannot forward sub without liveness information.
-    //
-    assert(fgDidEarlyLiveness);
 
     // And local is unalised
     //
@@ -521,7 +521,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Bail if sub node has mismatched types.
     // Might be able to tolerate these by retyping.
     //
-    if (defNode->TypeGet() != fwdSubNode->TypeGet())
+    if (genActualType(defNode->TypeGet()) != genActualType(fwdSubNode->TypeGet()))
     {
         JITDUMP(" mismatched types (store)\n");
         return false;

@@ -3,14 +3,14 @@
 
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 
-using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
+using Debug = System.Diagnostics.Debug;
 
 namespace System.Reflection.Runtime.General
 {
@@ -138,7 +138,7 @@ namespace System.Reflection.Runtime.General
             int contentType = ((int)assemblyFlags) & 0x00000E00;
             assemblyNameFlags |= (AssemblyNameFlags)contentType;
 
-            ArrayBuilder<byte> keyOrTokenArrayBuilder = new ArrayBuilder<byte>();
+            ArrayBuilder<byte> keyOrTokenArrayBuilder = default;
             foreach (byte b in publicKeyOrToken)
                 keyOrTokenArrayBuilder.Add(b);
 

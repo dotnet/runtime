@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -38,29 +38,22 @@ namespace Microsoft.Interop
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
                 // <managed> = (<managedType>)UnmanagedObjectUnwrapper.GetObjectFormUnmanagedWrapper<TUnmanagedUnwrapper>(<native>);
-                yield return ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
+                yield return AssignmentStatement(
                         IdentifierName(managedIdentifier),
                         CastExpression(
                             info.ManagedType.Syntax,
-                            InvocationExpression(
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.UnmanagedObjectUnwrapper),
+                            MethodInvocation(
+                                    TypeSyntaxes.UnmanagedObjectUnwrapper,
                                     GenericName(Identifier("GetObjectForUnmanagedWrapper"))
                                         .WithTypeArgumentList(
                                             TypeArgumentList(
                                                 SingletonSeparatedList(
-                                                    unwrapperType)))),
-                                ArgumentList(
-                                    SingletonSeparatedList(
-                                        Argument(IdentifierName(nativeIdentifier))))))));
+                                                    unwrapperType))),
+                                    Argument(IdentifierName(nativeIdentifier)))));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.NativeIdentifier;
-            public bool IsSupported(TargetFramework target, Version version) => true;
             public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
                 => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;

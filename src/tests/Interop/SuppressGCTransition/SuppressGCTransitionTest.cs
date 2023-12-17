@@ -107,7 +107,7 @@ unsafe static class SuppressGCTransitionNative
     }
 }
 
-unsafe class SuppressGCTransitionTest
+public unsafe class SuppressGCTransitionTest
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Inline_NoGCTransition(int expected)
@@ -285,72 +285,25 @@ unsafe class SuppressGCTransitionTest
 
         return n + 1;
     }
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int ILStubCache_GCTransition_NoGCTransition(int expected)
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static void TestEntryPoint()
     {
-        // This test uses a callback marked UnmanagedCallersOnly as a way to verify that
-        // SuppressGCTransition is taken into account when caching IL stubs.
-        // It calls functions with the same signature, differing only in SuppressGCTransition.
-        // When calling an UnmanagedCallersOnly method, the runtime validates that the GC is in
-        // pre-emptive mode. If not, it throws a fatal error that cannot be caught and crashes.
-        Console.WriteLine($"{nameof(ILStubCache_GCTransition_NoGCTransition)} ({expected}) ...");
+        CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);
 
-        int n;
-
-        void* cb = (delegate* unmanaged[Cdecl]<int, int>)&ReturnInt;
-
-        // Call function that does not have SuppressGCTransition
-        SuppressGCTransitionNative.InvokeCallbackVoidPtr_Inline_GCTransition(cb, &n);
-        Assert.Equal(expected++, n);
-
-        // Call function with same (blittable) signature, but with SuppressGCTransition.
-        // IL stub should not be re-used, GC transition not should occur, and callback invocation should fail.
-        SuppressGCTransitionNative.InvokeCallbackVoidPtr_Inline_NoGCTransition(cb, &n);
-        Assert.Equal(expected++, n);
-
-        // Call function that does not have SuppressGCTransition
-        SuppressGCTransitionNative.InvokeCallbackVoidPtr_NoInline_GCTransition(cb, &n);
-        Assert.Equal(expected++, n);
-
-        // Call function with same (non-blittable) signature, but with SuppressGCTransition
-        // IL stub should not be re-used, GC transition not should occur, and callback invocation should fail.
-        expected = n + 1;
-        SuppressGCTransitionNative.InvokeCallbackVoidPtr_NoInline_NoGCTransition(cb, &n);
-        Assert.Equal(expected++, n);
-
-        return n + 1;
-    }
-    public static int Main(string[] args)
-    {
-        try
-        {
-            CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);
-
-            int n = 1;
-            n = Inline_NoGCTransition(n);
-            n = Inline_GCTransition(n);
-            n = NoInline_NoGCTransition(n);
-            n = NoInline_GCTransition(n);
-            n = Mixed(n);
-            n = Mixed_TightLoop(n);
-            n = Inline_NoGCTransition_FunctionPointer(n);
-            n = Inline_GCTransition_FunctionPointer(n);
-            n = NoInline_NoGCTransition_FunctionPointer(n);
-            n = NoInline_GCTransition_FunctionPointer(n);
-            n = CallAsFunctionPointer(n);
-            n = ILStubCache_NoGCTransition_GCTransition(n);
-
-            if (args.Length != 0 && args[0].Equals("ILStubCache", StringComparison.OrdinalIgnoreCase))
-            {
-                // This test intentionally results in a fatal error, so only run when manually specified
-                n = ILStubCache_GCTransition_NoGCTransition(n);
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.ToString());
-            return 101;
-        }
-        return 100;
+        int n = 1;
+        n = Inline_NoGCTransition(n);
+        n = Inline_GCTransition(n);
+        n = NoInline_NoGCTransition(n);
+        n = NoInline_GCTransition(n);
+        n = Mixed(n);
+        n = Mixed_TightLoop(n);
+        n = Inline_NoGCTransition_FunctionPointer(n);
+        n = Inline_GCTransition_FunctionPointer(n);
+        n = NoInline_NoGCTransition_FunctionPointer(n);
+        n = NoInline_GCTransition_FunctionPointer(n);
+        n = CallAsFunctionPointer(n);
+        n = ILStubCache_NoGCTransition_GCTransition(n);
     }
 }

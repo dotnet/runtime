@@ -82,6 +82,11 @@ namespace System
             m_type = type;
         }
 
+        internal bool IsNullHandle()
+        {
+            return m_type == null;
+        }
+
         internal static bool IsTypeDefinition(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -463,12 +468,6 @@ namespace System
 #endif
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInterface(RuntimeType type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsByRefLike(RuntimeType type);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsVisible")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool _IsVisible(QCallTypeHandle typeHandle);
@@ -477,9 +476,6 @@ namespace System
         {
             return _IsVisible(new QCallTypeHandle(ref type));
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsValueType(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName")]
         private static partial void ConstructName(QCallTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);

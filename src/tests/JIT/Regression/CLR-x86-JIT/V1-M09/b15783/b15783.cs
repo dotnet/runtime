@@ -14,7 +14,7 @@ namespace DefaultNamespace
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Object v = ((UInt16)65535);
             Console.WriteLine("v.ToUInt16: " + v);
@@ -29,7 +29,6 @@ namespace DefaultNamespace
             if (((UInt16)v) != UInt16.MaxValue)
                 throw new Exception("UInt16.MaxValue from Object as UInt16 wasn't right!  " + (UInt16)v);
             Console.WriteLine("pass");
-            return 100;
         }
     }
 }

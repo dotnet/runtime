@@ -74,7 +74,12 @@ namespace System.Net.Sockets
         private unsafe NativeOverlapped* _pendingOverlappedForCancellation;
 
         private PinState _pinState;
-        private enum PinState : byte { None = 0, MultipleBuffer, SendPackets }
+        private enum PinState : byte
+        {
+            None = 0,
+            MultipleBuffer,
+            SendPackets
+        }
 
         [MemberNotNull(nameof(_preAllocatedOverlapped))]
         private void InitializeInternals()
@@ -1029,7 +1034,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private unsafe SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
+        private unsafe SocketError FinishOperationAccept(SocketAddress remoteSocketAddress)
         {
             SocketError socketError;
             IntPtr localAddr;
@@ -1120,7 +1125,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private unsafe void UpdateReceivedSocketAddress(Internals.SocketAddress socketAddress)
+        private unsafe void UpdateReceivedSocketAddress(SocketAddress socketAddress)
         {
             Debug.Assert(_socketAddressPtr != IntPtr.Zero);
             int size = *((int*)_socketAddressPtr);

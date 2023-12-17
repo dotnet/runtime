@@ -128,8 +128,7 @@ nativeStringResourceTable_mscorrc
 #GetTempPathW
 #InitializeCriticalSection
 #LeaveCriticalSection
-#LoadLibraryA
-#LoadLibraryW
+#LoadLibraryExA
 #LoadLibraryExW
 #MapViewOfFile
 #MapViewOfFileEx
@@ -151,7 +150,6 @@ nativeStringResourceTable_mscorrc
 #SetEvent
 #SetFilePointer
 #SetLastError
-#SetErrorMode
 #SetThreadDescription
 #Sleep
 #SleepEx

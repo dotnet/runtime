@@ -1144,13 +1144,6 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            // Bool and ubyte are the same type.
-            if ((indir->TypeIs(TYP_BOOL) && (varDsc->TypeGet() == TYP_UBYTE)) ||
-                (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
-            {
-                return IndirTransform::LclVar;
-            }
-
             // For small stores we can ignore the signed/unsigned diff.
             if (isDef && (varTypeToSigned(indir) == varTypeToSigned(varDsc)))
             {
@@ -1188,15 +1181,19 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0))
+                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0) &&
+                        m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
 #endif
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-                else if (indir->TypeIs(TYP_SIMD16, TYP_SIMD32) && (genTypeSize(indir) * 2 == genTypeSize(varDsc)) &&
-                         ((offset % genTypeSize(indir)) == 0))
+                else if (((indir->TypeIs(TYP_SIMD16) &&
+                           m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                          (indir->TypeIs(TYP_SIMD32) &&
+                           m_compiler->IsBaselineVector512IsaSupportedOpportunistically())) &&
+                         (genTypeSize(indir) * 2 == genTypeSize(varDsc)) && ((offset % genTypeSize(indir)) == 0))
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                 }
@@ -1327,16 +1324,17 @@ private:
 
                 LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
 
+                // Span's Length is never negative unconditionally
+                if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
+                {
+                    fieldVarDsc->SetIsNeverNegative(true);
+                }
+
                 // Retargeting the indirection to reference the promoted field would make it "wide", exposing
                 // the whole parent struct (with all of its fields).
                 if (accessSize > genTypeSize(fieldVarDsc))
                 {
                     return BAD_VAR_NUM;
-                }
-
-                if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
-                {
-                    fieldVarDsc->SetIsNeverNegative(true);
                 }
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);

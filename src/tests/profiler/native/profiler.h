@@ -22,7 +22,7 @@
 #endif // WIN32
 
 #define SHORT_LENGTH    32
-#define STRING_LENGTH  256
+#define STR_LENGTH     256
 #define LONG_LENGTH   1024
 
 typedef void (*ProfilerCallback) (void);

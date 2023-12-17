@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
@@ -22,6 +22,7 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ContentionKeyword = (EventKeywords)0x4000;
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
+            public const EventKeywords WaitHandleKeyword = (EventKeywords)0x40000000000;
         }
 
         [NonEvent]
@@ -131,6 +132,21 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID)
         {
             RuntimeImports.NativeRuntimeEventSource_LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
+        }
+
+        [NonEvent]
+        internal static void LogWaitHandleWaitStart(
+            WaitHandleWaitSourceMap WaitSource,
+            IntPtr AssociatedObjectID,
+            ushort ClrInstanceID)
+        {
+            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStart((byte)WaitSource, AssociatedObjectID, ClrInstanceID);
+        }
+
+        [NonEvent]
+        internal static void LogWaitHandleWaitStop(ushort ClrInstanceID)
+        {
+            RuntimeImports.NativeRuntimeEventSource_LogWaitHandleWaitStop(ClrInstanceID);
         }
     }
 }

@@ -379,17 +379,13 @@ namespace Internal.TypeSystem.Interop
             {
                 var emitter = new ILEmitter();
                 var codeStream = emitter.NewCodeStream();
-                _ = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
                 var elementType = _owningType.ElementType;
 
                 // Getter:
                 // return ((ElementType*)(&this))[index];
                 //
                 // Setter:
-                // fixed (InlineArray* pThis = &this)
-                //{
-                //  ((ElementType*)pThis)[(ulong)index] = (ElementType)value;
-                //}
+                // ((ElementType*)(&this)[(ulong)index] = (ElementType)value;
 
                 var vThis = emitter.NewLocal(_owningType.MakeByRefType());
                 codeStream.EmitLdArg(0);

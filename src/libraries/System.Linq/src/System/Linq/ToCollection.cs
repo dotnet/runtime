@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -250,18 +251,6 @@ namespace System.Linq
         {
             var result = new TSource[set.Count];
             set.CopyTo(result);
-            return result;
-        }
-
-        private static List<TSource> HashSetToList<TSource>(HashSet<TSource> set)
-        {
-            var result = new List<TSource>(set.Count);
-
-            foreach (TSource item in set)
-            {
-                result.Add(item);
-            }
-
             return result;
         }
     }

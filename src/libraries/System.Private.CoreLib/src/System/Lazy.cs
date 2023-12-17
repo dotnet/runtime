@@ -152,7 +152,7 @@ namespace System
             }
         }
 
-        internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             try
             {
@@ -182,8 +182,8 @@ namespace System
     /// </para>
     /// </remarks>
     [DebuggerTypeProxy(typeof(LazyDebugView<>))]
-    [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
-    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
+    [DebuggerDisplay("ThreadSafetyMode = {Mode}, IsValueCreated = {IsValueCreated}, IsValueFaulted = {IsValueFaulted}, Value = {ValueForDebugDisplay}")]
+    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
     {
         private static T CreateViaDefaultConstructor() => LazyHelper.CreateViaDefaultConstructor<T>();
 

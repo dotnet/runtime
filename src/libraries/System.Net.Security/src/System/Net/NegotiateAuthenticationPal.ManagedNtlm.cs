@@ -218,22 +218,30 @@ namespace System.Net
             public override IIdentity RemoteIdentity => throw new InvalidOperationException();
             public override System.Security.Principal.TokenImpersonationLevel ImpersonationLevel => System.Security.Principal.TokenImpersonationLevel.Impersonation;
 
-            public ManagedNtlmNegotiateAuthenticationPal(NegotiateAuthenticationClientOptions clientOptions)
+            private ManagedNtlmNegotiateAuthenticationPal(NegotiateAuthenticationClientOptions clientOptions)
             {
-                Debug.Assert(clientOptions.Package == NegotiationInfoClass.NTLM);
-
                 _credential = clientOptions.Credential;
-                if (string.IsNullOrWhiteSpace(_credential.UserName) || string.IsNullOrWhiteSpace(_credential.Password))
-                {
-                    // NTLM authentication is not possible with default credentials which are no-op
-                    throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
-                }
-
                 _spn = clientOptions.TargetName;
                 _channelBinding = clientOptions.Binding;
                 _protectionLevel = clientOptions.RequiredProtectionLevel;
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={clientOptions.Package}, spn={_spn}, requiredProtectionLevel={_protectionLevel}");
+            }
+
+            public static new NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
+            {
+                Debug.Assert(clientOptions.Package == NegotiationInfoClass.NTLM);
+
+                if (clientOptions.Credential == CredentialCache.DefaultNetworkCredentials ||
+                    string.IsNullOrWhiteSpace(clientOptions.Credential.UserName) ||
+                    string.IsNullOrWhiteSpace(clientOptions.Credential.Password))
+                {
+                    // NTLM authentication is not possible with default credentials which are no-op
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, SR.net_ntlm_not_possible_default_cred);
+                    return new UnsupportedNegotiateAuthenticationPal(clientOptions, NegotiateAuthenticationStatusCode.UnknownCredentials);
+                }
+
+                return new ManagedNtlmNegotiateAuthenticationPal(clientOptions);
             }
 
             public override void Dispose()
@@ -416,10 +424,23 @@ namespace System.Net
             {
                 if (_channelBinding != null)
                 {
-                    IntPtr cbtData = _channelBinding.DangerousGetHandle();
-                    int cbtDataSize = _channelBinding.Size;
-                    int written = MD5.HashData(new Span<byte>((void*)cbtData, cbtDataSize), hashBuffer);
-                    Debug.Assert(written == MD5.HashSizeInBytes);
+                    int appDataOffset = sizeof(SecChannelBindings);
+                    IntPtr cbtData = (nint)_channelBinding.DangerousGetHandle() + appDataOffset;
+                    int cbtDataSize = _channelBinding.Size - appDataOffset;
+
+                    // Channel bindings are calculated according to RFC 4121, section 4.1.1.2,
+                    // so we need to include zeroed initiator fields and length prefix for the
+                    // application data.
+                    Span<byte> prefix = stackalloc byte[sizeof(uint) * 5];
+                    prefix.Clear();
+                    BinaryPrimitives.WriteInt32LittleEndian(prefix.Slice(sizeof(uint) * 4), cbtDataSize);
+                    using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
+                    {
+                        md5.AppendData(prefix);
+                        md5.AppendData(new Span<byte>((void*)cbtData, cbtDataSize));
+                        int written = md5.GetHashAndReset(hashBuffer);
+                        Debug.Assert(written == MD5.HashSizeInBytes);
+                    }
                 }
                 else
                 {

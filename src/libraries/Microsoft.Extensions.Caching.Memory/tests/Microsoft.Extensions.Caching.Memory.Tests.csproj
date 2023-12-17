@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- ActiveIssue in AssemblyInfo.cs for Mono -->
+    <IgnoreForCI Condition="'$(RuntimeFlavor)' == 'Mono'">true</IgnoreForCI>
   </PropertyGroup>
 
   <ItemGroup>

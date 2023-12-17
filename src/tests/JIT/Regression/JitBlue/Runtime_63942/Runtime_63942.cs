@@ -7,9 +7,8 @@ using Xunit;
 public class Runtime_63942
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var _ = 3.14.ToString();
-        return 100;
     }
 }

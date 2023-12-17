@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 
@@ -16,19 +17,19 @@ using MBU = Microsoft.Build.Utilities;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
-public class GetChromeVersions : MBU.Task
+public partial class GetChromeVersions : MBU.Task
 {
+    private const string s_fetchReleasesUrl = "https://chromiumdash.appspot.com/fetch_releases?channel={0}&num=1";
     private const string s_allJsonUrl = "http://omahaproxy.appspot.com/all.json";
     private const string s_snapshotBaseUrl = $"https://storage.googleapis.com/chromium-browser-snapshots";
     private const string s_historyUrl = $"https://omahaproxy.appspot.com/history";
     private const string s_depsUrlPrefix = $"https://omahaproxy.appspot.com/deps.json?version=";
     private const int s_versionCheckThresholdDays = 1;
 
-    // start at the branch position found in all.json, and try to
-    // download chrome, and chromedriver. If not found, then try up to
-    // s_numBranchPositionsToTry lower versions
-    private const int s_numBranchPositionsToTry = 50;
     private static readonly HttpClient s_httpClient = new();
+
+    [GeneratedRegex("#define V8_BUILD_NUMBER (\\d+)")]
+    private static partial Regex V8BuildNumberRegex();
 
     public string Channel { get; set; } = "stable";
 
@@ -43,6 +44,11 @@ public class GetChromeVersions : MBU.Task
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
     public int MaxMajorVersionsToCheck { get; set; } = 2;
+
+    // start at the branch position found in all.json, and try to
+    // download chrome, and chromedriver. If not found, then try up to
+    // MaxBranchPositionsToCheck lower versions
+    public int MaxBranchPositionsToCheck { get; set; } = 75;
 
     [Output]
     public string ChromeVersion { get; set; } = string.Empty;
@@ -65,9 +71,10 @@ public class GetChromeVersions : MBU.Task
 
         try
         {
-            (ChromeVersionSpec version, string baseUrl) = await FindVersionFromHistoryAsync().ConfigureAwait(false);
+            //(ChromeVersionSpec version, string baseUrl) = await FindVersionFromHistoryAsync().ConfigureAwait(false);
             // For using all.json, use this instead:
             // (ChromeVersionSpec version, string baseUrl) = await FindVersionFromAllJsonAsync().ConfigureAwait(false);
+            (ChromeVersionSpec version, string baseUrl) = await FindVersionFromChromiumDash().ConfigureAwait(false);
 
             BaseSnapshotUrl = baseUrl;
             ChromeVersion = version.version;
@@ -89,7 +96,7 @@ public class GetChromeVersions : MBU.Task
         int numMajorVersionsTried = 0;
 
         string curMajorVersion = string.Empty;
-        await foreach (string version in GetVersionsAsync())
+        await foreach (string version in GetVersionsAsync().ConfigureAwait(false))
         {
             string majorVersion = version[..version.IndexOf('.')];
             if (curMajorVersion != majorVersion)
@@ -166,6 +173,68 @@ public class GetChromeVersions : MBU.Task
         }
     }
 
+    private async Task<(ChromeVersionSpec version, string baseSnapshotUrl)> FindVersionFromChromiumDash()
+    {
+        using Stream stream = await GetDownloadFileStreamAsync("fetch_releases.json", string.Format(s_fetchReleasesUrl, Channel)).ConfigureAwait(false);
+
+        ChromiumDashRelease[]? releases = await JsonSerializer
+                                                    .DeserializeAsync<ChromiumDashRelease[]>(stream)
+                                                    .ConfigureAwait(false);
+        if (releases is null)
+            throw new LogAsErrorException($"Failed to read chrome versions from {s_fetchReleasesUrl}");
+
+        ChromiumDashRelease? foundRelease = releases.Where(rel => string.Equals(rel.platform, OSIdentifier, StringComparison.InvariantCultureIgnoreCase)).SingleOrDefault();
+        if (foundRelease is null)
+        {
+            string availablePlatformIds = string.Join(", ", releases.Select(rel => rel.platform).Distinct().Order());
+            throw new LogAsErrorException($"Unknown Platform '{OSIdentifier}'. Platforms found " +
+                                            $"in fetch_releases.json: {availablePlatformIds}");
+        }
+
+        string foundV8Version = await FindV8VersionFromChromeVersion(foundRelease.version).ConfigureAwait(false);
+        ChromeVersionSpec versionSpec = new(os: foundRelease.platform,
+                                            channel: Channel,
+                                            version: foundRelease.version,
+                                            branch_base_position: foundRelease.chromium_main_branch_position.ToString(),
+                                            v8_version: foundV8Version);
+        string? baseSnapshotUrl = await FindSnapshotUrlFromBasePositionAsync(versionSpec, throwIfNotFound: true)
+                                        .ConfigureAwait(false);
+        return (versionSpec, baseSnapshotUrl!);
+
+        /*
+         * Taken from jsvu:
+         * url: `https://raw.githubusercontent.com/v8/v8/${major}.${minor}-lkgr/include/v8-version.h`,
+         * then regex: /#define V8_BUILD_NUMBER (\d+)/
+         */
+        async Task<string> FindV8VersionFromChromeVersion(string chromeVersion)
+        {
+            // 117.0.493.123
+            try
+            {
+                Version ver = new(chromeVersion);
+                int majorForV8 = (int)(ver.Major/10);
+                int minorForV8 = ver.Major % 10;
+
+                string lkgUrl = $"https://raw.githubusercontent.com/v8/v8/{majorForV8}.{minorForV8}-lkgr/include/v8-version.h";
+                Log.LogMessage(MessageImportance.Low, $"Checking {lkgUrl} ...");
+                string v8VersionHContents = await s_httpClient.GetStringAsync(lkgUrl).ConfigureAwait(false);
+
+                var m = V8BuildNumberRegex().Match(v8VersionHContents);
+                if (!m.Success)
+                    throw new LogAsErrorException($"Failed to find v8 build number at {lkgUrl}: {v8VersionHContents}");
+
+                if (!int.TryParse(m.Groups[1].ToString(), out int buildNumber))
+                    throw new LogAsErrorException($"Failed to parse v8 build number {m.Groups[1]}");
+
+                return $"{majorForV8}.{minorForV8}.{buildNumber}";
+            }
+            catch (Exception ex) when (ex is FormatException || ex is OverflowException || ex is ArgumentOutOfRangeException)
+            {
+                throw new LogAsErrorException($"Failed to parse chrome version '{chromeVersion}' to extract the milestone: {ex.Message}");
+            }
+        }
+    }
+
     private async Task<(ChromeVersionSpec versionSpec, string baseSnapshotUrl)> FindVersionFromAllJsonAsync()
     {
         using Stream stream = await GetDownloadFileStreamAsync("all.json", s_allJsonUrl).ConfigureAwait(false);
@@ -222,8 +291,8 @@ public class GetChromeVersions : MBU.Task
             try
             {
                 Log.LogMessage(MessageImportance.Low, $"Downloading {url} ...");
-                Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
-                using FileStream fs = File.OpenWrite(filePath);
+                using Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
+                using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
                 await stream.CopyToAsync(fs).ConfigureAwait(false);
             }
             catch (HttpRequestException hre)
@@ -240,7 +309,7 @@ public class GetChromeVersions : MBU.Task
         string baseUrl = $"{s_snapshotBaseUrl}/{OSPrefix}";
 
         int branchPosition = int.Parse(version.branch_base_position);
-        for (int i = 0; i < s_numBranchPositionsToTry; i++)
+        for (int i = 0; i < MaxBranchPositionsToCheck; i++)
         {
             string branchUrl = $"{baseUrl}/{branchPosition}";
             string url = $"{branchUrl}/REVISIONS";
@@ -269,6 +338,8 @@ public class GetChromeVersions : MBU.Task
 
         return null;
     }
+
+    private sealed record ChromiumDashRelease(string channel, int chromium_main_branch_position, string milesone, string platform, string version);
 
     private sealed record PerOSVersions(string os, ChromeVersionSpec[] versions);
     private sealed record ChromeVersionSpec(string os, string channel, string version, string branch_base_position, string v8_version);

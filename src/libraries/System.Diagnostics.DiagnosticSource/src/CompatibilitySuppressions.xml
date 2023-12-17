@@ -1,33 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- DiagnosticSource made NativeAOT compatible during .NET 8: https://github.com/dotnet/runtime/commit/70b33f8f69128eeb1463691e24646987b54a0e3d. -->
+  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
   <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Diagnostics.DiagnosticListener.Write(System.String,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
-    <Left>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
+    <Left>lib/net6.0/System.Diagnostics.DiagnosticSource.dll</Left>
+    <Right>lib/netstandard2.0/System.Diagnostics.DiagnosticSource.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Diagnostics.DiagnosticSource.StartActivity(System.Diagnostics.Activity,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
     <Left>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Diagnostics.DiagnosticSource.StopActivity(System.Diagnostics.Activity,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
-    <Left>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0014</DiagnosticId>
-    <Target>M:System.Diagnostics.DiagnosticSource.Write(System.String,System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute]</Target>
-    <Left>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Left>
-    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
+    <Right>lib/netstandard2.0/System.Diagnostics.DiagnosticSource.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

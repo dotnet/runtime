@@ -4,20 +4,23 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#if defined(TARGET_WINDOWS)
+#include <_version.h>
+#else
+#include <_version.c>
+#endif
 
-bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path)
+bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
 {
-    pal::string_t lib_path = lib_dir;
-    append_path(&lib_path, lib_name.c_str());
+    pal::string_t file_path = dir;
+    append_path(&file_path, file_name);
 
-    if (!pal::file_exists(lib_path))
-    {
+    if (!pal::file_exists(file_path))
         return false;
-    }
-    if (p_lib_path)
-    {
-        *p_lib_path = lib_path;
-    }
+
+    if (out_file_path)
+        *out_file_path = file_path;
+
     return true;
 }
 
@@ -469,6 +472,26 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
     url.append(os);
 
     return url;
+}
+
+pal::string_t get_host_version_description()
+{
+#if defined(TARGET_WINDOWS)
+    return _STRINGIFY(VER_PRODUCTVERSION_STR);
+#else
+    pal::string_t info {_STRINGIFY(HOST_VERSION)};
+
+    // sccsid is @(#)Version <file_version> [@Commit: <commit_hash>]
+    // Get the commit portion if available
+    char* commit_maybe = ::strchr(&sccsid[STRING_LENGTH("@(#)Version ")], '@');
+    if (commit_maybe != nullptr)
+    {
+        info.append(" ");
+        info.append(commit_maybe);
+    }
+
+    return info;
+#endif
 }
 
 pal::string_t to_lower(const pal::char_t* in) {

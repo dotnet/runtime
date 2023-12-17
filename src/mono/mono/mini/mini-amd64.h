@@ -480,16 +480,6 @@ typedef struct {
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
 
-#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg, ex_name) do { \
-            MonoInst *inst; \
-            MONO_INST_NEW ((cfg), inst, OP_AMD64_ICOMPARE_MEMBASE_REG); \
-            inst->inst_basereg = array_reg; \
-            inst->inst_offset = offset; \
-            inst->sreg2 = index_reg; \
-            MONO_ADD_INS ((cfg)->cbb, inst); \
-            MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, ex_name); \
-       } while (0)
-
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1

@@ -1542,7 +1542,7 @@ namespace System.ComponentModel
                 {
                     type = ComObjectType;
                 }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                else if (OperatingSystem.IsWindows()
                     && ComWrappers.TryGetComInstance(instance, out nint unknown))
                 {
                     // ComObjectType uses the Windows Forms provided ComNativeDescriptor. It currently has hard Win32

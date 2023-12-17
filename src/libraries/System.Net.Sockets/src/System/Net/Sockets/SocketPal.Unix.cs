@@ -152,6 +152,8 @@ namespace System.Net.Sockets
                     Count = (UIntPtr)buffer.Length
                 };
 
+                Debug.Assert(socketAddress.Length != 0 || sockAddr == null);
+
                 var messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = sockAddr,
                     SocketAddressLen = socketAddress.Length,
@@ -468,7 +470,6 @@ namespace System.Net.Sockets
         private static unsafe int SysReceiveMessageFrom(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, Span<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socket.IsSocket);
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
             byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
@@ -483,6 +484,8 @@ namespace System.Net.Sockets
                     Base = b,
                     Count = (UIntPtr)buffer.Length
                 };
+
+                Debug.Assert(socketAddress.Length != 0 || rawSocketAddress == null);
 
                 messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = rawSocketAddress,
@@ -512,7 +515,7 @@ namespace System.Net.Sockets
             if (socketAddressLen == 0)
             {
                 // We can fail to get peer address on TCP
-                socketAddressLen =  socketAddress.Length;
+                socketAddressLen = socketAddress.Length;
                 SocketAddressPal.Clear(socketAddress);
             }
             ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
@@ -842,12 +845,6 @@ namespace System.Net.Sockets
                 {
                     bytesReceived = received;
                     errorCode = SocketError.Success;
-                    if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
-                    {
-                        // We can fail to get peer address on TCP
-                        receivedSocketAddressLength = socketAddress.Length;
-                        SocketAddressPal.Clear(socketAddress);
-                    }
                     return true;
                 }
 
@@ -889,7 +886,7 @@ namespace System.Net.Sockets
                     if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
                     {
                         // We can fail to get peer address on TCP
-                        receivedSocketAddressLength =  socketAddress.Length;
+                        receivedSocketAddressLength = socketAddress.Length;
                         SocketAddressPal.Clear(socketAddress.Span);
                     }
                     bytesReceived = received;
@@ -1240,7 +1237,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, out int _, out bytesTransferred, out _, out errorCode))
+                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, Span<byte>.Empty, out int _, out bytesTransferred, out _, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
@@ -1273,7 +1270,7 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
-        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, ref SocketFlags socketFlags, SocketAddress socketAddress, out SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
             int socketAddressLen;
 
@@ -1299,7 +1296,7 @@ namespace System.Net.Sockets
         }
 
 
-        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, SocketAddress socketAddress, out SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
             int socketAddressLen;
 

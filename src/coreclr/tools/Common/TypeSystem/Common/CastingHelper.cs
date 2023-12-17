@@ -101,7 +101,7 @@ namespace Internal.TypeSystem
             return thisType.IsCompatibleWith(otherType, null);
         }
 
-        internal  static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
+        internal static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect visited)
         {
             // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
             bool isCastFromValueTypeToReferenceType = otherType.IsValueType && !thisType.IsValueType;
@@ -391,7 +391,9 @@ namespace Internal.TypeSystem
 
         private static bool CanCastToInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
         {
-            if (!otherType.HasVariance)
+            // Interfaces that don't have variance can still behave variantly when arrays are involved.
+            bool arrayCovariance = thisType.IsSzArray && otherType.HasInstantiation;
+            if (!otherType.HasVariance && !arrayCovariance)
             {
                 return thisType.CanCastToNonVariantInterface(otherType);
             }
@@ -404,7 +406,7 @@ namespace Internal.TypeSystem
 
                 foreach (var interfaceType in thisType.RuntimeInterfaces)
                 {
-                    if (interfaceType.CanCastByVarianceToInterfaceOrDelegate(otherType, protect))
+                    if (interfaceType.CanCastByVarianceToInterfaceOrDelegate(otherType, protect, arrayCovariance))
                     {
                         return true;
                     }
@@ -432,7 +434,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static bool CanCastByVarianceToInterfaceOrDelegate(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protectInput)
+        private static bool CanCastByVarianceToInterfaceOrDelegate(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protectInput, bool arrayCovariance = false)
         {
             if (thisType == otherType)
             {
@@ -467,23 +469,24 @@ namespace Internal.TypeSystem
 
                 if (!arg.IsEquivalentTo(targetArg))
                 {
-                    GenericParameterDesc openArgType = (GenericParameterDesc)instantiationOpen[i];
+                    GenericVariance variance = arrayCovariance
+                        ? GenericVariance.Covariant : ((GenericParameterDesc)instantiationOpen[i]).Variance;
 
-                    switch (openArgType.Variance)
+                    switch (variance)
                     {
                         case GenericVariance.Covariant:
-                            if (!arg.IsBoxedAndCanCastTo(targetArg, protect))
+                            if (!arg.IsBoxedAndCanCastTo(targetArg, protect, arrayCovariance))
                                 return false;
                             break;
 
                         case GenericVariance.Contravariant:
-                            if (!targetArg.IsBoxedAndCanCastTo(arg, protect))
+                            if (!targetArg.IsBoxedAndCanCastTo(arg, protect, arrayCovariance))
                                 return false;
                             break;
 
                         default:
                             // non-variant
-                            Debug.Assert(openArgType.Variance == GenericVariance.None);
+                            Debug.Assert(variance == GenericVariance.None);
                             return false;
                     }
                 }
@@ -548,7 +551,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static bool IsBoxedAndCanCastTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        private static bool IsBoxedAndCanCastTo(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect, bool arrayCovariance)
         {
             TypeDesc fromUnderlyingType = thisType.UnderlyingType;
 
@@ -562,6 +565,14 @@ namespace Internal.TypeSystem
                 if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
                 {
                     return genericVariableFromParam.CanCastToInternal(otherType, protect);
+                }
+            }
+            else if (arrayCovariance && fromUnderlyingType.IsPrimitive)
+            {
+                TypeDesc toUnderlyingType = otherType.UnderlyingType;
+                if (GetNormalizedIntegralArrayElementType(fromUnderlyingType) == GetNormalizedIntegralArrayElementType(toUnderlyingType))
+                {
+                    return true;
                 }
             }
 

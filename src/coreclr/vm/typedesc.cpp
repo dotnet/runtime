@@ -104,6 +104,31 @@ BOOL TypeDesc::IsSharedByGenericInstantiations()
     return FALSE;
 }
 
+BOOL TypeDesc::ContainsGenericVariables(BOOL methodOnly)
+{
+    if (IsGenericVariable())
+    {
+        if (!methodOnly)
+            return TRUE;
+
+        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(this);
+        return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
+    }
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().ContainsGenericVariables(methodOnly);
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->ContainsGenericVariables(methodOnly);
+    }
+
+    return FALSE;
+}
+
+
 PTR_BaseDomain TypeDesc::GetDomain()
 {
     CONTRACTL
@@ -1669,6 +1694,21 @@ FnPtrTypeDesc::IsSharedByGenericInstantiations()
     }
     return FALSE;
 } // FnPtrTypeDesc::IsSharedByGenericInstantiations
+
+BOOL
+FnPtrTypeDesc::ContainsGenericVariables(BOOL methodOnly)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].ContainsGenericVariables(methodOnly))
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::ContainsGenericVariables
 
 #ifndef DACCESS_COMPILE
 

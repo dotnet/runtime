@@ -5,7 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-class Test
+namespace MarshalArrayAsField.LPArray;
+public class Test
 {
     [DllImport("MarshalArrayByValArrayNative", CallingConvention = CallingConvention.Cdecl)]
     static extern bool TakeIntArraySeqStructByVal([In]S_INTArray_Seq s, [In]int size);
@@ -421,7 +422,10 @@ class Test
         Assert.Throws<TypeLoadException>(() => TakeStructArrayExpClassByVal(c14, ARRAY_SIZE));
     }
 
-    static int Main()
+    [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -65,6 +65,19 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
         #include "instrs.h"
 
+        #define INST1(id, nm, info, fmt, e1                                                     ) nm,
+        #define INST2(id, nm, info, fmt, e1, e2                                                 ) nm,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) nm,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) nm,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) nm,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) nm,
+        #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) nm,
+        #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) nm,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) nm,
+        #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) nm,
+        #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) nm,
+        #include "instrsarm64sve.h"
+
 #elif defined(TARGET_LOONGARCH64)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
@@ -827,7 +840,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     assert(varTypeIsFloating(simdBaseType));
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT, GT_LEA))
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CNS_INT, GT_LEA))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
@@ -912,9 +925,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 offset = addr->AsLclFld()->GetLclOffs();
                 break;
             }
-
-            case GT_CLS_VAR_ADDR:
-                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
 
             default:
                 return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);

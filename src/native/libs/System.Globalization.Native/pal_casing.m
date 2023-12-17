@@ -7,6 +7,10 @@
 
 #import <Foundation/Foundation.h>
 
+#if !__has_feature(objc_arc)
+#error This file relies on ARC for memory management, but ARC is not enabled.
+#endif
+
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 /**
@@ -51,37 +55,6 @@
     } \
 }
 
-/**
- * Append a code point to a string, overwriting 1 or 2 code units.
- * The offset points to the current end of the string contents
- * and is advanced (post-increment).
- * "Safe" macro, checks for a valid code point.
- * Converts code points outside of Basic Multilingual Plane into
- * corresponding surrogate pairs if sufficient space in the string.
- * High surrogate range: 0xD800 - 0xDBFF 
- * Low surrogate range: 0xDC00 - 0xDFFF
- * If the code point is not valid or a trail surrogate does not fit,
- * then isError is set to true.
- *
- * @param buffer const uint16_t * string buffer
- * @param offset string offset, must be offset<capacity
- * @param capacity size of the string buffer
- * @param codePoint code point to append
- * @param isError output bool set to true if an error occurs, otherwise not modified
- */
-#define Append(buffer, offset, capacity, codePoint, isError) { \
-    if ((offset) >= (capacity)) /* insufficiently sized destination buffer */ { \
-        (isError) = InsufficientBuffer; \
-    } else if ((uint32_t)(codePoint) > 0x10ffff) /* invalid code point */  { \
-        (isError) = InvalidCodePoint; \
-    } else if ((uint32_t)(codePoint) <= 0xffff) { \
-        (buffer)[(offset)++] = (uint16_t)(codePoint); \
-    } else { \
-        (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
-        (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
-    } \
-}
-
 /*
 Function:
 ChangeCaseNative
@@ -97,39 +70,42 @@ Returns 0 for success, non-zero on failure see ErrorCodes.
 int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName, int32_t lNameLength,
                                              const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
-    NSLocale *currentLocale;
-    if(localeName == NULL || lNameLength == 0)
+    @autoreleasepool
     {
-        currentLocale = [NSLocale systemLocale];
-    }
-    else
-    {
-        NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
-        currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
-    }
-
-    int32_t srcIdx = 0, dstIdx = 0, isError = 0;
-    uint16_t dstCodepoint;
-    while (srcIdx < cwSrcLength)
-    {
-        int32_t startIndex = srcIdx;
-        NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
-        int32_t srcLength = srcIdx - startIndex;
-        NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
-        NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
-        int32_t index = 0;
-        // iterate over all code points of a surrogate pair character
-        while (index < srcLength)
+        NSLocale *currentLocale;
+        if(localeName == NULL || lNameLength == 0)
         {
-            // the dst.length > srcLength is to prevent code point expansions
-            dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
-            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            index++;
+            currentLocale = [NSLocale systemLocale];
         }
-        if (isError)
-            return isError;
+        else
+        {
+            NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+            currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
+        }
+
+        int32_t srcIdx = 0, dstIdx = 0, isError = 0;
+        uint16_t dstCodepoint;
+        while (srcIdx < cwSrcLength)
+        {
+            int32_t startIndex = srcIdx;
+            NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
+            int32_t srcLength = srcIdx - startIndex;
+            NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
+            NSString *dst = bToUpper ? [src uppercaseStringWithLocale:currentLocale] : [src lowercaseStringWithLocale:currentLocale];
+            int32_t index = 0;
+            // iterate over all code points of a surrogate pair character
+            while (index < srcLength)
+            {
+                // the dst.length > srcLength is to prevent code point expansions
+                dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
+                Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+                index++;
+            }
+            if (isError)
+                return isError;
+        }
+        return Success;
     }
-    return Success;
 }
 
 /*
@@ -146,28 +122,31 @@ Returns 0 for success, non-zero on failure see ErrorCodes.
 */
 int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
-    int32_t srcIdx = 0, dstIdx = 0, isError = 0;
-    uint16_t dstCodepoint;
-    while (srcIdx < cwSrcLength)
+    @autoreleasepool
     {
-        int32_t startIndex = srcIdx;
-        NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
-        int32_t srcLength = srcIdx - startIndex;
-        NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
-        NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
-        int32_t index = 0;
-        // iterate over all code points of a surrogate pair character
-        while (index < srcLength)
+        int32_t srcIdx = 0, dstIdx = 0, isError = 0;
+        uint16_t dstCodepoint;
+        while (srcIdx < cwSrcLength)
         {
-            // the dst.length > srcLength is to prevent code point expansions
-            dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
-            Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
-            index++;
+            int32_t startIndex = srcIdx;
+            NEXTOFFSET(lpSrc, srcIdx, cwSrcLength);
+            int32_t srcLength = srcIdx - startIndex;
+            NSString *src = [NSString stringWithCharacters: lpSrc + startIndex length: srcLength];
+            NSString *dst = bToUpper ? src.uppercaseString : src.lowercaseString;
+            int32_t index = 0;
+            // iterate over all code points of a surrogate pair character
+            while (index < srcLength)
+            {
+                // the dst.length > srcLength is to prevent code point expansions
+                dstCodepoint = dst.length > srcLength ? [src characterAtIndex: index] : [dst characterAtIndex: index];
+                Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+                index++;
+            }
+            if (isError)
+                return isError;
         }
-        if (isError)
-            return isError;
+        return Success;
     }
-    return Success;
 }
 
 #endif

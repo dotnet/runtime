@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root_buffer } from "./roots";
+import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
@@ -242,13 +242,26 @@ function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>)
 // When threading is enabled, TextDecoder does not accept a view of a
 // SharedArrayBuffer, we must make a copy of the array first.
 // See https://github.com/whatwg/encoding/issues/172
-// BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
-// Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
-// See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
 export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
     // this condition should be eliminated by rollup on non-threading builds
     const needsCopy = isSharedArrayBuffer(view.buffer);
     return needsCopy
         ? view.slice(<any>start, <any>end)
         : view.subarray(<any>start, <any>end);
+}
+
+// below is minimal legacy support for Blazor
+let mono_wasm_string_root: any;
+
+/* @deprecated not GC safe, use monoStringToString */
+export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
+    if (mono_string === MonoStringNull)
+        return null;
+    if (!mono_wasm_string_root)
+        mono_wasm_string_root = mono_wasm_new_root();
+
+    mono_wasm_string_root.value = mono_string;
+    const result = monoStringToString(mono_wasm_string_root);
+    mono_wasm_string_root.value = MonoStringNull;
+    return result;
 }

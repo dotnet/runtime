@@ -1770,7 +1770,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
         assert(insertionPoint != nullptr);
 
 #if DEBUG
-        switch (block->bbJumpKind)
+        switch (block->GetKind())
         {
             case BBJ_COND:
                 assert(insertionPoint->OperIsConditionalJump());
@@ -1792,6 +1792,70 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     }
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given two nodes in the same block range, find which node appears last.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree* node1, GenTree* node2)
+{
+    assert(node1 != nullptr);
+    assert(node2 != nullptr);
+
+    if (node1 == node2)
+    {
+        return node1;
+    }
+
+    GenTree* cursor1 = node1->gtNext;
+    GenTree* cursor2 = node2->gtNext;
+
+    while (true)
+    {
+        if ((cursor1 == node2) || (cursor2 == nullptr))
+        {
+            return node2;
+        }
+
+        if ((cursor2 == node1) || (cursor1 == nullptr))
+        {
+            return node1;
+        }
+
+        cursor1 = cursor1->gtNext;
+        cursor2 = cursor2->gtNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given an array of nodes in a block range, find the last one.
+//
+// Arguments:
+//    nodes    - Pointer to nodes
+//    numNodes - Number of nodes
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
+{
+    assert(numNodes > 0);
+    GenTree* lastNode = nodes[0];
+    for (size_t i = 1; i < numNodes; i++)
+    {
+        lastNode = LastNode(lastNode, nodes[i]);
+    }
+
+    return lastNode;
 }
 
 #ifdef DEBUG

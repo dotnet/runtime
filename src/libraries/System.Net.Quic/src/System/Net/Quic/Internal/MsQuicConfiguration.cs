@@ -7,7 +7,6 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Quic;
-using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
 
@@ -118,14 +117,47 @@ internal static class MsQuicConfiguration
 #pragma warning restore SYSLIB0040
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+
         settings.IsSet.PeerUnidiStreamCount = 1;
         settings.PeerUnidiStreamCount = (ushort)options.MaxInboundUnidirectionalStreams;
+
         settings.IsSet.PeerBidiStreamCount = 1;
         settings.PeerBidiStreamCount = (ushort)options.MaxInboundBidirectionalStreams;
+
         if (options.IdleTimeout != TimeSpan.Zero)
         {
             settings.IsSet.IdleTimeoutMs = 1;
-            settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan ? (ulong)options.IdleTimeout.TotalMilliseconds : 0;
+            settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan
+                ? (ulong)options.IdleTimeout.TotalMilliseconds
+                : 0; // 0 disables the timeout
+        }
+
+        if (options.KeepAliveInterval != TimeSpan.Zero)
+        {
+            settings.IsSet.KeepAliveIntervalMs = 1;
+            settings.KeepAliveIntervalMs = options.KeepAliveInterval != Timeout.InfiniteTimeSpan
+                ? (uint)options.KeepAliveInterval.TotalMilliseconds
+                : 0; // 0 disables the keepalive
+        }
+
+        settings.IsSet.ConnFlowControlWindow = 1;
+        settings.ConnFlowControlWindow = (uint)(options._initialRecieveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
+
+        settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
+        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialRecieveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+
+        settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialRecieveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+
+        settings.IsSet.StreamRecvWindowUnidiDefault = 1;
+        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialRecieveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+
+        if (options.HandshakeTimeout != TimeSpan.Zero)
+        {
+            settings.IsSet.HandshakeIdleTimeoutMs = 1;
+            settings.HandshakeIdleTimeoutMs = options.HandshakeTimeout != Timeout.InfiniteTimeSpan
+                    ? (ulong)options.HandshakeTimeout.TotalMilliseconds
+                    : 0; // 0 disables the timeout
         }
 
         QUIC_HANDLE* handle;

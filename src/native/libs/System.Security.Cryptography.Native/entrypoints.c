@@ -302,6 +302,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslCtxSetCiphers)
     DllImportEntry(CryptoNative_SslCtxSetDefaultOcspCallback)
     DllImportEntry(CryptoNative_SslCtxSetEncryptionPolicy)
+    DllImportEntry(CryptoNative_SslCtxSetKeylogCallback)
     DllImportEntry(CryptoNative_SetCiphers)
     DllImportEntry(CryptoNative_SslCreate)
     DllImportEntry(CryptoNative_SslCtxCheckPrivateKey)

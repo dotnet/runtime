@@ -12,6 +12,7 @@
     <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
     <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <!-- Arcade -->
@@ -140,7 +141,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg" 
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg"
                         MsiVersion="$(MsiVersion)"
                         SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>
@@ -165,7 +166,7 @@
       <SwixWorkloadPackProjects Include="@(SwixProjects)" Condition="'%(PackageType)' == 'msi-pack'"
                                 ManifestOutputPath="$(VStemp)\p\%(SwixProjects.SdkFeatureBand)"
                                 ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand).packs.zip"/>
-      <SwixComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'false')"
+      <SwixComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'manifest-package-group') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'false')"
                                   ManifestOutputPath="$(VStemp)\c\%(SwixProjects.SdkFeatureBand)"
                                   ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand).components.zip"/>
       <SwixPreviewComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'true')"

@@ -1,24 +1,35 @@
 import { dotnet } from "./_framework/dotnet.js";
+import * as runtime from "./_framework/dotnet.runtime.js";
 
-async function fetchBinary(uri) {
-    return new Uint8Array(await (await fetch(uri)).arrayBuffer());
+async function fetchBinary(url) {
+    return (await fetch(url, { cache: "no-cache" })).arrayBuffer();
+}
+
+function fetchWasm(url) {
+    return {
+        response: fetch(url, { cache: "no-cache" }),
+        url,
+        name: url.substring(url.lastIndexOf("/") + 1)
+    };
 }
 
 const assets = [
     {
         name: "dotnet.native.js",
+        // demo dynamic import
+        moduleExports: import("./_framework/dotnet.native.js"),
         behavior: "js-module-native"
     },
     {
-        name: "dotnet.js",
-        behavior: "js-module-dotnet"
-    },
-    {
         name: "dotnet.runtime.js",
+        // demo static import
+        moduleExports: runtime,
         behavior: "js-module-runtime"
     },
     {
         name: "dotnet.native.wasm",
+        // demo pending download promise
+        pendingDownload: fetchWasm("./_framework/dotnet.native.wasm"),
         behavior: "dotnetwasm"
     },
     {
@@ -31,7 +42,8 @@ const assets = [
     },
     {
         name: "Wasm.Browser.Config.Sample.wasm",
-        buffer: await fetchBinary("./_framework/Wasm.Browser.Config.Sample.wasm"),
+        // demo buffer promise
+        buffer: fetchBinary("./_framework/Wasm.Browser.Config.Sample.wasm"),
         behavior: "assembly"
     },
     {

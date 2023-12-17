@@ -5,13 +5,14 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
 import { mono_log_warn } from "./logging";
 import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
 import { IDisposable } from "./marshal";
+import { wrap_as_cancelable } from "./cancelable-promise";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -19,6 +20,7 @@ const wasm_ws_pending_send_buffer_type = Symbol.for("wasm ws_pending_send_buffer
 const wasm_ws_pending_receive_event_queue = Symbol.for("wasm ws_pending_receive_event_queue");
 const wasm_ws_pending_receive_promise_queue = Symbol.for("wasm ws_pending_receive_promise_queue");
 const wasm_ws_pending_open_promise = Symbol.for("wasm ws_pending_open_promise");
+const wasm_ws_pending_open_promise_used = Symbol.for("wasm wasm_ws_pending_open_promise_used");
 const wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
 const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
 const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
@@ -58,17 +60,20 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
         open_promise_control.resolve(ws);
         prevent_timer_throttling();
     };
     const local_on_message = (ev: MessageEvent) => {
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
         _mono_wasm_web_socket_on_message(ws, ev);
         prevent_timer_throttling();
     };
     const local_on_close = (ev: CloseEvent) => {
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
 
         onClosed(ev.code, ev.reason);
 
@@ -93,6 +98,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     };
     const local_on_error = (ev: any) => {
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
         ws.removeEventListener("message", local_on_message);
         const error = new Error(ev.message || "WebSocket error");
         mono_log_warn("WebSocket error", error);
@@ -116,6 +122,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
 export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
     const open_promise_control = ws[wasm_ws_pending_open_promise];
+    ws[wasm_ws_pending_open_promise_used] = true;
     return open_promise_control.promise;
 }
 
@@ -126,7 +133,7 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
     const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
-        return null;
+        return resolvedPromise();
     }
 
     return _mono_wasm_web_socket_send_and_wait(ws, whole_buffer);
@@ -146,10 +153,9 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
     if (receive_event_queue.getLength()) {
         mono_assert(receive_promise_queue.getLength() == 0, "ERR20: Invalid WS state");
 
-        // finish synchronously
         _mono_wasm_web_socket_receive_buffering(ws, receive_event_queue, buffer_ptr, buffer_length);
 
-        return null;
+        return resolvedPromise();
     }
     const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
@@ -164,7 +170,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
     mono_assert(!!ws, "ERR19: expected ws instance");
 
     if (ws.readyState == WebSocket.CLOSED) {
-        return null;
+        return resolvedPromise();
     }
 
     if (wait_for_close_received) {
@@ -188,7 +194,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
         } else {
             ws.close(code);
         }
-        return null;
+        return resolvedPromise();
     }
 }
 
@@ -201,13 +207,22 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     // cleanup the delegate proxy
     ws[wasm_ws_on_closed]?.dispose();
 
-    // this is different from Managed implementation
-    ws.close(1000, "Connection was aborted.");
+    try {
+        // this is different from Managed implementation
+        ws.close(1000, "Connection was aborted.");
+    } catch (error) {
+        mono_log_warn("WebSocket error while aborting", error);
+    }
 }
 
 function reject_promises(ws: WebSocketExtension, error: Error) {
     const open_promise_control = ws[wasm_ws_pending_open_promise];
-    if (open_promise_control) {
+    const open_promise_used = ws[wasm_ws_pending_open_promise_used];
+
+    // when `open_promise_used` is false, we should not reject it,
+    // because it would be unhandled rejection. Nobody is subscribed yet.
+    // The subscription comes on the next call, which is `ws_wasm_open`, but cancelation/abort could happen in the meantime.
+    if (open_promise_control && open_promise_used) {
         open_promise_control.reject(error);
     }
     for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
@@ -231,7 +246,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
     // Otherwise we block so that we apply some backpresure to the application sending large data.
     // this is different from Managed implementation
     if (ws.bufferedAmount < ws_send_buffer_blocking_threshold) {
-        return null;
+        return resolvedPromise();
     }
 
     // block the promise/task until the browser passed the buffer to OS
@@ -395,6 +410,7 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_receive_event_queue]: Queue<Message>;
     [wasm_ws_pending_receive_promise_queue]: Queue<ReceivePromiseControl>;
     [wasm_ws_pending_open_promise]: PromiseController<WebSocketExtension>
+    [wasm_ws_pending_open_promise_used]: boolean
     [wasm_ws_pending_send_promises]: PromiseController<void>[]
     [wasm_ws_pending_close_promises]: PromiseController<void>[]
     [wasm_ws_is_aborted]: boolean
@@ -415,4 +431,19 @@ type Message = {
     type: number, // WebSocketMessageType
     data: Uint8Array,
     offset: number
+}
+
+function resolvedPromise(): Promise<void> | null {
+    if (!MonoWasmThreads) {
+        // signal that we are finished synchronously
+        // this is optimization, which doesn't allocate and doesn't require to marshal resolve() call to C# side.
+        return null;
+    } else {
+        // passing synchronous `null` as value of the result of the async JSImport function is not possible when there is message sent across threads.
+        const resolved = Promise.resolve();
+        // the C# code in the BrowserWebSocket expects that promise returned from this code is instance of `ControllablePromise`
+        // so that C# side could call `mono_wasm_cancel_promise` on it.
+        // in practice the `resolve()` callback would arrive before the `reject()` of the cancelation.
+        return wrap_as_cancelable<void>(resolved);
+    }
 }

@@ -82,7 +82,12 @@ namespace System
         internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
-        internal static event EventHandler? ProcessExit;
+#if !NATIVEAOT
+        internal static void OnFirstChanceException(object e)
+        {
+            FirstChanceException?.Invoke(AppDomain.CurrentDomain, new FirstChanceExceptionEventArgs((Exception)e));
+        }
+#endif
 
         internal static void OnProcessExit()
         {
@@ -91,8 +96,7 @@ namespace System
             {
                 EventListener.DisposeOnShutdown();
             }
-
-            ProcessExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
+            AppDomain.OnProcessExit();
         }
 
         /// <summary>

@@ -147,14 +147,24 @@
         <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 'GeneratedComInterfaceAttribute'를 사용한 인터페이스를 지원하지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 사용법이 권장 사항을 따르지 않습니다. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 사용법이 권장 사항을 따르지 않습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <target state="translated">관리 정의의 반환 값은 관리되지 않는 COM 메서드를 호출할 때 'out' 매개 변수로 변환됩니다. 반환 값이 관리되지 않는 COM 메서드에서 반환된 HRESULT 코드인 경우 메서드에서 '[PreserveSig]'를 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <target state="translated">관리 정의의 반환 값은 관리되지 않는 COM 메서드를 호출할 때 매개 변수 목록 끝에 있는 추가 'out' 매개 변수로 변환됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -437,6 +447,21 @@
         <target state="translated">제공된 그래프에는 주기가 있으며 토폴로지로 정렬할 수 없습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
+        <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
+        <target state="translated">'{0}' 형식은 네이티브 HRESULT가 아니라 네이티브 서명에서 구조체로 처리됩니다. HRESULT로 처리하려면 메서드에 '[return:MarshalAs(UnmanagedType.Error)]'를 추가하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
+        <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
+        <target state="translated">이 형식은 네이티브 HRESULT가 아니라 네이티브 서명의 구조체로 처리됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="translated">'[In]' 특성은 배열 매개 변수에서만 지원됩니다. 값별 매개 변수는 기본적으로 읽기 전용으로 간주됩니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
         <target state="translated">'[Out]' 특성도 사용되지 않는 한 '[In]' 특성은 지원되지 않습니다. Blittable 배열은 '[In]'으로만 마샬링할 수 없습니다.</target>
@@ -445,11 +470,6 @@
       <trans-unit id="InAttributeOnlyIsDefault">
         <source>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
         <target state="translated">'[In]' 특성은 '[Out]' 특성도 함께 사용되지 않는 한 필요하지 않습니다. '[Out]' 특성이 없는 '[In]' 특성의 동작은 기본 동작과 동일합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">이 매개 변수는 고정을 통해 마샬링되며 '[Out]' 특성이 없는 '[In]' 특성을 지원하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
@@ -462,14 +482,19 @@
         <target state="translated">이 매개 변수에 제공된 '[In]' 및 '[Out]' 특성은 이 매개 변수에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="translated">'[In]' 및 '[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경 가능하게 만들려면 'ref' 키워드를 사용하는 것이 좋습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">[In] 및 [Out] 속성</target>
         <note />
       </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">'in' 키워드는 고정을 통해 마샬링되는 매개 변수에서 지원되지 않습니다. 대신 'ref' 또는 'out'을 사용하세요.</target>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -702,6 +727,16 @@
         <target state="translated">잘못된 'VirtualMethodIndexAttribute' 사용</target>
         <note />
       </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">'LibraryImportAttribute' 사용법이 권장 사항을 따르지 않습니다. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="translated">'LibraryImportAttribute' 사용법이 권장 사항을 따르지 않습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
         <target state="translated">'GetManagedValuesSource'에서 반환된 'ReadOnlySpan'의 요소 형식은 'GetManagedValuesDestination'에서 반환된 요소 형식과 동일해야 합니다.</target>
@@ -903,8 +938,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">'[Out]' 특성은 고정으로 마샬링된 배열 매개 변수 및 매개 변수에서만 지원됩니다. 매개 변수를 변경할 수 있도록 하려면 'out' 또는 'ref' 키워드를 사용하세요.</target>
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="translated">'[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경할 수 있도록 'out' 또는 'ref' 키워드를 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -917,9 +952,9 @@
         <target state="translated">형식 '{0}'은(는) 'Out' 방향으로 마샬링을 지원하도록 지정하지만 관리 형식을 반환하는 'ToManaged' 메서드를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">이 매개 변수는 고정으로 마샬링되며 기본적으로 '[In, Out]'입니다.</target>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="translated">배열 매개 변수에는 명시적인 '[In]' 및 '[Out]' 특성을 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -992,24 +1027,19 @@
         <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <target state="translated">메서드를 호출할 때 호출 수신자로 마샬링되는 매개 변수 '{0}'의 크기를 정의해야 하지만 count 매개 변수 '{1}'은(는) 'out' 매개 변수입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <target state="translated">메서드를 호출할 때 호출 수신자로 마샬링되는 매개 변수 '{0}'의 크기를 정의해야 하지만 반환 값은 컬렉션의 크기로 사용됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
+        <target state="translated">메서드가 호출될 때 호출 수신자로 마샬링되는 컬렉션의 크기를 정의해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1162,11 +1192,6 @@
         <target state="translated">'{0}'에는 접근성 '{1}'이(가) 있습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">'[In]' 및 '[Out]' 특성은 이 형식에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">사용자 지정 마샬러의 비관리형 형식은 C# 비관리형 형식이어야 합니다.</target>
@@ -1234,7 +1259,7 @@
         <target state="translated">지정된 형식은 소스 생성 P/Invoke에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
         <target state="translated">지정된 형식은 원본 생성 COM에서 지원되지 않습니다.</target>
         <note />

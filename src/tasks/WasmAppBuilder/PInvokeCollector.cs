@@ -15,17 +15,19 @@ using Microsoft.Build.Tasks;
 internal sealed class PInvoke : IEquatable<PInvoke>
 #pragma warning restore CA1067
 {
-    public PInvoke(string entryPoint, string module, MethodInfo method)
+    public PInvoke(string entryPoint, string module, MethodInfo method, bool wasmLinkage)
     {
         EntryPoint = entryPoint;
         Module = module;
         Method = method;
+        WasmLinkage = wasmLinkage;
     }
 
     public string EntryPoint;
     public string Module;
     public MethodInfo Method;
     public bool Skip;
+    public bool WasmLinkage;
 
     public bool Equals(PInvoke? other)
         => other != null &&
@@ -63,7 +65,7 @@ internal sealed class PInvokeCollector {
         Log = log;
     }
 
-    public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
+    public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, Type type)
     {
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
@@ -90,9 +92,8 @@ internal sealed class PInvokeCollector {
                 if (signature == null)
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
 
-
-                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-                signatures.Add(signature);
+                if (signatures.Add(signature))
+                    Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
             }
         }
 
@@ -101,9 +102,10 @@ internal sealed class PInvokeCollector {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
                 var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
+                var wasmLinkage = method.CustomAttributes.Any(attr => attr.AttributeType.Name == "WasmImportLinkageAttribute");
                 var module = (string)dllimport.ConstructorArguments[0].Value!;
                 var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
-                pinvokes.Add(new PInvoke(entrypoint, module, method));
+                pinvokes.Add(new PInvoke(entrypoint, module, method, wasmLinkage));
 
                 string? signature = SignatureMapper.MethodToSignature(method);
                 if (signature == null)
@@ -111,8 +113,8 @@ internal sealed class PInvokeCollector {
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
                 }
 
-                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-                signatures.Add(signature);
+                if (signatures.Add(signature))
+                    Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
             }
         }
 
@@ -242,8 +244,23 @@ internal sealed class PInvokeCallback
     public PInvokeCallback(MethodInfo method)
     {
         Method = method;
+        foreach (var attr in method.CustomAttributes)
+        {
+            if (attr.AttributeType.Name == "UnmanagedCallersOnlyAttribute")
+            {
+                foreach(var arg in attr.NamedArguments)
+                {
+                    if (arg.MemberName == "EntryPoint")
+                    {
+                        EntryPoint = arg.TypedValue.Value!.ToString();
+                        return;
+                    }
+                }
+            }
+        }
     }
 
+    public string? EntryPoint;
     public MethodInfo Method;
     public string? EntryName;
 }

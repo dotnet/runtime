@@ -4,7 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   targetRid: ''
-  framework: 'net8.0'
+  framework: 'net9.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -23,6 +23,9 @@ parameters:
   # stress modes that each test will be run with. This is the same usage as 'testGroup' in
   # eng/pipelines/common/templates/runtimes/run-test-job.yml.
   coreclrTestGroup: ''
+  SuperPmiCollect: false
+  SuperPmiCollectionType: 'run'
+  SuperPmiCollectionName: 'libraries_tests'
   dependsOn: []
 
 jobs:
@@ -42,13 +45,18 @@ jobs:
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       testScope: ${{ parameters.testScope }}
+      SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
       runTests: true
-      ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
-      ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: 'Test Run'
-        name: test_run
+      ${{ if eq(parameters.SuperPmiCollect, true) }}:
+        displayName: ${{ format('SuperPMI collection {0} {1} {2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        name: ${{ format('spmi_{0}_{1}_{2}', parameters.SuperPmiCollectionName, parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+      ${{ else }}:
+        ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+          name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
+          displayName: 'Test Run'
+          name: test_run
       ${{ if eq(parameters.interpreter, 'true') }}:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
@@ -60,18 +68,39 @@ jobs:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
       - ${{ if eq(parameters.dependsOn[0], '') }}:
-        - ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
-          - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+      # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
+      - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
+          - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', 'coreclr', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
       variables:
+
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
+
+        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - template: /eng/pipelines/libraries/superpmi-collect-variables.yml
+            parameters:
+              buildConfig: ${{ parameters.buildConfig }}
+              osGroup: ${{ parameters.osGroup }}
+              archType: ${{ parameters.archType }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
 
         - ${{ parameters.variables }}
 
       steps:
+
+        # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe on AzDO machine; see `SuperPmiMcsPath`.
+        - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
+          - template: /eng/pipelines/common/download-artifact-step.yml
+            parameters:
+              unpackFolder: $(_runtimeX64DownloadPath)
+              artifactFileName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}$(archiveExtension)'
+              artifactName: 'CoreCLRProduct__${{ parameters.osGroup }}${{ parameters.osSubgroup }}_x64_${{ parameters.liveRuntimeBuildConfig }}'
+              displayName: 'CoreCLR product build (x64)'
+
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             displayName: Build Assets
@@ -113,6 +142,9 @@ jobs:
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
+            SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+            SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
+            SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
 
             # coreclrTestGroup: The following mappings of 'coreclrTestGroup' to 'scenarios' is copied from
             # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
@@ -137,6 +169,12 @@ jobs:
             ${{ else }}:
               extraHelixArguments: $(_extraHelixArguments)
 
+            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection') }}:
+              scenarios:
+              - normal
+            ${{ if in(parameters.coreclrTestGroup, 'superpmi_collection_no_tiered_compilation') }}:
+              scenarios:
+              - no_tiered_compilation
             ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
               scenarios:
               - no_tiered_compilation
@@ -204,4 +242,21 @@ jobs:
                 - jitosr_stress_random
                 - syntheticpgo
                 - syntheticpgo_blend
+                - jitcrossblocklocalassertionprop
 
+        - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+          - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml
+            parameters:
+              buildConfig: ${{ parameters.buildConfig }}
+              buildConfigUpper: $(buildConfigUpper)
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
+              SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
+              MergedMchFileLocation: $(MergedMchFileLocation)
+              MchFilesLocation: $(MchFilesLocation)
+              SpmiLogsLocation: $(SpmiLogsLocation)
+              SuperPmiMcsPath: $(SuperPmiMcsPath)
+              PythonScript: $(PythonScript)
+              PipScript: $(PipScript)

@@ -72,10 +72,10 @@ typedef struct _LOONGARCH64_KTRAP_FRAME {
 
 typedef struct _LOONGARCH64_VFP_STATE
 {
-    struct _LOONGARCH64_VFP_STATE *Link;          // link to next state entry
+    struct _LOONGARCH64_VFP_STATE *Link;     // link to next state entry
     ULONG Fcsr;                              // FCSR register
     ULONG64 Fcc;                             // Fcc flags.
-    ULONG64 F[32];                           // All F registers (0-31)
+    ULONG64 F[32];                           // All FPR64 (0-31)
 } LOONGARCH64_VFP_STATE, *PLOONGARCH64_VFP_STATE, KLOONGARCH64_VFP_STATE, *PKLOONGARCH64_VFP_STATE;
 
 //

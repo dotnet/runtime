@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!type.IsArray && !type.IsDefType)
                 return false;
 
-            // Interfaces don't have a dispatch map because we dispatch them based on the
+            // Interfaces don't have a dispatch map for instance methods because we dispatch them based on the
             // dispatch map of the implementing class.
             // The only exception are IDynamicInterfaceCastable scenarios that dispatch
             // using the interface dispatch map.
@@ -83,8 +83,9 @@ namespace ILCompiler.DependencyAnalysis
             // wasn't marked as [DynamicInterfaceCastableImplementation]" and "we couldn't find an
             // implementation". We don't want to use the custom attribute for that at runtime because
             // that's reflection and this should work without reflection.
-            if (type.IsInterface)
-                return ((MetadataType)type).IsDynamicInterfaceCastableImplementation();
+            bool isInterface = type.IsInterface;
+            if (isInterface && ((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                return true;
 
             DefType declType = type.GetClosestDefType();
 
@@ -111,6 +112,11 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc declMethod = slotMethod;
 
                     Debug.Assert(declMethod.IsVirtual);
+
+                    // Only static methods get placed in dispatch maps of interface types (modulo
+                    // IDynamicInterfaceCastable we already handled above).
+                    if (isInterface && !declMethod.Signature.IsStatic)
+                        continue;
 
                     if (interfaceOnDefinitionType != null)
                         declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), interfaceOnDefinitionType);
@@ -154,11 +160,15 @@ namespace ILCompiler.DependencyAnalysis
             var staticImplementations = new List<(int InterfaceIndex, int InterfaceMethodSlot, int ImplMethodSlot, int Context)>();
             var staticDefaultImplementations = new List<(int InterfaceIndex, int InterfaceMethodSlot, int ImplMethodSlot, int Context)>();
 
+            bool isInterface = declType.IsInterface;
+            bool needsEntriesForInstanceInterfaceMethodImpls = !isInterface
+                    || ((MetadataType)declType).IsDynamicInterfaceCastableImplementation();
+
             // Resolve all the interfaces, but only emit non-static and non-default implementations
             for (int interfaceIndex = 0; interfaceIndex < declTypeRuntimeInterfaces.Length; interfaceIndex++)
             {
                 var interfaceType = declTypeRuntimeInterfaces[interfaceIndex];
-                var interfaceDefinitionType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
+                var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
@@ -166,8 +176,12 @@ namespace ILCompiler.DependencyAnalysis
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
+
+                    if (!declMethod.Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
+                        continue;
+
                     if(!interfaceType.IsTypeDefinition)
-                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                     var implMethod = declMethod.Signature.IsStatic ?
                         declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(declMethod) :
@@ -244,9 +258,17 @@ namespace ILCompiler.DependencyAnalysis
                                     // For default interface methods, the generic context is acquired by indexing
                                     // into the interface list of the owning type.
                                     Debug.Assert(providingInterfaceDefinitionType != null);
-                                    int indexOfInterface = Array.IndexOf(declTypeDefinitionRuntimeInterfaces, providingInterfaceDefinitionType);
-                                    Debug.Assert(indexOfInterface >= 0);
-                                    genericContext = StaticVirtualMethodContextSource.ContextFromFirstInterface + indexOfInterface;
+                                    if (declTypeDefinition.HasSameTypeDefinition(providingInterfaceDefinitionType) &&
+                                        providingInterfaceDefinitionType == declTypeDefinition.InstantiateAsOpen())
+                                    {
+                                        genericContext = StaticVirtualMethodContextSource.ContextFromThisClass;
+                                    }
+                                    else
+                                    {
+                                        int indexOfInterface = Array.IndexOf(declTypeDefinitionRuntimeInterfaces, providingInterfaceDefinitionType);
+                                        Debug.Assert(indexOfInterface >= 0);
+                                        genericContext = StaticVirtualMethodContextSource.ContextFromFirstInterface + indexOfInterface;
+                                    }
                                 }
                                 staticDefaultImplementations.Add((
                                     interfaceIndex,

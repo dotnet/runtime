@@ -2435,6 +2435,8 @@ public:
     // Push and pop this frame from the thread's stack.
     void Push(Thread* pThread);
     void Pop();
+    // Remove this frame from any position in the thread's stack
+    void Remove();
 
 #endif // DACCESS_COMPILE
 
@@ -2809,7 +2811,7 @@ public:
 
 #ifdef HOST_64BIT
         // See code:GenericPInvokeCalliHelper
-        return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
+        return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x3));
 #else // HOST_64BIT
         return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
 #endif // HOST_64BIT
@@ -2869,8 +2871,11 @@ public:
     virtual void UpdateRegDisplay(const PREGDISPLAY);
 
     // m_Datum contains MethodDesc ptr or
-    // - on AMD64: CALLI target address (if lowest bit is set)
-    // - on X86: argument stack size (if value is <64k)
+    // - on 64 bit host: CALLI target address (if lowest bit is set)
+    // - on windows x86 host: argument stack size (if value is <64k)
+    // When m_Datum contains MethodDesc ptr, then on other than windows x86 host
+    // - bit 1 set indicates invoking new exception handling helpers
+    // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
     PTR_NDirectMethodDesc   m_Datum;
 

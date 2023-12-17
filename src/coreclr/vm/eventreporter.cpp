@@ -557,7 +557,7 @@ void LogCallstackForEventReporterWorker(EventReporter& reporter)
     {
         WordAt.Insert(WordAt.Begin(), W("   "));
     }
-    WordAt += W(" ");
+    WordAt.Append(W(" "));
 
     LogCallstackData data = {
         &reporter, &WordAt
@@ -679,7 +679,9 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
             FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress);
 
             StackSString s;
-            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("exception code %1, exception address %2"), 0, 0, exceptionCodeString, addressString);
+            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("exception code %1, exception address %2"), 0, 0,
+                SString{ SString::Literal, exceptionCodeString },
+                SString{ SString::Literal, addressString });
             reporter.AddDescription(s);
             if (pThread)
             {

@@ -180,7 +180,11 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
-    HMODULE hDac = LoadLibraryW(pDacModulePath);
+#ifdef TARGET_WINDOWS
+    HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+#else
+    HMODULE hDac = WszLoadLibrary(pDacModulePath);
+#endif // !TARGET_WINDOWS
     if (hDac == NULL)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -9723,12 +9727,6 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
-#if defined(_MSC_VER) && defined(TARGET_ARM)
-// This is a temporary workaround for an ARM specific MS C++ compiler bug (internal LKG build 18.1).
-// Branch < if (ptrRemoteManagedEvent == NULL) > was always taken and the function always returned false.
-// TODO: It should be removed once the bug is fixed.
-#pragma optimize("", off)
-#endif
 bool CordbProcess::CopyManagedEventFromTarget(
     const EXCEPTION_RECORD * pRecord,
     DebuggerIPCEvent * pLocalManagedEvent)
@@ -9775,9 +9773,6 @@ bool CordbProcess::CopyManagedEventFromTarget(
 
     return true;
 }
-#if defined(_MSC_VER) && defined(TARGET_ARM)
-#pragma optimize("", on)
-#endif
 
 //---------------------------------------------------------------------------------------
 // EnsureClrInstanceIdSet - Ensure we have a CLR Instance ID to debug

@@ -60,10 +60,9 @@ public class ShortEnregisteredLocal
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new ShortEnregisteredLocal().Method0();
-        return 100;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void Log(string varName, object varValue)

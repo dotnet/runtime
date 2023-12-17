@@ -72,4 +72,16 @@ namespace SharedTypes.ComInterfaces
             }
         }
     }
+
+    [GeneratedComClass]
+    internal partial class ArrayOfStatelessElementsThrows : IArrayOfStatelessElements
+    {
+        public void Method(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+        public void MethodContentsIn(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+        public void MethodContentsInOut(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+        public void MethodContentsOut(StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+        public void MethodIn(in StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+        public void MethodOut(out StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+        public void MethodRef(ref StatelessType[] param, int size) => throw new ManagedComMethodFailureException();
+    }
 }

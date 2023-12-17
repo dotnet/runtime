@@ -49,7 +49,7 @@ namespace Mono.Linker
 			this.context = context;
 		}
 
-		void EnsureProcessed (AssemblyDefinition assembly)
+		public void EnsureProcessed (AssemblyDefinition assembly)
 		{
 			if (!assemblies.Add (assembly))
 				return;
@@ -57,6 +57,8 @@ namespace Mono.Linker
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MapType (type);
 		}
+
+		public ICollection<MethodDefinition> MethodsWithOverrideInformation => override_methods.Keys;
 
 		/// <summary>
 		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
@@ -147,9 +149,12 @@ namespace Mono.Linker
 					// we shouldn't need to run the below logic. This results in ILLink potentially
 					// keeping more methods than needed.
 
+					// Static methods on interfaces must be implemented only via explicit method-impl record
+					// not by a signature match. So there's no point in running the logic below for static methods.
+
 					if (!resolvedInterfaceMethod.IsVirtual
 						|| resolvedInterfaceMethod.IsFinal
-						|| !resolvedInterfaceMethod.IsNewSlot)
+						|| resolvedInterfaceMethod.IsStatic)
 						continue;
 
 					// Try to find an implementation with a name/sig match on the current type

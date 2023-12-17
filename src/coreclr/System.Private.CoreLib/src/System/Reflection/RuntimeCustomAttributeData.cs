@@ -114,7 +114,7 @@ namespace System.Reflection
             if (type == typeof(int))
                 return CustomAttributeEncoding.Int32;
 
-            if (type.IsEnum)
+            if (type.IsActualEnum)
                 return CustomAttributeEncoding.Enum;
 
             if (type == typeof(string))
@@ -172,7 +172,7 @@ namespace System.Reflection
             if (type.IsInterface)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsValueType)
+            if (type.IsActualValueType)
                 return CustomAttributeEncoding.Undefined;
 
             throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA, nameof(type));
@@ -278,7 +278,7 @@ namespace System.Reflection
                 m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
-            ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
             if (parameters.Length != 0)
             {
                 m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
@@ -412,7 +412,7 @@ namespace System.Reflection
             // Ensure there is only a single constructor for 'pca', so it is safe to suppress IL2075
             ConstructorInfo[] allCtors = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Debug.Assert(allCtors.Length == 1);
-            Debug.Assert(allCtors[0].GetParameters().Length == 0);
+            Debug.Assert(allCtors[0].GetParametersAsSpan().Length == 0);
 #endif
 
             m_ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
@@ -1477,7 +1477,7 @@ namespace System.Reflection
             {
                 useAttributeArray = true;
             }
-            else if (caType.IsValueType)
+            else if (caType.IsActualValueType)
             {
                 useObjectArray = true;
             }

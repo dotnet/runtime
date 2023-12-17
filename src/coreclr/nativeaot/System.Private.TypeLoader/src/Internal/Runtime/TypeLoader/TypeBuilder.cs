@@ -6,19 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
-    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
-    using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
-
     internal static class LowLevelListExtensions
     {
         public static void Expand<T>(this LowLevelList<T> list, int count)
@@ -84,7 +78,7 @@ namespace Internal.Runtime.TypeLoader
 
             IntPtr methodDictionary;
 
-            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out methodDictionary))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -386,7 +380,7 @@ namespace Internal.Runtime.TypeLoader
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
             NativeLayoutInfoLoadContext context = state.NativeLayoutInfo.LoadContext;
 
-            NativeParser baseTypeParser = new NativeParser();
+            NativeParser baseTypeParser = default;
 
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
@@ -480,7 +474,7 @@ namespace Internal.Runtime.TypeLoader
             private int _size;
             private bool _isReferenceTypeGCLayout;
 
-            public static GCLayout None { get { return new GCLayout(); } }
+            public static GCLayout None { get { return default(GCLayout); } }
             public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
@@ -854,7 +848,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<GenericTypeEntry> TypesToRegister()
+        private IEnumerable<TypeLoaderEnvironment.GenericTypeEntry> TypesToRegister()
         {
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
@@ -862,7 +856,7 @@ namespace Internal.Runtime.TypeLoader
                 if (typeAsDefType == null)
                     continue;
 
-                yield return new GenericTypeEntry
+                yield return new TypeLoaderEnvironment.GenericTypeEntry
                 {
                     _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
                     _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
@@ -871,12 +865,12 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<GenericMethodEntry> MethodsToRegister()
+        private IEnumerable<TypeLoaderEnvironment.GenericMethodEntry> MethodsToRegister()
         {
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 InstantiatedMethod method = _methodsThatNeedDictionaries[i];
-                yield return new GenericMethodEntry
+                yield return new TypeLoaderEnvironment.GenericMethodEntry
                 {
                     _declaringTypeHandle = GetRuntimeTypeHandle(method.OwningType),
                     _genericMethodArgumentHandles = GetRuntimeTypeHandles(method.Instantiation),
@@ -895,7 +889,7 @@ namespace Internal.Runtime.TypeLoader
                     typesToRegisterCount++;
             }
 
-            DynamicGenericsRegistrationData registrationData = new DynamicGenericsRegistrationData
+            var registrationData = new TypeLoaderEnvironment.DynamicGenericsRegistrationData
             {
                 TypesToRegisterCount = typesToRegisterCount,
                 TypesToRegister = (typesToRegisterCount != 0) ? TypesToRegister() : null,
@@ -1025,7 +1019,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRefType);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRef);
                     }
                     TypeSystemContext.ByRefTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1034,7 +1028,7 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(typeAsParameterizedType is PointerType);
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointerType);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointer);
                     }
                     TypeSystemContext.PointerTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1259,7 +1253,7 @@ namespace Internal.Runtime.TypeLoader
                 pointerTypeHandle = EETypeCreator.CreatePointerEEType((uint)pointerType.GetHashCode(), pointeeTypeHandle, pointerType);
                 unsafe
                 {
-                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointerType);
+                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointer);
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
@@ -1279,7 +1273,7 @@ namespace Internal.Runtime.TypeLoader
                 byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
                 unsafe
                 {
-                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRefType);
+                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRef);
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
@@ -1304,7 +1298,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
                 unsafe
                 {
-                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointer);
                 }
                 TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
 
@@ -1366,7 +1360,7 @@ namespace Internal.Runtime.TypeLoader
             new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
         }
 
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
+        public static void ResolveMultipleCells(GenericDictionaryCell[] cells, out IntPtr[] fixups)
         {
             new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }

@@ -3434,7 +3434,8 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	MonoMemoryManager *mm = mono_mem_manager_get_generic (data.images, data.nimages);
 	collect_data_free (&data);
 
-	mono_mem_manager_lock (mm);
+	// Hashtable key equal func can take loader lock
+	mono_loader_lock ();
 
 	if (!mm->ginst_cache)
 		mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
@@ -3456,7 +3457,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		g_hash_table_insert (mm->ginst_cache, ginst, ginst);
 	}
 
-	mono_mem_manager_unlock (mm);
+	mono_loader_unlock ();
 
 	return ginst;
 }
@@ -3467,7 +3468,8 @@ mono_metadata_get_canonical_aggregate_modifiers (MonoAggregateModContainer *cand
 	g_assert (candidate->count > 0);
 	MonoMemoryManager *mm = mono_metadata_get_mem_manager_for_aggregate_modifiers (candidate);
 
-	mono_mem_manager_lock (mm);
+	// Hashtable key equal func can take loader lock
+	mono_loader_lock ();
 
 	if (!mm->aggregate_modifiers_cache)
 		mm->aggregate_modifiers_cache = g_hash_table_new_full (aggregate_modifiers_hash, aggregate_modifiers_equal, NULL, (GDestroyNotify)free_aggregate_modifiers);
@@ -3484,7 +3486,7 @@ mono_metadata_get_canonical_aggregate_modifiers (MonoAggregateModContainer *cand
 
 		g_hash_table_insert (mm->aggregate_modifiers_cache, amods, amods);
 	}
-	mono_mem_manager_unlock (mm);
+	mono_loader_unlock ();
 	return amods;
 }
 
@@ -3543,7 +3545,8 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	if (gclass)
 		return gclass;
 
-	mono_mem_manager_lock (mm);
+	// Hashtable key equal func can take loader lock
+	mono_loader_lock ();
 
 	gclass = mono_mem_manager_alloc0 (mm, sizeof (MonoGenericClass));
 	if (is_dynamic)
@@ -3563,7 +3566,7 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	// g_hash_table_insert (set->gclass_cache, gclass, gclass);
 
-	mono_mem_manager_unlock (mm);
+	mono_loader_unlock ();
 
 	return gclass2;
 }
@@ -7802,7 +7805,7 @@ guint
 mono_aligned_addr_hash (gconstpointer ptr)
 {
 	/* Same hashing we use for objects */
-	return (GPOINTER_TO_UINT (ptr) >> 3) * 2654435761u;
+	return (GCONSTPOINTER_TO_UINT (ptr) >> 3) * 2654435761u;
 }
 
 /*

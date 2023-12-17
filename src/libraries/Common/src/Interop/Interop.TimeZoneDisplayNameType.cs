@@ -13,6 +13,7 @@ internal static partial class Interop
             DaylightSavings = 2,
             GenericLocation = 3,
             ExemplarCity = 4,
+            TimeZoneName = 5,
         }
     }
 }

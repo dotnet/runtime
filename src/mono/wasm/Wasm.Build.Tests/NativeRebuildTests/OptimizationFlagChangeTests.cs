@@ -23,7 +23,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     public static IEnumerable<object?[]> FlagsOnlyChangeData(bool aot)
         => ConfigWithAOTData(aot, config: "Release").Multiply(
                     new object[] { /*cflags*/ "/p:EmccCompileOptimizationFlag=-O1", /*ldflags*/ "" },
-                    new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O0" }
+                    new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O1" }
         ).WithRunHosts(RunHost.Chrome).UnwrapItemsAsArrays();
 
     [Theory]
@@ -39,7 +39,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
         pathsDict.UpdateTo(unchanged: true, mainAssembly, "icall-table.h", "pinvoke-table.h", "driver-gen.c");
         if (cflags.Length == 0)
-            pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o");
+            pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o", "runtime.o");
 
         pathsDict.Remove(mainAssembly);
         if (buildArgs.AOT)

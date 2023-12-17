@@ -11,12 +11,11 @@ namespace Test
     {
         static uint m_u;
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool[] ab = new bool[4];
             uint uu;
             for (; ab[0]; uu = m_u & 1) { }
-            return 100;
         }
     }
 }

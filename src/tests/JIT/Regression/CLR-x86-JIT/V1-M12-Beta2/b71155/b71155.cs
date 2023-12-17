@@ -28,10 +28,9 @@ namespace Test
             }
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new AA().Method1();
-            return 100;
         }
     }
 }

@@ -19,7 +19,8 @@ using System.Xml.Linq;
 using System.Xml.Schema;
 using Xunit;
 using System.Runtime.Serialization.Tests;
-
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 public static partial class DataContractSerializerTests
 {
@@ -1116,6 +1117,88 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void DCS_TypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void DCS_CollectionTypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnload(string assemblyfile, string typename, bool makeCollection, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("DataContractSerializerTests", true, fullPath);
+        object obj;
+        wref = new WeakReference(alc);
+
+        // Load assembly by path. By name, and it gets loaded in the default ALC.
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        // Ensure the type loaded in the intended non-Default ALC
+        var type = asm.GetType(typename);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        if (makeCollection)
+        {
+            int arrayLength = 3;
+            var array = Array.CreateInstance(type, arrayLength);
+            for (int i = 0; i < arrayLength; i++)
+            {
+                array.SetValue(Activator.CreateInstance(type), i);
+            }
+            type = array.GetType();
+            obj = array;
+        }
+        else
+        {
+            obj = Activator.CreateInstance(type);
+        }
+
+        // Round-Trip the instance
+        var dcs = new DataContractSerializer(type);
+        var rtobj = DataContractSerializerHelper.SerializeAndDeserialize<object>(obj, null, null, () => dcs, true, false);
+        Assert.NotNull(rtobj);
+        if (makeCollection)
+            Assert.Equal(obj, rtobj);
+        else
+            Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
+    }
+
+    [Fact]
     public static void DCS_JaggedArrayAsRoot()
     {
         int[][] jaggedIntegerArray = new int[][] { new int[] { 1, 3, 5, 7, 9 }, new int[] { 0, 2, 4, 6 }, new int[] { 11, 22 } };
@@ -2090,7 +2173,7 @@ public static partial class DataContractSerializerTests
                 messageBuilder.AppendLine($"Actual exception type: {actualExceptionType.FullName}, {actualExceptionType.GetTypeInfo().Assembly.FullName}");
                 messageBuilder.AppendLine($"The type of {nameof(expectedExceptionType)} was: {expectedExceptionType.GetType()}");
                 messageBuilder.AppendLine($"The type of {nameof(actualExceptionType)} was: {actualExceptionType.GetType()}");
-                Assert.True(false, messageBuilder.ToString());
+                Assert.Fail(messageBuilder.ToString());
             }
 
             exceptionThrown = true;
@@ -3459,7 +3542,7 @@ public static partial class DataContractSerializerTests
     }
 
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 

@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public static partial class CancelablePromise
     {
         [JSImport("INTERNAL.mono_wasm_cancel_promise")]
-        private static partial void _CancelPromise(IntPtr promiseGCHandle);
+        private static partial void _CancelPromise(IntPtr gcHandle);
 
         public static void CancelPromise(Task promise)
         {
@@ -18,12 +18,12 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
-            JSHostImplementation.TaskCallback? holder = promise.AsyncState as JSHostImplementation.TaskCallback;
+            JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
 
 #if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send(static (JSHostImplementation.TaskCallback holder) =>
+            holder.SynchronizationContext!.Send(static (JSHostImplementation.PromiseHolder holder) =>
             {
 #endif
             _CancelPromise(holder.GCHandle);
@@ -32,23 +32,23 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        public static void CancelPromise<T1, T2>(Task promise, Action<T1, T2> callback, T1 state1, T2 state2)
+        public static void CancelPromise<T>(Task promise, Action<T> callback, T state)
         {
             // this check makes sure that promiseGCHandle is still valid handle
             if (promise.IsCompleted)
             {
                 return;
             }
-            JSHostImplementation.TaskCallback? holder = promise.AsyncState as JSHostImplementation.TaskCallback;
+            JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
 
 #if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send((JSHostImplementation.TaskCallback holder) =>
+            holder.SynchronizationContext!.Send((JSHostImplementation.PromiseHolder holder) =>
             {
 #endif
                 _CancelPromise(holder.GCHandle);
-                callback.Invoke(state1, state2);
+                callback.Invoke(state);
 #if FEATURE_WASM_THREADS
             }, holder);
 #endif

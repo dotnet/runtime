@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -17,6 +18,13 @@ namespace ILCompiler
         private static List<TypeLoadabilityCheckInProgress> t_typeLoadCheckInProgressStack;
         private static List<TypeDesc> EmptyList = new List<TypeDesc>();
         private readonly ValidTypeHashTable _validTypes = new ValidTypeHashTable();
+
+        /// <summary>
+        /// Once the type check stack is this deep, we declare the type being scanned as
+        /// recursive. In practice, for recursive types, stack overflow happens when the type
+        /// load stack is approximately twice as deep (1800~1900).
+        /// </summary>
+        private const int MaximumTypeLoadCheckStackDepth = 1024;
 
         /// <summary>
         /// Ensures that the type can be fully loaded. The method will throw one of the type system
@@ -102,6 +110,12 @@ namespace ILCompiler
         private static bool PushTypeLoadInProgress(TypeDesc type)
         {
             t_typeLoadCheckInProgressStack ??= new List<TypeLoadabilityCheckInProgress>();
+
+            if (t_typeLoadCheckInProgressStack.Count >= MaximumTypeLoadCheckStackDepth)
+            {
+                // Extreme stack depth typically indicates infinite recursion in recursive descent into the type
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
 
             // Walk stack to see if the specified type is already in the process of being type checked.
             int typeLoadCheckInProgressStackOffset = -1;
@@ -269,8 +283,11 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
-                    // E.g. "newarr void" will fail, but "newarr void[]" or "ldtoken void[]" will succeed.
+                    if (parameterType.IsVoid)
+                    {
+                        // Arrays of System.Void are not allowed
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                 }
             }
             else if (type.IsFunctionPointer)
@@ -288,10 +305,19 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitions
+                // Don't validate generic definitions much other than by checking for illegal recursion.
                 if (type.IsGenericDefinition)
                 {
+                    // Check for illegal recursion
+                    if (type is EcmaType ecmaType && ILCompiler.LazyGenericsSupport.CheckForECMAIllegalGenericRecursion(ecmaType))
+                    {
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                     return type;
+                }
+                else if (type.HasInstantiation)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.GetTypeDefinition());
                 }
 
                 // System.__Canon or System.__UniversalCanon

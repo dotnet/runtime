@@ -135,7 +135,7 @@ namespace Test01
             return c.X + c.Y + c.Z;
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int returnVal = 100;
 
@@ -153,8 +153,6 @@ namespace Test01
             {
                 returnVal = -1;
             }
-
-            return 100;
         }
     }
 }

@@ -13,6 +13,9 @@
 #endif // HOST_WINDOWS
 
 #if defined(HOST_UNIX)
+
+#include <minipal/utils.h>
+
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
 //

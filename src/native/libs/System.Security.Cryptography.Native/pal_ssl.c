@@ -1005,6 +1005,13 @@ void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
 }
 
+void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback cb)
+{
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
+    SSL_CTX_set_keylog_callback(ctx, cb);
+}
+
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 {
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0

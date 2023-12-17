@@ -41,7 +41,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TSource> ToFrozenDictionary<TSource, TKey>(
             this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer = null)
             where TKey : notnull =>
-            CreateFromDictionary(source.ToDictionary(keySelector, comparer));
+            source.ToDictionary(keySelector, comparer).ToFrozenDictionary(comparer);
 
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TElement}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector and element selector functions.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -55,7 +55,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TElement> ToFrozenDictionary<TSource, TKey, TElement>(
             this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer = null)
             where TKey : notnull =>
-            CreateFromDictionary(source.ToDictionary(keySelector, elementSelector, comparer));
+            source.ToDictionary(keySelector, elementSelector, comparer).ToFrozenDictionary(comparer);
 
         /// <summary>
         /// Extracts from the source either an existing <see cref="FrozenDictionary{TKey,TValue}"/> instance or a <see cref="Dictionary{TKey,TValue}"/>
@@ -113,6 +113,8 @@ namespace System.Collections.Frozen
         private static FrozenDictionary<TKey, TValue> CreateFromDictionary<TKey, TValue>(Dictionary<TKey, TValue> source)
             where TKey : notnull
         {
+            Debug.Assert(source.Count > 0, "Empty sources should have been filtered out by caller");
+
             IEqualityComparer<TKey> comparer = source.Comparer;
 
             // Optimize for value types when the default comparer is being used. In such a case, the implementation
@@ -159,10 +161,12 @@ namespace System.Collections.Frozen
 
                 // Calculate the minimum and maximum lengths of the strings in the dictionary. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
+                ulong lengthFilter = 0;
                 foreach (string key in keys)
                 {
                     if (key.Length < minLength) minLength = key.Length;
                     if (key.Length > maxLength) maxLength = key.Length;
+                    lengthFilter |= (1UL << (key.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -213,12 +217,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter)
+                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                     else
                     {
-                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                 }
 

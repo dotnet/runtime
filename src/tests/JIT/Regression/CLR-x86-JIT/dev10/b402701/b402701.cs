@@ -24,12 +24,11 @@ public class Foo
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Foo f = new Foo();
         caller(f);
 
         Console.WriteLine("test passed");
-        return 100;
     }
 }

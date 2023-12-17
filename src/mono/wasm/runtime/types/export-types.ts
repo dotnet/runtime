@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { IMemoryView } from "../marshal";
-import type { CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, MonoConfig, ModuleAPI, AssetEntry, ResourceRequest, GlobalizationMode, AssetBehaviors } from ".";
+import type { CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, MonoConfig, ModuleAPI, AssetEntry, GlobalizationMode, AssetBehaviors } from ".";
 import type { EmscriptenModule } from "./emscripten";
 import type { dotnet, exit } from "../loader/index";
 
@@ -21,6 +21,6 @@ export default createDotnetRuntime;
 
 export {
     EmscriptenModule,
-    RuntimeAPI, ModuleAPI, DotnetHostBuilder, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig, IMemoryView, AssetEntry, ResourceRequest, GlobalizationMode, AssetBehaviors,
+    RuntimeAPI, ModuleAPI, DotnetHostBuilder, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig, IMemoryView, AssetEntry, GlobalizationMode, AssetBehaviors,
     dotnet, exit
 };

@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 import type { RuntimeAPI } from "./types";
 
 import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, is_nullish } from "./types/internal";
-import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
+import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
@@ -55,7 +54,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         Module: module,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
-            gitHash: GitHash,
+            gitHash: runtimeHelpers.gitHash,
             buildConfiguration: BuildConfiguration
         },
         ...API,
@@ -102,9 +101,11 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
                 }
             });
         };
-        globalThisAny.MONO = globals.mono;
-        globalThisAny.BINDING = globals.binding;
-        globalThisAny.INTERNAL = globals.internal;
+        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
+            globalThisAny.MONO = globals.mono;
+            globalThisAny.BINDING = globals.binding;
+            globalThisAny.INTERNAL = globals.internal;
+        }
         globalThisAny.Module = module;
 
         // Blazor back compat
@@ -144,5 +145,5 @@ class RuntimeList {
 
 // export external API
 export {
-    passEmscriptenInternals, initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
+    passEmscriptenInternals, initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
 };

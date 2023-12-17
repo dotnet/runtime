@@ -663,15 +663,39 @@ namespace Microsoft.Extensions.FileProviders
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             {
-                File.Create(Path.Combine(root.Path, "File" + Guid.NewGuid().ToString()));
-                Directory.CreateDirectory(Path.Combine(root.Path, "Dir" + Guid.NewGuid().ToString()));
+                string fileName = "File" + Guid.NewGuid().ToString();
+                string subDirectoryName = "Dir" + Guid.NewGuid().ToString();
+                root.CreateFile(fileName);
+                root.CreateFolder(subDirectoryName);
+                root.CreateFile(Path.Combine(subDirectoryName, fileName));
 
                 using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var contents = provider.GetDirectoryContents(string.Empty);
                     Assert.Collection(contents.OrderBy(c => c.Name),
-                        item => Assert.IsType<PhysicalDirectoryInfo>(item),
-                        item => Assert.IsType<PhysicalFileInfo>(item));
+                        item =>
+                        {
+                            // Directory
+                            Assert.True(item.Exists);
+                            Assert.Equal(subDirectoryName, item.Name);
+                            Assert.True(item.IsDirectory);
+                            var directory = Assert.IsAssignableFrom<IDirectoryContents>(item);
+                            Assert.True(directory.Exists);
+                            // Single file in directory
+                            var file = Assert.Single(directory);
+                            Assert.True(file.Exists);
+                            Assert.Equal(fileName, file.Name);
+                            Assert.False(file.IsDirectory);
+                            Assert.False(file is IDirectoryContents);
+                        },
+                        item =>
+                        {
+                            // File
+                            Assert.True(item.Exists);
+                            Assert.Equal(fileName, item.Name);
+                            Assert.False(item.IsDirectory);
+                            Assert.False(item is IDirectoryContents);
+                        });
                 }
             }
         }

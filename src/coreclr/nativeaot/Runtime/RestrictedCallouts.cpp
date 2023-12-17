@@ -15,7 +15,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -224,7 +223,7 @@ bool RestrictedCallouts::InvokeRefCountedHandleCallbacks(Object * pObject)
     HandleTableRestrictedCallout * pCurrCallout = s_pHandleTableRestrictedCallouts;
     while (pCurrCallout)
     {
-        if (pObject->get_SafeEEType() == pCurrCallout->m_pTypeFilter)
+        if (pObject->GetGCSafeMethodTable() == pCurrCallout->m_pTypeFilter)
         {
             // Make the callout. Return true to our caller as soon as we see a true result here.
             if (((HandleTableRestrictedCallbackFunction)pCurrCallout->m_pCalloutMethod)(pObject))

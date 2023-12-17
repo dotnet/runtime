@@ -61,8 +61,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await ConnectAsync(client, uri, cancellation.Token);
 
-                object webSocketHandle = client.GetType().GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client);
-                WebSocketDeflateOptions negotiatedDeflateOptions = (WebSocketDeflateOptions)webSocketHandle.GetType()
+                object webSocketHandle = typeof(ClientWebSocket).GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client);
+                WebSocketDeflateOptions negotiatedDeflateOptions = (WebSocketDeflateOptions)Type.GetType("System.Net.WebSockets.WebSocketHandle, System.Net.WebSockets.Client")
                     .GetField("_negotiatedDeflateOptions", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(webSocketHandle);
 

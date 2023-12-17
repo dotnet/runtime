@@ -15,7 +15,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 1
+#define EE_INTERFACE_MAJOR_VERSION 2
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -434,6 +434,7 @@ typedef enum
      * but are useful when the handle owner needs an efficient way to change the
      * strength of a handle on the fly.
      *
+     * NOTE: HNDTYPE_VARIABLE is not used currently.
      */
     HNDTYPE_VARIABLE     = 4,
 
@@ -442,9 +443,6 @@ typedef enum
      *
      * Refcounted handles are handles that behave as strong handles while the
      * refcount on them is greater than 0 and behave as weak handles otherwise.
-     *
-     * N.B. These are currently NOT general purpose.
-     *      The implementation is tied to COM Interop.
      *
      */
     HNDTYPE_REFCOUNTED   = 5,
@@ -469,14 +467,11 @@ typedef enum
     /*
      * PINNED HANDLES for asynchronous operation
      *
-     * Pinned handles are strong handles which have the added property that they
-     * prevent an object from moving during a garbage collection cycle.  This is
-     * useful when passing a pointer to object innards out of the runtime while GC
-     * may be enabled.
+     * Pinned async handles are strong handles that pin a buffer or array of buffers owned
+     * by System.Threading.Overlapped instance.
      *
-     * NOTE:  PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING
-     *        OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS.  THIS TYPE
-     *        OF HANDLE SHOULD BE USED SPARINGLY!
+     * NOTE: HNDTYPE_ASYNCPINNED is no longer used in the VM starting .NET 8
+     *       but we are keeping it here for backward compatibility purposes"
      */
     HNDTYPE_ASYNCPINNED  = 7,
 
@@ -521,7 +516,7 @@ typedef bool (* walk_fn)(Object*, void*);
 typedef bool (* walk_fn2)(Object*, uint8_t**, void*);
 typedef void (* gen_walk_fn)(void* context, int generation, uint8_t* range_start, uint8_t* range_end, uint8_t* range_reserved);
 typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, void* context, bool compacting_p, bool bgc_p);
-typedef void (* fq_walk_fn)(bool, void*);
+typedef void (* fq_walk_fn)(bool isCritical, void* pObject);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
 typedef bool (* async_pin_enum_fn)(Object* object, void* context);
@@ -1018,6 +1013,8 @@ public:
     virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
 
     virtual uint64_t GetGenerationBudget(int generation) PURE_VIRTUAL
+
+    virtual size_t GetLOHThreshold() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

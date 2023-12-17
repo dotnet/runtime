@@ -12,18 +12,12 @@ using Xunit;
 
 public class PartialDefLiveness
 {
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        // Just making sure we'll not hit any asserts in SSA.
-        Problem();
-        return 100;
-    }
-
     [SkipLocalsInit]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Problem()
+    [Fact]
+    public static void Problem()
     {
+        // Just making sure we'll not hit any asserts in SSA.
         Unsafe.SkipInit(out EnormousStruct a);
         // We expect liveness to fail to remove this dead store.
         a.Field = 1;

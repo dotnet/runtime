@@ -124,10 +124,19 @@
     <RunArguments></RunArguments>
   </PropertyGroup>
 
+  <!-- Settings for input kind -->
+
+  <PropertyGroup Condition=" '$(CollectionType)' == 'nativeaot' ">
+    <InputKind>-ilc_rsps</InputKind>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' != 'nativeaot' ">
+    <InputKind>-assemblies</InputKind>
+  </PropertyGroup>
+
   <!-- Define the Helix work item command and timeout for each collection type -->
 
   <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) -assemblies $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) $(InputKind) $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -227,6 +236,7 @@
     <BDN_Partition Include="Partition3" BenchmarkPath="src\benchmarks\real-world\ImageSharp\ImageSharp.Benchmarks.csproj" BenchmarkBinary="ImageSharp.Benchmarks.dll" />
     <BDN_Partition Include="Partition4" BenchmarkPath="src\benchmarks\real-world\Microsoft.ML.Benchmarks\Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
     <BDN_Partition Include="Partition5" BenchmarkPath="src\benchmarks\real-world\Roslyn\CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
+    <BDN_Partition Include="Partition6" BenchmarkPath="src\benchmarks\real-world\PowerShell.Benchmarks\PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
   </ItemGroup>  
   <ItemGroup Condition="'$(CollectionName)' == 'realworld' and '$(AGENT_OS)' != 'Windows_NT'">
     <BDN_Partition Include="Partition0" BenchmarkPath="src/benchmarks/real-world/bepuphysics2/DemoBenchmarks.csproj" BenchmarkBinary="DemoBenchmarks.dll" />
@@ -235,6 +245,7 @@
     <BDN_Partition Include="Partition3" BenchmarkPath="src/benchmarks/real-world/ImageSharp/ImageSharp.Benchmarks.csproj" BenchmarkBinary="ImageSharp.Benchmarks.dll" />
     <BDN_Partition Include="Partition4" BenchmarkPath="src/benchmarks/real-world/Microsoft.ML.Benchmarks/Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
     <BDN_Partition Include="Partition5" BenchmarkPath="src/benchmarks/real-world/Roslyn/CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
+    <BDN_Partition Include="Partition6" BenchmarkPath="src/benchmarks/real-world/PowerShell.Benchmarks/PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
   </ItemGroup>  
 
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">

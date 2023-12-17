@@ -1,12 +1,13 @@
 <Project>
 
   <PropertyGroup>
+    <!-- Custom trimming logic should always use live ILLink, even when none of the
+         trimming-related SDK properties are set. -->
+    <_RequiresLiveILLink>true</_RequiresLiveILLink>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
-    <!-- Don't use SDK's trimming functionality. 
-         TODO: Remove this once we build using preview 6 SDK. -->
-    <_IsTrimmingEnabled>false</_IsTrimmingEnabled>
-    <!-- Same fix for preview 6 SDK. -->
-    <_RequiresILLinkPack>false</_RequiresILLinkPack>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 
@@ -95,7 +96,10 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="CombineLinkerXmlFiles"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkDescriptorsXmls"
           Condition="'@(ILLinkDescriptorsXmls)' != ''"
           Inputs="@(ILLinkDescriptorsXmls)"
@@ -188,7 +192,10 @@
 
   <!-- Examines the "input assembly" for IL that is unreachable from public API and trims that,
        rewriting the assembly to an "output assembly" -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="ILLink"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="PrepareForAssembliesTrim">

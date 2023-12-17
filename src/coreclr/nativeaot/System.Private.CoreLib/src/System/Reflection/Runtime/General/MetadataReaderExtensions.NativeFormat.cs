@@ -2,21 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 using Internal.LowLevelLinq;
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
-
 using Internal.Runtime.Augments;
 
-using Internal.Metadata.NativeFormat;
 using NativeFormatAssemblyFlags = global::Internal.Metadata.NativeFormat.AssemblyFlags;
 using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
@@ -154,7 +153,7 @@ namespace System.Reflection.Runtime.General
                 NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 if (optional == modifiedType.IsOptional)
                 {
-                    Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext);
+                    Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext).ToType();
                     customModifiers.Insert(0, customModifier);
                 }
 
@@ -225,7 +224,7 @@ namespace System.Reflection.Runtime.General
             ConstantBoxedEnumValue record = handle.GetConstantBoxedEnumValue(reader);
 
             Exception? exception = null;
-            Type? enumType = record.Type.TryResolve(reader, new TypeContext(null, null), ref exception);
+            Type? enumType = record.Type.TryResolve(reader, new TypeContext(null, null), ref exception)?.ToType();
             if (enumType == null)
             {
                 value = null;
@@ -389,7 +388,7 @@ namespace System.Reflection.Runtime.General
                 case HandleType.TypeSpecification:
                     {
                         Exception? exception = null;
-                        Type? type = handle.TryResolve(reader, new TypeContext(null, null), ref exception);
+                        Type? type = handle.TryResolve(reader, new TypeContext(null, null), ref exception)?.ToType();
                         value = type;
                         return (value == null) ? exception : null;
                     }
@@ -498,7 +497,7 @@ namespace System.Reflection.Runtime.General
             exception = null;
 
             ConstantEnumArray enumArray = handle.GetConstantEnumArray(reader);
-            Type? elementType = enumArray.ElementType.TryResolve(reader, new TypeContext(null, null), ref exception);
+            Type? elementType = enumArray.ElementType.TryResolve(reader, new TypeContext(null, null), ref exception)?.ToType();
             if (exception != null)
                 return null;
 
@@ -555,10 +554,9 @@ namespace System.Reflection.Runtime.General
         //
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle customAttributeHandle,
                                                    MetadataReader reader,
-                                                   string ns,
+                                                   ReadOnlySpan<string> namespaceParts,
                                                    string name)
         {
-            string[] namespaceParts = ns.Split('.');
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
             if (handleType == HandleType.TypeDefinition)
@@ -613,7 +611,7 @@ namespace System.Reflection.Runtime.General
         public static string ToNamespaceName(this NamespaceDefinitionHandle namespaceDefinitionHandle, MetadataReader reader)
         {
             string ns = "";
-            for (;;)
+            for (; ; )
             {
                 NamespaceDefinition currentNamespaceDefinition = namespaceDefinitionHandle.GetNamespaceDefinition(reader);
                 string name = currentNamespaceDefinition.Name.GetStringOrNull(reader);
@@ -703,7 +701,7 @@ namespace System.Reflection.Runtime.General
         {
             StringBuilder fullName = new StringBuilder(64);
             NamespaceReference namespaceReference;
-            for (;;)
+            for (; ; )
             {
                 namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                 string namespacePart = namespaceReference.Name.GetStringOrNull(reader);

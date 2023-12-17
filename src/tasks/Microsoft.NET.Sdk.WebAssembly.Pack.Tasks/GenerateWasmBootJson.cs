@@ -41,7 +41,7 @@ public class GenerateWasmBootJson : Task
     [Required]
     public bool CacheBootResources { get; set; }
 
-    public bool LoadAllICUData { get; set; }
+    public bool LoadFullICUData { get; set; }
 
     public bool IsHybridGlobalization { get; set; }
 
@@ -386,7 +386,7 @@ public class GenerateWasmBootJson : Task
             return GlobalizationMode.Invariant;
         else if (IsHybridGlobalization)
             return GlobalizationMode.Hybrid;
-        else if (LoadAllICUData)
+        else if (LoadFullICUData)
             return GlobalizationMode.All;
         else if (LoadCustomIcuData)
             return GlobalizationMode.Custom;

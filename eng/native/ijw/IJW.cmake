@@ -2,19 +2,13 @@ if (CLR_CMAKE_HOST_WIN32)
 
   function(remove_ijw_incompatible_options options updatedOptions)
     # IJW isn't compatible with Ehsc, which CMake enables by default
-    if(options MATCHES "/EHsc")
-        string(REPLACE "/EHsc" "" options "${options}")
-    endif()
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION "")
 
     # IJW isn't compatible with CFG
-    if(options MATCHES "/guard:cf")
-        string(REPLACE "/guard:cf" "" options "${options}")
-    endif()
+    set_property(DIRECTORY PROPERTY CLR_CONTROL_FLOW_GUARD OFF)
 
     # IJW isn't compatible with EHCONT, which requires CFG
-    if(options MATCHES "/guard:ehcont")
-        string(REPLACE "/guard:ehcont" "" options "${options}")
-    endif()
+    set_property(DIRECTORY PROPERTY CLR_EH_CONTINUATION OFF)
 
     # IJW isn't compatible with GR-
     if(options MATCHES "/GR-")
@@ -51,7 +45,7 @@ if (CLR_CMAKE_HOST_WIN32)
 
   # 4365 - signed/unsigned mismatch
   # 4679 - Could not import member. This is an issue with IJW and static abstract methods in interfaces.
-  add_compile_options(/wd4365 /wd4679)
+  add_compile_options(/wd4365 /wd4679 /wd5271)
 
   # IJW
   add_compile_options(/clr:netcore)

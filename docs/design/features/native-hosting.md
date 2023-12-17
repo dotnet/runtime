@@ -369,6 +369,7 @@ int hostfxr_get_runtime_delegate(const hostfxr_handle host_context_handle, hostf
 ```
 Starts the runtime and returns a function pointer to specified functionality of the runtime.
 * `host_context_handle` - handle to the initialized host context.
+  * **[.NET 8 and above]** If set to `NULL` the function will operate on the active host context in the process.
 * `type` - the type of runtime functionality requested
   * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading and calling managed components)
   * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/COM-activation.md) for more details.

@@ -11,12 +11,11 @@ namespace DefaultNamespace
     public class AppStarter
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int[] foo = new int[1];
             long j = 0;
             foo[(int)j] = 1;
-            return 100;
         }
     };
 }

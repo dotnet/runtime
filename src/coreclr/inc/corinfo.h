@@ -1759,7 +1759,7 @@ enum CORINFO_OS
 {
     CORINFO_WINNT,
     CORINFO_UNIX,
-    CORINFO_MACOS,
+    CORINFO_APPLE,
 };
 
 enum CORINFO_RUNTIME_ABI
@@ -2086,6 +2086,25 @@ public:
             CORINFO_METHOD_INFO*    info,           /* OUT */
             CORINFO_CONTEXT_HANDLE  context = NULL  /* IN  */
             ) = 0;
+
+    //------------------------------------------------------------------------------
+    // haveSameMethodDefinition: Check if two method handles have the same
+    // method definition.
+    //
+    // Arguments:
+    //    meth1 - First method handle
+    //    meth2 - Second method handle
+    //
+    // Return Value:
+    //   True if the methods share definitions.
+    //
+    // Remarks:
+    //   For example, Foo<int> and Foo<uint> have different method handles but
+    //   share the same method definition.
+    //
+    virtual bool haveSameMethodDefinition(
+        CORINFO_METHOD_HANDLE meth1Hnd,
+        CORINFO_METHOD_HANDLE meth2Hnd) = 0;
 
     // Decides if you have any limitations for inlining. If everything's OK, it will return
     // INLINE_PASS.

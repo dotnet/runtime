@@ -504,11 +504,11 @@ struct _MonoGenericContainer {
 	int type_argc    : 29; // Per the ECMA spec, this value is capped at 16 bits
 	/* If true, we're a generic method, otherwise a generic type definition. */
 	/* Invariant: parent != NULL => is_method */
-	gint is_method     : 1;
+	guint is_method     : 1;
 	/* If true, this container has no associated class/method and only the image is known. This can happen:
 	   1. For the special anonymous containers kept by MonoImage.
 	   2. When user code creates a generic parameter via SRE, but has not yet set an owner. */
-	gint is_anonymous : 1;
+	guint is_anonymous : 1;
 	/* Our type parameters. If this is a special anonymous container (case 1, above), this field is not valid, use mono_metadata_create_anon_gparam ()  */
 	MonoGenericParamFull *type_params;
 };
@@ -1062,7 +1062,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, 
 }
 #endif // __cplusplus
 
-#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
+#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), NULL))
 
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass);
@@ -1450,7 +1450,7 @@ mono_class_get_object_finalize_slot (void);
 MonoMethod *
 mono_class_get_default_finalize_method (void);
 
-const char *
+MONO_COMPONENT_API const char *
 mono_field_get_rva (MonoClassField *field, int swizzle);
 
 MONO_COMPONENT_API void

@@ -8,11 +8,11 @@
 // ******************************************************************************
 
 // This is a special memory region added to ELF and MachO dumps that contains extra diagnostics
-// information like the exception record for a crash for a NativeAOT app. The exception record
-// contains the pointer to the JSON formatted crash info.
+// information like the exception record address for a NativeAOT app crash or the runtime module
+// base address. The exception record contains the pointer to the JSON formatted crash info.
 
 #define SPECIAL_DIAGINFO_SIGNATURE "DIAGINFOHEADER"
-#define SPECIAL_DIAGINFO_VERSION 1
+#define SPECIAL_DIAGINFO_VERSION 2
 
 #ifdef __APPLE__
 const uint64_t SpecialDiagInfoAddress = 0x7fffffff10000000;
@@ -24,9 +24,12 @@ const uint64_t SpecialDiagInfoAddress = 0x7fff1000;
 #endif
 #endif
 
+const uint64_t SpecialDiagInfoSize = 0x1000;
+
 struct SpecialDiagInfoHeader
 {
     char Signature[16];
     int32_t Version;
     uint64_t ExceptionRecordAddress;
+    uint64_t RuntimeBaseAddress;
 };

@@ -8,6 +8,11 @@
 #include "exinfo.h"
 #include "dbginterface.h"
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "eetoprofinterfacewrapper.inl"
+#include "eedbginterfaceimpl.inl"
+#endif
+
 #ifndef FEATURE_EH_FUNCLETS
 #ifndef DACCESS_COMPILE
 //
@@ -300,4 +305,132 @@ void ExInfo::SetExceptionCode(const EXCEPTION_RECORD *pCER)
     DacError(E_UNEXPECTED);
 #endif // !DACCESS_COMPILE
 }
+#else // !FEATURE_EH_FUNCLETS
+
+#ifndef DACCESS_COMPILE
+
+ExInfo::ExInfo(Thread *pThread, CONTEXT *pCtx, REGDISPLAY *pRD, ExKind exceptionKind) :
+    m_pExContext(pCtx),
+    m_exception((Object*)NULL),
+    m_kind(exceptionKind),
+    m_passNumber(1),
+    m_idxCurClause(0xffffffff),
+    m_notifyDebuggerSP(NULL),
+    m_pRD(pRD),
+    m_pFrame(pThread->GetFrame()),
+    m_ClauseForCatch({}),
+#ifdef HOST_UNIX
+    m_propagateExceptionCallback(NULL),
+    m_propagateExceptionContext(NULL),
+#endif // HOST_UNIX
+    m_hThrowable(NULL),
+    m_CurrentClause({})
+{
+    m_pPrevExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    m_stackTraceInfo.Init();
+    m_stackTraceInfo.AllocateStackTrace();
+    m_sfLowBound.SetMaxVal();
+    pThread->GetExceptionState()->SetCurrentExInfo(this);
+}
+
+#endif // DACCESS_COMPILE
+
+bool IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)
+{
+    EECodeInfo codeInfo((PCODE)dwHandlerStartPC);
+    _ASSERTE(codeInfo.IsValid());
+
+    return pEHClause->FilterOffset == codeInfo.GetRelOffset();
+}
+
+void ExInfo::MakeCallbacksRelatedToHandler(
+    bool fBeforeCallingHandler,
+    Thread*                pThread,
+    MethodDesc*            pMD,
+    EE_ILEXCEPTION_CLAUSE* pEHClause,
+    DWORD_PTR              dwHandlerStartPC,
+    StackFrame             sf
+    )
+{
+    // Here we need to make an extra check for filter handlers because we could be calling the catch handler
+    // associated with a filter handler and yet the EH clause we have saved is for the filter handler.
+    BOOL fIsFilterHandler         = IsFilterHandler(pEHClause) && IsFilterStartOffset(pEHClause, dwHandlerStartPC);
+    BOOL fIsFaultOrFinallyHandler = IsFaultOrFinally(pEHClause);
+
+    if (fBeforeCallingHandler)
+    {
+        StackFrame sfToStore = sf;
+        if ((m_pPrevExInfo != NULL) &&
+            (m_pPrevExInfo->m_csfEnclosingClause == m_csfEnclosingClause))
+        {
+            // If this is a nested exception which has the same enclosing clause as the previous exception,
+            // we should just propagate the clause info from the previous exception.
+            sfToStore = m_pPrevExInfo->m_EHClauseInfo.GetStackFrameForEHClause();
+        }
+        m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_NONE, (UINT_PTR)dwHandlerStartPC, sfToStore);
+
+        if (pMD->IsILStub())
+        {
+            return;
+        }
+
+        if (fIsFilterHandler)
+        {
+            m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FILTER);
+            EEToDebuggerExceptionInterfaceWrapper::ExceptionFilter(pMD, (TADDR) dwHandlerStartPC, pEHClause->FilterOffset, (BYTE*)sf.SP);
+
+            EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFilterEnter(pMD);
+            ETW::ExceptionLog::ExceptionFilterBegin(pMD, (PVOID)dwHandlerStartPC);
+        }
+        else
+        {
+            EEToDebuggerExceptionInterfaceWrapper::ExceptionHandle(pMD, (TADDR) dwHandlerStartPC, pEHClause->HandlerStartPC, (BYTE*)sf.SP);
+
+            if (fIsFaultOrFinallyHandler)
+            {
+                m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_FINALLY);
+                EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFinallyEnter(pMD);
+                ETW::ExceptionLog::ExceptionFinallyBegin(pMD, (PVOID)dwHandlerStartPC);
+            }
+            else
+            {
+                m_EHClauseInfo.SetEHClauseType(COR_PRF_CLAUSE_CATCH);
+                EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherEnter(pThread, pMD);
+
+                DACNotify::DoExceptionCatcherEnterNotification(pMD, pEHClause->HandlerStartPC);
+                ETW::ExceptionLog::ExceptionCatchBegin(pMD, (PVOID)dwHandlerStartPC);
+            }
+        }
+    }
+    else
+    {
+        if (pMD->IsILStub())
+        {
+            return;
+        }
+
+        if (fIsFilterHandler)
+        {
+            ETW::ExceptionLog::ExceptionFilterEnd();
+            EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFilterLeave();
+        }
+        else
+        {
+            if (fIsFaultOrFinallyHandler)
+            {
+                ETW::ExceptionLog::ExceptionFinallyEnd();
+                EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFinallyLeave();
+            }
+            else
+            {
+                ETW::ExceptionLog::ExceptionCatchEnd();
+                ETW::ExceptionLog::ExceptionThrownEnd();
+                EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherLeave();
+            }
+        }
+
+        m_EHClauseInfo.ResetInfo();
+    }
+}
+
 #endif // !FEATURE_EH_FUNCLETS

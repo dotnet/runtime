@@ -5,10 +5,12 @@
     <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\</_TasksDir>
     <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\</_TasksDir>
 
-    <GenerateAppBundle>false</GenerateAppBundle>
+    <GenerateAppBundle Condition="'$(GenerateAppBundle)' == ''">true</GenerateAppBundle>
     <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
 
     <LibraryBuilderTasksAssemblyPath>$(_TasksDir)LibraryBuilder.dll</LibraryBuilderTasksAssemblyPath>
+    <MobileBuildTasksAssemblyPath>$(_TasksDir)MobileBuildTasks.dll</MobileBuildTasksAssemblyPath>
+    <_CommonTargetsDir>$(MSBuildThisFileDirectory)</_CommonTargetsDir>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\LibraryBuilder.props" />

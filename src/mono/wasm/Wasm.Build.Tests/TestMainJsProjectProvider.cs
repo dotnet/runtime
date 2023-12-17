@@ -82,7 +82,8 @@ public class TestMainJsProjectProvider : ProjectProviderBase
 
     public void AssertBundle(BuildArgs buildArgs, BuildProjectOptions buildProjectOptions)
     {
-        string binFrameworkDir = FindBinFrameworkDir(buildArgs.Config,
+        string binFrameworkDir = buildProjectOptions.BinFrameworkDir
+                                    ?? FindBinFrameworkDir(buildArgs.Config,
                                                      buildProjectOptions.Publish,
                                                      buildProjectOptions.TargetFramework);
         NativeFilesType expectedFileType = buildArgs.AOT

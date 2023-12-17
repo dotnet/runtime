@@ -15,8 +15,6 @@
 
 #if defined(FEATURE_EVENT_TRACE)
 
-#define Win32EventWrite PalEventWrite
-
 //---------------------------------------------------------------------------------------
 // BulkTypeValue / BulkTypeEventLogger: These take care of batching up types so they can
 // be logged via ETW in bulk
@@ -24,7 +22,6 @@
 
 BulkTypeValue::BulkTypeValue()
     : cTypeParameters(0)
-    , rgTypeParameters()
     , ullSingleTypeParameter(0)
 {
     LIMITED_METHOD_CONTRACT;
@@ -49,7 +46,6 @@ void BulkTypeValue::Clear()
     ZeroMemory(&fixedSizedData, sizeof(fixedSizedData));
     cTypeParameters = 0;
     ullSingleTypeParameter = 0;
-    rgTypeParameters.Release();
 }
 
 //---------------------------------------------------------------------------------------
@@ -61,7 +57,6 @@ void BulkTypeValue::Clear()
 // Fire an ETW event for all the types we batched so far, and then reset our state
 // so we can start batching new types at the beginning of the array.
 //
-
 void BulkTypeEventLogger::FireBulkTypeEvent()
 {
     LIMITED_METHOD_CONTRACT;
@@ -71,64 +66,51 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         // No types were batched up, so nothing to send
         return;
     }
-
-    // Normally, we'd use the MC-generated FireEtwBulkType for all this gunk, but
-    // it's insufficient as the bulk type event is too complex (arrays of structs of
-    // varying size). So we directly log the event via EventDataDescCreate and
-    // EventWrite
-
-    // We use one descriptor for the count + one for the ClrInstanceID + 4
-    // per batched type (to include fixed-size data + name + param count + param
-    // array).  But the system limit of 128 descriptors per event kicks in way
-    // before the 64K event size limit, and we already limit our batch size
-    // (m_nBulkTypeValueCount) to stay within the 128 descriptor limit.
-    EVENT_DATA_DESCRIPTOR EventData[128];
     UINT16 nClrInstanceID = GetClrInstanceId();
 
-    UINT iDesc = 0;
+    if(m_pBulkTypeEventBuffer == NULL)
+    {
+        // The buffer could not be allocated when this object was created, so bail.
+        return;
+    }
 
-    _ASSERTE(iDesc < _countof(EventData));
-    EventDataDescCreate(&EventData[iDesc++], &m_nBulkTypeValueCount, sizeof(m_nBulkTypeValueCount));
-
-    _ASSERTE(iDesc < _countof(EventData));
-    EventDataDescCreate(&EventData[iDesc++], &nClrInstanceID, sizeof(nClrInstanceID));
+    UINT iSize = 0;
 
     for (int iTypeData = 0; iTypeData < m_nBulkTypeValueCount; iTypeData++)
     {
+        BulkTypeValue& target = m_rgBulkTypeValues[iTypeData];
+
         // Do fixed-size data as one bulk copy
-        _ASSERTE(iDesc < _countof(EventData));
-        EventDataDescCreate(
-            &EventData[iDesc++],
-            &(m_rgBulkTypeValues[iTypeData].fixedSizedData),
-            sizeof(m_rgBulkTypeValues[iTypeData].fixedSizedData));
+        memcpy(
+                m_pBulkTypeEventBuffer + iSize,
+                &(target.fixedSizedData),
+                sizeof(target.fixedSizedData));
+        iSize += sizeof(target.fixedSizedData);
 
         // Do var-sized data individually per field
-
-        // Type name (nonexistent and thus empty on nativeaot)
-        _ASSERTE(iDesc < _countof(EventData));
-        EventDataDescCreate(&EventData[iDesc++], L"", sizeof(WCHAR));
+        // No name in event, so just the null terminator
+        m_pBulkTypeEventBuffer[iSize++] = 0;
+        m_pBulkTypeEventBuffer[iSize++] = 0;
 
         // Type parameter count
-        _ASSERTE(iDesc < _countof(EventData));
-        EventDataDescCreate(
-            &EventData[iDesc++],
-            &(m_rgBulkTypeValues[iTypeData].cTypeParameters),
-            sizeof(m_rgBulkTypeValues[iTypeData].cTypeParameters));
+        ULONG cTypeParams = target.cTypeParameters;
+        ULONG *ptrInt = (ULONG*)(m_pBulkTypeEventBuffer + iSize);
+        *ptrInt = cTypeParams;
+        iSize += sizeof(ULONG);
 
         // Type parameter array
-        if (m_rgBulkTypeValues[iTypeData].cTypeParameters > 0)
+        if (cTypeParams == 1)
         {
-            _ASSERTE(iDesc < _countof(EventData));
-            EventDataDescCreate(
-                &EventData[iDesc++],
-                ((m_rgBulkTypeValues[iTypeData].cTypeParameters == 1) ?
-                    &(m_rgBulkTypeValues[iTypeData].ullSingleTypeParameter) :
-                    (ULONGLONG*)(m_rgBulkTypeValues[iTypeData].rgTypeParameters)),
-                sizeof(ULONGLONG) * m_rgBulkTypeValues[iTypeData].cTypeParameters);
+            memcpy(m_pBulkTypeEventBuffer + iSize, &target.ullSingleTypeParameter, sizeof(ULONGLONG) * cTypeParams);
+            iSize += sizeof(ULONGLONG) * cTypeParams;
+        }
+        else if (cTypeParams > 1)
+        {
+            ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
         }
     }
 
-    Win32EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &BulkType, iDesc, EventData);
+    FireEtwBulkType(m_nBulkTypeValueCount, GetClrInstanceId(), iSize, m_pBulkTypeEventBuffer);
 
     // Reset state
     m_nBulkTypeValueCount = 0;
@@ -253,7 +235,6 @@ SHash<LoggedTypesTraits>* s_loggedTypesHash = NULL;
 //      Index into internal array where the info got batched.  Or -1 if there was a
 //      failure.
 //
-
 int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 {
 #ifdef MULTIPLE_HEAPS
@@ -297,8 +278,13 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     // Determine this MethodTable's module.
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
-    ULONGLONG osModuleHandle = (ULONGLONG) pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-
+    // EEType for GC statics are not fully populated and they do not have a valid TypeManager. We will identify them by checking for `ElementType_Unknown`.
+    // We will not be able to get the osModuleHandle for these
+    ULONGLONG osModuleHandle = 0;
+    if (pEEType->GetElementType() != ElementType_Unknown)
+    {
+        osModuleHandle = (ULONGLONG) pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
+    }
     pVal->fixedSizedData.ModuleID = osModuleHandle;
 
     if (pEEType->IsParameterizedType())
@@ -307,7 +293,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         // Array
         pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
         pVal->cTypeParameters = 1;
-        pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->get_RelatedParameterType();
+        pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->GetRelatedParameterType();
     }
     else
     {
@@ -373,15 +359,6 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
 {
-    // BulkTypeEventLogger currently fires ETW events only
-    if (!ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_TYPE_KEYWORD))
-    {
-        return;
-    }
-
     MethodTable * pEEType = (MethodTable *) thAsAddr;
 
     // Batch up this type.  This grabs useful info about the type, including any
@@ -400,7 +377,6 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     // We're about to recursively call ourselves for the type parameters, so make a
     // local copy of their type handles first (else, as we log them we could flush
     // and clear out m_rgBulkTypeValues, thus trashing pVal)
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
     DWORD cTypeParams = pVal->cTypeParameters;
     if (cTypeParams == 1)
     {
@@ -408,17 +384,8 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     }
     else if (cTypeParams > 1)
     {
-        rgTypeParameters = new (nothrow) ULONGLONG[cTypeParams];
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            rgTypeParameters[i] = pVal->rgTypeParameters[i];
-        }
-
-        // Recursively log any referenced parameter types
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            LogTypeAndParameters(rgTypeParameters[i]);
-        }
+        
+        ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
     }
 }
 
