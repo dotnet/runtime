@@ -146,7 +146,7 @@ namespace ILCompiler.ObjectWriter
             elfSection.SectionHeader.Alignment = Math.Max(elfSection.SectionHeader.Alignment, (ulong)alignment);
         }
 
-        protected internal override void EmitRelocation(
+        protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,
             Span<byte> data,
@@ -157,39 +157,14 @@ namespace ILCompiler.ObjectWriter
             // We read the addend from the data and clear it. This is necessary
             // to produce correct addends in the `.rela` sections which override
             // the destination with the addend from relocation table.
-
-            switch (relocType)
+            fixed (byte *pData = data)
             {
-                case IMAGE_REL_BASED_REL32:
-                case IMAGE_REL_BASED_RELPTR32:
-                case IMAGE_REL_BASED_HIGHLOW:
-                case IMAGE_REL_TLSGD:
-                case IMAGE_REL_TPOFF:
-                    addend += BinaryPrimitives.ReadInt32LittleEndian(data);
-                    BinaryPrimitives.WriteInt32LittleEndian(data, 0);
-                    break;
-
-                case IMAGE_REL_BASED_DIR64:
-                    ulong a = BinaryPrimitives.ReadUInt64LittleEndian(data);
-                    addend += checked((long)a);
-                    BinaryPrimitives.WriteUInt64LittleEndian(data, 0);
-                    break;
-
-                case IMAGE_REL_BASED_ARM64_BRANCH26:
-                case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
-                case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
-                case IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
-                case IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
-                case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
-                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
-                case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
-                case IMAGE_REL_AARCH64_TLSDESC_CALL:
-                    // NOTE: Zero addend in code is currently always used for these.
-                    // R2R object writer has the same assumption.
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Unsupported relocation: {relocType}");
+                long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                if (inlineValue != 0)
+                {
+                    addend += inlineValue;
+                    Relocation.WriteValue(relocType, (void*)pData, 0);
+                }
             }
 
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);

@@ -180,7 +180,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected internal override void EmitRelocation(
+        protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,
             Span<byte> data,
@@ -188,67 +188,27 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            switch (relocType)
+            if (relocType is IMAGE_REL_BASED_RELPTR32)
             {
-                case IMAGE_REL_BASED_ARM64_BRANCH26:
-                case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
-                case IMAGE_REL_SECREL:
-                case IMAGE_REL_SECTION:
-                    Debug.Assert(addend == 0);
-                    break;
-
-                case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
-                    if (addend != 0)
-                    {
-                        uint addInstr = BinaryPrimitives.ReadUInt32LittleEndian(data);
-                        addInstr &= 0xFFC003FF; // keep bits 31-22, 9-0
-                        addInstr |= (uint)(addend << 10); // Occupy 21-10.
-                        BinaryPrimitives.WriteUInt32LittleEndian(data, addInstr); // write the assembled instruction
-                    }
-                    break;
-
-                case IMAGE_REL_BASED_DIR64:
-                    if (addend != 0)
-                    {
-                        BinaryPrimitives.WriteInt64LittleEndian(
-                            data,
-                            BinaryPrimitives.ReadInt64LittleEndian(data) +
-                            addend);
-                        addend = 0;
-                    }
-                    break;
-
-                case IMAGE_REL_BASED_RELPTR32:
-                    addend += 4;
-                    if (addend != 0)
-                    {
-                        BinaryPrimitives.WriteInt32LittleEndian(
-                            data,
-                            BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)addend);
-                        addend = 0;
-                    }
-                    break;
-
-                case IMAGE_REL_BASED_REL32:
-                case IMAGE_REL_BASED_ADDR32NB:
-                case IMAGE_REL_BASED_ABSOLUTE:
-                case IMAGE_REL_BASED_HIGHLOW:
-                    if (addend != 0)
-                    {
-                        BinaryPrimitives.WriteInt32LittleEndian(
-                            data,
-                            BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)addend);
-                        addend = 0;
-                    }
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Unsupported relocation: {relocType}");
+                addend += 4;
+                if (addend != 0)
+                {
+                    BinaryPrimitives.WriteInt32LittleEndian(
+                        data,
+                        BinaryPrimitives.ReadInt32LittleEndian(data) +
+                        (int)addend);
+                }
+            }
+            else if (addend != 0)
+            {
+                fixed (byte *pData = data)
+                {
+                    long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                    Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
+                }
             }
 
-            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, 0);
         }
 
         private protected override void EmitReferencedMethod(string symbolName)

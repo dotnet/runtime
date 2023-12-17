@@ -374,7 +374,7 @@ namespace ILCompiler.ObjectWriter
             machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
         }
 
-        protected internal override void EmitRelocation(
+        protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,
             Span<byte> data,
@@ -382,107 +382,83 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            if (relocType is IMAGE_REL_BASED_DIR64 or IMAGE_REL_BASED_HIGHLOW)
+            // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
+            if (relocType is IMAGE_REL_BASED_DIR64 or IMAGE_REL_BASED_HIGHLOW &&
+                _sections[sectionIndex].IsDwarfSection)
             {
-                // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
-                MachSection machSection = _sections[sectionIndex];
-                if ((machSection.Flags & S_ATTR_DEBUG) != 0 &&
-                    machSection.SegmentName == "__DWARF")
+                // DWARF section to DWARF section relocation
+                if (symbolName.StartsWith('.'))
                 {
-                    // DWARF section to DWARF section relocation
-                    if (symbolName.StartsWith('.'))
+                    switch (relocType)
                     {
-                        switch (relocType)
-                        {
-                            case IMAGE_REL_BASED_DIR64:
-                                BinaryPrimitives.WriteInt64LittleEndian(data, addend);
-                                break;
-                            case IMAGE_REL_BASED_HIGHLOW:
-                                BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend);
-                                break;
-                            default:
-                                throw new NotSupportedException("Unsupported relocation in debug section");
-                        }
-                        return;
+                        case IMAGE_REL_BASED_DIR64:
+                            BinaryPrimitives.WriteInt64LittleEndian(data, addend);
+                            break;
+                        case IMAGE_REL_BASED_HIGHLOW:
+                            BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend);
+                            break;
+                        default:
+                            throw new NotSupportedException("Unsupported relocation in debug section");
                     }
-                    // DWARF section to code/data section relocation
-                    else
-                    {
-                        Debug.Assert(IsSectionSymbolName(symbolName));
-                        Debug.Assert(relocType == IMAGE_REL_BASED_DIR64);
-                        int targetSectionIndex = (int)_symbolNameToIndex[symbolName];
-                        BinaryPrimitives.WriteUInt64LittleEndian(data, _sections[targetSectionIndex].VirtualAddress + (ulong)addend);
-                        base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
-                    }
-
                     return;
                 }
-            }
-
-            // For most relocations we write the addend directly into the
-            // data. The exceptions are IMAGE_REL_BASED_ARM64_PAGEBASE_REL21
-            // and IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A.
-
-            if (relocType == IMAGE_REL_BASED_ARM64_BRANCH26)
-            {
-                Debug.Assert(_cpuType == CPU_TYPE_ARM64);
-                Debug.Assert(addend == 0);
-            }
-            else if (relocType == IMAGE_REL_BASED_DIR64)
-            {
-                if (addend != 0)
-                {
-                    BinaryPrimitives.WriteInt64LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt64LittleEndian(data) +
-                        addend);
-                    addend = 0;
-                }
-            }
-            else if (relocType == IMAGE_REL_BASED_RELPTR32)
-            {
-                if (_cpuType == CPU_TYPE_ARM64)
-                {
-                    // On ARM64 we need to represent PC relative relocations as
-                    // subtraction and the PC offset is baked into the addend.
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        (int)(addend - offset));
-                }
-                else if (sectionIndex == EhFrameSectionIndex)
-                {
-                    // ld64 requires X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED
-                    // for DWARF CFI sections
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        (int)(addend - offset));
-                }
+                // DWARF section to code/data section relocation
                 else
                 {
-                    addend += 4;
-                    if (addend != 0)
+                    Debug.Assert(IsSectionSymbolName(symbolName));
+                    Debug.Assert(relocType == IMAGE_REL_BASED_DIR64);
+                    int targetSectionIndex = (int)_symbolNameToIndex[symbolName];
+                    BinaryPrimitives.WriteUInt64LittleEndian(data, _sections[targetSectionIndex].VirtualAddress + (ulong)addend);
+                    base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+                }
+
+                return;
+            }
+
+            switch (relocType)
+            {
+                case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    // Addend is handled through ARM64_RELOC_ADDEND
+                    break;
+
+                case IMAGE_REL_BASED_RELPTR32:
+                    if (_cpuType == CPU_TYPE_ARM64 || sectionIndex == EhFrameSectionIndex)
                     {
+                        // On ARM64 we need to represent PC relative relocations as
+                        // subtraction and the PC offset is baked into the addend.
+                        // On x64, ld64 requires X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED
+                        // for DWARF .eh_frame section.
                         BinaryPrimitives.WriteInt32LittleEndian(
                             data,
                             BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)addend);
+                            (int)(addend - offset));
                     }
-                }
-                addend = 0;
-            }
-            else if (relocType == IMAGE_REL_BASED_REL32)
-            {
-                Debug.Assert(_cpuType != CPU_TYPE_ARM64);
-                if (addend != 0)
-                {
-                    BinaryPrimitives.WriteInt32LittleEndian(
-                        data,
-                        BinaryPrimitives.ReadInt32LittleEndian(data) +
-                        (int)addend);
+                    else
+                    {
+                        addend += 4;
+                        if (addend != 0)
+                        {
+                            BinaryPrimitives.WriteInt32LittleEndian(
+                                data,
+                                BinaryPrimitives.ReadInt32LittleEndian(data) +
+                                (int)addend);
+                        }
+                    }
                     addend = 0;
-                }
+                    break;
+
+                default:
+                    if (addend != 0)
+                    {
+                        fixed (byte *pData = data)
+                        {
+                            long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                            Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
+                            addend = 0;
+                        }
+                    }
+                    break;
             }
 
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
@@ -907,6 +883,8 @@ namespace ILCompiler.ObjectWriter
             public uint Type => Flags & 0xff;
             public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
 
+            public bool IsDwarfSection { get; }
+
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
             public Stream Stream => dataStream;
             public byte SectionIndex { get; set; }
@@ -920,6 +898,7 @@ namespace ILCompiler.ObjectWriter
 
                 this.SegmentName = segmentName;
                 this.SectionName = sectionName;
+                this.IsDwarfSection = segmentName == "__DWARF";
                 this.dataStream = stream;
                 this.relocationCollection = null;
             }
