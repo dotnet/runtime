@@ -2310,6 +2310,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->gshared)
 		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
+	if (cfg->init_method_rgctx_elim)
+		flags |= JIT_INFO_NO_MRGCTX;
 
 	if (cfg->arch_eh_jit_info) {
 		MonoJitArgumentInfo *arg_info;
@@ -3793,6 +3795,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
 		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
+
+		/*
+		 * Avoid creating rgctx trampolines when calling this method.
+		 * Static/vtype etc. methods still need an rgctx arg for EH.
+		 */
+		if (!mono_method_needs_mrgctx_arg_for_eh (cfg->method))
+			cfg->init_method_rgctx_elim = TRUE;
 	}
 
 	if (cfg->got_var) {

@@ -1514,6 +1514,7 @@ typedef struct {
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
 	guint            prefer_instances : 1;
+	guint            init_method_rgctx_elim : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -2723,6 +2724,9 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type);
 
 gboolean
 mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars);
+
+gboolean
+mono_method_needs_mrgctx_arg_for_eh (MonoMethod *method);
 
 int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx);

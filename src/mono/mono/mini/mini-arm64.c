@@ -6086,7 +6086,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Save mrgctx received in MONO_ARCH_RGCTX_REG */
-	if (cfg->rgctx_var) {
+	if (cfg->rgctx_var && !cfg->init_method_rgctx_elim) {
 		MonoInst *ins = cfg->rgctx_var;
 
 		g_assert (ins->opcode == OP_REGOFFSET);
