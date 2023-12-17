@@ -559,15 +559,8 @@ private:
     UINT32  m_InstructionOffset;
 
     // Pre-decoded information
+    GcInfoHeaderFlags m_headerFlags;
     bool    m_IsInterruptible;
-    bool    m_IsVarArg;
-    bool    m_GenericSecretParamIsMD;
-    bool    m_GenericSecretParamIsMT;
-#ifdef TARGET_AMD64
-    bool    m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    bool    m_HasTailCalls;
-#endif // TARGET_AMD64
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;

@@ -109,35 +109,19 @@ GcInfoDecoder::GcInfoDecoder(
     // Pre-decode information
     //--------------------------------------------
 
-    GcInfoHeaderFlags headerFlags;
     bool slimHeader = (m_Reader.ReadOneFast() == 0);
     // Use flag mask to bail out early if we already decoded all the pieces that caller requested
     int remainingFlags = flags == DECODE_EVERYTHING ? ~0 : flags;
 
     if (slimHeader)
     {
-        headerFlags = (GcInfoHeaderFlags)(m_Reader.ReadOneFast() ? GC_INFO_HAS_STACK_BASE_REGISTER : 0);
+        m_headerFlags = (GcInfoHeaderFlags)(m_Reader.ReadOneFast() ? GC_INFO_HAS_STACK_BASE_REGISTER : 0);
     }
     else
     {
         int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
-        headerFlags = (GcInfoHeaderFlags) m_Reader.Read(numFlagBits);
+        m_headerFlags = (GcInfoHeaderFlags) m_Reader.Read(numFlagBits);
     }
-
-    m_IsVarArg                 = headerFlags & GC_INFO_IS_VARARG;
-    int hasGSCookie            = headerFlags & GC_INFO_HAS_GS_COOKIE;
-    int hasPSPSym              = headerFlags & GC_INFO_HAS_PSP_SYM;
-    int hasGenericsInstContext = (headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE;
-    m_GenericSecretParamIsMD   = (headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MD;
-    m_GenericSecretParamIsMT   = (headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MT;
-    int hasStackBaseRegister   = headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER;
-#ifdef TARGET_AMD64
-    m_WantsReportOnlyLeaf      = ((headerFlags & GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    m_HasTailCalls             = ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
-#endif // TARGET_AMD64
-    int hasEncInfo = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_INFO;
-    int hasReversePInvokeFrame = headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME;
 
     int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
     m_ReturnKind =
@@ -162,7 +146,7 @@ GcInfoDecoder::GcInfoDecoder(
         return;
     }
 
-    if (hasGSCookie)
+    if (m_headerFlags & GC_INFO_HAS_GS_COOKIE)
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -176,7 +160,7 @@ GcInfoDecoder::GcInfoDecoder(
         m_ValidRangeEnd = (UINT32) DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
         _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
     }
-    else if (hasGenericsInstContext)
+    else if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
     {
         // Decode prolog information
         UINT32 normPrologSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
@@ -197,7 +181,7 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
     // Decode the offset to the GS cookie.
-    if(hasGSCookie)
+    if(m_headerFlags & GC_INFO_HAS_GS_COOKIE)
     {
         m_GSCookieStackSlot        = (INT32)  DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GS_COOKIE_STACK_SLOT_ENCBASE));
     }
@@ -215,7 +199,7 @@ GcInfoDecoder::GcInfoDecoder(
 
     // Decode the offset to the PSPSym.
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
-    if(hasPSPSym)
+    if(m_headerFlags & GC_INFO_HAS_PSP_SYM)
     {
         m_PSPSymStackSlot              = (INT32) DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(PSP_SYM_STACK_SLOT_ENCBASE));
     }
@@ -232,7 +216,7 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
     // Decode the offset to the generics type context.
-    if(hasGenericsInstContext)
+    if((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
     {
         m_GenericsInstContextStackSlot = (INT32) DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
     }
@@ -248,7 +232,7 @@ GcInfoDecoder::GcInfoDecoder(
         return;
     }
 
-    if(hasStackBaseRegister)
+    if(m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
     {
         if (slimHeader)
         {
@@ -264,7 +248,7 @@ GcInfoDecoder::GcInfoDecoder(
         m_StackBaseRegister = NO_STACK_BASE_REGISTER;
     }
 
-    if (hasEncInfo)
+    if (m_headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_INFO)
     {
         m_SizeOfEditAndContinuePreservedArea = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE);
 #ifdef TARGET_ARM64
@@ -286,7 +270,7 @@ GcInfoDecoder::GcInfoDecoder(
         return;
     }
 
-    if (hasReversePInvokeFrame)
+    if (m_headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME)
     {
         m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
     }
@@ -364,13 +348,13 @@ bool GcInfoDecoder::IsInterruptible()
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
 {
     _ASSERTE( m_Flags & DECODE_GENERICS_INST_CONTEXT );
-    return m_GenericSecretParamIsMD;
+    return (m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MD;
 }
 
 bool GcInfoDecoder::HasMethodTableGenericsInstContext()
 {
     _ASSERTE( m_Flags & DECODE_GENERICS_INST_CONTEXT );
-    return m_GenericSecretParamIsMT;
+    return (m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MT;
 }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -560,14 +544,14 @@ INT32 GcInfoDecoder::GetPSPSymStackSlot()
 bool GcInfoDecoder::GetIsVarArg()
 {
     _ASSERTE( m_Flags & DECODE_VARARG );
-    return m_IsVarArg;
+    return m_headerFlags & GC_INFO_IS_VARARG;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool GcInfoDecoder::HasTailCalls()
 {
     _ASSERTE( m_Flags & DECODE_HAS_TAILCALLS );
-    return m_HasTailCalls;
+    return ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 }
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -575,7 +559,7 @@ bool GcInfoDecoder::WantsReportOnlyLeaf()
 {
     // Only AMD64 with JIT64 can return false here.
 #ifdef TARGET_AMD64
-    return m_WantsReportOnlyLeaf;
+    return ((m_headerFlags & GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
 #else
     return true;
 #endif
