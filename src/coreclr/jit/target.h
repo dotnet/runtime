@@ -32,9 +32,9 @@ inline bool compFeatureVarArg()
 {
     return TargetOS::IsWindows && !TargetArchitecture::IsArm32;
 }
-inline bool compMacOsArm64Abi()
+inline bool compAppleArm64Abi()
 {
-    return TargetArchitecture::IsArm64 && TargetOS::IsMacOS;
+    return TargetArchitecture::IsArm64 && TargetOS::IsApplePlatform;
 }
 inline bool compFeatureArgSplit()
 {

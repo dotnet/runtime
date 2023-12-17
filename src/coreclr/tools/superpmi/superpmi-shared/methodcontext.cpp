@@ -4310,7 +4310,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_CORECLR_ABI;
 #ifdef TARGET_OSX
-        pEEInfoOut->osType                                     = CORINFO_MACOS;
+        pEEInfoOut->osType                                     = CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
         pEEInfoOut->osType                                     = CORINFO_UNIX;
 #else

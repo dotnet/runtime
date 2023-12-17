@@ -2510,7 +2510,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         assert(size != 0);
         assert(byteSize != 0);
 
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.

@@ -320,7 +320,7 @@ bool TargetOS::OSSettingConfigured = false;
 bool TargetOS::IsWindows = false;
 bool TargetOS::IsUnix    = false;
 #endif
-bool TargetOS::IsMacOS = false;
+bool TargetOS::IsApplePlatform = false;
 #endif
 
 /*****************************************************************************
@@ -330,10 +330,10 @@ bool TargetOS::IsMacOS = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS = os == CORINFO_MACOS;
+    TargetOS::IsApplePlatform = os == CORINFO_APPLE;
 #ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
                                          // runtimedetermined
-    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_APPLE);
     TargetOS::IsWindows = os == CORINFO_WINNT;
 #endif
     TargetOS::OSSettingConfigured = true;
@@ -468,7 +468,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 //
 // Notes:
 //   Usually values passed on the stack are aligned to stack slot (i.e. pointer size), except for
-//   on macOS ARM ABI that allows packing multiple args into a single stack slot.
+//   on Apple ARM ABI that allows packing multiple args into a single stack slot.
 //
 //   The arg size alignment can be different from the normal alignment. One
 //   example is on arm32 where a struct containing a double and float can
@@ -479,7 +479,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 {
-    if (compMacOsArm64Abi())
+    if (compAppleArm64Abi())
     {
         if (isFloatHfa)
         {

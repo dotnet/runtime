@@ -1518,7 +1518,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #if !defined(TARGET_64BIT)
                     assert(callArg->AbiInfo.ByteSize == 12);
 #else  // TARGET_64BIT
-                    if (compMacOsArm64Abi())
+                    if (compAppleArm64Abi())
                     {
                         assert(callArg->AbiInfo.ByteSize == 12);
                     }
