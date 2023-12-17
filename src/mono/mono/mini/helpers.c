@@ -274,7 +274,7 @@ MONO_RESTORE_WARNING
 	g_free (cmd);
 #endif
 
-	cmd = g_strdup_printf ("llvm-objdump -d --arch=rv64gc %s %s", objdump_args, o_file);
+	cmd = g_strdup_printf (ARCH_PREFIX DIS_CMD " %s %s", objdump_args, o_file);
 	unused = system (cmd);
 	g_free (cmd);
 	g_free (objdump_args);
