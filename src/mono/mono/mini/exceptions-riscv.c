@@ -160,7 +160,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	/* Save ctx */
 	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_FP, -ctx_offset, 0);
 	/* Save gregs */
-	code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS | (1 << RISCV_FP), RISCV_FP, -gregs_offset, FALSE);
+	code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_FP, -gregs_offset, FALSE);
 	/* Save fregs */
 	if (riscv_stdext_f || riscv_stdext_d)
 		code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);

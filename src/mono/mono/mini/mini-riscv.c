@@ -4792,7 +4792,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ENDFILTER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			if (cfg->param_area)
-				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
+				riscv_addi (code, RISCV_SP, RISCV_SP, cfg->param_area);
 			if (ins->opcode == OP_ENDFILTER && ins->sreg1 != RISCV_A0)
 				riscv_addi (code, RISCV_A0, ins->sreg1, 0);
 
