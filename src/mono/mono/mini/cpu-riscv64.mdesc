@@ -45,6 +45,7 @@ endfilter: src1:i len:32
 localloc: dest:i src1:i len:52
 localloc_imm: dest:i len:28
 generic_class_init: src1:a len:12 clob:c
+break: len:4
 
 throw: src1:i len:4
 rethrow: src1:i len:4

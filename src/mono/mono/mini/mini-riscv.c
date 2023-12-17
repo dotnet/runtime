@@ -2166,6 +2166,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	{
 	loop_start:
 		switch (ins->opcode) {
+		case OP_BREAK:
 		case OP_IL_SEQ_POINT:
 		case OP_SEQ_POINT:
 		case OP_GC_SAFE_POINT:
@@ -4092,6 +4093,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_riscv_patch (branch_label, code, MONO_R_RISCV_BNE);
 			break;
 		}
+		case OP_BREAK: 
+			/*
+			 * gdb does not like encountering the hw breakpoint ins in the debugged code.
+			 * So instead of emitting a trap, we emit a call a C function and place a
+			 * breakpoint there.
+			 */
+			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
+			break;
 
 		case OP_NOP:
 		case OP_RELAXED_NOP:
