@@ -276,7 +276,6 @@ FCFuncStart(gRuntimeAssemblyFuncs)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
-    FCFuncElement("GetLoadedAssemblies", AppDomainNative::GetLoadedAssemblies)
     FCFuncElement("IsTracingEnabled", AssemblyNative::IsTracingEnabled)
 FCFuncEnd()
 

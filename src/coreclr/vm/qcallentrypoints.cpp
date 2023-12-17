@@ -196,6 +196,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_TraceAssemblyResolveHandlerInvoked)
     DllImportEntry(AssemblyNative_TraceAssemblyLoadFromResolveHandlerInvoked)
     DllImportEntry(AssemblyNative_TraceSatelliteSubdirectoryPathProbed)
+    DllImportEntry(AssemblyNative_GetLoadedAssemblies)
     DllImportEntry(AssemblyNative_GetAssemblyCount)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetExecutingAssembly)
