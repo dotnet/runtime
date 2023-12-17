@@ -17221,12 +17221,14 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false);                           // iiii
             break;
 
+        // <Xdn>, <Pm>.<T>
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             emitDispReg(id->idReg1(), id->idOpSize(), true);           // ddddd
             emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, false); // MMMM
             emitDispArrangement(id->idInsOpt());
             break;
 
+        // <Zdn>.<T>, <Pm>.<T>
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);        // ddddd
@@ -17234,6 +17236,8 @@ void emitter::emitDispInsHelp(
             emitDispArrangement(id->idInsOpt());
             break;
 
+        // <Xdn>, <Pm>.<T>, <Wdn>
+        // <Xdn>, <Pm>.<T>
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
             if ((ins == INS_sve_sqdecp) || (ins == INS_sve_sqincp))
             {
