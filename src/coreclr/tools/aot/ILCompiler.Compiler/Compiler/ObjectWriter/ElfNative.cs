@@ -63,6 +63,9 @@ namespace ILCompiler.ObjectWriter
         public const uint SHN_LORESERVE = 65280;
         public const uint SHN_XINDEX = 65535;
 
+        // Section group type
+        public const uint GRP_COMDAT = 1;
+
         // Symbol type
         public const byte STT_NOTYPE = 0;
         public const byte STT_OBJECT = 1;

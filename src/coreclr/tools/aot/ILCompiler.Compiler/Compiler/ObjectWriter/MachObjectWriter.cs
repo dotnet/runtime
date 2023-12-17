@@ -13,6 +13,8 @@ using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
+using static ILCompiler.DependencyAnalysis.RelocType;
+using static ILCompiler.ObjectWriter.MachNative;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -78,13 +80,13 @@ namespace ILCompiler.ObjectWriter
             switch (factory.Target.Architecture)
             {
                 case TargetArchitecture.ARM64:
-                    _cpuType = MachNative.CPU_TYPE_ARM64;
-                    _cpuSubType = MachNative.CPU_SUBTYPE_ARM64_ALL;
+                    _cpuType = CPU_TYPE_ARM64;
+                    _cpuSubType = CPU_SUBTYPE_ARM64_ALL;
                     _compactUnwindDwarfCode = 0x3_00_00_00u;
                     break;
                 case TargetArchitecture.X64:
-                    _cpuType = MachNative.CPU_TYPE_X86_64;
-                    _cpuSubType = MachNative.CPU_SUBTYPE_X86_64_ALL;
+                    _cpuType = CPU_TYPE_X86_64;
+                    _cpuSubType = CPU_SUBTYPE_X86_64_ALL;
                     _compactUnwindDwarfCode = 0x4_00_00_00u;
                     break;
                 default:
@@ -112,7 +114,7 @@ namespace ILCompiler.ObjectWriter
                     Section = section,
                     Value = section.VirtualAddress,
                     Descriptor = 0,
-                    Type = MachNative.N_SECT,
+                    Type = N_SECT,
                 };
                 _symbolTable.Add(machSymbol);
                 _symbolNameToIndex[machSymbol.Name] = sectionIndex;
@@ -189,10 +191,10 @@ namespace ILCompiler.ObjectWriter
             {
                 CpuType = _cpuType,
                 CpuSubType = _cpuSubType,
-                FileType = MachNative.MH_OBJECT,
+                FileType = MH_OBJECT,
                 NumberOfCommands = loadCommandsCount,
                 SizeOfCommands = loadCommandsSize,
-                Flags = MachNative.MH_SUBSECTIONS_VIA_SYMBOLS,
+                Flags = MH_SUBSECTIONS_VIA_SYMBOLS,
                 Reserved = 0,
             };
             machHeader.Write(outputFileStream);
@@ -200,8 +202,8 @@ namespace ILCompiler.ObjectWriter
             MachSegment64Header machSegment64Header = new MachSegment64Header
             {
                 Name = "",
-                InitialProtection = MachNative.VM_PROT_READ | MachNative.VM_PROT_WRITE | MachNative.VM_PROT_EXECUTE,
-                MaximumProtection = MachNative.VM_PROT_READ | MachNative.VM_PROT_WRITE | MachNative.VM_PROT_EXECUTE,
+                InitialProtection = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
+                MaximumProtection = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
                 Address = 0,
                 Size = segmentSize,
                 FileOffset = segmentFileOffset,
@@ -241,15 +243,15 @@ namespace ILCompiler.ObjectWriter
             switch (_targetOS)
             {
                 case TargetOS.OSX:
-                    buildVersion.Platform = MachNative.PLATFORM_MACOS;
+                    buildVersion.Platform = PLATFORM_MACOS;
                     buildVersion.MinimumPlatformVersion = 0x0a_0c_00; // 10.12.0
                     break;
 
                 case TargetOS.MacCatalyst:
-                    buildVersion.Platform = MachNative.PLATFORM_MACCATALYST;
+                    buildVersion.Platform = PLATFORM_MACCATALYST;
                     buildVersion.MinimumPlatformVersion = _cpuType switch
                     {
-                        MachNative.CPU_TYPE_X86_64 => 0x0d_05_00u, // 13.5.0
+                        CPU_TYPE_X86_64 => 0x0d_05_00u, // 13.5.0
                         _ => 0x0e_02_00u, // 14.2.0
                     };
                     break;
@@ -260,10 +262,10 @@ namespace ILCompiler.ObjectWriter
                 case TargetOS.tvOSSimulator:
                     buildVersion.Platform = _targetOS switch
                     {
-                        TargetOS.iOS => MachNative.PLATFORM_IOS,
-                        TargetOS.iOSSimulator => MachNative.PLATFORM_IOSSIMULATOR,
-                        TargetOS.tvOS => MachNative.PLATFORM_TVOS,
-                        TargetOS.tvOSSimulator => MachNative.PLATFORM_TVOSSIMULATOR,
+                        TargetOS.iOS => PLATFORM_IOS,
+                        TargetOS.iOSSimulator => PLATFORM_IOSSIMULATOR,
+                        TargetOS.tvOS => PLATFORM_TVOS,
+                        TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
                     buildVersion.MinimumPlatformVersion = 0x0b_00_00; // 11.0.0
@@ -336,19 +338,19 @@ namespace ILCompiler.ObjectWriter
 
             uint flags = section.Name switch
             {
-                "bss" => MachNative.S_ZEROFILL,
-                ".eh_frame" => MachNative.S_COALESCED,
-                _ => section.Type == SectionType.Uninitialized ? MachNative.S_ZEROFILL : MachNative.S_REGULAR
+                "bss" => S_ZEROFILL,
+                ".eh_frame" => S_COALESCED,
+                _ => section.Type == SectionType.Uninitialized ? S_ZEROFILL : S_REGULAR
             };
 
             flags |= section.Name switch
             {
-                ".dotnet_eh_table" => MachNative.S_ATTR_DEBUG,
-                ".eh_frame" => MachNative.S_ATTR_LIVE_SUPPORT | MachNative.S_ATTR_STRIP_STATIC_SYMS | MachNative.S_ATTR_NO_TOC,
+                ".dotnet_eh_table" => S_ATTR_DEBUG,
+                ".eh_frame" => S_ATTR_LIVE_SUPPORT | S_ATTR_STRIP_STATIC_SYMS | S_ATTR_NO_TOC,
                 _ => section.Type switch
                 {
-                    SectionType.Executable => MachNative.S_ATTR_SOME_INSTRUCTIONS | MachNative.S_ATTR_PURE_INSTRUCTIONS,
-                    SectionType.Debug => MachNative.S_ATTR_DEBUG,
+                    SectionType.Executable => S_ATTR_SOME_INSTRUCTIONS | S_ATTR_PURE_INSTRUCTIONS,
+                    SectionType.Debug => S_ATTR_DEBUG,
                     _ => 0
                 }
             };
@@ -380,11 +382,11 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            if (relocType is RelocType.IMAGE_REL_BASED_DIR64 or RelocType.IMAGE_REL_BASED_HIGHLOW)
+            if (relocType is IMAGE_REL_BASED_DIR64 or IMAGE_REL_BASED_HIGHLOW)
             {
                 // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
                 MachSection machSection = _sections[sectionIndex];
-                if ((machSection.Flags & MachNative.S_ATTR_DEBUG) != 0 &&
+                if ((machSection.Flags & S_ATTR_DEBUG) != 0 &&
                     machSection.SegmentName == "__DWARF")
                 {
                     // DWARF section to DWARF section relocation
@@ -392,10 +394,10 @@ namespace ILCompiler.ObjectWriter
                     {
                         switch (relocType)
                         {
-                            case RelocType.IMAGE_REL_BASED_DIR64:
+                            case IMAGE_REL_BASED_DIR64:
                                 BinaryPrimitives.WriteInt64LittleEndian(data, addend);
                                 break;
-                            case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                            case IMAGE_REL_BASED_HIGHLOW:
                                 BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend);
                                 break;
                             default:
@@ -407,7 +409,7 @@ namespace ILCompiler.ObjectWriter
                     else
                     {
                         Debug.Assert(IsSectionSymbolName(symbolName));
-                        Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
+                        Debug.Assert(relocType == IMAGE_REL_BASED_DIR64);
                         int targetSectionIndex = (int)_symbolNameToIndex[symbolName];
                         BinaryPrimitives.WriteUInt64LittleEndian(data, _sections[targetSectionIndex].VirtualAddress + (ulong)addend);
                         base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
@@ -421,12 +423,12 @@ namespace ILCompiler.ObjectWriter
             // data. The exceptions are IMAGE_REL_BASED_ARM64_PAGEBASE_REL21
             // and IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A.
 
-            if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
+            if (relocType == IMAGE_REL_BASED_ARM64_BRANCH26)
             {
-                Debug.Assert(_cpuType == MachNative.CPU_TYPE_ARM64);
+                Debug.Assert(_cpuType == CPU_TYPE_ARM64);
                 Debug.Assert(addend == 0);
             }
-            else if (relocType == RelocType.IMAGE_REL_BASED_DIR64)
+            else if (relocType == IMAGE_REL_BASED_DIR64)
             {
                 if (addend != 0)
                 {
@@ -437,9 +439,9 @@ namespace ILCompiler.ObjectWriter
                     addend = 0;
                 }
             }
-            else if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
+            else if (relocType == IMAGE_REL_BASED_RELPTR32)
             {
-                if (_cpuType == MachNative.CPU_TYPE_ARM64)
+                if (_cpuType == CPU_TYPE_ARM64)
                 {
                     // On ARM64 we need to represent PC relative relocations as
                     // subtraction and the PC offset is baked into the addend.
@@ -470,9 +472,9 @@ namespace ILCompiler.ObjectWriter
                 }
                 addend = 0;
             }
-            else if (relocType == RelocType.IMAGE_REL_BASED_REL32)
+            else if (relocType == IMAGE_REL_BASED_REL32)
             {
-                Debug.Assert(_cpuType != MachNative.CPU_TYPE_ARM64);
+                Debug.Assert(_cpuType != CPU_TYPE_ARM64);
                 if (addend != 0)
                 {
                     BinaryPrimitives.WriteInt32LittleEndian(
@@ -507,7 +509,7 @@ namespace ILCompiler.ObjectWriter
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
                     Descriptor = 0,
-                    Type = MachNative.N_SECT | MachNative.N_EXT,
+                    Type = N_SECT | N_EXT,
                 });
             }
             sortedDefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));
@@ -532,7 +534,7 @@ namespace ILCompiler.ObjectWriter
                         Section = null,
                         Value = 0,
                         Descriptor = 0,
-                        Type = MachNative.N_UNDF | MachNative.N_EXT,
+                        Type = N_UNDF | N_EXT,
                     };
                     _symbolTable.Add(machSymbol);
                     _symbolNameToIndex[externSymbol] = symbolIndex;
@@ -548,7 +550,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            if (_cpuType == MachNative.CPU_TYPE_ARM64)
+            if (_cpuType == CPU_TYPE_ARM64)
             {
                 EmitRelocationsArm64(sectionIndex, relocationList);
             }
@@ -567,7 +569,7 @@ namespace ILCompiler.ObjectWriter
             {
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
-                if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_DIR64)
+                if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)
                 {
                     bool isExternal = !IsSectionSymbolName(symbolicRelocation.SymbolName);
                     sectionRelocations.Add(
@@ -576,12 +578,12 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = isExternal ? symbolIndex : symbolIndex + 1,
                             Length = 8,
-                            RelocationType = MachNative.X86_64_RELOC_UNSIGNED,
+                            RelocationType = X86_64_RELOC_UNSIGNED,
                             IsExternal = isExternal,
                             IsPCRelative = false,
                         });
                 }
-                else if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_RELPTR32 && sectionIndex == EhFrameSectionIndex)
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32 && sectionIndex == EhFrameSectionIndex)
                 {
                     sectionRelocations.Add(
                         new MachRelocation
@@ -589,7 +591,7 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = (uint)sectionIndex,
                             Length = 4,
-                            RelocationType = MachNative.X86_64_RELOC_SUBTRACTOR,
+                            RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
                             IsPCRelative = false,
                         });
@@ -599,12 +601,12 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
-                            RelocationType = MachNative.X86_64_RELOC_UNSIGNED,
+                            RelocationType = X86_64_RELOC_UNSIGNED,
                             IsExternal = true,
                             IsPCRelative = false,
                         });
                 }
-                else if (symbolicRelocation.Type is RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_REL32)
+                else if (symbolicRelocation.Type is IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_REL32)
                 {
                     sectionRelocations.Add(
                         new MachRelocation
@@ -612,7 +614,7 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
-                            RelocationType = MachNative.X86_64_RELOC_BRANCH,
+                            RelocationType = X86_64_RELOC_BRANCH,
                             IsExternal = true,
                             IsPCRelative = true,
                         });
@@ -633,7 +635,7 @@ namespace ILCompiler.ObjectWriter
             {
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
-                if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26)
+                if (symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_BRANCH26)
                 {
                     sectionRelocations.Add(
                         new MachRelocation
@@ -641,12 +643,12 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
-                            RelocationType = MachNative.ARM64_RELOC_BRANCH26,
+                            RelocationType = ARM64_RELOC_BRANCH26,
                             IsExternal = true,
                             IsPCRelative = true,
                         });
                 }
-                else if (symbolicRelocation.Type is RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
+                else if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
                 {
                     if (symbolicRelocation.Addend != 0)
                     {
@@ -656,7 +658,7 @@ namespace ILCompiler.ObjectWriter
                                 Address = (int)symbolicRelocation.Offset,
                                 SymbolOrSectionIndex = (uint)symbolicRelocation.Addend,
                                 Length = 4,
-                                RelocationType = MachNative.ARM64_RELOC_ADDEND,
+                                RelocationType = ARM64_RELOC_ADDEND,
                                 IsExternal = false,
                                 IsPCRelative = false,
                             });
@@ -664,8 +666,8 @@ namespace ILCompiler.ObjectWriter
 
                     byte type = symbolicRelocation.Type switch
                     {
-                        RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => MachNative.ARM64_RELOC_PAGE21,
-                        RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => MachNative.ARM64_RELOC_PAGEOFF12,
+                        IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ARM64_RELOC_PAGE21,
+                        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ARM64_RELOC_PAGEOFF12,
                         _ => 0
                     };
 
@@ -677,10 +679,10 @@ namespace ILCompiler.ObjectWriter
                             Length = 4,
                             RelocationType = type,
                             IsExternal = true,
-                            IsPCRelative = symbolicRelocation.Type != RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                            IsPCRelative = symbolicRelocation.Type != IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
                         });
                 }
-                else if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_DIR64)
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)
                 {
                     bool isExternal = !IsSectionSymbolName(symbolicRelocation.SymbolName);
                     sectionRelocations.Add(
@@ -689,12 +691,12 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = isExternal ? symbolIndex : symbolIndex + 1,
                             Length = 8,
-                            RelocationType = MachNative.ARM64_RELOC_UNSIGNED,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
                             IsExternal = isExternal,
                             IsPCRelative = false,
                         });
                 }
-                else if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_RELPTR32)
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32)
                 {
                     // This one is tough... needs to be represented by ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
                     sectionRelocations.Add(
@@ -703,7 +705,7 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = (uint)sectionIndex,
                             Length = 4,
-                            RelocationType = MachNative.ARM64_RELOC_SUBTRACTOR,
+                            RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
                             IsPCRelative = false,
                         });
@@ -713,7 +715,7 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
                             Length = 4,
-                            RelocationType = MachNative.ARM64_RELOC_UNSIGNED,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
                             IsExternal = true,
                             IsPCRelative = false,
                         });
@@ -734,7 +736,7 @@ namespace ILCompiler.ObjectWriter
             _compactUnwindSection = new MachSection("__LD", "__compact_unwind", _compactUnwindStream)
             {
                 Log2Alignment = 3,
-                Flags = MachNative.S_REGULAR | MachNative.S_ATTR_DEBUG,
+                Flags = S_REGULAR | S_ATTR_DEBUG,
             };
 
             IList<MachSymbol> symbols = _symbolTable;
@@ -763,7 +765,7 @@ namespace ILCompiler.ObjectWriter
                             Address = (int)_compactUnwindStream.Position,
                             SymbolOrSectionIndex = (byte)(1 + symbol.SectionIndex), // 1-based
                             Length = 8,
-                            RelocationType = MachNative.ARM64_RELOC_UNSIGNED,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
                             IsExternal = false,
                             IsPCRelative = false,
                         }
@@ -800,7 +802,7 @@ namespace ILCompiler.ObjectWriter
         {
             uint encoding = _compactUnwindDwarfCode;
 
-            if (_cpuType == MachNative.CPU_TYPE_ARM64)
+            if (_cpuType == CPU_TYPE_ARM64)
             {
                 if (blob.AsSpan().SequenceEqual(DwarfArm64EmptyFrame))
                 {
@@ -839,7 +841,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), MachNative.MH_MAGIC_64);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), MH_MAGIC_64);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)CpuType);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8, 4), CpuSubType);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12, 4), FileType);
@@ -870,7 +872,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), MachNative.LC_SEGMENT_64);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), LC_SEGMENT_64);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)(HeaderSize + NumberOfSections * MachSection.HeaderSize));
                 bool encoded = Encoding.UTF8.TryGetBytes(Name, buffer.Slice(8, 16), out _);
                 Debug.Assert(encoded);
@@ -903,7 +905,7 @@ namespace ILCompiler.ObjectWriter
             public uint Flags { get; set; }
 
             public uint Type => Flags & 0xff;
-            public bool IsInFile => Size > 0 && Type != MachNative.S_ZEROFILL && Type != MachNative.S_GB_ZEROFILL && Type != MachNative.S_THREAD_LOCAL_ZEROFILL;
+            public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
 
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
             public Stream Stream => dataStream;
@@ -1002,7 +1004,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), (uint)MachNative.LC_SYMTAB);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), LC_SYMTAB);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)HeaderSize);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8, 4), SymbolTableOffset);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12, 4), NumberOfSymbols);
@@ -1040,7 +1042,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), (uint)MachNative.LC_DYSYMTAB);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), LC_DYSYMTAB);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)HeaderSize);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8, 4), LocalSymbolsIndex);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12, 4), LocalSymbolsCount);
@@ -1077,7 +1079,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), MachNative.LC_BUILD_VERSION);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(0, 4), LC_BUILD_VERSION);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(4, 4), (uint)HeaderSize);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8, 4), Platform);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12, 4), MinimumPlatformVersion);

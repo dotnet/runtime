@@ -10,6 +10,8 @@ using System.Numerics;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
+using static ILCompiler.DependencyAnalysis.RelocType;
+using static ILCompiler.ObjectWriter.ElfNative;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -44,9 +46,9 @@ namespace ILCompiler.ObjectWriter
         {
             _machine = factory.Target.Architecture switch
             {
-                TargetArchitecture.X86 => ElfNative.EM_386,
-                TargetArchitecture.X64 => ElfNative.EM_X86_64,
-                TargetArchitecture.ARM64 => ElfNative.EM_AARCH64,
+                TargetArchitecture.X86 => EM_386,
+                TargetArchitecture.X64 => EM_X86_64,
+                TargetArchitecture.ARM64 => EM_AARCH64,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
 
@@ -66,29 +68,29 @@ namespace ILCompiler.ObjectWriter
 
             if (section.Type == SectionType.Uninitialized)
             {
-                type = ElfNative.SHT_NOBITS;
-                flags = ElfNative.SHF_ALLOC | ElfNative.SHF_WRITE;
+                type = SHT_NOBITS;
+                flags = SHF_ALLOC | SHF_WRITE;
             }
             else if (section == ObjectNodeSection.TLSSection)
             {
-                type = ElfNative.SHT_PROGBITS;
-                flags = ElfNative.SHF_ALLOC | ElfNative.SHF_WRITE | ElfNative.SHF_TLS;
+                type = SHT_PROGBITS;
+                flags = SHF_ALLOC | SHF_WRITE | SHF_TLS;
             }
             else
             {
-                type = section.Name == ".eh_frame" && _machine == ElfNative.EM_X86_64 ? ElfNative.SHT_IA_64_UNWIND : ElfNative.SHT_PROGBITS;
+                type = section.Name == ".eh_frame" && _machine == EM_X86_64 ? SHT_IA_64_UNWIND : SHT_PROGBITS;
                 flags = section.Type switch
                 {
-                    SectionType.Executable => ElfNative.SHF_ALLOC | ElfNative.SHF_EXECINSTR,
-                    SectionType.Writeable => ElfNative.SHF_ALLOC | ElfNative.SHF_WRITE,
-                    SectionType.Debug => sectionName == ".debug_str" ? ElfNative.SHF_MERGE | ElfNative.SHF_STRINGS : 0,
-                    _ => ElfNative.SHF_ALLOC,
+                    SectionType.Executable => SHF_ALLOC | SHF_EXECINSTR,
+                    SectionType.Writeable => SHF_ALLOC | SHF_WRITE,
+                    SectionType.Debug => sectionName == ".debug_str" ? SHF_MERGE | SHF_STRINGS : 0,
+                    _ => SHF_ALLOC,
                 };
             }
 
             if (comdatName is not null)
             {
-                flags |= ElfNative.SHF_GROUP;
+                flags |= SHF_GROUP;
                 if (!_comdatNameToElfSection.TryGetValue(comdatName, out groupSection))
                 {
                     Span<byte> tempBuffer = stackalloc byte[sizeof(uint)];
@@ -96,7 +98,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         SectionHeader = new ElfSectionHeader
                         {
-                            Type = ElfNative.SHT_GROUP,
+                            Type = SHT_GROUP,
                             Alignment = 4,
                             EntrySize = (uint)sizeof(uint),
                         },
@@ -105,7 +107,7 @@ namespace ILCompiler.ObjectWriter
                     };
 
                     // Write group flags
-                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, /*ElfNative.GRP_COMDAT*/1u);
+                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, GRP_COMDAT);
                     groupSection.Stream.Write(tempBuffer);
 
                     _comdatNameToElfSection.Add(comdatName, groupSection);
@@ -131,7 +133,7 @@ namespace ILCompiler.ObjectWriter
                 _symbols.Add(new ElfSymbol
                 {
                     Section = _sections[sectionIndex],
-                    Info = ElfNative.STT_SECTION,
+                    Info = STT_SECTION,
                 });
             }
 
@@ -156,37 +158,38 @@ namespace ILCompiler.ObjectWriter
             // to produce correct addends in the `.rela` sections which override
             // the destination with the addend from relocation table.
 
-            if (relocType == RelocType.IMAGE_REL_BASED_REL32 ||
-                relocType == RelocType.IMAGE_REL_BASED_RELPTR32 ||
-                relocType == RelocType.IMAGE_REL_TLSGD ||
-                relocType == RelocType.IMAGE_REL_TPOFF ||
-                relocType == RelocType.IMAGE_REL_BASED_HIGHLOW)
+            switch (relocType)
             {
-                addend += BinaryPrimitives.ReadInt32LittleEndian(data);
-                BinaryPrimitives.WriteInt32LittleEndian(data, 0);
-            }
-            else if (relocType == RelocType.IMAGE_REL_BASED_DIR64)
-            {
-                ulong a = BinaryPrimitives.ReadUInt64LittleEndian(data);
-                addend += checked((long)a);
-                BinaryPrimitives.WriteUInt64LittleEndian(data, 0);
-            }
-            else if (relocType == RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 ||
-                     relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 ||
-                     relocType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A ||
-                     relocType == RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 ||
-                     relocType == RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC ||
-                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 ||
-                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 ||
-                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 ||
-                     relocType == RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL)
-            {
-                // NOTE: Zero addend in code is currently always used for these.
-                // R2R object writer has the same assumption.
-            }
-            else
-            {
-                throw new NotSupportedException($"Unsupported relocation: {relocType}");
+                case IMAGE_REL_BASED_REL32:
+                case IMAGE_REL_BASED_RELPTR32:
+                case IMAGE_REL_BASED_HIGHLOW:
+                case IMAGE_REL_TLSGD:
+                case IMAGE_REL_TPOFF:
+                    addend += BinaryPrimitives.ReadInt32LittleEndian(data);
+                    BinaryPrimitives.WriteInt32LittleEndian(data, 0);
+                    break;
+
+                case IMAGE_REL_BASED_DIR64:
+                    ulong a = BinaryPrimitives.ReadUInt64LittleEndian(data);
+                    addend += checked((long)a);
+                    BinaryPrimitives.WriteUInt64LittleEndian(data, 0);
+                    break;
+
+                case IMAGE_REL_BASED_ARM64_BRANCH26:
+                case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
+                case IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+                case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case IMAGE_REL_AARCH64_TLSDESC_CALL:
+                    // NOTE: Zero addend in code is currently always used for these.
+                    // R2R object writer has the same assumption.
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Unsupported relocation: {relocType}");
             }
 
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
@@ -201,16 +204,16 @@ namespace ILCompiler.ObjectWriter
             {
                 var section = _sections[definition.SectionIndex];
                 var type =
-                    (section.SectionHeader.Flags & ElfNative.SHF_TLS) == ElfNative.SHF_TLS ? ElfNative.STT_TLS :
-                    definition.Size > 0 ? ElfNative.STT_FUNC : ElfNative.STT_NOTYPE;
+                    (section.SectionHeader.Flags & SHF_TLS) == SHF_TLS ? STT_TLS :
+                    definition.Size > 0 ? STT_FUNC : STT_NOTYPE;
                 sortedSymbols.Add(new ElfSymbol
                 {
                     Name = name,
                     Value = (ulong)definition.Value,
                     Size = (ulong)definition.Size,
                     Section = _sections[definition.SectionIndex],
-                    Info = (byte)(type | (ElfNative.STB_GLOBAL << 4)),
-                    Other = definition.Global ? ElfNative.STV_DEFAULT : ElfNative.STV_HIDDEN,
+                    Info = (byte)(type | (STB_GLOBAL << 4)),
+                    Other = definition.Global ? STV_DEFAULT : STV_HIDDEN,
                 });
             }
 
@@ -221,7 +224,7 @@ namespace ILCompiler.ObjectWriter
                     sortedSymbols.Add(new ElfSymbol
                     {
                         Name = externSymbol,
-                        Info = (ElfNative.STB_GLOBAL << 4),
+                        Info = (STB_GLOBAL << 4),
                     });
                 }
             }
@@ -247,13 +250,13 @@ namespace ILCompiler.ObjectWriter
         {
             switch (_machine)
             {
-                case ElfNative.EM_386:
+                case EM_386:
                     EmitRelocationsX86(sectionIndex, relocationList);
                     break;
-                case ElfNative.EM_X86_64:
+                case EM_X86_64:
                     EmitRelocationsX64(sectionIndex, relocationList);
                     break;
-                case ElfNative.EM_AARCH64:
+                case EM_AARCH64:
                     EmitRelocationsARM64(sectionIndex, relocationList);
                     break;
                 default:
@@ -277,16 +280,16 @@ namespace ILCompiler.ObjectWriter
                     uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
                     uint type = symbolicRelocation.Type switch
                     {
-                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfNative.R_386_32,
-                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfNative.R_386_PC32,
-                        RelocType.IMAGE_REL_BASED_REL32 => ElfNative.R_386_PLT32,
-                        RelocType.IMAGE_REL_TLSGD => ElfNative.R_386_TLS_GD,
-                        RelocType.IMAGE_REL_TPOFF => ElfNative.R_386_TLS_TPOFF,
+                        IMAGE_REL_BASED_HIGHLOW => R_386_32,
+                        IMAGE_REL_BASED_RELPTR32 => R_386_PC32,
+                        IMAGE_REL_BASED_REL32 => R_386_PLT32,
+                        IMAGE_REL_TLSGD => R_386_TLS_GD,
+                        IMAGE_REL_TPOFF => R_386_TLS_TPOFF,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
                     long addend = symbolicRelocation.Addend;
-                    if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_REL32)
+                    if (symbolicRelocation.Type == IMAGE_REL_BASED_REL32)
                     {
                         addend -= 4;
                     }
@@ -311,17 +314,17 @@ namespace ILCompiler.ObjectWriter
                     uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
                     uint type = symbolicRelocation.Type switch
                     {
-                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfNative.R_X86_64_32,
-                        RelocType.IMAGE_REL_BASED_DIR64 => ElfNative.R_X86_64_64,
-                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfNative.R_X86_64_PC32,
-                        RelocType.IMAGE_REL_BASED_REL32 => ElfNative.R_X86_64_PLT32,
-                        RelocType.IMAGE_REL_TLSGD => ElfNative.R_X86_64_TLSGD,
-                        RelocType.IMAGE_REL_TPOFF => ElfNative.R_X86_64_TPOFF32,
+                        IMAGE_REL_BASED_HIGHLOW => R_X86_64_32,
+                        IMAGE_REL_BASED_DIR64 => R_X86_64_64,
+                        IMAGE_REL_BASED_RELPTR32 => R_X86_64_PC32,
+                        IMAGE_REL_BASED_REL32 => R_X86_64_PLT32,
+                        IMAGE_REL_TLSGD => R_X86_64_TLSGD,
+                        IMAGE_REL_TPOFF => R_X86_64_TPOFF32,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
                     long addend = symbolicRelocation.Addend;
-                    if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_REL32)
+                    if (symbolicRelocation.Type == IMAGE_REL_BASED_REL32)
                     {
                         addend -= 4;
                     }
@@ -346,18 +349,18 @@ namespace ILCompiler.ObjectWriter
                     uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
                     uint type = symbolicRelocation.Type switch
                     {
-                        RelocType.IMAGE_REL_BASED_DIR64 => ElfNative.R_AARCH64_ABS64,
-                        RelocType.IMAGE_REL_BASED_HIGHLOW => ElfNative.R_AARCH64_ABS32,
-                        RelocType.IMAGE_REL_BASED_RELPTR32 => ElfNative.R_AARCH64_PREL32,
-                        RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => ElfNative.R_AARCH64_CALL26,
-                        RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ElfNative.R_AARCH64_ADR_PREL_PG_HI21,
-                        RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ElfNative.R_AARCH64_ADD_ABS_LO12_NC,
-                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 => ElfNative.R_AARCH64_TLSLE_ADD_TPREL_HI12,
-                        RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC => ElfNative.R_AARCH64_TLSLE_ADD_TPREL_LO12_NC,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 => ElfNative.R_AARCH64_TLSDESC_ADR_PAGE21,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 => ElfNative.R_AARCH64_TLSDESC_LD64_LO12,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 => ElfNative.R_AARCH64_TLSDESC_ADD_LO12,
-                        RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL => ElfNative.R_AARCH64_TLSDESC_CALL,
+                        IMAGE_REL_BASED_DIR64 => R_AARCH64_ABS64,
+                        IMAGE_REL_BASED_HIGHLOW => R_AARCH64_ABS32,
+                        IMAGE_REL_BASED_RELPTR32 => R_AARCH64_PREL32,
+                        IMAGE_REL_BASED_ARM64_BRANCH26 => R_AARCH64_CALL26,
+                        IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => R_AARCH64_ADR_PREL_PG_HI21,
+                        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => R_AARCH64_ADD_ABS_LO12_NC,
+                        IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12 => R_AARCH64_TLSLE_ADD_TPREL_HI12,
+                        IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC => R_AARCH64_TLSLE_ADD_TPREL_LO12_NC,
+                        IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21 => R_AARCH64_TLSDESC_ADR_PAGE21,
+                        IMAGE_REL_AARCH64_TLSDESC_LD64_LO12 => R_AARCH64_TLSDESC_LD64_LO12,
+                        IMAGE_REL_AARCH64_TLSDESC_ADD_LO12 => R_AARCH64_TLSDESC_ADD_LO12,
+                        IMAGE_REL_AARCH64_TLSDESC_CALL => R_AARCH64_TLSDESC_CALL,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -374,7 +377,7 @@ namespace ILCompiler.ObjectWriter
             using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             switch (_machine)
             {
-                case ElfNative.EM_386:
+                case EM_386:
                     EmitObjectFile<uint>(outputFileStream);
                     break;
                 default:
@@ -397,7 +400,7 @@ namespace ILCompiler.ObjectWriter
             // Add marker for non-executable stack
             _sections.Add(new ElfSectionDefinition
             {
-                SectionHeader = new ElfSectionHeader { Type = ElfNative.SHT_PROGBITS },
+                SectionHeader = new ElfSectionHeader { Type = SHT_PROGBITS },
                 Name = ".note.GNU-stack",
                 Stream = Stream.Null,
             });
@@ -427,7 +430,7 @@ namespace ILCompiler.ObjectWriter
                 section.SectionHeader.Offset = currentOffset;
                 section.SectionHeader.Size = (ulong)section.Stream.Length;
 
-                if (section.SectionHeader.Type != ElfNative.SHT_NOBITS)
+                if (section.SectionHeader.Type != SHT_NOBITS)
                 {
                     currentOffset += (ulong)section.Stream.Length;
                 }
@@ -452,7 +455,7 @@ namespace ILCompiler.ObjectWriter
             // Reserve names for the predefined sections
             _stringTable.ReserveString(".strtab");
             _stringTable.ReserveString(".symtab");
-            if (sectionCount >= ElfNative.SHN_LORESERVE)
+            if (sectionCount >= SHN_LORESERVE)
             {
                 _stringTable.ReserveString(".symtab_shndx");
                 hasSymTabExtendedIndices = true;
@@ -480,21 +483,21 @@ namespace ILCompiler.ObjectWriter
             // Write the ELF file header
             ElfHeader elfHeader = new ElfHeader
             {
-                Type = ElfNative.ET_REL,
+                Type = ET_REL,
                 Machine = _machine,
-                Version = ElfNative.EV_CURRENT,
+                Version = EV_CURRENT,
                 SegmentHeaderEntrySize = 0x38,
                 SectionHeaderOffset = currentOffset,
                 SectionHeaderEntrySize = (ushort)ElfSectionHeader.GetSize<TSize>(),
-                SectionHeaderEntryCount = sectionCount < ElfNative.SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
-                StringTableIndex = strTabSectionIndex < ElfNative.SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)ElfNative.SHN_XINDEX,
+                SectionHeaderEntryCount = sectionCount < SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
+                StringTableIndex = strTabSectionIndex < SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)SHN_XINDEX,
             };
             elfHeader.Write<TSize>(outputFileStream);
 
             // Write the section contents and relocations
             foreach (var section in _sections)
             {
-                if (section.SectionHeader.Type != ElfNative.SHT_NOBITS)
+                if (section.SectionHeader.Type != SHT_NOBITS)
                 {
                     outputFileStream.Position = (long)section.SectionHeader.Offset;
                     section.Stream.Position = 0;
@@ -523,7 +526,7 @@ namespace ILCompiler.ObjectWriter
                 foreach (var symbol in _symbols)
                 {
                     uint index = symbol.Section?.SectionIndex ?? 0;
-                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, index >= ElfNative.SHN_LORESERVE ? index : 0);
+                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, index >= SHN_LORESERVE ? index : 0);
                     outputFileStream.Write(tempBuffer);
                 }
             }
@@ -534,12 +537,12 @@ namespace ILCompiler.ObjectWriter
             ElfSectionHeader nullSectionHeader = new ElfSectionHeader
             {
                 NameIndex = 0,
-                Type = ElfNative.SHT_NULL,
+                Type = SHT_NULL,
                 Flags = 0u,
                 Address = 0u,
                 Offset = 0u,
-                Size = sectionCount >= ElfNative.SHN_LORESERVE ? sectionCount : 0u,
-                Link = strTabSectionIndex >= ElfNative.SHN_LORESERVE ? strTabSectionIndex : 0u,
+                Size = sectionCount >= SHN_LORESERVE ? sectionCount : 0u,
+                Link = strTabSectionIndex >= SHN_LORESERVE ? strTabSectionIndex : 0u,
                 Info = 0u,
                 Alignment = 0u,
                 EntrySize = 0u,
@@ -552,14 +555,14 @@ namespace ILCompiler.ObjectWriter
                 section.SectionHeader.NameIndex = _stringTable.GetStringOffset(section.Name);
                 section.SectionHeader.Write<TSize>(outputFileStream);
 
-                if (section.SectionHeader.Type != ElfNative.SHT_NOBITS &&
+                if (section.SectionHeader.Type != SHT_NOBITS &&
                     section.RelocationStream != Stream.Null)
                 {
                     ElfSectionHeader relaSectionHeader = new ElfSectionHeader
                     {
                         NameIndex = _stringTable.GetStringOffset(".rela" + section.Name),
-                        Type = ElfNative.SHT_RELA,
-                        Flags = (section.GroupSection is not null ? ElfNative.SHF_GROUP : 0u) | ElfNative.SHF_INFO_LINK,
+                        Type = SHT_RELA,
+                        Flags = (section.GroupSection is not null ? SHF_GROUP : 0u) | SHF_INFO_LINK,
                         Address = 0u,
                         Offset = section.SectionHeader.Offset + section.SectionHeader.Size,
                         Size = (ulong)section.RelocationStream.Length,
@@ -576,7 +579,7 @@ namespace ILCompiler.ObjectWriter
             ElfSectionHeader stringTableSectionHeader = new ElfSectionHeader
             {
                 NameIndex = _stringTable.GetStringOffset(".strtab"),
-                Type = ElfNative.SHT_STRTAB,
+                Type = SHT_STRTAB,
                 Flags = 0u,
                 Address = 0u,
                 Offset = stringTableOffset,
@@ -592,7 +595,7 @@ namespace ILCompiler.ObjectWriter
             ElfSectionHeader symbolTableSectionHeader = new ElfSectionHeader
             {
                 NameIndex = _stringTable.GetStringOffset(".symtab"),
-                Type = ElfNative.SHT_SYMTAB,
+                Type = SHT_SYMTAB,
                 Flags = 0u,
                 Address = 0u,
                 Offset = symbolTableOffset,
@@ -612,7 +615,7 @@ namespace ILCompiler.ObjectWriter
                 ElfSectionHeader sectionHeader = new ElfSectionHeader
                 {
                     NameIndex = _stringTable.GetStringOffset(".symtab_shndx"),
-                    Type = ElfNative.SHT_SYMTAB_SHNDX,
+                    Type = SHT_SYMTAB_SHNDX,
                     Flags = 0u,
                     Address = 0u,
                     Offset = symbolTableExtendedIndicesOffset,
@@ -686,8 +689,8 @@ namespace ILCompiler.ObjectWriter
 
                 buffer.Clear();
                 Magic.CopyTo(buffer.Slice(0, Magic.Length));
-                buffer[4] = typeof(TSize) == typeof(uint) ? ElfNative.ELFCLASS32 : ElfNative.ELFCLASS64;
-                buffer[5] = ElfNative.ELFDATA2LSB;
+                buffer[4] = typeof(TSize) == typeof(uint) ? ELFCLASS32 : ELFCLASS64;
+                buffer[5] = ELFDATA2LSB;
                 buffer[6] = 1;
                 var tempBuffer = buffer.Slice(16);
                 tempBuffer = tempBuffer.Slice(((IBinaryInteger<ushort>)Type).WriteLittleEndian(tempBuffer));
@@ -779,8 +782,8 @@ namespace ILCompiler.ObjectWriter
                 Span<byte> buffer = stackalloc byte[GetSize<TSize>()];
                 ushort sectionIndex;
 
-                sectionIndex = Section is { SectionIndex: >= ElfNative.SHN_LORESERVE } ?
-                    (ushort)ElfNative.SHN_XINDEX :
+                sectionIndex = Section is { SectionIndex: >= SHN_LORESERVE } ?
+                    (ushort)SHN_XINDEX :
                     (Section is not null ? (ushort)Section.SectionIndex : (ushort)0u);
 
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer, Name is not null ? stringTable.GetStringOffset(Name) : 0);

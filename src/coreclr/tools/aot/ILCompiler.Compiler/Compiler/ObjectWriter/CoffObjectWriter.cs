@@ -12,15 +12,12 @@ using System.Numerics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
-
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
-using Internal.JitInterface;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+using static ILCompiler.DependencyAnalysis.RelocType;
+using static ILCompiler.ObjectWriter.CoffObjectWriter.CoffRelocationType;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -193,14 +190,14 @@ namespace ILCompiler.ObjectWriter
         {
             switch (relocType)
             {
-                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
-                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
-                case RelocType.IMAGE_REL_SECREL:
-                case RelocType.IMAGE_REL_SECTION:
+                case IMAGE_REL_BASED_ARM64_BRANCH26:
+                case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case IMAGE_REL_SECREL:
+                case IMAGE_REL_SECTION:
                     Debug.Assert(addend == 0);
                     break;
 
-                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                     if (addend != 0)
                     {
                         uint addInstr = BinaryPrimitives.ReadUInt32LittleEndian(data);
@@ -210,7 +207,7 @@ namespace ILCompiler.ObjectWriter
                     }
                     break;
 
-                case RelocType.IMAGE_REL_BASED_DIR64:
+                case IMAGE_REL_BASED_DIR64:
                     if (addend != 0)
                     {
                         BinaryPrimitives.WriteInt64LittleEndian(
@@ -221,7 +218,7 @@ namespace ILCompiler.ObjectWriter
                     }
                     break;
 
-                case RelocType.IMAGE_REL_BASED_RELPTR32:
+                case IMAGE_REL_BASED_RELPTR32:
                     addend += 4;
                     if (addend != 0)
                     {
@@ -233,10 +230,10 @@ namespace ILCompiler.ObjectWriter
                     }
                     break;
 
-                case RelocType.IMAGE_REL_BASED_REL32:
-                case RelocType.IMAGE_REL_BASED_ADDR32NB:
-                case RelocType.IMAGE_REL_BASED_ABSOLUTE:
-                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case IMAGE_REL_BASED_REL32:
+                case IMAGE_REL_BASED_ADDR32NB:
+                case IMAGE_REL_BASED_ABSOLUTE:
+                case IMAGE_REL_BASED_HIGHLOW:
                     if (addend != 0)
                     {
                         BinaryPrimitives.WriteInt32LittleEndian(
@@ -343,13 +340,13 @@ namespace ILCompiler.ObjectWriter
                                 SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
                                 Type = relocation.Type switch
                                 {
-                                    RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_I386_DIR32NB,
-                                    RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_I386_DIR32NB,
-                                    RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_I386_DIR32,
-                                    RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_I386_REL32,
-                                    RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_I386_REL32,
-                                    RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_I386_SECREL,
-                                    RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_I386_SECTION,
+                                    IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_I386_DIR32NB,
+                                    IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_I386_DIR32NB,
+                                    IMAGE_REL_BASED_HIGHLOW => IMAGE_REL_I386_DIR32,
+                                    IMAGE_REL_BASED_REL32 => IMAGE_REL_I386_REL32,
+                                    IMAGE_REL_BASED_RELPTR32 => IMAGE_REL_I386_REL32,
+                                    IMAGE_REL_SECREL => IMAGE_REL_I386_SECREL,
+                                    IMAGE_REL_SECTION => IMAGE_REL_I386_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
                                 },
                             });
@@ -365,14 +362,14 @@ namespace ILCompiler.ObjectWriter
                                 SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
                                 Type = relocation.Type switch
                                 {
-                                    RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
-                                    RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_AMD64_ADDR32NB,
-                                    RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_AMD64_ADDR32,
-                                    RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_AMD64_ADDR64,
-                                    RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
-                                    RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_AMD64_REL32,
-                                    RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_AMD64_SECREL,
-                                    RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_AMD64_SECTION,
+                                    IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_AMD64_ADDR32NB,
+                                    IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_AMD64_ADDR32NB,
+                                    IMAGE_REL_BASED_HIGHLOW => IMAGE_REL_AMD64_ADDR32,
+                                    IMAGE_REL_BASED_DIR64 => IMAGE_REL_AMD64_ADDR64,
+                                    IMAGE_REL_BASED_REL32 => IMAGE_REL_AMD64_REL32,
+                                    IMAGE_REL_BASED_RELPTR32 => IMAGE_REL_AMD64_REL32,
+                                    IMAGE_REL_SECREL => IMAGE_REL_AMD64_SECREL,
+                                    IMAGE_REL_SECTION => IMAGE_REL_AMD64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
                                 },
                             });
@@ -388,17 +385,17 @@ namespace ILCompiler.ObjectWriter
                                 SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
                                 Type = relocation.Type switch
                                 {
-                                    RelocType.IMAGE_REL_BASED_ABSOLUTE => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
-                                    RelocType.IMAGE_REL_BASED_ADDR32NB => CoffRelocationType.IMAGE_REL_ARM64_ADDR32NB,
-                                    RelocType.IMAGE_REL_BASED_HIGHLOW => CoffRelocationType.IMAGE_REL_ARM64_ADDR32,
-                                    RelocType.IMAGE_REL_BASED_DIR64 => CoffRelocationType.IMAGE_REL_ARM64_ADDR64,
-                                    RelocType.IMAGE_REL_BASED_REL32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
-                                    RelocType.IMAGE_REL_BASED_RELPTR32 => CoffRelocationType.IMAGE_REL_ARM64_REL32,
-                                    RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 => CoffRelocationType.IMAGE_REL_ARM64_BRANCH26,
-                                    RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => CoffRelocationType.IMAGE_REL_ARM64_PAGEBASE_REL21,
-                                    RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => CoffRelocationType.IMAGE_REL_ARM64_PAGEOFFSET_12A,
-                                    RelocType.IMAGE_REL_SECREL => CoffRelocationType.IMAGE_REL_ARM64_SECREL,
-                                    RelocType.IMAGE_REL_SECTION => CoffRelocationType.IMAGE_REL_ARM64_SECTION,
+                                    IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_ARM64_ADDR32NB,
+                                    IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_ARM64_ADDR32NB,
+                                    IMAGE_REL_BASED_HIGHLOW => IMAGE_REL_ARM64_ADDR32,
+                                    IMAGE_REL_BASED_DIR64 => IMAGE_REL_ARM64_ADDR64,
+                                    IMAGE_REL_BASED_REL32 => IMAGE_REL_ARM64_REL32,
+                                    IMAGE_REL_BASED_RELPTR32 => IMAGE_REL_ARM64_REL32,
+                                    IMAGE_REL_BASED_ARM64_BRANCH26 => IMAGE_REL_ARM64_BRANCH26,
+                                    IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => IMAGE_REL_ARM64_PAGEBASE_REL21,
+                                    IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => IMAGE_REL_ARM64_PAGEOFFSET_12A,
+                                    IMAGE_REL_SECREL => IMAGE_REL_ARM64_SECREL,
+                                    IMAGE_REL_SECTION => IMAGE_REL_ARM64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
                                 },
                             });
@@ -478,14 +475,14 @@ namespace ILCompiler.ObjectWriter
                         if (associatedDataNode is not null)
                         {
                             xdataSectionWriter.EmitSymbolReference(
-                                RelocType.IMAGE_REL_BASED_ADDR32NB,
+                                IMAGE_REL_BASED_ADDR32NB,
                                 GetMangledName(associatedDataNode));
                         }
 
                         if (ehInfo is not null)
                         {
                             xdataSectionWriter.EmitSymbolReference(
-                                RelocType.IMAGE_REL_BASED_ADDR32NB,
+                                IMAGE_REL_BASED_ADDR32NB,
                                 GetMangledName(ehInfo));
                         }
 
@@ -497,14 +494,14 @@ namespace ILCompiler.ObjectWriter
 
                     // Emit RUNTIME_FUNCTION
                     pdataSectionWriter.EmitAlignment(4);
-                    pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
+                    pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
                     // Only x64 has the End symbol
                     if (_machine == Machine.Amd64)
                     {
-                        pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
+                        pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
                     }
                     // Unwind info pointer
-                    pdataSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, unwindSymbolName, 0);
+                    pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, unwindSymbolName, 0);
                 }
             }
         }
@@ -854,7 +851,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private enum CoffRelocationType
+        internal enum CoffRelocationType
         {
             IMAGE_REL_I386_ABSOLUTE = 0,
             IMAGE_REL_I386_DIR32 = 6,
