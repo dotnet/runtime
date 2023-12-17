@@ -773,13 +773,11 @@ add_arg (CallInfo *cinfo, ArgInfo *ainfo, int size, gboolean sign)
 	}
 	// If no argument registers are available, the scalar is passed on the stack by value
 	else {
-		// 	cinfo->stack_usage & ainfo->offset
-		// will be calculated in get_call_info()
 		ainfo->storage = ArgOnStack;
-		ainfo->slot_size = size;
+		ainfo->slot_size = sizeof (host_mgreg_t);
 		ainfo->is_signed = sign;
 		ainfo->offset = cinfo->stack_usage;
-		cinfo->stack_usage += size;
+		cinfo->stack_usage += sizeof (host_mgreg_t);
 	}
 }
 
@@ -835,8 +833,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 		if (cinfo->next_arg > RISCV_A7) {
 			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeOnStack;
-			cinfo->stack_usage += sizeof (host_mgreg_t) * 2;
-			ainfo->slot_size = sizeof (host_mgreg_t) * 2;
+			cinfo->stack_usage += aligned_size;
+			ainfo->slot_size = aligned_size;
 		}
 		// If exactly one register is available, the low-order XLEN bits are
 		// passed in the register and the high-order XLEN bits are passed on the stack
@@ -869,8 +867,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 		if (cinfo->next_arg > RISCV_A7) {
 			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeOnStack;
-			cinfo->stack_usage += sizeof (host_mgreg_t);
-			ainfo->slot_size = sizeof (host_mgreg_t);
+			cinfo->stack_usage += aligned_size;
+			ainfo->slot_size = aligned_size;
 		} else {
 			ainfo->storage = ArgVtypeInIReg;
 			ainfo->reg = cinfo->next_arg;
