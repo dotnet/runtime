@@ -592,6 +592,8 @@ private:
 #endif
     UINT32 m_Version;
 
+    bool PredecodeFatHeader(int remainingFlags);
+
     static bool SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, void * hCallback);
 
     OBJECTREF* GetRegisterSlot(

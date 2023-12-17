@@ -83,6 +83,172 @@ bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset,
     return fStop;
 }
 
+// returns true if we decoded enough;
+bool GcInfoDecoder::PredecodeFatHeader(int remainingFlags)
+{
+    int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
+    m_headerFlags = (GcInfoHeaderFlags)m_Reader.Read(numFlagBits);
+
+    m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_FAT_HEADER));
+
+    remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    remainingFlags &= ~DECODE_HAS_TAILCALLS;
+#endif
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    m_CodeLength = (UINT32)DENORMALIZE_CODE_LENGTH((UINT32)m_Reader.DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE));
+    remainingFlags &= ~DECODE_CODE_LENGTH;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    if (m_headerFlags & GC_INFO_HAS_GS_COOKIE)
+    {
+        // Note that normalization as a code offset can be different than
+        //  normalization as code length
+        UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
+
+        // Decode prolog/epilog information
+        UINT32 normPrologSize = (UINT32)m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
+        UINT32 normEpilogSize = (UINT32)m_Reader.DecodeVarLengthUnsigned(NORM_EPILOG_SIZE_ENCBASE);
+
+        m_ValidRangeStart = (UINT32)DENORMALIZE_CODE_OFFSET(normPrologSize);
+        m_ValidRangeEnd = (UINT32)DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
+        _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
+    }
+    else if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
+    {
+        // Decode prolog information
+        UINT32 normPrologSize = (UINT32)m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
+        m_ValidRangeStart = (UINT32)DENORMALIZE_CODE_OFFSET(normPrologSize);
+        // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
+        m_ValidRangeEnd = m_ValidRangeStart + 1;
+    }
+    else
+    {
+        m_ValidRangeStart = m_ValidRangeEnd = 0;
+    }
+
+    remainingFlags &= ~DECODE_PROLOG_LENGTH;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    // Decode the offset to the GS cookie.
+    if (m_headerFlags & GC_INFO_HAS_GS_COOKIE)
+    {
+        m_GSCookieStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GS_COOKIE_STACK_SLOT_ENCBASE));
+    }
+    else
+    {
+        m_GSCookieStackSlot = NO_GS_COOKIE;
+    }
+
+    remainingFlags &= ~DECODE_GS_COOKIE;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    // Decode the offset to the PSPSym.
+    // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
+    if (m_headerFlags & GC_INFO_HAS_PSP_SYM)
+    {
+        m_PSPSymStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(PSP_SYM_STACK_SLOT_ENCBASE));
+    }
+    else
+    {
+        m_PSPSymStackSlot = NO_PSP_SYM;
+    }
+
+    remainingFlags &= ~DECODE_PSP_SYM;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    // Decode the offset to the generics type context.
+    if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
+    {
+        m_GenericsInstContextStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
+    }
+    else
+    {
+        m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
+    }
+
+    remainingFlags &= ~DECODE_GENERICS_INST_CONTEXT;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    if (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
+    {
+        m_StackBaseRegister = (UINT32)DENORMALIZE_STACK_BASE_REGISTER(m_Reader.DecodeVarLengthUnsigned(STACK_BASE_REGISTER_ENCBASE));
+    }
+    else
+    {
+        m_StackBaseRegister = NO_STACK_BASE_REGISTER;
+    }
+
+    if (m_headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_INFO)
+    {
+        m_SizeOfEditAndContinuePreservedArea = (UINT32)m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE);
+#ifdef TARGET_ARM64
+        m_SizeOfEditAndContinueFixedStackFrame = (UINT32)m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE);
+#endif
+    }
+    else
+    {
+        m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+#ifdef TARGET_ARM64
+        m_SizeOfEditAndContinueFixedStackFrame = 0;
+#endif
+    }
+
+    remainingFlags &= ~DECODE_EDIT_AND_CONTINUE;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+    if (m_headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME)
+    {
+        m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
+    }
+    else
+    {
+        m_ReversePInvokeFrameStackSlot = NO_REVERSE_PINVOKE_FRAME;
+    }
+
+    remainingFlags &= ~DECODE_REVERSE_PINVOKE_VAR;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return true;
+    }
+
+#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
+    m_SizeOfStackOutgoingAndScratchArea = (UINT32)DENORMALIZE_SIZE_OF_STACK_AREA(m_Reader.DecodeVarLengthUnsigned(SIZE_OF_STACK_AREA_ENCBASE));
+#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+
+    return false;
+}
+
 GcInfoDecoder::GcInfoDecoder(
             GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags,
@@ -113,189 +279,72 @@ GcInfoDecoder::GcInfoDecoder(
     // Use flag mask to bail out early if we already decoded all the pieces that caller requested
     int remainingFlags = flags == DECODE_EVERYTHING ? ~0 : flags;
 
-    if (slimHeader)
+    if (!slimHeader)
+    {
+        if (PredecodeFatHeader(remainingFlags))
+            return;
+    }
+    else
     {
         m_headerFlags = (GcInfoHeaderFlags)(m_Reader.ReadOneFast() ? GC_INFO_HAS_STACK_BASE_REGISTER : 0);
-    }
-    else
-    {
-        int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
-        m_headerFlags = (GcInfoHeaderFlags) m_Reader.Read(numFlagBits);
-    }
+        m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_SLIM_HEADER));
 
-    int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
-    m_ReturnKind =
-        (ReturnKind)((UINT32)m_Reader.Read(returnKindBits));
-
-    remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
+        remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    remainingFlags &= ~DECODE_HAS_TAILCALLS;
+        remainingFlags &= ~DECODE_HAS_TAILCALLS;
 #endif
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    m_CodeLength = (UINT32) DENORMALIZE_CODE_LENGTH((UINT32) m_Reader.DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE));
-
-    remainingFlags &= ~DECODE_CODE_LENGTH;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    if (m_headerFlags & GC_INFO_HAS_GS_COOKIE)
-    {
-        // Note that normalization as a code offset can be different than
-        //  normalization as code length
-        UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
-
-        // Decode prolog/epilog information
-        UINT32 normPrologSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
-        UINT32 normEpilogSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_EPILOG_SIZE_ENCBASE);
-
-        m_ValidRangeStart = (UINT32) DENORMALIZE_CODE_OFFSET(normPrologSize);
-        m_ValidRangeEnd = (UINT32) DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
-        _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
-    }
-    else if ((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
-    {
-        // Decode prolog information
-        UINT32 normPrologSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
-        m_ValidRangeStart = (UINT32) DENORMALIZE_CODE_OFFSET(normPrologSize);
-        // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
-        m_ValidRangeEnd = m_ValidRangeStart + 1;
-    }
-    else
-    {
-        m_ValidRangeStart = m_ValidRangeEnd = 0;
-    }
-
-    remainingFlags &= ~DECODE_PROLOG_LENGTH;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    // Decode the offset to the GS cookie.
-    if(m_headerFlags & GC_INFO_HAS_GS_COOKIE)
-    {
-        m_GSCookieStackSlot        = (INT32)  DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GS_COOKIE_STACK_SLOT_ENCBASE));
-    }
-    else
-    {
-        m_GSCookieStackSlot        = NO_GS_COOKIE;
-    }
-
-    remainingFlags &= ~DECODE_GS_COOKIE;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    // Decode the offset to the PSPSym.
-    // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
-    if(m_headerFlags & GC_INFO_HAS_PSP_SYM)
-    {
-        m_PSPSymStackSlot              = (INT32) DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(PSP_SYM_STACK_SLOT_ENCBASE));
-    }
-    else
-    {
-        m_PSPSymStackSlot              = NO_PSP_SYM;
-    }
-
-    remainingFlags &= ~DECODE_PSP_SYM;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    // Decode the offset to the generics type context.
-    if((m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
-    {
-        m_GenericsInstContextStackSlot = (INT32) DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE));
-    }
-    else
-    {
-        m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
-    }
-
-    remainingFlags &= ~DECODE_GENERICS_INST_CONTEXT;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    if(m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
-    {
-        if (slimHeader)
+        if (remainingFlags == 0)
         {
-            m_StackBaseRegister = (UINT32) DENORMALIZE_STACK_BASE_REGISTER(0);
+            // Bail, if we've decoded enough,
+            return;
+        }
+
+        m_CodeLength = (UINT32)DENORMALIZE_CODE_LENGTH((UINT32)m_Reader.DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE));
+
+        //
+        // predecoding the rest of slim header does not require any reading.
+        //
+
+        m_ValidRangeStart = m_ValidRangeEnd = 0;
+        m_GSCookieStackSlot = NO_GS_COOKIE;
+        m_PSPSymStackSlot = NO_PSP_SYM;
+        m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
+
+        if (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
+        {
+            m_StackBaseRegister = (UINT32)DENORMALIZE_STACK_BASE_REGISTER(0);
         }
         else
         {
-            m_StackBaseRegister = (UINT32) DENORMALIZE_STACK_BASE_REGISTER(m_Reader.DecodeVarLengthUnsigned(STACK_BASE_REGISTER_ENCBASE));
+            m_StackBaseRegister = NO_STACK_BASE_REGISTER;
         }
-    }
-    else
-    {
-        m_StackBaseRegister = NO_STACK_BASE_REGISTER;
-    }
 
-    if (m_headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_INFO)
-    {
-        m_SizeOfEditAndContinuePreservedArea = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE);
-#ifdef TARGET_ARM64
-        m_SizeOfEditAndContinueFixedStackFrame = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE);
-#endif
-    }
-    else
-    {
         m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
 #ifdef TARGET_ARM64
         m_SizeOfEditAndContinueFixedStackFrame = 0;
 #endif
-    }
 
-    remainingFlags &= ~DECODE_EDIT_AND_CONTINUE;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    if (m_headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME)
-    {
-        m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
-    }
-    else
-    {
         m_ReversePInvokeFrameStackSlot = NO_REVERSE_PINVOKE_FRAME;
-    }
-
-    remainingFlags &= ~DECODE_REVERSE_PINVOKE_VAR;
-    if (remainingFlags == 0)
-    {
-        // Bail, if we've decoded enough,
-        return;
-    }
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    if (slimHeader)
-    {
         m_SizeOfStackOutgoingAndScratchArea = 0;
-    }
-    else
-    {
-        m_SizeOfStackOutgoingAndScratchArea = (UINT32)DENORMALIZE_SIZE_OF_STACK_AREA(m_Reader.DecodeVarLengthUnsigned(SIZE_OF_STACK_AREA_ENCBASE));
-    }
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+
+        remainingFlags &= ~(DECODE_CODE_LENGTH
+                            | DECODE_PROLOG_LENGTH
+                            | DECODE_GS_COOKIE
+                            | DECODE_PSP_SYM
+                            | DECODE_GENERICS_INST_CONTEXT
+                            | DECODE_EDIT_AND_CONTINUE
+                            | DECODE_REVERSE_PINVOKE_VAR
+                            );
+
+        if (remainingFlags == 0)
+        {
+            // Bail, if we've decoded enough,
+            return;
+        }
+    }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     m_NumSafePoints = (UINT32) DENORMALIZE_NUM_SAFE_POINTS(m_Reader.DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE));
