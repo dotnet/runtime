@@ -231,7 +231,7 @@ public:
         size_t sourceLen = strlen(utf8str);
         size_t destLen = minipal_get_length_utf8_to_utf16(utf8str, sourceLen, 0);
 
-        LPWSTR buffer = (LPWSTR) AllocThrows((length + 1) * sizeof(WCHAR));
+        CHAR16_T* buffer = (CHAR16_T*) AllocThrows((destLen + 1) * sizeof(CHAR16_T));
 
         if (!minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, 0))
         {
@@ -243,11 +243,11 @@ public:
     void ConvertUnicode_Utf8(const WCHAR * pString)
     {
         size_t sourceLen = u16_strlen(pString);
-        size_t destLen = minipal_get_length_utf16_to_utf8(pString, sourceLen, 0);
+        size_t destLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, 0);
 
-        LPSTR buffer = (LPSTR) AllocThrows((length + 1) * sizeof(char));
+        LPSTR buffer = (LPSTR) AllocThrows((destLen + 1) * sizeof(char));
 
-        if (!minipal_convert_utf16_to_utf8(pString, sourceLen, buffer, destLen, 0))
+        if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, 0))
         {
             ThrowHR(COR_E_INSUFFICIENTMEMORY);
         }

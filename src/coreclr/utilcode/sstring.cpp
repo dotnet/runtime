@@ -865,16 +865,16 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
         UNREACHABLE();
     }
 
-    size_t length = minipal_get_length_utf16_to_utf8(GetRawUnicode(), GetCount(), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
+    size_t length = minipal_get_length_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
 
     if (length <= COUNT_T_MAX)
     {
-        s.Resize(length, REPRESENTATION_UTF8);
+        s.Resize((COUNT_T)length, REPRESENTATION_UTF8);
 
         //we optimize the empty string by replacing it with null for SString above in Resize
         if (length > 0)
         {
-            if (!minipal_convert_utf16_to_utf8(GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
+            if (!minipal_convert_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
             {
                 ThrowHR(COR_E_INSUFFICIENTMEMORY);
             }
@@ -885,7 +885,7 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
         ThrowHR(COR_E_OVERFLOW);
     }
 
-    RETURN length + 1;
+    RETURN (COUNT_T)length + 1;
 }
 
 //-----------------------------------------------------------------------------
