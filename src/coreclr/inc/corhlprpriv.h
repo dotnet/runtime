@@ -11,7 +11,7 @@
 #define __CORHLPRPRIV_H__
 
 #include "corhlpr.h"
-#include "minipal/utf8.h"
+#include <minipal/utf8.h>
 
 #if defined(_MSC_VER) && defined(HOST_X86)
 #pragma optimize("y", on)		// If routines don't get inlined, don't pay the EBP frame penalty
