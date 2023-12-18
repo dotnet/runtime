@@ -33,7 +33,7 @@ all: build-all
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
+EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/browser/emscripten-version.txt)
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
@@ -116,7 +116,7 @@ build-runtime-tests:
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(LOG_PATH)/Wasm.Debugger.Tests.binlog \
 	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
-	$(TOP)/src/mono/wasm/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
+	$(TOP)/src/mono/browser/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
 	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 submit-debugger-tests-helix: build-debugger-tests-helix
@@ -154,15 +154,15 @@ submit-tests-helix:
 run-debugger-tests:
 	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
+	$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing" $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing" $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:
-	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/BrowserDebugHost $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/mono/browser/debugger/BrowserDebugHost $(MSBUILD_ARGS)
 build-dbg-testsuite:
-	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
