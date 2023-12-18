@@ -18,10 +18,9 @@ jobs:
       - name: Cross Build
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
-        working-directory: ./runtime
       - name: Build Tests programs
         run: ./build.sh -mono -debug riscv64 -ninja -tree:JIT/ --ci
-        working-directory: ./runtime/src/tests
+        working-directory: ./src/tests
       # upload entire project
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
@@ -44,5 +43,5 @@ jobs:
           name: jit-riscv64
       - name: Run tests
         run: bash -c ./run.sh Release
-        working-directory: ./runtime/src/tests
+        working-directory: ./src/tests
       
