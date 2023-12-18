@@ -1,0 +1,40 @@
+on:
+  push:
+    branches:
+      - riscv-jit-rv64
+
+jobs:
+  cross-build:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+      env:
+        ROOTFS_DIR: /crossrootfs/riscv64
+        QEMU_LD_PREFIX: /crossrootfs/riscv64
+    steps:
+      - name: Cross Build
+      # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
+        run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+      - name: Build Tests programs
+        run: cd src/tests && ./build.sh -mono -debug riscv64 -ninja -tree:JIT/ --ci
+      # upload entire project
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: jit-riscv64
+          path: ./
+  
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+      env:
+        ROOTFS_DIR: /crossrootfs/riscv64
+        QEMU_LD_PREFIX: /crossrootfs/riscv64
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: jit-riscv64
+      - name: Run tests
+        run: cd src/tests && ./run.sh Release
