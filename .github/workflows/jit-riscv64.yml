@@ -16,7 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Cross Rebuild
-        continue-on-error: true
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
       - name: Cross Build
         if: ${{ failure() }}
