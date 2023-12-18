@@ -614,6 +614,44 @@ PhaseStatus Compiler::fgImport()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//------------------------------------------------------------------------
+// fgUpdateCallFinally: For BBJ_CALLFINALLY/BBJ_ALWAYS pairs, replace BBJ_ALWAYS with BBJ_CALLFINALLYRET.
+//
+// This should be temporary. Later, fix impImportLeave to do this directly.
+//
+// Returns:
+//    phase status
+//
+PhaseStatus Compiler::fgUpdateCallFinally()
+{
+    if (info.compXcptnsCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            // There are no ret-less callfinally yet (this is run early), so there must be a matching
+            // BBJ_ALWAYS block.
+            BasicBlock* blockAlways = block->Next();
+            assert(blockAlways != nullptr);
+            assert(blockAlways->KindIs(BBJ_ALWAYS));
+            assert(blockAlways->isEmpty());
+            assert(blockAlways->HasFlag(BBF_KEEP_BBJ_ALWAYS));
+
+            blockAlways->SetKind(BBJ_CALLFINALLYRET);
+            blockAlways->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
+
+            JITDUMP("Replaced BBJ_ALWAYS " FMT_BB " of BBJ_CALLFINALLY " FMT_BB " pair with BBJ_CALLFINALLYRET.\n",
+                    blockAlways->bbNum, block->bbNum);
+        }
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
 /*****************************************************************************
  * This function returns true if tree is a node with a call
  * that unconditionally throws an exception
@@ -1633,8 +1671,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 // Convert a BBJ_RETURN block in a synchronized method to a BBJ_ALWAYS.
 // We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit().
 // Thus, we put BBJ_RETURN blocks inside a 'try'. In IL this is illegal. Instead, we would
-// see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_ALWAYS blocks
-// during importing, and the BBJ_ALWAYS would point at an outer block with the BBJ_RETURN.
+// see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_CALLFINALLYRET blocks
+// during importing, and the BBJ_CALLFINALLYRET would point at an outer block with the BBJ_RETURN.
 // Here, we mimic some of the logic of importing a LEAVE to get the same effect for synchronized methods.
 void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 {
@@ -3202,9 +3240,9 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
                 case BBJ_CALLFINALLY:
                     // A BBJ_CALLFINALLY that falls through is always followed
-                    // by an empty BBJ_ALWAYS.
+                    // by an empty BBJ_CALLFINALLYRET.
                     //
-                    assert(prevToFirstColdBlock->isBBCallAlwaysPair());
+                    assert(prevToFirstColdBlock->isBBCallFinallyPair());
                     firstColdBlock =
                         firstColdBlock->Next(); // Note that this assignment could make firstColdBlock == nullptr
                     break;
@@ -3239,6 +3277,11 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     break;
             }
         }
+    }
+
+    for (block = firstColdBlock; block != nullptr; block = block->Next())
+    {
+        block->SetFlags(BBF_COLD);
     }
 
 EXIT:;
@@ -4340,6 +4383,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
 #ifdef DEBUG
     JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");
+    JITDUMP("RPO -> BB [pre, post]\n");
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         unsigned          rpoNum = dfsTree->GetPostOrderCount() - i;

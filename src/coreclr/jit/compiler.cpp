@@ -4530,6 +4530,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
+    // Convert BBJ_CALLFINALLY/BBJ_ALWAYS pairs to BBJ_CALLFINALLY/BBJ_CALLFINALLYRET.
+    // Temporary: eventually, do this immediately in impImportLeave
+    //
+    DoPhase(this, PHASE_UPDATE_CALLFINALLY, &Compiler::fgUpdateCallFinally);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -5348,7 +5353,7 @@ void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockT
             if (top->Prev()->KindIs(BBJ_CALLFINALLY))
             {
                 // It must be a retless BBJ_CALLFINALLY if we get here.
-                assert(!top->Prev()->isBBCallAlwaysPair());
+                assert(!top->Prev()->isBBCallFinallyPair());
 
                 // If the block before the loop start is a retless BBJ_CALLFINALLY
                 // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
@@ -5361,10 +5366,10 @@ void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockT
             }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            if (top->Prev()->isBBCallAlwaysPairTail())
+            if (top->Prev()->isBBCallFinallyPairTail())
             {
-                // If the previous block is the BBJ_ALWAYS of a
-                // BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we can't add alignment
+                // If the previous block is the BBJ_CALLFINALLYRET of a
+                // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
                 // because we can't add instructions in that block. In the
                 // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
                 // reported EH, as above.
@@ -5478,9 +5483,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
-            !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump (which isn't to the next block)
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->HasFlag(BBF_NONE_QUIRK))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -6059,17 +6063,17 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
-    if (TargetOS::IsMacOS)
+    if (TargetOS::IsApplePlatform)
     {
-        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_APPLE);
     }
     else if (TargetOS::IsUnix)
     {
         if (TargetArchitecture::IsX64)
         {
-            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            // Apple x64 uses the Unix jit variant in crossgen2, not a special jit
             info.compMatchedVM =
-                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_APPLE));
         }
         else
         {

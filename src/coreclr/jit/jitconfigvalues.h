@@ -243,6 +243,8 @@ CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot")) // Internal Jit
                                                                  // given set of stress mode names, e.g. STRESS_REGS,
                                                                  // STRESS_TAILCALL
 CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit stress mode
+CONFIG_STRING(JitDumpEmitUnitTests, W("JitDumpEmitUnitTests"))   // Dump unit tests from Emit
+
 ///
 /// JIT Hardware Intrinsics
 ///

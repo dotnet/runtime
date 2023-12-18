@@ -1936,11 +1936,8 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(jmpDist);
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2013,11 +2010,8 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2118,12 +2112,10 @@ AGAIN:
  *  Emit a 32-bit RISCV64 instruction
  */
 
-/*static*/ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
     assert(sizeof(code_t) == 4);
-    BYTE* dstRW       = dst + writeableOffset;
-    *((code_t*)dstRW) = code;
-
+    memcpy(dst + writeableOffset, &code, sizeof(code_t));
     return sizeof(code_t);
 }
 
@@ -2293,8 +2285,68 @@ static void assertCodeLength(unsigned code, uint8_t size)
            (imm20HiBit << 31);
 }
 
+void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
+                                                instrDescJmp*   jmp,
+                                                UNATIVE_OFFSET& dstOffs,
+                                                const BYTE*&    dstAddr) const
+{
+    // TODO-RISCV64-BUG: iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jumps to label and
+    // an instruction-count based jumps impossible
+    if (jmp->idAddr()->iiaHasInstrCount())
+    {
+        assert(ig != nullptr);
+        int      instrCount = jmp->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, jmp);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
+        dstAddr = emitOffsetToPtr(dstOffs);
+        return;
+    }
+    dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
+    dstAddr = emitOffsetToPtr(dstOffs);
+}
+
+ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
+{
+    UNATIVE_OFFSET srcOffs = emitCurCodeOffs(src);
+    const BYTE*    srcAddr = emitOffsetToPtr(srcOffs);
+
+    assert(!jmp->idAddr()->iiaIsJitDataOffset()); // not used by riscv64 impl
+
+    UNATIVE_OFFSET dstOffs{};
+    const BYTE*    dstAddr = nullptr;
+    emitOutputInstrJumpDistanceHelper(ig, jmp, dstOffs, dstAddr);
+
+    ssize_t distVal = static_cast<ssize_t>(dstAddr - srcAddr);
+
+    if (dstOffs > srcOffs)
+    {
+        // This is a forward jump
+
+        emitFwdJumps = true;
+
+        // The target offset will be closer by at least 'emitOffsAdj', but only if this
+        // jump doesn't cross the hot-cold boundary.
+        if (!emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
+        {
+            distVal -= emitOffsAdj;
+            dstOffs -= emitOffsAdj;
+        }
+        jmp->idjOffs = dstOffs;
+        if (jmp->idjOffs != dstOffs)
+        {
+            IMPL_LIMITATION("Method is too large");
+        }
+    }
+    return distVal;
+}
+
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -2304,6 +2356,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
+    BYTE* const       dst    = *dp;
     BYTE*             dstRW  = *dp + writeableOffset;
     BYTE*             dstRW2 = dstRW + 4; // addr for updating gc info if needed.
     const BYTE* const odstRW = dstRW;
@@ -2685,7 +2738,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regNumber reg1 = id->idReg1();
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset();
+                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, jmp);
                 imm -= 4;
 
                 assert((imm & 0x3) == 0);
@@ -2854,7 +2907,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         break;
         case INS_OPTS_J_cond:
         {
-            ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+            ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
             assert(isValidSimm13(imm));
             assert(!(imm & 1));
 
@@ -2875,7 +2928,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
                 assert((imm & 3) == 0);
 
                 ins  = id->idIns();
@@ -3072,6 +3125,91 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return sz;
 }
 
+bool emitter::emitDispBranchInstrType(unsigned opcode2) const
+{
+    switch (opcode2)
+    {
+        case 0:
+            printf("beq ");
+            break;
+        case 1:
+            printf("bne ");
+            break;
+        case 4:
+            printf("blt ");
+            break;
+        case 5:
+            printf("bge ");
+            break;
+        case 6:
+            printf("bltu");
+            break;
+        case 7:
+            printf("bgeu");
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const
+{
+    static const auto signFn = [](int offset) { return offset >= 0 ? "+" : ""; };
+
+    int instrCount = id->idAddr()->iiaGetInstrCount();
+    if (ig == nullptr)
+    {
+        printf("pc%s%d instructions", signFn(instrCount), instrCount);
+        return;
+    }
+    unsigned       insNum  = emitFindInsNum(ig, id);
+    UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
+    UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
+    ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(dstOffs));
+    printf("pc%s%d (%d instructions)", signFn(relOffs), static_cast<int>(relOffs), instrCount);
+}
+
+void emitter::emitDispBranchLabel(const instrDesc* id) const
+{
+    if (id->idIsBound())
+    {
+        return emitPrintLabel(id->idAddr()->iiaIGlabel);
+    }
+    printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+}
+
+bool emitter::emitDispBranch(unsigned         opcode2,
+                             const char*      register1Name,
+                             const char*      register2Name,
+                             const instrDesc* id,
+                             const insGroup*  ig) const
+{
+    if (!emitDispBranchInstrType(opcode2))
+    {
+        return false;
+    }
+    printf("           %s, %s, ", register1Name, register2Name);
+    assert(id != nullptr);
+    if (id->idAddr()->iiaHasInstrCount())
+    {
+        // Branch is jumping to some non-labeled offset
+        emitDispBranchOffset(id, ig);
+    }
+    else
+    {
+        // Branch is jumping to the labeled offset
+        emitDispBranchLabel(id);
+    }
+    printf("\n");
+    return true;
+}
+
+void emitter::emitDispIllegalInstruction(code_t instructionCode)
+{
+    printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
+}
+
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -3095,12 +3233,14 @@ static const char* const RegNames[] =
 //    doffs - Flag informing whether the instruction's offset should be displayed.
 //    insOffset - The instruction's offset.
 //    id   - The instrDesc of the code if needed.
+//    ig   - The insGroup of the code if needed
 //
 // Note:
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigned insOffset, instrDesc* id)
+void emitter::emitDispInsName(
+    code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
@@ -3415,47 +3555,16 @@ void emitter::emitDispInsName(code_t code, const BYTE* addr, bool doffs, unsigne
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
             const char*  rs2     = RegNames[(code >> 20) & 0x1f];
-            int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
-                         (((code >> 8) & 0xf) << 1);
-            if (offset & 0x800)
+            // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
+            //              (((code >> 8) & 0xf) << 1);
+            // if (offset & 0x800)
+            // {
+            //     offset |= 0xfffff000;
+            // }
+            if (!emitDispBranch(opcode2, rs1, rs2, id, ig))
             {
-                offset |= 0xfffff000;
+                emitDispIllegalInstruction(code);
             }
-            switch (opcode2)
-            {
-                case 0:
-                    printf("beq ");
-                    break;
-                case 1:
-                    printf("bne ");
-                    break;
-                case 4:
-                    printf("blt ");
-                    break;
-                case 5:
-                    printf("bge ");
-                    break;
-                case 6:
-                    printf("bltu");
-                    break;
-                case 7:
-                    printf("bgeu");
-                    break;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
-            static const int MAX_LEN = 32;
-
-            int len = printf("           %s, %s, %d", rs1, rs2, offset);
-            if (len <= 0 || len > MAX_LEN)
-            {
-                printf("\n");
-                return;
-            }
-            if (!emitComp->opts.disDiffable)
-                printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
-            printf("\n");
             return;
         }
         case 0x03:
@@ -4097,7 +4206,7 @@ void emitter::emitDispIns(
         instrSize = sizeof(code_t);
         code_t instruction;
         memcpy(&instruction, instr, instrSize);
-        emitDispInsName(instruction, instr, doffs, offset, id);
+        emitDispInsName(instruction, instr, doffs, offset, id, ig);
     }
 }
 

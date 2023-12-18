@@ -4551,7 +4551,7 @@ public:
     void SetMultiRegNums();
 
     // Return number of stack slots that this argument is taking.
-    // This value is not meaningful on macOS arm64 where multiple arguments can
+    // This value is not meaningful on Apple arm64 where multiple arguments can
     // be passed in the same stack slot.
     unsigned GetStackSlotsNumber() const
     {

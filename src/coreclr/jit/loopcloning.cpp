@@ -2121,7 +2121,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
     loop->VisitLoopBlocksLexical([=, &newPred](BasicBlock* blk) {
-        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later with optCopyBlkDest()
+        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
+        // with BasicBlock::CopyTarget().
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
 
@@ -2215,7 +2216,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         assert(!newblk->HasInitializedTarget());
 
         // First copy the jump destination(s) from "blk".
-        optCopyBlkDest(blk, newblk);
+        newblk->CopyTarget(this, blk);
 
         // Now redirect the new block according to "blockMap".
         optRedirectBlock(newblk, blockMap);
@@ -2225,6 +2226,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         {
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
                 fgAddRefPred(newblk->GetTarget(), newblk);
                 break;
 
