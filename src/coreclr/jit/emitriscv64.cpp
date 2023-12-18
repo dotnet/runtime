@@ -2992,27 +2992,25 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2) const
 
 void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const
 {
-    static const auto signFn = [](int offset) { return offset >= 0 ? "+" : ""; };
-
     int instrCount = id->idAddr()->iiaGetInstrCount();
     if (ig == nullptr)
     {
-        printf("pc%s%d instructions", signFn(instrCount), instrCount);
+        printf("pc%+d instructions", instrCount);
         return;
     }
     unsigned insNum = emitFindInsNum(ig, id);
 
     if (ig->igInsCnt < insNum + 1 + instrCount)
     {
-        // TODO-RISCV64-BUG: This should be a labeled offset but does not contain a iiaIGlabel
-        printf("pc%s%d instructions", signFn(instrCount), instrCount);
+        // TODO-RISCV64-BUG: This should be a labeled offset but does not contain an iiaIGlabel
+        printf("pc%+d instructions", instrCount);
         return;
     }
 
     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
     ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
-    printf("pc%s%d (%d instructions)", signFn(relOffs), static_cast<int>(relOffs), instrCount);
+    printf("pc%+d (%d instructions)", static_cast<int>(relOffs), instrCount);
 }
 
 void emitter::emitDispBranchLabel(const instrDesc* id) const
