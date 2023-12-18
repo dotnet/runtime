@@ -1510,7 +1510,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             // Ngen case
             if (op2->gtOper == GT_IND)
             {
-                if (!optIsTreeKnownIntValue(!optLocalAssertionProp, op2->AsOp()->gtOp1, &cnsValue, &iconFlags))
+                if (!optIsTreeKnownIntValue(!optLocalAssertionProp, op2->AsOp()->gtOp1, &cnsValue, &iconFlags) &&
+                    (iconFlags == GTF_ICON_CLASS_HDL))
                 {
                     goto DONE_ASSERTION; // Don't make an assertion
                 }
@@ -1519,13 +1520,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.op2.kind       = O2K_IND_CNS_INT;
                 assertion.op2.u1.iconVal = cnsValue;
                 assertion.op2.vn         = optConservativeNormalVN(op2->AsOp()->gtOp1);
-
-                /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
-                assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
-                assertion.op2.SetIconFlag(iconFlags);
+                assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
             }
             // JIT case
-            else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags))
+            else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags) &&
+                     (iconFlags == GTF_ICON_CLASS_HDL))
             {
                 assertion.assertionKind  = assertionKind;
                 assertion.op2.kind       = O2K_CONST_INT;
@@ -1534,7 +1533,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
-                assertion.op2.SetIconFlag(iconFlags);
+                assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
             }
             else
             {

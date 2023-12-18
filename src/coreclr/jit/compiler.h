@@ -10125,7 +10125,9 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef OPT_CONFIG
-        bool optRepeat; // Repeat optimizer phases k times
+        bool optRepeat;              // Repeat optimizer phases k times
+        bool optRepeatLastIteration; // Just a hint for optimization passes that we're on the last iteration
+                                     // in optRepeat mode.
 #endif
 
         bool disAsm;       // Display native code as it is generated
