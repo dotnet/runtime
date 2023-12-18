@@ -95,8 +95,12 @@ namespace System.Security.Cryptography.Tests
         public static KeySizes? PlatformKeySizeRequirements { get; } =
             PlatformDetection.IsOpenSslSupported ? new KeySizes(4, 512, 1) : null;
 
+        public static int? PlatformMaxOutputSize { get; } = PlatformDetection.IsOpenSslSupported ? 0xFFFFFF / 8 : null;
+        public static int? PlatformMaxCustomizationStringSize { get; } = PlatformDetection.IsOpenSslSupported ? 512 : null;
+
         public static byte[] MinimalKey { get; } =
             PlatformKeySizeRequirements?.MinSize is int min ? new byte[min] : Array.Empty<byte>();
+
 
         [ConditionalFact(nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_AllAtOnce()
@@ -834,7 +838,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
-        public void ArgValidation_Allocated_KeySize()
+        public void CryptographicException_Allocated_KeySize()
         {
             if (PlatformKeySizeRequirements?.MinSize - 1 is int smallKey and > 0)
             {
@@ -855,10 +859,132 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task CryptographicException_OneShot_KeySize()
+        {
+            if (PlatformKeySizeRequirements?.MinSize - 1 is int smallKeySize and > 0)
+            {
+                await AssertOneShotsThrowAnyAsync<CryptographicException>(keySize: smallKeySize);
+            }
+
+            if (PlatformKeySizeRequirements?.MaxSize + 1 is int largeKeySize)
+            {
+                await AssertOneShotsThrowAnyAsync<CryptographicException>(keySize: largeKeySize);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void CryptographicException_Instance_CustomizationStringSize()
+        {
+            if (PlatformMaxCustomizationStringSize + 1 is int tooBigCustomizationString)
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => TKmacTrait.Create(MinimalKey, new byte[tooBigCustomizationString]));
+
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    TKmacTrait.Create(
+                        new ReadOnlySpan<byte>(MinimalKey),
+                        new ReadOnlySpan<byte>(new byte[tooBigCustomizationString])));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task CryptographicException_OneShot_CustomizationStringSize()
+        {
+            if (PlatformMaxCustomizationStringSize + 1 is int tooBigCustomizationString)
+            {
+                await AssertOneShotsThrowAnyAsync<CryptographicException>(
+                    customizationStringSize: tooBigCustomizationString);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task CryptographicException_OneShot_OutputSize()
+        {
+            if (PlatformMaxOutputSize + 1 is int tooBigOutputSize)
+            {
+                await AssertOneShotsThrowAnyAsync<CryptographicException>(outputSize: tooBigOutputSize);
+            }
+        }
+
         [Fact]
         public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(TKmacTrait.IsSupported, PlatformSupportsKmac());
+        }
+
+        private static async Task AssertOneShotsThrowAnyAsync<TException>(
+            int? keySize = null,
+            int? customizationStringSize = null,
+            int outputSize = 1) where TException : Exception
+        {
+            byte[] key = keySize is int ks ? new byte[ks] : MinimalKey;
+            byte[] source = [1];
+            byte[] destination = new byte[outputSize];
+            byte[] customizationString = new byte[customizationStringSize.GetValueOrDefault()];
+
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.HashData(key, source, outputSize, customizationString));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.HashData(
+                    new ReadOnlySpan<byte>(key),
+                    new ReadOnlySpan<byte>(source),
+                    outputSize,
+                    new ReadOnlySpan<byte>(customizationString)));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.HashData(
+                    new ReadOnlySpan<byte>(key),
+                    new ReadOnlySpan<byte>(source),
+                    destination,
+                    new ReadOnlySpan<byte>(customizationString)));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.HashData(
+                    key,
+                    Stream.Null,
+                    outputSize,
+                    customizationString));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.HashData(
+                    new ReadOnlySpan<byte>(key),
+                    Stream.Null,
+                    outputSize,
+                    customizationString));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.HashData(
+                    new ReadOnlySpan<byte>(key),
+                    Stream.Null,
+                    destination,
+                    customizationString));
+
+            await Assert.ThrowsAnyAsync<TException>(
+                async () => await TKmacTrait.HashDataAsync(
+                    key,
+                    Stream.Null,
+                    outputSize,
+                    customizationString,
+                    default(CancellationToken)));
+
+            await Assert.ThrowsAnyAsync<TException>(
+                async () => await TKmacTrait.HashDataAsync(
+                    new ReadOnlyMemory<byte>(key),
+                    Stream.Null,
+                    outputSize,
+                    new ReadOnlyMemory<byte>(customizationString),
+                    default(CancellationToken)));
+
+            await Assert.ThrowsAnyAsync<TException>(
+                async () => await TKmacTrait.HashDataAsync(
+                    new ReadOnlyMemory<byte>(key),
+                    Stream.Null,
+                    new Memory<byte>(destination),
+                    new ReadOnlyMemory<byte>(customizationString),
+                    default(CancellationToken)));
         }
 
         private static bool PlatformSupportsKmac()
