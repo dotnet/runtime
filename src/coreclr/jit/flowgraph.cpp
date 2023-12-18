@@ -4413,7 +4413,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
     if (!dfsTree->HasCycle())
     {
-        JITDUMP("DFS tree has no cycles; skipping identification of natural loops\n");
+        JITDUMP("Flow graph has no cycles; skipping identification of natural loops\n");
         return loops;
     }
 
