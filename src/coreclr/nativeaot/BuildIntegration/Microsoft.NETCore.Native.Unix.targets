@@ -92,7 +92,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
       <DirectPInvoke Include="libSystem.Globalization.Native" />
       <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
-      <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
+      <StaticICULibs Include="-licuio -licutu -lstdc++" />
+      <StaticICULibs Include="-licui18n -licuuc -licudata" Condition="'$(HybridGlobalization)' != 'true'" />
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
