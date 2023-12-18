@@ -7,7 +7,6 @@
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
-    <HybridGlobalization>true</HybridGlobalization> 
     <AppName>HelloiOS</AppName>
     <GenerateXcodeProject>true</GenerateXcodeProject>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
