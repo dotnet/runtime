@@ -71,6 +71,7 @@ fcall_membase: dest:f src1:b len:12 clob:c
 # Note: in RV32, it shoule be 
 # lcall: dest:l ...
 lcall: dest:a len:16 clob:c
+call_reg: dest:a src1:i len:4 clob:c
 lcall_membase: dest:a src1:b len:8 clob:c
 
 store_membase_reg: dest:b src1:i len:24
@@ -112,6 +113,10 @@ move: dest:i src1:i len:4
 lmove: dest:i src1:i len:4
 fmove: dest:f src1:f len:4
 rmove: dest:f src1:f len:4
+move_f_to_i4: dest:i src1:f len:4
+move_i4_to_f: dest:f src1:i len:4
+move_f_to_i8: dest:i src1:f len:4
+move_i8_to_f: dest:f src1:i len:4
 
 iconst: dest:i len:16
 i8const: dest:i len:16
@@ -151,6 +156,7 @@ float_ceq: dest:i src1:f src2:f len:4
 float_cle: dest:i src1:f src2:f len:4
 float_clt: dest:i src1:f src2:f len:4
 float_clt_un: dest:i src1:f src2:f len:4
+r4_ceq: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
 r4_clt_un: dest:i src1:f src2:f len:4
 r4_cle: dest:i src1:f src2:f len:4

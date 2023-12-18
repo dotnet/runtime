@@ -1754,6 +1754,14 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	case ArgInFReg:
 		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
 		break;
+#ifdef TARGET_RISCV64
+	case ArgInFRegR4:
+		if (COMPILE_LLVM (cfg))
+			NOT_IMPLEMENTED;
+		else
+			MONO_EMIT_NEW_UNALU (cfg, OP_RMOVE, cfg->ret->dreg, val->dreg);
+		break;
+#endif
 	default:
 		g_print ("can't process Storage type %d\n", cinfo->ret.storage);
 		NOT_IMPLEMENTED;
@@ -1865,14 +1873,24 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LREM_UN:
 	case OP_IREM_UN_IMM:
 
+	case OP_ICONV_TO_OVF_I1:
+	case OP_ICONV_TO_OVF_I1_UN:
 	case OP_ICONV_TO_OVF_U1:
 	case OP_ICONV_TO_OVF_U1_UN:
+	case OP_ICONV_TO_OVF_I2:
+	case OP_ICONV_TO_OVF_I2_UN:
 	case OP_ICONV_TO_OVF_U2:
 	case OP_ICONV_TO_OVF_U2_UN:
+	case OP_ICONV_TO_OVF_I8:
+	case OP_ICONV_TO_OVF_I8_UN:
 	case OP_ICONV_TO_OVF_U4:
 	case OP_ICONV_TO_OVF_U4_UN:
+	case OP_ICONV_TO_OVF_I8:
+	case OP_ICONV_TO_OVF_I8_UN:
 	case OP_ICONV_TO_OVF_U8:
 	case OP_ICONV_TO_OVF_U8_UN:
+	case OP_ICONV_TO_OVF_I_UN:
+	case OP_ICONV_TO_OVF_U_UN:
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
 	case OP_LCONV_TO_OVF_U1:
@@ -1958,6 +1976,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		case ArgInIReg:
 		case ArgInFReg:
+#ifdef TARGET_RISCV64
+		case ArgInFRegR4:
+#endif
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			cfg->ret->dreg = cinfo->ret.reg;
@@ -2196,6 +2217,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MOVE:
 		case OP_RMOVE:
 		case OP_FMOVE:
+		case OP_MOVE_F_TO_I4:
+		case OP_MOVE_I4_TO_F:
+#ifdef TARGET_RISCV64
+		case OP_MOVE_F_TO_I8:
+		case OP_MOVE_I8_TO_F:
+#endif
 		case OP_LMOVE:
 		case OP_ISUB:
 		case OP_LSUB:
@@ -2294,14 +2321,60 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 		case OP_FCONV_TO_I8:
 		case OP_FCEQ:
+		case OP_FCLE:
 		case OP_FCLT:
+		case OP_FCLT_UN:
+		case OP_RCEQ:
+		case OP_RCLE:
 		case OP_RCLT:
 		case OP_RCLT_UN:
-		case OP_FCLT_UN:
 		case OP_RISCV_SETFREG_R4:
 		case OP_R4CONST:
 		case OP_ICONV_TO_R4:
 			break;
+		case OP_RCGT:
+		case OP_RCGT_UN: {
+			// rcgt rd, rs1, rs2 -> rlt rd, rs2, rs1
+			ins->opcode = OP_RCLT;
+			int tmp_reg = ins->sreg1;
+			ins->sreg1 = ins->sreg2;
+			ins->sreg2 = tmp_reg;
+			break;
+		}
+		case OP_RCGE:
+		case OP_FCGE:{
+			// rcge rd, rs1, rs2 -> rcle rd, rs2, rs1
+			if (ins->opcode == OP_FCGE)
+				ins->opcode = OP_FCLE;
+			else
+				ins->opcode = OP_RCLE;
+			int tmp_reg = ins->sreg1;
+			ins->sreg1 = ins->sreg2;
+			ins->sreg2 = tmp_reg;
+			break;
+		}
+		case OP_RCNEQ:
+		case OP_FCNEQ:{
+			// fcneq rd, rs1, rs2 -> fceq rd, rs1, rs2, ceq rd, rd, zero
+			if (ins->opcode == OP_FCNEQ)
+				ins->opcode = OP_FCEQ;
+			else
+				ins->opcode = OP_RCEQ;
+			NEW_INS_AFTER (cfg, ins, temp, OP_CEQ);
+			temp->dreg = ins->dreg;
+			temp->sreg1 = temp->dreg;
+			temp->sreg2 = RISCV_ZERO;
+			break;
+		}
+		case OP_FCGT:
+		case OP_FCGT_UN: {
+			// fcgt rd, rs1, rs2 -> flt rd, rs2, rs1
+			ins->opcode = OP_FCLT;
+			int tmp_reg = ins->sreg1;
+			ins->sreg1 = ins->sreg2;
+			ins->sreg2 = tmp_reg;
+			break;
+		}
 		case OP_FCONV_TO_I2:
 		case OP_RCONV_TO_I2: {
 			// fconv_to_i2 rd, fs1 => fconv_to_i{4|8} rs1, fs1; {i|l}conv_to_i2 rd, rs1
@@ -2326,24 +2399,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			ins->sreg1 = temp->dreg;
 			goto loop_start;
-		}
-		case OP_RCGT:
-		case OP_RCGT_UN: {
-			// rcgt rd, rs1, rs2 -> rlt rd, rs2, rs1
-			ins->opcode = OP_RCLT;
-			int tmp_reg = ins->sreg1;
-			ins->sreg1 = ins->sreg2;
-			ins->sreg2 = tmp_reg;
-			break;
-		}
-		case OP_FCGT:
-		case OP_FCGT_UN: {
-			// fcgt rd, rs1, rs2 -> flt rd, rs2, rs1
-			ins->opcode = OP_FCLT;
-			int tmp_reg = ins->sreg1;
-			ins->sreg1 = ins->sreg2;
-			ins->sreg2 = tmp_reg;
-			break;
 		}
 		case OP_RCOMPARE: {
 			if (ins->next) {
@@ -2492,6 +2547,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_CALL_REG:
+		case OP_LCALL_REG:
 		case OP_FCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_VCALL2_REG:
@@ -4115,6 +4171,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				riscv_fsgnj_s (code, ins->dreg, ins->sreg1, ins->sreg1);
 			break;
+		case OP_MOVE_F_TO_I4:
+			g_assert (riscv_stdext_f);
+			riscv_fmv_x_w (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_MOVE_I4_TO_F:
+			g_assert (riscv_stdext_f);
+			riscv_fmv_w_x (code, ins->dreg, ins->sreg1);
+			break;
+#ifdef TARGET_RISCV64
+		case OP_MOVE_F_TO_I8:
+			g_assert (riscv_stdext_d);
+			riscv_fmv_x_d (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_MOVE_I8_TO_F:
+			g_assert (riscv_stdext_d);
+			riscv_fmv_d_x (code, ins->dreg, ins->sreg1);
+			break;
+#endif
 		case OP_LOAD_MEMBASE:
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 0);
 			break;
@@ -4583,6 +4657,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_feq_s (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		}
+		case OP_RCEQ: {
+			g_assert (riscv_stdext_f);
+			riscv_feq_s (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		}
 		case OP_RCLT:
 		case OP_RCLT_UN: {
 			g_assert (riscv_stdext_f);
@@ -4656,6 +4735,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_CALL_REG:
+		case OP_LCALL_REG:
 		case OP_RCALL_REG:
 		case OP_FCALL_REG:
 		case OP_VOIDCALL_REG:
