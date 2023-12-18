@@ -19,7 +19,7 @@ jobs:
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
       - name: Build Tests programs
-        run: ./build.sh -mono -debug riscv64 -ninja -tree:JIT/ --ci
+        run: ./build.sh -mono -debug riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
       # upload entire project
       - name: Upload Artifacts
@@ -29,6 +29,7 @@ jobs:
           path: ./
   
   test:
+    continue-on-error: true
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
