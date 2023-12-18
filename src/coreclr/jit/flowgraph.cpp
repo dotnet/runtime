@@ -4635,9 +4635,6 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
         return;
     }
 
-    BitVecTraits loopTraits(loop->GetDfsTree()->PostOrderTraits());
-    BitVec       outputBlocks(BitVecOps::MakeEmpty(&loopTraits));
-
     // Display: LOOP# (old LOOP#) / header / parent loop# / blocks / entry edges / exit edges / back edges
     // Blocks can compacted be "[top .. bottom]" if lexically adjacent and no non-loop blocks in
     // the range. Otherwise, print a verbose list of blocks.
@@ -4665,103 +4662,186 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
     // Dump the set of blocks in the loop. There are three cases:
     // 1. If there is only one block in the loop, display it.
     // 2. If the blocks happen to be lexically dense and without non-loop blocks in the range,
-    //    then use a shortcut of `[BBtop .. BBbottom]`.
-    // 3. Otherwise, display the entire list of blocks.
+    //    then use a shortcut of `[BBtop .. BBbottom]`. Note that "lexically dense" is defined
+    //    in terms of the "bbNext" ordering of blocks, which is the default used by the basic
+    //    block dumper fgDispBasicBlocks. However, setting JitDumpFgBlockOrder can change the
+    //    basic block dump order.
+    // 3. If all the loop blocks are found when traversing from the lexical top to lexical
+    //    bottom block (as defined by `bbNum` ordering, not `bbNext` ordering), then display
+    //    a set of ranges, with the non-loop blocks in the range breaking up the continuous range.
+    // 4. Otherwise, display the entire list of blocks individually.
     //
     // Lexicality depends on properly renumbered blocks, which we might not have when dumping.
 
-    printf("\n  Members (%u): ", loop->NumLoopBlocks());
-
+    bool           first;
     const unsigned numBlocks = loop->NumLoopBlocks();
+    printf("\n  Members (%u): ", numBlocks);
+
     if (numBlocks == 0)
     {
-        // This should never happen?
+        // This should never happen
         printf("NONE?");
     }
     else if (numBlocks == 1)
     {
-        // Should be able to assume the only block is the header, but just in case, use the normal visitor.
-        loop->VisitLoopBlocksReversePostOrder([](BasicBlock* block) {
-            printf(FMT_BB " ", block->bbNum);
-            return BasicBlockVisit::Continue;
-        });
+        // If there's exactly one block, it must be the header.
+        printf(FMT_BB, loop->GetHeader()->bbNum);
     }
     else
     {
-        BasicBlock* lexicalTopBlock     = loop->GetLexicallyTopMostBlock();
-        BasicBlock* lexicalBottomBlock  = loop->GetLexicallyBottomMostBlock();
-        BasicBlock* lexicalEndIteration = lexicalBottomBlock->Next();
+        BasicBlock* const lexicalTopBlock     = loop->GetLexicallyTopMostBlock();
+        BasicBlock* const lexicalBottomBlock  = loop->GetLexicallyBottomMostBlock();
+        BasicBlock* const lexicalEndIteration = lexicalBottomBlock->Next();
+        unsigned          numLexicalBlocks    = 0;
 
-        // Add all the loop blocks to a set, then check all the blocks in the identified lexical range.
-        // If there are non-loop blocks found, or if we don't find all the loop blocks in the lexical walk
-        // (meaning the bbNums might not be properly ordered), we fail.
-        loop->VisitLoopBlocks([&](BasicBlock* loopBlock) {
-            BitVecOps::AddElemD(&loopTraits, outputBlocks, loopBlock->bbNewPostorderNum);
-            return BasicBlockVisit::Continue;
-        });
-        bool lexicallyDense = true; // assume the best
+        // Count the number of loop blocks found in the identified lexical range. If there are non-loop blocks
+        // found, or if we don't find all the loop blocks in the lexical walk (meaning the bbNums might not be
+        // properly ordered), we fail.
+        bool lexicallyDense                    = true; // assume the best
+        bool lexicalRangeContainsAllLoopBlocks = true; // assume the best
         for (BasicBlock* block = lexicalTopBlock; (block != nullptr) && (block != lexicalEndIteration);
              block             = block->Next())
         {
             if (!loop->ContainsBlock(block))
             {
                 lexicallyDense = false;
-                break;
             }
-            BitVecOps::RemoveElemD(&loopTraits, outputBlocks, block->bbNewPostorderNum);
+            else
+            {
+                ++numLexicalBlocks;
+            }
         }
-        if (!BitVecOps::IsEmpty(&loopTraits, outputBlocks))
+        if (numBlocks != numLexicalBlocks)
         {
-            lexicallyDense = false;
+            lexicalRangeContainsAllLoopBlocks = false;
         }
 
-        if (lexicallyDense)
+        if (lexicallyDense && lexicalRangeContainsAllLoopBlocks)
         {
+            // This is just an optimization over the next case (`!lexicallyDense`) as there's no need to
+            // loop over the blocks again.
             printf("[" FMT_BB ".." FMT_BB "]", lexicalTopBlock->bbNum, lexicalBottomBlock->bbNum);
+        }
+        else if (lexicalRangeContainsAllLoopBlocks)
+        {
+            // The lexical range from top to bottom contains all the loop blocks, but also contains some
+            // non-loop blocks. Try to display the blocks in groups of ranges, to avoid dumping all the
+            // blocks individually.
+            BasicBlock* firstInRange = nullptr;
+            BasicBlock* lastInRange  = nullptr;
+            first                    = true;
+            auto printRange          = [&]() {
+                // Dump current range if there is one; reset firstInRange.
+                if (firstInRange == nullptr)
+                {
+                    return;
+                }
+                if (!first)
+                {
+                    printf(";");
+                }
+                if (firstInRange == lastInRange)
+                {
+                    // Just one block in range
+                    printf(FMT_BB, firstInRange->bbNum);
+                }
+                else
+                {
+                    printf("[" FMT_BB ".." FMT_BB "]", firstInRange->bbNum, lastInRange->bbNum);
+                }
+                firstInRange = lastInRange = nullptr;
+                first                      = false;
+            };
+            for (BasicBlock* block = lexicalTopBlock; block != lexicalEndIteration; block = block->Next())
+            {
+                if (!loop->ContainsBlock(block))
+                {
+                    printRange();
+                }
+                else
+                {
+                    if (firstInRange == nullptr)
+                    {
+                        firstInRange = block;
+                    }
+                    lastInRange = block;
+                }
+            }
+            printRange();
         }
         else
         {
-            bool firstMember = true;
-            loop->VisitLoopBlocksReversePostOrder([&firstMember](BasicBlock* block) {
-                printf("%s" FMT_BB, firstMember ? "" : ";", block->bbNum);
-                firstMember = false;
+            // We didn't see all the loop blocks in the lexical range; maybe the `bbNum` order is
+            // not well ordered such that `top` and `bottom` are not first/last in `bbNext` order.
+            // Just dump all the blocks individually using the loop block visitor.
+            first = true;
+            loop->VisitLoopBlocksReversePostOrder([&first](BasicBlock* block) {
+                printf("%s" FMT_BB, first ? "" : ";", block->bbNum);
+                first = false;
                 return BasicBlockVisit::Continue;
             });
+
+            // Print out the lexical top and bottom blocks, which will explain why we didn't print ranges.
+            printf("\n  Lexical top: " FMT_BB, lexicalTopBlock->bbNum);
+            printf("\n  Lexical bottom: " FMT_BB, lexicalBottomBlock->bbNum);
         }
     }
 
     // Dump Entry Edges, Back Edges, Exit Edges
 
     printf("\n  Entry: ");
-    bool first = true;
-    for (FlowEdge* const edge : loop->EntryEdges())
+    if (loop->EntryEdges().size() == 0)
     {
-        printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum, loop->GetHeader()->bbNum);
-        first = false;
+        printf("NONE");
+    }
+    else
+    {
+        first = true;
+        for (FlowEdge* const edge : loop->EntryEdges())
+        {
+            printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum,
+                   loop->GetHeader()->bbNum);
+            first = false;
+        }
     }
 
     printf("\n  Exit: ");
-    first = true;
-    for (FlowEdge* const edge : loop->ExitEdges())
+    if (loop->ExitEdges().size() == 0)
     {
-        BasicBlock* const exitBlock = edge->getSourceBlock();
-        printf("%s" FMT_BB " ->", first ? "" : "; ", exitBlock->bbNum);
-        exitBlock->VisitRegularSuccs(comp, [=](BasicBlock* succ) {
-            if (!loop->ContainsBlock(succ))
-            {
-                printf(" " FMT_BB, succ->bbNum);
-            }
-            return BasicBlockVisit::Continue;
-        });
-        first = false;
+        printf("NONE");
+    }
+    else
+    {
+        first = true;
+        for (FlowEdge* const edge : loop->ExitEdges())
+        {
+            BasicBlock* const exitingBlock = edge->getSourceBlock();
+            printf("%s" FMT_BB " ->", first ? "" : "; ", exitingBlock->bbNum);
+            exitingBlock->VisitRegularSuccs(comp, [=](BasicBlock* succ) {
+                if (comp->fgGetPredForBlock(succ, exitingBlock) == edge)
+                {
+                    printf(" " FMT_BB, succ->bbNum);
+                }
+                return BasicBlockVisit::Continue;
+            });
+            first = false;
+        }
     }
 
     printf("\n  Back: ");
-    first = true;
-    for (FlowEdge* const edge : loop->BackEdges())
+    if (loop->BackEdges().size() == 0)
     {
-        printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum, loop->GetHeader()->bbNum);
-        first = false;
+        printf("NONE");
+    }
+    else
+    {
+        first = true;
+        for (FlowEdge* const edge : loop->BackEdges())
+        {
+            printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum,
+                   loop->GetHeader()->bbNum);
+            first = false;
+        }
     }
 
     printf("\n");
