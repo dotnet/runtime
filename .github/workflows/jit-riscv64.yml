@@ -1,4 +1,5 @@
 on:
+  workflow_dispatch:
   push:
     branches:
       - riscv-jit-rv64
@@ -27,7 +28,6 @@ jobs:
         with:
           name: jit-riscv64
           path: ./
-        working-directory: ./runtime
   
   test:
     runs-on: ubuntu-latest
