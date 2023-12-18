@@ -15,9 +15,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Cross Rebuild
+        continue-on-error: true
+        run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
       - name: Cross Build
+        if: failure()
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+      # cache
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .dotnet/
+            artifacts/
       - name: Build Tests programs
         run: ./build.sh -mono -debug riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
@@ -42,6 +53,11 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: jit-riscv64
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            artifacts/tests/coreclr
       - name: Run tests
         run: bash -c ./run.sh Release
         working-directory: ./src/tests
