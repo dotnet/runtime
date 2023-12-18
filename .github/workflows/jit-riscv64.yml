@@ -12,21 +12,22 @@ jobs:
         ROOTFS_DIR: /crossrootfs/riscv64
         QEMU_LD_PREFIX: /crossrootfs/riscv64
     steps:
-      - name: check current path
-        run: |
-          bash -c ls -la
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Cross Build
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
-        run: bash -c ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+        run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+        working-directory: ./runtime
       - name: Build Tests programs
-        run: |
-          cd src/tests && bash -c ./build.sh -mono -debug riscv64 -ninja -tree:JIT/ --ci
+        run: ./build.sh -mono -debug riscv64 -ninja -tree:JIT/ --ci
+        working-directory: ./runtime/src/tests
       # upload entire project
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: jit-riscv64
           path: ./
+        working-directory: ./runtime
   
   test:
     runs-on: ubuntu-latest
@@ -42,6 +43,6 @@ jobs:
         with:
           name: jit-riscv64
       - name: Run tests
-        run: |
-          cd src/tests && bash -c ./run.sh Release
+        run: bash -c ./run.sh Release
+        working-directory: ./runtime/src/tests
       
