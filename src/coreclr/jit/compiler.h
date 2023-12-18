@@ -1969,6 +1969,8 @@ class FlowGraphDfsTree
     // that all predecessors are visited before successors whenever possible.
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
+
+    // Whether the DFS that produced the tree found any backedges.
     bool m_hasCycle;
 
 public:
