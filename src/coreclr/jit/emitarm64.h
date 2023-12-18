@@ -341,9 +341,6 @@ static code_t insEncodeReg_V_20_to_16(regNumber reg);
 // Return an encoding for the specified 'R' register used in '20' thru '16' position.
 static code_t insEncodeReg_R_20_to_16(regNumber reg);
 
-// Return an encoding for the specified 'R' register used in '20' thru '16' position.
-static code_t insEncodeReg_R_20_to_16(regNumber reg);
-
 // Return an encoding for the specified 'R' register used in '9' thru '5' position.
 static code_t insEncodeReg_R_9_to_5(regNumber reg);
 

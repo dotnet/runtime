@@ -11706,19 +11706,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'R' register used in '20' thru '16' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_R_20_to_16(regNumber reg)
-{
-    assert(isIntegerRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 16;
-}
-
-/*****************************************************************************
- *
  *  Return an encoding for the specified 'R' register used in '9' thru '5' position.
  */
 
@@ -11804,7 +11791,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 31));
+    assert((ureg >= 12) && (ureg <= 15));
     return ureg << 16;
 }
 
