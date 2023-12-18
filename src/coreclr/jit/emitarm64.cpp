@@ -1286,9 +1286,6 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
 
         case IF_DV_2B: // DV_2B   .Q.........iiiii ......nnnnnddddd      Rd Vn[]    (umov - to general)
         case IF_DV_2H: // DV_2H   X........X...... ......nnnnnddddd      Rd Vn      (fmov - to general)
-
-        case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
-        case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             return true;
 
         case IF_DV_2C: // DV_2C   .Q.........iiiii ......nnnnnddddd      Vd Rn      (dup/ins - vector from general)
@@ -1321,9 +1318,6 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
-
-        case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
-        case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
 
