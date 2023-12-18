@@ -378,8 +378,7 @@ void CodeGen::genMarkLabelsForCodegen()
     {
         switch (block->GetKind())
         {
-            case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
-            {
+            case BBJ_ALWAYS:
                 // If we can skip this jump, don't create a label for the target
                 if (block->CanRemoveJumpToNext(compiler))
                 {
@@ -387,7 +386,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 }
 
                 FALLTHROUGH;
-            }
+
             case BBJ_EHCATCHRET:
                 JITDUMP("  " FMT_BB " : branch target\n", block->GetTarget()->bbNum);
                 block->GetTarget()->SetFlags(BBF_HAS_LABEL);
@@ -401,7 +400,7 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_SWITCH:
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
+                    JITDUMP("  " FMT_BB " : switch target\n", bTarget->bbNum);
                     bTarget->SetFlags(BBF_HAS_LABEL);
                 }
                 break;
@@ -413,12 +412,12 @@ void CodeGen::genMarkLabelsForCodegen()
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 {
-                    // For callfinally thunks, we need to mark the block following the callfinally/always pair,
+                    // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
                     BasicBlock* bbToLabel = block->Next();
-                    if (block->isBBCallAlwaysPair())
+                    if (block->isBBCallFinallyPair())
                     {
-                        bbToLabel = bbToLabel->Next(); // skip the BBJ_ALWAYS
+                        bbToLabel = bbToLabel->Next(); // skip the BBJ_CALLFINALLYRET
                     }
                     if (bbToLabel != nullptr)
                     {
@@ -430,9 +429,14 @@ void CodeGen::genMarkLabelsForCodegen()
 
                 break;
 
+            case BBJ_CALLFINALLYRET:
+                JITDUMP("  " FMT_BB " : finally continuation\n", block->GetFinallyContinuation()->bbNum);
+                block->GetFinallyContinuation()->SetFlags(BBF_HAS_LABEL);
+                break;
+
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
+            case BBJ_EHFILTERRET: // The filter-handler will get marked when processing the EH handlers, below.
             case BBJ_RETURN:
             case BBJ_THROW:
                 break;
@@ -1782,9 +1786,9 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" - Windows");
         }
-        else if (TargetOS::IsMacOS)
+        else if (TargetOS::IsApplePlatform)
         {
-            printf(" - MacOS");
+            printf(" - Apple");
         }
         else if (TargetOS::IsUnix)
         {
@@ -2559,12 +2563,12 @@ void CodeGen::genReportEH()
 
                 hndBeg = compiler->ehCodeOffset(block);
 
-                // How big is it? The BBJ_ALWAYS has a null bbEmitCookie! Look for the block after, which must be
-                // a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
+                // How big is it? The BBJ_CALLFINALLYRET has a null bbEmitCookie! Look for the block after, which must
+                // be a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
                 BasicBlock* bbLabel = block->Next();
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
-                    bbLabel = bbLabel->Next(); // skip the BBJ_ALWAYS
+                    bbLabel = bbLabel->Next(); // skip the BBJ_CALLFINALLYRET
                 }
                 if (bbLabel == nullptr)
                 {

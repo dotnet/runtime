@@ -50,11 +50,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--<AdditionalSharedFrameworkToInstallArguments Include="-Version 8.0.0-rc.2.23457.7" />-->
     <!-- Required for running apps built with 9.0 sdk, but the sdk does
          not yet support *running* with 9.0 sdk -->
-    <AdditionalSharedFrameworkToInstallArguments Condition="!$([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -c 8.0 -q daily" />
-    <AdditionalSharedFrameworkToInstallArguments Condition=" $([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -Channel 8.0 -Quality daily" />
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 8.0 -Quality daily" />
 
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
@@ -169,10 +167,6 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
-  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
-             TaskName="GenerateFileFromTemplate"
-             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
-
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
@@ -193,7 +187,7 @@
       " />
 
     <MSBuild Projects="%(_NuGetsToBuild.Project)"
-             Properties="%(_NuGetsToBuild.Properties)"
+             Properties="%(_NuGetsToBuild.Properties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />
     <MSBuild Projects="%(_NuGetsToBuild.Project)"
              Properties="%(_NuGetsToBuild.Properties)"
