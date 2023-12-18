@@ -118,6 +118,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_Destroy)
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
+    DllImportEntry(RuntimeModule_GetTypes)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
     DllImportEntry(ModuleBuilder_GetTypeRef)

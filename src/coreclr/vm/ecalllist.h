@@ -244,10 +244,6 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetLoaderAllocator", RuntimeFieldHandle::GetLoaderAllocator)
 FCFuncEnd()
 
-FCFuncStart(gCOMModuleFuncs)
-    FCFuncElement("GetTypes", COMModule::GetTypes)
-FCFuncEnd()
-
 FCFuncStart(gCOMModuleHandleFuncs)
     FCFuncElement("GetToken", ModuleHandle::GetToken)
     FCFuncElement("GetDynamicMethod", ModuleHandle::GetDynamicMethod)
@@ -683,7 +679,6 @@ FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
-FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 

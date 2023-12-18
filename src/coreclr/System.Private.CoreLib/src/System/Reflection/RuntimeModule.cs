@@ -15,21 +15,21 @@ namespace System.Reflection
         internal RuntimeModule() { throw new NotSupportedException(); }
 
         #region FCalls
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetType(QCallModule module, string className, [MarshalAs(UnmanagedType.Bool)] bool throwOnError, [MarshalAs(UnmanagedType.Bool)] bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
         private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
         private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType[] GetTypes(RuntimeModule module);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetTypes")]
+        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes);
 
         internal RuntimeType[] GetDefinedTypes()
         {
-            return GetTypes(this);
+            RuntimeType[]? types = null;
+            RuntimeModule thisAsLocal = this;
+            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types));
+            return types!;
         }
         #endregion
 
@@ -442,10 +442,7 @@ namespace System.Reflection
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
         [RequiresUnreferencedCode("Types might be removed")]
-        public override Type[] GetTypes()
-        {
-            return GetTypes(this);
-        }
+        public override Type[] GetTypes() => GetDefinedTypes();
 
         #endregion
 

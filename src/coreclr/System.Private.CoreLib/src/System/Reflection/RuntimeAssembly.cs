@@ -268,23 +268,7 @@ namespace System.Reflection
         public override IEnumerable<TypeInfo> DefinedTypes
         {
             [RequiresUnreferencedCode("Types might be removed")]
-            get
-            {
-                RuntimeModule[] modules = GetModulesInternal(true, false);
-                if (modules.Length == 1)
-                {
-                    return modules[0].GetDefinedTypes();
-                }
-
-                List<RuntimeType> rtTypes = new List<RuntimeType>();
-
-                for (int i = 0; i < modules.Length; i++)
-                {
-                    rtTypes.AddRange(modules[i].GetDefinedTypes());
-                }
-
-                return rtTypes.ToArray();
-            }
+            get => GetManifestModule(GetNativeHandle()).GetDefinedTypes();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
