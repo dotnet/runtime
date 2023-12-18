@@ -2127,22 +2127,22 @@ void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                                 UNATIVE_OFFSET& dstOffs,
                                                 const BYTE*&    dstAddr) const
 {
-    // TODO-RISCV64: Currently the iiaEncodedInstrCount is not set by any of the emitIns_* methods
-    assert(!jmp->idAddr()->iiaHasInstrCount());
-    // if (jmp->idAddr()->iiaHasInstrCount())
-    // {
-    //     assert(ig != nullptr);
-    //     int      instrCount = jmp->idAddr()->iiaGetInstrCount();
-    //     unsigned insNum     = emitFindInsNum(ig, jmp);
-    //     if (instrCount < 0)
-    //     {
-    //         // Backward branches using instruction count must be within the same instruction group.
-    //         assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
-    //     }
-    //     dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
-    //     dstAddr = emitOffsetToPtr(dstOffs);
-    //     return;
-    // }
+    // TODO-RISCV64-BUG: Currently the iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jump
+    // to label and an instruction-count based jumps impossible
+    if (jmp->idAddr()->iiaHasInstrCount())
+    {
+        assert(ig != nullptr);
+        int      instrCount = jmp->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, jmp);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
+        dstAddr = emitOffsetToPtr(dstOffs);
+        return;
+    }
     dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
     dstAddr = emitOffsetToPtr(dstOffs);
 }
