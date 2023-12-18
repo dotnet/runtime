@@ -993,15 +993,15 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             struct
             {
-                unsigned int iiaEncodedInstr; // instruction's binary encoding.
                 regNumber    _idReg3 : REGNUM_BITS;
                 regNumber    _idReg4 : REGNUM_BITS;
+                unsigned int iiaEncodedInstr; // instruction's binary encoding.
             };
 
             struct
             {
-                int            iiaJmpOffset; // temporary saving the offset of jmp or data.
                 emitLclVarAddr iiaLclVar;
+                int            iiaJmpOffset; // temporary saving the offset of jmp or data.
             };
 
             void iiaSetInstrEncode(unsigned int encode)
