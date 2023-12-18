@@ -546,6 +546,19 @@ struct RangeOps
         result.uLimit = Limit(Limit::keConstant, 1 << r1hiConstant);
         return result;
     }
+
+    static Range Negate(Range& range)
+    {
+        // Only constant ranges can be negated.
+        if (!range.LowerLimit().IsConstant() || !range.UpperLimit().IsConstant())
+        {
+            return Limit(Limit::keUnknown);
+        }
+        Range result  = Limit(Limit::keConstant);
+        result.lLimit = Limit(Limit::keConstant, -range.UpperLimit().GetConstant());
+        result.uLimit = Limit(Limit::keConstant, -range.LowerLimit().GetConstant());
+        return result;
+    }
 };
 
 class RangeCheck
