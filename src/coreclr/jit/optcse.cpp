@@ -422,12 +422,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         enableSharedConstCSE = true;
     }
 
+#if defined(OPT_CONFIG)
     // Only do shared const CSE on the last iteration of the CSE phase to avoid producing
     // random ADD(CNS, CNS) too soon
     if (!opts.optRepeatLastIteration)
     {
         enableSharedConstCSE = false;
     }
+#endif // defined(OPT_CONFIG)
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);

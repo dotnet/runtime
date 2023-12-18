@@ -4919,7 +4919,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         while (iterations > 0)
         {
+#if defined(OPT_CONFIG)
             opts.optRepeatLastIteration = iterations == 1;
+#endif // defined(OPT_CONFIG)
+
             if (doSsa)
             {
                 // Build up SSA form for the IR
