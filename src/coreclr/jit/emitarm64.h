@@ -486,6 +486,10 @@ static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
 static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
 
+// Returns the encoding to select the 4/8-byte width specifier <R> at bit location 22
+// for an Arm64 Sve instruction.
+static code_t insEncodeSveElemsize_R_22(emitAttr size);
+
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
 {
