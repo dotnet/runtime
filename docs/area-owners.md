@@ -167,7 +167,7 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 | Operating System | Lead          | Owners (area experts to tag in PRs and issues)                      | Description     |
 |------------------|---------------|---------------------------------------------------------------------|-----------------|
 | os-android       | @steveisok    | @akoeplinger                                                        |                 |
-| os-freebsd       |               | @wfurt @Thefrank @sec                                               | Community owned |
+| os-freebsd       |               | @wfurt @Thefrank @sec                                               |                 |
 | os-maccatalyst   | @steveisok    | @kotlarmilos                                                        |                 |
 | os-ios           | @steveisok    | @vargaz, @kotlarmilos                                               |                 |
 | os-tizen         | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |                 |
