@@ -5210,7 +5210,8 @@ void Compiler::fgDebugCheckDfsTree()
                  [=](BasicBlock* block, unsigned postorderNum) {
                      assert(block->bbNewPostorderNum == postorderNum);
                      assert(m_dfsTree->GetPostOrder(postorderNum) == block);
-                 });
+                 },
+                 [](BasicBlock* block, BasicBlock* succ) {});
 
     assert(m_dfsTree->GetPostOrderCount() == count);
 }

@@ -4079,15 +4079,30 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
+    bool         hasCycle  = false;
 
-    unsigned numBlocks = fgRunDfs([](BasicBlock* block, unsigned preorderNum) { block->bbPreorderNum = preorderNum; },
-                                  [=](BasicBlock* block, unsigned postorderNum) {
-                                      block->bbNewPostorderNum = postorderNum;
-                                      assert(postorderNum < fgBBcount);
-                                      postOrder[postorderNum] = block;
-                                  });
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+        block->bbPreorderNum     = preorderNum;
+        block->bbNewPostorderNum = UINT_MAX;
+    };
 
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks);
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+        block->bbNewPostorderNum = postorderNum;
+        assert(postorderNum < fgBBcount);
+        postOrder[postorderNum] = block;
+    };
+
+    auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ) {
+        // Check if block -> succ is a backedge, in which case the flow
+        // graph has a cycle.
+        if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbNewPostorderNum == UINT_MAX))
+        {
+            hasCycle = true;
+        }
+    };
+
+    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
 
 //------------------------------------------------------------------------
@@ -4388,12 +4403,19 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
     {
         unsigned          rpoNum = dfsTree->GetPostOrderCount() - i;
         BasicBlock* const block  = dfsTree->GetPostOrder(i - 1);
-        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum + 1, block->bbNum, block->bbPreorderNum + 1,
-                block->bbNewPostorderNum + 1);
+        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbNewPostorderNum);
     }
+
+    unsigned improperLoopHeaders = 0;
 #endif
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
+
+    if (!dfsTree->HasCycle())
+    {
+        JITDUMP("DFS tree has no cycles; skipping identification of natural loops\n");
+        return loops;
+    }
 
     ArrayStack<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
 
@@ -4439,7 +4461,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
-            loops->m_improperLoopHeaders++;
+            INDEBUG(improperLoopHeaders++);
             continue;
         }
 
@@ -4545,9 +4567,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
     }
 
-    if (loops->m_improperLoopHeaders > 0)
+    if (improperLoopHeaders > 0)
     {
-        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
+        JITDUMP("Rejected %u loop headers\n", improperLoopHeaders);
     }
 #endif
 

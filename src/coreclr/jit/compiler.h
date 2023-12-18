@@ -1969,12 +1969,14 @@ class FlowGraphDfsTree
     // that all predecessors are visited before successors whenever possible.
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
+    bool m_hasCycle;
 
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
+        , m_hasCycle(hasCycle)
     {
     }
 
@@ -2002,6 +2004,11 @@ public:
     BitVecTraits PostOrderTraits() const
     {
         return BitVecTraits(m_postOrderCount, m_comp);
+    }
+
+    bool HasCycle() const
+    {
+        return m_hasCycle;
     }
 
     bool Contains(BasicBlock* block) const;
@@ -2246,10 +2253,6 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
-    // Whether or not we saw any non-natural loop cycles, also known as
-    // irreducible loops.
-    unsigned m_improperLoopHeaders = 0;
-
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
@@ -2262,11 +2265,6 @@ public:
     size_t NumLoops()
     {
         return m_loops.size();
-    }
-
-    bool HaveNonNaturalLoopCycles()
-    {
-        return m_improperLoopHeaders > 0;
     }
 
     FlowGraphNaturalLoop* GetLoopByIndex(unsigned index);
@@ -6076,8 +6074,8 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
-    template<typename TFuncAssignPreorder, typename TFuncAssignPostorder>
-    unsigned fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPostorder assignPostorder);
+    template<typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
 
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
