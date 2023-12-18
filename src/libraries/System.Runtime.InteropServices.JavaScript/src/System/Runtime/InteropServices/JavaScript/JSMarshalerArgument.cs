@@ -86,7 +86,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
         // this is always called from ToManaged() marshaler
+#pragma warning disable CA1822 // Mark members as static
         internal JSProxyContext ToManagedContext
+#pragma warning restore CA1822 // Mark members as static
         {
             get
             {
@@ -114,7 +116,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // this is always called from ToJS() marshaler
+#pragma warning disable CA1822 // Mark members as static
         internal JSProxyContext ToJSContext
+#pragma warning restore CA1822 // Mark members as static
         {
             get
             {
@@ -141,7 +145,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // make sure that we are on a thread with JS interop and that it matches the target of the argument
+#pragma warning disable CA1822 // Mark members as static
         internal JSProxyContext AssertCurrentThreadContext()
+#pragma warning restore CA1822 // Mark members as static
         {
 #if !FEATURE_WASM_THREADS
             return JSProxyContext.MainThreadContext;
