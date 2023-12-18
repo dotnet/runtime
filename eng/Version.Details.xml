@@ -12,9 +12,9 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-alpha.1.23613.1">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-alpha.1.23617.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>487a0a43dbe6e83f07b200b7523447222bb2137b</Sha>
+      <Sha>e5721f8f058db60052ff7298d1a5acd69347b5db</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.23612.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -94,9 +94,9 @@
       <Sha>758bd2af139fcae0460284e63765384d3c199388</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23613.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23617.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>487a0a43dbe6e83f07b200b7523447222bb2137b</Sha>
+      <Sha>e5721f8f058db60052ff7298d1a5acd69347b5db</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.23608.1">
@@ -361,26 +361,26 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>72272bf090494e2717d293b6a808c3301da99a7a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.9.0-3.23605.11">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.9.0-3.23615.7">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>92a930f3247040ec9c077dac9bcdf0294745b339</Sha>
+      <Sha>6a1cfc22d6b40c4e0fe5ac98a77a251c987a7c51</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.9.0-3.23605.11">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.9.0-3.23615.7">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>92a930f3247040ec9c077dac9bcdf0294745b339</Sha>
+      <Sha>6a1cfc22d6b40c4e0fe5ac98a77a251c987a7c51</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-3.23605.11">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-3.23615.7">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>92a930f3247040ec9c077dac9bcdf0294745b339</Sha>
+      <Sha>6a1cfc22d6b40c4e0fe5ac98a77a251c987a7c51</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23613.2">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23615.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>5df6c399d438b3bbf5813c2c732c7cbd1619cbf9</Sha>
+      <Sha>5dc99c6249a4cf845fbdcc367641c1b32347b85a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.23613.2">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.23615.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>5df6c399d438b3bbf5813c2c732c7cbd1619cbf9</Sha>
+      <Sha>5dc99c6249a4cf845fbdcc367641c1b32347b85a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23551.3">
       <Uri>https://github.com/dotnet/sdk</Uri>
@@ -401,9 +401,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23615.2">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23615.9">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>25dcfe15b01029eab5ef6756117ac101231f55e7</Sha>
+      <Sha>4ee18b14edc2c741b286fe9ea347989a4790a764</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

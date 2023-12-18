@@ -38,13 +38,14 @@ seq_point: len:0
 check_this: src1:b len:4
 get_ex_obj: dest:i len:4
 gc_safe_point: src1:i len:12 clob:c
-start_handler: len:8 clob:c
+start_handler: len:16 clob:c
 call_handler: len:4 clob:c
 endfinally: len:32
 endfilter: src1:i len:32
 localloc: dest:i src1:i len:52
 localloc_imm: dest:i len:28
 generic_class_init: src1:a len:12 clob:c
+break: len:4
 
 throw: src1:i len:4
 rethrow: src1:i len:4
@@ -54,14 +55,17 @@ br_reg: src1:i len:4
 jump_table: dest:i len:16
 call: dest:a len:4 clob:c
 call_reg: dest:a src1:i len:4 clob:c
-call_membase: dest:a src1:b len:8 clob:c
+call_membase: dest:a src1:b len:20 clob:c
 voidcall: len:4 clob:c
 voidcall_reg: src1:i len:4 clob:c
-voidcall_membase: src1:b len:8 clob:c
+voidcall_membase: src1:b len:20 clob:c
 vcall2: len:16 clob:c
-vcall2_membase: src1:b len:20 clob:c
+vcall2_reg: src1:i len:16 clob:c
+vcall2_membase: src1:b len:28 clob:c
 fcall: dest:f len:8 clob:c
 rcall: dest:f len:8 clob:c
+rcall_membase: dest:f src1:b len:12 clob:c
+fcall_reg: dest:f src1:i len:8 clob:c
 fcall_membase: dest:f src1:b len:12 clob:c
 
 # Note: in RV32, it shoule be 
@@ -148,6 +152,7 @@ float_cle: dest:i src1:f src2:f len:4
 float_clt: dest:i src1:f src2:f len:4
 float_clt_un: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
+r4_clt_un: dest:i src1:f src2:f len:4
 r4_cle: dest:i src1:f src2:f len:4
 
 add_imm: dest:i src1:i len:4

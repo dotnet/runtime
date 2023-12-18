@@ -3279,6 +3279,11 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         }
     }
 
+    for (block = firstColdBlock; block != nullptr; block = block->Next())
+    {
+        block->SetFlags(BBF_COLD);
+    }
+
 EXIT:;
 
 #ifdef DEBUG

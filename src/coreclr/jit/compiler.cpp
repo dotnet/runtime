@@ -6063,17 +6063,17 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
-    if (TargetOS::IsMacOS)
+    if (TargetOS::IsApplePlatform)
     {
-        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_APPLE);
     }
     else if (TargetOS::IsUnix)
     {
         if (TargetArchitecture::IsX64)
         {
-            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            // Apple x64 uses the Unix jit variant in crossgen2, not a special jit
             info.compMatchedVM =
-                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_APPLE));
         }
         else
         {
