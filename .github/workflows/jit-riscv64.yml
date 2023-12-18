@@ -12,6 +12,8 @@ jobs:
         ROOTFS_DIR: /crossrootfs/riscv64
         QEMU_LD_PREFIX: /crossrootfs/riscv64
     steps:
+      - name: check path
+        run: pwd
       - name: Cross Build
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
