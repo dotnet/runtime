@@ -2156,8 +2156,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *
  *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
  *  I-Type layout:
- *  31----------------------15-14------12-11-----------7-6------------0
- *  |        imm[11:0]        |  funct3  |      rd      |   opcode    |
+ *  31------------20-19-----15-14------12-11-----------7-6------------0
+ *  |   imm[11:0]   |   rs1   |  funct3  |      rd      |   opcode    |
  *  -------------------------------------------------------------------
  */
 
@@ -2167,9 +2167,10 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
     assertCodeLength(funct3, 3);
+    assertCodeLength(rs1, 5);
     isValidSimm12(imm12);
 
-    return opcode | (rd << 7) | (funct3 << 12) | (imm12 << 15);
+    return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (imm12 << 20);
 }
 
 /*****************************************************************************
@@ -2218,7 +2219,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(rd, 5);
     isValidSimm20(imm20);
 
-    return opcode | (rd << 7) | (imm20 << (12 + 12));
+    return opcode | (rd << 7) | ((imm20 >> 12) << 12);
 }
 
 /*****************************************************************************
@@ -2278,7 +2279,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     unsigned imm20          = imm21 >> 1;
     unsigned imm20HiSection = imm20 & kSectionMask;
     unsigned imm20HiBit     = (imm20 >> 19) & kBitMask;
-    unsigned imm20LoSection = (imm20 >> 11) & kSection;
+    unsigned imm20LoSection = (imm20 >> 11) & kSectionMask;
     unsigned imm20LoBit     = (imm20 >> 10) & kBitMask;
 
     return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) |
