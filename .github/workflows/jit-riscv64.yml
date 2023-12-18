@@ -15,19 +15,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Cross Rebuild Mono
-        continue-on-error: true
-        run: ./build.sh mono -c Debug --cross --arch riscv64 --ci --rebuild
       - name: Cross Build Mono
-        if: ${{ failure() }}
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
-        
-      - name: Cross Rebuild Libs & host
-        continue-on-error: true
-        run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
       - name: Cross Build Libs & host
-        if: ${{ failure() }}
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
       - name: Build Tests programs
         run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
