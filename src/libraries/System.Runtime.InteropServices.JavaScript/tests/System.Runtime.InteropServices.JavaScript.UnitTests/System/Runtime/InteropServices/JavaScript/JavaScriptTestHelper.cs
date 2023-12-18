@@ -997,9 +997,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         static JSObject _module;
         public static async Task InitializeAsync()
         {
-#if FEATURE_WASM_THREADS
-            JSHost.AssertOperationStack(0);
-#endif
             if (_module == null)
             {
                 _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
@@ -1015,9 +1012,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static Task DisposeAsync()
         {
-#if FEATURE_WASM_THREADS
-            JSHost.AssertOperationStack(0);
-#endif
             _module?.Dispose();
             _module = null;
             return Task.CompletedTask;

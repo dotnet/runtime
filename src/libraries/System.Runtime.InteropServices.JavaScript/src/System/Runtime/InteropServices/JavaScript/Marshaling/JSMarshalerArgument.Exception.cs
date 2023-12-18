@@ -33,7 +33,8 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.JSHandle != IntPtr.Zero)
             {
                 // this is JSException round-trip
-                jsException = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(slot.JSHandle);
+                var ctx = ToManagedContext;
+                jsException = ctx.CreateCSOwnedProxy(slot.JSHandle);
             }
 
             string? message;
@@ -67,7 +68,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
 #if FEATURE_WASM_THREADS
                     JSObject.AssertThreadAffinity(value);
-                    JSProxyContext.CaptureContextFromParameter(jse.jsException.ProxyContext);
+                    var ctx = jse.jsException.ProxyContext;
+                    if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
+                    {
+                        JSProxyContext.CaptureContextFromParameter(ctx);
+                        slot.ContextHandle = ctx.ContextHandle;
+                    }
+                    else if (slot.ContextHandle != ctx.ContextHandle)
+                    {
+                        Environment.FailFast("ContextHandle mismatch");
+                    }
 #endif
                     // this is JSException roundtrip
                     ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
@@ -78,7 +88,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     ToJS(cpy.Message);
                     slot.Type = MarshalerType.Exception;
-                    slot.GCHandle = JSProxyContext.CurrentOperationContext.GetJSOwnedObjectGCHandle(cpy);
+
+                    var ctx = ToJSContext;
+                    slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cpy);
                 }
             }
         }

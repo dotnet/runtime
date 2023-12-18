@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
@@ -30,6 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
         }
 #else
+        public nint ContextHandle;
         public nint NativeTID;
         public int ManagedTID;
         public bool IsMainThread;
@@ -56,6 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
             NativeTID = GetNativeThreadId();
             ManagedTID = Thread.CurrentThread.ManagedThreadId;
             IsMainThread = isMainThread;
+            ContextHandle = (nint)GCHandle.Alloc(this, GCHandleType.Normal);
         }
 #endif
 
@@ -81,126 +82,85 @@ namespace System.Runtime.InteropServices.JavaScript
             set => _MainThreadContext = value;
         }
 
-        private sealed class PendingOperation
+        public enum JSImportOperationState
         {
-            public JSProxyContext? CapturedContext;
-            public bool PopScheduled;
-            public bool SkipAdditionalPushes;
+            None,
+            JSImportParams,
         }
 
         [ThreadStatic]
-        private static List<PendingOperation>? _OperationStack;
-        private static List<PendingOperation> OperationStack
+        private static JSProxyContext? _CapturedOperationContext;
+        private static JSImportOperationState _CapturingState;
+        public static JSImportOperationState CapturingState => _CapturingState;
+
+        // there will be call to JS from JSImport generated code, but we don't know which target thread yet
+        public static void JSImportWithUnknownContext()
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            // it would be ideal to assert here, that we arrived here with JSImportOperationState.None
+            // but any exception during JSImportOperationState.JSImportParams phase could make this state un-balanced
+            // typically this would be exception which is validating the marshaled value
+            // manually re-setting _CapturingState on each throw site would be possible, but fragile
+            // luckily, we always reset it here before any new JSImport call
+            // so the code which could interact with _CapturedOperationContext value will receive fresh values
+            _CapturingState = JSImportOperationState.JSImportParams;
+            _CapturedOperationContext = null;
+        }
+
+        // there will be no capture during following call to JS
+        public static void JSImportNoCapture()
+        {
+            _CapturingState = JSImportOperationState.None;
+            _CapturedOperationContext = null;
+        }
+
+        // we are at the end of marshaling of the JSImport parameters
+        public static JSProxyContext SealJSImportCapturing()
+        {
+            if (_CapturingState != JSImportOperationState.JSImportParams)
             {
-                return _OperationStack ??= new();
+                Environment.FailFast("Not in JSImport capturing phase");
+                //throw new InvalidOperationException("Not in JSImport capturing phase");
             }
-        }
+            _CapturingState = JSImportOperationState.None;
+            var capturedOperationContext = _CapturedOperationContext;
+            _CapturedOperationContext = null;
 
-        public static void PushOperationUnknownContext()
-        {
-            // for SchedulePopOperation
-            var stack = PopScheduledOperation();
-
-            // because this is called multiple times for each JSImport
-            if (SkipPushes(stack))
+            if (capturedOperationContext != null)
             {
-                return;
+                return capturedOperationContext;
             }
-
-            stack.Add(new PendingOperation() { SkipAdditionalPushes = true });
-        }
-
-        public static void PushOperationWithContext(JSProxyContext knownContext)
-        {
-            // for SchedulePopOperation
-            var stack = PopScheduledOperation();
-
-            if (SkipPushes(stack)) Environment.FailFast("PushOperationWithContext should not be used with SkipAdditionalPushes");
-
-            stack.Add(new PendingOperation() { CapturedContext = knownContext });
-        }
-
-        public static JSProxyContext PushOperationWithCurrentThreadContext()
-        {
-            // for SchedulePopOperation
-            var stack = PopScheduledOperation();
-
-            if (SkipPushes(stack)) Environment.FailFast("PushOperationWithCurrentThreadContext should not be used with SkipAdditionalPushes");
-
-            var current = AssertIsInteropThread();
-            stack.Add(new PendingOperation { CapturedContext = current });
-            return current;
-        }
-
-        public static void PopOperation()
-        {
-            var stack = OperationStack;
-            if (stack.Count < 1) Environment.FailFast("Unbalanced PopOperation");// there is no recovery
-            stack.RemoveAt(stack.Count - 1);
-        }
-
-        // this is here until we change the code generator and the API to Push/Pop the context
-        // we have no way how to Pop from the after marshaling the result
-        public static void SchedulePopOperation()
-        {
-            var stack = OperationStack;
-            var op = stack[stack.Count - 1];
-            if (op.PopScheduled) Environment.FailFast("SchedulePopOperation called twice");
-            op.PopScheduled = true;
-            op.SkipAdditionalPushes = false;
-        }
-
-        // for SchedulePopOperation
-        private static List<PendingOperation> PopScheduledOperation()
-        {
-            var stack = OperationStack;
-            if (stack.Count > 0 && stack[stack.Count - 1].PopScheduled)
+            // it could happen that we are in operation, in which we didn't capture target thread/context
+            var executionContext = ExecutionContext;
+            if (executionContext != null)
             {
-                PopOperation();
+                // we could will call JS on the current thread (or child task), if it has the JS interop installed
+                return executionContext;
             }
-            Debug.Assert(stack.Count == 0 || !stack[stack.Count - 1].PopScheduled);
-            return stack;
+            // otherwise we will call JS on the main thread, which always has JS interop
+            return MainThreadContext;
         }
 
-        private static bool SkipPushes(List<PendingOperation> stack)
-        {
-            return stack.Count > 0 && stack[stack.Count - 1].SkipAdditionalPushes;
-        }
-
-        public static void SealSkipPushes()
-        {
-            var stack = OperationStack;
-            if (stack.Count < 1) Environment.FailFast("Unbalanced PopOperation");// there is no recovery
-            stack[stack.Count - 1].SkipAdditionalPushes = false;
-        }
-
-        public static void AssertOperationStack(int expected)
-        {
-            // for SchedulePopOperation
-            var stack = PopScheduledOperation();
-
-            var actual = stack.Count;
-            var skipAdditionalPushes = stack.Count > 0 ? stack[stack.Count - 1].SkipAdditionalPushes : false;
-            var popScheduled = stack.Count > 0 ? stack[stack.Count - 1].PopScheduled : false;
-            if (actual != expected) Environment.FailFast($"Unexpected OperationStack size expected: {expected} actual: {actual} popScheduled:{popScheduled} skipAdditionalPushes:{skipAdditionalPushes}");
-        }
-
-        // TODO: sort generated ToJS() calls to make the capture context before we need to use it
+        // this is called only during marshaling (in) parameters of JSImport, which have existing ProxyContext (thread affinity)
+        // together with CurrentOperationContext is will validate that all parameters of the call have same context/affinity
         public static void CaptureContextFromParameter(JSProxyContext parameterContext)
         {
-            var stack = OperationStack;
-            if (stack.Count < 1) Environment.FailFast("CaptureContextFromParameter could be only used during pending operation.");
-            var pendingOperation = stack[stack.Count - 1];
-            if (pendingOperation.PopScheduled) Environment.FailFast("CaptureContextFromParameter could be only used during pending operation.");
-            var capturedContext = pendingOperation.CapturedContext;
-            if (capturedContext != null && parameterContext != capturedContext)
+            if (_CapturingState != JSImportOperationState.JSImportParams)
             {
+                Environment.FailFast("CaptureContextFromParameter state mismatch");
+            }
+
+            var capturedContext = _CapturedOperationContext;
+
+            if (capturedContext == null)
+            {
+                _CapturedOperationContext = capturedContext;
+            }
+            else if (parameterContext != capturedContext)
+            {
+                _CapturedOperationContext = null;
+                _CapturingState = JSImportOperationState.None;
                 throw new InvalidOperationException("All JSObject proxies need to have same thread affinity");
             }
-            pendingOperation.CapturedContext = capturedContext;
         }
 
         // Context flowing from parent thread into child tasks.
@@ -222,25 +182,36 @@ namespace System.Runtime.InteropServices.JavaScript
         // - main thread, for calls from any other thread, like managed thread pool or `new Thread`
         public static JSProxyContext CurrentOperationContext
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                var stack = OperationStack;
-                if (stack.Count < 1) throw new Exception("CurrentOperationContext could be only used during pending operation.");
-                var pendingOperation = stack[stack.Count - 1];
-                if (pendingOperation.CapturedContext != null)
+                if (_CapturingState != JSImportOperationState.JSImportParams)
                 {
-                    return pendingOperation.CapturedContext;
+                    throw new InvalidOperationException("Not in capturing phase of a JSImport");
+                }
+                var capturedOperationContext = _CapturedOperationContext;
+                if (capturedOperationContext != null)
+                {
+                    return capturedOperationContext;
                 }
                 // it could happen that we are in operation, in which we didn't capture target thread/context
                 var executionContext = ExecutionContext;
                 if (executionContext != null)
                 {
+                    // capture this fallback for validation of all other parameters
+                    _CapturedOperationContext = executionContext;
+
                     // we could will call JS on the current thread (or child task), if it has the JS interop installed
                     return executionContext;
                 }
+
                 // otherwise we will call JS on the main thread, which always has JS interop
-                return MainThreadContext;
+                var mainThreadContext = MainThreadContext;
+
+                // capture this fallback for validation of all other parameters
+                // such validation could fail if Task is marshaled earlier than JSObject and uses different target context
+                _CapturedOperationContext = mainThreadContext;
+
+                return mainThreadContext;
             }
         }
 
@@ -468,7 +439,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var jsHandle = proxy.JSHandle;
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
-                    throw new InvalidOperationException("ReleaseCSOwnedObject expected to find registration for" + jsHandle);
+                    throw new InvalidOperationException("ReleaseCSOwnedObject expected to find registration for " + jsHandle);
                 };
                 if (!skipJS)
                 {
@@ -556,8 +527,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
 #if FEATURE_WASM_THREADS
                     if (!IsCurrentThread()) throw new InvalidOperationException("JSProxyContext must be disposed on the thread which owns it.");
-                    AssertOperationStack(0);
-                    _OperationStack = null;
+                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     List<WeakReference<JSObject>> copy = new(ThreadCsOwnedObjects.Values);

@@ -71,12 +71,5 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
             }
         }
-
-#if FEATURE_WASM_THREADS
-        public static void AssertOperationStack(int expected)
-        {
-            JSProxyContext.AssertOperationStack(expected);
-        }
-#endif
     }
 }

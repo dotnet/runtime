@@ -209,7 +209,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
-                    // this will pop interop operation in MT
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }
@@ -219,14 +218,18 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
 #if FEATURE_WASM_THREADS
+            var targetContext = JSProxyContext.SealJSImportCapturing();
             JSProxyContext.AssertIsInteropThread();
-            JSProxyContext.SealSkipPushes();
+            arguments[0].slot.ContextHandle = targetContext.ContextHandle;
+            arguments[1].slot.ContextHandle = targetContext.ContextHandle;
+#else
+            var targetContext = JSProxyContext.MainThreadContext;
 #endif
 
             if (signature.IsAsync)
             {
                 // pre-allocate the result handle and Task
-                var holder = new JSHostImplementation.PromiseHolder(JSProxyContext.CurrentOperationContext);
+                var holder = new JSHostImplementation.PromiseHolder(targetContext);
                 arguments[1].slot.Type = MarshalerType.TaskPreCreated;
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
@@ -237,7 +240,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
-                    // this will pop interop operation in MT
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }
@@ -250,9 +252,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     holderHandle.Free();
                 }
             }
-#if FEATURE_WASM_THREADS
-            JSProxyContext.SchedulePopOperation();
-#endif
         }
 
         internal static unsafe JSFunctionBinding BindJSImportImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
@@ -296,7 +295,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
-                    // this will pop interop operation in MT
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }

@@ -6,10 +6,4 @@
     <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.JavaScript.JSHost.AssertOperationStack(System.Int32)</Target>
-    <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
-    <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
-  </Suppression>
 </Suppressions>

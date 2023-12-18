@@ -72,15 +72,11 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
-        /// <remarks>In multi-threading build, this will pop interop operation</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowException(ref JSMarshalerArgument arg)
         {
             arg.ToManaged(out Exception? ex);
 
-#if FEATURE_WASM_THREADS
-            JSProxyContext.PopOperation();
-#endif
             if (ex != null)
             {
                 throw ex;
@@ -225,7 +221,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             ctx.AwaitNewData();
 
-            Interop.Runtime.InstallWebWorkerInterop();
+            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
         }
 
         public static void UninstallWebWorkerInterop()

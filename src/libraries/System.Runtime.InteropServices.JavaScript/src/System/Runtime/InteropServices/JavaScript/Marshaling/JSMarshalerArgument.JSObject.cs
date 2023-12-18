@@ -20,7 +20,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            value = JSProxyContext.CurrentOperationContext.CreateCSOwnedProxy(slot.JSHandle);
+            var ctx = ToManagedContext;
+            value = ctx.CreateCSOwnedProxy(slot.JSHandle);
         }
 
         /// <summary>
@@ -40,7 +41,17 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
 #if FEATURE_WASM_THREADS
-                JSProxyContext.CaptureContextFromParameter(value.ProxyContext);
+                JSObject.AssertThreadAffinity(value);
+                var ctx = value.ProxyContext;
+                if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
+                {
+                    JSProxyContext.CaptureContextFromParameter(ctx);
+                    slot.ContextHandle = ctx.ContextHandle;
+                }
+                else if (slot.ContextHandle != ctx.ContextHandle)
+                {
+                    Environment.FailFast("ContextHandle mismatch");
+                }
 #endif
                 ObjectDisposedException.ThrowIf(value.IsDisposed, value);
                 slot.Type = MarshalerType.JSObject;

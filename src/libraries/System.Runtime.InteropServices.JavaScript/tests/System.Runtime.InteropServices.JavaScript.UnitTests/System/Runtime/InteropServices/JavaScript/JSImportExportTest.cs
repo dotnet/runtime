@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void StructSize()
         {
-            Assert.Equal(16, sizeof(JSMarshalerArgument));
+            Assert.Equal(32, sizeof(JSMarshalerArgument));
         }
 
         [Fact]
@@ -382,13 +382,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public void JsImportObjectArrayThrows(object[]? expected)
         {
             Assert.Throws<NotSupportedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
-            // this will make OperationStack unbalanced
-            // because the exceptions is throwed from ToJs() marshaler before the call to JSFunctionBinding.InvokeJS
-            // which is expected until we make operation context part of the code generator
-            AssertOperationStack(1);
-            // any subsequent interop operation will fix that
-            JavaScriptTestHelper.echo1_Int32(1);
-            AssertOperationStack(0);
         }
 
         [Fact]
@@ -1841,7 +1834,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             Func<int, int> res = JavaScriptTestHelper.backback_FuncIntFuncInt((a) =>
             {
-                AssertOperationStack(2);
                 called = a;
                 return a;
             }, 42);
@@ -1858,7 +1850,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             Func<int, int, int> res = JavaScriptTestHelper.backback_FuncIntIntFuncIntInt((a, b) =>
             {
-                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
                 return a + b;
@@ -1878,7 +1869,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int calledB = -1;
             JavaScriptTestHelper.back3_ActionIntInt((a, b) =>
             {
-                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1893,7 +1883,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionLongLong((a, b) =>
             {
-                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1908,7 +1897,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             long calledB = -1;
             JavaScriptTestHelper.back3_ActionIntLong((a, b) =>
             {
-                AssertOperationStack(2);
                 calledA = a;
                 calledB = b;
             }, 42, 43);
@@ -1923,7 +1911,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Exception expected = new Exception("test!!");
             Exception actual = Assert.Throws<Exception>(() => JavaScriptTestHelper.back3_ActionInt((a) =>
             {
-                AssertOperationStack(2);
                 called = a;
                 throw expected;
             }, 42));
@@ -1937,14 +1924,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             int called = -1;
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
-                AssertOperationStack(4);
                 called = a;
                 return a;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
 
             Assert.Equal(-1, called);
             var actual = chain(42);
-            AssertOperationStack(0);
             Assert.Equal(42, actual);
             Assert.Equal(42, called);
         }
@@ -1956,14 +1941,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var expected = new Exception("test!!");
             var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
             {
-                AssertOperationStack(4);
                 called = a;
                 throw expected;
             }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
 
             Assert.Equal(-1, called);
             var actual = Assert.Throws<Exception>(() => chain(42));
-            AssertOperationStack(0);
             Assert.Equal(42, called);
             Assert.Same(expected, actual);
         }
@@ -2139,13 +2122,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static DateTimeOffset TrimNano(DateTimeOffset date)
         {
             return new DateTime(date.Ticks - (date.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
-        }
-
-        private static void AssertOperationStack(int cnt)
-        {
-#if FEATURE_WASM_THREADS
-            JSHost.AssertOperationStack(cnt);
-#endif
         }
     }
 }

@@ -194,7 +194,7 @@ export type RuntimeHelpers = {
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
-    jsSynchronizationContextInstalled: boolean,
+    proxy_context_gc_handle: GCHandle,
     cspPolicy: boolean,
 
     allAssetsInMemory: PromiseAndController<void>,
@@ -350,12 +350,6 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: void InstallMainSynchronizationContext()
     install_main_synchronization_context(): void;
-
-    // the marshaled signature is: void PushOperation()
-    push_operation(): void;
-
-    // the marshaled signature is: void PopOperation()
-    pop_operation(): void;
 
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
