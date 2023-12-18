@@ -114,7 +114,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code;
 	guint8 *start;
-	int i, size, offset, gregs_offset, fregs_offset, ctx_offset, num_fregs, frame_size;
+	int size, offset, gregs_offset, fregs_offset, ctx_offset, frame_size;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
