@@ -1275,14 +1275,14 @@ void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
 //
 // Remarks:
 //   This function will determine how the argument size needs to be rounded. On
-//   most ABIs all arguments are rounded to stack pointer size, but macOS arm64
+//   most ABIs all arguments are rounded to stack pointer size, but Apple arm64
 //   ABI is an exception as it allows packing some small arguments into the
 //   same stack slot.
 //
 void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa)
 {
     unsigned roundedByteSize;
-    if (compMacOsArm64Abi())
+    if (compAppleArm64Abi())
     {
         // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
         if (isStruct && !isFloatHfa)

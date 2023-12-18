@@ -322,9 +322,6 @@ void Compiler::fgComputeReturnBlocks()
 //
 // Initialize fgEnterBlks to the set of blocks for which we don't have explicit control
 // flow edges. These are the entry basic block and each of the EH handler blocks.
-// For ARM, also include the BBJ_ALWAYS block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
-// to avoid creating "retless" calls, since we need the BBJ_ALWAYS for the purpose
-// of unwinding, even if the call doesn't return (due to an explicit throw, for example).
 //
 void Compiler::fgComputeEnterBlocksSet()
 {
@@ -392,8 +389,8 @@ void Compiler::fgComputeEnterBlocksSet()
 //    or not is based on the reachability sets, and hence it must be computed and valid.
 //
 //    During late phase, all the reachable blocks from fgFirstBB are traversed and everything
-//    else are marked as unreachable (with exceptions of handler/filter blocks and BBJ_ALWAYS
-//    blocks in Arm). As such, it is not dependent on the validity of reachability sets.
+//    else are marked as unreachable (with exceptions of handler/filter blocks). As such, it
+//    is not dependent on the validity of reachability sets.
 //
 template <typename CanRemoveBlockBody>
 bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
@@ -401,10 +398,10 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
     bool hasUnreachableBlocks = false;
     bool changed              = false;
 
-    /* Record unreachable blocks */
+    // Mark unreachable blocks with BBF_REMOVED.
     for (BasicBlock* const block : Blocks())
     {
-        /* Internal throw blocks are also reachable */
+        // Internal throw blocks are always reachable.
         if (fgIsThrowHlpBlk(block))
         {
             continue;
@@ -432,17 +429,18 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
         // Make sure that the block was marked as removed */
         noway_assert(block->HasFlag(BBF_REMOVED));
 
-        // Some blocks mark the end of trys and catches and can't be removed. We convert these into
-        // empty blocks of type BBJ_THROW.
-
-        const bool  bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
-        BasicBlock* leaveBlk            = bIsBBCallAlwaysPair ? block->Next() : nullptr;
-
         if (block->HasFlag(BBF_DONT_REMOVE))
         {
-            // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
+            // Unmark the block as removed, clear BBF_INTERNAL, and set BBF_IMPORTED
 
             JITDUMP("Converting BBF_DONT_REMOVE block " FMT_BB " to BBJ_THROW\n", block->bbNum);
+
+            // If the CALLFINALLY is being replaced by a throw, then the CALLFINALLYRET is unreachable.
+            if (block->isBBCallFinallyPair())
+            {
+                BasicBlock* const leaveBlock = block->Next();
+                fgPrepareCallFinallyRetForRemoval(leaveBlock);
+            }
 
             // The successors may be unreachable after this change.
             changed |= block->NumSucc() > 0;
@@ -458,59 +456,22 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             hasUnreachableBlocks = true;
             changed              = true;
         }
-
-        // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, get rid of the BBJ_ALWAYS block which is now dead.
-        if (bIsBBCallAlwaysPair)
-        {
-            assert(leaveBlk->KindIs(BBJ_ALWAYS));
-
-            if (!block->KindIs(BBJ_THROW))
-            {
-                // We didn't convert the BBJ_CALLFINALLY to a throw, above. Since we already marked it as removed,
-                // change the kind to something else. Otherwise, we can hit asserts below in fgRemoveBlock that
-                // the leaveBlk BBJ_ALWAYS is not allowed to be a CallAlwaysPairTail.
-                assert(block->KindIs(BBJ_CALLFINALLY));
-                block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
-            }
-
-            leaveBlk->RemoveFlags(BBF_DONT_REMOVE);
-
-            for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
-            {
-                fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
-            }
-            assert(leaveBlk->bbRefs == 0);
-            assert(leaveBlk->bbPreds == nullptr);
-
-            fgRemoveBlock(leaveBlk, /* unreachable */ true);
-
-            // Note: `changed` will already have been set to true by processing the BBJ_CALLFINALLY.
-            // `hasUnreachableBlocks` doesn't need to be set for the leaveBlk itself because we've already called
-            // `fgRemoveBlock` on it.
-        }
     }
 
     if (hasUnreachableBlocks)
     {
-        // Now remove the unreachable blocks
-        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+        // Now remove the unreachable blocks: if we marked a block with BBF_REMOVED then we need to
+        // call fgRemoveBlock() on it.
+        BasicBlock* bNext;
+        for (BasicBlock* block = fgFirstBB; block != nullptr; block = bNext)
         {
-            // If we marked a block with BBF_REMOVED then we need to call fgRemoveBlock() on it
-
             if (block->HasFlag(BBF_REMOVED))
             {
-                fgRemoveBlock(block, /* unreachable */ true);
-
-                // TODO: couldn't we have fgRemoveBlock() return the block after the (last)one removed
-                // so we don't need the code below?
-
-                // When we have a BBJ_CALLFINALLY, BBJ_ALWAYS pair; fgRemoveBlock will remove
-                // both blocks, so we must advance 1 extra place in the block list
-                //
-                if (block->isBBCallAlwaysPair())
-                {
-                    block = block->Next();
-                }
+                bNext = fgRemoveBlock(block, /* unreachable */ true);
+            }
+            else
+            {
+                bNext = block->Next();
             }
         }
     }
@@ -608,9 +569,6 @@ PhaseStatus Compiler::fgComputeReachability()
 
 //------------------------------------------------------------------------
 // fgRemoveDeadBlocks: Identify all the unreachable blocks and remove them.
-//         Handler and filter blocks are considered as reachable and hence won't
-//         be removed. For Arm32, do not remove BBJ_ALWAYS block of
-//         BBJ_CALLFINALLY/BBJ_ALWAYS pair.
 //
 bool Compiler::fgRemoveDeadBlocks()
 {
@@ -686,11 +644,9 @@ bool Compiler::fgRemoveDeadBlocks()
     // or not.
     bool hasUnreachableBlock = false;
 
-    // A block is unreachable if no path was found from
-    // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
-        bool isRemovable = !isVisited || (block->bbRefs == 0);
+        const bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        const bool isRemovable = !isVisited || (block->bbRefs == 0);
 
         hasUnreachableBlock |= isRemovable;
         return isRemovable;
@@ -2043,7 +1999,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     assert(block->KindIs(BBJ_ALWAYS));
     assert(block->TargetIs(bNext));
-    assert(!block->isBBCallAlwaysPairTail());
     assert(!fgInDifferentRegions(block, bNext));
 
     // Make sure the second block is not the start of a TRY block or an exception handler
@@ -2839,6 +2794,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         switch (block->GetKind())
         {
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
                 block->SetTarget(bDest->GetTarget());
                 break;
 
@@ -2884,6 +2840,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 
         case BBJ_THROW:
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_RETURN:
         case BBJ_EHCATCHRET:
         case BBJ_EHFINALLYRET:
@@ -2899,7 +2856,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
         case BBJ_ALWAYS:
 
             /* Special case for first BB */
-            if (!bPrev)
+            if (bPrev == nullptr)
             {
                 assert(block == fgFirstBB);
                 if (!block->JumpsToNext())
@@ -2909,13 +2866,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             }
             else
             {
-                /* If this block follows a BBJ_CALLFINALLY do not remove it
-                 * (because we don't know who may jump to it) */
-                if (bPrev->KindIs(BBJ_CALLFINALLY))
-                {
-                    break;
-                }
-
                 // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
                 // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block->bbTarget.
                 if (bPrev->bbFallsThrough() && !block->JumpsToNext())
@@ -4440,21 +4390,13 @@ bool Compiler::fgExpandRarelyRunBlocks()
         BasicBlock* bPrevPrev = nullptr;
         BasicBlock* tmpbb;
 
-        if (bPrev->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+        if (bPrev->KindIs(BBJ_CALLFINALLYRET))
         {
-            // If we've got a BBJ_CALLFINALLY/BBJ_ALWAYS pair, treat the BBJ_CALLFINALLY as an
-            // additional predecessor for the BBJ_ALWAYS block
+            // If we've got a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, treat the BBJ_CALLFINALLY as an
+            // additional predecessor for the BBJ_CALLFINALLYRET block
             tmpbb = bPrev->Prev();
-            noway_assert(tmpbb != nullptr);
-#if defined(FEATURE_EH_FUNCLETS)
-            noway_assert(tmpbb->isBBCallAlwaysPair());
+            noway_assert(tmpbb->isBBCallFinallyPair());
             bPrevPrev = tmpbb;
-#else
-            if (tmpbb->KindIs(BBJ_CALLFINALLY))
-            {
-                bPrevPrev = tmpbb;
-            }
-#endif
         }
 
         FlowEdge* pred = bPrev->bbPreds;
@@ -4542,31 +4484,40 @@ bool Compiler::fgExpandRarelyRunBlocks()
             continue;
         }
 
-        const char* reason = nullptr;
+        INDEBUG(const char* reason = nullptr);
+        bool setRarelyRun = false;
 
         switch (bPrev->GetKind())
         {
             case BBJ_ALWAYS:
-
                 if (bPrev->GetTarget()->isRunRarely())
                 {
-                    reason = "Unconditional jump to a rarely run block";
+                    INDEBUG(reason = "Unconditional jump to a rarely run block");
+                    setRarelyRun = true;
                 }
                 break;
 
             case BBJ_CALLFINALLY:
-
-                if (bPrev->isBBCallAlwaysPair() && block->isRunRarely())
+                if (bPrev->isBBCallFinallyPair() && block->isRunRarely())
                 {
-                    reason = "Call of finally followed by a rarely run block";
+                    INDEBUG(reason = "Call of finally followed rarely run continuation block");
+                    setRarelyRun = true;
+                }
+                break;
+
+            case BBJ_CALLFINALLYRET:
+                if (bPrev->GetFinallyContinuation()->isRunRarely())
+                {
+                    INDEBUG(reason = "Finally continuation is a rarely run block");
+                    setRarelyRun = true;
                 }
                 break;
 
             case BBJ_COND:
-
                 if (block->isRunRarely() && bPrev->GetTrueTarget()->isRunRarely())
                 {
-                    reason = "Both sides of a conditional jump are rarely run";
+                    INDEBUG(reason = "Both sides of a conditional jump are rarely run");
+                    setRarelyRun = true;
                 }
                 break;
 
@@ -4574,7 +4525,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 break;
         }
 
-        if (reason != nullptr)
+        if (setRarelyRun)
         {
             JITDUMP("%s, marking " FMT_BB " as rarely run\n", reason, bPrev->bbNum);
 
@@ -4650,9 +4601,9 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #endif // DEBUG
 
                 // When marking a BBJ_CALLFINALLY as rarely run we also mark
-                // the BBJ_ALWAYS that comes after it as rarely run
+                // the BBJ_CALLFINALLYRET that comes after it as rarely run
                 //
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
                     BasicBlock* bNext = block->Next();
                     PREFIX_ASSUME(bNext != nullptr);
@@ -4660,7 +4611,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Also marking the BBJ_ALWAYS at " FMT_BB " as rarely run\n", bNext->bbNum);
+                        printf("Also marking the BBJ_CALLFINALLYRET at " FMT_BB " as rarely run\n", bNext->bbNum);
                     }
 #endif // DEBUG
                 }
@@ -4679,16 +4630,16 @@ bool Compiler::fgExpandRarelyRunBlocks()
         // if bPrev->bbWeight is not based upon profile data we can adjust
         // the weights of bPrev and block
         //
-        else if (bPrev->isBBCallAlwaysPair() &&          // we must have a BBJ_CALLFINALLY and BBK_ALWAYS pair
+        else if (bPrev->isBBCallFinallyPair() &&         // we must have a BBJ_CALLFINALLY and BBJ_CALLFINALLYRET pair
                  (bPrev->bbWeight != block->bbWeight) && // the weights are currently different
-                 !bPrev->hasProfileWeight())             // and the BBJ_CALLFINALLY block is not using profiled
-                                                         // weights
+                 !bPrev->hasProfileWeight())             // and the BBJ_CALLFINALLY block is not using profiled weights
         {
             if (block->isRunRarely())
             {
-                bPrev->bbWeight =
-                    block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
-                bPrev->SetFlags(BBF_RUN_RARELY); // and is now rarely run
+                // Set the BBJ_CALLFINALLY block to the same weight as the BBJ_CALLFINALLYRET block and
+                // mark it rarely run.
+                bPrev->bbWeight = block->bbWeight;
+                bPrev->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -4700,13 +4651,14 @@ bool Compiler::fgExpandRarelyRunBlocks()
             }
             else if (bPrev->isRunRarely())
             {
-                block->bbWeight =
-                    bPrev->bbWeight; // the BBJ_ALWAYS block now has the same weight as the BBJ_CALLFINALLY block
-                block->SetFlags(BBF_RUN_RARELY); // and is now rarely run
+                // Set the BBJ_CALLFINALLYRET block to the same weight as the BBJ_CALLFINALLY block and
+                // mark it rarely run.
+                block->bbWeight = bPrev->bbWeight;
+                block->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Marking the BBJ_ALWAYS block at " FMT_BB " as rarely run because " FMT_BB
+                    printf("Marking the BBJ_CALLFINALLYRET block at " FMT_BB " as rarely run because " FMT_BB
                            " is rarely run\n",
                            block->bbNum, bPrev->bbNum);
                 }
@@ -4714,8 +4666,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
             }
             else // Both blocks are hot, bPrev is known not to be using profiled weight
             {
-                bPrev->bbWeight =
-                    block->bbWeight; // the BBJ_CALLFINALLY block now has the same weight as the BBJ_ALWAYS block
+                // Set the BBJ_CALLFINALLY block to the same weight as the BBJ_CALLFINALLYRET block
+                bPrev->bbWeight = block->bbWeight;
             }
             noway_assert(block->bbWeight == bPrev->bbWeight);
         }
@@ -4810,6 +4762,12 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         // We also consider reversing conditional branches so that they become a not taken forwards branch.
         //
 
+        // Don't consider BBJ_CALLFINALLYRET; it should be processed together with BBJ_CALLFINALLY.
+        if (block->KindIs(BBJ_CALLFINALLYRET))
+        {
+            continue;
+        }
+
         // If block is marked with a BBF_KEEP_BBJ_ALWAYS flag then we don't move the block
         if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
         {
@@ -4818,19 +4776,19 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
         // Finally and handlers blocks are to be kept contiguous.
         // TODO-CQ: Allow reordering within the handler region
-        if (block->hasHndIndex() == true)
+        if (block->hasHndIndex())
         {
             continue;
         }
 
         bool        reorderBlock   = useProfile;
-        bool        isRare         = block->isRunRarely();
+        const bool  isRare         = block->isRunRarely();
         BasicBlock* bDest          = nullptr;
         bool        forwardBranch  = false;
         bool        backwardBranch = false;
 
         // Setup bDest
-        if (bPrev->KindIs(BBJ_ALWAYS))
+        if (bPrev->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
         {
             bDest          = bPrev->GetTarget();
             forwardBranch  = fgIsForwardBranch(bPrev, bDest);
@@ -4863,7 +4821,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             //
             if (forwardBranch)
             {
-                if (bPrev->KindIs(BBJ_ALWAYS))
+                if (bPrev->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
                 {
                     if (bPrev->JumpsToNext())
                     {
@@ -5067,9 +5025,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
                 while (bTmp != nullptr)
                 {
-                    // Don't try to split a Call/Always pair
+                    // Don't try to split a call finally pair
                     //
-                    if (bTmp->isBBCallAlwaysPair())
+                    if (bTmp->isBBCallFinallyPair())
                     {
                         // Move bTmp forward
                         bTmp = bTmp->Next();
@@ -5090,11 +5048,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     if ((bTmp->bbWeight > highestWeight) && fgEhAllowsMoveBlock(bPrev, bTmp))
                     {
                         // When we have a current candidateBlock that is a conditional (or unconditional) jump
-                        // to bTmp (which is a higher weighted block) then it is better to keep out current
+                        // to bTmp (which is a higher weighted block) then it is better to keep our current
                         // candidateBlock and have it fall into bTmp
                         //
                         if ((candidateBlock == nullptr) || !candidateBlock->KindIs(BBJ_COND, BBJ_ALWAYS) ||
-                            (candidateBlock->KindIs(BBJ_ALWAYS) &&
+                            (candidateBlock->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) &&
                              (!candidateBlock->TargetIs(bTmp) || candidateBlock->JumpsToNext())) ||
                             (candidateBlock->KindIs(BBJ_COND) && !candidateBlock->TrueTargetIs(bTmp)))
                         {
@@ -5105,7 +5063,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         }
                     }
 
-                    const bool bTmpJumpsToNext = bTmp->KindIs(BBJ_ALWAYS) && bTmp->JumpsToNext();
+                    const bool bTmpJumpsToNext = bTmp->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bTmp->JumpsToNext();
                     if ((!bTmp->bbFallsThrough() && !bTmpJumpsToNext) || (bTmp->bbWeight == BB_ZERO_WEIGHT))
                     {
                         lastNonFallThroughBlock = bTmp;
@@ -5149,7 +5107,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             /* (bPrev is known to be a normal block at this point) */
             if (!isRare)
             {
-                if (block->NextIs(bDest) && block->KindIs(BBJ_RETURN) && bPrev->KindIs(BBJ_ALWAYS))
+                if (block->NextIs(bDest) && block->KindIs(BBJ_RETURN) && bPrev->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
                 {
                     // This is a common case with expressions like "return Expr1 && Expr2" -- move the return
                     // to establish fall-through.
@@ -5228,9 +5186,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         {
             while (true)
             {
-                // Don't try to split a Call/Always pair
+                // Don't try to split a call finally pair
                 //
-                if (bEnd->isBBCallAlwaysPair())
+                if (bEnd->isBBCallFinallyPair())
                 {
                     // Move bEnd and bNext forward
                     bEnd  = bNext;
@@ -5356,11 +5314,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
                 while (true)
                 {
-                    // Don't try to split a Call/Always pair
+                    // Don't try to split a call finally pair
                     //
-                    if (bEnd2->isBBCallAlwaysPair())
+                    if (bEnd2->isBBCallFinallyPair())
                     {
-                        noway_assert(bNext->KindIs(BBJ_ALWAYS));
+                        noway_assert(bNext->KindIs(BBJ_CALLFINALLYRET));
                         // Move bEnd2 and bNext forward
                         bEnd2 = bNext;
                         bNext = bNext->Next();
@@ -5373,7 +5331,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         break;
                     }
 
-                    if (bEnd2->KindIs(BBJ_ALWAYS) && bEnd2->JumpsToNext())
+                    if (bEnd2->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bEnd2->JumpsToNext())
                     {
                         // Treat jumps to next block as fall-through
                     }
@@ -5448,7 +5406,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     printf("Decided to reverse conditional branch at block " FMT_BB " branch to " FMT_BB " ",
                            bPrev->bbNum, bDest->bbNum);
                 }
-                else if (bPrev->KindIs(BBJ_ALWAYS))
+                else if (bPrev->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
                 {
                     printf("Decided to straighten unconditional branch at block " FMT_BB " branch to " FMT_BB " ",
                            bPrev->bbNum, bDest->bbNum);
@@ -5532,8 +5490,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
         if (compHndBBtabCount > 0)
         {
-            fStartIsInTry = new (this, CMK_Unknown) bool[compHndBBtabCount];
-            fStartIsInHnd = new (this, CMK_Unknown) bool[compHndBBtabCount];
+            fStartIsInTry = new (this, CMK_Generic) bool[compHndBBtabCount];
+            fStartIsInHnd = new (this, CMK_Generic) bool[compHndBBtabCount];
 
             for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
             {
@@ -5668,7 +5626,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     BasicBlock* nearBlk = nullptr;
                     BasicBlock* jumpBlk = nullptr;
 
-                    if (bEnd->KindIs(BBJ_ALWAYS) && !bEnd->JumpsToNext() &&
+                    if (bEnd->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && !bEnd->JumpsToNext() &&
                         (!isRare || bEnd->GetTarget()->isRunRarely()) &&
                         fgIsForwardBranch(bEnd, bEnd->GetTarget(), bPrev))
                     {
@@ -6072,16 +6030,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 }
             }
 
-            // Remove jumps to the following block
-            // and optimize any JUMPS to JUMPS
+            // Remove jumps to the following block and optimize any JUMPS to JUMPS
 
-            if (block->KindIs(BBJ_ALWAYS))
+            if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
             {
                 bDest = block->GetTarget();
                 if (bDest == bNext)
                 {
                     // Skip jump optimizations, and try to compact block and bNext later
-                    if (!block->isBBCallAlwaysPairTail())
+                    if (!block->isBBCallFinallyPairTail())
                     {
                         block->SetFlags(BBF_NONE_QUIRK);
                     }
@@ -6200,7 +6157,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         // In the join free case, we also need to move bDest right after bNext
                         // to create same flow as in the isJumpAroundEmpty case.
                         //
-                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallAlwaysPair())
+                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallFinallyPair())
                         {
                             optimizeJump = false;
                         }
@@ -6548,7 +6505,7 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
             fgRemoveUnreachableBlocks([=, &anyCallFinallyPairs](BasicBlock* block) {
                 if (!m_dfsTree->Contains(block))
                 {
-                    anyCallFinallyPairs |= block->isBBCallAlwaysPair();
+                    anyCallFinallyPairs |= block->isBBCallFinallyPair();
                     return true;
                 }
 
@@ -6593,6 +6550,9 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
             break;
         case BBJ_CALLFINALLY:
             costSz = 5;
+            break;
+        case BBJ_CALLFINALLYRET:
+            costSz = 0;
             break;
         case BBJ_SWITCH:
             costSz = 10;

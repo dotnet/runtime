@@ -25,6 +25,7 @@
 //                                                                                                measureIR
 CompPhaseNameMacro(PHASE_PRE_IMPORT,                 "Pre-import",                     false, -1, false)
 CompPhaseNameMacro(PHASE_IMPORTATION,                "Importation",                    false, -1, true)
+CompPhaseNameMacro(PHASE_UPDATE_CALLFINALLY,         "Update callfinally/always pairs",false, -1, true)
 CompPhaseNameMacro(PHASE_INDXCALL,                   "Indirect call transform",        false, -1, true)
 CompPhaseNameMacro(PHASE_PATCHPOINTS,                "Expand patchpoints",             false, -1, true)
 CompPhaseNameMacro(PHASE_POST_IMPORT,                "Post-import",                    false, -1, false)

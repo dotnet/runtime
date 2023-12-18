@@ -1142,6 +1142,8 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
+    assert(block->KindIs(BBJ_CALLFINALLY));
+
     // Generate a call to the finally, like this:
     //      mov  a0,qword ptr [fp + 10H] / sp    // Load a0 with PSPSym, or sp if PSPSym is not used
     //      jal  finally-funclet
@@ -1171,6 +1173,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         {
             instGen(INS_ebreak); // This should never get executed
         }
+
+        return block;
     }
     else
     {
@@ -1179,10 +1183,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->GetTarget();
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
 
         // Now go to where the finally funclet needs to return to.
-        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
             // TODO-RISCV64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -1192,22 +1196,13 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, jumpDest);
+            inst_JMP(EJ_jmp, finallyContinuation);
         }
 
         GetEmitter()->emitEnableGC();
-    }
 
-    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTarget - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
-    if (!block->HasFlag(BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallAlwaysPair());
-        block = nextBlock;
+        return nextBlock;
     }
-    return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
