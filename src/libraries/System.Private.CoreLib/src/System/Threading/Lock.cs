@@ -681,19 +681,19 @@ namespace System.Threading
             double waitDurationNs =
                 (Stopwatch.GetTimestamp() - contentionTrackingStartedTicks) * 1_000_000_000.0 / Stopwatch.Frequency;
 
-            // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
-            if (NativeRuntimeEventSource.Log.IsEnabled())
+            try
             {
-                try
+                // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     NativeRuntimeEventSource.Log.ContentionStop(waitDurationNs);
                 }
-                catch
-                {
-                    // We are throwing. The acquire failed.
-                    this.Exit();
-                    throw;
-                }
+            }
+            catch
+            {
+                // We are throwing. The acquire failed and we should not leave the lock locked.
+                this.Exit();
+                throw;
             }
         }
 
