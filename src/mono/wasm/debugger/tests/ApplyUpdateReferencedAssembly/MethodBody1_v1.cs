@@ -124,4 +124,18 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine($"do not step into here");
         }
     }
+
+    public class MethodBody11 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a line that will not be changed");
+            Console.WriteLine("original");
+        }
+        public static void NewMethodStaticWithThrow () {
+            int i = 20;
+            Console.WriteLine($"add a breakpoint in the new static method, look at locals {i}");
+            throw new Exception("my exception");
+            /*var newvar = new MethodBody6();
+            newvar.NewMethodInstance (10);*/
+        }
+    }
 }

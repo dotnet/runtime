@@ -6,10 +6,10 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
 
-const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
+export const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
 // adapted from Blazor's WebAssemblyResourceLoader.ts
-async function openCache(): Promise<Cache | null> {
+export async function openCache(): Promise<Cache | null> {
     // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
     if (typeof globalThis.caches === "undefined") {
         return null;
@@ -51,7 +51,7 @@ export async function checkMemorySnapshotSize(): Promise<void> {
             return;
         }
 
-        const cacheKey = await getCacheKey();
+        const cacheKey = await getMemorySnapshotCacheKey();
         if (!cacheKey) {
             return;
         }
@@ -77,11 +77,24 @@ export async function checkMemorySnapshotSize(): Promise<void> {
 }
 
 export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
+    const cacheKey = await getMemorySnapshotCacheKey();
+    if (!cacheKey)
+        return undefined;
+    return await getCacheEntry(cacheKey);
+}
+
+export async function storeMemorySnapshot(memory: ArrayBuffer) {
+    const cacheKey = await getMemorySnapshotCacheKey();
+    if (!cacheKey)
+        return;
+
+    await storeCacheEntry(cacheKey, memory, "wasm-memory");
+
+    cleanupCache(memoryPrefix, cacheKey); // no await
+}
+
+export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | undefined> {
     try {
-        const cacheKey = await getCacheKey();
-        if (!cacheKey) {
-            return undefined;
-        }
         const cache = await openCache();
         if (!cache) {
             return undefined;
@@ -92,17 +105,13 @@ export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
         }
         return res.arrayBuffer();
     } catch (ex) {
-        mono_log_warn("Failed load memory snapshot from the cache", ex);
+        mono_log_warn("Failed to load entry from the cache: " + cacheKey, ex);
         return undefined;
     }
 }
 
-export async function storeMemorySnapshot(memory: ArrayBuffer) {
+export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string) {
     try {
-        const cacheKey = await getCacheKey();
-        if (!cacheKey) {
-            return;
-        }
         const cache = await openCache();
         if (!cache) {
             return;
@@ -114,21 +123,19 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
 
         const responseToCache = new Response(copy, {
             headers: {
-                "content-type": "wasm-memory",
+                "content-type": mimeType,
                 "content-length": memory.byteLength.toString(),
             },
         });
 
         await cache.put(cacheKey, responseToCache);
-
-        cleanupMemorySnapshots(cacheKey); // no await
     } catch (ex) {
-        mono_log_warn("Failed to store memory snapshot in the cache", ex);
+        mono_log_warn("Failed to store entry to the cache: " + cacheKey, ex);
         return;
     }
 }
 
-export async function cleanupMemorySnapshots(protectKey: string) {
+export async function cleanupCache(prefix: string, protectKey: string) {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -136,7 +143,7 @@ export async function cleanupMemorySnapshots(protectKey: string) {
         }
         const items = await cache.keys();
         for (const item of items) {
-            if (item.url && item.url !== protectKey && item.url.startsWith(memoryPrefix)) {
+            if (item.url && item.url !== protectKey && item.url.startsWith(prefix)) {
                 await cache.delete(item);
             }
         }
@@ -145,11 +152,18 @@ export async function cleanupMemorySnapshots(protectKey: string) {
     }
 }
 
-// calculate hash of things which affect the memory snapshot
-async function getCacheKey(): Promise<string | null> {
-    if (runtimeHelpers.memorySnapshotCacheKey) {
+export async function getMemorySnapshotCacheKey(): Promise<string | null> {
+    if (runtimeHelpers.memorySnapshotCacheKey)
         return runtimeHelpers.memorySnapshotCacheKey;
-    }
+
+    const result = await getCacheKey(memoryPrefix);
+    if (result)
+        runtimeHelpers.memorySnapshotCacheKey = result;
+    return result;
+}
+
+// calculate hash of things which affect the memory snapshot
+export async function getCacheKey(prefix: string): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
@@ -186,6 +200,5 @@ async function getCacheKey(): Promise<string | null> {
     const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
     const uint8ViewOfHash = new Uint8Array(sha256Buffer);
     const hashAsString = Array.from(uint8ViewOfHash).map((b) => b.toString(16).padStart(2, "0")).join("");
-    runtimeHelpers.memorySnapshotCacheKey = `${memoryPrefix}-${hashAsString}`;
-    return runtimeHelpers.memorySnapshotCacheKey;
+    return `${prefix}-${hashAsString}`;
 }

@@ -6,7 +6,7 @@
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
-  <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.targets" />
 
   <!-- FIXME: use proper dependency -->
   <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">

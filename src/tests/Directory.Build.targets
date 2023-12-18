@@ -508,7 +508,7 @@
 
     <ItemGroup>
       <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 
@@ -567,6 +567,11 @@
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
+
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+    <HasRuntimeOutput>false</HasRuntimeOutput>
+    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">

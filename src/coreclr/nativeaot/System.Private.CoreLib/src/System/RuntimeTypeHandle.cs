@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -18,15 +18,14 @@ namespace System
     {
         private IntPtr _value;
 
+        internal unsafe RuntimeTypeHandle(MethodTable* pEEType)
+            => _value = (IntPtr)pEEType;
+
         internal RuntimeTypeHandle(EETypePtr pEEType)
-            : this(pEEType.RawValue)
-        {
-        }
+            => _value = pEEType.RawValue;
 
         private RuntimeTypeHandle(IntPtr value)
-        {
-            _value = value;
-        }
+            => _value = value;
 
         public override bool Equals(object? obj)
         {

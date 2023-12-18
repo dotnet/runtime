@@ -112,4 +112,23 @@ namespace ApplyUpdateReferencedAssembly
     //         return M1(1, 2);
     //     }
     // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public class MethodBody11 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a line that will not be changed");
+            Console.WriteLine("original");
+        }
+    }
 }

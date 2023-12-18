@@ -3,6 +3,7 @@
 
 import { Module } from "../../globals";
 import { pthreadPtr } from "./types";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including
  * the low-level representations of {@linkcode pthreadPtr} thread info structs, etc.
@@ -12,11 +13,14 @@ import { pthreadPtr } from "./types";
  */
 
 // This is what we know about the Emscripten PThread library
-interface PThreadLibrary {
-    unusedWorkers: Worker[];
+export interface PThreadLibrary {
+    unusedWorkers: PThreadWorker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
     loadWasmModuleToWorker: (worker: Worker) => Promise<Worker>;
+    threadInitTLS: () => void,
+    getNewWorker: () => PThreadWorker,
+    returnWorkerToPool: (worker: PThreadWorker) => void,
 }
 
 interface EmscriptenPThreadInfo {
@@ -24,8 +28,10 @@ interface EmscriptenPThreadInfo {
 }
 
 /// N.B. emscripten deletes the `pthread` property from the worker when it is not actively running a pthread
-interface PThreadWorker extends Worker {
+export interface PThreadWorker extends Worker {
     pthread: EmscriptenPThreadInfo;
+    loaded: boolean;
+    interopInstalled: boolean;
 }
 
 interface PThreadObject {
@@ -42,13 +48,12 @@ function isRunningPThreadWorker(w: Worker): w is PThreadWorker {
 }
 
 /// These utility functions dig into Emscripten internals
-const Internals = {
+export const Internals = !MonoWasmThreads ? null as any : {
     get modulePThread(): PThreadLibrary {
         return (<any>Module).PThread as PThreadLibrary;
     },
     getWorker: (pthreadPtr: pthreadPtr): PThreadWorker | undefined => {
-        // see https://github.com/emscripten-core/emscripten/pull/16239
-        return Internals.modulePThread.pthreads[pthreadPtr]?.worker;
+        return Internals.modulePThread.pthreads[pthreadPtr];
     },
     getThreadId: (worker: Worker): pthreadPtr | undefined => {
         /// See library_pthread.js in Emscripten.
@@ -71,6 +76,3 @@ const Internals = {
         return Internals.modulePThread.loadWasmModuleToWorker(worker);
     }
 };
-
-
-export default Internals;

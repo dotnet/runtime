@@ -991,13 +991,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (!bIntrinsicImported)
             {
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
                 // Keep track of the raw IL offset of the call
-                call->AsCall()->gtRawILOffset = rawILOffset;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+                INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1040,7 +1035,7 @@ DONE:
 #ifdef DEBUG
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-    call->AsCall()->callSig  = new (this, CMK_Generic) CORINFO_SIG_INFO;
+    call->AsCall()->callSig  = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
     *call->AsCall()->callSig = *sig;
 #endif
 
@@ -1050,7 +1045,6 @@ DONE:
     {
         const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
         const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
-        const bool isStressTailCall   = (tailCallFlags & PREFIX_TAILCALL_STRESS) != 0;
 
         // Exactly one of these should be true.
         assert(isExplicitTailCall != isImplicitTailCall);
@@ -1113,11 +1107,13 @@ DONE:
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
                     JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
 
-                    if (isStressTailCall)
+#ifdef DEBUG
+                    if ((prefixFlags & PREFIX_TAILCALL_STRESS) != 0)
                     {
-                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_STRESS_TAILCALL;
-                        JITDUMP("\nGTF_CALL_M_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
+                        call->AsCall()->gtCallDebugFlags |= GTF_CALL_MD_STRESS_TAILCALL;
+                        JITDUMP("\nGTF_CALL_MD_STRESS_TAILCALL set for call [%06u]\n", dspTreeID(call));
                     }
+#endif
                 }
                 else
                 {
@@ -1205,12 +1201,8 @@ DONE:
             }
         }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
         // Keep track of the raw IL offset of the call
-        call->AsCall()->gtRawILOffset = rawILOffset;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+        INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1255,8 +1247,8 @@ DONE:
                     dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
             fgMarkBackwardJump(loopHead, compCurBB);
 
-            compMayConvertTailCallToLoop = true;
-            compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+            setMethodHasRecursiveTailcall();
+            compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
         }
 
         // We only do these OSR checks in the root method because:
@@ -1275,7 +1267,7 @@ DONE:
             {
                 BasicBlock* const successor = compCurBB->GetUniqueSucc();
                 assert(successor->KindIs(BBJ_RETURN));
-                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                successor->SetFlags(BBF_TAILCALL_SUCCESSOR);
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
         }
@@ -2551,6 +2543,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
+            // Not expanding this can lead to noticeable allocations in T0
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+
             // We need these to be able to fold "typeof(...) == typeof(...)"
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
@@ -3239,8 +3234,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
-                    retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
-                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                    retNode        = gtNewAtomicNode(op, genActualType(callType), op1, op2);
                 }
                 break;
             }
@@ -3251,16 +3245,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop(1).val->IsIntegralConst(0))
+
+                if ((retType == TYP_REF) &&
+                    (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3271,11 +3267,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op3 = impPopStack().val; // comparand
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
-
-                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
-
-                node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
-                retNode = node;
+                retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
                 break;
             }
 
@@ -3286,17 +3278,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 2);
 
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop().val->IsIntegralConst(0))
+
+                if ((retType == TYP_REF) &&
+                    (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3305,19 +3299,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op1 = impPopStack().val;
 
                 // This creates:
-                //   val
                 // XAdd
-                //   addr
-                //     field (for example)
+                //   val
+                //   field_addr (for example)
                 //
-                // In the case where the first argument is the address of a local, we might
-                // want to make this *not* make the var address-taken -- but atomic instructions
-                // on a local are probably pretty useless anyway, so we probably don't care.
-
-                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
-                                    genActualType(callType), op1, op2);
-                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-                retNode = op1;
+                retNode = gtNewAtomicNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                          callType, op1, op2);
                 break;
             }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
@@ -3818,7 +3805,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsIntegralConst())
                 {
                     float f32Cns = BitOperations::UInt32BitsToSingle((uint32_t)op1->AsIntConCommon()->IconValue());
-                    retNode      = gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
+                    retNode      = gtNewDconNodeF(f32Cns);
                 }
                 else
                 {
@@ -3837,7 +3824,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     impPopStack();
 
                     int64_t i64Cns = op1->AsIntConCommon()->LngValue();
-                    retNode        = gtNewDconNode(*reinterpret_cast<double*>(&i64Cns));
+                    retNode        = gtNewDconNodeD(*reinterpret_cast<double*>(&i64Cns));
                 }
 #if TARGET_64BIT
                 else
@@ -4166,15 +4153,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                     if (toType == TYP_DOUBLE)
                     {
                         uint64_t u64Cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                        return gtNewDconNode(BitOperations::UInt64BitsToDouble(u64Cns), TYP_DOUBLE);
+                        return gtNewDconNodeD(BitOperations::UInt64BitsToDouble(u64Cns));
                     }
                     else
                     {
                         assert(toType == TYP_FLOAT);
 
                         uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                        float    f32Cns = BitOperations::UInt32BitsToSingle(u32Cns);
-                        return gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
+                        return gtNewDconNodeF(BitOperations::UInt32BitsToSingle(u32Cns));
                     }
                 }
                 // TODO-CQ: We should support this on 32-bit via decomposition
@@ -5305,6 +5291,14 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
+    // The VM assumes that the PInvoke frame in IL Stub is only going to be used
+    // for the PInvoke target call. The PInvoke frame cannot be reused by marshalling helper
+    // calls (see InlinedCallFrame::GetActualInteropMethodDesc and related stackwalking code).
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+    {
+        return false;
+    }
+
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     // For platforms that use per-P/Invoke InlinedCallFrame initialization,
     // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
@@ -5315,18 +5309,6 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
     if (block->hasTryIndex())
     {
-        // This does not apply to the raw pinvoke call that is inside the pinvoke
-        // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
-        // otherwise we would end up with a stub that recursively calls itself, and end
-        // up with a stack overflow.
-        // This works correctly because the runtime never emits a catch block in a managed-to-native
-        // IL stub. If the runtime ever emits a catch block into a managed-to-native stub when using
-        // P/Invoke helpers, this condition will need to be revisited.
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
-        {
-            return true;
-        }
-
         // Check if this block's try block or any containing try blocks have catch handlers.
         // If any of the containing try blocks have catch handlers,
         // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
@@ -5343,7 +5325,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 
         return true;
     }
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
 
     return true;
 }
@@ -5421,12 +5403,20 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) || IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
+    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
+                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
     {
-        // PInvoke in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
+        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
         // converted to regular method calls earlier using convertPInvokeCalliToCall.
 
         // PInvoke CALLI in IL stubs must be inlined
+    }
+    else if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+             opts.IsReadyToRun())
+    {
+        // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
+        // be inlined into the stub, otherwise we would end up with a stub that recursively calls
+        // itself, and end up with a stack overflow.
     }
     else
     {
@@ -5440,25 +5430,17 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in NativeAOT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+            if (!impCanPInvokeInline())
             {
-                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
-                // recursive calls to the stub.
+                return;
             }
-            else
-            {
-                if (!impCanPInvokeInline())
-                {
-                    return;
-                }
 
-                // Size-speed tradeoff: don't use inline pinvoke at rarely
-                // executed call sites.  The non-inline version is more
-                // compact.
-                if (block->isRunRarely())
-                {
-                    return;
-                }
+            // Size-speed tradeoff: don't use inline pinvoke at rarely
+            // executed call sites.  The non-inline version is more
+            // compact.
+            if (block->isRunRarely())
+            {
+                return;
             }
         }
 
@@ -6889,7 +6871,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See what we know about the type of 'this' in the call.
     assert(call->gtArgs.HasThisPointer());
     CallArg*             thisArg      = call->gtArgs.GetThisArg();
-    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal(false);
+    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal();
     bool                 isExact      = false;
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
@@ -7094,7 +7076,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
-    call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
@@ -7255,7 +7237,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                 // TODO-CallArgs-REVIEW: Might discard commas otherwise?
                                 assert(thisObj == thisArg->GetEarlyNode());
                                 thisArg->SetEarlyNode(localCopyThis);
-                                call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
                                 call->gtArgs.InsertInstParam(this, methodTableArg);
 
@@ -7294,7 +7276,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             // TODO-CallArgs-REVIEW: Might discard commas otherwise?
                             thisArg->SetEarlyNode(localCopyThis);
                             call->gtCallMethHnd = unboxedEntryMethod;
-                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                             derivedMethod         = unboxedEntryMethod;
                             pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
 
@@ -7364,7 +7346,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                             assert(thisObj == thisArg->GetEarlyNode());
                             thisArg->SetEarlyNode(boxPayload);
                             call->gtCallMethHnd = unboxedEntryMethod;
-                            call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                            INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
                             // Method attributes will differ because unboxed entry point is shared
                             //
@@ -7388,7 +7370,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                         thisArg->SetEarlyNode(boxPayload);
                         call->gtCallMethHnd = unboxedEntryMethod;
-                        call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
+                        INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
                         derivedMethod         = unboxedEntryMethod;
                         pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedUnboxedMethod;
                     }
@@ -7422,6 +7404,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
     }
 
+    // We might have created a new recursive tail call candidate.
+    //
+    if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
+    {
+        setMethodHasRecursiveTailcall();
+        compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
+    }
+
 #ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
@@ -7434,7 +7424,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Update the call.
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-        call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN
@@ -7491,7 +7480,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 
     // Flag block as needing scrutiny
     //
-    compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+    compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
     return true;
 }
 
@@ -9802,7 +9791,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
     optMethodFlags |= OMF_HAS_MDARRAYREF;
-    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
+    compCurBB->SetFlags(BBF_HAS_MDARRAYREF);
 
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 

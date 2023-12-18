@@ -25,8 +25,7 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
-    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">10</_WasmPThreadPoolSize>
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-wasm.targets -->
+    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 

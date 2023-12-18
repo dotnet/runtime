@@ -27,12 +27,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
 		new ReferenceAssemblies (
 				"net8.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-rc.1.23419.4"),
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0"),
 				Path.Combine ("ref", "net8.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
 		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
-		public static async ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
+		public static async ValueTask<ImmutableArray<MetadataReference>> GetDotNetReferences ()
 		{
 			if (s_netcoreappRefs.IsDefault) {
 				var refs = await NetCoreAppReferencessemblies.ResolveAsync (null, default);
@@ -206,7 +206,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return token.ValueText;
 
 			default:
-				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
+				Assert.Fail("Unsupported expr kind " + expr.Kind ());
 				return null!;
 			}
 		}

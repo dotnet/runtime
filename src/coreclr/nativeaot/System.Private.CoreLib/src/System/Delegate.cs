@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Runtime;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Text;
+
 using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -286,7 +287,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return RuntimeAugments.Callbacks.GetDelegateMethod(this);
+            return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -352,20 +353,15 @@ namespace System
             return a.GetEETypePtr() == b.GetEETypePtr();
         }
 
-        // Returns a new delegate of the specified type whose implementation is provied by the
+        // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
         internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
-            EETypePtr delegateEEType;
-            if (!t.TryGetEEType(out delegateEEType))
-            {
-                throw new InvalidOperationException();
-            }
+            RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            if (!delegateEEType.IsDefType || delegateEEType.IsGenericTypeDefinition)
-            {
-                throw new InvalidOperationException();
-            }
+            EETypePtr delegateEEType = typeHandle.ToEETypePtr();
+            Debug.Assert(!delegateEEType.IsNull);
+            Debug.Assert(delegateEEType.IsCanonical);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 

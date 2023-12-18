@@ -169,7 +169,7 @@ namespace System
             this._dateData = dateData;
         }
 
-        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong) ticks);
+        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong)ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
@@ -1385,7 +1385,7 @@ namespace System
             // y100 = number of whole 100-year periods since 3/1/0000
             // r1 = (day number within 100-year period) * 4
             (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
-            ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+            ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
             ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
             int n3 = 2141 * daySinceMarch1 + 197913;
             year = (int)(100 * y100 + (uint)(u2 >> 32));
@@ -1447,7 +1447,7 @@ namespace System
             {
                 // r1 = (day number within 100-year period) * 4
                 uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
-                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
                 ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
                 int n3 = 2141 * daySinceMarch1 + 197913;
                 // Return 1-based day-of-month
@@ -1524,7 +1524,7 @@ namespace System
             {
                 // r1 = (day number within 100-year period) * 4
                 uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
-                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ulong u2 = Math.BigMul(EafMultiplier, r1 | 3U);
                 ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
                 int n3 = 2141 * daySinceMarch1 + 197913;
                 return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);

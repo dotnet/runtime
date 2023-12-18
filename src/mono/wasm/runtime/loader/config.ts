@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
@@ -186,6 +188,11 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
+    if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
+        // ActiveIssue https://github.com/dotnet/runtime/issues/91538
+        config.pthreadPoolSize = 5;
+    }
+
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
@@ -212,6 +219,9 @@ export function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
+
+    loaderHelpers.maxParallelDownloads = config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
+    loaderHelpers.enableDownloadRetry = config.enableDownloadRetry !== undefined ? config.enableDownloadRetry : loaderHelpers.enableDownloadRetry;
 }
 
 let configLoaded = false;

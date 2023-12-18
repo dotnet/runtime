@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonData.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonBuilderHelper.cs" />
 

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
+
 using Internal.DeveloperExperience;
 
 namespace System
@@ -103,10 +104,15 @@ namespace System
             if (!WriteValue("version"u8, "1.0.0"u8))
                 return false;
 
-            if (!WriteValue("runtime"u8, new ReadOnlySpan<byte>(RuntimeImports.RhGetRuntimeVersion(out int cbLength), cbLength)))
+            static void Dummy() { }
+
+            if (!WriteHexValue("runtime_base"u8, (ulong)RuntimeImports.RhGetOSModuleFromPointer((nint)(void*)(delegate*<void>)&Dummy)))
                 return false;
 
             if (!WriteIntValue("runtime_type"u8, (int)RuntimeType.NativeAOT))
+                return false;
+
+            if (!WriteValue("runtime_version"u8, new ReadOnlySpan<byte>(RuntimeImports.RhGetRuntimeVersion(out int cbLength), cbLength)))
                 return false;
 
             CrashReason crashReason = reason switch

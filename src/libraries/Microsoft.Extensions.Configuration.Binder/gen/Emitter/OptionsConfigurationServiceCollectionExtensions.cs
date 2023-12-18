@@ -53,8 +53,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // Like the others, it is public API that could be called directly by users.
                 // So, it is always generated whenever a Configure overload is called.
                 EmitStartMethod(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, paramList: $"string? {Identifier.name}, " + configParam + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.services);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.config);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.services, _emitThrowIfNullMethod);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.config, _emitThrowIfNullMethod);
                 _writer.WriteLine($$"""
                     OptionsServiceCollectionExtensions.AddOptions({{Identifier.services}});
                     {{Identifier.services}}.{{Identifier.AddSingleton}}<{{Identifier.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>>(new {{Identifier.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.config}}));

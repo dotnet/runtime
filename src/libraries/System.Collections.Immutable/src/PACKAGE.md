@@ -53,6 +53,10 @@ The main types provided by this library are:
 * `System.Collections.Immutable.ImmutableSortedSet<T>`
 * `System.Collections.Immutable.ImmutableStack`
 * `System.Collections.Immutable.ImmutableStack<T>`
+* `System.Collections.Frozen.FrozenDictionary`
+* `System.Collections.Frozen.FrozenDictionary<TKey, TValue>`
+* `System.Collections.Frozen.FrozenSet`
+* `System.Collections.Frozen.FrozenSet<T>`
 
 ## Additional Documentation
 

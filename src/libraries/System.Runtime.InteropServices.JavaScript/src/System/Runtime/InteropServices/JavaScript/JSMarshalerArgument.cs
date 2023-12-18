@@ -44,17 +44,17 @@ namespace System.Runtime.InteropServices.JavaScript
             internal IntPtr JSHandle;
             [FieldOffset(4)]
             internal IntPtr GCHandle;
-            [FieldOffset(4)]
-            internal MarshalerType ElementType;
 
             [FieldOffset(8)]
             internal int Length;
 
             /// <summary>
-            /// Discriminator
+            /// Discriminators
             /// </summary>
             [FieldOffset(12)]
             internal MarshalerType Type;
+            [FieldOffset(13)]
+            internal MarshalerType ElementType;
         }
 
         /// <summary>

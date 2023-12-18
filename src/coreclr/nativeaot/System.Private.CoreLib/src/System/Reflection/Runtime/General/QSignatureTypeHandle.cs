@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.General
 
         internal Type GetModifiedType(TypeContext typeContext)
         {
-            return ModifiedType.Create(Resolve(typeContext), (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
+            return ModifiedType.Create(Resolve(typeContext).ToType(), (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
         }
     }
 }

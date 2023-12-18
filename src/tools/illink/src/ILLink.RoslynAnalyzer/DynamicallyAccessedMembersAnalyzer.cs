@@ -25,6 +25,12 @@ namespace ILLink.RoslynAnalyzer
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
 		public const string attributeArgument = "attributeArgument";
 		public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
+		public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>> (GetRequiresAnalyzers);
+		static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers () =>
+			ImmutableArray.Create<RequiresAnalyzerBase> (
+				new RequiresAssemblyFilesAnalyzer (),
+				new RequiresUnreferencedCodeAnalyzer (),
+				new RequiresDynamicCodeAnalyzer ());
 
 		public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
@@ -49,6 +55,12 @@ namespace ILLink.RoslynAnalyzer
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedTypeNameInTypeGetType));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedParameterInMethodCreateInstance));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed));
+
+			foreach (var requiresAnalyzer in RequiresAnalyzers.Value) {
+				foreach (var diagnosticDescriptor in requiresAnalyzer.SupportedDiagnostics)
+					diagDescriptorsArrayBuilder.Add (diagnosticDescriptor);
+			}
+
 			return diagDescriptorsArrayBuilder.ToImmutable ();
 
 			void AddRange (DiagnosticId first, DiagnosticId last)
@@ -68,24 +80,29 @@ namespace ILLink.RoslynAnalyzer
 
 		public override void Initialize (AnalysisContext context)
 		{
-			if (!System.Diagnostics.Debugger.IsAttached)
+			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
+			if (!Debugger.IsAttached)
 				context.EnableConcurrentExecution ();
-			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
 			context.RegisterCompilationStartAction (context => {
-				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, context.Compilation))
+				var dataFlowAnalyzerContext = DataFlowAnalyzerContext.Create (context.Options, context.Compilation, RequiresAnalyzers.Value);
+				if (!dataFlowAnalyzerContext.AnyAnalyzersEnabled)
 					return;
 
 				context.RegisterOperationBlockAction (context => {
-					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
 					foreach (var operationBlock in context.OperationBlocks) {
-						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, operationBlock);
+						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, dataFlowAnalyzerContext, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.TrimAnalysisPatterns.CollectDiagnostics ())
+						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
 							context.ReportDiagnostic (diagnostic);
 					}
 				});
+
+				// Remaining actions are only for DynamicallyAccessedMembers analysis.
+				if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+					return;
+
 				// Examine generic instantiations in base types and interface list
 				context.RegisterSymbolAction (context => {
 					var type = (INamedTypeSymbol) context.Symbol;

@@ -353,6 +353,18 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
 
+check_struct_has_member(
+    "struct statvfs"
+    f_basetype
+    "sys/statvfs.h"
+    HAVE_STATVFS_BASETYPE)
+
+set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
+check_type_size(
+    "((struct dirent*)0)->d_name"
+    DIRENT_NAME_SIZE)
+set(CMAKE_EXTRA_INCLUDE_FILES)
+
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
     set (STATFS_INCLUDES sys/mount.h)
@@ -498,10 +510,16 @@ check_symbol_exists(
     sys/socket.h
     HAVE_ACCEPT4)
 
+set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if(CLR_CMAKE_TARGET_HAIKU)
+    set(CMAKE_REQUIRED_LIBRARIES "bsd")
+endif()
+
 check_symbol_exists(
     kqueue
     "sys/types.h;sys/event.h"
     HAVE_KQUEUE)
+set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 check_symbol_exists(
     disconnectx
@@ -563,23 +581,22 @@ if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    # TODO: test to see if these all actually hold true on Mac Catalyst
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
@@ -590,14 +607,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
 else()
-    if(CLR_CMAKE_TARGET_OSX)
-        unset(HAVE_ALIGNED_ALLOC) # only exists on OSX 10.15+
-    else()
-        check_symbol_exists(
-            aligned_alloc
-            stdlib.h
-            HAVE_ALIGNED_ALLOC)
-    endif()
+    check_symbol_exists(
+        aligned_alloc
+        stdlib.h
+        HAVE_ALIGNED_ALLOC)
 
     check_c_source_runs(
         "
@@ -925,6 +938,10 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
+check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
@@ -985,6 +1002,10 @@ check_include_files(
 check_include_files(
     "sys/mntent.h"
     HAVE_SYS_MNTENT_H)
+
+check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"
@@ -1145,7 +1166,7 @@ check_symbol_exists(
     sys/sysmacros.h
     HAVE_MAKEDEV_SYSMACROSH)
 
-if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_HAIKU)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
 

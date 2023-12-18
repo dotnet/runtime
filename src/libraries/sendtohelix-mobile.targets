@@ -58,6 +58,7 @@
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
+      <_RuntimeComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'build'))</_RuntimeComponentManifestDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
@@ -66,6 +67,8 @@
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
                                                                                  Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
+      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"         Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                 Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
       <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
       <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Condition="'$(RuntimeFlavor)' == 'mono'"
@@ -138,7 +141,6 @@
   </Target>
 
   <Target Name="AfterBuildHelixWorkItems_Mobile" AfterTargets="BuildHelixWorkItems">
-    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
 
     <PropertyGroup>
       <_TestPath Condition="'%(XHarnessAppBundleToTest.CustomCommands)' != ''">$([System.IO.Path]::GetDirectoryName('%(XHarnessAppBundleToTest.Identity)'))</_TestPath>

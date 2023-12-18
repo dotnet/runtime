@@ -6,7 +6,7 @@ import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
+import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
 
 export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
 {
@@ -109,8 +109,7 @@ function getLongTimePattern(locale: string | undefined, designators: any) : stri
         hourPattern = hasPrefix ? "hh" : "h";
         pattern = pattern.replace(hasPrefix ? hour12WithPrefix : localizedHour12, hourPattern);
     }
-
-    return pattern;
+    return normalizeSpaces(pattern);
 }
 
 function getShortTimePattern(pattern: string) : string

@@ -50,7 +50,7 @@ namespace ILCompiler
             };
 
         private readonly List<TypeDesc> _typesWithForcedEEType = new List<TypeDesc>();
-        private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
+        private readonly SortedSet<ModuleDesc> _modulesWithMetadata = new SortedSet<ModuleDesc>(CompilerComparer.Instance);
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
@@ -660,10 +660,19 @@ namespace ILCompiler
         private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
         {
             // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithEETypes())
+            foreach (var constructedType in GetTypesWithConstructedEETypes())
             {
                 if (!IsReflectionBlocked(constructedType))
                     yield return constructedType;
+            }
+
+            // All necessary types for which this is the highest load level that are not blocked
+            // get runtime mapping.
+            foreach (var necessaryType in GetTypesWithEETypes())
+            {
+                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
+                    !IsReflectionBlocked(necessaryType))
+                    yield return necessaryType;
             }
         }
 

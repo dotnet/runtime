@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -32,20 +33,16 @@ namespace System.Reflection.Runtime.TypeInfos
             return _rank;
         }
 
-        protected sealed override bool IsArrayImpl() => true;
-        public sealed override bool IsSZArray => !_multiDim;
-        public sealed override bool IsVariableBoundArray => _multiDim;
-        protected sealed override bool IsByRefImpl() => false;
-        protected sealed override bool IsPointerImpl() => false;
+        public override bool IsArray => true;
+        public override bool IsSZArray => !_multiDim;
+        public override bool IsVariableBoundArray => _multiDim;
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
 #pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
-            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+        public sealed override TypeAttributes Attributes =>
+            TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
 #pragma warning restore SYSLIB0050
-        }
 
-        internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
+    internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
         {
             get
             {
@@ -53,7 +50,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 int rank = this.GetArrayRank();
 
                 RuntimeArrayTypeInfo arrayType = this;
-                RuntimeTypeInfo countType = typeof(int).CastToRuntimeTypeInfo();
+                RuntimeTypeInfo countType = typeof(int).ToRuntimeTypeInfo();
 
                 {
                     //
@@ -81,7 +78,7 @@ namespace System.Reflection.Runtime.TypeInfos
                             {
                                 lengths[i] = (int)(args[i]);
                             }
-                            return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
+                            return RuntimeAugments.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
                         }
                     );
                 }
@@ -157,7 +154,7 @@ namespace System.Reflection.Runtime.TypeInfos
                                 lowerBounds[i] = (int)(args[i * 2]);
                                 lengths[i] = (int)(args[i * 2 + 1]);
                             }
-                            return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, lowerBounds);
+                            return RuntimeAugments.NewMultiDimArray(arrayType.TypeHandle, lengths, lowerBounds);
                         }
                     );
                 }
@@ -170,10 +167,10 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 int rank = this.GetArrayRank();
 
-                RuntimeTypeInfo indexType = typeof(int).CastToRuntimeTypeInfo();
+                RuntimeTypeInfo indexType = typeof(int).ToRuntimeTypeInfo();
                 RuntimeArrayTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
-                RuntimeTypeInfo voidType = typeof(void).CastToRuntimeTypeInfo();
+                RuntimeTypeInfo voidType = typeof(void).ToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] getParameters = new RuntimeTypeInfo[rank];
@@ -299,8 +296,8 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
-                RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
+                RuntimeTypeHandle projectionTypeHandleForArrays = RuntimeAugments.ProjectionTypeForArrays;
+                RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetRuntimeTypeInfoForRuntimeTypeHandle();
                 return projectionRuntimeTypeForArrays;
             }
         }
@@ -311,7 +308,7 @@ namespace System.Reflection.Runtime.TypeInfos
         private static Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
         {
             int length = lengths[index];
-            Array jaggedArray = ReflectionCoreExecution.ExecutionEnvironment.NewArray(arrayType.TypeHandle, length);
+            Array jaggedArray = RuntimeAugments.NewArray(arrayType.TypeHandle, length);
             if (index != lengths.Length - 1)
             {
                 for (int i = 0; i < length; i++)

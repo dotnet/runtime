@@ -104,6 +104,11 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsPrimitive || type.IsVoid)
                 return;
 
+            // Reflection doesn't need the ability to generate MethodTables out of thin air for reference types.
+            // Skip generating the dependencies.
+            if (type.IsGCPointer)
+                return;
+
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, canonType);

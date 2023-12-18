@@ -374,11 +374,82 @@ namespace Microsoft.Extensions.Options.Generators
 """);
         }
 
-        public void EmitRangeAttribute(string modifier, string prefix, string className, string suffix)
+        public void EmitRangeAttribute(string modifier, string prefix, string className, string suffix, bool emitTimeSpanSupport)
         {
             OutGeneratedCodeAttribute();
 
             string qualifiedClassName = $"{prefix}{suffix}_{className}";
+
+            string initializationString = emitTimeSpanSupport ?
+            """
+                                if (OperandType == typeof(global::System.TimeSpan))
+                                {
+                                    if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                                        !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                                    {
+                                        throw new global::System.InvalidOperationException(c_minMaxError);
+                                    }
+                                    Minimum = timeSpanMinimum;
+                                    Maximum = timeSpanMaximum;
+                                }
+                                else
+                                {
+                                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                }
+            """
+            :
+            """
+                                Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+            """;
+
+            string convertValue = emitTimeSpanSupport ?
+            """
+                        if (OperandType == typeof(global::System.TimeSpan))
+                        {
+                            if (value is global::System.TimeSpan)
+                            {
+                                convertedValue = value;
+                            }
+                            else if (value is string)
+                            {
+                                if (!global::System.TimeSpan.TryParse((string)value, formatProvider, out global::System.TimeSpan timeSpanValue))
+                                {
+                                    return false;
+                                }
+                                convertedValue = timeSpanValue;
+                            }
+                            else
+                            {
+                                throw new global::System.InvalidOperationException($"A value type {value.GetType()} that is not a TimeSpan or a string has been given. This might indicate a problem with the source generator.");
+                            }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                convertedValue = ConvertValue(value, formatProvider);
+                            }
+                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                            {
+                                return false;
+                            }
+                        }
+            """
+            :
+            """
+                        try
+                        {
+                            convertedValue = ConvertValue(value, formatProvider);
+                        }
+                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                        {
+                            return false;
+                        }
+            """;
+
+
 
             OutLn($$"""
 [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -414,19 +485,20 @@ namespace Microsoft.Extensions.Options.Generators
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         private bool NeedToConvertMinMax { get; }
         private bool Initialized { get; set; }
+        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+
         public override bool IsValid(object? value)
         {
             if (!Initialized)
             {
                 if (Minimum is null || Maximum is null)
                 {
-                    throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    throw new global::System.InvalidOperationException(c_minMaxError);
                 }
                 if (NeedToConvertMinMax)
                 {
                     System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+{{initializationString}}
                 }
                 int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
                 if (cmp > 0)
@@ -448,14 +520,7 @@ namespace Microsoft.Extensions.Options.Generators
             System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
             object? convertedValue;
 
-            try
-            {
-                convertedValue = ConvertValue(value, formatProvider);
-            }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
-            {
-                return false;
-            }
+{{convertValue}}
 
             var min = (global::System.IComparable)Minimum;
             var max = (global::System.IComparable)Maximum;
@@ -540,12 +605,12 @@ namespace Microsoft.Extensions.Options.Generators
 
         private void GenValidationAttributesClasses()
         {
-            var attributesData = _optionsSourceGenContext.AttributesToGenerate;
-
-            if (attributesData.Count == 0)
+            if (_optionsSourceGenContext.AttributesToGenerate.Count == 0)
             {
                 return;
             }
+
+            var attributesData = _optionsSourceGenContext.AttributesToGenerate.OrderBy(static kvp => kvp.Key, StringComparer.Ordinal).ToArray();
 
             OutLn($"namespace {StaticGeneratedValidationAttributesClassesNamespace}");
             OutOpenBrace();
@@ -574,17 +639,19 @@ namespace Microsoft.Extensions.Options.Generators
                 }
                 else if (attributeData.Key == _symbolHolder.RangeAttributeSymbol.Name)
                 {
-                    EmitRangeAttribute(_optionsSourceGenContext.ClassModifier, Emitter.StaticAttributeClassNamePrefix, attributeData.Key, _optionsSourceGenContext.Suffix);
+                    EmitRangeAttribute(_optionsSourceGenContext.ClassModifier, Emitter.StaticAttributeClassNamePrefix, attributeData.Key, _optionsSourceGenContext.Suffix, attributeData.Value is not null);
                 }
             }
 
             OutCloseBrace();
         }
 
-        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate)
+        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate, string modelName)
         {
             if (modelToValidate.SelfValidates)
             {
+                OutLn($"context.MemberName = \"Validate\";");
+                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.Validate\" : $\"{{name}}.Validate\";");
                 OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
@@ -617,7 +684,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
             OutLn($"var context = new {StaticValidationContextType}(options);");
 
-            int capacity = modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
+            int capacity = modelToValidate.MembersToValidate.Count == 0 ? 0 : modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
             if (capacity > 0)
             {
                 OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
@@ -648,7 +715,7 @@ namespace Microsoft.Extensions.Options.Generators
                 }
             }
 
-            GenModelSelfValidationIfNecessary(modelToValidate);
+            GenModelSelfValidationIfNecessary(modelToValidate, modelToValidate.SimpleName);
             OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
             OutCloseBrace();
         }

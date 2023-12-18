@@ -347,7 +347,6 @@ jobs:
           displayName: Collect vslogs on exit
           condition: always()
 
-
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
             du -sh $(Build.SourcesDirectory)/*

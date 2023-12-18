@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Globalization;
-using System.Threading;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -1262,8 +1262,8 @@ namespace System
                 return cache.CorElementType;
 
             var type = this;
-            cache.CorElementType = RuntimeTypeHandle.GetCorElementType (new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            cache.CorElementType = RuntimeTypeHandle.GetCorElementType(new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.CorElementType);
             return cache.CorElementType;
         }
@@ -1276,7 +1276,7 @@ namespace System
 
             var type = this;
             cache.TypeAttributes = RuntimeTypeHandle.GetAttributes(new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.TypeAttributes);
             return cache.TypeAttributes;
         }
@@ -1694,7 +1694,7 @@ namespace System
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
 
             // Note down even if we found no constructors
             UpdateCached(TypeCacheEntries.DefaultCtor);
@@ -2467,7 +2467,7 @@ namespace System
                     for (int i = 1; i < typeNum + 1; i++)
                     {
                         var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[i]);
-                        fPtrReturnAndParameterTypes[i-1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                        fPtrReturnAndParameterTypes[i - 1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
                     }
                 }
                 return fPtrReturnAndParameterTypes;

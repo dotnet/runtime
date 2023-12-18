@@ -144,10 +144,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             Debug.Assert(!type.IsValueType);
                             string binderOptionsArg = configureOptions ? $"{Identifier.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
 
-                            EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
-                            EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
+                            EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, _emitThrowIfNullMethod);
+                            EmitCheckForNullArgument_WithBlankLine(Identifier.instance, _emitThrowIfNullMethod, voidReturn: true);
                             _writer.WriteLine($$"""
-                                var {{Identifier.typedObj}} = ({{type.DisplayString}}){{Identifier.instance}};
+                                var {{Identifier.typedObj}} = ({{type.TypeRef.FullyQualifiedName}}){{Identifier.instance}};
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, defaultValueIfNotFound: false, {{binderOptionsArg}});
                                 """);
                         }

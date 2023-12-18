@@ -31,9 +31,9 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     if(CORECLR_SET_RPATH AND CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64)
       set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -80,7 +80,7 @@ else(CLR_CMAKE_HOST_WIN32)
         list(APPEND CLR_DAC_SOURCES libredefines.S)
     endif(CLR_CMAKE_HOST_LINUX)
 
-    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
@@ -93,7 +93,7 @@ else(CLR_CMAKE_HOST_WIN32)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_WIN32)
@@ -144,7 +144,7 @@ if(CLR_CMAKE_HOST_WIN32)
     add_custom_command(
         DEPENDS mscordaccore_def "${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" mscordacobj daccess
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.exp
-        COMMAND lib.exe /NOLOGO /OUT:"${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.lib" /DEF:"${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" "$<TARGET_FILE:daccess>" $<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/LTCG> ${STATIC_LIBRARY_FLAGS} $<TARGET_OBJECTS:mscordacobj>
+        COMMAND lib.exe /NOLOGO /OUT:"${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.lib" /DEF:"${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def" "$<TARGET_FILE:daccess>" $<$<CONFIG:Release,Relwithdebifo>:/LTCG> ${STATIC_LIBRARY_FLAGS} $<TARGET_OBJECTS:mscordacobj>
         COMMENT "Generating mscordaccore.exp export file"
     )
 

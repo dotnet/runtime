@@ -104,7 +104,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
+
+      <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''" />
       <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />

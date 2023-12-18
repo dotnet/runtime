@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -447,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DWORD lpString2,
             DWORD cchCount2
             );*/
-        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int CompareString(
             uint locale,
             uint dwCmpFlags,

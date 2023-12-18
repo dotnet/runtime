@@ -259,7 +259,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.Message);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-static unsafe class UnsafeAccessorsTests
+public static unsafe class UnsafeAccessorsTests
 {
     const string PrivateStatic = nameof(PrivateStatic);
     const string Private = nameof(Private);

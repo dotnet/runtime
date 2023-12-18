@@ -15,9 +15,6 @@
 #include "finalizerthread.h"
 #include "dbginterface.h"
 
-// from ntstatus.h
-#define STATUS_SUSPEND_COUNT_EXCEEDED    ((NTSTATUS)0xC000004AL)
-
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -357,12 +354,6 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
             {
                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "In Thread::SuspendThread ::SuspendThread returned %x\n", dwSuspendCount);
             }
-
-            // Our callers generally expect that STR_Failure means that
-            // the thread has exited.
-#ifndef TARGET_UNIX
-            _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
-#endif // !TARGET_UNIX
 
             str = STR_Failure;
             break;
@@ -964,9 +955,8 @@ BOOL Thread::ReadyForAsyncException()
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
+    if (g_isNewExceptionHandlingEnabled && IsAbortPrevented())
     {
-        // TODO: make thread abort work for the new exception handling
         return FALSE;
     }
 #endif // FEATURE_EH_FUNCLETS

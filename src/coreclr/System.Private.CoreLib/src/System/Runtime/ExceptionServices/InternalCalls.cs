@@ -5,8 +5,8 @@
 // This is where we group together all the internal calls.
 //
 
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime.ExceptionServices
 {

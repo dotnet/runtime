@@ -114,7 +114,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder);
+            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder, this);
             return _module;
         }
 

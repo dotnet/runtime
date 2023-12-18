@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include "gcenv.h"
+#include "gcheaputilities.h"
+
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -9,14 +12,12 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
 #include "Crst.h"
-#include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -25,7 +26,7 @@
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
-#include "RhVolatile.h"
+#include "GcEnum.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -80,10 +81,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         ClearState(TSF_Redirected);
 #endif //FEATURE_SUSPEND_REDIRECTION
 
-        RedhawkGCInterface::WaitForGCCompletion();
+        GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag
-        VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
+        VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
     }
     while (ThreadStore::IsTrapThreadsRequested());
 
@@ -146,27 +147,40 @@ void Thread::EnablePreemptiveMode()
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
 }
 
+// NOTE: In general, this function can only be used in contexts where explicit actions have been taken to
+// ensure that valid m_pDeferredTransitionFrame setting is in place (since this setting is not generally
+// guaranteed to be valid).
 void Thread::DisablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
 
     // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
 
     if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
         WaitForGC(m_pDeferredTransitionFrame);
     }
 }
-#endif // !DACCESS_COMPILE
 
-bool Thread::IsCurrentThreadInCooperativeMode()
+// Setup the m_pDeferredTransitionFrame field for GC helpers entered from native helper thread
+// code (e.g. ETW or EventPipe threads). Do not use anywhere else.
+void Thread::SetDeferredTransitionFrameForNativeHelperThread()
 {
-#ifndef DACCESS_COMPILE
     ASSERT(ThreadStore::GetCurrentThread() == this);
-#endif // !DACCESS_COMPILE
-    return (m_pTransitionFrame == NULL);
+    ASSERT(!Thread::IsCurrentThreadInCooperativeMode());
+    m_pDeferredTransitionFrame = m_pTransitionFrame;
+
+    // This function can only be used when there is no managed code anywhere on the current stack (i.e., when
+    // the current thread has the simplest possible transition frame configuration). A real transition (and
+    // the implied possibility of ancestor managed code on this thread) can be deferred only in the restricted
+    // set of cases which are allowed to use DeferTransitionFrame or SetDeferredTransitionFrame.
+    if (m_pDeferredTransitionFrame != TOP_OF_STACK_MARKER)
+    {
+        RhFailFast();
+    }
 }
+#endif // !DACCESS_COMPILE
 
 //
 // This is used by the EH system to find the place where execution left managed code when an exception leaks out of a
@@ -263,7 +277,7 @@ void Thread::Construct()
     m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
     m_hPalThread = INVALID_HANDLE_VALUE;
 
-    m_threadId.SetToCurrentThread();
+    m_threadId = PalGetCurrentOSThreadId();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
     HANDLE curThreadPseudo  = PalGetCurrentThread();
@@ -328,17 +342,30 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return *(uint64_t*)&m_threadId;
+    return m_threadId;
 }
 
-bool Thread::IsCurrentThread()
+uint64_t Thread::s_DeadThreadsNonAllocBytes = 0;
+
+/* static*/
+uint64_t Thread::GetDeadThreadsNonAllocBytes()
 {
-    return m_threadId.IsCurrentThread();
+#ifdef HOST_64BIT
+    return s_DeadThreadsNonAllocBytes;
+#else
+    // As it could be noticed we read 64bit values that may be concurrently updated.
+    // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
+    return PalInterlockedCompareExchange64((int64_t*)&s_DeadThreadsNonAllocBytes, 0, 0);
+#endif
 }
 
 void Thread::Detach()
 {
-    RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    // clean up the alloc context
+    gc_alloc_context* context = GetAllocContext();
+    s_DeadThreadsNonAllocBytes += context->alloc_limit - context->alloc_ptr;
+    GCHeapUtilities::GetGCHeap()->FixAllocContext(context, NULL, NULL);
+
     SetDetached();
 }
 
@@ -365,17 +392,17 @@ void Thread::Destroy()
 }
 
 #ifdef HOST_WASM
-extern RtuObjectRef * t_pShadowStackTop;
-extern RtuObjectRef * t_pShadowStackBottom;
+extern OBJECTREF * t_pShadowStackTop;
+extern OBJECTREF * t_pShadowStackBottom;
 
 void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
 {
     // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
-    RedhawkGCInterface::EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
+    EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
 }
 #endif
 
-void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
+void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData)
 {
     this->CrossThreadUnhijack();
 
@@ -391,7 +418,7 @@ void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
 
 #ifdef DACCESS_COMPILE
 // A trivial wrapper that unpacks the DacScanCallbackData and calls the callback provided to GcScanRoots
-void GcScanRootsCallbackWrapper(PTR_RtuObjectRef ppObject, DacScanCallbackData* callbackData, uint32_t flags)
+void GcScanRootsCallbackWrapper(PTR_OBJECTREF ppObject, DacScanCallbackData* callbackData, uint32_t flags)
 {
     Thread::GcScanRootsCallbackFunc * pfnUserCallback = (Thread::GcScanRootsCallbackFunc *)callbackData->pfnUserCallback;
     pfnUserCallback(ppObject, callbackData->token, flags);
@@ -424,9 +451,9 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
-void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & frameIterator)
+void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
-    PTR_RtuObjectRef pHijackedReturnValue = NULL;
+    PTR_OBJECTREF    pHijackedReturnValue = NULL;
     GCRefKind        returnValueKind      = GCRK_Unknown;
 
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
@@ -434,7 +461,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
         GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
         if (reg0Kind != GCRK_Scalar)
         {
-            RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
+            EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
         }
 
 #if defined(TARGET_ARM64) || defined(TARGET_UNIX)
@@ -442,7 +469,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
         if (reg1Kind != GCRK_Scalar)
         {
             // X0/X1 or RAX/RDX are saved in hijack frame next to each other in this order
-            RedhawkGCInterface::EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
+            EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
         }
 #endif  // TARGET_ARM64 || TARGET_UNIX
 
@@ -465,7 +492,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                 (
                     [&](size_t* pRef)
                     {
-                        RedhawkGCInterface::EnumGcRefConservatively((PTR_RtuObjectRef)pRef, pfnEnumCallback, pvCallbackData);
+                        EnumGcRefConservatively((PTR_OBJECTREF)pRef, pfnEnumCallback, pvCallbackData);
                     }
                 );
             }
@@ -475,9 +502,9 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
             PTR_VOID pUpperBound = m_pStackHigh;
 
-            RedhawkGCInterface::EnumGcRefsInRegionConservatively(
-                dac_cast<PTR_RtuObjectRef>(pLowerBound),
-                dac_cast<PTR_RtuObjectRef>(pUpperBound),
+            EnumGcRefsInRegionConservatively(
+                dac_cast<PTR_OBJECTREF>(pLowerBound),
+                dac_cast<PTR_OBJECTREF>(pUpperBound),
                 pfnEnumCallback,
                 pvCallbackData);
         }
@@ -493,7 +520,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
             if (!frameIterator.ShouldSkipRegularGcReporting())
             {
-                RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
+                EnumGcRefs(frameIterator.GetCodeManager(),
                                                frameIterator.GetMethodInfo(),
                                                frameIterator.GetEffectiveSafePointAddress(),
                                                frameIterator.GetRegisterSet(),
@@ -515,10 +542,10 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             // callsite of the type described above.
             if (frameIterator.HasStackRangeToReportConservatively())
             {
-                PTR_RtuObjectRef pLowerBound;
-                PTR_RtuObjectRef pUpperBound;
+                PTR_OBJECTREF pLowerBound;
+                PTR_OBJECTREF pUpperBound;
                 frameIterator.GetStackRangeToReportConservatively(&pLowerBound, &pUpperBound);
-                RedhawkGCInterface::EnumGcRefsInRegionConservatively(pLowerBound,
+                EnumGcRefsInRegionConservatively(pLowerBound,
                                                                      pUpperBound,
                                                                      pfnEnumCallback,
                                                                      pvCallbackData);
@@ -536,8 +563,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
     // add to a dump file during FailFast.
     for (PTR_ExInfo curExInfo = GetCurExInfo(); curExInfo != NULL; curExInfo = curExInfo->m_pPrevExInfo)
     {
-        PTR_RtuObjectRef pExceptionObj = dac_cast<PTR_RtuObjectRef>(&curExInfo->m_exception);
-        RedhawkGCInterface::EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
+        PTR_OBJECTREF pExceptionObj = dac_cast<PTR_OBJECTREF>(&curExInfo->m_exception);
+        EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
     }
 
     for (GCFrameRegistration* pCurGCFrame = m_pGCFrameRegistrations; pCurGCFrame != NULL; pCurGCFrame = pCurGCFrame->m_pNext)
@@ -546,14 +573,14 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
         for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
         {
-            RedhawkGCInterface::EnumGcRef(dac_cast<PTR_RtuObjectRef>(pCurGCFrame->m_pObjRefs + i),
+            EnumGcRef(dac_cast<PTR_OBJECTREF>(pCurGCFrame->m_pObjRefs + i),
                 pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
 
     // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
-    PTR_RtuObjectRef pThreadAbortExceptionObj = dac_cast<PTR_RtuObjectRef>(&m_threadAbortException);
-    RedhawkGCInterface::EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
+    PTR_OBJECTREF pThreadAbortExceptionObj = dac_cast<PTR_OBJECTREF>(&m_threadAbortException);
+    EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE
@@ -939,11 +966,6 @@ void Thread::ClearState(ThreadStateFlags flags)
     PalInterlockedAnd(&m_ThreadStateFlags, ~flags);
 }
 
-bool Thread::IsStateSet(ThreadStateFlags flags)
-{
-    return ((m_ThreadStateFlags & flags) == (uint32_t) flags);
-}
-
 bool Thread::IsSuppressGcStressSet()
 {
     return IsStateSet(TSF_SuppressGcStress);
@@ -1051,11 +1073,6 @@ COOP_PINVOKE_HELPER(void, RhpValidateExInfoPop, (Thread * pThread, ExInfo * pExI
     pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
 
-bool Thread::IsDoNotTriggerGcSet()
-{
-    return IsStateSet(TSF_DoNotTriggerGc);
-}
-
 void Thread::SetDoNotTriggerGc()
 {
     ASSERT(!IsStateSet(TSF_DoNotTriggerGc));
@@ -1124,49 +1141,6 @@ EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL
 }
 #endif // TARGET_UNIX
 
-FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame)
-{
-    // remember the current transition frame, so it will be restored when we return from reverse pinvoke
-    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
-
-    // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in
-    // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
-    // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
-    // methods on interfaces passed to native.
-    // We will allow threads in DoNotTriggerGc mode to do reverse PInvoke regardless of their coop state.
-    if (IsDoNotTriggerGcSet())
-    {
-        // We expect this scenario only when EE is stopped.
-        ASSERT(ThreadStore::IsTrapThreadsRequested());
-        // no need to do anything
-        return true;
-    }
-
-    // Do we need to attach the thread?
-    if (!IsStateSet(TSF_Attached))
-        return false; // thread is not attached
-
-    if (IsCurrentThreadInCooperativeMode())
-        return false; // bad transition
-
-    // this is an ordinary transition to managed code
-    // GC threads should not do that
-    ASSERT(!IsGCSpecial());
-
-    // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
-
-    // now check if we need to trap the thread
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        // put the previous frame back (sets us back to preemptive mode)
-        m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
-        return false; // need to trap the thread
-    }
-
-    return true;
-}
-
 EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
     g_RuntimeInitializationCallback = fPtr;
@@ -1198,7 +1172,7 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
     // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
 
     // now check if we need to trap the thread
     if (ThreadStore::IsTrapThreadsRequested())
@@ -1223,30 +1197,6 @@ void Thread::EnsureRuntimeInitialized()
     }
 
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
-}
-
-FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
-{
-    // set our mode to preemptive
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame->m_savedPInvokeTransitionFrame);
-}
-
-FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
-{
-    ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
-    pFrame->m_pThread = this;
-    // set our mode to preemptive
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
-}
-
-FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
-{
-    // must be in cooperative mode when checking the trap flag
-    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        RhpWaitForGC2(pFrame);
-    }
 }
 
 Object * Thread::GetThreadAbortException()

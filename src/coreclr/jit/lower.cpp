@@ -542,13 +542,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-        case GT_ARR_ELEM: // Lowered by fgMorphArrayOps()
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-            // Lowered by fgSimpleLowering()
-            unreached();
-            break;
-
         case GT_ROL:
         case GT_ROR:
             LowerRotate(node);
@@ -638,7 +631,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_CMPXCHG:
-            CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
+            CheckImmedAndMakeContained(node, node->AsCmpXchg()->Comparand());
             break;
 
         case GT_XORR:
@@ -688,11 +681,85 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            return LowerArrLength(node->AsArrCommon());
+            break;
+
         default:
             break;
     }
 
     return node->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerArrLength: lower an array length
+//
+// Arguments:
+//    node - the array length node we are lowering.
+//
+// Returns:
+//    next node that needs to be lowered.
+//
+// Notes:
+//    If base array is nullptr, this effectively
+//    turns into a nullcheck.
+//
+GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
+{
+    GenTree* const arr       = node->ArrRef();
+    int            lenOffset = 0;
+
+    switch (node->OperGet())
+    {
+        case GT_ARR_LENGTH:
+        {
+            lenOffset = node->AsArrLen()->ArrLenOffset();
+            noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
+                         lenOffset == OFFSETOF__CORINFO_String__stringLen);
+            break;
+        }
+
+        case GT_MDARR_LENGTH:
+            lenOffset = (int)comp->eeGetMDArrayLengthOffset(node->AsMDArr()->Rank(), node->AsMDArr()->Dim());
+            break;
+
+        case GT_MDARR_LOWER_BOUND:
+            lenOffset = (int)comp->eeGetMDArrayLowerBoundOffset(node->AsMDArr()->Rank(), node->AsMDArr()->Dim());
+            break;
+
+        default:
+            unreached();
+    }
+
+    // Create the expression `*(array_addr + lenOffset)`
+
+    GenTree* addr;
+    noway_assert(arr->gtNext == node);
+
+    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    {
+        // If the array is NULL, then we should get a NULL reference
+        // exception when computing its length.  We need to maintain
+        // an invariant where there is no sum of two constants node, so
+        // let's simply return an indirection of NULL.
+
+        addr = arr;
+    }
+    else
+    {
+        GenTree* con = comp->gtNewIconNode(lenOffset, TYP_I_IMPL);
+        addr         = comp->gtNewOperNode(GT_ADD, TYP_BYREF, arr, con);
+        BlockRange().InsertAfter(arr, con, addr);
+    }
+
+    // Change to a GT_IND.
+    node->ChangeOper(GT_IND);
+    node->AsIndir()->Addr() = addr;
+
+    return arr->gtNext;
 }
 
 /**  -- Switch Lowering --
@@ -779,8 +846,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // jumpCnt is the number of elements in the jump table array.
     // jumpTab is the actual pointer to the jump table array.
     // targetCnt is the number of unique targets in the jump table array.
-    jumpCnt   = originalSwitchBB->bbJumpSwt->bbsCount;
-    jumpTab   = originalSwitchBB->bbJumpSwt->bbsDstTab;
+    jumpCnt   = originalSwitchBB->GetSwitchTargets()->bbsCount;
+    jumpTab   = originalSwitchBB->GetSwitchTargets()->bbsDstTab;
     targetCnt = originalSwitchBB->NumSucc(comp);
 
 // GT_SWITCH must be a top-level node with no use.
@@ -800,16 +867,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     {
         JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
         noway_assert(comp->opts.OptimizationDisabled());
-        if (originalSwitchBB->NextIs(jumpTab[0]))
+        originalSwitchBB->SetKindAndTarget(BBJ_ALWAYS, jumpTab[0]);
+
+        if (originalSwitchBB->JumpsToNext())
         {
-            originalSwitchBB->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
-            originalSwitchBB->bbJumpDest = nullptr;
+            originalSwitchBB->SetFlags(BBF_NONE_QUIRK);
         }
-        else
-        {
-            originalSwitchBB->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
-            originalSwitchBB->bbJumpDest = jumpTab[0];
-        }
+
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
         {
@@ -890,19 +954,18 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     BasicBlock* afterDefaultCondBlock = comp->fgSplitBlockAfterNode(originalSwitchBB, condRange.LastNode());
 
     // afterDefaultCondBlock is now the switch, and all the switch targets have it as a predecessor.
-    // originalSwitchBB is now a BBJ_NONE, and there is a predecessor edge in afterDefaultCondBlock
+    // originalSwitchBB is now a BBJ_ALWAYS, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
-    assert(originalSwitchBB->KindIs(BBJ_NONE));
+    assert(originalSwitchBB->KindIs(BBJ_ALWAYS));
     assert(originalSwitchBB->NextIs(afterDefaultCondBlock));
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
-    assert(afterDefaultCondBlock->bbJumpSwt->bbsHasDefault);
+    assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
-    originalSwitchBB->bbJumpDest = jumpTab[jumpCnt - 1];
+    originalSwitchBB->SetCond(jumpTab[jumpCnt - 1]);
 
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
@@ -956,15 +1019,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             assert(jumpTab[i] == uniqueSucc);
             (void)comp->fgRemoveRefPred(uniqueSucc, afterDefaultCondBlock);
         }
-        if (afterDefaultCondBlock->NextIs(uniqueSucc))
+
+        afterDefaultCondBlock->SetKindAndTarget(BBJ_ALWAYS, uniqueSucc);
+
+        if (afterDefaultCondBlock->JumpsToNext())
         {
-            afterDefaultCondBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
-            afterDefaultCondBlock->bbJumpDest = nullptr;
-        }
-        else
-        {
-            afterDefaultCondBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
-            afterDefaultCondBlock->bbJumpDest = uniqueSucc;
+            afterDefaultCondBlock->SetFlags(BBF_NONE_QUIRK);
         }
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
@@ -1012,7 +1072,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // If we haven't used the afterDefaultCondBlock yet, then use that.
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_NONE, currentBlock, true);
+                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true, currentBlock->Next());
+                newBlock->SetFlags(BBF_NONE_QUIRK);
                 comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
@@ -1022,10 +1083,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 assert(currentBlock == afterDefaultCondBlock);
                 fUsedAfterDefaultCondBlock = true;
             }
-
-            // We're going to have a branch, either a conditional or unconditional,
-            // to the target. Set the target.
-            currentBlock->bbJumpDest = jumpTab[i];
 
             // Wire up the predecessor list for the "branch" case.
             comp->fgAddRefPred(jumpTab[i], currentBlock, oldEdge);
@@ -1037,13 +1094,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
+                currentBlock->SetKindAndTarget(BBJ_ALWAYS, jumpTab[i]);
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
+                currentBlock->SetCond(jumpTab[i]);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1071,13 +1128,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         if (!fUsedAfterDefaultCondBlock)
         {
             // All the cases were fall-through! We don't need this block.
-            // Convert it from BBJ_SWITCH to BBJ_NONE and unset the BBF_DONT_REMOVE flag
+            // Convert it from BBJ_SWITCH to BBJ_ALWAYS and unset the BBF_DONT_REMOVE flag
             // so fgRemoveBlock() doesn't complain.
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
-            currentBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
-            currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
+            currentBlock->SetKindAndTarget(BBJ_ALWAYS, currentBlock->Next());
+            currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
     }
@@ -1111,7 +1168,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
             // this block no longer branches to the default block
-            afterDefaultCondBlock->bbJumpSwt->removeDefault();
+            afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
         }
 
         comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
@@ -1248,16 +1305,14 @@ bool Lowering::TryLowerSwitchToBitTest(
     //
 
     GenCondition bbSwitchCondition;
-    bbSwitch->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
-
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
     if (bbSwitch->NextIs(bbCase0))
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
-        bbSwitchCondition    = GenCondition::C;
-        bbSwitch->bbJumpDest = bbCase1;
+        bbSwitchCondition = GenCondition::C;
+        bbSwitch->SetCond(bbCase1);
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
         comp->fgAddRefPred(bbCase1, bbSwitch);
@@ -1267,8 +1322,8 @@ bool Lowering::TryLowerSwitchToBitTest(
         assert(bbSwitch->NextIs(bbCase1));
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
-        bbSwitchCondition    = GenCondition::NC;
-        bbSwitch->bbJumpDest = bbCase0;
+        bbSwitchCondition = GenCondition::NC;
+        bbSwitch->SetCond(bbCase0);
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
         comp->fgAddRefPred(bbCase1, bbSwitch);
@@ -1463,7 +1518,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #if !defined(TARGET_64BIT)
                     assert(callArg->AbiInfo.ByteSize == 12);
 #else  // TARGET_64BIT
-                    if (compMacOsArm64Abi())
+                    if (compAppleArm64Abi())
                     {
                         assert(callArg->AbiInfo.ByteSize == 12);
                     }
@@ -1986,7 +2041,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         if (GenTree::OperIsCmpCompare(oper))
                         {
                             assert(type == TYP_INT);
-                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_UBYTE, op1, op2, CORINFO_TYPE_NATIVEUINT,
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, CORINFO_TYPE_NATIVEUINT,
                                                                genTypeSize(op1));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
@@ -2504,7 +2559,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // The below condition cannot be asserted in lower because fgSimpleLowering()
     // can add a new basic block for range check failure which becomes
     // fgLastBB with block number > loop header block number.
-    // assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
+    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
     //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
@@ -2562,7 +2617,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         // this we insert GT_NO_OP as embedded stmt before GT_START_NONGC, if the method
         // has a single basic block and is not a GC-safe point.  The presence of a single
         // nop outside non-gc interruptible region will prevent gc starvation.
-        if ((comp->fgBBcount == 1) && !(comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT))
+        if ((comp->fgBBcount == 1) && !comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT))
         {
             assert(comp->fgFirstBB == comp->compCurBB);
             GenTree* noOp = new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
@@ -2800,7 +2855,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // Therefore the block containing the tail call should be a GC safe point to avoid
     // GC starvation. It is legal for the block to be unmarked iff the entry block is a
     // GC safe point, as the entry block trivially dominates every reachable block.
-    assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || (comp->fgFirstBB->bbFlags & BBF_GC_SAFE_POINT));
+    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
@@ -6119,12 +6174,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         return false;
     }
-
-    if (((scale | offset) > 0) && parent->OperIsHWIntrinsic())
-    {
-        // For now we only support unscaled indices for SIMD loads
-        return false;
-    }
 #endif
 
     if (scale == 0)
@@ -6325,10 +6374,10 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
         {
-            // If this is a child of an indir, let the parent handle it.
+            // If this is a child of an ordinary indir, let the parent handle it.
             // If there is a chain of adds, only look at the topmost one.
             GenTree* parent = use.User();
-            if (!parent->OperIsIndir() && !parent->OperIs(GT_ADD))
+            if ((!parent->OperIsIndir() || parent->OperIsAtomicOp()) && !parent->OperIs(GT_ADD))
             {
                 TryCreateAddrMode(node, false, parent);
             }
@@ -6534,7 +6583,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             unreached();
 #endif
         }
-        assert(divMod->MarkedDivideByConstOptimized());
 
         const bool     requiresDividendMultiuse = !isDiv;
         const weight_t curBBWeight              = m_block->getBBWeight(comp);
@@ -6863,9 +6911,6 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         return true;
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
-        return false;
-#elif defined(TARGET_RISCV64)
-        NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         return false;
 #else
 #error Unsupported or unset target architecture
@@ -7504,8 +7549,6 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
             FALLTHROUGH;
         case GT_LCL_VAR:
             return tree1->AsLclVarCommon()->GetLclNum() == tree2->AsLclVarCommon()->GetLclNum();
-        case GT_CLS_VAR_ADDR:
-            return tree1->AsClsVar()->gtClsVarHnd == tree2->AsClsVar()->gtClsVarHnd;
         default:
             return false;
     }
@@ -8232,11 +8275,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
         // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_PER_BYTE;
         lowerCns &= mask;
         upperCns &= mask;
 
-        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
+        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_PER_BYTE)));
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
@@ -8385,7 +8428,7 @@ const int LDP_REORDERING_MAX_DISTANCE = 16;
 //
 bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 {
-    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
+    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
     {
         return false;
     }

@@ -135,8 +135,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (linkedMembers.Count != 0)
-				Assert.True (
-					false,
+				Assert.Fail(
 					"Linked output includes unexpected member:\n  " +
 					string.Join ("\n  ", linkedMembers.Values.Select (e => e.Entity.GetDisplayName ())));
         }
@@ -303,7 +302,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			// We never link away a module today so let's make sure the linked one isn't null
 			if (linked == null) {
-				Assert.True (false, $"Linked assembly `{original.Assembly.Name.Name}` is missing module `{original.Name}`");
+				Assert.Fail($"Linked assembly `{original.Assembly.Name.Name}` is missing module `{original.Name}`");
 				return;
 			}
 
@@ -352,7 +351,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// we do want to validate. There's no specific use case right now, but I can easily imagine one
 				// for more detailed testing of for example custom attributes on local functions, or similar.
 				if (!IsCompilerGeneratedMember (original))
-					Assert.True (false, $"Type `{original}' should have been removed");
+					Assert.Fail($"Type `{original}' should have been removed");
 			}
 
 			bool prev = checkNames;
@@ -371,7 +370,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 					var linkedMemberName = linkedMembers.Keys.FirstOrDefault (l => l.Contains (newName));
 					if (linkedMemberName == null)
-						Assert.True (false, $"Newly created member '{newName}' was not found");
+						Assert.Fail($"Newly created member '{newName}' was not found");
 
 					linkedMembers.Remove (linkedMemberName);
 				}
@@ -388,7 +387,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 
 			if (linked == null) {
-				Assert.True (false, $"Type `{original}' should have been kept");
+				Assert.Fail($"Type `{original}' should have been kept");
 				return;
 			}
 
@@ -478,7 +477,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (expectedBaseName != linked.BaseType?.FullName) {
-				Assert.True (false, $"Incorrect base type on : {linked.Name}. Expected {expectedBaseName}, actual {linked.BaseType?.FullName}");
+				Assert.Fail($"Incorrect base type on : {linked.Name}. Expected {expectedBaseName}, actual {linked.BaseType?.FullName}");
 			}
 		}
 
@@ -497,7 +496,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				if (expectedInterfaces.Count != 0)
-					Assert.True (false, $"Expected interfaces were not found on {src}");
+					Assert.Fail($"Expected interfaces were not found on {src}");
 			}
 		}
 
@@ -531,7 +530,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!expectedKept) {
 				if (linked != null)
-					Assert.True (false, $"Field `{src}' should have been removed");
+					Assert.Fail($"Field `{src}' should have been removed");
 
 				return;
 			}
@@ -542,7 +541,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static void VerifyFieldKept (FieldDefinition src, FieldDesc? linked, bool compilerGenerated)
 		{
 			if (linked == null) {
-				Assert.True (false, $"Field `{src}' should have been kept");
+				Assert.Fail($"Field `{src}' should have been kept");
 				return;
 			}
 
@@ -551,7 +550,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new NotImplementedException ("Constant value for a field is not yet supported by the test infra.");
 #if false
 			if (!Equals (src.Constant, linked.Constant)) {
-				Assert.True (false, $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
+				Assert.Fail($"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
 			}
 #endif
 
@@ -572,13 +571,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!expectedKept) {
 				if (linked is not null)
-					Assert.True (false, $"Property `{src}' should have been removed");
+					Assert.Fail($"Property `{src}' should have been removed");
 
 				return;
 			}
 
 			if (linked is null) {
-				Assert.True (false, $"Property `{src}' should have been kept");
+				Assert.Fail($"Property `{src}' should have been kept");
 				return;
 			}
 
@@ -586,7 +585,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new NotSupportedException ("Constant value for a property is not yet supported by the test infra.");
 #if false
 			if (src.Constant != linked.Constant) {
-				Assert.True (false, $"Property '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
+				Assert.Fail($"Property '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
 			}
 #endif
 
@@ -607,13 +606,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!expectedKept) {
 				if (linked is not null)
-					Assert.True (false, $"Event `{src}' should have been removed");
+					Assert.Fail($"Event `{src}' should have been removed");
 
 				return;
 			}
 
 			if (linked is null) {
-				Assert.True (false, $"Event `{src}' should have been kept");
+				Assert.Fail($"Event `{src}' should have been kept");
 				return;
 			}
 
@@ -658,7 +657,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// so we're not going to validate kept/remove on them. Note that we're still going to go validate "into" them
 				// to check for other properties (like parameter name presence/removal for example)
 				if (!compilerGenerated)
-					Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been removed");
+					Assert.Fail($"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been removed");
 			}
 
 			VerifyMethodKept (src, linked, compilerGenerated);
@@ -684,7 +683,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (srcField == null) {
-				Assert.True (false, $"{src.MetadataToken.TokenType} `{src}', could not locate the expected backing field {backingFieldName}");
+				Assert.Fail($"{src.MetadataToken.TokenType} `{src}', could not locate the expected backing field {backingFieldName}");
 				return;
 			}
 
@@ -696,7 +695,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		void VerifyMethodKept (MethodDefinition src, LinkedMethodEntity? linked, bool compilerGenerated)
 		{
 			if (linked == null) {
-				Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been kept");
+				Assert.Fail($"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been kept");
 				return;
 			}
 
@@ -926,7 +925,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			foreach (var resource in linked.MainModule.Resources) {
 				if (!expectedResourceNames.Remove (resource.Name))
-					Assert.True (false, $"Resource '{resource.Name}' should be removed.");
+					Assert.Fail($"Resource '{resource.Name}' should be removed.");
 
 				EmbeddedResource embeddedResource = (EmbeddedResource) resource;
 
@@ -936,7 +935,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (expectedResourceNames.Count > 0) {
-				Assert.True (false, $"Resource '{expectedResourceNames.First ()}' should be kept.");
+				Assert.Fail($"Resource '{expectedResourceNames.First ()}' should be kept.");
 			}
 		}
 
@@ -1010,19 +1009,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 
 			if (!src.HasBody)
-				Assert.True (false, $"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies");
+				Assert.Fail($"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies");
 
 			var srcImplementationDetails = src.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
 
 			if (srcImplementationDetails == null) {
-				Assert.True (false, "Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
+				Assert.Fail("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
 				return;
 			}
 
 			var linkedImplementationDetails = linked.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
 
 			if (linkedImplementationDetails == null) {
-				Assert.True (false, "Could not locate <PrivateImplementationDetails> in the linked assembly");
+				Assert.Fail("Could not locate <PrivateImplementationDetails> in the linked assembly");
 				return;
 			}
 
@@ -1032,7 +1031,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.ToArray ();
 
 			if (possibleInitializerFields.Length == 0)
-				Assert.True (false, $"`{src}` does not make use of any initializers");
+				Assert.Fail($"`{src}` does not make use of any initializers");
 
 			if (expectKeptAll) {
 				foreach (var srcField in possibleInitializerFields) {
@@ -1042,7 +1041,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			} else {
 				foreach (var index in expectedIndices) {
 					if (index < 0 || index > possibleInitializerFields.Length)
-						Assert.True (false, $"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}");
+						Assert.Fail($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}");
 
 					var srcField = possibleInitializerFields[index];
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
@@ -1085,7 +1084,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				var name = srcDefinition.Name.Substring (1, srcDefinition.Name.IndexOf ('>') - 1);
 				var fixedField = srcDefinition.DeclaringType.Fields.FirstOrDefault (f => f.Name == name);
 				if (fixedField == null)
-					Assert.True (false, $"Could not locate original fixed field for {srcDefinition}");
+					Assert.Fail($"Could not locate original fixed field for {srcDefinition}");
 
 				foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object> (fixedField!, nameof (KeptAttributeOnFixedBufferTypeAttribute)))
 					yield return additionalExpectedAttributesFromFixedField?.ToString ();
@@ -1142,20 +1141,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
 				var originalCompilerGeneratedBufferType = src.NestedTypes.FirstOrDefault (t => t.FullName.Contains ($"<{field.Name}>") && t.FullName.Contains ("__FixedBuffer"));
 				if (originalCompilerGeneratedBufferType == null) {
-					Assert.True (false, $"Could not locate original compiler generated fixed buffer type for field {field}");
+					Assert.Fail($"Could not locate original compiler generated fixed buffer type for field {field}");
 					return;
 				}
 
 				var linkedCompilerGeneratedBufferType = linked.NestedTypes.FirstOrDefault (t => t.Name == originalCompilerGeneratedBufferType.Name);
 				if (linkedCompilerGeneratedBufferType == null) {
-					Assert.True (false, $"Missing expected type {originalCompilerGeneratedBufferType}");
+					Assert.Fail($"Missing expected type {originalCompilerGeneratedBufferType}");
 					return;
 				}
 
 				// Have to verify the field before the type
 				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault ();
 				if (originalElementField == null) {
-					Assert.True (false, $"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
+					Assert.Fail($"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
 					return;
 				}
 

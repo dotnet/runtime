@@ -469,7 +469,7 @@ DEFINE_METHOD(MARSHAL,              GET_HR_FOR_EXCEPTION,              GetHRForE
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(MARSHAL,              GET_FUNCTION_POINTER_FOR_DELEGATE,          GetFunctionPointerForDelegate,          SM_Delegate_RetIntPtr)
 DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER,          GetDelegateForFunctionPointer,          SM_IntPtr_Type_RetDelegate)
-DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER_INTERNAL, GetDelegateForFunctionPointerInternal,  SM_IntPtr_Type_RetDelegate)
+DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER_INTERNAL, GetDelegateForFunctionPointerInternal,  SM_IntPtr_RuntimeType_RetDelegate)
 
 DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTaskMem,                SM_Int_RetIntPtr)
 DEFINE_METHOD(MARSHAL,              FREE_CO_TASK_MEM,                  FreeCoTaskMem,                 SM_IntPtr_RetVoid)
@@ -1068,8 +1068,7 @@ DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSaf
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
 
-DEFINE_CLASS(NATIVEVARIANT,         StubHelpers,            NativeVariant)
-DEFINE_CLASS(NATIVEDECIMAL,         StubHelpers,            NativeDecimal)
+DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 
 DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper)
 // Note: The order of methods here has to match order they are implemented on the interfaces in

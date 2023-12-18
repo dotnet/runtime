@@ -32,7 +32,7 @@ const legacy_interop_cwraps: SigLine[] = WasmEnableLegacyJsInterop ? [
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
 ] : [];
 
-const diagnostics_cwraps: SigLine[] = MonoWasmThreads ? [
+const threading_cwraps: SigLine[] = MonoWasmThreads ? [
     // MONO.diagnostics
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
@@ -41,6 +41,7 @@ const diagnostics_cwraps: SigLine[] = MonoWasmThreads ? [
     [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
+    [false, "mono_wasm_init_finalizer_thread", null, []],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -100,6 +101,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_i32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
+    [true, "mono_wasm_read_as_bool_or_null_unsafe", "number", ["number"]],
 
     // jiterpreter
     [true, "mono_jiterp_trace_bailout", "void", ["number"]],
@@ -148,9 +150,11 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
     [true, "mono_jiterp_begin_catch", "void", ["number"]],
     [true, "mono_jiterp_end_catch", "void", []],
+    [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
+    [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
 
-    ...diagnostics_cwraps,
-    ...legacy_interop_cwraps
+    ...threading_cwraps,
+    ...legacy_interop_cwraps,
 ];
 
 export interface t_LegacyCwraps {
@@ -170,7 +174,7 @@ export interface t_LegacyCwraps {
     mono_wasm_array_length_ref(array: MonoObjectRef): number;
 }
 
-export interface t_DiagnosticsCwraps {
+export interface t_ThreadingCwraps {
     // MONO.diagnostics
     mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
     mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
@@ -179,6 +183,7 @@ export interface t_DiagnosticsCwraps {
     mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
     mono_wasm_diagnostic_server_post_resume_runtime(): void;
     mono_wasm_diagnostic_server_create_stream(): VoidPtr;
+    mono_wasm_init_finalizer_thread(): void;
 }
 
 export interface t_ProfilerCwraps {
@@ -238,6 +243,7 @@ export interface t_Cwraps {
     mono_wasm_get_i32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f64_unaligned(source: VoidPtr): number;
+    mono_wasm_read_as_bool_or_null_unsafe(obj: MonoObject): number;
 
     mono_jiterp_trace_bailout(reason: number): void;
     mono_jiterp_get_trace_bailout_count(reason: number): number;
@@ -293,13 +299,15 @@ export interface t_Cwraps {
     mono_jiterp_tlqueue_clear(queue: number): void;
     mono_jiterp_begin_catch(ptr: number): void;
     mono_jiterp_end_catch(): void;
+    mono_interp_pgo_load_table(buffer: VoidPtr, bufferSize: number): number;
+    mono_interp_pgo_save_table(buffer: VoidPtr, bufferSize: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
 
 export default wrapped_c_functions;
 export const legacy_c_functions: t_LegacyCwraps & t_Cwraps = wrapped_c_functions as any;
-export const diagnostics_c_functions: t_DiagnosticsCwraps & t_Cwraps = wrapped_c_functions as any;
+export const threads_c_functions: t_ThreadingCwraps & t_Cwraps = wrapped_c_functions as any;
 export const profiler_c_functions: t_ProfilerCwraps & t_Cwraps = wrapped_c_functions as any;
 
 // see src/mono/wasm/driver.c I52_ERROR_xxx

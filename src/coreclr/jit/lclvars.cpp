@@ -88,7 +88,7 @@ void Compiler::lvaInit()
     lvaCallSpCheck = BAD_VAR_NUM;
 #endif
 
-    structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
+    structPromotionHelper = new (this, CMK_Promotion) StructPromotionHelper(this);
 }
 
 /*****************************************************************************/
@@ -259,9 +259,9 @@ void Compiler::lvaInitTypeRef()
     LclVarDsc*              varDsc    = varDscInfo.varDsc;
     CORINFO_ARG_LIST_HANDLE localsSig = info.compMethodInfo->locals.args;
 
-#ifdef TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     compHasSplitParam = varDscInfo.hasSplitParam;
-#endif
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (unsigned i = 0; i < info.compMethodInfo->locals.numArgs;
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
@@ -1044,6 +1044,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #if FEATURE_FASTTAILCALL
                         varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
 #endif
+#ifdef TARGET_RISCV64
+                        varDscInfo->hasSplitParam = true;
+#endif
                     }
                 }
                 else
@@ -1227,10 +1230,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #else
             unsigned argAlignment = eeGetArgSizeAlignment(origArgType, (hfaType == TYP_FLOAT));
             // We expect the following rounding operation to be a noop on all
-            // ABIs except ARM (where we have 8-byte aligned args) and macOS
+            // ABIs except ARM (where we have 8-byte aligned args) and Apple
             // ARM64 (that allows to pack multiple smaller parameters in a
             // single stack slot).
-            assert(compMacOsArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
+            assert(compAppleArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
 #endif
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
 
@@ -2388,6 +2391,11 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvIsOSRLocal        = varDsc->lvIsOSRLocal;
         fieldVarDsc->lvIsOSRExposedLocal = varDsc->lvIsOSRExposedLocal;
 
+        if (varDsc->IsSpan() && fieldVarDsc->lvFldOffset == OFFSETOF__CORINFO_Span__length)
+        {
+            fieldVarDsc->SetIsNeverNegative(true);
+        }
+
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
         {
@@ -2928,6 +2936,8 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             varDsc->lvStructDoubleAlign = 1;
         }
 #endif // not TARGET_64BIT
+
+        varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
@@ -3899,14 +3909,14 @@ var_types LclVarDsc::GetRegisterType() const
 //   when moving locals between register and stack. Because of this the
 //   returned type is usually at least one 4-byte stack slot. However, there
 //   are certain exceptions for promoted fields in OSR methods (that may refer
-//   back to the original frame) and due to macOS arm64 where subsequent small
+//   back to the original frame) and due to Apple arm64 where subsequent small
 //   parameters can be packed into the same stack slot.
 //
 var_types LclVarDsc::GetStackSlotHomeType() const
 {
     if (varTypeIsSmall(TypeGet()))
     {
-        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
+        if (compAppleArm64Abi() && lvIsParam && !lvIsRegArg)
         {
             // Allocated by caller and potentially only takes up a small slot
             return GetRegisterType();
@@ -4081,9 +4091,9 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             return;
         }
 
-        if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
+        if ((m_domTree != nullptr) && IsDominatedByExceptionalEntry(block))
         {
-            SetVolatileHint(varDsc);
+            SetHasExceptionalUsesHint(varDsc);
         }
 
         if (tree->OperIs(GT_STORE_LCL_VAR))
@@ -4097,7 +4107,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
-                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
                 bool bbIsReturn = block->KindIs(BBJ_RETURN);
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
                 // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
@@ -4159,19 +4169,19 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 //
 bool Compiler::IsDominatedByExceptionalEntry(BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     return block->IsDominatedByExceptionalEntryFlag();
 }
 
 //------------------------------------------------------------------------
-// SetVolatileHint: Set a local var's volatile hint.
+// SetHasExceptionalUsesHint: Set that a local var has exceptional uses.
 //
 // Arguments:
 //    varDsc - the local variable that needs the hint.
 //
-void Compiler::SetVolatileHint(LclVarDsc* varDsc)
+void Compiler::SetHasExceptionalUsesHint(LclVarDsc* varDsc)
 {
-    varDsc->lvVolatileHint = true;
+    varDsc->lvHasExceptionalUsesHint = true;
 }
 
 //------------------------------------------------------------------------
@@ -5433,7 +5443,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+    noway_assert(compAppleArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
     if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
@@ -5587,7 +5597,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-        assert(compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
+        assert(compAppleArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5976,7 +5986,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             argOffs = roundUp(argOffs, argAlignment);
         }
@@ -8058,7 +8068,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // TYP_BLK locals.
         // TODO-Cleanup: Can probably be removed now since TYP_BLK does not
         // exist anymore.
-        if (pComp->compMayConvertTailCallToLoop)
+        if (pComp->doesMethodHaveRecursiveTailcall())
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;

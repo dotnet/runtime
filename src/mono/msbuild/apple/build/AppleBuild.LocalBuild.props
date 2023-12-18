@@ -19,7 +19,6 @@
         $(AppleBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
 
   <PropertyGroup>
     <!-- Keep these underscored targets in sync with the root Directory.Build.props -->
@@ -95,4 +94,7 @@
   <PropertyGroup>
     <ILLinkTasksAssembly>$(_ILLinkTasksAssembly)</ILLinkTasksAssembly>
   </PropertyGroup>
+  <!-- Due to dependencies on resolving properties like: $(MicrosoftNetCoreAppRuntimePackRidDir) we need to import the default props at the end -->
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
+
 </Project>

@@ -89,8 +89,6 @@ namespace System
         }
 #endif
 
-        internal static event EventHandler? ProcessExit;
-
         internal static void OnProcessExit()
         {
             AssemblyLoadContext.OnProcessExit();
@@ -98,8 +96,7 @@ namespace System
             {
                 EventListener.DisposeOnShutdown();
             }
-
-            ProcessExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
+            AppDomain.OnProcessExit();
         }
 
         /// <summary>

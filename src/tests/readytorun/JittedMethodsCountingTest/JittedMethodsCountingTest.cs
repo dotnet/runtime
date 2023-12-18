@@ -14,47 +14,49 @@ public class JittedMethodsCountingTest
     [Fact]
     public static int TestEntryPoint()
     {
-        // If DOTNET_ReadyToRun is disabled, then this test ought to be skipped.
-        if (!IsReadyToRunEnvSet())
+        // If either of DOTNET_ReadyToRun, DOTNET_EnableHWIntrinsics, or
+        // DOTNET_EnableSSE(2) are disabled (i.e. set to "0"), then this test
+        // ought to be skipped.
+        if (!IsReadyToRunEnabled() || !IsHardwareIntrinsicsEnabled() || !IsSSEEnabled())
         {
-            Console.WriteLine("\nThis test is only supported in ReadyToRun scenarios."
+            Console.WriteLine("\nThis test is only supported in ReadyToRun scenarios"
+                              + " with Hardware Intrinsics and SSE(2) enabled."
                               + " Skipping...\n");
-            return 100;
-        }
-
-        if (IsRunCrossgen2Set() && IsRunningOnARM64())
-        {
-            Console.WriteLine("\nThis test is currently unsupported on ARM64 when"
-                              + " RunCrossGen2 is enabled. Skipping...\n");
             return 100;
         }
 
         Console.WriteLine("\nHello World from Jitted Methods Counting Test!");
 
-        long jits = JitInfo.GetCompiledMethodCount(false);
-        Console.WriteLine("Number of Jitted Methods in App: {0}\n", jits);
+        long jits = JitInfo.GetCompiledMethodCount(currentThread: false);
+
+        Console.WriteLine("Number of Jitted Methods in App: {0} - Max Threshold: {1}\n",
+                          jits,
+                          MAX_JITTED_METHODS_ACCEPTED);
 
         return (jits >= 0 && jits <= MAX_JITTED_METHODS_ACCEPTED) ? 100 : 101;
     }
 
-    private static bool IsReadyToRunEnvSet()
+    private static bool IsReadyToRunEnabled()
     {
         string? dotnetR2R = Environment.GetEnvironmentVariable("DOTNET_ReadyToRun");
         return (string.IsNullOrEmpty(dotnetR2R) || dotnetR2R == "1");
     }
 
-    private static bool IsRunCrossgen2Set()
+    private static bool IsHardwareIntrinsicsEnabled()
     {
-        string? runCrossgen2 = Environment.GetEnvironmentVariable("RunCrossGen2");
-        return (runCrossgen2 == "1");
+        string? dotnetEnableHWIntrinsics =
+            Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic");
+
+        return (string.IsNullOrEmpty(dotnetEnableHWIntrinsics)
+                || dotnetEnableHWIntrinsics != "0");
     }
 
-    private static bool IsRunningOnARM64()
+    private static bool IsSSEEnabled()
     {
-        InteropServices.Architecture thisMachineArch = InteropServices
-                                                      .RuntimeInformation
-                                                      .OSArchitecture;
+        string? dotnetSSE = Environment.GetEnvironmentVariable("DOTNET_EnableSSE");
+        string? dotnetSSE2 = Environment.GetEnvironmentVariable("DOTNET_EnableSSE2");
 
-        return (thisMachineArch == InteropServices.Architecture.Arm64);
+        return ((string.IsNullOrEmpty(dotnetSSE) || dotnetSSE != "0")
+                && (string.IsNullOrEmpty(dotnetSSE2) || dotnetSSE2 != "0"));
     }
 }

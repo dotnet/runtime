@@ -7,7 +7,7 @@ import { EventPipeSocketConnection, takeOverSocket } from "./socket-connection";
 import { StreamQueue, allocateQueue } from "./stream-queue";
 import type { MockRemoteSocket } from "../mock";
 import type { VoidPtr } from "../../types/emscripten";
-import { diagnostics_c_functions as cwraps } from "../../cwraps";
+import { threads_c_functions as cwraps } from "../../cwraps";
 import {
     EventPipeCommandCollectTracing2,
     EventPipeCollectTracingCommandProvider,

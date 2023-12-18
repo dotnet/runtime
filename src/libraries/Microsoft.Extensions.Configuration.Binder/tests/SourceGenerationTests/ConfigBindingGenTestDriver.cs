@@ -38,9 +38,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                 _assemblyReferences = assemblyReferences ?? s_compilationAssemblyRefs;
 
-                _parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] { 	
-                    new KeyValuePair<string, string>("InterceptorsPreview", "") ,	
-                    new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")	
+                _parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
+                    new KeyValuePair<string, string>("InterceptorsPreview", "") ,
+                    new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
                 });
 
                 ConfigurationBindingGenerator generator = new() { OnSourceEmitting = spec => _genSpec = spec };
@@ -96,18 +96,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
     internal struct ConfigBindingGenRunResult
     {
-        public required Compilation OutputCompilation { get; init; }
+        public Compilation OutputCompilation { get; init; }
 
-        public required GeneratedSourceResult? GeneratedSource { get; init; }
+        public GeneratedSourceResult? GeneratedSource { get; init; }
 
         /// <summary>
         /// Diagnostics produced by the generator alone. Doesn't include any from other build participants.
         /// </summary>
-        public required ImmutableArray<Diagnostic> Diagnostics { get; init; }
+        public ImmutableArray<Diagnostic> Diagnostics { get; init; }
 
-        public required ImmutableArray<IncrementalGeneratorRunStep> TrackedSteps { get; init; }
+        public ImmutableArray<IncrementalGeneratorRunStep> TrackedSteps { get; init; }
 
-        public required SourceGenerationSpec? GenerationSpec { get; init; }
+        public SourceGenerationSpec? GenerationSpec { get; init; }
     }
 
     internal enum ExpectedDiagnostics
@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 {
                     Assert.True(
                         IsPermitted(diagnostic),
-                        $"Generator caused dagnostic in output compilation: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}.");
+                        $"Generator caused diagnostic in output compilation: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}.");
                 }
             }
             else

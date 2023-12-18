@@ -3,22 +3,23 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import cwraps from "./cwraps";
-import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, mono_wasm_release_cs_owned_object, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
-    get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
+    get_arg_b8, get_arg_date, get_arg_length, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol, set_js_handle
 } from "./marshal";
-import { monoStringToString } from "./strings";
-import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
+import { monoStringToString, utf16ToString } from "./strings";
+import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType, JSHandle } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
-import { get_marshaler_to_cs_by_type, jsinteropDoc } from "./marshal-to-cs";
+import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
 import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 
 export function initialize_marshalers_to_js(): void {
@@ -44,6 +45,9 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.DateTime, _marshal_datetime_to_js);
         cs_to_js_marshalers.set(MarshalerType.DateTimeOffset, _marshal_datetime_to_js);
         cs_to_js_marshalers.set(MarshalerType.Task, marshal_task_to_js);
+        cs_to_js_marshalers.set(MarshalerType.TaskRejected, marshal_task_to_js);
+        cs_to_js_marshalers.set(MarshalerType.TaskResolved, marshal_task_to_js);
+        cs_to_js_marshalers.set(MarshalerType.TaskPreCreated, begin_marshal_task_to_js);
         cs_to_js_marshalers.set(MarshalerType.Action, _marshal_delegate_to_js);
         cs_to_js_marshalers.set(MarshalerType.Function, _marshal_delegate_to_js);
         cs_to_js_marshalers.set(MarshalerType.None, _marshal_null_to_js);
@@ -212,107 +216,145 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
     return result;
 }
 
+export class TaskHolder {
+    constructor(public promise: Promise<any>, public resolve_or_reject: (type: MarshalerType, js_handle: JSHandle, argInner: JSMarshalerArgument) => void) {
+    }
+}
+
 export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
     const type = get_arg_type(arg);
-    if (type === MarshalerType.None) {
-        return null;
+    // this path is used only when Task is passed as argument to JSImport and virtual JSHandle would be used
+    mono_assert(type != MarshalerType.TaskPreCreated, "Unexpected Task type: TaskPreCreated");
+
+    // if there is synchronous result, return it
+    const promise = try_marshal_sync_task_to_js(arg, type, res_converter);
+    if (promise !== false) {
+        return promise;
     }
 
-    if (type !== MarshalerType.Task) {
-
-        if (!res_converter) {
-            // when we arrived here from _marshal_cs_object_to_js
-            res_converter = cs_to_js_marshalers.get(type);
-        }
-        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. ${jsinteropDoc}`);
-
-        // this is already resolved
-        const val = res_converter(arg);
-        return new Promise((resolve) => resolve(val));
-    }
-
-    const js_handle = get_arg_js_handle(arg);
-    if (js_handle == JSHandleNull) {
-        // this is already resolved void
-        return new Promise((resolve) => resolve(undefined));
-    }
-    const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
-    mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
+    const jsv_handle = get_arg_js_handle(arg);
+    const holder = create_task_holder(res_converter);
+    register_with_jsv_handle(holder, jsv_handle);
     if (BuildConfiguration === "Debug") {
-        (promise as any)[proxy_debug_symbol] = `JS Promise with JSHandle ${js_handle}`;
+        (holder as any)[proxy_debug_symbol] = `TaskHolder with JSVHandle ${jsv_handle}`;
     }
-    loaderHelpers.assertIsControllablePromise<any>(promise);
-    const promise_control = loaderHelpers.getPromiseController(promise);
 
-    const orig_resolve = promise_control.resolve;
-    promise_control.resolve = (argInner: JSMarshalerArgument) => {
-        const type = get_arg_type(argInner);
-        if (type === MarshalerType.None) {
-            orig_resolve(null);
-            return;
-        }
+    return holder.promise;
+}
 
-        if (!res_converter) {
-            // when we arrived here from _marshal_cs_object_to_js
-            res_converter = cs_to_js_marshalers.get(type);
-        }
-        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. ${jsinteropDoc}`);
+export function begin_marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
+    // this path is used when Task is returned from JSExport/call_entry_point
+    const holder = create_task_holder(res_converter);
+    const js_handle = mono_wasm_get_js_handle(holder);
+    if (BuildConfiguration === "Debug") {
+        (holder as any)[proxy_debug_symbol] = `TaskHolder with JSHandle ${js_handle}`;
+    }
+    set_js_handle(arg, js_handle);
+    set_arg_type(arg, MarshalerType.TaskPreCreated);
+    return holder.promise;
+}
 
-        const js_value = res_converter!(argInner);
-        orig_resolve(js_value);
-    };
+export function end_marshal_task_to_js(args: JSMarshalerArguments, res_converter: MarshalerToJs | undefined, eagerPromise: Promise<any> | null) {
+    // this path is used when Task is returned from JSExport/call_entry_point
+    const res = get_arg(args, 1);
+    const type = get_arg_type(res);
+
+    // if there is no synchronous result, return eagerPromise we created earlier
+    if (type === MarshalerType.TaskPreCreated) {
+        return eagerPromise;
+    }
+
+    // otherwise drop the eagerPromise's handle
+    const js_handle = get_arg_js_handle(res);
+    mono_wasm_release_cs_owned_object(js_handle);
+
+    // get the synchronous result
+    const promise = try_marshal_sync_task_to_js(res, type, res_converter);
+
+    // make sure we got the result
+    mono_assert(promise !== false, () => `Expected synchronous result, got: ${type}`);
 
     return promise;
 }
 
-export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
-    const exc = get_arg(args, 0);
-    const res = get_arg(args, 1);
-    const arg_handle = get_arg(args, 2);
-    const arg_value = get_arg(args, 3);
-
-    const exc_type = get_arg_type(exc);
-    const value_type = get_arg_type(arg_value);
-    const js_handle = get_arg_js_handle(arg_handle);
-
-    if (js_handle === JSHandleNull) {
-        const { promise, promise_control } = createPromiseController();
-        const js_handle = mono_wasm_get_js_handle(promise)!;
-        if (BuildConfiguration === "Debug" && Object.isExtensible(promise)) {
-            (promise as any)[proxy_debug_symbol] = `JS Promise with JSHandle ${js_handle}`;
-        }
-        set_js_handle(res, js_handle);
-
-        if (exc_type !== MarshalerType.None) {
-            // this is already failed task
-            const reason = marshal_exception_to_js(exc);
-            promise_control.reject(reason);
-        }
-        else if (value_type !== MarshalerType.Task) {
-            // this is already resolved task
-            const sub_converter = cs_to_js_marshalers.get(value_type);
-            mono_assert(sub_converter, () => `Unknown sub_converter for type ${MarshalerType[value_type]}. ${jsinteropDoc}`);
-            const data = sub_converter(arg_value);
-            promise_control.resolve(data);
-        }
-    } else {
-        // resolve existing promise
-        const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        mono_assert(!!promise, () => `ERR25: promise not found for js_handle: ${js_handle} `);
-        loaderHelpers.assertIsControllablePromise(promise);
-        const promise_control = loaderHelpers.getPromiseController(promise);
-
-        if (exc_type !== MarshalerType.None) {
-            const reason = marshal_exception_to_js(exc);
-            promise_control.reject(reason);
-        }
-        else if (value_type !== MarshalerType.Task) {
-            // here we assume that resolve was wrapped with sub_converter inside _marshal_task_to_js
-            promise_control.resolve(arg_value);
-        }
+function try_marshal_sync_task_to_js(arg: JSMarshalerArgument, type: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null | false {
+    if (type === MarshalerType.None) {
+        return null;
     }
-    set_arg_type(res, MarshalerType.Task);
-    set_arg_type(exc, MarshalerType.None);
+    if (type === MarshalerType.TaskRejected) {
+        return Promise.reject(marshal_exception_to_js(arg));
+    }
+    if (type === MarshalerType.TaskResolved) {
+        const element_type = get_arg_element_type(arg);
+        if (element_type === MarshalerType.Void) {
+            return Promise.resolve();
+        }
+        // this will change the type to the actual type of the result
+        set_arg_type(arg, element_type);
+        if (!res_converter) {
+            // when we arrived here from _marshal_cs_object_to_js
+            res_converter = cs_to_js_marshalers.get(element_type);
+        }
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+
+        const val = res_converter(arg);
+        return Promise.resolve(val);
+    }
+    return false;
+}
+
+function create_task_holder(res_converter?: MarshalerToJs) {
+    const { promise, promise_control } = loaderHelpers.createPromiseController<any>();
+    const holder = new TaskHolder(promise, (type, js_handle, argInner) => {
+        if (type === MarshalerType.TaskRejected) {
+            const reason = marshal_exception_to_js(argInner);
+            promise_control.reject(reason);
+        } else if (type === MarshalerType.TaskResolved) {
+            const type = get_arg_type(argInner);
+            if (type === MarshalerType.Void) {
+                promise_control.resolve(undefined);
+            } else {
+                if (!res_converter) {
+                    // when we arrived here from _marshal_cs_object_to_js
+                    res_converter = cs_to_js_marshalers.get(type);
+                }
+                mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. ${jsinteropDoc}`);
+
+                const js_value = res_converter!(argInner);
+                promise_control.resolve(js_value);
+            }
+        }
+        else {
+            mono_assert(false, () => `Unexpected type ${MarshalerType[type]}`);
+        }
+        mono_wasm_release_cs_owned_object(js_handle);
+    });
+    return holder;
+}
+
+export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments): void {
+    const exc = get_arg(args, 0);
+    try {
+        loaderHelpers.assert_runtime_running();
+
+        const res = get_arg(args, 1);
+        const arg_handle = get_arg(args, 2);
+        const arg_value = get_arg(args, 3);
+
+        const type = get_arg_type(arg_handle);
+        const js_handle = get_arg_js_handle(arg_handle);
+
+        const holder = mono_wasm_get_jsobj_from_js_handle(js_handle) as TaskHolder;
+        mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
+
+        holder.resolve_or_reject(type, js_handle, arg_value);
+
+        set_arg_type(res, MarshalerType.Void);
+        set_arg_type(exc, MarshalerType.None);
+
+    } catch (ex: any) {
+        marshal_exception_to_cs(exc, ex);
+    }
 }
 
 export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
@@ -320,12 +362,21 @@ export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     if (type == MarshalerType.None) {
         return null;
     }
-    const root = get_string_root(arg);
-    try {
-        const value = monoStringToString(root);
+    if (WasmEnableJsInteropByValue) {
+        const buffer = get_arg_intptr(arg);
+        const len = get_arg_length(arg) * 2;
+        const value = utf16ToString(<any>buffer, <any>buffer + len);
+        Module._free(buffer as any);
         return value;
-    } finally {
-        root.release();
+    }
+    else {
+        const root = get_string_root(arg);
+        try {
+            const value = monoStringToString(root);
+            return value;
+        } finally {
+            root.release();
+        }
     }
 }
 
@@ -364,6 +415,7 @@ function _marshal_js_object_to_js(arg: JSMarshalerArgument): any {
     }
     const js_handle = get_arg_js_handle(arg);
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
+    mono_assert(js_obj !== undefined, () => `JS object JSHandle ${js_handle} was not found`);
     return js_obj;
 }
 
@@ -431,7 +483,9 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             const element_arg = get_arg(<any>buffer_ptr, index);
             result[index] = marshal_string_to_js(element_arg);
         }
-        cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        if (!WasmEnableJsInteropByValue) {
+            cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        }
     }
     else if (element_type == MarshalerType.Object) {
         result = new Array(length);
@@ -439,7 +493,9 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             const element_arg = get_arg(<any>buffer_ptr, index);
             result[index] = _marshal_cs_object_to_js(element_arg);
         }
-        cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        if (!WasmEnableJsInteropByValue) {
+            cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+        }
     }
     else if (element_type == MarshalerType.JSObject) {
         result = new Array(length);

@@ -1247,14 +1247,17 @@ namespace System.Text.RegularExpressions.Generator
             void EmitLiteralAfterAtomicLoop()
             {
                 Debug.Assert(regexTree.FindOptimizations.LiteralAfterLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = regexTree.FindOptimizations.LiteralAfterLoop.Value;
+                (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal) target = regexTree.FindOptimizations.LiteralAfterLoop.Value;
 
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
 
+                string stringComparisonComment = target.Literal.StringComparison == StringComparison.OrdinalIgnoreCase ? "ordinal case-insensitive " : "";
+                string stringComparisonArgument = target.Literal.StringComparison == StringComparison.OrdinalIgnoreCase ? ", StringComparison.OrdinalIgnoreCase" : "";
+
                 writer.Write($"// The pattern begins with an atomic loop for {DescribeSet(target.LoopNode.Str!)}, followed by ");
                 writer.WriteLine(
-                    target.Literal.String is not null ? $"the string {Literal(target.Literal.String)}." :
+                    target.Literal.String is not null ? $"the {stringComparisonComment}string {Literal(target.Literal.String)}." :
                     target.Literal.Chars is not null ? $"one of the characters {Literal(new string(target.Literal.Chars))}" :
                     $"the character {Literal(target.Literal.Char)}.");
                 writer.WriteLine($"// Search for the literal, and then walk backwards to the beginning of the loop.");
@@ -1275,7 +1278,7 @@ namespace System.Text.RegularExpressions.Generator
                     // Find the literal.  If we can't find it, we're done searching.
                     writer.Write("int i = slice.");
                     writer.WriteLine(
-                        target.Literal.String is string literalString ? $"IndexOf({Literal(literalString)});" :
+                        target.Literal.String is string literalString ? $"IndexOf({Literal(literalString)}{stringComparisonArgument});" :
                         target.Literal.Chars is not char[] literalChars ? $"IndexOf({Literal(target.Literal.Char)});" :
                         literalChars.Length switch
                         {
@@ -2582,6 +2585,9 @@ namespace System.Text.RegularExpressions.Generator
                 if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {
+                    // This is the set loop that's part of the literal-after-loop optimization: the end of the loop
+                    // is stored in runtrackpos, so we just need to transfer that to pos. The optimization is only
+                    // selected if the shape of the tree is amenable.
                     Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
                     writer.WriteLine("// Skip loop already matched in TryFindNextPossibleStartingPosition.");
                     writer.WriteLine("pos = base.runtrackpos;");

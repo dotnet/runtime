@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
-            foreach (EmbeddedObjectNode node in factory.MetadataManager.GetFrozenObjects())
+            foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {
                 AlignNextObject(ref builder, factory);
 
@@ -46,10 +46,7 @@ namespace ILCompiler.DependencyAnalysis
                     builder.EmitZeros(minimumObjectSize - objectSize);
                 }
 
-                if (node is ISymbolDefinitionNode)
-                {
-                    builder.AddSymbol((ISymbolDefinitionNode)node);
-                }
+                builder.AddSymbol(node);
             }
 
             // Terminate with a null pointer as expected by the GC

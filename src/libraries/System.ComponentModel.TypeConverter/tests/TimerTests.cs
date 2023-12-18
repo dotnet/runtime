@@ -36,7 +36,6 @@ namespace System.Timers.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void TestTimerStartAutoReset()
         {
             using (var timer = new TestTimer(1))
@@ -93,6 +92,14 @@ namespace System.Timers.Tests
                     start.ToUniversalTime() - TimeSpan.FromSeconds(WiggleRoomSeconds),
                     end.ToUniversalTime() + TimeSpan.FromSeconds(WiggleRoomSeconds));
             }
+        }
+
+        [Fact]
+        public void ElapsedEventArgs_Ctor_SignalTime()
+        {
+            DateTime now = DateTime.Now;
+            ElapsedEventArgs args = new ElapsedEventArgs(now);
+            Assert.Equal(now, args.SignalTime);
         }
 
         [Theory]

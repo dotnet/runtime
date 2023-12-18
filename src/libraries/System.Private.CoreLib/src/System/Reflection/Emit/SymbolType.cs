@@ -286,7 +286,7 @@ namespace System.Reflection.Emit
         public override int GetArrayRank()
         {
             if (!IsArray)
-                throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+                throw new ArgumentException(SR.Argument_HasToBeArrayClass);
 
             return _rank;
         }

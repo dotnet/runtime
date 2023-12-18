@@ -214,11 +214,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (types.Add(type))
                 {
                     _methodsToGen |= method;
-
-                    if (type is { Namespace: string @namespace })
-                    {
-                        _namespaces.Add(@namespace);
-                    }
                 }
             }
 

@@ -611,13 +611,7 @@ namespace System.Linq
                 Debug.Assert(count == _source.GetCount(onlyIfCheap: true));
 
                 TResult[] array = new TResult[count];
-                int index = 0;
-                foreach (TSource input in _source)
-                {
-                    array[index] = _selector(input);
-                    ++index;
-                }
-
+                Fill(_source, array, _selector);
                 return array;
             }
 
@@ -640,20 +634,33 @@ namespace System.Linq
                 {
                     case -1:
                         list = new List<TResult>();
+                        foreach (TSource input in _source)
+                        {
+                            list.Add(_selector(input));
+                        }
                         break;
                     case 0:
-                        return new List<TResult>();
+                        list = new List<TResult>();
+                        break;
                     default:
                         list = new List<TResult>(count);
+                        Fill(_source, SetCountAndGetSpan(list, count), _selector);
                         break;
-                }
-
-                foreach (TSource input in _source)
-                {
-                    list.Add(_selector(input));
                 }
 
                 return list;
+            }
+
+            private static void Fill(IPartition<TSource> source, Span<TResult> results, Func<TSource, TResult> func)
+            {
+                int index = 0;
+                foreach (TSource item in source)
+                {
+                    results[index] = func(item);
+                    ++index;
+                }
+
+                Debug.Assert(index == results.Length, "All list elements were not initialized.");
             }
 
             public int GetCount(bool onlyIfCheap)

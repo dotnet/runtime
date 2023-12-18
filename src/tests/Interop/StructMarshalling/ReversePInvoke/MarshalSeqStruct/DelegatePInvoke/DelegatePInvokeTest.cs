@@ -901,7 +901,7 @@ public class MarshalStructTest
                 Assert.True(Helper.ValidateS11(sourceS11, changeS11, "DelegatePInvoke_MarshalStructS11ByRef_Cdecl"));
                 break;
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByRef_Cdecl:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByRef_Cdecl:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1043,7 +1043,7 @@ public class MarshalStructTest
                 Assert.True(Helper.ValidateS11(sourceS11, changeS11, "DelegatePInvoke_MarshalStructS11ByRef_StdCall"));
                 break;
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByRef_StdCall:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByRef_StdCall:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1185,7 +1185,7 @@ public class MarshalStructTest
                 Assert.True(Helper.ValidateS11(sourceS11, cloneS11, "DelegatePInvoke_MarshalStructS11ByVal_Cdecl"));
                 break;
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByVal_Cdecl:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByVal_Cdecl:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1326,7 +1326,7 @@ public class MarshalStructTest
                 Assert.True(caller14(sourceS11));
                 break;
             default:
-                Assert.True(false, "TestMethod_DelegatePInvoke_MarshalByVal_StdCall:The structid (Managed Side) is wrong");
+                Assert.Fail("TestMethod_DelegatePInvoke_MarshalByVal_StdCall:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1413,7 +1413,9 @@ public class MarshalStructTest
 
     #endregion
 
-    static int Main()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try{
             Console.WriteLine("\nRun the methods for marshaling structure Delegate P/Invoke ByRef");

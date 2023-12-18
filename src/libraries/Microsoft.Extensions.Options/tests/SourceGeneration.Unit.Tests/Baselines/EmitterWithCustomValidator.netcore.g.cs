@@ -99,19 +99,21 @@ namespace __OptionValidationGeneratedAttributes
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         private bool NeedToConvertMinMax { get; }
         private bool Initialized { get; set; }
+        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+
         public override bool IsValid(object? value)
         {
             if (!Initialized)
             {
                 if (Minimum is null || Maximum is null)
                 {
-                    throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    throw new global::System.InvalidOperationException(c_minMaxError);
                 }
                 if (NeedToConvertMinMax)
                 {
                     System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
+                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
                 }
                 int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
                 if (cmp > 0)

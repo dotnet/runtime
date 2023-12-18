@@ -1,25 +1,20 @@
-# Building
+# Build WebAssembly
 
-This depends on `emsdk` to be installed.
+If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\wasm\emsdk` directory.
 
-## emsdk on macOS
+### Windows
 
-* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
-Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
+Windows build [requirements](../../../docs/workflow/requirements/windows-requirements.md)
 
-`EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
+**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
 
-Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if
-you are directly using the `dotnet build`, or `build.sh`.
+## Building
 
-* Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](./emscripten-version.txt)
+At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
-Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
+## macOS
 
-## Building on macOS
-
-* To build the whole thing, with libraries:
+* To build the whole repository, including libraries:
 
 `make build-all`
 
@@ -29,19 +24,16 @@ Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for 
 
 **Note:** Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
 
-## emsdk on Windows
-
-Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
-
-If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
-
-**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
-
-## Building on Windows
-
-* To build everything
+## Windows
 
 `build.cmd -os browser -subset mono+libs` in the repo top level directory.
+
+## Linux
+
+* To build the whole repository, including libraries:
+
+`build.sh -os browser -subset mono+libs` in the repo top level directory.
+
 
 # Running tests
 
@@ -96,7 +88,7 @@ For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Coll
 
 ### Windows
 
-Library tests on windows can be run as described in [testing-libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
+Library tests on windows can be run as described in [testing-libraries](../../../docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
 
 `.\build.cmd libs.tests -test -os browser`
 
@@ -313,12 +305,14 @@ npm update --lockfile-version=1
 
 * `runtime-wasm*` pipelines are triggered manually, and they only run the jobs that would not run on any default pipelines based on path changes.
 * The `AOT` jobs run only smoke tests on `runtime`, and on `runtime-wasm*` pipelines all the `AOT` tests are run.
+* HG libtests are library test with `HybridGlobalization=true`
 
 | .                 | runtime-wasm               | runtime-wasm-libtests | runtime-wasm-non-libtests |
 | ----------------- | -------------------------- | --------------------  | --------------------      |
 | libtests          | linux+windows: all         | linux+windows: all    | none                      |
 | libtests eat      | linux:         all         | linux:         all    | none                      |
 | libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
+| libtests hg       | linux+windows: all         | linux+windows: all    | none                      |
 | high resource aot | linux+windows: all         | linux+windows: all    | none                      |
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
 | Debugger tests    | linux+windows              | none                  | linux+windows             |

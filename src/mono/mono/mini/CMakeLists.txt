@@ -31,6 +31,8 @@ elseif(HOST_SOLARIS)
   set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
 elseif(HOST_FREEBSD)
   set(OS_LIBS pthread m)
+elseif(HOST_HAIKU)
+  set(OS_LIBS network)
 endif()
 
 #
@@ -58,6 +60,7 @@ if(HAVE_SYS_ICU)
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
+      pal_common.c
       pal_idna.c
       pal_locale.c
       pal_localeNumberData.c
@@ -280,7 +283,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD)
+elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD OR HOST_HAIKU)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
@@ -297,7 +300,8 @@ set(interp_sources
     interp/transform.c
     interp/tiering.h
     interp/tiering.c
-    interp/jiterpreter.c)
+    interp/jiterpreter.c
+    interp/interp-pgo.c)
 set(interp_simd_sources
     interp/interp-simd.c)
 set(interp_stub_sources
@@ -400,10 +404,10 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
   endif()
   target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(MONO_SET_RPATH_ORIGIN)
     set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
@@ -606,10 +610,10 @@ if(NOT DISABLE_EXECUTABLES)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")

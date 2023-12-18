@@ -6,13 +6,14 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Xunit;
 
 public static class DynamicMethodJumpStubTests
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         DynamicMethodJumpStubTest();
-        return 100;
     }
 
     public static void DynamicMethodJumpStubTest()

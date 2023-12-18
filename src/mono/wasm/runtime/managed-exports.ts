@@ -6,10 +6,10 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";
+import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
+import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
 
 export function init_managed_exports(): void {
@@ -30,8 +30,6 @@ export function init_managed_exports(): void {
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
     mono_assert(release_js_owned_object_by_gc_handle_method, "Can't find ReleaseJSOwnedObjectByGCHandle method");
-    const create_task_callback_method = get_method("CreateTaskCallback");
-    mono_assert(create_task_callback_method, "Can't find CreateTaskCallback method");
     const complete_task_method = get_method("CompleteTask");
     mono_assert(complete_task_method, "Can't find CompleteTask method");
     const call_delegate_method = get_method("CallDelegate");
@@ -57,8 +55,15 @@ export function init_managed_exports(): void {
                 program_args = undefined;
             }
             marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
+
+            // because this is async, we could pre-allocate the promise
+            let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
+
             invoke_method_and_handle_exception(call_entry_point, args);
-            let promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
+
+            // in case the C# side returned synchronously
+            promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
+
             if (promise === null || promise === undefined) {
                 promise = Promise.resolve(0);
             }
@@ -106,18 +111,6 @@ export function init_managed_exports(): void {
             set_arg_type(arg1, MarshalerType.Object);
             set_gc_handle(arg1, gc_handle);
             invoke_method_and_handle_exception(release_js_owned_object_by_gc_handle_method, args);
-        } finally {
-            Module.stackRestore(sp);
-        }
-    };
-    runtimeHelpers.javaScriptExports.create_task_callback = () => {
-        const sp = Module.stackSave();
-        loaderHelpers.assert_runtime_running();
-        try {
-            const args = alloc_stack_frame(2);
-            invoke_method_and_handle_exception(create_task_callback_method, args);
-            const res = get_arg(args, 1);
-            return get_arg_gc_handle(res);
         } finally {
             Module.stackRestore(sp);
         }

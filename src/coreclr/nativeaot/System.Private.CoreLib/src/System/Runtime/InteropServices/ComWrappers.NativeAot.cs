@@ -417,14 +417,14 @@ namespace System.Runtime.InteropServices
             static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(ManagedObjectWrapperHolder).GetEEType()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, EETypePtr.EETypePtrOf<ManagedObjectWrapperHolder>()))
                 {
                     throw new OutOfMemoryException();
                 }
             }
 
             [UnmanagedCallersOnly]
-            static bool IsRootedCallback(IntPtr pObj)
+            private static bool IsRootedCallback(IntPtr pObj)
             {
                 // We are paused in the GC, so this is safe.
 #pragma warning disable CS8500 // Takes a pointer to a managed type
@@ -951,7 +951,7 @@ namespace System.Runtime.InteropServices
 
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (_rcwCache.TryGetValue(identity, out GCHandle handle))
                     {
@@ -1047,7 +1047,7 @@ namespace System.Runtime.InteropServices
                 return true;
             }
 
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 object? cachedWrapper = null;
                 if (_rcwCache.TryGetValue(identity, out var existingHandle))
@@ -1092,7 +1092,7 @@ namespace System.Runtime.InteropServices
 
         private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the

@@ -627,7 +627,12 @@ namespace Internal.NativeFormat
 #endif
     class VertexBag : Vertex
     {
-        private enum EntryType { Vertex, Unsigned, Signed }
+        private enum EntryType
+        {
+            Vertex,
+            Unsigned,
+            Signed
+        }
 
         private struct Entry
         {

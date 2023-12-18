@@ -11,12 +11,16 @@ import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";
 import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
+import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
 import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
+import { MonoObject, MonoObjectNull } from "./types/internal";
+import { monoStringToStringUnsafe } from "./strings";
+import { thread_available } from "./pthreads/browser";
 
 export function export_internal(): any {
     return {
@@ -53,6 +57,7 @@ export function export_internal(): any {
         get_global_this,
         get_dotnet_instance: () => exportedRuntimeAPI,
         dynamic_import,
+        thread_available,
 
         // BrowserWebSocket
         mono_wasm_cancel_promise,
@@ -87,9 +92,17 @@ export function export_internal(): any {
         jiterpreter_apply_options: applyOptions,
         jiterpreter_get_options: getOptions,
 
+        // interpreter pgo
+        interp_pgo_load_data,
+        interp_pgo_save_data,
+
         // Blazor GC Lock support
         mono_wasm_gc_lock,
         mono_wasm_gc_unlock,
+
+        // Blazor legacy replacement
+        monoObjectAsBoolOrNullUnsafe,
+        monoStringToStringUnsafe,
 
         loadLazyAssembly,
         loadSatelliteAssemblies
@@ -104,4 +117,19 @@ export function cwraps_internal(internal: any): void {
         mono_wasm_profiler_init_browser: profiler_c_functions.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     });
+}
+
+/* @deprecated not GC safe, legacy support for Blazor */
+export function monoObjectAsBoolOrNullUnsafe(obj: MonoObject): boolean | null {
+    if (obj === MonoObjectNull) {
+        return null;
+    }
+    const res = cwraps.mono_wasm_read_as_bool_or_null_unsafe(obj);
+    if (res === 0) {
+        return false;
+    }
+    if (res === 1) {
+        return true;
+    }
+    return null;
 }

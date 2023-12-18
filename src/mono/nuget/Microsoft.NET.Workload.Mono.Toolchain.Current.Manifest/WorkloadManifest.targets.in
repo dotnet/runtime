@@ -37,7 +37,10 @@
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true'">$(WasmNativeWorkload)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(WasmNativeWorkloadAvailable)' == '' or '$(WasmNativeWorkload)' == 'false'">false</WasmNativeWorkloadAvailable>
     <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
+
+    <!-- Runtime feature defaults to trim unnecessary code -->
   </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Keep in sync with WasmApp.Native.targets -->
@@ -71,7 +74,7 @@
     <_IstvOSLibraryMode Condition="'$(RuntimeIdentifier)' == 'tvos-arm64'">true</_IstvOSLibraryMode>
   </PropertyGroup>
 
-  <PropertyGroup 
+  <PropertyGroup
     Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(_IsAppleMobileLibraryMode)' == 'true'">
     <UsingMobileWorkload>true</UsingMobileWorkload>
   </PropertyGroup>
@@ -83,7 +86,7 @@
 
   <!-- TFM specific -->
 
-  <Import Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
+  <Import Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true' or '$(UsingWasiRuntimeWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
@@ -142,10 +145,11 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
   </ImportGroup>
 
-  <ImportGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(UsingWasiRuntimeWorkload)' == 'true'">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(UsingWasiRuntimeWorkload)' == 'true'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk" />
+    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.wasi-wasm" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
   </ImportGroup>
 
@@ -182,6 +186,9 @@
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'$(TargetsCurrent)' == 'true'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
+    </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetCoreAppCurrent}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net8.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
@@ -223,6 +230,6 @@
         Importance="High" />
   </Target>
 
-  <Import Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')"
+  <Import Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'"
           Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>

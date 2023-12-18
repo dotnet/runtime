@@ -408,6 +408,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!context.SdbAgent.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass valueType))
                             throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                         var typeInfo = await context.SdbAgent.GetTypeInfo(valueType.TypeId, token);
+                        if (valueType.InlineArray == null)
+                        {
+                            JObject vtResult = await InvokeGetItemOnJObject(rootObject, valueType.TypeId, objectId, elementIdxInfo, token);
+                            if (vtResult != null)
+                                return vtResult;
+                        }
                         if (int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx) && elementIdx >= 0 && elementIdx < valueType.InlineArray.Count)
                             return (JObject)valueType.InlineArray[elementIdx]["value"];
                         throw new InvalidOperationException($"Index is outside the bounds of the inline array");
@@ -436,34 +442,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (elementIdxInfo.Indexers is null || elementIdxInfo.Indexers.Count == 0)
                             throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
 
-                        var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
-                        int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "get_Item", BindingFlags.Default, token);
-                        if (methodIds == null || methodIds.Length == 0)
-                            throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
-
-                        // ToDo: optimize the loop by choosing the right method at once without trying out them all
-                        for (int i = 0; i < methodIds.Length; i++)
-                        {
-                            MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
-                            ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
-                            if (paramInfo.Length == elementIdxInfo.DimensionsCount)
-                            {
-                                try
-                                {
-                                    if (!CheckParametersCompatibility(paramInfo, elementIdxInfo.Indexers))
-                                        continue;
-                                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, elementIdxInfo.Indexers, paramInfo);
-                                    JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
-                                    return (JObject)getItemRetObj["value"];
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
-                                    continue;
-                                }
-                            }
-                        }
-                        throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
+                        List<int> typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
+                        JObject objResult = await InvokeGetItemOnJObject(rootObject, typeIds[0], objectId, elementIdxInfo, token);
+                        if (objResult == null)
+                            throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
+                        return objResult;
                     default:
                         throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                 }
@@ -543,6 +526,42 @@ namespace Microsoft.WebAssembly.Diagnostics
                     ElementIdxStr: elementIdxStr.ToString(),
                     Indexers: indexers);
             }
+        }
+
+        private async Task<JObject> InvokeGetItemOnJObject(
+            JObject rootObject,
+            int typeId,
+            DotnetObjectId objectId,
+            ElementIndexInfo elementIdxInfo,
+            CancellationToken token)
+        {
+            int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeId, "get_Item", BindingFlags.Default, token);
+            if (methodIds == null || methodIds.Length == 0)
+                throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
+            var type = rootObject?["type"]?.Value<string>();
+
+            // ToDo: optimize the loop by choosing the right method at once without trying out them all
+            for (int i = 0; i < methodIds.Length; i++)
+            {
+                MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
+                ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
+                if (paramInfo.Length != elementIdxInfo.DimensionsCount)
+                    continue;
+                try
+                {
+                    if (!CheckParametersCompatibility(paramInfo, elementIdxInfo.Indexers))
+                        continue;
+                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, elementIdxInfo.Indexers, paramInfo);
+                    JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
+                    return (JObject)getItemRetObj["value"];
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
+                    continue;
+                }
+            }
+            return null;
 
             async Task<ArraySegment<byte>> WriteIndexObjectAsIndices(DotnetObjectId rootObjId, List<object> indexObjects, ParameterInfo[] paramInfo)
             {
@@ -578,19 +597,47 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             foreach ((ParameterInfo paramInfo, object indexObj) in paramInfos.Zip(indexObjects))
             {
-                // shouldn't we check LiteralExpressionSyntax for compatibility as well?
-                if (indexObj is JObject indexJObj && !CheckParameterCompatibility(paramInfo.TypeCode, indexJObj))
+                string argumentType = "", argumentClassName = "";
+                if (indexObj is JObject indexJObj)
+                {
+                    argumentType = indexJObj["type"]?.Value<string>();
+                    argumentClassName = indexJObj["className"]?.Value<string>();
+                }
+                else if (indexObj is LiteralExpressionSyntax literal)
+                {
+                    // any primitive literal is an object
+                    if (paramInfo.TypeCode.Value == ElementType.Object)
+                        continue;
+                    switch (literal.Kind())
+                    {
+                        case SyntaxKind.NumericLiteralExpression:
+                            argumentType = "number";
+                            break;
+                        case SyntaxKind.StringLiteralExpression:
+                            argumentType = "string";
+                            break;
+                        case SyntaxKind.TrueLiteralExpression:
+                        case SyntaxKind.FalseLiteralExpression:
+                            argumentType = "boolean";
+                            break;
+                        case SyntaxKind.CharacterLiteralExpression:
+                            argumentType = "symbol";
+                            break;
+                        case SyntaxKind.NullLiteralExpression:
+                            // do not check
+                            continue;
+                    }
+                }
+                if (!CheckParameterCompatibility(paramInfo.TypeCode, argumentType, argumentClassName))
                     return false;
             }
             return true;
         }
 
-        private static bool CheckParameterCompatibility(ElementType? paramTypeCode, JObject value)
+        private static bool CheckParameterCompatibility(ElementType? paramTypeCode, string argumentType, string argumentClassName="")
         {
             if (!paramTypeCode.HasValue)
                 return true;
-            var argumentType = value["type"]?.Value<string>();
-            var argumentClassName = value["className"]?.Value<string>();
 
             switch (paramTypeCode.Value)
             {
@@ -623,6 +670,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (argumentType == "number" && (argumentClassName == "Single" || argumentClassName == "Double"))
                         return false;
                     if (argumentType == "object")
+                        return false;
+                    if (argumentType == "string" || argumentType == "symbol")
                         return false;
                     break;
                 case ElementType.String:

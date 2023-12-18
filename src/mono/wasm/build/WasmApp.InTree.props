@@ -1,7 +1,11 @@
 <Project>
   <!-- This depends on the root Directory.Build.props imported this file -->
+  <PropertyGroup>
+    <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
+    <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
+  </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" />
   <PropertyGroup>
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>

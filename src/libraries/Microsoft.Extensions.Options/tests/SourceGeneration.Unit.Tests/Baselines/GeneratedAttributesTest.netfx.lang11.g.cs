@@ -118,6 +118,26 @@
                 (builder ??= new()).AddResults(validationResults);
             }
 
+            context.MemberName = "P13";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P13" : $"{name}.P13";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A5);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P13, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "P14";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P14" : $"{name}.P14";
+            validationResults.Clear();
+            validationAttributes.Clear();
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A6);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P14, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
         }
     }
@@ -139,6 +159,16 @@ namespace __OptionValidationStaticInstances
 
         internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__CompareAttribute A4 = new __OptionValidationGeneratedAttributes.__SourceGen__CompareAttribute(
             "P5");
+
+        internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__RangeAttribute A5 = new __OptionValidationGeneratedAttributes.__SourceGen__RangeAttribute(
+            typeof(global::System.TimeSpan),
+            "00:00:00",
+            "23:59:59");
+
+        internal static readonly __OptionValidationGeneratedAttributes.__SourceGen__RangeAttribute A6 = new __OptionValidationGeneratedAttributes.__SourceGen__RangeAttribute(
+            typeof(global::System.TimeSpan),
+            "01:00:00",
+            "23:59:59");
     }
 }
 namespace __OptionValidationStaticInstances
@@ -151,110 +181,84 @@ namespace __OptionValidationStaticInstances
 namespace __OptionValidationGeneratedAttributes
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
-    file class __SourceGen__RangeAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false)]
+    file class __SourceGen__CompareAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        public __SourceGen__RangeAttribute(int minimum, int maximum) : base()
+        private static string DefaultErrorMessageString => "'{0}' and '{1}' do not match.";
+        public __SourceGen__CompareAttribute(string otherProperty) : base(() => DefaultErrorMessageString)
         {
-            Minimum = minimum;
-            Maximum = maximum;
-            OperandType = typeof(int);
-        }
-        public __SourceGen__RangeAttribute(double minimum, double maximum) : base()
-        {
-            Minimum = minimum;
-            Maximum = maximum;
-            OperandType = typeof(double);
-        }
-        public __SourceGen__RangeAttribute(global::System.Type type, string minimum, string maximum) : base()
-        {
-            OperandType = type;
-            NeedToConvertMinMax = true;
-            Minimum = minimum;
-            Maximum = maximum;
-        }
-        public object Minimum { get; private set; }
-        public object Maximum { get; private set; }
-        public bool MinimumIsExclusive { get; set; }
-        public bool MaximumIsExclusive { get; set; }
-        public global::System.Type OperandType { get; }
-        public bool ParseLimitsInInvariantCulture { get; set; }
-        public bool ConvertValueInInvariantCulture { get; set; }
-        public override string FormatErrorMessage(string name) =>
-                string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
-        private bool NeedToConvertMinMax { get; }
-        private bool Initialized { get; set; }
-        public override bool IsValid(object? value)
-        {
-            if (!Initialized)
+            if (otherProperty == null)
             {
-                if (Minimum is null || Maximum is null)
-                {
-                    throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                }
-                if (NeedToConvertMinMax)
-                {
-                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException("The minimum and maximum values must be set to valid values.");
-                }
-                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                if (cmp > 0)
-                {
-                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                }
-                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                {
-                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                }
-                Initialized = true;
+                throw new global::System.ArgumentNullException(nameof(otherProperty));
+            }
+            OtherProperty = otherProperty;
+        }
+        public string OtherProperty { get; }
+        public override bool RequiresValidationContext => true;
+
+        protected override global::System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, global::System.ComponentModel.DataAnnotations.ValidationContext validationContext)
+        {
+            bool result = true;
+
+            if (validationContext.ObjectInstance is global::ValidationTest.OptionsUsingGeneratedAttributes && OtherProperty == "P5")
+            {
+                result = Equals(value, ((global::ValidationTest.OptionsUsingGeneratedAttributes)validationContext.ObjectInstance).P5);
             }
 
-            if (value is null or string { Length: 0 })
+            if (!result)
+            {
+                string[]? memberNames = validationContext.MemberName is null ? null : new string[] { validationContext.MemberName };
+                return new global::System.ComponentModel.DataAnnotations.ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
+            }
+
+            return null;
+        }
+        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
+    }
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
+    file class __SourceGen__MaxLengthAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        private const int MaxAllowableLength = -1;
+        private static string DefaultErrorMessageString => "The field {0} must be a string or array type with a maximum length of '{1}'.";
+        public __SourceGen__MaxLengthAttribute(int length) : base(() => DefaultErrorMessageString) { Length = length; }
+        public __SourceGen__MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
+        public int Length { get; }
+        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override bool IsValid(object? value)
+        {
+            if (Length == 0 || Length < -1)
+            {
+                throw new global::System.InvalidOperationException("MaxLengthAttribute must have a Length value that is greater than zero. Use MaxLength() without parameters to indicate that the string or array can have the maximum allowable length.");
+            }
+            if (value == null || MaxAllowableLength == Length)
             {
                 return true;
             }
 
-            System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-            object? convertedValue;
-
-            try
-            {
-                convertedValue = ConvertValue(value, formatProvider);
-            }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
-            {
-                return false;
-            }
-
-            var min = (global::System.IComparable)Minimum;
-            var max = (global::System.IComparable)Maximum;
-
-            return
-                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
-                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
-        }
-        private string GetValidationErrorMessage()
-        {
-            return (MinimumIsExclusive, MaximumIsExclusive) switch
-            {
-                (false, false) => "The field {0} must be between {1} and {2}.",
-                (true, false) => "The field {0} must be between {1} exclusive and {2}.",
-                (false, true) => "The field {0} must be between {1} and {2} exclusive.",
-                (true, true) => "The field {0} must be between {1} exclusive and {2} exclusive.",
-            };
-        }
-        private object? ConvertValue(object? value, System.Globalization.CultureInfo formatProvider)
-        {
+            int length;
             if (value is string stringValue)
             {
-                value = global::System.Convert.ChangeType(stringValue, OperandType, formatProvider);
+                length = stringValue.Length;
+            }
+            else if (value is System.Collections.ICollection collectionValue)
+            {
+                length = collectionValue.Count;
+            }
+            else if (value is global::ValidationTest.FakeCount)
+            {
+                length = ((global::ValidationTest.FakeCount)value).Count;
+            }
+            else if (value is global::ValidationTest.FakeCountChild)
+            {
+                length = ((global::ValidationTest.FakeCountChild)value).Count;
             }
             else
             {
-                value = global::System.Convert.ChangeType(value, OperandType, formatProvider);
+                throw new global::System.InvalidCastException($"The field of type {value.GetType()} must be a string, array, or ICollection type.");
             }
-            return value;
+
+            return length <= Length;
         }
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
@@ -304,83 +308,146 @@ namespace __OptionValidationGeneratedAttributes
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
-    file class __SourceGen__MaxLengthAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
+    file class __SourceGen__RangeAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        private const int MaxAllowableLength = -1;
-        private static string DefaultErrorMessageString => "The field {0} must be a string or array type with a maximum length of '{1}'.";
-        public __SourceGen__MaxLengthAttribute(int length) : base(() => DefaultErrorMessageString) { Length = length; }
-        public __SourceGen__MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
-        public int Length { get; }
-        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public __SourceGen__RangeAttribute(int minimum, int maximum) : base()
+        {
+            Minimum = minimum;
+            Maximum = maximum;
+            OperandType = typeof(int);
+        }
+        public __SourceGen__RangeAttribute(double minimum, double maximum) : base()
+        {
+            Minimum = minimum;
+            Maximum = maximum;
+            OperandType = typeof(double);
+        }
+        public __SourceGen__RangeAttribute(global::System.Type type, string minimum, string maximum) : base()
+        {
+            OperandType = type;
+            NeedToConvertMinMax = true;
+            Minimum = minimum;
+            Maximum = maximum;
+        }
+        public object Minimum { get; private set; }
+        public object Maximum { get; private set; }
+        public bool MinimumIsExclusive { get; set; }
+        public bool MaximumIsExclusive { get; set; }
+        public global::System.Type OperandType { get; }
+        public bool ParseLimitsInInvariantCulture { get; set; }
+        public bool ConvertValueInInvariantCulture { get; set; }
+        public override string FormatErrorMessage(string name) =>
+                string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
+        private bool NeedToConvertMinMax { get; }
+        private bool Initialized { get; set; }
+        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+
         public override bool IsValid(object? value)
         {
-            if (Length == 0 || Length < -1)
+            if (!Initialized)
             {
-                throw new global::System.InvalidOperationException("MaxLengthAttribute must have a Length value that is greater than zero. Use MaxLength() without parameters to indicate that the string or array can have the maximum allowable length.");
+                if (Minimum is null || Maximum is null)
+                {
+                    throw new global::System.InvalidOperationException(c_minMaxError);
+                }
+                if (NeedToConvertMinMax)
+                {
+                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                    if (OperandType == typeof(global::System.TimeSpan))
+                    {
+                        if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                            !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                        {
+                            throw new global::System.InvalidOperationException(c_minMaxError);
+                        }
+                        Minimum = timeSpanMinimum;
+                        Maximum = timeSpanMaximum;
+                    }
+                    else
+                    {
+                        Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                        Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                    }
+                }
+                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                if (cmp > 0)
+                {
+                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                }
+                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                {
+                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                }
+                Initialized = true;
             }
-            if (value == null || MaxAllowableLength == Length)
+
+            if (value is null or string { Length: 0 })
             {
                 return true;
             }
 
-            int length;
-            if (value is string stringValue)
+            System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+            object? convertedValue;
+
+            if (OperandType == typeof(global::System.TimeSpan))
             {
-                length = stringValue.Length;
-            }
-            else if (value is System.Collections.ICollection collectionValue)
-            {
-                length = collectionValue.Count;
-            }
-            else if (value is global::ValidationTest.FakeCount)
-            {
-                length = ((global::ValidationTest.FakeCount)value).Count;
-            }
-            else if (value is global::ValidationTest.FakeCountChild)
-            {
-                length = ((global::ValidationTest.FakeCountChild)value).Count;
+                if (value is global::System.TimeSpan)
+                {
+                    convertedValue = value;
+                }
+                else if (value is string)
+                {
+                    if (!global::System.TimeSpan.TryParse((string)value, formatProvider, out global::System.TimeSpan timeSpanValue))
+                    {
+                        return false;
+                    }
+                    convertedValue = timeSpanValue;
+                }
+                else
+                {
+                    throw new global::System.InvalidOperationException($"A value type {value.GetType()} that is not a TimeSpan or a string has been given. This might indicate a problem with the source generator.");
+                }
             }
             else
             {
-                throw new global::System.InvalidCastException($"The field of type {value.GetType()} must be a string, array, or ICollection type.");
+                try
+                {
+                    convertedValue = ConvertValue(value, formatProvider);
+                }
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                {
+                    return false;
+                }
             }
 
-            return length <= Length;
+            var min = (global::System.IComparable)Minimum;
+            var max = (global::System.IComparable)Maximum;
+
+            return
+                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
+                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
         }
-    }
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false)]
-    file class __SourceGen__CompareAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
-    {
-        private static string DefaultErrorMessageString => "'{0}' and '{1}' do not match.";
-        public __SourceGen__CompareAttribute(string otherProperty) : base(() => DefaultErrorMessageString)
+        private string GetValidationErrorMessage()
         {
-            if (otherProperty == null)
+            return (MinimumIsExclusive, MaximumIsExclusive) switch
             {
-                throw new global::System.ArgumentNullException(nameof(otherProperty));
-            }
-            OtherProperty = otherProperty;
+                (false, false) => "The field {0} must be between {1} and {2}.",
+                (true, false) => "The field {0} must be between {1} exclusive and {2}.",
+                (false, true) => "The field {0} must be between {1} and {2} exclusive.",
+                (true, true) => "The field {0} must be between {1} exclusive and {2} exclusive.",
+            };
         }
-        public string OtherProperty { get; }
-        public override bool RequiresValidationContext => true;
-
-        protected override global::System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, global::System.ComponentModel.DataAnnotations.ValidationContext validationContext)
+        private object? ConvertValue(object? value, System.Globalization.CultureInfo formatProvider)
         {
-            bool result = true;
-
-            if (validationContext.ObjectInstance is global::ValidationTest.OptionsUsingGeneratedAttributes && OtherProperty == "P5")
+            if (value is string stringValue)
             {
-                result = Equals(value, ((global::ValidationTest.OptionsUsingGeneratedAttributes)validationContext.ObjectInstance).P5);
+                value = global::System.Convert.ChangeType(stringValue, OperandType, formatProvider);
             }
-
-            if (!result)
+            else
             {
-                string[]? memberNames = validationContext.MemberName is null ? null : new string[] { validationContext.MemberName };
-                return new global::System.ComponentModel.DataAnnotations.ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
+                value = global::System.Convert.ChangeType(value, OperandType, formatProvider);
             }
-
-            return null;
+            return value;
         }
-        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
     }
 }

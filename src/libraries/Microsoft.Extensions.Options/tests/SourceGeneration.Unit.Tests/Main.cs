@@ -1731,6 +1731,7 @@ string lengthAttribute = "";
 #endif //NETCOREAPP
 
         string source = $$"""
+            using System;
             using System.Collections.Generic;
             using Microsoft.Extensions.Options;
             using System.ComponentModel.DataAnnotations;
@@ -1782,6 +1783,12 @@ string lengthAttribute = "";
 
                     [MaxLengthAttribute(5)]
                     public List<string>? P12 { get; set; }
+
+                    [RangeAttribute(typeof(TimeSpan), "00:00:00", "23:59:59")]
+                    public string? P13 { get; set; }
+
+                    [RangeAttribute(typeof(TimeSpan), "01:00:00", "23:59:59")]
+                    public TimeSpan P14 { get; set; }
                 }
 
                 [OptionsValidator]
@@ -1812,5 +1819,99 @@ string lengthAttribute = "";
 
         Assert.True(emitResult.Success);
         // Console.WriteLine(emittedSource);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator(@"""
+            using System.Collections.Generic;
+
+            public class MyOptions
+            {
+                [Length(10, 20)]
+                public IList<string> P1 { get; set; }
+
+                [MinLength(4)]
+                public IList<string> P2 { get; set; }
+
+                [MaxLength(5)]
+                public IList<string> P3 { get; set; }
+
+                [Length(10, 20)]
+                public ICollection<string> P4 { get; set; }
+
+                [MinLength(4)]
+                public ICollection<string> P5 { get; set; }
+
+                [MaxLength(5)]
+                public ICollection<string> P6 { get; set; }
+            }
+
+            [OptionsValidator]
+            public partial class MyOptionsValidator : IValidateOptions<MyOptions>
+            {
+            }
+        """);
+
+        Assert.Empty(diagnostics);
+        Assert.Single(generatedSources);
+
+#if NETCOREAPP
+        string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netcore.g.cs");
+#else
+        string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netfx.g.cs");
+#endif // NETCOREAPP
+        Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public async Task OptionsExtendingSystemClassTest()
+    {
+        string source = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+            using System.Collections.Generic;
+
+            #nullable enable
+
+            [OptionsValidator]
+            public sealed class RedisNamedClientOptions : Dictionary<string, RedisClientOptions>, IValidateOptions<RedisNamedClientOptions>
+            {
+                public const string Section = "RedisClients";
+
+                [Required]
+                [ValidateEnumeratedItems]
+                public IEnumerable<RedisClientOptions> RedisClientOptionsList => this.Values;
+            }
+
+            public sealed class RedisClientOptions
+            {
+                [Required]
+                [ValidateEnumeratedItems]
+                public required IList<EndPointsOptions> EndPoints { get; init; }
+            }
+
+            public sealed class EndPointsOptions
+            {
+                [Required]
+                public required string Host { get; init; }
+
+                [Required]
+                [Range(1_024, 65_535)]
+                public required int Port { get; init; }
+            }
+        """;
+
+        var (diagnostics, src) = await RunGenerator(source);
+        Assert.Empty(diagnostics);
+        Assert.Single(src);
+#if NETCOREAPP
+        string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netcore.g.cs");
+#else
+        string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netfx.g.cs");
+#endif // NETCOREAPP
+        Assert.Equal(generatedSource.Replace("\r\n", "\n"), src[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 }

@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_THREADS
         // the JavaScript object could only exist on the single web worker and can't migrate to other workers
-        internal int OwnerThreadId;
+        internal nint OwnerTID;
 #endif
 #if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
@@ -42,12 +42,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             JSHandle = jsHandle;
 #if FEATURE_WASM_THREADS
-            OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
-            m_SynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext;
-            if (m_SynchronizationContext == null)
+            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+            if (ctx == null)
             {
-                throw new InvalidOperationException(); // should not happen
+                Environment.FailFast("Missing CurrentJSSynchronizationContext");
             }
+            m_SynchronizationContext = ctx;
+            OwnerTID = ctx!.TargetTID;
 #endif
         }
 
@@ -93,25 +94,21 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
+            JSSynchronizationContext.AssertWebWorkerContext();
+            var currentTID = JSSynchronizationContext.CurrentJSSynchronizationContext!.TargetTID;
+
             if (value is JSObject jsObject)
             {
-                if (jsObject.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (jsObject.OwnerTID != currentTID)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
             }
-            if (value is JSException jsException)
+            else if (value is JSException jsException)
             {
-                if (jsException.jsException != null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (jsException.jsException != null && jsException.jsException.OwnerTID != currentTID)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
-                }
-            }
-            if (value is JSHostImplementation.TaskCallback holder)
-            {
-                if (holder.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
-                {
-                    throw new InvalidOperationException("The JavaScript promise can be used only on the thread where it was created.");
                 }
             }
         }
@@ -126,13 +123,33 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
+        internal void DisposeLocal()
+        {
+            JSHostImplementation.ThreadCsOwnedObjects.Remove(JSHandle);
+            _isDisposed = true;
+            JSHandle = IntPtr.Zero;
+        }
+
         private void DisposeThis()
         {
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
-                SynchronizationContext.Send(static (JSObject self) =>
+                if (SynchronizationContext == SynchronizationContext.Current)
                 {
+                    lock (_thisLock)
+                    {
+                        JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
+                        _isDisposed = true;
+                        JSHandle = IntPtr.Zero;
+                        m_SynchronizationContext = null;
+                    } //lock
+                    return;
+                }
+
+                SynchronizationContext.Post(static (object? s) =>
+                {
+                    var self = (JSObject)s!;
                     lock (self._thisLock)
                     {
                         JSHostImplementation.ReleaseCSOwnedObject(self.JSHandle);

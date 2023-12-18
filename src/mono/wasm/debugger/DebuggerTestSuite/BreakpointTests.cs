@@ -217,7 +217,6 @@ namespace DebuggerTests
         [MemberData(nameof(FalseConditions))]
         [MemberData(nameof(TrueConditions))]
         [MemberData(nameof(InvalidConditions))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task ConditionalBreakpoint2(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
         {
             Result [] bps = new Result[2];
@@ -700,7 +699,6 @@ namespace DebuggerTests
         [InlineData(true, "Debugger.stepInto", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         [InlineData(false, "Debugger.resume", "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeUserBp", 927, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         [InlineData(true, "Debugger.resume", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task StepThroughOrNonUserCodeAttributeWithUserBp(
             bool justMyCodeEnabled, string debuggingFunction, string evalFunName,
             string functionNameCheck1, int line1, int col1,

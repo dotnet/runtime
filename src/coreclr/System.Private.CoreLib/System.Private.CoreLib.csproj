@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -47,7 +47,7 @@
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
     <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830;AD0001</NoWarn>
+    <NoWarn>$(NoWarn),0419,0649;AD0001</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
@@ -56,7 +56,6 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -162,7 +161,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.cs" />
@@ -170,6 +168,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeFieldBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeILGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeLocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.cs" />
@@ -264,8 +263,8 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs">
       <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
-      <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
+      <Link>Common\System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />

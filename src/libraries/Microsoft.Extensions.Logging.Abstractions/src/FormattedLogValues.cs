@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Logging
 
                 if (index == Count - 1)
                 {
-                    return new KeyValuePair<string, object?> ("{OriginalFormat}", _originalMessage);
+                    return new KeyValuePair<string, object?>("{OriginalFormat}", _originalMessage);
                 }
 
                 return _formatter!.GetValue(_values!, index);

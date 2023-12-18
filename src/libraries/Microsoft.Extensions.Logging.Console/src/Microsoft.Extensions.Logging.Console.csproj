@@ -7,8 +7,6 @@
     <DefineConstants>$(DefineConstants);NO_SUPPRESS_GC_TRANSITION</DefineConstants>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
-    <Features>$(Features);InterceptorsPreview</Features>
-    <!-- TODO: Remove InterceptorsPreview feature after 8.0 RC2 SDK is used for build -->
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <!-- TODO: reinstate pragma suppressions for config binding diagnostics: https://github.com/dotnet/runtime/issues/92509. -->

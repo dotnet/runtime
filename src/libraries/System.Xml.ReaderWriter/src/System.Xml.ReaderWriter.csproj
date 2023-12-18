@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>System.Xml</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
   <ItemGroup>

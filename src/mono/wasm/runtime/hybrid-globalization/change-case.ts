@@ -75,6 +75,7 @@ export function mono_wasm_change_case_invariant(src: number, srcLength: number, 
                 }
             }
         }
+        wrap_no_error_root(is_exception, exceptionRoot);
     }
     catch (ex: any) {
         wrap_error_root(is_exception, ex, exceptionRoot);
