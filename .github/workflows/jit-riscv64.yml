@@ -19,7 +19,7 @@ jobs:
         continue-on-error: true
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
       - name: Cross Build
-        if: failure()
+        if: ${{ failure() }}
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
       # cache
@@ -29,7 +29,7 @@ jobs:
           path: |
             .dotnet/
             artifacts/
-          key: ${{ runner.os }}-dotnet-cross-build
+        key: ${{ runner.os }}-dotnet-cross-build
       - name: Build Tests programs
         run: ./build.sh -mono -debug riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
@@ -59,7 +59,7 @@ jobs:
         with:
           path: |
             artifacts/tests/coreclr
-          key: ${{ runner.os }}-dotnet-test
+        key: ${{ runner.os }}-dotnet-test
       - name: Run tests
         run: bash -c ./run.sh Release
         working-directory: ./src/tests
