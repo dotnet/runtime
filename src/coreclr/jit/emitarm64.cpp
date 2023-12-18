@@ -1193,9 +1193,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
             FALLTHROUGH;
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
-            assert(insOptsScalableSimple(id->idInsOpt())); // xx
-            assert(isGeneralRegister(id->idReg1()));       // ddddd
-            assert(isPredicateRegister(id->idReg2()));     // MMMM
+            assert(insOptsScalableWithScalar(id->idInsOpt())); // xx
+            assert(isGeneralRegister(id->idReg1()));           // ddddd
+            assert(isPredicateRegister(id->idReg2()));         // MMMM
             assert(isValidGeneralDatasize(id->idOpSize()));
             break;
 
@@ -6889,7 +6889,7 @@ void emitter::emitIns_R_R(
 
             if (isGeneralRegister(reg1)) // ddddd
             {
-                assert(insOptsScalableSimple(opt)); // xx
+                assert(insOptsScalableWithScalar(opt)); // xx
                 assert(size == EA_8BYTE);
                 fmt = IF_SVE_DM_2A;
             }
@@ -6910,7 +6910,7 @@ void emitter::emitIns_R_R(
 
             if (isGeneralRegister(reg1)) // ddddd
             {
-                assert(insOptsScalableSimple(opt)); // xx
+                assert(insOptsScalableWithScalar(opt)); // xx
                 assert(isValidGeneralDatasize(size));
                 fmt = IF_SVE_DO_2A;
             }
