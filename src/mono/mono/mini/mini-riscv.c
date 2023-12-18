@@ -2948,45 +2948,29 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MUL_IMM:
-		case OP_IMUL_IMM:
-		case OP_LMUL_IMM:
-		case OP_IDIV_IMM: {
 			g_assert (riscv_stdext_m);
 			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->inst_imm = 0;
-			switch (ins->opcode) {
-			case OP_MUL_IMM:
 #ifdef TARGET_RISCV64
 				ins->opcode = OP_LMUL;
 #else
 				ins->opcode = OP_IMUL;
 #endif
-				break;
-			case OP_IMUL_IMM:
-				ins->opcode = OP_IMUL;
-				break;
-			case OP_LMUL_IMM:
-				ins->opcode = OP_LMUL;
-				break;
-			case OP_DIV_IMM:
-#ifdef TARGET_RISCV64
-				ins->opcode = OP_LDIV;
-#else
-				ins->opcode = OP_IDIV;
-#endif
-				break;
-			case OP_IDIV_IMM:
-				ins->opcode = OP_IDIV;
-				break;
-			case OP_LDIV_IMM:
-				ins->opcode = OP_LDIV;
-				break;
-			}
 			break;
-		}
+		case OP_DIV_IMM:
+			mono_decompose_op_imm (cfg, bb, ins);
+#ifdef TARGET_RISCV64
+			g_assert(ins->opcode == OP_LDIV);
+#else
+			g_assert(ins->opcode == OP_IDIV);
+#endif
+			break;
+		case OP_IMUL_IMM:
+		case OP_LMUL_IMM:
+		case OP_IDIV_IMM: 
 		case OP_IREM_IMM:
 		case OP_LREM_IMM:
 		case OP_IREM_UN_IMM:
