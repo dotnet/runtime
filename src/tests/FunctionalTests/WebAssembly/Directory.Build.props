@@ -28,7 +28,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
-    <_InTreeEmSdk>$(MSBuildThisFileDirectory)..\..\..\mono\browser\emsdk</_InTreeEmSdk>
+    <_InTreeEmSdk>$(BrowserProjectRoot)emsdk</_InTreeEmSdk>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists($(_InTreeEmSdk))">$(_InTreeEmSdk)</EMSDK_PATH>
   </PropertyGroup>
 </Project>
