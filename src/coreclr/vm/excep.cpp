@@ -10910,13 +10910,14 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     // processing for subsequent frames on the stack since FirstChance notification
     // will be delivered only when the exception is first thrown/rethrown.
     ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
-
+#ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
         _ASSERTE(pCurTES->GetCurrentExInfo());
         _ASSERTE(!(pCurTES->GetCurrentExInfo()->DeliveredFirstChanceNotification()));
     }
     else
+#endif // FEATURE_EH_FUNCLETS
     {
         _ASSERTE(pCurTES->GetCurrentExceptionTracker());
         _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
@@ -10936,12 +10937,14 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
 
         }
 
+#ifdef FEATURE_EH_FUNCLETS
         if (g_isNewExceptionHandlingEnabled)
         {
             // Mark the exception info as having delivered the first chance notification
             pCurTES->GetCurrentExInfo()->SetFirstChanceNotificationStatus(TRUE);
         }
         else
+#endif // FEATURE_EH_FUNCLETS
         {
             // Mark the exception tracker as having delivered the first chance notification
             pCurTES->GetCurrentExceptionTracker()->SetFirstChanceNotificationStatus(TRUE);

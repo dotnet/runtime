@@ -375,6 +375,7 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
 
             case StackFrameIterator::SFITER_FRAMELESS_METHOD:
                 {
+#ifdef FEATURE_EH_FUNCLETS
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
                     if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
@@ -382,6 +383,7 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
                         ftResult = kManagedExceptionHandlingCodeFrame;
                     }
                     else
+#endif // FEATURE_EH_FUNCLETS
                     {
                         ftResult = kManagedStackFrame;
                         fInitFrameData = TRUE;

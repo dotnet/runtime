@@ -114,7 +114,6 @@ void ExInfo::Init()
     DestroyExceptionHandle();
     m_hThrowable = NULL;
     m_ExceptionCode = 0;
-    m_pMDToReportFunctionLeave = NULL;
 
     // By default, mark the tracker as not having delivered the first
     // chance exception notification

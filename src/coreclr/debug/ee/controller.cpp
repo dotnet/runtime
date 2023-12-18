@@ -6142,6 +6142,7 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
     // Ignore managed exception handling frames
     if (pFrame->md != NULL)
     {
@@ -6151,6 +6152,7 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
             return false;
         }
     }
+#endif // FEATURE_EH_FUNCLETS
 
     return true;
 }

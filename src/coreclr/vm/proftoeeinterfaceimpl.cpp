@@ -8073,6 +8073,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     CONTEXT builtContext;
 #endif
 
+#ifdef FEATURE_EH_FUNCLETS
     //
     // Skip all managed exception handling functions
     //
@@ -8083,6 +8084,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     {
         return SWA_CONTINUE;
     }
+#endif // FEATURE_EH_FUNCLETS
 
     //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
@@ -8102,6 +8104,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
         return SWA_CONTINUE;
     }
 
+#ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
@@ -8113,6 +8116,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
             return SWA_CONTINUE;
         }
     }
+#endif // FEATURE_EH_FUNCLETS
 
     //
     // If this is not a transition of any sort and not a managed
