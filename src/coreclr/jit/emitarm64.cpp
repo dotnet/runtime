@@ -1207,6 +1207,21 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
+        case IF_SVE_DQ_0A: // ................ ................ -- SVE FFR initialise
+            break;
+
+        case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(id->idReg1())); // NNNN
+            break;
+
+        case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isGeneralRegister(id->idReg1()));        // nnnnn
+            assert(isGeneralRegister(id->idReg2()));        // mmmmm
+            assert(isValidGeneralDatasize(id->idOpSize())); // x
+            break;
+
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             assert(insOptsScalableSimple(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // nnnnn
@@ -5627,6 +5642,12 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             assert(!"Instruction cannot be encoded: IF_SI_0A");
         }
     }
+    else if (ins == INS_sve_setffr)
+    {
+        fmt  = IF_SVE_DQ_0A;
+        attr = EA_PTRSIZE;
+        imm  = 0;
+    }
     else
     {
         unreached();
@@ -5650,7 +5671,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 {
     insFormat  fmt = IF_NONE;
-    instrDesc* id  = nullptr;
+    instrDesc* id  = emitNewInstrSmall(attr);
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -5658,7 +5679,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
         case INS_br:
         case INS_ret:
             assert(isGeneralRegister(reg));
-            id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_BR_1A;
             break;
@@ -5666,25 +5686,29 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
         case INS_dczva:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
-            id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
             break;
 
         case INS_mrs_tpid0:
-            id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
             break;
 
         case INS_sve_aesmc:
         case INS_sve_aesimc:
-            id = emitNewInstrSmall(attr);
             id->idInsOpt(INS_OPTS_SCALABLE_B);
             id->idReg1(reg);
             assert(isVectorRegister(reg)); // ddddd
             assert(isScalableVectorSize(attr));
             fmt = IF_SVE_GL_1A;
+            break;
+
+        case INS_sve_wrffr:
+            id->idInsOpt(INS_OPTS_SCALABLE_B);
+            id->idReg1(reg);
+            assert(isPredicateRegister(reg)); // NNNN
+            fmt = IF_SVE_DR_1A;
             break;
 
         default:
@@ -6915,6 +6939,15 @@ void emitter::emitIns_R_R(
                 assert(isScalableVectorSize(size));
                 fmt = IF_SVE_DP_2A;
             }
+            break;
+
+        case INS_sve_ctermeq:
+        case INS_sve_ctermne:
+            assert(insOptsNone(opt));
+            assert(isGeneralRegister(reg1));      // nnnnn
+            assert(isGeneralRegister(reg2));      // mmmmm
+            assert(isValidGeneralDatasize(size)); // x
+            fmt = IF_SVE_DS_2A;
             break;
 
         case INS_sve_sqxtnb:
@@ -11672,7 +11705,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 0;
 }
 
@@ -11685,7 +11718,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 5;
 }
 
@@ -11704,28 +11737,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '21' thru '17' position.
+ *  Return an encoding for the specified 'V' register used in '20' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_V_21_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_V_20_to_16(regNumber reg)
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 31));
+    return ureg << 16;
 }
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'R' register used in '21' thru '17' position.
+ *  Return an encoding for the specified 'R' register used in '20' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_R_21_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_R_20_to_16(regNumber reg)
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 31));
+    return ureg << 16;
 }
 
 /*****************************************************************************
@@ -11737,7 +11770,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 5;
 }
 
@@ -11750,21 +11783,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 0;
 }
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'P' register used in '20' thru '17' position.
+ *  Return an encoding for the specified 'P' register used in '19' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_P_20_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_P_19_to_16(regNumber reg)
 {
     assert(isPredicateRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
     assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 17;
+    return ureg << 16;
 }
 
 /*****************************************************************************
@@ -11808,15 +11841,15 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'R' register used in '18' thru '17' position.
+ *  Return an encoding for the specified 'R' register used in '17' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_R_18_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_R_17_to_16(regNumber reg)
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 12) && (ureg <= 15));
+    return ureg << 16;
 }
 
 /*****************************************************************************
@@ -11870,27 +11903,27 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '19' thru '17' position.
+ *  Return an encoding for the specified 'V' register used in '18' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_V_19_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_V_18_to_16(regNumber reg)
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 7));
+    return ureg << 16;
 }
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '20' thru '16' position.
+ *  Return an encoding for the specified 'V' register used in '19' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_V_20_to_16(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_V_19_to_16(regNumber reg)
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 15));
     return ureg << 16;
 }
 
@@ -11903,7 +11936,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 6;
 }
 
@@ -11919,7 +11952,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
     assert(ureg % 2 == 0);
     ureg /= 2u;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 6;
 }
 
@@ -12795,6 +12828,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
     code_t imm3High   = (encodedImm & 0x60) << 17;
     code_t imm3Low    = (encodedImm & 0x1f) << 5;
     return encodedSize | imm3High | imm3Low;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the <R> 4/8-byte width specifier <R>
+ *  at bit location 22 for an Arm64 Sve instruction.
+ */
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_R_22(emitAttr size)
+{
+    if (size == EA_8BYTE)
+    {
+        return 0x400000; // set the bit at location 22
+    }
+
+    assert(size == EA_4BYTE);
+    return 0;
 }
 
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
@@ -14880,6 +14929,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
             code |= insEncodeVLSElemsize(id->idOpSize());                    // X
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_DQ_0A: // ................ ................ -- SVE FFR initialise
+            code = emitInsCodeSve(ins, fmt);
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_8_to_5(id->idReg1()); // NNNN
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_R_9_to_5(id->idReg1());       // nnnnn
+            code |= insEncodeReg_R_20_to_16(id->idReg2());     // mmmmm
+            code |= insEncodeSveElemsize_R_22(id->idOpSize()); // x
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -17328,6 +17396,21 @@ void emitter::emitDispInsHelp(
                 emitDispReg(id->idReg1(), id->idOpSize(), true);                            // ddddd
                 emitDispPredicateReg(id->idReg2(), PREDICATE_SIZED, id->idInsOpt(), false); // MMMM
             }
+            break;
+
+        // none
+        case IF_SVE_DQ_0A: // ................ ................ -- SVE FFR initialise
+            break;
+
+        // <Pn>.B
+        case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
+            emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), false); // NNNN
+            break;
+
+        // <R><n>, <R><m>
+        case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
+            emitDispReg(id->idReg1(), id->idOpSize(), true);  // nnnnn
+            emitDispReg(id->idReg2(), id->idOpSize(), false); // mmmmm
             break;
 
         // <Zd>.<T>, <Zn>.<Tb>
@@ -19848,6 +19931,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_7C;
+            break;
+
+        case IF_SVE_DQ_0A: // ................ ................ -- SVE FFR initialise
+        case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
         // Not available in Arm Neoverse N2 Software Optimization Guide.

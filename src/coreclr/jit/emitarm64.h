@@ -335,11 +335,11 @@ static code_t insEncodeReg_V_9_to_5(regNumber reg);
 // Return an encoding for the specified 'P' register used in '12' thru '10' position.
 static code_t insEncodeReg_P_12_to_10(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '21' thru '17' position.
-static code_t insEncodeReg_V_21_to_17(regNumber reg);
+// Return an encoding for the specified 'V' register used in '20' thru '16' position.
+static code_t insEncodeReg_V_20_to_16(regNumber reg);
 
-// Return an encoding for the specified 'R' register used in '21' thru '17' position.
-static code_t insEncodeReg_R_21_to_17(regNumber reg);
+// Return an encoding for the specified 'R' register used in '20' thru '16' position.
+static code_t insEncodeReg_R_20_to_16(regNumber reg);
 
 // Return an encoding for the specified 'R' register used in '9' thru '5' position.
 static code_t insEncodeReg_R_9_to_5(regNumber reg);
@@ -347,8 +347,8 @@ static code_t insEncodeReg_R_9_to_5(regNumber reg);
 // Return an encoding for the specified 'R' register used in '4' thru '0' position.
 static code_t insEncodeReg_R_4_to_0(regNumber reg);
 
-// Return an encoding for the specified 'P' register used in '20' thru '17' position.
-static code_t insEncodeReg_P_20_to_17(regNumber reg);
+// Return an encoding for the specified 'P' register used in '19' thru '16' position.
+static code_t insEncodeReg_P_19_to_16(regNumber reg);
 
 // Return an encoding for the specified 'P' register used in '3' thru '0' position.
 static code_t insEncodeReg_P_3_to_0(regNumber reg);
@@ -359,8 +359,8 @@ static code_t insEncodeReg_P_8_to_5(regNumber reg);
 // Return an encoding for the specified 'P' register used in '13' thru '10' position.
 static code_t insEncodeReg_P_13_to_10(regNumber reg);
 
-// Return an encoding for the specified 'R' register used in '18' thru '17' position.
-static code_t insEncodeReg_R_18_to_17(regNumber reg);
+// Return an encoding for the specified 'R' register used in '17' thru '16' position.
+static code_t insEncodeReg_R_17_to_16(regNumber reg);
 
 // Return an encoding for the specified 'P' register used in '7' thru '5' position.
 static code_t insEncodeReg_P_7_to_5(regNumber reg);
@@ -374,11 +374,11 @@ static code_t insEncodeReg_P_2_to_0(regNumber reg);
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
 
-// Return an encoding for the specified 'V' register used in '19' thru '17' position.
-static code_t insEncodeReg_V_19_to_17(regNumber reg);
+// Return an encoding for the specified 'V' register used in '18' thru '16' position.
+static code_t insEncodeReg_V_18_to_16(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '20' thru '16' position.
-static code_t insEncodeReg_V_20_to_16(regNumber reg);
+// Return an encoding for the specified 'V' register used in '19' thru '16' position.
+static code_t insEncodeReg_V_19_to_16(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position.
 static code_t insEncodeReg_V_9_to_6(regNumber reg);
@@ -485,6 +485,10 @@ static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
 static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
+
+// Returns the encoding to select the 4/8-byte width specifier <R> at bit location 22
+// for an Arm64 Sve instruction.
+static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
