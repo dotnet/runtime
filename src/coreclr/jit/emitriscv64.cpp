@@ -3002,7 +3002,7 @@ void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) cons
     }
     unsigned insNum = emitFindInsNum(ig, id);
 
-    if (ig->igInsCnt >= insNum + 1 + instrCount)
+    if (ig->igInsCnt < insNum + 1 + instrCount)
     {
         // TODO-RISCV64-BUG: This should be a labeled offset but does not contain a label
         printf("pc%s%d instructions", signFn(instrCount), instrCount);
