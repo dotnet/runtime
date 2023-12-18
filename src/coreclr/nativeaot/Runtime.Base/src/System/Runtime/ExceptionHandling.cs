@@ -1026,20 +1026,17 @@ namespace System.Runtime
 #if NATIVEAOT
                     try
                     {
-#endif
                         shouldInvokeHandler =
-#if NATIVEAOT
                             InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
-#else
-                            InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
-#endif
-#if NATIVEAOT
                     }
                     catch when (true)
                     {
                         // Prevent leaking any exception from the filter funclet
                     }
-#endif
+#else // NATIVEAOT
+                    shouldInvokeHandler =
+                        InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
+#endif // NATIVEAOT
 
                     if (shouldInvokeHandler)
                     {

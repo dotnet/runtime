@@ -2313,32 +2313,24 @@ BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
 
     BOOL fDeliveredFirstChanceNotification = FALSE;
 
-    // <TODO>
-    // Remove this once SIS is fully enabled.
-    // </TODO>
-    extern bool g_EnableSIS;
+    _ASSERTE(GetThreadNULLOk() == pThread);
 
-    if (g_EnableSIS)
+    GCX_COOP();
+
+    // For debugger, we may want to notify 1st chance exceptions if they're coming out of a stub.
+    // We recognize stubs as Frames with a M2U transition type. The debugger's stackwalker also
+    // recognizes these frames and publishes ICorDebugInternalFrames in the stackwalk. It's
+    // important to use pFrame as the stack address so that the Exception callback matches up
+    // w/ the ICorDebugInternalFrame stack range.
+    if (CORDebuggerAttached())
     {
-        _ASSERTE(GetThreadNULLOk() == pThread);
-
-        GCX_COOP();
-
-        // For debugger, we may want to notify 1st chance exceptions if they're coming out of a stub.
-        // We recognize stubs as Frames with a M2U transition type. The debugger's stackwalker also
-        // recognizes these frames and publishes ICorDebugInternalFrames in the stackwalk. It's
-        // important to use pFrame as the stack address so that the Exception callback matches up
-        // w/ the ICorDebugInternlFrame stack range.
-        if (CORDebuggerAttached())
+        if (pCurrentFrame->GetTransitionType() == Frame::TT_M2U)
         {
-            if (pCurrentFrame->GetTransitionType() == Frame::TT_M2U)
-            {
-                // Use -1 for the backing store pointer whenever we use the address of a frame as the stack pointer.
-                EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread,
-                                                                                   (SIZE_T)0,
-                                                                                   (SIZE_T)pCurrentFrame);
-                fDeliveredFirstChanceNotification = TRUE;
-            }
+            // Use -1 for the backing store pointer whenever we use the address of a frame as the stack pointer.
+            EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread,
+                                                                                (SIZE_T)0,
+                                                                                (SIZE_T)pCurrentFrame);
+            fDeliveredFirstChanceNotification = TRUE;
         }
     }
 
