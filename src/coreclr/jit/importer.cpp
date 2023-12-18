@@ -3856,29 +3856,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
                 {
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
-
-                    if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                    {
-                        op1->gtFlags |= callFlags;
-                        op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
-
-                        // Create a GT_COMMA to invoke the lazyCtor
-                        GenTreeCall* lazyCtorCall =
-                            gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
-                        if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF)
-                        {
-                            m_preferredInitCctor = pFieldInfo->helper;
-                        }
-                        lazyCtorCall->setEntryPoint(pFieldInfo->fieldLookup);
-                        lazyCtorCall->gtInitClsHnd = pResolvedToken->hClass;
-                        lazyCtorCall->gtFlags |= callFlags;
-                        lazyCtorCall->SetArgNeedsEnclosingType();
-
-                        op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtUnusedValNode(lazyCtorCall), op1);
-
-                        op1 =
-                            gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
-                    }
+                    op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
+                    m_preferredInitCctor = CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
                     break;
                 }
                 if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
@@ -9132,6 +9111,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
                     GenTree* helperNode = impInitClass(&resolvedToken);
+                    if (fieldInfo.useEnclosingTypeOnly)
+                    {
+                        helperNode->AsCall()->SetArgNeedsEnclosingType();
+                    }
                     if (compDonotInline())
                     {
                         return;
