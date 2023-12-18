@@ -24,6 +24,7 @@ enum PredicateType
     PREDICATE_NONE = 0,
     PREDICATE_MERGE,
     PREDICATE_ZERO,
+    PREDICATE_SIZED,
 };
 
 const char* emitSveRegName(regNumber reg);
@@ -53,8 +54,8 @@ void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, boo
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
 void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
-void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
-void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
+void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -376,8 +377,8 @@ static code_t insEncodePredQualifier_16(bool merge);
 // Return an encoding for the specified 'V' register used in '19' thru '17' position.
 static code_t insEncodeReg_V_19_to_17(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '20' thru '17' position.
-static code_t insEncodeReg_V_20_to_17(regNumber reg);
+// Return an encoding for the specified 'V' register used in '20' thru '16' position.
+static code_t insEncodeReg_V_20_to_16(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position.
 static code_t insEncodeReg_V_9_to_6(regNumber reg);
@@ -1053,7 +1054,13 @@ void emitIns_R_R_R_Ext(instruction ins,
 void emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
+void emitIns_R_R_R_R(instruction ins,
+                     emitAttr    attr,
+                     regNumber   reg1,
+                     regNumber   reg2,
+                     regNumber   reg3,
+                     regNumber   reg4,
+                     insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
