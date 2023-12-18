@@ -3821,7 +3821,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         break;
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
-        case CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY:
 
 #ifdef FEATURE_READYTORUN
             if (!opts.IsReadyToRun())
@@ -3857,27 +3856,29 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
                 {
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
-                }
-                else if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY)
-                {
-                    op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
-                    op1->gtFlags |= callFlags;
-                    op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
 
-                    // Create a GT_COMMA to invoke the lazyCtor
-                    GenTreeCall* lazyCtorCall = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
-                    if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF)
+                    if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                     {
-                        m_preferredInitCctor = pFieldInfo->helper;
+                        op1->gtFlags |= callFlags;
+                        op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
+
+                        // Create a GT_COMMA to invoke the lazyCtor
+                        GenTreeCall* lazyCtorCall =
+                            gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GCSTATIC_BASE, TYP_BYREF);
+                        if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF)
+                        {
+                            m_preferredInitCctor = pFieldInfo->helper;
+                        }
+                        lazyCtorCall->setEntryPoint(pFieldInfo->fieldLookup);
+                        lazyCtorCall->gtInitClsHnd = pResolvedToken->hClass;
+                        lazyCtorCall->gtFlags |= callFlags;
+                        lazyCtorCall->SetArgNeedsEnclosingType();
+
+                        op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtUnusedValNode(lazyCtorCall), op1);
+
+                        op1 =
+                            gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
                     }
-                    lazyCtorCall->setEntryPoint(pFieldInfo->fieldLookup);
-                    lazyCtorCall->gtInitClsHnd = pResolvedToken->hClass;
-                    lazyCtorCall->gtFlags |= callFlags;
-                    lazyCtorCall->SetArgNeedsEnclosingType();
-
-                    op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), gtUnusedValNode(lazyCtorCall), op1);
-
-                    op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
                     break;
                 }
                 if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
@@ -9049,7 +9050,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         break;
 
                     case CORINFO_FIELD_STATIC_TLS_MANAGED:
-                    case CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY:
                         setMethodHasTlsFieldAccess();
                         FALLTHROUGH;
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
@@ -9230,7 +9230,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         break;
 
                     case CORINFO_FIELD_STATIC_TLS_MANAGED:
-                    case CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
@@ -9331,7 +9330,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         goto SPILL_APPEND;
 
                     case CORINFO_FIELD_STATIC_TLS_MANAGED:
-                    case CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY:
                         setMethodHasTlsFieldAccess();
                         FALLTHROUGH;
                     case CORINFO_FIELD_STATIC_ADDRESS:

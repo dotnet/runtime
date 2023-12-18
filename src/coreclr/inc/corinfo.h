@@ -1684,7 +1684,6 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
     CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
-    CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY,  // managed TLS access lazy ctor initialization
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
     CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)

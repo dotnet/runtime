@@ -2147,13 +2147,10 @@ namespace Internal.JitInterface
                             {
                                 if (ti.IsInlined)
                                 {
+                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
                                     if (_compilation.HasLazyStaticConstructor(field.OwningType))
                                     {
-                                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY;
-                                    }
-                                    else
-                                    {
-                                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                                     }
                                 }
                             }
