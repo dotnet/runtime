@@ -32,6 +32,9 @@ MONO_COMPONENT_API MonoClass *
 mono_class_create_generic_parameter (MonoGenericParam *param);
 
 MonoClass *
+mono_class_init_to_ready_level (MonoClass *klass, MonoClassReady ready_level);
+
+MonoClass *
 mono_class_create_ptr (MonoType *type);
 
 MonoClass *

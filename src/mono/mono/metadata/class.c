@@ -61,7 +61,7 @@ static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token
 static guint32 mono_field_resolve_flags (MonoClassField *field);
 
 static MonoClass *
-mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, GHashTable* visited_images, gboolean case_sensitive, MonoError *error);
+mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, MonoClassReady ready_level, GHashTable* visited_images, gboolean case_sensitive, MonoError *error);
 
 GENERATE_GET_CLASS_WITH_CACHE (valuetype, "System", "ValueType")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (handleref, "System.Runtime.InteropServices", "HandleRef")
@@ -93,7 +93,7 @@ MonoClass *
 mono_class_from_typeref (MonoImage *image, guint32 type_token)
 {
 	ERROR_DECL (error);
-	MonoClass *klass = mono_class_from_typeref_checked (image, type_token, error);
+	MonoClass *klass = mono_class_from_typeref_at_level (image, type_token, MONO_CLASS_READY_EXACT_PARENT, error);
 	g_assert (is_ok (error)); /*FIXME proper error handling*/
 	return klass;
 }
@@ -113,6 +113,12 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
  */
 MonoClass *
 mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError *error)
+{
+	return mono_class_from_typeref_at_level (image, type_token, MONO_CLASS_READY_EXACT_PARENT, error);
+}
+
+MonoClass *
+mono_class_from_typeref_at_level (MonoImage *image, guint32 type_token, MonoClassReady ready_level, MonoError *error)
 {
 	guint32 cols [MONO_TYPEREF_SIZE];
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
@@ -137,13 +143,13 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		The defacto behavior is that it's just a typedef in disguise.
 		*/
 		/* a typedef in disguise */
-		res = mono_class_from_name_checked (image, nspace, name, error);
+		res = mono_class_from_name_at_level (image, nspace, name, ready_level, error);
 		goto done;
 
 	case MONO_RESOLUTION_SCOPE_MODULEREF:
 		module = mono_image_load_module_checked (image, idx, error);
 		if (module)
-			res = mono_class_from_name_checked (module, nspace, name, error);
+			res = mono_class_from_name_at_level (module, nspace, name, ready_level, error);
 		goto done;
 
 	case MONO_RESOLUTION_SCOPE_TYPEREF: {
@@ -155,11 +161,12 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 			return NULL;
 		}
 
-		enclosing = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | idx, error);
+		enclosing = mono_class_from_typeref_at_level (image, MONO_TOKEN_TYPE_REF | idx, ready_level, error);
 		return_val_if_nok (error, NULL);
 
 		GList *nested_classes = mono_class_get_nested_classes_property (enclosing);
-		if (m_class_is_nested_classes_inited (enclosing) && nested_classes) {
+		if (m_class_is_nested_classes_inited (enclosing) && nested_classes && ready_level == MONO_CLASS_READY_EXACT_PARENT) {
+			// FIXME: preload: ensure 'res' is at the expected ready level
 			/* Micro-optimization: don't scan the metadata tables if enclosing is already inited */
 			for (tmp = nested_classes; tmp; tmp = tmp->next) {
 				res = (MonoClass *)tmp->data;
@@ -177,7 +184,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 				const char *nname = mono_metadata_string_heap (enclosing_image, string_offset);
 
 				if (strcmp (nname, name) == 0)
-					return mono_class_create_from_typedef (enclosing_image, MONO_TOKEN_TYPE_DEF | class_nested, error);
+					return mono_class_create_from_typedef_at_level (enclosing_image, MONO_TOKEN_TYPE_DEF | class_nested, ready_level, error);
 
 				i = mono_metadata_nesting_typedef (enclosing_image, enclosing_type_token, i + 1);
 			}
@@ -211,7 +218,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		return NULL;
 	}
 
-	res = mono_class_from_name_checked (image->references [idx - 1]->image, nspace, name, error);
+	res = mono_class_from_name_at_level (image->references [idx - 1]->image, nspace, name, ready_level, error);
 
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
@@ -2185,6 +2192,12 @@ mono_class_from_mono_type (MonoType *type)
 MonoClass *
 mono_class_from_mono_type_internal (MonoType *type)
 {
+	return mono_class_from_mono_type_at_level (type, MONO_CLASS_READY_EXACT_PARENT);
+}
+
+MonoClass *
+mono_class_from_mono_type_at_level (MonoType *type, MonoClassReady ready_level)
+{
 	g_assert (type);
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
@@ -2224,18 +2237,22 @@ mono_class_from_mono_type_internal (MonoType *type)
 	case MONO_TYPE_TYPEDBYREF:
 		return type->data.klass? type->data.klass: mono_defaults.typed_reference_class;
 	case MONO_TYPE_ARRAY:
-		return mono_class_create_bounded_array (type->data.array->eklass, type->data.array->rank, TRUE);
+		return mono_class_create_bounded_array_at_level (type->data.array->eklass, type->data.array->rank, TRUE, ready_level);
 	case MONO_TYPE_PTR:
-		return mono_class_create_ptr (type->data.type);
+		return mono_class_create_ptr_at_level (type->data.type, ready_level);
 	case MONO_TYPE_FNPTR:
-		return mono_class_create_fnptr (type->data.method);
+		return mono_class_create_fnptr_at_level (type->data.method, ready_level);
 	case MONO_TYPE_SZARRAY:
-		return mono_class_create_array (type->data.klass, 1);
+		return mono_class_create_array_at_level (type->data.klass, 1, ready_level);
 	case MONO_TYPE_CLASS:
-	case MONO_TYPE_VALUETYPE:
-		return type->data.klass;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass = type->data.klass;
+		if (G_LIKELY (m_class_ready_level_at_least (klass, ready_level)))
+			return klass;
+		return mono_class_init_to_ready_level (type->data.klass, ready_level);
+	}
 	case MONO_TYPE_GENERICINST:
-		return mono_class_create_generic_inst (type->data.generic_class);
+		return mono_class_create_generic_inst_at_level (type->data.generic_class, ready_level);
 	case MONO_TYPE_MVAR:
 	case MONO_TYPE_VAR:
 		return mono_class_create_generic_parameter (type->data.generic_param);
@@ -2256,9 +2273,9 @@ mono_class_from_mono_type_internal (MonoType *type)
  * \param context the generic context used to evaluate generic instantiations in
  */
 static MonoType *
-mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, gboolean *did_inflate, MonoError *error)
+mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoClassReady ready_level, MonoGenericContext *context, gboolean *did_inflate, MonoError *error)
 {
-	MonoType *t = mono_type_create_from_typespec_checked (image, type_spec, error);
+	MonoType *t = mono_type_create_from_typespec_at_level (image, type_spec, ready_level, error);
 
 	*did_inflate = FALSE;
 
@@ -2287,13 +2304,13 @@ mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGener
  * \param context the generic context used to evaluate generic instantiations in
  */
 static MonoClass *
-mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, MonoError *error)
+mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoClassReady ready_level, MonoGenericContext *context, MonoError *error)
 {
 	MonoClass *ret;
 	gboolean inflated = FALSE;
-	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context, &inflated, error);
+	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, ready_level, context, &inflated, error);
 	return_val_if_nok (error, NULL);
-	ret = mono_class_from_mono_type_internal (t);
+	ret = mono_class_from_mono_type_at_level (t, ready_level);
 	if (inflated)
 		mono_metadata_free_type (t);
 	return ret;
@@ -2905,6 +2922,13 @@ mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_toke
 MonoClass *
 mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error)
 {
+	return mono_class_get_at_ready_level (image, type_token, MONO_CLASS_READY_EXACT_PARENT, error);
+}
+
+
+MonoClass *
+mono_class_get_at_ready_level (MonoImage *image, guint32 type_token, MonoClassReady ready_level, MonoError *error)
+{
 	MonoClass *klass = NULL;
 
 	error_init (error);
@@ -2922,13 +2946,13 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error)
 
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
-		klass = mono_class_create_from_typedef (image, type_token, error);
+		klass = mono_class_create_from_typedef_at_level (image, type_token, ready_level, error);
 		break;
 	case MONO_TOKEN_TYPE_REF:
-		klass = mono_class_from_typeref_checked (image, type_token, error);
+		klass = mono_class_from_typeref_at_level (image, type_token, ready_level, error);
 		break;
 	case MONO_TOKEN_TYPE_SPEC:
-		klass = mono_class_create_from_typespec (image, type_token, NULL, error);
+		klass = mono_class_create_from_typespec (image, type_token, ready_level, NULL, error);
 		break;
 	default:
 		mono_error_set_bad_image (error, image, "Unknown type token %x", type_token & 0xff000000);
@@ -2984,7 +3008,7 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 		return m_class_get_byval_arg (klass);
 	}
 
-	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated, error);
+	type = mono_type_retrieve_from_typespec (image, type_token, MONO_CLASS_READY_EXACT_PARENT, context, &inflated, error);
 
 	if (!type) {
 		return NULL;
@@ -3230,7 +3254,7 @@ mono_class_from_name_case_checked (MonoImage *image, const char *name_space, con
 
 	visited_images = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	klass = mono_class_from_name_checked_aux (image, name_space, name, visited_images, FALSE, error);
+	klass = mono_class_from_name_checked_aux (image, name_space, name, MONO_CLASS_READY_EXACT_PARENT, visited_images, FALSE, error);
 
 	g_hash_table_destroy (visited_images);
 
@@ -3304,7 +3328,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 }
 
 static MonoClass *
-mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, GHashTable* visited_images, gboolean case_sensitive, MonoError *error)
+mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, MonoClassReady ready_level, GHashTable* visited_images, gboolean case_sensitive, MonoError *error)
 {
 	GHashTable *nspace_table = NULL;
 	MonoImage *loaded_image = NULL;
@@ -3334,7 +3358,8 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	/* FIXME: get_class_from_name () can't handle types in the EXPORTEDTYPE table */
 	// The AOT cache in get_class_from_name is case-sensitive, so don't bother with it for case-insensitive lookups
-	if (table_info_get_rows (&image->tables [MONO_TABLE_EXPORTEDTYPE]) == 0 && case_sensitive) {
+	if (table_info_get_rows (&image->tables [MONO_TABLE_EXPORTEDTYPE]) == 0 && case_sensitive && ready_level == MONO_CLASS_READY_EXACT_PARENT) {
+		// FIXME: preload: pass the ready level to the callback
 		gboolean res = mono_get_runtime_callbacks ()->get_class_from_name (image, name_space, name, &klass);
 		if (res) {
 			if (!klass) {
@@ -3358,6 +3383,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 		if (nspace_table)
 			token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 	} else {
+		g_assert (ready_level == MONO_CLASS_READY_EXACT_PARENT); // preload: not supported
 		FindAllUserData all_user_data = { name_space, NULL };
 		FindUserData user_data = { name, NULL };
 		GSList *values;
@@ -3396,7 +3422,8 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 		}
 	}
 
-	if (!token) {
+	if (!token && ready_level == MONO_CLASS_READY_EXACT_PARENT) {
+		// FIXME: preload: pass ready_level to search_modules
 		klass = search_modules (image, name_space, name, case_sensitive, error);
 		if (klass || !is_ok (error))
 			return klass;
@@ -3417,7 +3444,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 			loaded_image = mono_assembly_load_module_checked (image->assembly, impl >> MONO_IMPLEMENTATION_BITS, error);
 			if (!loaded_image)
 				return NULL;
-			klass = mono_class_from_name_checked_aux (loaded_image, name_space, name, visited_images, case_sensitive, error);
+			klass = mono_class_from_name_checked_aux (loaded_image, name_space, name, ready_level, visited_images, case_sensitive, error);
 			if (nested)
 				return klass ? return_nested_in (klass, nested, case_sensitive) : NULL;
 			return klass;
@@ -3430,7 +3457,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 			g_assert (image->references [assembly_idx - 1]);
 			if (image->references [assembly_idx - 1] == (gpointer)-1)
 				return NULL;
-			klass = mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, visited_images, case_sensitive, error);
+			klass = mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, ready_level, visited_images, case_sensitive, error);
 			if (nested)
 				return klass ? return_nested_in (klass, nested, case_sensitive) : NULL;
 			return klass;
@@ -3441,9 +3468,11 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	token = MONO_TOKEN_TYPE_DEF | token;
 
-	klass = mono_class_get_checked (image, token, error);
-	if (nested)
+	klass = mono_class_get_at_ready_level (image, token, ready_level, error);
+	if (nested) {
+		g_assert (ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: ready level
 		return return_nested_in (klass, nested, case_sensitive);
+	}
 	return klass;
 }
 
@@ -3462,12 +3491,18 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
 {
+	return mono_class_from_name_at_level (image, name_space, name, MONO_CLASS_READY_EXACT_PARENT, error);
+}
+
+MonoClass *
+mono_class_from_name_at_level (MonoImage *image, const char* name_space, const char *name, MonoClassReady ready_level, MonoError *error)
+{
 	MonoClass *klass;
 	GHashTable *visited_images;
 
 	visited_images = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-	klass = mono_class_from_name_checked_aux (image, name_space, name, visited_images, TRUE, error);
+	klass = mono_class_from_name_checked_aux (image, name_space, name, ready_level, visited_images, TRUE, error);
 
 	g_hash_table_destroy (visited_images);
 

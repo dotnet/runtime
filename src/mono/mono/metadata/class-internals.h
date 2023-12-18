@@ -1252,17 +1252,29 @@ mono_class_full_name (MonoClass *klass);
 MonoClass*
 mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext *context, MonoError *error);
 
+MonoClass *
+mono_class_get_at_ready_level (MonoImage *image, guint32 type_token, MonoClassReady ready_level, MonoError *error);
+
 MONO_PROFILER_API MonoClass *
 mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error);
 
 MonoClass *
 mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 
+MonoClass *
+mono_class_from_typeref_at_level (MonoImage *image, uint32_t type_token, MonoClassReady ready_level, MonoError *error);
+
+MonoClass *
+mono_class_from_name_at_level (MonoImage *image, const char *name_space, const char *name, MonoClassReady ready_level, MonoError *error);
+
 MONO_COMPONENT_API MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
 MonoClass *
 mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
+
+MonoClass *
+mono_class_from_mono_type_at_level (MonoType *type, MonoClassReady ready_level);
 
 MONO_PROFILER_API MonoClass *
 mono_class_from_mono_type_internal (MonoType *type);

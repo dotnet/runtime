@@ -477,11 +477,11 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
 MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error)
 {
-	return mono_class_create_from_typedef_full (image, type_token, MONO_CLASS_READY_INITED, error);
+	return mono_class_create_from_typedef_at_level (image, type_token, MONO_CLASS_READY_INITED, error);
 }
 
 MonoClass *
-mono_class_create_from_typedef_full (MonoImage *image, guint32 type_token, int8_t max_ready_level, MonoError *error)
+mono_class_create_from_typedef_at_level (MonoImage *image, guint32 type_token, MonoClassReady max_ready_level, MonoError *error)
 {
 	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 	MonoClass *klass, *parent = NULL;
@@ -972,11 +972,19 @@ check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 MonoClass*
 mono_class_create_generic_inst (MonoGenericClass *gclass)
 {
+	return mono_class_create_generic_inst_at_level (gclass, MONO_CLASS_READY_EXACT_PARENT);
+}
+
+MonoClass*
+mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassReady max_ready_level)
+{
 	MonoClass *klass, *gklass;
 
 	if (gclass->cached_class)
 		return gclass->cached_class;
 
+	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: allow lesser load levels
+	
 	klass = (MonoClass *)mono_mem_manager_alloc0 ((MonoMemoryManager*)gclass->owner, sizeof (MonoClassGenericInst));
 
 	gklass = gclass->container_class;
@@ -1145,6 +1153,12 @@ class_kind_may_contain_generic_instances (MonoTypeKind kind)
 MonoClass *
 mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bounded)
 {
+	return mono_class_create_bounded_array_at_level (eclass, rank, bounded, MONO_CLASS_READY_EXACT_PARENT);
+	
+}
+MonoClass *
+mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gboolean bounded, MonoClassReady max_ready_level)
+{
 	MonoImage *image;
 	MonoClass *klass, *cached, *k;
 	MonoClass *parent = NULL;
@@ -1158,6 +1172,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		bounded = FALSE;
 
 	image = eclass->image;
+
+	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: allow other ready levels
 
 	// FIXME: Optimize this
 	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)eclass->class_kind) ? mono_metadata_get_mem_manager_for_class (eclass) : NULL;
@@ -1243,7 +1259,12 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->instance_size = mono_class_instance_size (klass->parent);
 	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
+
+	// FIXME: preload - only go past here if we need more initialization
+
 	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
+
 
 	if (MONO_TYPE_IS_VOID (m_class_get_byval_arg (eclass))) {
 		mono_class_set_type_load_failure (klass, "Arrays of System.Void types are invalid.");
@@ -1392,7 +1413,13 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 MonoClass *
 mono_class_create_array (MonoClass *eclass, guint32 rank)
 {
-	return mono_class_create_bounded_array (eclass, rank, FALSE);
+	return mono_class_create_bounded_array_at_level (eclass, rank, FALSE, MONO_CLASS_READY_EXACT_PARENT);
+}
+
+MonoClass *
+mono_class_create_array_at_level (MonoClass *eclass, guint32 rank, MonoClassReady max_ready_level)
+{
+	return mono_class_create_bounded_array_at_level (eclass, rank, FALSE, max_ready_level);
 }
 
 // This is called by mono_class_create_generic_parameter when a new class must be created.
@@ -1552,11 +1579,19 @@ mono_class_create_generic_parameter (MonoGenericParam *param)
 MonoClass *
 mono_class_create_ptr (MonoType *type)
 {
+	return mono_class_create_ptr_at_level (type, MONO_CLASS_READY_EXACT_PARENT);
+}
+
+MonoClass *
+mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level)
+{
 	MonoClass *result;
 	MonoClass *el_class;
 	MonoImage *image;
 	char *name;
 	MonoMemoryManager *mm;
+
+	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: other ready levels
 
 	el_class = mono_class_from_mono_type_internal (type);
 	image = el_class->image;
@@ -1593,6 +1628,10 @@ mono_class_create_ptr (MonoType *type)
 	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
 	result->class_kind = MONO_CLASS_POINTER;
 	g_free (name);
+
+	// FIXME: preload - only go past here if we need more preloading - we start to use the element class past here.
+	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_APPROX_PARENT);
+	
 
 	MONO_PROFILER_RAISE (class_loading, (result));
 
@@ -1650,8 +1689,16 @@ mono_class_create_ptr (MonoType *type)
 MonoClass *
 mono_class_create_fnptr (MonoMethodSignature *sig)
 {
+	return mono_class_create_fnptr_at_level (sig, MONO_CLASS_READY_EXACT_PARENT);
+}
+
+MonoClass *
+mono_class_create_fnptr_at_level (MonoMethodSignature *sig, MonoClassReady max_ready_level)
+{
 	MonoClass *result, *cached;
 	static GHashTable *ptr_hash = NULL;
+
+	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: other ready levels
 
 	/* FIXME: These should be allocate from a mempool as well, but which one ? */
 
@@ -4293,6 +4340,46 @@ mono_class_create_array_fill_type (void)
 	aklass.klass.name = "array_filler_type";
 
 	return &aklass.klass;
+}
+
+MonoClass *
+mono_class_init_to_ready_level (MonoClass *klass, MonoClassReady ready_level)
+{
+	if (G_UNLIKELY (m_class_has_failure (klass)))
+		return klass;
+	// micro-optimization: every class is at BAREBONES; and mostly they've been inited already
+	if (G_LIKELY (ready_level == MONO_CLASS_READY_BAREBONES || m_class_ready_level_at_least (klass, ready_level)))
+		return klass;
+	// first couple of readiness levels are done by the creation functions
+	switch (m_class_get_class_kind (klass)) {
+	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD: {
+		ERROR_DECL (typeinit_error);
+		MonoClass *klass2 = mono_class_create_from_typedef_at_level (m_class_get_image (klass), m_class_get_type_token (klass), ready_level, typeinit_error);
+		if (!is_ok (typeinit_error)) {
+			mono_error_cleanup (typeinit_error);
+			// assume m_class_has_failure is set
+			return klass;
+		}
+		g_assert (klass2 == klass);
+		break;
+	}
+	case MONO_CLASS_ARRAY:
+		g_assert_not_reached (); // TODO
+	case MONO_CLASS_GPARAM:
+		g_assert_not_reached (); // TODO
+	case MONO_CLASS_POINTER:
+		g_assert_not_reached (); // TODO
+	case MONO_CLASS_GINST:
+		g_assert_not_reached (); // TODO
+	default:
+		g_assert_not_reached ();
+	}
+	// last few readiness levels are done by mono_class_init_internal
+	if (ready_level < MONO_CLASS_READY_INITED)
+		return klass;
+	mono_class_init_internal (klass);
+	return klass;
 }
 
 void

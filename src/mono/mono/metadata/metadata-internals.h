@@ -1071,6 +1071,9 @@ void mono_type_set_alignment (MonoTypeEnum type, int align);
 MonoType *
 mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error);
 
+MonoType *
+mono_type_create_from_typespec_at_level (MonoImage *image, guint32 type_spec, int ready_level, MonoError *error);
+
 MonoMethodSignature*
 mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
 

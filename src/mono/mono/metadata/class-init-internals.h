@@ -8,7 +8,23 @@
 #include <mono/metadata/class.h>
 
 MonoClass *
-mono_class_create_from_typedef_full (MonoImage *image, guint32 type_token, int8_t max_ready_level, MonoError *error);
+mono_class_create_from_typedef_at_level (MonoImage *image, guint32 type_token, MonoClassReady max_ready_level, MonoError *error);
+
+MonoClass*
+mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassReady max_ready_level);
+
+MonoClass *
+mono_class_create_bounded_array_at_level (MonoClass *element_class, uint32_t rank, mono_bool bounded, MonoClassReady max_ready_level);
+
+MonoClass *
+mono_class_create_array_at_level (MonoClass *element_class, uint32_t rank, MonoClassReady max_ready_level);
+
+MonoClass *
+mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level);
+
+MonoClass *
+mono_class_create_fnptr_at_level (MonoMethodSignature *sig, MonoClassReady max_ready_level);
+
 
 void
 mono_class_setup_interface_id_nolock (MonoClass *klass);

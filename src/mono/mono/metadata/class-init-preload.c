@@ -104,13 +104,17 @@ preload_done_visiting (MonoClass *klass)
  */
 
 static void
+preload_visit_classkind (MonoClass *klass);
+static void
+preload_visit_classdef (MonoClass *klass);
+static void
 preload_visit_parent (MonoClass *klass);
 static void
 preload_visit_interfaces (MonoClass *klass);
 static void
 preload_visit_class_generic_param_constraints (MonoClass *klass);
 static void
-preload_visit_dor (MonoImage *image, MonoGenericContext *context, uint32_t def_or_ref_or_spec_token);
+preload_visit_dor (MonoImage *image, MonoGenericContainer *container, uint32_t def_or_ref_or_spec_token);
 static void
 preload_visit_interfaces_from_typedef (MonoImage *meta, guint32 index, uint32_t **interface_tokens, guint *count);
 static void
@@ -122,13 +126,25 @@ preload_visit_typedef (MonoImage *image, uint32_t typedef_index);
 static void
 preload_visit_typeref (MonoImage *image, uint32_t typeref_index);
 static void
-preload_visit_typespec (MonoImage *image, MonoGenericContext *context, uint32_t typespec_index);
+preload_visit_typespec (MonoImage *image, uint32_t typespec_index);
+static void
+preload_visit_type_and_cmods (MonoImage *image, MonoType *ty);
+static void
+preload_visit_and_inflate_mono_type (MonoImage *image, MonoType *ty);
 static uint32_t
 preload_resolve_from_name (MonoImage *image, const char *nspace, const char *name);
+static void
+preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class);
 
 
 void
 mono_class_preload_class (MonoClass *klass)
+{
+	preload_visit_classdef (klass);
+}
+
+static void
+preload_visit_classdef (MonoClass *klass)
 {
 	/* we should only come here without the loader lock */
 	g_assert (!mono_loader_lock_tracking() || !mono_loader_lock_is_owned_by_self());
@@ -146,6 +162,10 @@ mono_class_preload_class (MonoClass *klass)
 	int class_kind = m_class_get_class_kind (klass);
 	g_assert (class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD);
 
+	/* if we're already visiting this class, don't go again. */
+	if (preload_is_visiting (klass))
+		return;
+
 	/* mark the that we started visiting the class */
 	/* WISH: it would be nice if we could avoid visiting a class is another thread already put
            it into the PRELOAD_STARTED state.  But that seems hard: the loser thread would need to
@@ -160,13 +180,46 @@ mono_class_preload_class (MonoClass *klass)
 	if (class_kind == MONO_CLASS_GTD)
 		preload_visit_class_generic_param_constraints (klass);
 
-	/* corlib classes are already loaded and corlib doesn't depend on any other assemblies. */
-	if (m_class_get_image (klass) == mono_defaults.corlib)
-		goto done;
-
-done:
 	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
 	preload_done_visiting (klass);
+}
+
+static void
+preload_visit_classkind (MonoClass *klass)
+{
+	switch (m_class_get_class_kind (klass)) {
+	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD:
+		preload_visit_classdef (klass);
+		break;
+	case MONO_CLASS_GINST:
+		// generic insts are created on demand by mono_class_create_generic_inst with at
+                // least EXACT_PARENT readiness
+		g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT));
+		break;
+	case MONO_CLASS_GPARAM:
+		// don't expect to do anything - the MonoGenericContainer constraints should've been
+		// visited in the class def.
+		break;
+	case MONO_CLASS_ARRAY:
+		// assumption: mono_class_create_array_type always inits the array to at least
+		// EXACT_PARENT, and it sets m_class_get_byval_arg(klass) so that we can get the
+		// element type from byval_arg
+		g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT));
+		g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (klass)->type == MONO_TYPE_ARRAY);
+		preload_visit_type_and_cmods (m_class_get_image (klass), m_class_get_byval_arg (klass));
+		break;
+	case MONO_CLASS_POINTER:
+		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) {
+			g_assert_not_reached (); // TODO: visit a pointer type
+		} else {
+			g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR);
+			g_assert_not_reached (); // TODO: visit a fnptr type
+		}
+		break;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 static void
@@ -179,7 +232,7 @@ preload_visit_parent (MonoClass *klass)
 	MonoImage *image = m_class_get_image (klass);
 	uint32_t parent_token = mono_metadata_token_from_dor (mono_metadata_decode_row_col (&image->tables [MONO_TABLE_TYPEDEF], mono_metadata_token_index (klass_token) - 1, MONO_TYPEDEF_EXTENDS));
 	MonoGenericContainer *container = mono_class_try_get_generic_container (klass);
-	preload_visit_dor (image, container ? &container->context : NULL, parent_token);
+	preload_visit_dor (image, container, parent_token);
 }
 
 static void
@@ -194,7 +247,7 @@ preload_visit_interfaces (MonoClass *klass)
 	uint32_t *itf_tokens = NULL;
 	preload_visit_interfaces_from_typedef (image, klass_token, &itf_tokens, &count);
 	for (int i = 0; i < count; i++) {
-		preload_visit_dor (image, container ? &container->context : NULL, itf_tokens[i]);
+		preload_visit_dor (image, container, itf_tokens[i]);
 	}
 	g_free (itf_tokens);
 }
@@ -333,7 +386,6 @@ preload_visit_gparam_constraints (MonoImage *image, guint32 owner, MonoGenericCo
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
 	locator_t loc;
 	guint32 i, token, start;
-	MonoGenericContext *context = &container->context;
 
 	/* FIXME: metadata-update */
 	guint32 rows = table_info_get_rows (tdef);
@@ -360,7 +412,7 @@ preload_visit_gparam_constraints (MonoImage *image, guint32 owner, MonoGenericCo
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
 		if (cols [MONO_GENPARCONSTRAINT_GENERICPAR] == owner) {
 			token = mono_metadata_token_from_dor (cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
-			preload_visit_dor (image, context, token);
+			preload_visit_dor (image, container, token);
 		} else {
 			break;
 		}
@@ -368,7 +420,7 @@ preload_visit_gparam_constraints (MonoImage *image, guint32 owner, MonoGenericCo
 }
 
 static void
-preload_visit_dor (MonoImage *image, MonoGenericContext *context, uint32_t def_or_ref_or_spec_token)
+preload_visit_dor (MonoImage *image, MonoGenericContainer *container, uint32_t def_or_ref_or_spec_token)
 {
 	int table = mono_metadata_token_table (def_or_ref_or_spec_token);
 	uint32_t index = mono_metadata_token_index (def_or_ref_or_spec_token);
@@ -380,7 +432,7 @@ preload_visit_dor (MonoImage *image, MonoGenericContext *context, uint32_t def_o
 		preload_visit_typeref (image, index);
 		break;
 	case MONO_TABLE_TYPESPEC:
-		preload_visit_typespec (image, context, index);
+		preload_visit_typespec (image, index);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -391,12 +443,12 @@ static void
 preload_visit_typedef (MonoImage *image, uint32_t typedef_index)
 {
 	ERROR_DECL (preload_error);
-	MonoClass *barebones = mono_class_create_from_typedef_full (image, typedef_index, MONO_CLASS_READY_BAREBONES, preload_error);
+	MonoClass *barebones = mono_class_create_from_typedef_at_level (image, typedef_index, MONO_CLASS_READY_BAREBONES, preload_error);
 	if (!is_ok (preload_error)) {
 		mono_error_cleanup (preload_error);
 		return;
 	}
-	mono_class_preload_class (barebones);
+	preload_visit_classdef (barebones);
 }
 
 /* FIXME: share more code with mono_class_from_typeref_checked */
@@ -523,11 +575,110 @@ preload_resolve_from_name (MonoImage *image, const char *nspace, const char *nam
 	g_error ("Token for %s.%s from (%s) not found in cache.\n", nspace, name, image->name);
 }
 
+/**
+ * Preload all the classes in the given type and its custom modifiers.  If we see generic vars,
+ * inflate them as we go.
+ */
 static void
-preload_visit_typespec (MonoImage *image, MonoGenericContext *context, uint32_t typespec_index)
+preload_visit_type_and_cmods (MonoImage *image, MonoType *ty)
+{
+	preload_visit_and_inflate_mono_type (image, ty);
+	if (G_UNLIKELY (ty->has_cmods)) {
+		g_assert_not_reached (); // TODO: visit the cmods
+	}
+}
+
+/**
+ * Preload all the classes in the given type
+ */
+static void
+preload_visit_and_inflate_mono_type (MonoImage *image, MonoType *ty)
+{
+	switch (ty->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_TYPEDBYREF:
+		// done
+		break;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		preload_visit_classdef (ty->data.klass);
+		break;
+	case MONO_TYPE_SZARRAY:
+		preload_visit_classkind (ty->data.klass);
+		break;
+	case MONO_TYPE_ARRAY:
+		g_assert_not_reached(); // TODO finish me
+	case MONO_TYPE_PTR: {
+		MonoType *etype = ty->data.type;
+		preload_visit_type_and_cmods (image, etype);
+		break;
+	}
+	case MONO_TYPE_FNPTR:
+		g_assert_not_reached(); // TODO finish me
+	case MONO_TYPE_MVAR:
+		g_assert_not_reached(); // don't expect to see method vars during class preloading
+	case MONO_TYPE_VAR:
+		/* nothing to do, the generic context has already been preloaded */
+		break;
+	case MONO_TYPE_GENERICINST:
+		preload_visit_generic_class (image, ty->data.generic_class);
+		break;
+	default:
+		g_assert_not_reached();
+	}
+}
+
+static void
+preload_visit_typespec (MonoImage *image, uint32_t typespec_index)
 {
 	// see mono_type_create_from_typespec_checked and do_mono_metadata_parse_generic_class and mono_metadata_parse_generic_inst
 	// TODO: finish this
 	// N.B. we might need to make the parser return barebones types
-	g_assert_not_reached ();
+	ERROR_DECL (typeload_error);
+	MonoType * t = mono_type_create_from_typespec_at_level (image, typespec_index, MONO_CLASS_READY_BAREBONES, typeload_error);
+	if (!is_ok (typeload_error)) {
+		mono_error_cleanup (typeload_error);
+		return;
+	}
+	
+	preload_visit_type_and_cmods (image, t);
+}
+
+static void
+preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class)
+{
+	if (generic_class->cached_class) {
+		/* if there's a cached MonoClass, for this generic instance, assume we must have
+                   initialized it to at least EXACT_PARENT state.  That is what
+                   mono_class_create_generic_inst does. */
+		/* FIXME: preload: but that won't be what happens after mono_class_create_generic_at_level... */
+		g_assert (m_class_ready_level_at_least (generic_class->cached_class, MONO_CLASS_READY_EXACT_PARENT));
+		return;
+	}
+
+	MonoClass *gtd = generic_class->container_class;
+
+	preload_visit_classkind (gtd);
+	MonoGenericInst *class_inst = generic_class->context.class_inst;
+	g_assert (class_inst != NULL);
+	g_assert (generic_class->context.method_inst == NULL);
+	for (int i = 0; i < class_inst->type_argc; i++) {
+		preload_visit_type_and_cmods (image, class_inst->type_argv[i]);
+	}
 }
