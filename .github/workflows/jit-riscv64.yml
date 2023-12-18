@@ -16,6 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Cross Rebuild Mono
+        continue-on-error: true
         run: ./build.sh mono -c Debug --cross --arch riscv64 --ci --rebuild
       - name: Cross Build Mono
         if: ${{ failure() }}
@@ -23,10 +24,14 @@ jobs:
         run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
         
       - name: Cross Rebuild Libs & host
+        continue-on-error: true
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
       - name: Cross Build Libs & host
         if: ${{ failure() }}
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+      - name: Build Tests programs
+        run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
+        working-directory: ./src/tests
       # cache
       - name: Cache
         uses: actions/cache@v2
@@ -35,9 +40,6 @@ jobs:
             .dotnet/
             artifacts/
           key: ${{ runner.os }}-dotnet-cross-build
-      - name: Build Tests programs
-        run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
-        working-directory: ./src/tests
       # upload entire project
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
