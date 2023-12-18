@@ -1,0 +1,64 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - riscv-jit-rv64
+
+jobs:
+  cross-build:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+      env:
+        ROOTFS_DIR: /crossrootfs/riscv64
+        QEMU_LD_PREFIX: /crossrootfs/riscv64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Cross Build Mono
+      # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
+        run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
+      - name: Cross Build Libs & host
+        run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+      - name: Build Tests programs
+        run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
+        working-directory: ./src/tests
+      # cache
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .dotnet/
+            artifacts/
+          key: ${{ runner.os }}-dotnet-cross-build
+      # upload entire project
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: jit-riscv64
+          path: ./
+  
+  test:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+      env:
+        ROOTFS_DIR: /crossrootfs/riscv64
+        QEMU_LD_PREFIX: /crossrootfs/riscv64
+    needs: cross-build
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: jit-riscv64
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            artifacts/tests/coreclr
+          key: ${{ runner.os }}-dotnet-test
+      - name: Run tests
+        run: bash -c ./run.sh Release
+        working-directory: ./src/tests
+      
