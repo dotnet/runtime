@@ -23,6 +23,8 @@ namespace TestUnhandledExceptionTester
             testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
             testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll") + " " + unhandledType;
             testProcess.StartInfo.RedirectStandardError = true;
+            // Disable creating dump since the target process is expected to fail with an unhandled exception
+            testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
             testProcess.ErrorDataReceived += (sender, line) => 
             {
                 Console.WriteLine($"\"{line.Data}\"");
