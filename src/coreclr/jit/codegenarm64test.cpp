@@ -5121,7 +5121,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_H); // UQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>
 
     // IF_SVE_DQ_0A
-    theEmitter->emitInsSve_SetFFR(); // SETFFR
+    theEmitter->emitIns_I(INS_sve_setffr, EA_PTRSIZE, 0); // SETFFR
 
     // IF_SVE_DR_1A
     theEmitter->emitIns_R(INS_sve_wrffr, EA_SCALABLE, REG_P0); // WRFFR <Pn>.B

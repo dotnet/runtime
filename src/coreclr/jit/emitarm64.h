@@ -1001,8 +1001,6 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 public:
 void emitIns(instruction ins);
 
-void emitInsSve_SetFFR();
-
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);

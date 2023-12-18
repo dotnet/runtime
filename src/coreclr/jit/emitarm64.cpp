@@ -5606,21 +5606,6 @@ void emitter::emitIns(instruction ins)
 
 /*****************************************************************************
  *
- *  Add a SETFFR instruction: initialize first-fault register to all true.
- */
-
-void emitter::emitInsSve_SetFFR()
-{
-    instrDesc* id = emitNewInstrSmall(EA_SCALABLE);
-    id->idIns(INS_sve_setffr);
-    id->idInsFmt(IF_SVE_DQ_0A);
-
-    dispIns(id);
-    appendToCurIG(id);
-}
-
-/*****************************************************************************
- *
  *  Add an instruction with a single immediate value.
  */
 
@@ -5639,6 +5624,12 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
         {
             assert(!"Instruction cannot be encoded: IF_SI_0A");
         }
+    }
+    else if (ins == INS_sve_setffr)
+    {
+        fmt  = IF_SVE_DQ_0A;
+        attr = EA_PTRSIZE;
+        imm  = 0;
     }
     else
     {
@@ -17306,8 +17297,7 @@ void emitter::emitDispInsHelp(
 
         // <Pn>.B
         case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
-            emitDispPredicateReg(id->idReg1(), PREDICATE_NONE, false); // NNNN
-            emitDispArrangement(id->idInsOpt());                       // .B
+            emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), false); // NNNN
             break;
 
         // <R><n>, <R><m>
