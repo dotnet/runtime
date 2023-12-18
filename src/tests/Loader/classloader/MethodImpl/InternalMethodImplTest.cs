@@ -33,6 +33,7 @@ public class InternalMethodImplTest
 
 class F1
 {
+    [MethodImpl(MethodImplOptions.NoInlining)] // The exception is thrown when restoring the caller with R2R
     public F1()
     {
         var f2 = new F2();
