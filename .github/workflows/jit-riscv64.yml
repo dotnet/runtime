@@ -21,12 +21,12 @@ jobs:
         if: ${{ failure() }}
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
+        
       - name: Cross Rebuild Libs & host
-        run: ./build.sh libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
+        run: ./build.sh mono.libs+host+clr.hosts -c Release --cross --arch riscv64 --ci --rebuild
       - name: Cross Build Libs & host
         if: ${{ failure() }}
-      # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
-        run: ./build.sh libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+        run: ./build.sh mono.libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
       # cache
       - name: Cache
         uses: actions/cache@v2
