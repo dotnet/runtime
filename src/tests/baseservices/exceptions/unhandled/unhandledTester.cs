@@ -14,15 +14,14 @@ namespace TestUnhandledExceptionTester
 {
     public class Program
     {
-        [Fact]
-        public static void TestEntryPoint()
+        static void RunExternalProcess(string unhandledType)
         {
             List<string> lines = new List<string>();
 
             Process testProcess = new Process();
 
             testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll");
+            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll") + " " + unhandledType;
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.ErrorDataReceived += (sender, line) => 
             {
@@ -77,17 +76,36 @@ namespace TestUnhandledExceptionTester
             }
             else
             {
-                if (lines[0] != "Unhandled exception. System.Exception: Test")
+                if (unhandledType == "main")
                 {
-                    throw new Exception("Missing Unhandled exception header");
+                    if (lines[0] != "Unhandled exception. System.Exception: Test")
+                    {
+                        throw new Exception("Missing Unhandled exception header");
+                    }
                 }
-
+                else if (unhandledType == "foreign")
+                {
+                    if (lines[0] != "Unhandled exception. System.EntryPointNotFoundException: Unable to find an entry point named 'HelloCpp' in shared library '__internal'.")
+                    {
+                        throw new Exception("Missing Unhandled exception header");
+                    }
+                }
             }
 
-            if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
+            if (unhandledType == "main")
             {
-                throw new Exception("Missing exception source frame");
+                if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
+                {
+                    throw new Exception("Missing exception source frame");
+                }
             }
+        }
+
+        [Fact]
+        public static void TestEntryPoint()
+        {
+            RunExternalProcess("main");
+            RunExternalProcess("foreign");
         }
     }
 }
