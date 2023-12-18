@@ -83,7 +83,7 @@ bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset,
     return fStop;
 }
 
-// returns true if we decoded enough;
+// returns true if we decoded all that was asked;
 bool GcInfoDecoder::PredecodeFatHeader(int remainingFlags)
 {
     int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
@@ -286,13 +286,24 @@ GcInfoDecoder::GcInfoDecoder(
     }
     else
     {
-        m_headerFlags = (GcInfoHeaderFlags)(m_Reader.ReadOneFast() ? GC_INFO_HAS_STACK_BASE_REGISTER : 0);
+        if (m_Reader.ReadOneFast())
+        {
+            m_headerFlags = GC_INFO_HAS_STACK_BASE_REGISTER;
+            m_StackBaseRegister = (UINT32)DENORMALIZE_STACK_BASE_REGISTER(0);
+        }
+        else
+        {
+            m_headerFlags = (GcInfoHeaderFlags)0;
+            m_StackBaseRegister = NO_STACK_BASE_REGISTER;
+        }
+
         m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_SLIM_HEADER));
 
         remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         remainingFlags &= ~DECODE_HAS_TAILCALLS;
 #endif
+
         if (remainingFlags == 0)
         {
             // Bail, if we've decoded enough,
@@ -309,17 +320,8 @@ GcInfoDecoder::GcInfoDecoder(
         m_GSCookieStackSlot = NO_GS_COOKIE;
         m_PSPSymStackSlot = NO_PSP_SYM;
         m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
-
-        if (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER)
-        {
-            m_StackBaseRegister = (UINT32)DENORMALIZE_STACK_BASE_REGISTER(0);
-        }
-        else
-        {
-            m_StackBaseRegister = NO_STACK_BASE_REGISTER;
-        }
-
         m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+
 #ifdef TARGET_ARM64
         m_SizeOfEditAndContinueFixedStackFrame = 0;
 #endif
@@ -427,7 +429,7 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
 
 }
 
-// Repositioning within a bit stream is relatively involved, compared to sequential read,
+// Repositioning within a bit stream is an involved operation, compared to sequential read,
 // so we prefer linear search unless the number of safepoints is too high.
 // The limit is not very significant as most methods will have just a few safe points.
 // At 32, even if a single point is 16bit encoded (64K method length),
