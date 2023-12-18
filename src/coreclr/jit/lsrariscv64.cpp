@@ -605,7 +605,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BOUNDS_CHECK:
         {
             GenTreeBoundsChk* node = tree->AsBoundsChk();
-            if (genActualType(node->GetIndex()->TypeGet()) == TYP_INT)
+            if (genActualType(node->GetIndex()) == TYP_INT)
             {
                 buildInternalIntRegisterDefForNode(tree);
                 buildInternalRegisterUses();

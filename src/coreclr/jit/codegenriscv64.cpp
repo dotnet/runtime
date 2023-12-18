@@ -2124,7 +2124,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             assert(emitter::isGeneralRegister(divisorReg));
         }
 
-        emitAttr size = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
+        emitAttr size = EA_ATTR(genTypeSize(genActualType(tree)));
         bool     is4  = (size == EA_4BYTE);
         assert(is4 || (size == EA_8BYTE));
 
@@ -5425,7 +5425,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     genConsumeRegs(index);
     genConsumeRegs(length);
 
-    if (genActualType(index->TypeGet()) == TYP_INT)
+    if (genActualType(index) == TYP_INT)
     {
         regNumber tempReg = oper->GetSingleTempReg();
         GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
@@ -5433,8 +5433,8 @@ void CodeGen::genRangeCheck(GenTree* oper)
     }
 
 #ifdef DEBUG
-    var_types lengthType = genActualType(length->TypeGet());
-    var_types indexType  = genActualType(index->TypeGet());
+    var_types lengthType = genActualType(length);
+    var_types indexType  = genActualType(index);
     // Bounds checks can only be 32 or 64 bit sized comparisons.
     assert(lengthType == TYP_INT || lengthType == TYP_LONG);
     assert(indexType == TYP_INT || indexType == TYP_LONG);
