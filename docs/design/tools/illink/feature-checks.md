@@ -164,6 +164,9 @@ else if (Feature.IsSupported)
 ```
 
 ### Short-circuiting boolean guard
+
+Short-circuiting can only be done if the C# source code was compiled with optimizations enabled. 
+
 ```csharp
 var a = Feature.IsSupported && Feature.Run();
 ```
