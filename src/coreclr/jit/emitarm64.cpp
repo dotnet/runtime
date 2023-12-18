@@ -1057,13 +1057,21 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         // Scalable, 4 regs, to predicate register.
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
-            assert(insOptsScalableSimple(id->idInsOpt())); // xx
+            assert(isScalableVectorSize(elemsize));
             assert(isPredicateRegister(id->idReg1()));     // DDDD
             assert(isLowPredicateRegister(id->idReg2()));  // ggg
             assert(isVectorRegister(id->idReg3()));        // mmmmm
             assert(isVectorRegister(id->idReg4()));        // nnnnn
-            assert(isScalableVectorSize(elemsize));
+            if (id->idInsFmt() == IF_SVE_CX_4A)
+            {
+                assert(insOptsScalableSimple(id->idInsOpt())); // xx
+            }
+            else
+            {
+                assert(insOptsScalableWide(id->idInsOpt())); // xx
+            }
             break;
 
         // Scalable FP.
@@ -9988,13 +9996,20 @@ void emitter::emitIns_R_R_R_R(instruction ins,
         case INS_sve_cmplo:
         case INS_sve_cmpls:
         case INS_sve_cmplt:
-            assert(insOptsScalableSimple(opt));
             assert(isPredicateRegister(reg1));    // DDDD
             assert(isLowPredicateRegister(reg2)); // ggg
             assert(isVectorRegister(reg3));       // mmmmm
             assert(isVectorRegister(reg4));       // nnnnn
             assert(isScalableVectorSize(attr));   // xx
-            fmt = IF_SVE_CX_4A;
+            if (insOptsScalableSimple(opt))
+            {
+                fmt = IF_SVE_CX_4A;
+            }
+            else
+            {
+                assert(insOptsScalableWide(opt));
+                fmt = IF_SVE_CX_4A_A;
+            }
             break;
 
         case INS_sve_mla:
@@ -14945,7 +14960,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
             code |= insEncodeReg_P_12_to_10(id->idReg2());                // ggg
@@ -17413,11 +17429,19 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
-        case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), true); // DDDD
             emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true);  // ggg
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);                        // mmmmm
             emitDispSveReg(id->idReg4(), id->idInsOpt(), false);                       // nnnnn
+            break;
+
+        // <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.D
+        case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+            emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), true); // DDDD
+            emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true);  // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), true);                        // mmmmm
+            emitDispSveReg(id->idReg4(), INS_OPTS_SCALABLE_D, false);                       // nnnnn
             break;
 
         // <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
@@ -19838,7 +19862,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
 
-        case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
