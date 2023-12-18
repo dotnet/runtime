@@ -11648,7 +11648,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 0;
 }
 
@@ -11661,7 +11661,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 5;
 }
 
@@ -11680,28 +11680,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '21' thru '17' position.
+ *  Return an encoding for the specified 'V' register used in '20' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_V_21_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_V_20_to_16(regNumber reg)
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 31));
+    return ureg << 16;
 }
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'R' register used in '21' thru '17' position.
+ *  Return an encoding for the specified 'R' register used in '20' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_R_21_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_R_20_to_16(regNumber reg)
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 31));
+    return ureg << 16;
 }
 
 /*****************************************************************************
@@ -11726,7 +11726,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 5;
 }
 
@@ -11739,21 +11739,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 0;
 }
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'P' register used in '20' thru '17' position.
+ *  Return an encoding for the specified 'P' register used in '19' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_P_20_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_P_19_to_16(regNumber reg)
 {
     assert(isPredicateRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
     assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 17;
+    return ureg << 16;
 }
 
 /*****************************************************************************
@@ -11797,15 +11797,15 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'R' register used in '18' thru '17' position.
+ *  Return an encoding for the specified 'R' register used in '17' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_R_18_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_R_17_to_16(regNumber reg)
 {
     assert(isIntegerRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 31));
+    return ureg << 16;
 }
 
 /*****************************************************************************
@@ -11859,27 +11859,27 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '19' thru '17' position.
+ *  Return an encoding for the specified 'V' register used in '18' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_V_19_to_17(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_V_18_to_16(regNumber reg)
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
-    return ureg << 17;
+    assert((ureg >= 0) && (ureg <= 7));
+    return ureg << 16;
 }
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '20' thru '16' position.
+ *  Return an encoding for the specified 'V' register used in '19' thru '16' position.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeReg_V_20_to_16(regNumber reg)
+/*static*/ emitter::code_t emitter::insEncodeReg_V_19_to_16(regNumber reg)
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 15));
     return ureg << 16;
 }
 
@@ -11892,7 +11892,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 6;
 }
 
@@ -11908,7 +11908,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
     assert(ureg % 2 == 0);
     ureg /= 2u;
-    assert((ureg >= 0) && (ureg <= 32));
+    assert((ureg >= 0) && (ureg <= 31));
     return ureg << 6;
 }
 
