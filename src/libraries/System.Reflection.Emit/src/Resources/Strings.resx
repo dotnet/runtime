@@ -258,4 +258,10 @@
   <data name="InvalidOperation_BadTypeAttributesNotAbstract" xml:space="preserve">
     <value>Type must be declared abstract if any of its methods are abstract.</value>
   </data>
+  <data name="AmbiguousMatch_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'</value>
+  </data>
+  <data name="InvalidOperation_BadEmptyMethodBody" xml:space="preserve">
+    <value>Method '{0}' does not have a method body.</value>
+  </data>
 </root>

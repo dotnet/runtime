@@ -21,6 +21,7 @@ namespace System.Reflection.Emit
         private readonly Dictionary<MemberInfo, EntityHandle> _memberReferences = new();
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
         private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _ctorReferences = new();
+        private readonly Guid _moduleVersionId;
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private List<CustomAttributeWrapper>? _customAttributes;
         private int _nextTypeDefRowId = 1;
@@ -40,6 +41,7 @@ namespace System.Reflection.Emit
             _name = name;
             _metadataBuilder = builder;
             _assemblyBuilder = assemblyBuilder;
+            _moduleVersionId = Guid.NewGuid();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -109,7 +111,7 @@ namespace System.Reflection.Emit
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
                 generation: 0,
                 moduleName: _metadataBuilder.GetOrAddString(_name),
-                mvid: _metadataBuilder.GetOrAddGuid(Guid.NewGuid()),
+                mvid: _metadataBuilder.GetOrAddGuid(_moduleVersionId),
                 encId: default,
                 encBaseId: default);
 
@@ -195,9 +197,10 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (typeBuilder._interfaceMappings != null)
+            // Even there were no interfaces implemented it could have an override for base type abstract method
+            if (typeBuilder._methodOverrides != null)
             {
-                foreach (List<(MethodInfo ifaceMethod, MethodInfo targetMethod)> mapList in typeBuilder._interfaceMappings.Values)
+                foreach (List<(MethodInfo ifaceMethod, MethodInfo targetMethod)> mapList in typeBuilder._methodOverrides.Values)
                 {
                     foreach ((MethodInfo ifaceMethod, MethodInfo targetMethod) pair in mapList)
                     {
@@ -566,7 +569,7 @@ namespace System.Reflection.Emit
             if (!_assemblyReferences.TryGetValue(assembly, out var handle))
             {
                 AssemblyName aName = assembly.GetName();
-                handle = AddAssemblyReference(aName.Name!, aName.Version, aName.CultureName, aName.GetPublicKeyToken(), aName.Flags, aName.ContentType);
+                handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, aName.GetPublicKeyToken(), aName.Flags, aName.ContentType);
                 _assemblyReferences.Add(assembly, handle);
             }
 
@@ -687,10 +690,10 @@ namespace System.Reflection.Emit
                 name: parameter.Name != null ? _metadataBuilder.GetOrAddString(parameter.Name) : default,
                 sequenceNumber: parameter.Position);
 
-        private AssemblyReferenceHandle AddAssemblyReference(string name, Version? version, string? culture,
+        private AssemblyReferenceHandle AddAssemblyReference(string? name, Version? version, string? culture,
             byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>
             _metadataBuilder.AddAssemblyReference(
-                name: _metadataBuilder.GetOrAddString(name),
+                name: name == null ? default : _metadataBuilder.GetOrAddString(name),
                 version: version ?? new Version(0, 0, 0, 0),
                 culture: (culture == null) ? default : _metadataBuilder.GetOrAddString(value: culture),
                 publicKeyOrToken: (publicKeyToken == null) ? default : _metadataBuilder.GetOrAddBlob(publicKeyToken), // reference has token, not full public key
@@ -744,28 +747,29 @@ namespace System.Reflection.Emit
         public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
         public override Assembly Assembly => _assemblyBuilder;
+        public override Guid ModuleVersionId => _moduleVersionId;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
 
         public override int GetFieldMetadataToken(FieldInfo field)
         {
-            if (field is FieldBuilderImpl fb)
+            if (field is FieldBuilderImpl fb && fb._handle != default)
             {
                 return MetadataTokens.GetToken(fb._handle);
             }
 
-            return field.MetadataToken;
+            return 0;
         }
 
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => throw new NotImplementedException();
 
         public override int GetMethodMetadataToken(MethodInfo method)
         {
-            if (method is MethodBuilderImpl mb)
+            if (method is MethodBuilderImpl mb && mb._handle != default)
             {
                 return MetadataTokens.GetToken(mb._handle);
             }
 
-            return method.MetadataToken;
+            return 0;
         }
 
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));

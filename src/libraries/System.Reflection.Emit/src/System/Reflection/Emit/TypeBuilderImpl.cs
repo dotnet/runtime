@@ -38,7 +38,7 @@ namespace System.Reflection.Emit
         internal readonly List<PropertyBuilderImpl> _propertyDefinitions = new();
         internal readonly List<EventBuilderImpl> _eventDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
-        internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _interfaceMappings;
+        internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _methodOverrides;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
@@ -103,9 +103,9 @@ namespace System.Reflection.Emit
             }
 
             _module.PopulateTypeAndItsMembersTokens(this);
+            ValidateMethods();
             _isCreated = true;
 
-            ValidateMethods();
             if (!IsAbstract)
             {
                 ValidateAllAbstractMethodsAreImplemented();
@@ -128,6 +128,7 @@ namespace System.Reflection.Emit
                     continue;
                 }
 
+                ILGeneratorImpl? body = method.ILGeneratorImpl;
                 if ((methodAttrs & MethodAttributes.Abstract) != 0)
                 {
                     // Check if an abstract method declared on a non-abstract class
@@ -136,12 +137,15 @@ namespace System.Reflection.Emit
                         throw new InvalidOperationException(SR.InvalidOperation_BadTypeAttributesNotAbstract);
                     }
 
-                    ILGeneratorImpl? body = method.ILGeneratorImpl;
                     // If this is an abstract method or an interface should not have body.
                     if (body != null && body.ILOffset > 0)
                     {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, method.Name));
                     }
+                }
+                else if ((body == null || body.ILOffset == 0) && !method._canBeRuntimeImpl)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, method.Name));
                 }
             }
         }
@@ -162,7 +166,7 @@ namespace System.Reflection.Emit
                     {
                         MethodInfo? targetMethod = GetMethodImpl(method.Name, GetBindingFlags(method), null, method.CallingConvention, GetParameterTypes(method.GetParameters()), null);
 
-                        if (targetMethod == null && !FoundInInterfaceMapping(method))
+                        if ((targetMethod == null || targetMethod.IsAbstract) && !FoundInInterfaceMapping(method))
                         {
                             throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, method, FullName));
                         }
@@ -183,17 +187,7 @@ namespace System.Reflection.Emit
                     MethodInfo interfaceMethod = interfaceMethods[i];
                     MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
 
-                    if (implementedMethod == null)
-                    {
-                        Type? parent = _typeParent;
-                        while (parent != null && implementedMethod == null)
-                        {
-                            implementedMethod = parent.GetMethod(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
-                            parent = parent.BaseType;
-                        }
-                    }
-
-                    if (implementedMethod == null && !FoundInInterfaceMapping(interfaceMethod))
+                    if ((implementedMethod == null || implementedMethod.IsAbstract) && !FoundInInterfaceMapping(interfaceMethod))
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, interfaceMethod, FullName));
                     }
@@ -206,12 +200,12 @@ namespace System.Reflection.Emit
 
         private bool FoundInInterfaceMapping(MethodInfo abstractMethod)
         {
-            if (_interfaceMappings == null)
+            if (_methodOverrides == null)
             {
                 return false;
             }
 
-            if (_interfaceMappings.TryGetValue(abstractMethod.DeclaringType!, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? mapping))
+            if (_methodOverrides.TryGetValue(abstractMethod.DeclaringType!, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? mapping))
             {
                 foreach ((MethodInfo ifaceMethod, MethodInfo targetMethod) pair in mapping)
                 {
@@ -369,9 +363,9 @@ namespace System.Reflection.Emit
             Type baseType = methodInfoDeclaration.DeclaringType!;
             ValidateBaseType(baseType, methodInfoDeclaration.Name);
             ValidateImplementedMethod(methodInfoBody, methodInfoDeclaration);
-            _interfaceMappings ??= new();
+            _methodOverrides ??= new();
 
-            if (_interfaceMappings.TryGetValue(baseType, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? im))
+            if (_methodOverrides.TryGetValue(baseType, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? im))
             {
                 if (im.Exists(pair => pair.ifaceMethod.Equals(methodInfoDeclaration)))
                 {
@@ -384,7 +378,7 @@ namespace System.Reflection.Emit
             {
                 im = new List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>();
                 im.Add((methodInfoDeclaration, methodInfoBody));
-                _interfaceMappings.Add(baseType, im);
+                _methodOverrides.Add(baseType, im);
             }
         }
 
@@ -703,11 +697,11 @@ namespace System.Reflection.Emit
             return bindingFlags;
         }
 
-        private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags ctorFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
+        private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             bindingFlags ^= BindingFlags.DeclaredOnly;
 
-            if ((bindingFlags & ctorFlags) != ctorFlags)
+            if ((bindingFlags & methodFlags) != methodFlags)
             {
                 return false;
             }
@@ -725,13 +719,13 @@ namespace System.Reflection.Emit
                 }
             }
 
-            Type[] parameterTypes = method.ParameterTypes ?? EmptyTypes;
-
             if (argumentTypes == null)
             {
-                return parameterTypes.Length == 0;
+                // Not filtering by parameter types
+                return true;
             }
 
+            Type[] parameterTypes = method.ParameterTypes ?? EmptyTypes;
             if (argumentTypes.Length != parameterTypes.Length)
             {
                 return false;
@@ -786,6 +780,11 @@ namespace System.Reflection.Emit
                 }
             }
 
+            if (!bindingAttr.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            {
+                methods.AddRange(_typeParent.GetMethods(bindingAttr));
+            }
+
             return methods.ToArray();
         }
 
@@ -794,17 +793,34 @@ namespace System.Reflection.Emit
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             ThrowIfNotCreated();
-            ArgumentNullException.ThrowIfNull(name);
 
+            MethodInfo? found = null;
             foreach (MethodBuilderImpl method in _methodDefinitions)
             {
                 if (name.Equals(method.Name) && MatchesTheFilter(method, GetBindingFlags(method), bindingAttr, callConvention, types))
                 {
-                    return method;
+                    if (found != null)
+                    {
+                        throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, method.DeclaringType, method.Name));
+                    }
+
+                    found = method;
                 }
             }
 
-            return null;
+            if (found == null && !bindingAttr.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            {
+                if (types == null)
+                {
+                    found = _typeParent.GetMethod(name, bindingAttr);
+                }
+                else
+                {
+                    found = _typeParent.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
+                }
+            }
+
+            return found;
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
@@ -843,39 +859,31 @@ namespace System.Reflection.Emit
             ValidateInterfaceType(interfaceType);
 
             MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            InterfaceMapping im = default;
-            im.InterfaceType = interfaceType;
-            im.TargetType = this;
-            im.InterfaceMethods = new MethodInfo[interfaceMethods.Length];
-            im.TargetMethods = new MethodInfo[interfaceMethods.Length];
+            InterfaceMapping im = new InterfaceMapping
+            {
+                InterfaceType = interfaceType,
+                TargetType = this,
+                InterfaceMethods = new MethodInfo[interfaceMethods.Length],
+                TargetMethods = new MethodInfo[interfaceMethods.Length]
+            };
 
             for (int i = 0; i < interfaceMethods.Length; i++)
             {
                 MethodInfo interfaceMethod = interfaceMethods[i];
                 MethodInfo? targetMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
 
-                if (targetMethod == null)
-                {
-                    Type? parent = _typeParent;
-                    while (parent != null && targetMethod == null)
-                    {
-                        targetMethod = parent.GetMethod(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
-                        parent = parent.BaseType;
-                    }
-                }
-
                 im.InterfaceMethods[i] = interfaceMethod;
                 im.TargetMethods[i] = targetMethod!;
             }
 
-            if (_interfaceMappings == null)
+            if (_methodOverrides == null)
             {
                 return im;
             }
 
             // Add the interface implementations defined with 'DefineMethodOverride',
             // this overrides default implementations if there is any
-            if (_interfaceMappings.TryGetValue(interfaceType, out var mapping))
+            if (_methodOverrides.TryGetValue(interfaceType, out var mapping))
             {
                 for (int i = 0; i < interfaceMethods.Length; i++)
                 {

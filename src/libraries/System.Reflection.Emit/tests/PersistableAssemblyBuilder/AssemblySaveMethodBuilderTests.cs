@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -296,7 +296,7 @@ namespace System.Reflection.Emit.Tests
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
 
             Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl))); // concreteTypeWithAbstractMethod not created
-            type.DefineMethod("M", MethodAttributes.Public, typeof(int), null);
+            type.DefineMethod("M", MethodAttributes.Public, typeof(int), null).GetILGenerator().Emit(OpCodes.Ret);
             type.CreateType();
 
             Assert.Throws<ArgumentNullException>(() => type.GetInterfaceMap(null));
@@ -318,16 +318,19 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void CreateType_ValidateAllAbstractMethodsAreImplemented()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
-            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder typeNotImplementedIfaceMethod, out MethodInfo _);
+            typeNotImplementedIfaceMethod.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
             TypeBuilder partiallyImplementedType = module.DefineType("Type2", TypeAttributes.Public);
             partiallyImplementedType.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
-            partiallyImplementedType.DefineMethod("M2", MethodAttributes.Public, typeof(string), [typeof(int)]);
+            partiallyImplementedType.DefineMethod("M2", MethodAttributes.Public, typeof(string), [typeof(int)]).GetILGenerator().Emit(OpCodes.Ret);
             TypeBuilder baseTypeImplementedTheInterfaceMethod = module.DefineType("Type3", TypeAttributes.Public, parent: typeof(DefineMethodOverrideClass));
+            baseTypeImplementedTheInterfaceMethod.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
+            baseTypeImplementedTheInterfaceMethod.DefineMethod("M2", MethodAttributes.Public, typeof(string), [typeof(int)]).GetILGenerator().Emit(OpCodes.Ret);
             TypeBuilder baseTypePartiallyImplemented = module.DefineType("Type4", TypeAttributes.Public, parent: typeof(PartialImplementation));
+            baseTypePartiallyImplemented.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
 
-            Assert.Throws<TypeLoadException>(() => type.CreateType());
+            Assert.Throws<TypeLoadException>(() => typeNotImplementedIfaceMethod.CreateType());
             Assert.Throws<TypeLoadException>(() => partiallyImplementedType.CreateType());
             baseTypeImplementedTheInterfaceMethod.CreateType(); // succeeds
             Assert.Throws<TypeLoadException>(() => baseTypePartiallyImplemented.CreateType());
@@ -338,20 +341,59 @@ namespace System.Reflection.Emit.Tests
         {
             AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder concreteTypeWithAbstractMethod, out MethodInfo _);
             concreteTypeWithAbstractMethod.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
-
-            Assert.Throws<InvalidOperationException>(() => concreteTypeWithAbstractMethod.CreateType());
+            Assert.Throws<InvalidOperationException>(() => concreteTypeWithAbstractMethod.CreateType()); // Type must be declared abstract if any of its methods are abstract.
 
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
             TypeBuilder abstractType = module.DefineType("AbstractType", TypeAttributes.Public | TypeAttributes.Abstract);
-            MethodBuilder abstractMethod =  abstractType.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
+            MethodBuilder abstractMethod = abstractType.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
             abstractType.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.PinvokeImpl);
-            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator());
+            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator()); 
             abstractType.CreateType(); // succeeds
 
-            TypeBuilder concreteTypeWithAbstractPinvokeMethod = module.DefineType("Type3", TypeAttributes.Public);
-            concreteTypeWithAbstractPinvokeMethod.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.PinvokeImpl);
-            concreteTypeWithAbstractPinvokeMethod.CreateType(); 
+            TypeBuilder concreteTypeWithNativeAndPinvokeMethod = module.DefineType("Type3", TypeAttributes.Public);
+            concreteTypeWithNativeAndPinvokeMethod.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.PinvokeImpl);
+            MethodBuilder dllImportMethod = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("DllImportMethod", MethodAttributes.Public);
+            dllImportMethod.SetCustomAttribute(new CustomAttributeBuilder(typeof(DllImportAttribute).GetConstructor([typeof(string)]), ["kernel32.dll"]));
+            MethodBuilder implFlagsSetMethod = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("InternalCall", MethodAttributes.Public);
+            implFlagsSetMethod.SetImplementationFlags(MethodImplAttributes.InternalCall);
+
+            MethodBuilder methodNeedsIL = concreteTypeWithNativeAndPinvokeMethod.DefineMethod("MethodNeedsIL", MethodAttributes.Public);
+            Assert.Throws<InvalidOperationException>(() => concreteTypeWithNativeAndPinvokeMethod.CreateType()); // Method 'MethodNeedsIL' does not have a method body.
+            methodNeedsIL.GetILGenerator().Emit(OpCodes.Ret);
+            concreteTypeWithNativeAndPinvokeMethod.CreateType(); // succeeds
         }
 
+        [Fact]
+        public void GetMethodsGetMethodImpl_Tests()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            MethodBuilder voidPublicMethod = type.DefineMethod("VoidMethod", MethodAttributes.Public, typeof(void), [typeof(int)]);
+            MethodBuilder voidAssemblyStaticMethod = type.DefineMethod("VoidMethod", MethodAttributes.Assembly | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+            MethodBuilder voidFamilyOrAssemblyMethod = type.DefineMethod("VoidMethod", MethodAttributes.FamORAssem, typeof(void), Type.EmptyTypes);
+            MethodBuilder voidFamilyMethod = type.DefineMethod("VoidMethod", MethodAttributes.Family, typeof(void), [typeof(int), typeof(string)]);
+            MethodBuilder voidPublicMethodOverload = type.DefineMethod("VoidMethod", MethodAttributes.Public, typeof(void), [typeof(int), typeof(long)]);
+
+            voidPublicMethod.GetILGenerator().Emit(OpCodes.Ret);
+            voidAssemblyStaticMethod.GetILGenerator().Emit(OpCodes.Ret);
+            voidFamilyMethod.GetILGenerator().Emit(OpCodes.Ret);
+            voidFamilyOrAssemblyMethod.GetILGenerator().Emit(OpCodes.Ret);
+            voidPublicMethodOverload.GetILGenerator().Emit(OpCodes.Ret);
+            type.CreateType();
+
+            Assert.Equal(8, type.GetMethods().Length);
+            Assert.Equal(5, type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).Length);
+            Assert.Equal(4, type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Length);
+            Assert.Equal(2, type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance).Length);
+            Assert.Equal(2, type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Instance).Length);
+            Assert.Equal(0, type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static).Length);
+            Assert.Equal(1, type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Static).Length);
+            Assert.NotNull(type.GetMethod("VoidMethod", [typeof(int)]));
+            Assert.NotNull(type.GetMethod("VoidMethod", [typeof(int), typeof(long)]));
+            Assert.NotNull(type.GetMethod("VoidMethod", BindingFlags.NonPublic | BindingFlags.Static));
+            Assert.NotNull(type.GetMethod("VoidMethod", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes));
+            Assert.NotNull(type.GetMethod("VoidMethod", BindingFlags.NonPublic | BindingFlags.Instance, [typeof(int), typeof(string)]));
+            Assert.Throws<AmbiguousMatchException>(() => type.GetMethod("VoidMethod"));
+            Assert.Throws<AmbiguousMatchException>(() => type.GetMethod("VoidMethod", BindingFlags.NonPublic | BindingFlags.Instance));
+        }
     }
 }

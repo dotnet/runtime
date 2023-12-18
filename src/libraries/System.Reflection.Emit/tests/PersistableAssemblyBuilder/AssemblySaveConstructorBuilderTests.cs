@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
             {
                 AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
                 ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
-                ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName, CallingConventions.Standard, [typeof(int)]);
+                ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(int)]);
                 constructor2.DefineParameter(1, ParameterAttributes.None, "parameter1");
                 FieldBuilder fieldBuilderA = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
                 ILGenerator il = constructor2.GetILGenerator();
@@ -41,6 +41,10 @@ namespace System.Reflection.Emit.Tests
                     Assert.Equal(constructor, type.GetConstructor(Type.EmptyTypes));
                     Assert.Equal(ctors[0], typeFromDisk.GetConstructor(Type.EmptyTypes));
                     Assert.Equal(ctors[1], typeFromDisk.GetConstructor([mlc.CoreAssembly.GetType("System.Int32")]));
+                    Assert.True(ctors[0].Attributes.HasFlag(MethodAttributes.SpecialName));
+                    Assert.True(ctors[0].Attributes.HasFlag(MethodAttributes.RTSpecialName));
+                    Assert.True(ctors[1].Attributes.HasFlag(MethodAttributes.SpecialName));
+                    Assert.True(ctors[1].Attributes.HasFlag(MethodAttributes.RTSpecialName));
                 }
             }
         }
@@ -62,7 +66,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineDefaultConstructor_GenericParentCreated_Works()
+        public void DefineDefaultConstructor_TypesWithGenericParents()
         {
             using (TempFile file = TempFile.Create())
             {
@@ -72,8 +76,9 @@ namespace System.Reflection.Emit.Tests
                 FieldBuilder field = type.DefineField("TestField", typeof(bool), FieldAttributes.Public | FieldAttributes.Static);
                 ILGenerator constructorILGenerator = constructor.GetILGenerator();
                 constructorILGenerator.Emit(OpCodes.Ldarg_0);
+                constructorILGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes));
                 constructorILGenerator.Emit(OpCodes.Ldc_I4_1);
-                constructorILGenerator.Emit(OpCodes.Stfld, field);
+                constructorILGenerator.Emit(OpCodes.Stsfld, field);
                 constructorILGenerator.Emit(OpCodes.Ret);
                 type.CreateType();
 

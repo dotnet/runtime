@@ -53,7 +53,8 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb1 = module.DefineType("Type1", TypeAttributes.Public | TypeAttributes.SequentialLayout, typeof(object), PackingSize.Size2, 16);
                 tb1.AddInterfaceImplementation(iface1);
                 tb1.AddInterfaceImplementation(typeof(IComparable));
-                tb1.DefineMethod("CompareTo", MethodAttributes.Public, CallingConventions.Standard | CallingConventions.HasThis, typeof(int), [typeof(object)]);
+                tb1.DefineMethod("CompareTo", MethodAttributes.Public, CallingConventions.Standard | CallingConventions.HasThis,
+                    typeof(int), [typeof(object)]).GetILGenerator().Emit(OpCodes.Ret);
                 tb1.SetCustomAttribute(cattrb);
                 tb1.CreateType();
 
@@ -197,20 +198,21 @@ namespace System.Reflection.Emit.Tests
                 propertyb.AddOtherMethod(mbOther);
                 tb_properties.CreateType();
 
-                // Events TODO: not supported yet
-                /*TypeBuilder tbEvents = module.DefineType("typeEvents", TypeAttributes.Public, typeof(object));
-                var mbAdd = tbEvents.DefineMethod("add_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
+                // Events
+                TypeBuilder tbEvents = module.DefineType("TypeEvents", TypeAttributes.Public, typeof(object));
+                var mbAdd = tbEvents.DefineMethod("AddMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
                 mbAdd.GetILGenerator().Emit(OpCodes.Ret);
-                var mbRaise = tbEvents.DefineMethod("raise_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
+                var mbRaise = tbEvents.DefineMethod("RaiseMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
                 mbRaise.GetILGenerator().Emit(OpCodes.Ret);
-                var mbRemove = tbEvents.DefineMethod("remove_method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), new Type[] { });
+                var mbRemove = tbEvents.DefineMethod("RemoveMethod1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
                 mbRemove.GetILGenerator().Emit(OpCodes.Ret);
                 var eventb = tbEvents.DefineEvent("Event1", EventAttributes.SpecialName, typeof(int));
                 eventb.SetCustomAttribute(cattrb);
                 eventb.SetAddOnMethod(mbAdd);
                 eventb.SetRaiseMethod(mbRaise);
                 eventb.SetRemoveOnMethod(mbRemove);
-                tbEvents.CreateType();*/
+                tbEvents.CreateType();
+
                 saveMethod.Invoke(ab, [file.Path]);
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -433,20 +435,20 @@ namespace System.Reflection.Emit.Tests
             CheckCattr(prop.GetCustomAttributesData());
 
             // Events
-            /*var typeEvents = a.GetType("type_events");
+            var typeEvents = a.GetType("TypeEvents");
             var ev = typeEvents.GetEvent("Event1");
             Assert.NotNull(ev);
             var m = ev.AddMethod;
             Assert.NotNull(m);
-            Assert.Equal("add_method1", m.Name);
+            Assert.Equal("AddMethod1", m.Name);
             m = ev.RemoveMethod;
             Assert.NotNull(m);
-            Assert.Equal("remove_method1", m.Name);
+            Assert.Equal("RemoveMethod1", m.Name);
             m = ev.RaiseMethod;
             Assert.NotNull(m);
-            Assert.Equal("raise_method1", m.Name);
+            Assert.Equal("RaiseMethod1", m.Name);
             Assert.Equal(EventAttributes.SpecialName, ev.Attributes);
-            CheckCattr(ev);*/
+            CheckCattr(ev.GetCustomAttributesData());
         }
     }
 }
