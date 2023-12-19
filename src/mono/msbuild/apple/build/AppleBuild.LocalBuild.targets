@@ -87,7 +87,7 @@
           Condition="$([System.String]::Copy('%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)').EndsWith('TestRunner.dll'))"
           Include="%(AppleAssembliesToBundle.FullPath)" />
       <TrimmerRootAssembly
-          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(MainLibraryFileName)'"
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
           Include="%(AppleAssembliesToBundle.FullPath)" />
       <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
           which doesn't exist at the path when BuildTestsOnHelix -->
