@@ -9540,14 +9540,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             if (allocSize <= maxSize)
                             {
+                                ClassLayout* layout = typGetBlkLayout((unsigned)allocSize);
+
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
                                 JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
-                                lvaSetStruct(stackallocAsLocal, typGetBlkLayout((unsigned)allocSize), false);
+                                lvaSetStruct(stackallocAsLocal, layout, false);
                                 lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
                                 op1                                          = gtNewLclVarAddrNode(stackallocAsLocal);
                                 convertedToLocal                             = true;
+
+                                if (info.compInitMem)
+                                {
+                                    // Explicitly zero out the local
+                                    op1 = gtNewOperNode(GT_COMMA, TYP_I_IMPL,
+                                                        gtNewStoreValueNode(layout, op1, gtNewIconNode(0)),
+                                                        gtCloneExpr(op1));
+                                }
 
                                 if (!this->opts.compDbgEnC)
                                 {
