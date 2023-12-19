@@ -79,7 +79,7 @@ emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
 // Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
-unsigned emitOutput_Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
 ssize_t emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
 void emitOutputInstrJumpDistanceHelper(const insGroup* ig,
@@ -101,6 +101,8 @@ static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1
 static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, int imm20);
 static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13);
 static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21);
+
+unsigned code_t emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, unsigned rs2) const;
 
 /************************************************************************/
 /*           Public inline informational methods                        */

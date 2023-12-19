@@ -2112,7 +2112,7 @@ AGAIN:
  *  Emit a 32-bit RISCV64 instruction
  */
 
-unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(sizeof(code_t) == 4);
     memcpy(dst + writeableOffset, &code, sizeof(code_t));
@@ -2270,8 +2270,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
 /*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21)
 {
     static constexpr unsigned kHiSectionMask = 0x3ff; // 0b1111111111
-    static constexpr unsigned kLoSectionMask = 0xff; // 0b11111111
-    static constexpr unsigned kBitMask     = 0x01;
+    static constexpr unsigned kLoSectionMask = 0xff;  // 0b11111111
+    static constexpr unsigned kBitMask       = 0x01;
 
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
@@ -2285,6 +2285,21 @@ static void assertCodeLength(unsigned code, uint8_t size)
 
     return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) |
            (imm20HiBit << 31);
+}
+
+unsigned code_t
+emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, unsigned rs2) const
+{
+#ifdef DEBUG
+    static constexpr unsigned kInstructionMask = 0xfe00707f;
+
+    assert((ins & kInstructionMask) == 0);
+#endif // DEBUG
+
+    unsigned opcode = ins & 0x7f;
+    unsigned funct3 = (ins >> 12) & 0x07;
+    unsigned funct7 = (ins >> 25) & 0x7f;
+    return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7), sizeof(code_t));
 }
 
 void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
