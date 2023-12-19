@@ -170,7 +170,7 @@ inline unsigned genCountBits(uint64_t bits)
 #ifdef TARGET_ARM64
 inline unsigned genCountBits(regMaskTP mask)
 {
-    return genCountBits(mask.low);
+    return regMaskTP::PopCountRegMask(mask);
 }
 #endif
 

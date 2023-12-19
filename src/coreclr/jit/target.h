@@ -218,6 +218,7 @@ typedef unsigned __int64   regMaskSmall;
 struct __regMaskTP
 {
     unsigned __int64 low;
+    unsigned __int64 high;
 
     __regMaskTP() : low(0)
     {
@@ -233,12 +234,16 @@ struct __regMaskTP
 
     FORCEINLINE static uint32_t BitScanForwardRegMask(regMaskTP mask)
     {
+        if (mask.low == 0)
+        {
+            return 32 + BitOperations::BitScanForward(mask.high);
+        }
         return BitOperations::BitScanForward(mask.low);
     }
 
     FORCEINLINE static unsigned PopCountRegMask(regMaskTP mask)
     {
-        return BitOperations::PopCount(mask.low);
+        return BitOperations::PopCount(mask.low) + BitOperations::PopCount(mask.high);
     }
 
     FORCEINLINE operator regMaskTP() const
