@@ -2421,6 +2421,30 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, c
     return distVal;
 }
 
+unsigned emitter::emitOutput_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins)
+{
+    BYTE* const     dstBase = dst;
+    const regNumber reg1    = id->idReg1();
+
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
+
+    if (id->idIsCnsReloc())
+    {
+        *ins = INS_addi;
+    }
+    else
+    {
+        assert(id->idIsDspReloc());
+        *ins = INS_ld;
+    }
+
+    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
+
+    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
+
+    return dst - dstBase;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -2449,23 +2473,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case INS_OPTS_RELOC:
         {
-            const regNumber reg1 = id->idReg1();
-
-            dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
-
-            if (id->idIsCnsReloc())
-            {
-                ins = INS_addi;
-            }
-            else
-            {
-                assert(id->idIsDspReloc());
-                ins = INS_ld;
-            }
-            dst += emitOutput_ITypeInstr(dst, ins, reg1, reg1, 0);
-
-            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
-
+            dst += emitOutput_Rellocation(dst, id, &ins);
             sz = sizeof(instrDesc);
         }
         break;

@@ -109,6 +109,8 @@ unsigned emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm2
 unsigned emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const;
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm21) const;
 
+unsigned emitOutput_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins);
+
 /************************************************************************/
 /*           Public inline informational methods                        */
 /************************************************************************/
