@@ -10,7 +10,10 @@
     <OriginalPublishDir>$([System.IO.Path]::GetFullPath('$(TestRootDir)..\publish\'))</OriginalPublishDir>
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
     <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_TrimApp;$(AppleBuildDependsOn)</AppleBuildDependsOn>
-    <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+    <PublishDir>$(OriginalPublishDir)</PublishDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
@@ -23,9 +26,6 @@
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
-
-    <!-- Forced by ILLink targets -->
-    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
@@ -37,7 +37,7 @@
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
-  <Target Name="_PrepareForAppleBuildAppOnHelix" DependsOnTargets="_PublishRuntimePack">
+  <Target Name="_PrepareForAppleBuildAppOnHelix">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *iOS/tvOS* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
              Importance="High" />
 
@@ -70,6 +70,11 @@
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+      <ManagedAssemblyToLink Include="@(AppleAssembliesToBundle)" >
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
   </Target>
 
   <Target Name="_PublishRuntimePack"
@@ -84,20 +89,12 @@
           DestinationFolder="$(OriginalPublishDir)" />
   </Target>
 
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
-  <Target Name="_TrimApp">
-    <!-- To do: Pass in features that need to be turned on or off -->
-    <ILLink AssemblyPaths="@(AppleAssembliesToBundle)"
-            RootAssemblyNames="@(TrimmerRootAssembly)"
-            RootDescriptorFiles="@(TrimmerRootDescriptor)"
-            OutputDirectory="$(OriginalPublishDir)"
-            ExtraArgs=" --notrimwarn"
-            TrimMode="$(TrimMode)"
-            Warn="5"
-            SingleWarn="true"
-            RemoveSymbols="false">
-      <Output TaskParameter="ExitCode" PropertyName="_ILLinkExitCode" />
-    </ILLink>
+  <Target Name="_TrimApp" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
+    <ItemGroup>
+      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
+      <AppleAssembliesToBundle Include="@(_ResolvedFileToPublishAlways->'$(PublishDir)%(RelativePath)')" />
+      <Delete Files="@(_RemovedManagedAssembly)" />
+    </ItemGroup>
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
