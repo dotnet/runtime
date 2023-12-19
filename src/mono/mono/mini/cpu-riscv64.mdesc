@@ -124,32 +124,37 @@ move_f_to_i8: dest:i src1:f len:4
 move_i8_to_f: dest:f src1:i len:4
 
 iconst: dest:i len:16
-i8const: dest:i len:16
 int_add: dest:i src1:i src2:i len:4
-long_add: dest:i src1:i src2:i len:4
-r4_add: dest:f src1:f src2:f len:4
-float_add: dest:f src1:f src2:f len:4
 int_sub: dest:i src1:i src2:i len:4
-long_sub: dest:i src1:i src2:i len:4
-float_sub: dest:f src1:f src2:f len:4
-float_neg: dest:f src1:f len:4
 int_mul: dest:i src1:i src2:i len:4
-r4_mul: dest:f src1:f src2:f len:4
-long_mul: dest:i src1:i src2:i len:4
-float_mul: dest:f src1:f src2:f len:4
 int_div: dest:i src1:i src2:i len:32
-long_div: dest:i src1:i src2:i len:32
 int_div_un: dest:i src1:i src2:i len:32
-long_div_un: dest:i src1:i src2:i len:32
-r4_div: dest:f src1:f src2:f len:36
-float_div: dest:f src1:f src2:f len:36
 int_rem: dest:i src1:i src2:i len:32
-long_rem: dest:i src1:i src2:i len:32
 int_rem_un: dest:i src1:i src2:i len:32
+
+i8const: dest:i len:16
+long_add: dest:i src1:i src2:i len:4
+long_sub: dest:i src1:i src2:i len:4
+long_mul: dest:i src1:i src2:i len:4
+long_div: dest:i src1:i src2:i len:32
+long_div_un: dest:i src1:i src2:i len:32
+long_rem: dest:i src1:i src2:i len:32
 long_rem_un: dest:i src1:i src2:i len:32
 
-r4const: dest:f len:16
 r8const: dest:f len:16
+float_neg: dest:f src1:f len:4
+float_add: dest:f src1:f src2:f len:4
+float_sub: dest:f src1:f src2:f len:4
+float_mul: dest:f src1:f src2:f len:4
+float_div: dest:f src1:f src2:f len:36
+
+r4const: dest:f len:16
+r4_add: dest:f src1:f src2:f len:4
+r4_sub: dest:f src1:f src2:f len:4
+r4_mul: dest:f src1:f src2:f len:4
+r4_div: dest:f src1:f src2:f len:36
+
+
 int_conv_to_r4: dest:f src1:i len:4
 int_conv_to_r8: dest:f src1:i len:4
 r4_conv_to_i8: dest:i src1:f len:4
@@ -158,14 +163,15 @@ r4_conv_to_i4: dest:i src1:f len:4
 float_conv_to_i4: dest:i src1:f len:4
 float_conv_to_r4: dest:f src1:f len:4
 float_conv_to_i8: dest:i src1:f len:4
-float_ceq: dest:i src1:f src2:f len:4
-float_cle: dest:i src1:f src2:f len:4
-float_clt: dest:i src1:f src2:f len:4
-float_clt_un: dest:i src1:f src2:f len:4
+
 r4_ceq: dest:i src1:f src2:f len:4
 r4_clt: dest:i src1:f src2:f len:4
 r4_clt_un: dest:i src1:f src2:f len:4
 r4_cle: dest:i src1:f src2:f len:4
+float_ceq: dest:i src1:f src2:f len:4
+float_cle: dest:i src1:f src2:f len:4
+float_clt: dest:i src1:f src2:f len:4
+float_clt_un: dest:i src1:f src2:f len:4
 
 add_imm: dest:i src1:i len:4
 int_add_imm: dest:i src1:i len:4

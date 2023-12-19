@@ -1229,6 +1229,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 
 	case OP_FADD:
 	case OP_FSUB:
+	case OP_RSUB:
 	case OP_FDIV:
 	case OP_RDIV:
 	case OP_FMUL:
@@ -1811,6 +1812,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ISUB:
 	case OP_LSUB:
 	case OP_FSUB:
+	case OP_RSUB:
 	case OP_ISUB_IMM:
 	case OP_LSUB_IMM:
 	case OP_ISUB_OVF:
@@ -2260,6 +2262,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISUB:
 		case OP_LSUB:
 		case OP_FSUB:
+		case OP_RSUB:
 		case OP_IADD:
 		case OP_LADD:
 		case OP_IMUL:
@@ -4311,6 +4314,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fsub_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			}
 			break;
+		case OP_RSUB:
+			g_assert (riscv_stdext_f);
+			riscv_fsub_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		}
 		case OP_FNEG:
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
