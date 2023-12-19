@@ -2421,7 +2421,7 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, c
     return distVal;
 }
 
-unsigned emitter::emitOutput_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins)
+BYTE* emitter::emitOutputInstr_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins)
 {
     BYTE* const     dstBase = dst;
     const regNumber reg1    = id->idReg1();
@@ -2442,7 +2442,38 @@ unsigned emitter::emitOutput_Rellocation(BYTE* dst, const instrDesc* id, instruc
 
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
 
-    return dst - dstBase;
+    return dst;
+}
+
+BYTE* emitter::emitOutputInstr_Addi(BYTE* dst, const instrDesc* id)
+{
+    ssize_t         immediate = static_cast<ssize_t>(id->idAddr()->iiaAddr);
+    const regNumber reg1      = id->idReg1();
+
+    switch (id->idCodeSize())
+    {
+        case 8:
+            dst = emitOutputInstr_Addi8(dst, id, immediate, reg1);
+            break;
+    }
+    return dst;
+}
+
+BYTE* emitter::emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
+{
+    if (id->idReg2())
+    {
+        // special for INT64_MAX or UINT32_MAX
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, 0xfff);
+        ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
+        dst += emitOutput_RTypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
+    }
+    else
+    {
+        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, immediate + 0x800);
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, immediate & 0xfff);
+    }
+    return dst;
 }
 
 /*****************************************************************************
@@ -2472,11 +2503,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (insOp)
     {
         case INS_OPTS_RELOC:
-            dst += emitOutput_Rellocation(dst, id, &ins);
-            sz = sizeof(instrDesc);
+            dst = emitOutputInstr_Rellocation(dst, id, &ins);
+            sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_I:
         {
+            ins            = INS_addi;
             ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
             regNumber reg1 = id->idReg1();
 
