@@ -4316,7 +4316,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (riscv_stdext_f);
 			riscv_fsub_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		}
 		case OP_FNEG:
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
