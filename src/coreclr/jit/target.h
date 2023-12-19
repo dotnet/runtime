@@ -213,28 +213,23 @@ enum _regMask_enum : unsigned
 typedef unsigned __int64 regMaskTP;
 #elif defined(TARGET_ARM64)
 typedef struct __regMaskTP regMaskTP;
+typedef unsigned __int64   regMaskSmall;
+
 struct __regMaskTP
 {
     unsigned __int64 low;
 
-    __regMaskTP() : low(0) {}
-    __regMaskTP(unsigned __int64 _low) : low(_low) {}
+    __regMaskTP() : low(0)
+    {
+    }
+    __regMaskTP(unsigned __int64 _low) : low(_low)
+    {
+    }
     //// Move constructor
     //__regMaskTP(__regMaskTP&& other) noexcept
     //{
     //    low      = other.low;
     //}
-
-    //unsigned __int64 operator&(const unsigned __int64& b)
-    //{
-    //    return low & b;
-    //}
-
-    //unsigned __int64 operator&(const regMaskTP& b)
-    //{
-    //    return low & b.low;
-    //}
-
 
     FORCEINLINE static uint32_t BitScanForwardRegMask(regMaskTP mask)
     {
@@ -246,98 +241,6 @@ struct __regMaskTP
         return BitOperations::PopCount(mask.low);
     }
 
-    FORCEINLINE regMaskTP operator&(const unsigned __int64 b) const
-    {
-        regMaskTP result(low & b);
-        return result;
-    }
-
-    FORCEINLINE regMaskTP operator&(const regMaskTP& b) const
-    {
-        regMaskTP result(low & b.low);
-        return result;
-    }
-
-    FORCEINLINE regMaskTP operator|(const unsigned __int64 b) const
-    {
-        regMaskTP result(low | b);
-        return result;
-    }
-    
-    //unsigned __int64 operator|(const regMaskTP& b)
-    //{
-    //    return low | b.low;
-    //}
-
-    FORCEINLINE regMaskTP operator|(const regMaskTP& b) const
-    {
-        regMaskTP result(low | b.low);
-        return result;
-    }
-
-    FORCEINLINE regMaskTP operator<<(const unsigned value) const
-    {
-        regMaskTP result(low << value);
-        return result;
-    }
-
-    FORCEINLINE regMaskTP& operator=(const unsigned __int64& value)
-    {
-        low = value;
-        return *this;
-    }
-
-    FORCEINLINE regMaskTP& operator=(const unsigned& value)
-    {
-        low = value;
-        return *this;
-    }
-
-    FORCEINLINE regMaskTP& operator^=(const regMaskTP& value)
-    {
-        low ^= value.low;
-        return *this;
-    }
-
-    FORCEINLINE regMaskTP& operator&=(const regMaskTP& value)
-    {
-        low &= value.low;
-        return *this;
-    }
-
-    FORCEINLINE regMaskTP& operator|=(const regMaskTP& value)
-    {
-        low |= value.low;
-        return *this;
-    }
-
-    FORCEINLINE regMaskTP& operator<<=(const unsigned value)
-    {
-        low <<= value;
-        return *this;
-    }
-
-    FORCEINLINE bool operator==(const regMaskTP& value) const
-    {
-        return low != value.low;
-    }
-
-    FORCEINLINE bool operator!=(const regMaskTP& value) const
-    {
-        return low != value.low;
-    }
-
-    //FORCEINLINE bool operator||(const regMaskTP& value) const
-    //{
-    //    return low != 0 || value.low != 0;
-    //}
-
-    FORCEINLINE regMaskTP operator~()
-    {
-        regMaskTP result(~low);
-        return result;
-    }
-
     FORCEINLINE operator regMaskTP() const
     {
         return regMaskTP{static_cast<uint64_t>(low)};
@@ -347,10 +250,124 @@ struct __regMaskTP
     {
         return low != 0;
     }
+
+    FORCEINLINE explicit operator regMaskSmall() const
+    {
+        return (regMaskSmall)low;
+    }
+
+    FORCEINLINE explicit operator unsigned int() const
+    {
+        return (unsigned int)low;
+    }
 };
-    //typedef unsigned __int64 regMaskTP;
+// typedef unsigned __int64 regMaskTP;
+FORCEINLINE regMaskTP operator-(const regMaskTP& a, const regMaskTP& b)
+{
+    regMaskTP result(a.low - b.low);
+    return result;
+}
+
+FORCEINLINE regMaskTP operator&(const regMaskTP& a, const regMaskTP& b)
+{
+    regMaskTP result(a.low & b.low);
+    return result;
+}
+
+FORCEINLINE regMaskTP operator|(const regMaskTP& a, const regMaskTP& b)
+{
+    regMaskTP result(a.low | b.low);
+    return result;
+}
+
+FORCEINLINE regMaskTP operator<<(const regMaskTP& a, const regMaskTP& b)
+{
+    regMaskTP result(a.low << b.low);
+    return result;
+}
+
+FORCEINLINE regMaskTP operator|=(regMaskTP& a, const regMaskTP& b)
+{
+    a.low |= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskTP operator-=(regMaskTP& a, const regMaskTP& b)
+{
+    a.low -= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskTP operator^=(regMaskTP& a, const regMaskTP& b)
+{
+    a.low ^= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskSmall operator^=(regMaskSmall& a, const regMaskTP& b)
+{
+    a ^= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskSmall operator&=(regMaskSmall& a, const regMaskTP& b)
+{
+    a &= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskSmall operator|=(regMaskSmall& a, const regMaskTP& b)
+{
+    a |= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskSmall operator-=(regMaskSmall& a, const regMaskTP& b)
+{
+    a -= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskTP operator<<=(regMaskTP& a, const regMaskTP& b)
+{
+    a.low <<= b.low;
+    return a;
+}
+
+FORCEINLINE regMaskTP operator&=(regMaskTP& a, const regMaskTP& b)
+{
+    a.low &= b.low;
+    return a;
+}
+
+// FORCEINLINE regMaskTP operator|=(regMaskTP& a, const regMaskTP& b)
+//{
+//    low <<= value;
+//    return *this;
+//}
+
+FORCEINLINE constexpr bool operator==(const regMaskTP& a, const regMaskTP& b)
+{
+    return a.low == b.low;
+}
+
+FORCEINLINE constexpr bool operator!=(const regMaskTP& a, const regMaskTP& b)
+{
+    return a.low != b.low;
+}
+
+FORCEINLINE constexpr bool operator>(const regMaskTP& a, const regMaskTP& b)
+{
+    return a.low > b.low;
+}
+
+FORCEINLINE regMaskTP operator~(const regMaskTP& a)
+{
+    regMaskTP result(~a.low);
+    return result;
+}
 #else
-typedef unsigned       regMaskTP;
+typedef unsigned regMaskTP;
 #endif
 
 #if REGMASK_BITS == 8
