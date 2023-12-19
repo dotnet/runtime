@@ -55,7 +55,7 @@ public sealed class LogAdapter
         _output?.WriteLine(AutoFormat(s, o));
     }
 
-    public void Info(string code, string message, params object[] args)
+    public void InfoHigh(string code, string message, params object[] args)
     {
         // We use MessageImportance.High to ensure this appears in build output, since
         //  warnaserror makes warnings hard to use

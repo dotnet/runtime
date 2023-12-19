@@ -65,20 +65,20 @@ public class ManagedToNativeGenerator : Task
         }
     }
 
-    private void ExecuteInternal()
+    private void ExecuteInternal(LogAdapter log)
     {
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, Log);
-            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, Log);
+            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log);
+            var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
 
             var resolver = new PathAssemblyResolver(managedAssemblies);
             using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
             foreach (string asmPath in managedAssemblies)
             {
-                Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
+                log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes, and icalls");
                 Assembly asm = mlc.LoadFromAssemblyPath(asmPath);
                 pinvoke.ScanAssembly(asm);
                 icall.ScanAssembly(asm);
@@ -88,7 +88,7 @@ public class ManagedToNativeGenerator : Task
                 pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
                 icall.Generate(IcallOutputPath));
 
-            var m2n = new InterpToNativeGenerator(Log);
+            var m2n = new InterpToNativeGenerator(log);
             m2n.Generate(cookies, InterpToNativeOutputPath);
 
             if (!string.IsNullOrEmpty(CacheFilePath))
