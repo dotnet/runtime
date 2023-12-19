@@ -65,7 +65,7 @@ jobs:
             artifacts/tests/
           key: ${{ runner.os }}-dotnet-cross-build
       - name: Build Tests programs
-        run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
+        run: ./build.sh -mono -Release riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
       - name: Run tests
         run: bash -c ./run.sh Release
