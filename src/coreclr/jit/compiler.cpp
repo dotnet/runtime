@@ -6063,17 +6063,17 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
-    if (TargetOS::IsMacOS)
+    if (TargetOS::IsApplePlatform)
     {
-        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_APPLE);
     }
     else if (TargetOS::IsUnix)
     {
         if (TargetArchitecture::IsX64)
         {
-            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            // Apple x64 uses the Unix jit variant in crossgen2, not a special jit
             info.compMatchedVM =
-                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_APPLE));
         }
         else
         {
@@ -9399,6 +9399,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cLoopPtr,    dLoopPtr       : Display the blocks of a loop, including the trees, given a LoopDsc* (call
  *                                    optPrintLoopInfo()).
  *      cLoops,      dLoops         : Display the loop table (call optPrintLoopTable()).
+ *      cNewLoops,   dNewLoops      : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
+ *                                    Compiler::m_loops.
+ *      cNewLoopsA,  dNewLoopsA     : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
+ *                                    loops arg.
+ *      cNewLoop,    dNewLoop       : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
+ *                                    loop arg.
  *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
  *
  * The following don't require a Compiler* to work:
@@ -9454,6 +9460,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cLoop")
 #pragma comment(linker, "/include:cLoopPtr")
 #pragma comment(linker, "/include:cLoops")
+#pragma comment(linker, "/include:cNewLoops")
+#pragma comment(linker, "/include:cNewLoopsA")
+#pragma comment(linker, "/include:cNewLoop")
 #pragma comment(linker, "/include:cTreeFlags")
 
 // Functions which call the c* functions getting Compiler* using `JitTls::GetCompiler()`
@@ -9479,6 +9488,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dLoop")
 #pragma comment(linker, "/include:dLoopPtr")
 #pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dNewLoops")
+#pragma comment(linker, "/include:dNewLoopsA")
+#pragma comment(linker, "/include:dNewLoop")
 #pragma comment(linker, "/include:dTreeFlags")
 
 // Functions which don't require a Compiler*
@@ -9723,6 +9735,27 @@ JITDBGAPI void __cdecl cLoops(Compiler* comp)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Loops %u\n", sequenceNumber++);
     comp->optPrintLoopTable();
+}
+
+JITDBGAPI void __cdecl cNewLoops(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
+    FlowGraphNaturalLoops::Dump(comp->m_loops);
+}
+
+JITDBGAPI void __cdecl cNewLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    FlowGraphNaturalLoops::Dump(loops);
+}
+
+JITDBGAPI void __cdecl cNewLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    FlowGraphNaturalLoop::Dump(loop);
 }
 
 JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
@@ -10415,6 +10448,21 @@ JITDBGAPI void __cdecl dLoopPtr(const Compiler::LoopDsc* loop)
 JITDBGAPI void __cdecl dLoops()
 {
     cLoops(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dNewLoops()
+{
+    cNewLoops(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dNewLoopsA(FlowGraphNaturalLoops* loops)
+{
+    cNewLoopsA(JitTls::GetCompiler(), loops);
+}
+
+JITDBGAPI void __cdecl dNewLoop(FlowGraphNaturalLoop* loop)
+{
+    cNewLoop(JitTls::GetCompiler(), loop);
 }
 
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
