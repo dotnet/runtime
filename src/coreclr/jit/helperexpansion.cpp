@@ -438,7 +438,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    // Always expand for NativeAOT, see
+    // Always expand for NativeAOT
     const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
     if (!isNativeAOT && opts.OptimizationDisabled())
     {

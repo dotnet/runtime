@@ -3868,7 +3868,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 }
 
                 op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
-
                 if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
                     (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
                      pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE))

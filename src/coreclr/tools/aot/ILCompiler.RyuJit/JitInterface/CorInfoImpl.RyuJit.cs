@@ -2051,6 +2051,7 @@ namespace Internal.JitInterface
             CORINFO_FIELD_ACCESSOR fieldAccessor;
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
             uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
+
             if (field.IsThreadStatic && field.OwningType is MetadataType mt)
             {
                 fieldOffset += _compilation.NodeFactory.ThreadStaticBaseOffset(mt);
@@ -2155,8 +2156,8 @@ namespace Internal.JitInterface
                             }
                         }
 
-                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
+                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
                     else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                     {
