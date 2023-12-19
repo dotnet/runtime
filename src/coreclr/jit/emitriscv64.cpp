@@ -2304,7 +2304,7 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd,
     unsigned opcode  = insCode & kInstructionOpcodeMask;
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
     unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 25;
-    return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7), sizeof(code_t));
+    return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7));
 }
 
 unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const
@@ -2318,7 +2318,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd,
     unsigned insCode = emitInsCode(ins);
     unsigned opcode  = insCode & kInstructionOpcodeMask;
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, imm12), sizeof(code_t));
+    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, imm12));
 }
 
 unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm12) const
@@ -2332,13 +2332,13 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1
     unsigned insCode = emitInsCode(ins);
     unsigned opcode  = insCode & kInstructionOpcodeMask;
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2, imm12), sizeof(code_t));
+    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2, imm12));
 }
 
 unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm20) const
 {
     unsigned insCode = emitInsCode(ins);
-    return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, rd, imm20), sizeof(code_t));
+    return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, rd, imm20));
 }
 
 unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const
@@ -2352,13 +2352,13 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1
     unsigned insCode = emitInsCode(ins);
     unsigned opcode  = insCode & kInstructionOpcodeMask;
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13), sizeof(code_t));
+    return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13));
 }
 
 unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm21) const
 {
     unsigned insCode = emitInsCode(ins);
-    return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21), sizeof(code_t));
+    return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21));
 }
 
 void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
