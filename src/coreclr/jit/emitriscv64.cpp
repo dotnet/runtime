@@ -2307,7 +2307,7 @@ emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned
     return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7), sizeof(code_t));
 }
 
-unsigned code_t emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const
+unsigned code_t emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const
 {
 #ifdef DEBUG
     static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
@@ -2318,6 +2318,19 @@ unsigned code_t emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, u
     unsigned opcode = ins & kInstructionOpcodeMask;
     unsigned funct3 = (ins & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, imm12), sizeof(code_t));
+}
+
+unsigned code_t emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm12) const
+{
+#ifdef DEBUG
+    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+
+    assert((ins & kInstructionMask) == 0);
+#endif // DEBUG
+
+    unsigned opcode = ins & kInstructionOpcodeMask;
+    unsigned funct3 = (ins & kInstructionFunct3Mask) >> 12;
+    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2, imm12), sizeof(code_t));
 }
 
 void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
