@@ -588,6 +588,16 @@ mono_class_create_from_typedef_at_level (MonoImage *image, guint32 type_token, M
 		enable_gclass_recording ();
 	}
 
+	/* we have to set the ready level to EXACT_PARENT relatively early while still holding the
+	 * loader lock so that certain recursive uses will bail at the EXACT_PARENT check early
+	 * after we took the loader lock - we don't want to get stuck in an infinite loop
+	 * initializing interfaces or generic param constraints.
+	 *
+	 * But after we set the level, we still have some more initialization to do while holding
+	 * the loader lock.
+	 */
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
+
 	if (cols [MONO_TYPEDEF_EXTENDS]) {
 		MonoClass *tmp;
 		guint32 parent_token = mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]);
@@ -600,6 +610,8 @@ mono_class_create_from_typedef_at_level (MonoImage *image, guint32 type_token, M
 			klass->_byval_arg.data.klass = klass;
 			klass->_byval_arg.type = MONO_TYPE_CLASS;
 		}
+
+
 		parent = mono_class_get_checked (image, parent_token, error);
 		if (parent && context) /* Always inflate */
 			parent = mono_class_inflate_generic_class_checked (parent, context, error);
@@ -692,16 +704,6 @@ mono_class_create_from_typedef_at_level (MonoImage *image, guint32 type_token, M
 				break;
 		}
 	}
-
-	/* we have to set the ready level to EXACT_PARENT relatively early while still holding the
-	 * loader lock so that certain recursive uses will bail at the EXACT_PARENT check early
-	 * after we took the loader lock - we don't want to get stuck in an infinite loop
-	 * initializing interfaces or generic param constraints.
-	 *
-	 * But after we set the level, we still have some more initialization to do while holding
-         * the loader lock.
-	 */
-	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 
 	if (!klass->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (
@@ -979,13 +981,19 @@ MonoClass*
 mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassReady max_ready_level)
 {
 	MonoClass *klass, *gklass;
+	gboolean allocate_class = TRUE;
 
-	if (gclass->cached_class)
-		return gclass->cached_class;
+	if (gclass->cached_class) {
+		klass = gclass->cached_class;
+		allocate_class = FALSE;
+		if (m_class_ready_level_at_least (klass, max_ready_level))
+			return klass;
+	}
 
-	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: allow lesser load levels
-	
-	klass = (MonoClass *)mono_mem_manager_alloc0 ((MonoMemoryManager*)gclass->owner, sizeof (MonoClassGenericInst));
+	MonoMemoryManager *memory_manager = (MonoMemoryManager*)gclass->owner;
+
+	if (allocate_class)
+		klass = (MonoClass *)mono_mem_manager_alloc0 (memory_manager, sizeof (MonoClassGenericInst));
 
 	gklass = gclass->container_class;
 
@@ -1008,15 +1016,46 @@ mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassRead
 	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
 	klass->this_arg.byref__ = TRUE;
-	klass->is_inlinearray = gklass->is_inlinearray;
-	klass->inlinearray_value = gklass->inlinearray_value;
+
+	if (allocate_class) {
+		mono_mem_manager_lock (memory_manager);
+
+		if (gclass->cached_class) {
+			klass = gclass->cached_class;
+		} else {
+			mono_memory_barrier ();
+			gclass->cached_class = klass;
+		}
+		mono_mem_manager_unlock (memory_manager);
+	}
+
+	/* from this point on, klass is possibly shared */
+
+	if (max_ready_level == MONO_CLASS_READY_BAREBONES) {
+		return klass;
+	}
+	
+	mono_class_init_to_ready_level (gklass, MONO_CLASS_READY_APPROX_PARENT);
+
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
+	// FIXME: preload - verify that all this stuff is in the same readiness level as the typedef gklass
+
 	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT); // FIXME: is this true?
+
+	if (max_ready_level == MONO_CLASS_READY_APPROX_PARENT)
+		return klass;
+
+	mono_class_init_to_ready_level (gklass, MONO_CLASS_READY_EXACT_PARENT);
+
+	mono_loader_lock ();
 
 	if (mono_get_runtime_callbacks ()->init_class)
 		mono_get_runtime_callbacks ()->init_class (klass);
+
+	klass->is_inlinearray = gklass->is_inlinearray;
+	klass->inlinearray_value = gklass->inlinearray_value;
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
@@ -1057,12 +1096,6 @@ mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassRead
 		}
 	}
 
-	mono_loader_lock ();
-
-	if (gclass->cached_class) {
-		mono_loader_unlock ();
-		return gclass->cached_class;
-	}
 
 	if (record_gclass_instantiation > 0)
 		gclass_recorded_list = g_slist_append (gclass_recorded_list, klass);
@@ -1080,7 +1113,6 @@ mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassRead
 		mono_class_setup_supertypes (klass);
 
 	mono_memory_barrier ();
-	gclass->cached_class = klass;
 
 	MONO_PROFILER_RAISE (class_loaded, (klass));
 
@@ -1156,6 +1188,35 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	return mono_class_create_bounded_array_at_level (eclass, rank, bounded, MONO_CLASS_READY_EXACT_PARENT);
 	
 }
+
+static void
+array_cache_lock (MonoMemoryManager *mm, MonoImage *image, gboolean szarray)
+{
+	if (mm) {
+		mono_mem_manager_lock (mm);
+	} else {
+		if (szarray) {
+			mono_os_mutex_lock (&image->szarray_cache_lock);
+		} else {
+			mono_image_lock (image);
+		}
+	}
+}
+
+static void
+array_cache_unlock (MonoMemoryManager *mm, MonoImage *image, gboolean szarray)
+{
+	if (mm) {
+		mono_mem_manager_unlock (mm);
+	} else {
+		if (szarray) {
+			mono_os_mutex_unlock (&image->szarray_cache_lock);
+		} else {
+			mono_image_unlock (image);
+		}
+	}
+}
+
 MonoClass *
 mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gboolean bounded, MonoClassReady max_ready_level)
 {
@@ -1166,41 +1227,38 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 	size_t nsize;
 	char *name;
 	MonoMemoryManager *mm;
+	gboolean alloc_class = TRUE;
 
 	if (rank > 1)
 		/* bounded only matters for one-dimensional arrays */
 		bounded = FALSE;
 
+	gboolean is_szarray = rank == 1 && !bounded;
+	
 	image = eclass->image;
-
-	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: allow other ready levels
 
 	// FIXME: Optimize this
 	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)eclass->class_kind) ? mono_metadata_get_mem_manager_for_class (eclass) : NULL;
 	/* Check cache */
 	cached = NULL;
-	if (rank == 1 && !bounded) {
+	array_cache_lock (mm, image, is_szarray);
+	if (is_szarray) {
 		if (mm) {
-			mono_mem_manager_lock (mm);
 			if (!mm->szarray_cache)
 				mm->szarray_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
 			cached = (MonoClass *)g_hash_table_lookup (mm->szarray_cache, eclass);
-			mono_mem_manager_unlock (mm);
 		} else {
 			/*
 			 * This case is very frequent not just during compilation because of calls
 			 * from mono_class_from_mono_type_internal (), mono_array_new (),
 			 * Array:CreateInstance (), etc, so use a separate cache + a separate lock.
 			 */
-			mono_os_mutex_lock (&image->szarray_cache_lock);
 			if (!image->szarray_cache)
 				image->szarray_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 			cached = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
-			mono_os_mutex_unlock (&image->szarray_cache_lock);
 		}
 	} else {
 		if (mm) {
-			mono_mem_manager_lock (mm);
 			if (!mm->array_cache)
 				mm->array_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
 			rootlist = (GSList *)g_hash_table_lookup (mm->array_cache, eclass);
@@ -1211,9 +1269,7 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 					break;
 				}
 			}
-			mono_mem_manager_unlock (mm);
 		} else {
-			mono_loader_lock ();
 			if (!image->array_cache)
 				image->array_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 			rootlist = (GSList *)g_hash_table_lookup (image->array_cache, eclass);
@@ -1224,17 +1280,22 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 					break;
 				}
 			}
-			mono_loader_unlock ();
 		}
 	}
-	if (cached)
+	array_cache_unlock (mm, image, is_szarray);
+	if (cached) {
+		alloc_class = FALSE;
+	}
+
+	if (cached && m_class_ready_level_at_least (cached, max_ready_level))
 		return cached;
 
 	parent = mono_defaults.array_class;
-	if (!m_class_ready_level_at_least (parent, MONO_CLASS_READY_INITED)) // FIXME: is a lower readiness sufficient?
-		mono_class_init_internal (parent);
-
-	klass = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassArray)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
+	if (alloc_class) {
+		klass = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassArray)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
+	} else {
+		klass = cached;
+	}
 
 	klass->image = image;
 	klass->name_space = eclass->name_space;
@@ -1242,29 +1303,108 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 
 	nsize = strlen (eclass->name);
 	int maxrank = MIN (rank, 32);
-	name = (char *)g_malloc (nsize + 2 + maxrank + 1);
-	memcpy (name, eclass->name, nsize);
-	name [nsize] = '[';
-	if (maxrank > 1)
-		memset (name + nsize + 1, ',', maxrank - 1);
-	if (bounded)
-		name [nsize + maxrank] = '*';
-	name [nsize + maxrank + bounded] = ']';
-	name [nsize + maxrank + bounded + 1] = 0;
-	klass->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
-	g_free (name);
+	if (alloc_class) {
+		name = (char *)g_malloc (nsize + 2 + maxrank + 1);
+		memcpy (name, eclass->name, nsize);
+		name [nsize] = '[';
+		if (maxrank > 1)
+			memset (name + nsize + 1, ',', maxrank - 1);
+		if (bounded)
+			name [nsize + maxrank] = '*';
+		name [nsize + maxrank + bounded] = ']';
+		name [nsize + maxrank + bounded + 1] = 0;
+		klass->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
+		g_free (name);
+	}
 
 	klass->type_token = 0;
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
 	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
+
+	if (alloc_class) {
+		if ((rank > 1) || bounded) {
+			MonoArrayType *at = mm ? (MonoArrayType *)mono_mem_manager_alloc0 (mm, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));
+			klass->_byval_arg.type = MONO_TYPE_ARRAY;
+			klass->_byval_arg.data.array = at;
+			at->eklass = eclass;
+			at->rank = GUINT32_TO_UINT8 (rank);
+			/* FIXME: complete.... */
+		} else {
+			klass->_byval_arg.type = MONO_TYPE_SZARRAY;
+			klass->_byval_arg.data.klass = eclass;
+		}
+		klass->this_arg = klass->_byval_arg;
+		klass->this_arg.byref__ = 1;
+	}
+
+	if (alloc_class) {
+		array_cache_lock (mm, image, is_szarray);
+		/* Check cache again */
+		cached = NULL;
+		if (is_szarray) {
+			if (mm) {
+				cached = (MonoClass *)g_hash_table_lookup (mm->szarray_cache, eclass);
+			} else {
+				cached = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
+			}
+		} else {
+			if (mm) {
+				rootlist = (GSList *)g_hash_table_lookup (mm->array_cache, eclass);
+				for (list = rootlist; list; list = list->next) {
+					k = (MonoClass *)list->data;
+					if ((m_class_get_rank (k) == rank) && (m_class_get_byval_arg (k)->type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
+						cached = k;
+						break;
+					}
+				}
+			} else {
+				rootlist = (GSList *)g_hash_table_lookup (image->array_cache, eclass);
+				for (list = rootlist; list; list = list->next) {
+					k = (MonoClass *)list->data;
+					if ((m_class_get_rank (k) == rank) && (m_class_get_byval_arg (k)->type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
+						cached = k;
+						break;
+					}
+				}
+			}
+		}
+		// someone else published it, abandon ours and use the published one, otherwise add ours to the cache
+		if (cached) {
+			klass = cached;
+		} else {
+			if (is_szarray) {
+				if (mm) {
+					g_hash_table_insert (mm->szarray_cache, eclass, klass);
+				} else {
+					g_hash_table_insert (image->szarray_cache, eclass, klass);
+				}
+			} else {
+				if (mm) {
+					list = g_slist_append (rootlist, klass);
+					g_hash_table_insert (mm->array_cache, eclass, list);
+				} else {
+					list = g_slist_append (rootlist, klass);
+					g_hash_table_insert (image->array_cache, eclass, list);
+				}
+			}
+		}
+		array_cache_unlock (mm, image, is_szarray);
+	}
+
+	// klass is shared from this point on
+
+	if (max_ready_level == MONO_CLASS_READY_BAREBONES)
+		return klass;
+	
 	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
 
 	// FIXME: preload - only go past here if we need more initialization
+	if (m_class_ready_level_at_least (klass, max_ready_level))
+		return klass;
 
-	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
-
+	mono_class_init_to_ready_level (eclass, MONO_CLASS_READY_EXACT_PARENT);
 
 	if (MONO_TYPE_IS_VOID (m_class_get_byval_arg (eclass))) {
 		mono_class_set_type_load_failure (klass, "Arrays of System.Void types are invalid.");
@@ -1284,18 +1424,22 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 	} else
 		klass->sizes.element_size = -1;
 
+	if (!m_class_ready_level_at_least (parent, MONO_CLASS_READY_APPROX_PARENT)) // FIXME: is a lower readiness sufficient?
+		mono_class_init_internal (parent);
+
+
 	mono_class_setup_supertypes (klass);
 
-	// NOTE: this is probably too aggressive if eclass is not a valuetype.  It looks like we
-	// only need the size info in order to set MonoClass:has_references for this array type -
+	// We only need the size info in order to set MonoClass:has_references for this array type -
 	// and for that we only need to setup the fields of the element type if it's not a reference
 	// type.
-	if (!eclass->size_inited)
+	gboolean valuetype_elt = !MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass));
+	if (valuetype_elt && !eclass->size_inited)
 		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
 	/*FIXME we fail the array type, but we have to let other fields be set.*/
 
-	klass->has_references = MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass)) || m_class_has_references (eclass)? TRUE: FALSE;
+	klass->has_references = !valuetype_elt || m_class_has_references (eclass) ? TRUE : FALSE;
 
 	if (eclass->enumtype)
 		klass->cast_class = eclass->element_class;
@@ -1303,20 +1447,6 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 		klass->cast_class = eclass;
 
 	class_composite_fixup_cast_class (klass, FALSE);
-
-	if ((rank > 1) || bounded) {
-		MonoArrayType *at = mm ? (MonoArrayType *)mono_mem_manager_alloc0 (mm, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));
-		klass->_byval_arg.type = MONO_TYPE_ARRAY;
-		klass->_byval_arg.data.array = at;
-		at->eklass = eclass;
-		at->rank = GUINT32_TO_UINT8 (rank);
-		/* FIXME: complete.... */
-	} else {
-		klass->_byval_arg.type = MONO_TYPE_SZARRAY;
-		klass->_byval_arg.data.klass = eclass;
-	}
-	klass->this_arg = klass->_byval_arg;
-	klass->this_arg.byref__ = 1;
 
 	if (rank > 32) {
 		ERROR_DECL (prepared_error);
@@ -1329,72 +1459,13 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 
 	mono_loader_lock ();
 
-	/* Check cache again */
-	cached = NULL;
-	if (rank == 1 && !bounded) {
-		if (mm) {
-			mono_mem_manager_lock (mm);
-			cached = (MonoClass *)g_hash_table_lookup (mm->szarray_cache, eclass);
-			mono_mem_manager_unlock (mm);
-		} else {
-			mono_os_mutex_lock (&image->szarray_cache_lock);
-			cached = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
-			mono_os_mutex_unlock (&image->szarray_cache_lock);
-		}
-	} else {
-		if (mm) {
-			mono_mem_manager_lock (mm);
-			rootlist = (GSList *)g_hash_table_lookup (mm->array_cache, eclass);
-			for (list = rootlist; list; list = list->next) {
-				k = (MonoClass *)list->data;
-				if ((m_class_get_rank (k) == rank) && (m_class_get_byval_arg (k)->type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
-					cached = k;
-					break;
-				}
-			}
-			mono_mem_manager_unlock (mm);
-		} else {
-			rootlist = (GSList *)g_hash_table_lookup (image->array_cache, eclass);
-			for (list = rootlist; list; list = list->next) {
-				k = (MonoClass *)list->data;
-				if ((m_class_get_rank (k) == rank) && (m_class_get_byval_arg (k)->type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
-					cached = k;
-					break;
-				}
-			}
-		}
-	}
-	if (cached) {
-		mono_loader_unlock ();
-		return cached;
-	}
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
 	UnlockedAdd (&classes_size, sizeof (MonoClassArray));
 	++class_array_count;
 
-	if (rank == 1 && !bounded) {
-		if (mm) {
-			mono_mem_manager_lock (mm);
-			g_hash_table_insert (mm->szarray_cache, eclass, klass);
-			mono_mem_manager_unlock (mm);
-		} else {
-			mono_os_mutex_lock (&image->szarray_cache_lock);
-			g_hash_table_insert (image->szarray_cache, eclass, klass);
-			mono_os_mutex_unlock (&image->szarray_cache_lock);
-		}
-	} else {
-		if (mm) {
-			mono_mem_manager_lock (mm);
-			list = g_slist_append (rootlist, klass);
-			g_hash_table_insert (mm->array_cache, eclass, list);
-			mono_mem_manager_unlock (mm);
-		} else {
-			list = g_slist_append (rootlist, klass);
-			g_hash_table_insert (image->array_cache, eclass, list);
-		}
-	}
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT);
 
 	mono_loader_unlock ();
 
@@ -3082,16 +3153,7 @@ mono_class_init_internal (MonoClass *klass)
 	if (!m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
 		if (mono_class_has_failure (klass))
 			return FALSE;
-		int class_kind = m_class_get_class_kind (klass);
-		/* only typedefs are partially ready - all the other classes go to full init. */
-		g_assert(class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD);
-		MonoImage *image = m_class_get_image (klass);
-		uint32_t token = m_class_get_type_token (klass);
-		ERROR_DECL (reinit_error);
-		MonoClass *reinited_class = mono_class_create_from_typedef (image, token, reinit_error);
-		/* FIXME: can we fail to reinit? */
-		mono_error_assert_ok (reinit_error);
-		g_assert (reinited_class == klass);
+		mono_class_init_to_ready_level (klass, MONO_CLASS_READY_EXACT_PARENT);
 	}
 	g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT));
 
@@ -4364,14 +4426,24 @@ mono_class_init_to_ready_level (MonoClass *klass, MonoClassReady ready_level)
 		g_assert (klass2 == klass);
 		break;
 	}
-	case MONO_CLASS_ARRAY:
-		g_assert_not_reached (); // TODO
+	case MONO_CLASS_ARRAY: {
+		int rank = m_class_get_rank (klass);
+		gboolean bounded = m_class_get_byval_arg (klass)->type != MONO_TYPE_SZARRAY;
+		MonoClass *eclass = m_class_get_element_class (klass);
+		MonoClass *klass2 = mono_class_create_bounded_array_at_level (eclass, rank, bounded, ready_level);
+		g_assert (klass2 == klass);
+		break;
+	}
 	case MONO_CLASS_GPARAM:
 		g_assert_not_reached (); // TODO
 	case MONO_CLASS_POINTER:
 		g_assert_not_reached (); // TODO
-	case MONO_CLASS_GINST:
-		g_assert_not_reached (); // TODO
+	case MONO_CLASS_GINST: {
+		MonoGenericClass *generic_class = m_class_get_byval_arg (klass)->data.generic_class;
+		MonoClass *klass2 = mono_class_create_generic_inst_at_level (generic_class, ready_level);
+		g_assert (klass2 == klass);
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}

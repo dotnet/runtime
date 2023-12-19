@@ -193,19 +193,17 @@ preload_visit_classkind (MonoClass *klass)
 		preload_visit_classdef (klass);
 		break;
 	case MONO_CLASS_GINST:
-		// generic insts are created on demand by mono_class_create_generic_inst with at
-                // least EXACT_PARENT readiness
-		g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT));
+		if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT))
+			break;
+		preload_visit_type_and_cmods (m_class_get_image (klass), m_class_get_byval_arg (klass));
 		break;
 	case MONO_CLASS_GPARAM:
 		// don't expect to do anything - the MonoGenericContainer constraints should've been
 		// visited in the class def.
 		break;
 	case MONO_CLASS_ARRAY:
-		// assumption: mono_class_create_array_type always inits the array to at least
-		// EXACT_PARENT, and it sets m_class_get_byval_arg(klass) so that we can get the
+		// assumption: mono_class_create_array_type always sets m_class_get_byval_arg(klass) at BAREBONES, so that we can get the
 		// element type from byval_arg
-		g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT));
 		g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (klass)->type == MONO_TYPE_ARRAY);
 		preload_visit_type_and_cmods (m_class_get_image (klass), m_class_get_byval_arg (klass));
 		break;
@@ -664,12 +662,10 @@ static void
 preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class)
 {
 	if (generic_class->cached_class) {
-		/* if there's a cached MonoClass, for this generic instance, assume we must have
-                   initialized it to at least EXACT_PARENT state.  That is what
-                   mono_class_create_generic_inst does. */
-		/* FIXME: preload: but that won't be what happens after mono_class_create_generic_at_level... */
-		g_assert (m_class_ready_level_at_least (generic_class->cached_class, MONO_CLASS_READY_EXACT_PARENT));
-		return;
+		/* if there's a cached MonoClass, for this generic instance, see if it's already
+                   sufficiently initialized. */
+		if (m_class_ready_level_at_least (generic_class->cached_class, MONO_CLASS_READY_EXACT_PARENT)) // FIXME: preload: APPROX_PARENT should be good enough
+			return;
 	}
 
 	MonoClass *gtd = generic_class->container_class;

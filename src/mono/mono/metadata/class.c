@@ -790,7 +790,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inflated)
 			return type;
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.klass = mono_class_from_mono_type_internal (inflated);
+		nt->data.klass = mono_class_from_mono_type_at_level (inflated, MONO_CLASS_READY_BAREBONES);
 		mono_metadata_free_type (inflated);
 		return nt;
 	}
@@ -802,7 +802,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inflated)
 			return type;
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.array->eklass = mono_class_from_mono_type_internal (inflated);
+		nt->data.array->eklass = mono_class_from_mono_type_at_level (inflated, MONO_CLASS_READY_BAREBONES);
 		mono_metadata_free_type (inflated);
 		return nt;
 	}
