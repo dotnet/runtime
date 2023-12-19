@@ -220,10 +220,10 @@ struct __regMaskTP
     unsigned __int64 low;
     unsigned __int64 high;
 
-    __regMaskTP() : low(0)
+    __regMaskTP() : low(0), high(0)
     {
     }
-    __regMaskTP(unsigned __int64 _low) : low(_low)
+    __regMaskTP(unsigned __int64 _low, unsigned __int64 _high = 0) : low(_low), high(_high)
     {
     }
     //// Move constructor
@@ -253,53 +253,57 @@ struct __regMaskTP
 
     FORCEINLINE explicit operator bool() const
     {
-        return low != 0;
+        return low != 0 && high != 0;
     }
 
     FORCEINLINE explicit operator regMaskSmall() const
     {
+        assert(high == 0);
         return (regMaskSmall)low;
     }
 
     FORCEINLINE explicit operator unsigned int() const
     {
+        assert(high == 0);
         return (unsigned int)low;
     }
 };
 // typedef unsigned __int64 regMaskTP;
 FORCEINLINE regMaskTP operator-(const regMaskTP& a, const regMaskTP& b)
 {
-    regMaskTP result(a.low - b.low);
+    regMaskTP result(a.low - b.low, a.high - b.high);
     return result;
 }
 
 FORCEINLINE regMaskTP operator&(const regMaskTP& a, const regMaskTP& b)
 {
-    regMaskTP result(a.low & b.low);
+    regMaskTP result(a.low & b.low, a.high & b.high);
     return result;
 }
 
 FORCEINLINE regMaskTP operator|(const regMaskTP& a, const regMaskTP& b)
 {
-    regMaskTP result(a.low | b.low);
+    regMaskTP result(a.low | b.low, a.high | b.high);
     return result;
 }
 
 FORCEINLINE regMaskTP operator<<(const regMaskTP& a, const regMaskTP& b)
 {
-    regMaskTP result(a.low << b.low);
+    regMaskTP result(a.low << b.low, a.high << b.high);
     return result;
 }
 
 FORCEINLINE regMaskTP operator|=(regMaskTP& a, const regMaskTP& b)
 {
     a.low |= b.low;
+    a.high |= b.high;
     return a;
 }
 
 FORCEINLINE regMaskTP operator-=(regMaskTP& a, const regMaskTP& b)
 {
     a.low -= b.low;
+    a.high -= b.high;
     return a;
 }
 
@@ -311,24 +315,28 @@ FORCEINLINE regMaskTP operator^=(regMaskTP& a, const regMaskTP& b)
 
 FORCEINLINE regMaskSmall operator^=(regMaskSmall& a, const regMaskTP& b)
 {
+    assert(b.high == 0);
     a ^= b.low;
     return a;
 }
 
 FORCEINLINE regMaskSmall operator&=(regMaskSmall& a, const regMaskTP& b)
 {
+    assert(b.high == 0);
     a &= b.low;
     return a;
 }
 
 FORCEINLINE regMaskSmall operator|=(regMaskSmall& a, const regMaskTP& b)
 {
+    assert(b.high == 0);
     a |= b.low;
     return a;
 }
 
 FORCEINLINE regMaskSmall operator-=(regMaskSmall& a, const regMaskTP& b)
 {
+    assert(b.high == 0);
     a -= b.low;
     return a;
 }
@@ -336,12 +344,14 @@ FORCEINLINE regMaskSmall operator-=(regMaskSmall& a, const regMaskTP& b)
 FORCEINLINE regMaskTP operator<<=(regMaskTP& a, const regMaskTP& b)
 {
     a.low <<= b.low;
+    a.high <<= b.high;
     return a;
 }
 
 FORCEINLINE regMaskTP operator&=(regMaskTP& a, const regMaskTP& b)
 {
     a.low &= b.low;
+    a.high &= b.high;
     return a;
 }
 
@@ -353,22 +363,22 @@ FORCEINLINE regMaskTP operator&=(regMaskTP& a, const regMaskTP& b)
 
 FORCEINLINE constexpr bool operator==(const regMaskTP& a, const regMaskTP& b)
 {
-    return a.low == b.low;
+    return (a.low == b.low) && (a.high == b.high);
 }
 
 FORCEINLINE constexpr bool operator!=(const regMaskTP& a, const regMaskTP& b)
 {
-    return a.low != b.low;
+    return (a.low != b.low) || (a.high != b.high);
 }
 
 FORCEINLINE constexpr bool operator>(const regMaskTP& a, const regMaskTP& b)
 {
-    return a.low > b.low;
+    return (a.low > b.low) && (a.high > b.high);
 }
 
 FORCEINLINE regMaskTP operator~(const regMaskTP& a)
 {
-    regMaskTP result(~a.low);
+    regMaskTP result(~a.low, ~a.high);
     return result;
 }
 #else
