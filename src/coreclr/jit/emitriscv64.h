@@ -102,11 +102,12 @@ static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, int imm20);
 static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13);
 static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21);
 
-unsigned code_t emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, unsigned rs2) const;
-unsigned code_t emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const;
-unsigned code_t emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm12) const;
-unsigned code_t emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm20) const;
-unsigned code_t emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const;
+unsigned emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, unsigned rs2) const;
+unsigned emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const;
+unsigned emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm12) const;
+unsigned emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm20) const;
+unsigned emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const;
+unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm21) const;
 
 /************************************************************************/
 /*           Public inline informational methods                        */
