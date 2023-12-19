@@ -66,6 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var jse = cpy as JSException;
                 if (jse != null && jse.jsException != null)
                 {
+                    ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
 #if FEATURE_WASM_THREADS
                     JSObject.AssertThreadAffinity(value);
                     var ctx = jse.jsException.ProxyContext;
@@ -76,11 +77,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else if (slot.ContextHandle != ctx.ContextHandle)
                     {
-                        Environment.FailFast("ContextHandle mismatch");
+                        Environment.FailFast($"ContextHandle mismatch, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                     }
 #endif
                     // this is JSException roundtrip
-                    ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
                     slot.Type = MarshalerType.JSException;
                     slot.JSHandle = jse.jsException.JSHandle;
                 }

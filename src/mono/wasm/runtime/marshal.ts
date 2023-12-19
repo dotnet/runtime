@@ -26,9 +26,7 @@ export function alloc_stack_frame(size: number): JSMarshalerArguments {
     const bytes = JavaScriptMarshalerArgSize * size;
     const args = Module.stackAlloc(bytes) as any;
     _zero_region(args, bytes);
-    if (MonoWasmThreads) {
-        set_args_context(args);
-    }
+    set_args_context(args);
     return args;
 }
 
@@ -44,6 +42,7 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
 }
 
 export function set_args_context(args: JSMarshalerArguments): void {
+    if (!MonoWasmThreads) return;
     mono_assert(args, "Null args");
     const exc = get_arg(args, 0);
     const res = get_arg(args, 1);
@@ -264,6 +263,7 @@ export function get_arg_js_handle(arg: JSMarshalerArgument): JSHandle {
 }
 
 export function set_arg_proxy_context(arg: JSMarshalerArgument): void {
+    if (!MonoWasmThreads) return;
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 16, <any>runtimeHelpers.proxy_context_gc_handle);
 }
@@ -271,7 +271,7 @@ export function set_arg_proxy_context(arg: JSMarshalerArgument): void {
 export function set_js_handle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 4, <any>jsHandle);
-    if (MonoWasmThreads) set_arg_proxy_context(arg);
+    set_arg_proxy_context(arg);
 }
 
 export function get_arg_gc_handle(arg: JSMarshalerArgument): GCHandle {
@@ -282,7 +282,7 @@ export function get_arg_gc_handle(arg: JSMarshalerArgument): GCHandle {
 export function set_gc_handle(arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 4, <any>gcHandle);
-    if (MonoWasmThreads) set_arg_proxy_context(arg);
+    set_arg_proxy_context(arg);
 }
 
 export function get_string_root(arg: JSMarshalerArgument): WasmRoot<MonoString> {

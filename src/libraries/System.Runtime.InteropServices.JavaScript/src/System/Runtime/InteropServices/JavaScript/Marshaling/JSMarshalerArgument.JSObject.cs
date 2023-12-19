@@ -40,6 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
+                ObjectDisposedException.ThrowIf(value.IsDisposed, value);
 #if FEATURE_WASM_THREADS
                 JSObject.AssertThreadAffinity(value);
                 var ctx = value.ProxyContext;
@@ -50,10 +51,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else if (slot.ContextHandle != ctx.ContextHandle)
                 {
-                    Environment.FailFast("ContextHandle mismatch");
+                    Environment.FailFast($"ContextHandle mismatch, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
 #endif
-                ObjectDisposedException.ThrowIf(value.IsDisposed, value);
                 slot.Type = MarshalerType.JSObject;
                 slot.JSHandle = value.JSHandle;
             }

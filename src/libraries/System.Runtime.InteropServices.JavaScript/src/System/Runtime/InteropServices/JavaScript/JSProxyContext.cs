@@ -90,7 +90,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [ThreadStatic]
         private static JSProxyContext? _CapturedOperationContext;
+        [ThreadStatic]
         private static JSImportOperationState _CapturingState;
+
         public static JSImportOperationState CapturingState => _CapturingState;
 
         // there will be call to JS from JSImport generated code, but we don't know which target thread yet
@@ -118,8 +120,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (_CapturingState != JSImportOperationState.JSImportParams)
             {
-                Environment.FailFast("Not in JSImport capturing phase");
-                //throw new InvalidOperationException("Not in JSImport capturing phase");
+                Environment.FailFast($"Method only allowed during JSImport capturing phase, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
             }
             _CapturingState = JSImportOperationState.None;
             var capturedOperationContext = _CapturedOperationContext;
@@ -146,7 +147,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (_CapturingState != JSImportOperationState.JSImportParams)
             {
-                Environment.FailFast("CaptureContextFromParameter state mismatch");
+                Environment.FailFast($"Method only allowed during JSImport capturing phase, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
             }
 
             var capturedContext = _CapturedOperationContext;
@@ -159,7 +160,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 _CapturedOperationContext = null;
                 _CapturingState = JSImportOperationState.None;
-                throw new InvalidOperationException("All JSObject proxies need to have same thread affinity");
+                throw new InvalidOperationException("All JSObject proxies need to have same thread affinity. See https://aka.ms/dotnet-JS-interop-threads");
             }
         }
 
@@ -186,7 +187,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_CapturingState != JSImportOperationState.JSImportParams)
                 {
-                    throw new InvalidOperationException("Not in capturing phase of a JSImport");
+                    Environment.FailFast($"Method only allowed during JSImport capturing phase, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
                 var capturedOperationContext = _CapturedOperationContext;
                 if (capturedOperationContext != null)
@@ -360,14 +361,16 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     handle.Free();
                 }
+                holder.IsDisposed = true;
             }
         }
 
         public unsafe void ReleaseJSOwnedObjectByGCHandle(nint gcHandle)
         {
-            PromiseHolder? holder = null;
+            ToManagedCallback? holderCallback = null;
             lock (this)
             {
+                PromiseHolder? holder = null;
                 if (IsGCVHandle(gcHandle))
                 {
                     if (!ThreadJsOwnedHolders.Remove(gcHandle, out holder))
@@ -392,11 +395,13 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     handle.Free();
                 }
+                if (holder != null)
+                {
+                    holderCallback = holder.Callback;
+                    holder.IsDisposed = true;
+                }
             }
-            if (holder != null)
-            {
-                holder.Callback!(null);
-            }
+            holderCallback?.Invoke(null);
         }
 
         public JSObject CreateCSOwnedProxy(nint jsHandle)
@@ -425,7 +430,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             if (!ctx.IsCurrentThread())
             {
-                throw new InvalidOperationException("ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy");
+                throw new InvalidOperationException($"ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy. ManagedThreadId: {Environment.CurrentManagedThreadId} JSHandle: {proxy.JSHandle}");
             }
 #endif
             lock (ctx)
@@ -439,7 +444,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var jsHandle = proxy.JSHandle;
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
-                    throw new InvalidOperationException("ReleaseCSOwnedObject expected to find registration for " + jsHandle);
+                    Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 };
                 if (!skipJS)
                 {
@@ -526,7 +531,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (!_isDisposed)
                 {
 #if FEATURE_WASM_THREADS
-                    if (!IsCurrentThread()) throw new InvalidOperationException("JSProxyContext must be disposed on the thread which owns it.");
+                    if (!IsCurrentThread())
+                    {
+                        Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                    }
                     ((GCHandle)ContextHandle).Free();
 #endif
 

@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public readonly nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
             public JSProxyContext ProxyContext;
+            public bool IsDisposed;
 #if FEATURE_WASM_THREADS
             public ManualResetEventSlim? CallbackReady;
 #endif

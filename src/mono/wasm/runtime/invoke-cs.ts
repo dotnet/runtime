@@ -356,9 +356,7 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
     assert_bindings();
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
-        if (MonoWasmThreads) {
-            set_args_context(args);
-        }
+        set_args_context(args);
         const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
         if (fail) runtimeHelpers.abort("ERR24: Unexpected error: " + monoStringToString(fail_root));
         if (is_args_exception(args)) {

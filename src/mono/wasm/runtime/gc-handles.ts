@@ -98,6 +98,7 @@ export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
     }
 }
 
+// note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
 export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {

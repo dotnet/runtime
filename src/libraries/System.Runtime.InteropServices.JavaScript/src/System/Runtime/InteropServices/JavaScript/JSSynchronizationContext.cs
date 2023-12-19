@@ -97,7 +97,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var workItem = new WorkItem(d, state, null);
             if (!Queue.Writer.TryWrite(workItem))
-                Environment.FailFast("JSSynchronizationContext.Post failed");
+                Environment.FailFast($"JSSynchronizationContext.Post failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
         }
 
         // This path can only run when threading is enabled
@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 var workItem = new WorkItem(d, state, signal);
                 if (!Queue.Writer.TryWrite(workItem))
-                    Environment.FailFast("JSSynchronizationContext.Send failed");
+                    Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
 
                 signal.Wait();
             }

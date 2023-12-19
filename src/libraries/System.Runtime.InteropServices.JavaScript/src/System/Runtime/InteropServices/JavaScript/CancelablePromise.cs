@@ -22,20 +22,24 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-
-#if FEATURE_WASM_THREADS
-            if (holder.ProxyContext.IsCurrentThread())
+#if !FEATURE_WASM_THREADS
+            if (holder.IsDisposed)
             {
-                _CancelPromise(holder.GCHandle);
                 return;
             }
-
+            _CancelPromise(holder.GCHandle);
+#else
             holder.ProxyContext.SynchronizationContext.Post(static (object? h) =>
             {
                 var holder = (JSHostImplementation.PromiseHolder)h!;
-#endif
+                lock (holder.ProxyContext)
+                {
+                    if (holder.IsDisposed)
+                    {
+                        return;
+                    }
+                }
                 _CancelPromise(holder.GCHandle);
-#if FEATURE_WASM_THREADS
             }, holder);
 #endif
         }
@@ -50,23 +54,27 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-
-#if FEATURE_WASM_THREADS
-            if (holder.ProxyContext.IsCurrentThread())
+#if !FEATURE_WASM_THREADS
+            if (holder.IsDisposed)
             {
-                _CancelPromise(holder.GCHandle);
-                callback.Invoke(state);
                 return;
             }
-
-            holder.ProxyContext.SynchronizationContext.Post((object? h) =>
+            _CancelPromise(holder.GCHandle);
+            callback.Invoke(state);
+#else
+            holder.ProxyContext.SynchronizationContext.Post(_ =>
             {
-                var holder = (JSHostImplementation.PromiseHolder)h!;
-#endif
+                lock (holder.ProxyContext)
+                {
+                    if (holder.IsDisposed)
+                    {
+                        return;
+                    }
+                }
+
                 _CancelPromise(holder.GCHandle);
                 callback.Invoke(state);
-#if FEATURE_WASM_THREADS
-            }, holder);
+            }, null);
 #endif
         }
     }

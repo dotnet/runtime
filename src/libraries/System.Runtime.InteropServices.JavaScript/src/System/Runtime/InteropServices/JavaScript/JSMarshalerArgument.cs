@@ -106,8 +106,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var proxyContextGCHandle = (GCHandle)slot.ContextHandle;
                 if (proxyContextGCHandle == default)
                 {
-                    // throw new InvalidOperationException("ContextHandle not set");
-                    Environment.FailFast("ToManagedContext: ContextHandle not set");
+                    Environment.FailFast($"ContextHandle not set, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
                 var argumentContext = (JSProxyContext)proxyContextGCHandle.Target!;
                 return argumentContext;
@@ -135,8 +134,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var proxyContextGCHandle = slot.ContextHandle;
                 if (proxyContextGCHandle == IntPtr.Zero)
                 {
-                    Environment.FailFast("ToJSContext: ContextHandle not set");
-                    //throw new InvalidOperationException("ContextHandle was not set");
+                    Environment.FailFast($"ContextHandle not set, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
                 var argumentContext = (JSProxyContext)((GCHandle)proxyContextGCHandle).Target!;
                 return argumentContext;
@@ -155,13 +153,11 @@ namespace System.Runtime.InteropServices.JavaScript
             var currentThreadContext = JSProxyContext.CurrentThreadContext;
             if (currentThreadContext == null)
             {
-                // must be called on thread with JS interop
-                Environment.FailFast(Environment.StackTrace);
+                Environment.FailFast($"Must be called on same thread with JS interop, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
             }
             if (slot.ContextHandle != currentThreadContext.ContextHandle)
             {
-                // must be called on same thread which created the stack frame
-                Environment.FailFast(Environment.StackTrace);
+                Environment.FailFast($"Must be called on same thread which created the stack frame, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
             }
             return currentThreadContext;
 #endif
