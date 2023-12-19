@@ -4530,11 +4530,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // Convert BBJ_CALLFINALLY/BBJ_ALWAYS pairs to BBJ_CALLFINALLY/BBJ_CALLFINALLYRET.
-    // Temporary: eventually, do this immediately in impImportLeave
-    //
-    DoPhase(this, PHASE_UPDATE_CALLFINALLY, &Compiler::fgUpdateCallFinally);
-
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))

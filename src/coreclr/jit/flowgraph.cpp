@@ -614,44 +614,6 @@ PhaseStatus Compiler::fgImport()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-//------------------------------------------------------------------------
-// fgUpdateCallFinally: For BBJ_CALLFINALLY/BBJ_ALWAYS pairs, replace BBJ_ALWAYS with BBJ_CALLFINALLYRET.
-//
-// This should be temporary. Later, fix impImportLeave to do this directly.
-//
-// Returns:
-//    phase status
-//
-PhaseStatus Compiler::fgUpdateCallFinally()
-{
-    if (info.compXcptnsCount == 0)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            // There are no ret-less callfinally yet (this is run early), so there must be a matching
-            // BBJ_ALWAYS block.
-            BasicBlock* blockAlways = block->Next();
-            assert(blockAlways != nullptr);
-            assert(blockAlways->KindIs(BBJ_ALWAYS));
-            assert(blockAlways->isEmpty());
-            assert(blockAlways->HasFlag(BBF_KEEP_BBJ_ALWAYS));
-
-            blockAlways->SetKind(BBJ_CALLFINALLYRET);
-            blockAlways->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
-
-            JITDUMP("Replaced BBJ_ALWAYS " FMT_BB " of BBJ_CALLFINALLY " FMT_BB " pair with BBJ_CALLFINALLYRET.\n",
-                    blockAlways->bbNum, block->bbNum);
-        }
-    }
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
 /*****************************************************************************
  * This function returns true if tree is a node with a call
  * that unconditionally throws an exception

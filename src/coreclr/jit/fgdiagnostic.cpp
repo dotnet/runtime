@@ -2776,9 +2776,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // block that does a local call to the finally. This BBJ_CALLFINALLYRET is within
     // the try region protected by the finally (for x86), but that's ok.
     BasicBlock* prevBlock = block->Prev();
-    // TODO-Quirk: the BBJ_ALWAYS below is a quirk, until fgUpdateCallFinally is removed
-    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) &&
-        blockPred->KindIs(BBJ_EHFINALLYRET))
+    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_CALLFINALLYRET) && blockPred->KindIs(BBJ_EHFINALLYRET))
     {
         return true;
     }
