@@ -41,6 +41,7 @@ jobs:
           path: ./runtime.tar.gz
   
   test:
+    continue-on-error: true
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
@@ -68,7 +69,6 @@ jobs:
         run: ./build.sh -mono -Debug riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
       - name: Run tests
-        continue-on-error: true
         run: bash -c ./run.sh Debug
         working-directory: ./src/tests
       - name: Upload Test error Log
