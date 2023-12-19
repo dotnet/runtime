@@ -24,11 +24,12 @@ jobs:
             artifacts/
           key: ${{ runner.os }}-dotnet-cross-build
           
+      - name: Cross Build Libs & host
+        run: ./build.sh libs -c Release --cross --arch riscv64 --ci
+
       - name: Cross Build Mono
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
-        run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
-      - name: Cross Build Libs & host
-        run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
+        run: ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ci
 
       - name: compress files
         run: tar -zcf runtime.tar.gz ./.dotnet ./artifacts
