@@ -31,7 +31,7 @@ jobs:
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
 
       - name: compress files
-        run: tar -zcf runtime.tar.gz ./* 
+        run: tar -zcf runtime.tar.gz ./.dotnet ./artifacts
       # upload entire project
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
@@ -47,14 +47,17 @@ jobs:
       env:
         ROOTFS_DIR: /crossrootfs/riscv64
         QEMU_LD_PREFIX: /crossrootfs/riscv64
+        CORE_ROOT: /crossrootfs/riscv64
     needs: cross-build
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
           name: runtime.tar.gz
       - name: Decompress
-        run: tar -zxf runtime.tar.gz -C ./ 
+        run: tar -zxf runtime.tar.gz -C ./
       - name: Cache
         uses: actions/cache@v2
         with:
