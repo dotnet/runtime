@@ -15,6 +15,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+       # cache
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .dotnet/
+            artifacts/
+          key: ${{ runner.os }}-dotnet-cross-build
+          
       - name: Cross Build Mono
       # ./build.sh mono+libs+host+clr.hosts -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
         run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
@@ -23,20 +32,15 @@ jobs:
       - name: Build Tests programs
         run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
-      # cache
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            .dotnet/
-            artifacts/
-          key: ${{ runner.os }}-dotnet-cross-build
+
+      - name: compress files
+        run: tar -zcvf runtime.tar.gz ./* 
       # upload entire project
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: jit-riscv64
-          path: ./
+          path: ./runtime.tar.gz
   
   test:
     continue-on-error: true
@@ -52,6 +56,8 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: jit-riscv64
+      - name: Decompress
+        run: tar -zxvf runtime.tar.gz ./* 
       - name: Cache
         uses: actions/cache@v2
         with:
