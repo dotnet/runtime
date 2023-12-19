@@ -1584,6 +1584,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
+    // Caller has no "init locals" flag, but callee does? Propagate the flag up.
+    info.compInitMem |= InlineeCompiler->info.compInitMem;
+
 #ifdef TARGET_ARM64
     info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
 #endif
