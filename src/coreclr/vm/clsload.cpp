@@ -3583,11 +3583,12 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
+    SArray<EEClassHashEntry_t *> exportedEntries;
 
     AddExportedTypeHaveLock(
         pManifestModule,
         cl,
-        NULL,
+        &exportedEntries,
         pamTracker);
 }
 
@@ -3630,7 +3631,7 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
     {
         COUNT_T exportedEntryIndex = RidFromToken(mdImpl) - 1;
         _ASSERTE(RidFromToken(mdImpl) < RidFromToken(cl));
-        if (exportedEntries != NULL && exportedEntries->GetCount() > exportedEntryIndex)
+        if (exportedEntries->GetCount() > exportedEntryIndex)
         {
             pEncloser = (*exportedEntries)[exportedEntryIndex];
         }
@@ -3669,11 +3670,11 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
     }
 
     insertedEntry = InsertValue(pClassHash, pClassCaseInsHash, pszNameSpace, pszName, EEClassHashTable::CompressClassDef(cl), pEncloser, pamTracker);
+
     _ASSERTE(insertedEntry != NULL);
-    if (exportedEntries != NULL)
+    COUNT_T exportedEntryIndex = RidFromToken(cl) - 1;
+    if (classEntryIndex < exportedEntries->GetCount())
     {
-        COUNT_T exportedEntryIndex = RidFromToken(cl) - 1;
-        _ASSERTE(exportedEntryIndex < exportedEntries->GetCount());
         (*exportedEntries)[exportedEntryIndex] = insertedEntry;
     }
 }

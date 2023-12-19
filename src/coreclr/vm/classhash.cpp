@@ -233,10 +233,10 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         _ASSERTE(!(IsCaseInsensitiveTable() && FORBIDGC_LOADER_USE_ENABLED()));
 #endif
 
-        // cqb - If IsCaseInsensitiveTable() is true for the hash table, the bytes in Key will be allocated
-        // from cqb. This is to prevent wasting bytes in the Loader Heap. Thusly, it is important to note that
-        // in this case, the lifetime of Key is bounded by the lifetime of cqb, which will free the memory
-        // it allocated on destruction.
+        // If IsCaseInsensitiveTable() is true for the hash table, strings passed to the ConstructKeyCallback instance
+        // will be dynamically allocated. This is to prevent wasting bytes in the Loader Heap. Thusly, it is important 
+        // to note that in this case, the lifetime of Key is bounded by the lifetime of the single call to UseKeys, and
+        // will be freed when that function returns.
 
         _ASSERTE(m_pModule != NULL);
         LPSTR        pszName = NULL;
