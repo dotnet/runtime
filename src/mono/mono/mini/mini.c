@@ -3795,6 +3795,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
 		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
+		if (cfg->init_method_rgctx_ins_load) {
+			cfg->init_method_rgctx_ins_load->opcode = OP_PCONST;
+			cfg->init_method_rgctx_ins_load->inst_p0 = GINT_TO_POINTER (0x1);
+			MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_load);
+		}
 
 		/*
 		 * Avoid creating rgctx trampolines when calling this method.
