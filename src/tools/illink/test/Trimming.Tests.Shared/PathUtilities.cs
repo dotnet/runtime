@@ -11,16 +11,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public static class PathUtilities
 	{
-		public static string GetTestsSourceRootDirectory([CallerFilePath] string? thisFile = null) =>
+		public static string TFMDirectoryName => (string)AppContext.GetData("Mono.Linker.Tests.TargetFramework")!;
+
+		public static string GetTestsSourceRootDirectory([CallerFilePath]string? thisFile = null) =>
 			Path.GetFullPath((string)AppContext.GetData("Mono.Linker.Tests.LinkerTestDir")!);
 
 		public static string GetTestAssemblyRoot(string assemblyName)
 		{
 			string artifactsBinDirectory = (string)AppContext.GetData("Mono.Linker.Tests.ArtifactsBinDir")!;
 			string configuration = (string)AppContext.GetData("Mono.Linker.Tests.Configuration")!;
-			string targetFramework = (string)AppContext.GetData("Mono.Linker.Tests.TargetFramework")!;
 
-			return Path.GetFullPath(Path.Combine(artifactsBinDirectory, assemblyName, configuration, targetFramework));
+			return Path.GetFullPath(Path.Combine(artifactsBinDirectory, assemblyName, configuration, TFMDirectoryName));
 		}
 	}
 }
