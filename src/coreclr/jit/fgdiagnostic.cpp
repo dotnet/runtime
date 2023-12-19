@@ -2492,12 +2492,12 @@ void Compiler::fgDispBasicBlocks(bool dumpTrees)
 // fgDumpStmtTree: dump the statement and the basic block number.
 //
 // Arguments:
-//    stmt  - the statement to dump;
-//    bbNum - the basic block number to dump.
+//    block - the basic block that contains the statement to dump.
+//    stmt  - the statement to dump.
 //
-void Compiler::fgDumpStmtTree(Statement* stmt, unsigned bbNum)
+void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 {
-    printf("\n***** " FMT_BB "\n", bbNum);
+    printf("\n***** %s\n", block->dspToString());
     gtDispStmt(stmt);
 }
 
@@ -2521,7 +2521,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     {
         for (Statement* const stmt : block->Statements())
         {
-            fgDumpStmtTree(stmt, block->bbNum);
+            fgDumpStmtTree(block, stmt);
         }
     }
     else
