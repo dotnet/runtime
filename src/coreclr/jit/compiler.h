@@ -5208,8 +5208,6 @@ public:
 
     PhaseStatus fgImport();
 
-    PhaseStatus fgUpdateCallFinally();
-
     PhaseStatus fgTransformIndirectCalls();
 
     PhaseStatus fgTransformPatchpoints();
