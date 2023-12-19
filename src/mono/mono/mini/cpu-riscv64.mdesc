@@ -77,9 +77,9 @@ lcall_reg: dest:a src1:i len:4 clob:c
 lcall_membase: dest:a src1:b len:8 clob:c
 
 tailcall_parameter: len:24
-tailcall: len:24 clob:c
-tailcall_membase: src1:b len:24 clob:c
-tailcall_reg: src1:b len:24 clob:c
+tailcall: len:60 clob:c
+tailcall_membase: src1:b len:60 clob:c
+tailcall_reg: src1:b len:60 clob:c
 
 store_membase_reg: dest:b src1:i len:24
 storei1_membase_reg: dest:b src1:i len:24
