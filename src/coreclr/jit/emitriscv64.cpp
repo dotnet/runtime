@@ -2269,7 +2269,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
 
 /*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21)
 {
-    static constexpr unsigned kSectionMask = 0x3ff; // 0b1111111111
+    static constexpr unsigned kHiSectionMask = 0x3ff; // 0b1111111111
+    static constexpr unsigned kLoSectionMask = 0xff; // 0b11111111
     static constexpr unsigned kBitMask     = 0x01;
 
     assertCodeLength(opcode, 7);
@@ -2277,9 +2278,9 @@ static void assertCodeLength(unsigned code, uint8_t size)
     isValidSimm21(imm21);
 
     unsigned imm20          = imm21 >> 1;
-    unsigned imm20HiSection = imm20 & kSectionMask;
+    unsigned imm20HiSection = imm20 & kHiSectionMask;
     unsigned imm20HiBit     = (imm20 >> 19) & kBitMask;
-    unsigned imm20LoSection = (imm20 >> 11) & kSectionMask;
+    unsigned imm20LoSection = (imm20 >> 11) & kLoSectionMask;
     unsigned imm20LoBit     = (imm20 >> 10) & kBitMask;
 
     return opcode | (rd << 7) | (imm20LoSection << 12) | (imm20LoBit << 20) | (imm20HiSection << 21) |
