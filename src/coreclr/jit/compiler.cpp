@@ -5483,8 +5483,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump that won't be removed
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->CanRemoveJumpToNext(this))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
