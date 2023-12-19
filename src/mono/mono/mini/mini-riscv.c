@@ -1845,6 +1845,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LNEG:
 
 	case OP_ICONV_TO_I4:
+	case OP_ICONV_TO_OVF_I4:
 	case OP_ICONV_TO_U4:
 	case OP_ICONV_TO_I8:
 	case OP_ICONV_TO_U8:
@@ -2448,6 +2449,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			ins->sreg1 = temp->dreg;
 			goto loop_start;
+		}
+		case OP_RCONV_TO_R4: {
+			if (ins->dreg != ins->sreg1)
+				ins->opcode = OP_RMOVE;
+			else
+				NULLIFY_INS (ins);
+			break;
 		}
 		case OP_RCOMPARE: {
 			if (ins->next) {
