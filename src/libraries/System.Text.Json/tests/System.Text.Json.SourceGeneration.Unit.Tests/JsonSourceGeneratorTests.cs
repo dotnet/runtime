@@ -770,10 +770,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
 
-// Enable once test harness is updated to be able to reference C# 12.
-#if false
-
-        [Fact]
+        [Fact(Skip = "Enable once test harness is updated to be able to reference C# 12.")]
         public static void NoCrashWithNonNameUsingAlias()
         {
             string source = $$"""
@@ -804,7 +801,5 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp12));
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
-
-#endif
     }
 }
