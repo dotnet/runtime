@@ -554,10 +554,9 @@ namespace System.Reflection.Runtime.General
         //
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle customAttributeHandle,
                                                    MetadataReader reader,
-                                                   string ns,
+                                                   ReadOnlySpan<string> namespaceParts,
                                                    string name)
         {
-            string[] namespaceParts = ns.Split('.');
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
             if (handleType == HandleType.TypeDefinition)
@@ -612,7 +611,7 @@ namespace System.Reflection.Runtime.General
         public static string ToNamespaceName(this NamespaceDefinitionHandle namespaceDefinitionHandle, MetadataReader reader)
         {
             string ns = "";
-            for (;;)
+            for (; ; )
             {
                 NamespaceDefinition currentNamespaceDefinition = namespaceDefinitionHandle.GetNamespaceDefinition(reader);
                 string name = currentNamespaceDefinition.Name.GetStringOrNull(reader);
@@ -702,7 +701,7 @@ namespace System.Reflection.Runtime.General
         {
             StringBuilder fullName = new StringBuilder(64);
             NamespaceReference namespaceReference;
-            for (;;)
+            for (; ; )
             {
                 namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                 string namespacePart = namespaceReference.Name.GetStringOrNull(reader);

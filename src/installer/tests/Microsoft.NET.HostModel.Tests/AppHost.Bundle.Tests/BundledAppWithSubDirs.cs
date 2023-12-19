@@ -12,7 +12,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs : BundleTestBase, IClassFixture<BundledAppWithSubDirs.SharedTestState>
+    public class BundledAppWithSubDirs : IClassFixture<BundledAppWithSubDirs.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -23,7 +23,7 @@ namespace AppHost.Bundle.Tests
 
         private void RunTheApp(string path, bool selfContained)
         {
-            RunTheApp(path, selfContained ? null : RepoDirectoriesProvider.Default.BuiltDotnet)
+            RunTheApp(path, selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
@@ -63,7 +63,7 @@ namespace AppHost.Bundle.Tests
             using (new TestArtifact(dotnetWithMockHostFxr))
             {
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();
@@ -93,14 +93,14 @@ namespace AppHost.Bundle.Tests
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrBundleVersionFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrBundleVersionFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(5, 0, 0));
                 var dotnet = dotnetBuilder.Build();
 
                 Command command = Command.Create(singleFile)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
                     .MultilevelLookup(false)
                     .Start();
 
@@ -179,7 +179,7 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile, selfContained: true);
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
             public SingleFileTestApp SelfContainedApp { get; }

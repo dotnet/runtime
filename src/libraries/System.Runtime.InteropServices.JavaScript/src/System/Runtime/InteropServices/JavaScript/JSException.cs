@@ -47,7 +47,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
 #if FEATURE_WASM_THREADS
-                if (jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                var currentTID = JSSynchronizationContext.CurrentJSSynchronizationContext?.TargetTID;
+                if (jsException.OwnerTID != currentTID)
                 {
                     return bs;
                 }

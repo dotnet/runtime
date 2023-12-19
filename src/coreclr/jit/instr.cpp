@@ -840,7 +840,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     assert(varTypeIsFloating(simdBaseType));
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT, GT_LEA))
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CNS_INT, GT_LEA))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
@@ -925,9 +925,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 offset = addr->AsLclFld()->GetLclOffs();
                 break;
             }
-
-            case GT_CLS_VAR_ADDR:
-                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
 
             default:
                 return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);

@@ -171,11 +171,8 @@ internal class ChromeProvider : WasmHostProvider
     {
         string str = $"--headless --disable-gpu --lang={lang} --incognito --remote-debugging-port={port}";
         // `/.dockerenv` - is to check if this is running in a codespace
-        if (File.Exists("/.dockerenv"))
-        {
-            Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
+        if (DebuggerTestBase.IsRunningInContainer)
             str = "--no-sandbox " + str;
-        }
         return str;
     }
 }

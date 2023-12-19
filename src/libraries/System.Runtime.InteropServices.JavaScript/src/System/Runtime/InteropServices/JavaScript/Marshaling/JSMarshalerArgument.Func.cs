@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_exception.Initialize();
                 args_return.Initialize();
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
 
         }
@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_return.Initialize();
                 Arg1Marshaler(ref args_arg1, arg1);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -238,7 +238,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_exception.Initialize();
                 args_return.Initialize();
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -274,7 +274,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 args_return.Initialize();
                 Arg1Marshaler(ref args_arg1, arg1);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -313,7 +313,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -356,7 +356,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;

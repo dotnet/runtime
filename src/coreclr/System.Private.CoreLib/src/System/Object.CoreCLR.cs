@@ -17,7 +17,7 @@ namespace System
         // so that other object may only call this method on themselves.  It is intended to
         // support the ICloneable interface.
         [Intrinsic]
-        protected unsafe object MemberwiseClone()
+        protected internal unsafe object MemberwiseClone()
         {
             object clone = RuntimeHelpers.AllocateUninitializedClone(this);
 

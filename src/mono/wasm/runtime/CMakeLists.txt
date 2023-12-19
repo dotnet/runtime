@@ -4,9 +4,10 @@ project(mono-wasm-runtime C)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
 option(DISABLE_LEGACY_JS_INTEROP "defined if the build does not support legacy JavaScript interop" OFF)
+option(ENABLE_JS_INTEROP_BY_VALUE "defined when JS interop without pointers to managed objects" OFF)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
-add_executable(dotnet.native corebindings.c driver.c pinvoke.c)
+add_executable(dotnet.native runtime.c corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet.native PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
 target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1 ${CONFIGURATION_COMPILE_OPTIONS})

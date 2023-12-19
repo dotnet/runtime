@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData("hello", "hello", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", "HELLo", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", null, "fr-FR", CompareOptions.IgnoreCase, 1, 1)]

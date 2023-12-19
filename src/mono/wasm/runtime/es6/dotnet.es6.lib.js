@@ -17,38 +17,33 @@ var methodIndexByName = undefined;
 var gitHash = undefined;
 
 function setup(linkerSetup) {
-    const pthreadReplacements = {};
+    // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
+    #if USE_PTHREADS
+    const modulePThread = PThread;
+    #else
+    const modulePThread = {};
+    const ENVIRONMENT_IS_PTHREAD = false;
+    #endif
     const dotnet_replacements = {
         fetch: globalThis.fetch,
         ENVIRONMENT_IS_WORKER,
         require,
-        updateMemoryViews,
-        pthreadReplacements,
+        modulePThread,
         scriptDirectory,
     };
-    // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
-    #if USE_PTHREADS
-    pthreadReplacements.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
-    pthreadReplacements.threadInitTLS = PThread.threadInitTLS;
-    pthreadReplacements.allocateUnusedWorker = PThread.allocateUnusedWorker;
-    #else
-    const ENVIRONMENT_IS_PTHREAD = false;
-    #endif
 
     ENVIRONMENT_IS_WORKER = dotnet_replacements.ENVIRONMENT_IS_WORKER;
     Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
-    updateMemoryViews = dotnet_replacements.updateMemoryViews;
+    noExitRuntime = dotnet_replacements.noExitRuntime;
     fetch = dotnet_replacements.fetch;
     require = dotnet_replacements.require;
     _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
-    #if USE_PTHREADS
-    PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
-    PThread.threadInitTLS = pthreadReplacements.threadInitTLS;
-    PThread.allocateUnusedWorker = pthreadReplacements.allocateUnusedWorker;
-    #endif
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
+        updateMemoryViews,
+        getMemory: () => { return wasmMemory; },
+        getWasmIndirectFunctionTable: () => { return wasmTable; },
         ...linkerSetup
     });
 

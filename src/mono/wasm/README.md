@@ -305,12 +305,14 @@ npm update --lockfile-version=1
 
 * `runtime-wasm*` pipelines are triggered manually, and they only run the jobs that would not run on any default pipelines based on path changes.
 * The `AOT` jobs run only smoke tests on `runtime`, and on `runtime-wasm*` pipelines all the `AOT` tests are run.
+* HG libtests are library test with `HybridGlobalization=true`
 
 | .                 | runtime-wasm               | runtime-wasm-libtests | runtime-wasm-non-libtests |
 | ----------------- | -------------------------- | --------------------  | --------------------      |
 | libtests          | linux+windows: all         | linux+windows: all    | none                      |
 | libtests eat      | linux:         all         | linux:         all    | none                      |
 | libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
+| libtests hg       | linux+windows: all         | linux+windows: all    | none                      |
 | high resource aot | linux+windows: all         | linux+windows: all    | none                      |
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
 | Debugger tests    | linux+windows              | none                  | linux+windows             |

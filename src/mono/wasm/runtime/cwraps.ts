@@ -41,6 +41,7 @@ const threading_cwraps: SigLine[] = MonoWasmThreads ? [
     [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
+    [false, "mono_wasm_init_finalizer_thread", null, []],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -100,6 +101,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_i32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
+    [true, "mono_wasm_read_as_bool_or_null_unsafe", "number", ["number"]],
 
     // jiterpreter
     [true, "mono_jiterp_trace_bailout", "void", ["number"]],
@@ -181,6 +183,7 @@ export interface t_ThreadingCwraps {
     mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
     mono_wasm_diagnostic_server_post_resume_runtime(): void;
     mono_wasm_diagnostic_server_create_stream(): VoidPtr;
+    mono_wasm_init_finalizer_thread(): void;
 }
 
 export interface t_ProfilerCwraps {
@@ -240,6 +243,7 @@ export interface t_Cwraps {
     mono_wasm_get_i32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f64_unaligned(source: VoidPtr): number;
+    mono_wasm_read_as_bool_or_null_unsafe(obj: MonoObject): number;
 
     mono_jiterp_trace_bailout(reason: number): void;
     mono_jiterp_get_trace_bailout_count(reason: number): number;

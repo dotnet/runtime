@@ -394,7 +394,8 @@ export function localHeapViewF64(): Float64Array {
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews() {
     if (!MonoWasmThreads) return;
-    if (Module.getMemory()!.buffer != Module.HEAPU8.buffer) {
+    const memory = runtimeHelpers.getMemory();
+    if (memory.buffer !== Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
 }
@@ -418,7 +419,7 @@ export function forceThreadMemoryViewRefresh() {
     // this condition should be eliminated by rollup on non-threading builds and it would become empty method.
     if (!MonoWasmThreads) return;
 
-    const wasmMemory = Module.getMemory();
+    const wasmMemory = runtimeHelpers.getMemory();
 
     /*
     Normally when wasm memory grows in v8, this size change is broadcast to other web workers via an 'interrupt', which works by setting a thread-local flag that needs to be checked. 

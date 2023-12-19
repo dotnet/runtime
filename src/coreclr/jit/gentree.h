@@ -194,7 +194,7 @@ inline AssertionIndex GetAssertionIndex(unsigned index)
 
 class AssertionInfo
 {
-    // true if the assertion holds on the bbNext edge instead of the bbJumpDest edge (for GT_JTRUE nodes)
+    // true if the assertion holds on the bbNext edge instead of the bbTarget edge (for GT_JTRUE nodes)
     unsigned short m_isNextEdgeAssertion : 1;
     // 1-based index of the assertion
     unsigned short m_assertionIndex : 15;
@@ -618,6 +618,7 @@ enum GenTreeDebugFlags : unsigned int
     GTF_DEBUG_NODE_MASK         = 0x0000003F, // These flags are all node (rather than operation) properties.
 
     GTF_DEBUG_VAR_CSE_REF       = 0x00800000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
+    GTF_DEBUG_CAST_DONT_FOLD    = 0x00400000, // GT_CAST    -- Try to prevent this cast from being folded
 };
 
 inline constexpr GenTreeDebugFlags operator ~(GenTreeDebugFlags a)
@@ -1723,7 +1724,6 @@ public:
         {
             case GT_LEA:
             case GT_RETFILT:
-            case GT_NOP:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
@@ -1816,7 +1816,7 @@ public:
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 
-    inline GenTree* gtEffectiveVal(bool commaOnly = false);
+    inline GenTree* gtEffectiveVal();
 
     inline GenTree* gtCommaStoreVal();
 
@@ -2995,7 +2995,7 @@ struct GenTreeOp : public GenTreeUnOp
         : GenTreeUnOp(oper, type DEBUGARG(largeNode)), gtOp2(nullptr)
     {
         // Unary operators with optional arguments:
-        assert(oper == GT_NOP || oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+        assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
     }
 
     // returns true if we will use the division by constant optimization for this node.
@@ -4551,7 +4551,7 @@ public:
     void SetMultiRegNums();
 
     // Return number of stack slots that this argument is taking.
-    // This value is not meaningful on macOS arm64 where multiple arguments can
+    // This value is not meaningful on Apple arm64 where multiple arguments can
     // be passed in the same stack slot.
     unsigned GetStackSlotsNumber() const
     {
@@ -7932,24 +7932,6 @@ public:
     pointers) must be flagged as 'large' in GenTree::InitNodeSize().
  */
 
-// GenTreeClsVar: data address node (GT_CLS_VAR_ADDR).
-//
-struct GenTreeClsVar : public GenTree
-{
-    CORINFO_FIELD_HANDLE gtClsVarHnd;
-
-    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd)
-        : GenTree(GT_CLS_VAR_ADDR, type), gtClsVarHnd(clsVarHnd)
-    {
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeClsVar() : GenTree()
-    {
-    }
-#endif
-};
-
 /* gtPhiArg -- phi node rhs argument, var = phi(phiarg, phiarg, phiarg...); GT_PHI_ARG */
 struct GenTreePhiArg : public GenTreeLclVarCommon
 {
@@ -9257,18 +9239,14 @@ inline GenTree*& GenTree::Data()
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
-inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
+inline GenTree* GenTree::gtEffectiveVal()
 {
     GenTree* effectiveVal = this;
     while (true)
     {
-        if (effectiveVal->gtOper == GT_COMMA)
+        if (effectiveVal->OperIs(GT_COMMA))
         {
-            effectiveVal = effectiveVal->AsOp()->gtGetOp2();
-        }
-        else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->AsOp()->gtOp1 != nullptr))
-        {
-            effectiveVal = effectiveVal->AsOp()->gtOp1;
+            effectiveVal = effectiveVal->gtGetOp2();
         }
         else
         {

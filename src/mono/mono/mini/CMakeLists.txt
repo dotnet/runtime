@@ -404,10 +404,10 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
   endif()
   target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(MONO_SET_RPATH_ORIGIN)
     set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
@@ -610,10 +610,10 @@ if(NOT DISABLE_EXECUTABLES)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")

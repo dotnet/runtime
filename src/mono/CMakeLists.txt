@@ -950,10 +950,10 @@ set(FULL_VERSION ${product_version_string})
 # OS SPECIFIC CHECKS
 ######################################
 
-if(CLR_CMAKE_HOST_ALPINE_LINUX)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+if(CLR_CMAKE_TARGET_LINUX_MUSL)
+  # Setting RLIMIT_NOFILE breaks debugging of coreclr on musl-libc for some reason
   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
-  # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
+  # On musl-libc, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()

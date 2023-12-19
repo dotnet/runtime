@@ -57,7 +57,7 @@ namespace System
                         values[i] = (TStorage)valuesAsObject[i];
                     }
                     return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
-            });
+                });
         }
 #pragma warning restore
 

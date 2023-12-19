@@ -74,6 +74,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_GetLocaleNameNative)
     DllImportEntry(GlobalizationNative_GetLocalesNative)
     DllImportEntry(GlobalizationNative_GetLocaleTimeFormatNative)
+    DllImportEntry(GlobalizationNative_GetSortKeyNative)
     DllImportEntry(GlobalizationNative_GetTimeZoneDisplayNameNative)
     DllImportEntry(GlobalizationNative_IndexOfNative)
     DllImportEntry(GlobalizationNative_IsNormalizedNative)

@@ -941,7 +941,8 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
             JITDUMP("Merge assertions from pred " FMT_BB " edge: ", pred->bbNum);
             Compiler::optDumpAssertionIndices(assertions, "\n");
         }
-        else if (pred->KindIs(BBJ_COND, BBJ_ALWAYS) && pred->HasJumpTo(block))
+        else if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(block)) ||
+                 (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(block)))
         {
             if (m_pCompiler->bbJtrueAssertionOut != nullptr)
             {
@@ -1481,7 +1482,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
     }
-    else if (varTypeIsSmallInt(expr->TypeGet()))
+    else if (varTypeIsSmall(expr))
     {
         range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));

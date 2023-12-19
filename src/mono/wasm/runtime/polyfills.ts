@@ -33,17 +33,9 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
-    if (MonoWasmThreads) {
-        if (replacements.pthreadReplacements) {
-            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
-        }
+    if (MonoWasmThreads && replacements.modulePThread) {
+        replaceEmscriptenPThreadLibrary(replacements.modulePThread);
     }
-
-    // memory
-    const originalUpdateMemoryViews = replacements.updateMemoryViews;
-    runtimeHelpers.updateMemoryViews = replacements.updateMemoryViews = () => {
-        originalUpdateMemoryViews();
-    };
 }
 
 export async function init_polyfills_async(): Promise<void> {

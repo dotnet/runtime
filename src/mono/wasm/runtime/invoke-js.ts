@@ -5,10 +5,10 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
-import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "./memory";
-import { monoStringToString, stringToMonoStringRoot } from "./strings";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name } from "./marshal";
+import { setI32_unchecked, receiveWorkerHeapViews } from "./memory";
+import { stringToMonoStringRoot } from "./strings";
+import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
@@ -19,106 +19,111 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { assert_synchronization_context } from "./pthreads/shared";
 
-export const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
+export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
-export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     assert_bindings();
-    const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
-        module_name_root = mono_wasm_new_external_root<MonoString>(module_name),
-        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
-        const version = get_signature_version(signature);
-        mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
-
-        const js_function_name = monoStringToString(function_name_root)!;
-        const mark = startMeasure();
-        const js_module_name = monoStringToString(module_name_root)!;
-        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
-
-        const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
-        const args_count = get_signature_argument_count(signature);
-
-        const arg_marshalers: (BoundMarshalerToJs)[] = new Array(args_count);
-        const arg_cleanup: (Function | undefined)[] = new Array(args_count);
-        let has_cleanup = false;
-        for (let index = 0; index < args_count; index++) {
-            const sig = get_sig(signature, index + 2);
-            const marshaler_type = get_signature_type(sig);
-            const arg_marshaler = bind_arg_marshal_to_js(sig, marshaler_type, index + 2);
-            mono_assert(arg_marshaler, "ERR42: argument marshaler must be resolved");
-            arg_marshalers[index] = arg_marshaler;
-            if (marshaler_type === MarshalerType.Span) {
-                arg_cleanup[index] = (js_arg: any) => {
-                    if (js_arg) {
-                        js_arg.dispose();
-                    }
-                };
-                has_cleanup = true;
-            }
-            else if (marshaler_type == MarshalerType.Task) {
-                assert_synchronization_context();
-            }
-        }
-        const res_sig = get_sig(signature, 1);
-        const res_marshaler_type = get_signature_type(res_sig);
-        if (res_marshaler_type == MarshalerType.Task) {
-            assert_synchronization_context();
-        }
-        const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
-
-        const closure: BindingClosure = {
-            fn,
-            fqn: js_module_name + ":" + js_function_name,
-            args_count,
-            arg_marshalers,
-            res_converter,
-            has_cleanup,
-            arg_cleanup,
-            isDisposed: false,
-        };
-        let bound_fn: Function;
-        if (args_count == 0 && !res_converter) {
-            bound_fn = bind_fn_0V(closure);
-        }
-        else if (args_count == 1 && !has_cleanup && !res_converter) {
-            bound_fn = bind_fn_1V(closure);
-        }
-        else if (args_count == 1 && !has_cleanup && res_converter) {
-            bound_fn = bind_fn_1R(closure);
-        }
-        else if (args_count == 2 && !has_cleanup && res_converter) {
-            bound_fn = bind_fn_2R(closure);
-        }
-        else {
-            bound_fn = bind_fn(closure);
-        }
-
-        // this is just to make debugging easier. 
-        // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
-        // in Release configuration, it would be a trimmed by rollup
-        if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
-            try {
-                bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
-            }
-            catch (ex) {
-                runtimeHelpers.cspPolicy = true;
-            }
-        }
-
-        (<any>bound_fn)[imported_js_function_symbol] = closure;
-        const fn_handle = fn_wrapper_by_fn_handle.length;
-        fn_wrapper_by_fn_handle.push(bound_fn);
-        setI32(function_js_handle, <any>fn_handle);
+        bind_js_import(signature);
         wrap_no_error_root(is_exception, resultRoot);
-        endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
     } catch (ex: any) {
-        setI32(function_js_handle, 0);
         Module.err(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
         resultRoot.release();
-        function_name_root.release();
     }
+}
+
+function bind_js_import(signature: JSFunctionSignature): Function {
+    const mark = startMeasure();
+
+    const version = get_signature_version(signature);
+    mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
+
+    const js_function_name = get_signature_function_name(signature)!;
+    const js_module_name = get_signature_module_name(signature)!;
+    const function_handle = get_signature_handle(signature);
+
+    mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
+
+    const fn = mono_wasm_lookup_js_import(js_function_name, js_module_name);
+    const args_count = get_signature_argument_count(signature);
+
+    const arg_marshalers: (BoundMarshalerToJs)[] = new Array(args_count);
+    const arg_cleanup: (Function | undefined)[] = new Array(args_count);
+    let has_cleanup = false;
+    for (let index = 0; index < args_count; index++) {
+        const sig = get_sig(signature, index + 2);
+        const marshaler_type = get_signature_type(sig);
+        const arg_marshaler = bind_arg_marshal_to_js(sig, marshaler_type, index + 2);
+        mono_assert(arg_marshaler, "ERR42: argument marshaler must be resolved");
+        arg_marshalers[index] = arg_marshaler;
+        if (marshaler_type === MarshalerType.Span) {
+            arg_cleanup[index] = (js_arg: any) => {
+                if (js_arg) {
+                    js_arg.dispose();
+                }
+            };
+            has_cleanup = true;
+        }
+        else if (marshaler_type == MarshalerType.Task) {
+            assert_synchronization_context();
+        }
+    }
+    const res_sig = get_sig(signature, 1);
+    const res_marshaler_type = get_signature_type(res_sig);
+    if (res_marshaler_type == MarshalerType.Task) {
+        assert_synchronization_context();
+    }
+    const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
+
+    const closure: BindingClosure = {
+        fn,
+        fqn: js_module_name + ":" + js_function_name,
+        args_count,
+        arg_marshalers,
+        res_converter,
+        has_cleanup,
+        arg_cleanup,
+        isDisposed: false,
+    };
+    let bound_fn: Function;
+    if (args_count == 0 && !res_converter) {
+        bound_fn = bind_fn_0V(closure);
+    }
+    else if (args_count == 1 && !has_cleanup && !res_converter) {
+        bound_fn = bind_fn_1V(closure);
+    }
+    else if (args_count == 1 && !has_cleanup && res_converter) {
+        bound_fn = bind_fn_1R(closure);
+    }
+    else if (args_count == 2 && !has_cleanup && res_converter) {
+        bound_fn = bind_fn_2R(closure);
+    }
+    else {
+        bound_fn = bind_fn(closure);
+    }
+
+    // this is just to make debugging easier. 
+    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+    // in Release configuration, it would be a trimmed by rollup
+    if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+        try {
+            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
+        }
+        catch (ex) {
+            runtimeHelpers.cspPolicy = true;
+        }
+    }
+
+    (<any>bound_fn)[imported_js_function_symbol] = closure;
+
+    js_import_wrapper_by_fn_handle[function_handle] = bound_fn;
+
+    endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
+
+    return bound_fn;
 }
 
 function bind_fn_0V(closure: BindingClosure) {
@@ -264,15 +269,15 @@ type BindingClosure = {
     arg_cleanup: (Function | undefined)[]
 }
 
-export function mono_wasm_invoke_bound_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+export function mono_wasm_invoke_js_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
     bound_fn(args);
 }
 
-export function mono_wasm_invoke_import(fn_handle: JSFnHandle, args: JSMarshalerArguments): void {
-    const bound_fn = fn_wrapper_by_fn_handle[<any>fn_handle];
-    mono_assert(bound_fn, () => `Imported function handle expected ${fn_handle}`);
+export function mono_wasm_invoke_js_import(function_handle: JSFnHandle, args: JSMarshalerArguments): void {
+    const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
+    mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
     bound_fn(args);
 }
 
@@ -281,7 +286,7 @@ export function mono_wasm_set_module_imports(module_name: string, moduleImports:
     mono_log_debug(`added module imports '${module_name}'`);
 }
 
-function mono_wasm_lookup_function(function_name: string, js_module_name: string): Function {
+function mono_wasm_lookup_js_import(function_name: string, js_module_name: string | null): Function {
     mono_assert(function_name && typeof function_name === "string", "function_name must be string");
 
     let scope: any = {};

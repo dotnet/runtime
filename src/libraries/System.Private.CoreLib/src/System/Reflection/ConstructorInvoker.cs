@@ -130,7 +130,7 @@ namespace System.Reflection
         /// <param name="arg3">The third argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            if (_argCount !=3)
+            if (_argCount != 3)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -258,7 +258,7 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj : null, copyOfArgs)!;
+                return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                 // No need to call CopyBack here since there are no ref values.
             }
 

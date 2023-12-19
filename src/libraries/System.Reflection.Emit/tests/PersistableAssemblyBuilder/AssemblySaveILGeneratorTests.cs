@@ -19,6 +19,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), new[] { typeof(Version) });
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ret);
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -48,6 +49,7 @@ namespace System.Reflection.Emit.Tests
                 int expectedReturn = 5;
                 ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
                 ilGenerator.Emit(OpCodes.Ret);
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -86,7 +88,7 @@ namespace System.Reflection.Emit.Tests
                 addMethodIL.Emit(OpCodes.Ldarg_1);
                 addMethodIL.Emit(OpCodes.Add);
                 addMethodIL.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -125,7 +127,7 @@ namespace System.Reflection.Emit.Tests
                 addMethodIL.Emit(OpCodes.Ldc_R8, (double)123456.123);
                 addMethodIL.Emit(OpCodes.Add);
                 addMethodIL.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType", TypeAttributes.NotPublic);
                 MethodBuilder stringMethod = anotherType.DefineMethod("StringMethod", MethodAttributes.FamORAssem, typeof(string), Type.EmptyTypes);
                 MethodBuilder floatMethod = anotherType.DefineMethod("FloatMethod", MethodAttributes.Family, typeof(float), Type.EmptyTypes);
@@ -140,7 +142,7 @@ namespace System.Reflection.Emit.Tests
                 ILGenerator longMethodIL = longMethod.GetILGenerator();
                 longMethodIL.Emit(OpCodes.Ldc_I8, (long)1234567);
                 longMethodIL.Emit(OpCodes.Ret);
-
+                anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -223,7 +225,7 @@ namespace System.Reflection.Emit.Tests
                 il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 2
                 il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 1
                 il2.Emit(OpCodes.Ret);         // pop 1 stack size 0
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
@@ -274,7 +276,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldc_I4_M1);
                 il.MarkLabel(endOfMethod);
                 il.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
@@ -345,7 +347,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldstr, "many bananas");
                 il.MarkLabel(endOfMethod);
                 il.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
@@ -392,7 +394,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Stloc, int2Local);
                 il.Emit(OpCodes.Ldloc_3);
                 il.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
                 Assert.Equal(2, getMaxStackSizeMethod.Invoke(il, new object[0]));
                 saveMethod.Invoke(ab, new object[] { file.Path });
@@ -481,7 +483,7 @@ namespace System.Reflection.Emit.Tests
                 multiplyMethodIL.Emit(OpCodes.Stloc, iLocal);
                 multiplyMethodIL.Emit(OpCodes.Ldloc, iLocal);
                 multiplyMethodIL.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType", TypeAttributes.NotPublic, type);
                 MethodBuilder stringMethod = anotherType.DefineMethod("StringMethod", MethodAttributes.FamORAssem, typeof(string), Type.EmptyTypes);
                 ILGenerator stringMethodIL = stringMethod.GetILGenerator();
@@ -514,7 +516,7 @@ namespace System.Reflection.Emit.Tests
                 longMethodIL.Emit(OpCodes.Stloc, longLocal);
                 longMethodIL.Emit(OpCodes.Ldloc, longLocal);
                 longMethodIL.Emit(OpCodes.Ret);
-
+                anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -559,6 +561,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Mul);
                 il.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -620,7 +623,7 @@ namespace System.Reflection.Emit.Tests
                 ilMain.Emit(OpCodes.Box, typeof(int));
                 ilMain.Emit(OpCodes.Call, writeLineObj);
                 ilMain.Emit(OpCodes.Ret);
-
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -651,6 +654,133 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void ReferenceConstructedGenericMethod()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(null, null, null, new[] { methodParams[0] }, null, null);
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                ilg.Emit(OpCodes.Ldarg_0);
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ret);
+                MethodBuilder mainMethod = type.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+                ilg = mainMethod.GetILGenerator();
+                MethodInfo GMOfString = genericMethod.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateType();
+                saveMethod.Invoke(ab, new[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo genericMethodFromDisk = typeFromDisk.GetMethod("GM");
+                Assert.True(genericMethodFromDisk.IsGenericMethod);
+                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                byte[] ilBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+            }
+        }
+
+        [Fact]
+        public void ReferenceConstructedGenericMethodFieldOfConstructedType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(new[] { "T" });
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public |
+                    MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+                FieldBuilder myField = type.DefineField("Field", typeParams[0], FieldAttributes.Public);
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(null, null, null, new [] { methodParams[0] }, null, null);
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                Type SampleOfU = type.MakeGenericType(methodParams[0]);
+                ilg.DeclareLocal(SampleOfU);
+                ConstructorInfo ctorOfU = TypeBuilder.GetConstructor(SampleOfU, ctor);
+                ilg.Emit(OpCodes.Newobj, ctorOfU);
+                ilg.Emit(OpCodes.Stloc_0);
+                ilg.Emit(OpCodes.Ldloc_0);
+                ilg.Emit(OpCodes.Ldarg_0);
+                FieldInfo FieldOfU = TypeBuilder.GetField(SampleOfU, myField);
+                ilg.Emit(OpCodes.Stfld, FieldOfU);
+                ilg.Emit(OpCodes.Ldloc_0);
+                ilg.Emit(OpCodes.Ldfld, FieldOfU);
+                ilg.Emit(OpCodes.Box, methodParams[0]);
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateType();
+                TypeBuilder dummy = ab.GetDynamicModule("MyModule").DefineType("Dummy", TypeAttributes.Class | TypeAttributes.NotPublic);
+                MethodBuilder mainMethod = dummy.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+                ilg = mainMethod.GetILGenerator();
+                Type SampleOfInt = type.MakeGenericType(typeof(string));
+                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt, genericMethod);
+                MethodInfo GMOfString = SampleOfIntGM.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
+                dummy.CreateType();
+/* Generated IL would like this in C#:
+public class MyType<T>
+{
+	public T Field;
+
+	public static void GM<U>(U P_0)
+	{
+		MyType<U> myType = new MyType<U>();
+		myType.Field = P_0;
+		Console.WriteLine(myType.Field);
+	}
+}
+
+internal class Dummy
+{
+	public static void Main()
+	{
+		MyType<string>.GM("HelloWorld");
+	}
+}               */
+                saveMethod.Invoke(ab, new[] { file.Path });
+
+                Module module = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
+                Type myTypeFromDisk = module.GetType("MyType");
+                Assert.True(myTypeFromDisk.IsGenericType);
+                Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
+                Assert.Equal("T", myTypeFromDisk.GetGenericArguments()[0].Name);
+                Assert.Equal("T", myTypeFromDisk.GetField("Field").FieldType.Name);
+                MethodInfo genericMethodFromDisk = myTypeFromDisk.GetMethod("GM");
+                Assert.True(genericMethodFromDisk.IsGenericMethod);
+                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                Assert.Equal(1, genericMethodFromDisk.GetMethodBody().LocalVariables.Count);
+                Assert.Equal("MyType[U]", genericMethodFromDisk.GetMethodBody().LocalVariables[0].LocalType.ToString());
+                byte[] gmIlBytes = genericMethodFromDisk.GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Newobj.Value, gmIlBytes[0]);
+                Assert.Equal(OpCodes.Stloc_0.Value, gmIlBytes[5]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[6]);
+                Assert.Equal(OpCodes.Ldarg_0.Value, gmIlBytes[7]);
+                Assert.Equal(OpCodes.Stfld.Value, gmIlBytes[8]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[13]);
+                Assert.Equal(OpCodes.Ldfld.Value, gmIlBytes[14]);
+                Assert.Equal(OpCodes.Box.Value, gmIlBytes[19]);
+                Assert.Equal(OpCodes.Call.Value, gmIlBytes[24]);
+                Assert.Equal(OpCodes.Ret.Value, gmIlBytes[29]);
+                byte[] ilBytes = module.GetType("Dummy").GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+            }
+        }
+
+        [Fact]
         public void EmitWriteLineMacroTest()
         {
             using (TempFile file = TempFile.Create())
@@ -669,7 +799,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EmitWriteLine(local);
                 ilGenerator.Emit(OpCodes.Ldsfld, field);
                 ilGenerator.Emit(OpCodes.Ret);
-
+                type1.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -727,7 +857,8 @@ namespace System.Reflection.Emit.Tests
                 ilMain.Emit(OpCodes.Ret);
                 ILGenerator il = staticMethod.GetILGenerator();
                 il.Emit(OpCodes.Ret);
-
+                tb.CreateType();
+                anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -758,7 +889,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldarg_2);
                 il.Emit(OpCodes.Newobj, ctor);
                 il.Emit(OpCodes.Ret);
-
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -784,7 +915,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Initobj, typeof(ValueTuple));
                 ilGenerator.Emit(OpCodes.Ldc_I4, 1);
                 ilGenerator.Emit(OpCodes.Ret);
-
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -849,6 +980,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -901,6 +1033,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -976,6 +1109,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1038,6 +1172,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1071,6 +1206,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1111,6 +1247,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EmitWriteLine("Finally handler");
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1174,6 +1311,7 @@ namespace System.Reflection.Emit.Tests
                 myAdderIL.MarkLabel(myEndOfMethodLabel);
                 myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder1);
                 myAdderIL.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1207,6 +1345,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1259,6 +1398,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EmitWriteLine("Outer catch block ends");
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -1331,6 +1471,7 @@ namespace System.Reflection.Emit.Tests
 
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);

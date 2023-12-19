@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { fn_wrapper_by_fn_handle } from "./invoke-js";
+import { js_import_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
@@ -105,7 +105,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
         _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
         _js_handle_free_list.push(js_handle);
     }
-    if (is_jsv_handle(js_handle)) {
+    else if (is_jsv_handle(js_handle)) {
         obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
         _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
     }
@@ -184,7 +184,7 @@ export function assertNoProxies(): void {
     mono_assert(_cs_owned_objects_by_js_handle.length === 1, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_jsv_handle.length === 1, "There should be no proxies on this thread.");
     mono_assert(exportsByAssembly.size === 0, "There should be no exports on this thread.");
-    mono_assert(fn_wrapper_by_fn_handle.length === 1, "There should be no imports on this thread.");
+    mono_assert(js_import_wrapper_by_fn_handle.length === 1, "There should be no imports on this thread.");
 }
 
 // when we arrive here from UninstallWebWorkerInterop, the C# will unregister the handles too.
@@ -290,7 +290,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
 
     if (disposeMethods) {
         // dispose all [JSImport]
-        for (const bound_fn of fn_wrapper_by_fn_handle) {
+        for (const bound_fn of js_import_wrapper_by_fn_handle) {
             if (bound_fn) {
                 const closure = (<any>bound_fn)[imported_js_function_symbol];
                 if (closure) {
@@ -299,7 +299,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 }
             }
         }
-        fn_wrapper_by_fn_handle.length = 1;
+        js_import_wrapper_by_fn_handle.length = 1;
 
         // dispose all [JSExport]
         const assemblyExports = [...exportsByAssembly.values()];

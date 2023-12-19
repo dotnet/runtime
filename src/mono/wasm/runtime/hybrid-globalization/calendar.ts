@@ -7,7 +7,7 @@ import { monoStringToString, stringToUTF16 } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { INNER_SEPARATOR, OUTER_SEPARATOR } from "./helpers";
+import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
 
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
@@ -55,7 +55,7 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
         const eraNames = getEraNames(date, locale, calendarId);
         calendarInfo.EraNames = eraNames.eraNames;
         calendarInfo.AbbreviatedEraNames = eraNames.abbreviatedEraNames;
-       
+
         const result = Object.values(calendarInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
         {
@@ -114,6 +114,7 @@ function getMonthYearPattern(locale: string | undefined, date: Date): string
     pattern = pattern.replace("999", YEAR_CODE);
     // sometimes the number is localized and the above does not have an effect
     const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
+    pattern = normalizeSpaces(pattern);
     return pattern.replace(yearStr, YEAR_CODE);
 }
 
@@ -155,8 +156,8 @@ function getShortDatePattern(locale: string | undefined): string
     const shortDayStr = "2";
     let pattern = date.toLocaleDateString(locale, {dateStyle: "short"});
     // each date part might be in localized numbers or standard arabic numbers
-    // toLocaleDateString returns not compatible data, 
-    // e.g. { dateStyle: "short" } sometimes contains localized year number 
+    // toLocaleDateString returns not compatible data,
+    // e.g. { dateStyle: "short" } sometimes contains localized year number
     // while { year: "numeric" } contains non-localized year number and vice versa
     if (pattern.includes(shortYearStr))
     {
@@ -171,7 +172,7 @@ function getShortDatePattern(locale: string | undefined): string
         if (yearStrShort)
             pattern = pattern.replace(yearStrShort, YEAR_CODE);
     }
-    
+
     if (pattern.includes(shortMonthStr))
     {
         pattern = pattern.replace(longMonthStr, "MM");
@@ -195,9 +196,7 @@ function getShortDatePattern(locale: string | undefined): string
         const localizedDayCode = dayStr.length == 1 ? "d" : "dd";
         pattern = pattern.replace(dayStr, localizedDayCode);
     }
-    
-    
-    return pattern;
+    return normalizeSpaces(pattern);
 }
 
 function getLongDatePattern(locale: string | undefined, date: Date): string
@@ -221,7 +220,7 @@ function getLongDatePattern(locale: string | undefined, date: Date): string
     else
     {
         const replacedMonthName = getGenitiveForName(date, pattern, monthName, new Intl.DateTimeFormat(locale, { weekday: "long", year: "numeric", day: "numeric"}));
-        pattern = pattern.replace(replacedMonthName, MONTH_CODE);            
+        pattern = pattern.replace(replacedMonthName, MONTH_CODE);
     }
     pattern = pattern.replace("999", YEAR_CODE);
     // sometimes the number is localized and the above does not have an effect,
@@ -233,6 +232,7 @@ function getLongDatePattern(locale: string | undefined, date: Date): string
     pattern = pattern.replace(replacedWeekday, "dddd");
     pattern = pattern.replace("22", DAY_CODE);
     const dayStr = date.toLocaleDateString(locale, { day: "numeric" }); // should we replace it for localized digits?
+    pattern = normalizeSpaces(pattern);
     return pattern.replace(dayStr, DAY_CODE);
 }
 
@@ -326,7 +326,7 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
     if (shouldBePopulatedByManagedCode(calendarId))
     {
         // managed code already handles these calendars,
-        // so empty strings will get overwritten in 
+        // so empty strings will get overwritten in
         // InitializeEraNames/InitializeAbbreviatedEraNames
         return {
             eraNames: "",
@@ -337,7 +337,7 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
     const dayStr = date.toLocaleDateString(locale, { day: "numeric" });
     const eraDate = date.toLocaleDateString(locale, { era: "short" });
     const shortEraDate = date.toLocaleDateString(locale, { era: "narrow" });
-    
+
     const eraDateParts = eraDate.includes(yearStr) ?
         getEraDateParts(yearStr) :
         getEraDateParts(date.getFullYear().toString());
@@ -365,13 +365,13 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
     {
         if (eraDate.startsWith(yearStr) || eraDate.endsWith(yearStr))
         {
-            return { 
+            return {
                 eraDateParts: eraDate.split(dayStr),
                 abbrEraDateParts: shortEraDate.split(dayStr),
                 ignoredPart: yearStr,
             };
         }
-        return { 
+        return {
             eraDateParts: eraDate.split(yearStr),
             abbrEraDateParts: shortEraDate.split(yearStr),
             ignoredPart: dayStr,

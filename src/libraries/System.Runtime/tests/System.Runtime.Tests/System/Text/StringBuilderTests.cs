@@ -13,10 +13,10 @@ namespace System.Text.Tests
 {
     public partial class StringBuilderTests
     {
-        private static readonly string s_chunkSplitSource = new string('a', 30);
         private static readonly string s_noCapacityParamName = "valueCount";
 
-        private static StringBuilder StringBuilderWithMultipleChunks() => new StringBuilder(20).Append(s_chunkSplitSource);
+        internal static readonly string s_chunkSplitSource = new string('a', 30);
+        internal static StringBuilder StringBuilderWithMultipleChunks() => new StringBuilder(20).Append(s_chunkSplitSource);
 
         [Fact]
         public static void Ctor_Empty()
@@ -1692,87 +1692,6 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace('a', 'b', 6, 0)); // Count + start index > builder.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace('a', 'b', 5, 1)); // Count + start index > builder.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace('a', 'b', 4, 2)); // Count + start index > builder.Length
-        }
-
-        [Theory]
-        [InlineData("", "a", "!", 0, 0, "")]
-        [InlineData("aaaabbbbccccdddd", "a", "!", 0, 16, "!!!!bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "a", "!", 2, 3, "aa!!bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "a", "!", 4, 1, "aaaabbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aab", "!", 2, 2, "aaaabbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aab", "!", 2, 3, "aa!bbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aa", "!", 0, 16, "!!bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aa", "$!", 0, 16, "$!$!bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aa", "$!$", 0, 16, "$!$$!$bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aaaa", "!", 0, 16, "!bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aaaa", "$!", 0, 16, "$!bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "a", "", 0, 16, "bbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "b", null, 0, 16, "aaaaccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 0, 16, "")]
-        [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 16, 0, "aaaabbbbccccdddd")]
-        [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddde", "", 0, 16, "aaaabbbbccccdddd")]
-        [InlineData("aaaaaaaaaaaaaaaa", "a", "b", 0, 16, "bbbbbbbbbbbbbbbb")]
-        public static void Replace_String(string value, string oldValue, string newValue, int startIndex, int count, string expected)
-        {
-            StringBuilder builder;
-            if (startIndex == 0 && count == value.Length)
-            {
-                // Use Replace(string, string)
-                builder = new StringBuilder(value);
-                builder.Replace(oldValue, newValue);
-                Assert.Equal(expected, builder.ToString());
-            }
-            // Use Replace(string, string, int, int)
-            builder = new StringBuilder(value);
-            builder.Replace(oldValue, newValue, startIndex, count);
-            Assert.Equal(expected, builder.ToString());
-        }
-
-        [Fact]
-        public static void Replace_String_StringBuilderWithMultipleChunks()
-        {
-            StringBuilder builder = StringBuilderWithMultipleChunks();
-            builder.Replace("a", "b", builder.Length - 10, 10);
-            Assert.Equal(new string('a', builder.Length - 10) + new string('b', 10), builder.ToString());
-        }
-
-        [Fact]
-        public static void Replace_String_StringBuilderWithMultipleChunks_WholeString()
-        {
-            StringBuilder builder = StringBuilderWithMultipleChunks();
-            builder.Replace(builder.ToString(), "");
-            Assert.Same(string.Empty, builder.ToString());
-        }
-
-        [Fact]
-        public static void Replace_String_StringBuilderWithMultipleChunks_LongString()
-        {
-            StringBuilder builder = StringBuilderWithMultipleChunks();
-            builder.Replace(builder.ToString() + "b", "");
-            Assert.Equal(s_chunkSplitSource, builder.ToString());
-        }
-
-        [Fact]
-        public static void Replace_String_Invalid()
-        {
-            var builder = new StringBuilder(0, 5);
-            builder.Append("Hello");
-
-            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "")); // Old value is null
-            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "a", 0, 0)); // Old value is null
-
-            AssertExtensions.Throws<ArgumentException>("oldValue", () => builder.Replace("", "a")); // Old value is empty
-            AssertExtensions.Throws<ArgumentException>("oldValue", () => builder.Replace("", "a", 0, 0)); // Old value is empty
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace("o", "oo")); // New length > builder.MaxCapacity
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace("o", "oo", 0, 5)); // New length > builder.MaxCapacity
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace("a", "b", -1, 0)); // Start index < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace("a", "b", 0, -1)); // Count < 0
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace("a", "b", 6, 0)); // Count + start index > builder.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace("a", "b", 5, 1)); // Count + start index > builder.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace("a", "b", 4, 2)); // Count + start index > builder.Length
         }
 
         [Theory]
