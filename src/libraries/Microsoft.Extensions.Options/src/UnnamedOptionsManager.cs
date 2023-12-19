@@ -10,24 +10,23 @@ namespace Microsoft.Extensions.Options
         IOptions<TOptions>
         where TOptions : class
     {
-        private readonly IOptionsFactory<TOptions> _factory;
         private volatile object? _syncObj;
-        private volatile TOptions? _value;
+        private volatile object? _factoryOrValue;
 
-        public UnnamedOptionsManager(IOptionsFactory<TOptions> factory) => _factory = factory;
+        public UnnamedOptionsManager(IOptionsFactory<TOptions> factory) => _factoryOrValue = factory;
 
         public TOptions Value
         {
             get
             {
-                if (_value is TOptions value)
+                if (_factoryOrValue is TOptions value)
                 {
                     return value;
                 }
 
                 lock (_syncObj ?? Interlocked.CompareExchange(ref _syncObj, new object(), null) ?? _syncObj)
                 {
-                    return _value ??= _factory.Create(Options.DefaultName);
+                    return _factoryOrValue ??= ((IOptionsFactory<TOptions>)_factoryOrValue).Create(Options.DefaultName);
                 }
             }
         }
