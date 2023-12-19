@@ -62,25 +62,25 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
-      <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
-      <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                 Destination="build/MonoAOTCompiler" />
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
-      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"         Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                 Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
-      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
-      <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
-      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Condition="'$(RuntimeFlavor)' == 'mono'"
-                                                                                 Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
-      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/ilc" />
-      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"           Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/BuildIntegration" />
-      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
-                                                                                 Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build/microsoft.net.illink.tasks" />
+      <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                     Destination="build/cmake" />
+      <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                       Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                       Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                     Destination="build/MonoAOTCompiler" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"        Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
+      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"             Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                     Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
+      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"                   Destination="build/apple" />
+      <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"          Destination="build/common" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                          Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                     Destination="build/cross" />
+      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                      Destination="build/MonoTargetsTasks" />
+      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"                Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                     Destination="build/ilc" />
+      <HelixCorrelationPayload Include="$(CoreCLRBuildIntegrationDir)"               Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                     Destination="build/BuildIntegration" />
+      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                         Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                     Destination="build/aotsdk" />
+      <HelixCorrelationPayload Include="$(ToolsILLinkDir)/$(_NetCoreAppToolCurrent)" Destination="build/microsoft.net.illink.tasks" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
