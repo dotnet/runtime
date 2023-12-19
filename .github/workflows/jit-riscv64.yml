@@ -47,7 +47,7 @@ jobs:
       env:
         ROOTFS_DIR: /crossrootfs/riscv64
         QEMU_LD_PREFIX: /crossrootfs/riscv64
-        CORE_ROOT: /__w/runtime/runtime/artifacts/tests/coreclr/linux.riscv64.Release/Tests/Core_Root
+        CORE_ROOT: /__w/runtime/runtime/artifacts/tests/coreclr/linux.riscv64.Debug/Tests/Core_Root
     needs: cross-build
     steps:
       - name: Checkout
@@ -65,9 +65,9 @@ jobs:
             artifacts/tests/
           key: ${{ runner.os }}-dotnet-cross-build
       - name: Build Tests programs
-        run: ./build.sh -mono -Release riscv64 -tree:JIT/ --ci
+        run: ./build.sh -mono -Debug riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
       - name: Run tests
-        run: bash -c ./run.sh Release
+        run: bash -c ./run.sh Debug
         working-directory: ./src/tests
       
