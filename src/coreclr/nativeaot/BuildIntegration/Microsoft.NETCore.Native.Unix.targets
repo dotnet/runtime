@@ -96,7 +96,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_iOSLibraryMode)' == 'true' and ('$(_AppleSdkName)' == '' or '$(_AppleTripleArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
       Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' _AppleTripleArch = '$(_AppleTripleArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
 
-    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_iOSLibraryMode)' == 'true'" ConsoleToMsBuild="true">
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == '' and '$(_iOSLibraryMode)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
     </Exec>
     <Error Condition="!Exists('$(SysRoot)') and '$(_iOSLibraryMode)' == 'true'"
@@ -175,8 +175,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
       <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
       <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != '' and '$(_iOSLibraryMode)' != 'true'" />
-      <LinkerArg Include="-isysroot $(SysRoot)" Condition="'$(SysRoot)' != '' and '$(_iOSLibraryMode)' == 'true'" />
+      <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
+      <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="--target=$(TargetTriple)" Condition="('$(_IsApplePlatform)' != 'true' or '$(_iOSLibraryMode)' == 'true') and '$(TargetTriple)' != ''" />
       <LinkerArg Include="-arch $(CrossCompileArch)" Condition="'$(_IsApplePlatform)' == 'true' and '$(CrossCompileArch)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
