@@ -2338,6 +2338,19 @@ unsigned code_t emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsig
     return emitOutput_Instr(dst, insEncodeUTypeInstr(ins, rd, imm20), sizeof(code_t));
 }
 
+unsigned code_t emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const
+{
+#ifdef DEBUG
+    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+
+    assert((ins & kInstructionMask) == 0);
+#endif // DEBUG
+
+    unsigned opcode = ins & kInstructionOpcodeMask;
+    unsigned funct3 = (ins & kInstructionFunct3Mask) >> 12;
+    return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13), sizeof(code_t));
+}
+
 void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                                 instrDescJmp*   jmp,
                                                 UNATIVE_OFFSET& dstOffs,
