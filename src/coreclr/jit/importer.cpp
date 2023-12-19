@@ -9551,9 +9551,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 op1                                          = gtNewLclVarAddrNode(stackallocAsLocal);
                                 convertedToLocal                             = true;
 
-                                if (info.compInitMem)
+                                if (compIsForInlining() && info.compInitMem &&
+                                    !impInlineInfo->InlinerCompiler->info.compInitMem)
                                 {
-                                    // Explicitly zero out the local
+                                    // Explicitly zero out the local if we're inlining a method with InitLocals into a
+                                    // method
+                                    // without InitLocals.
                                     op1 = gtNewOperNode(GT_COMMA, TYP_I_IMPL,
                                                         gtNewStoreValueNode(layout, op1, gtNewIconNode(0)),
                                                         gtCloneExpr(op1));
