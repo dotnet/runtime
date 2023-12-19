@@ -39,7 +39,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: jit-riscv64
+          name: runtime.tar.gz
           path: ./runtime.tar.gz
   
   test:
@@ -55,9 +55,9 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          name: jit-riscv64
+          name: runtime.tar.gz
       - name: Decompress
-        run: tar -zxf runtime.tar.gz -P -C /__w/runtime/runtime
+        run: tar -zxf runtime.tar.gz -C ./ 
       - name: Run tests
         run: bash -c ./run.sh Release
         working-directory: ./src/tests
