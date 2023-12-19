@@ -71,4 +71,10 @@ jobs:
         continue-on-error: true
         run: bash -c ./run.sh Debug
         working-directory: ./src/tests
+      - name: Upload Test error Log
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-error-log.log
+          path: ./artifacts/log/TestRunResults_linux_riscv64_Debug.log
       
