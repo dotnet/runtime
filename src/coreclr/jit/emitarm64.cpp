@@ -15810,6 +15810,27 @@ void emitter::emitDispLowPredicateRegPair(regNumber reg, insOpts opt)
 }
 
 //------------------------------------------------------------------------
+// emitDispVectorLengthSpecifier: Display the vector length specifier
+//
+void emitter::emitDispVectorLengthSpecifier(insOpts opt)
+{
+    assert(insOptsScalableWithVectorLength(opt));
+
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B_VL_2X:
+        case INS_OPTS_SCALABLE_H_VL_2X:
+        case INS_OPTS_SCALABLE_S_VL_2X:
+        case INS_OPTS_SCALABLE_D_VL_2X:
+            printf("vlx2");
+            break;
+        default:
+            printf("vlx4");
+            break;
+    }
+}
+
+//------------------------------------------------------------------------
 // emitDispArrangement: Display a SIMD vector arrangement suffix
 //
 void emitter::emitDispArrangement(insOpts opt)
@@ -17693,6 +17714,7 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), true); // DDD
             emitDispReg(id->idReg2(), id->idOpSize(), true);                           // nnnnn
             emitDispReg(id->idReg3(), id->idOpSize(), true);                           // mmmmm
+            emitDispVectorLengthSpecifier(id->idInsOpt());
             break;
 
         default:
