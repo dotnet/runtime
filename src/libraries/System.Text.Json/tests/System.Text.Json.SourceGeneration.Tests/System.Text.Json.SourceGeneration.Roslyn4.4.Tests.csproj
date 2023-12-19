@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TestedRoslynVersion>4.5</TestedRoslynVersion>
+    <TestedRoslynVersion>4.8</TestedRoslynVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
