@@ -69,9 +69,19 @@ namespace TestUnhandledExceptionTester
                 {
                     throw new Exception("Missing Unhandled exception header");
                 }
-                if (lines[1] != "System.Exception: Test")
+                if (unhandledType == "main")
                 {
-                    throw new Exception("Missing exception type and message");
+                    if (lines[1] != "System.Exception: Test")
+                    {
+                        throw new Exception("Missing exception type and message");
+                    }
+                }
+                else if (unhandledType == "foreign")
+                {
+                    if (lines[1] != "System.EntryPointNotFoundException: HelloCpp")
+                    {
+                        throw new Exception("Missing exception type and message");
+                    }
                 }
 
                 exceptionStackFrameLine = 2;
@@ -87,7 +97,7 @@ namespace TestUnhandledExceptionTester
                 }
                 else if (unhandledType == "foreign")
                 {
-                    if (lines[0] != "Unhandled exception. System.EntryPointNotFoundException: Unable to find an entry point named 'HelloCpp' in shared library '__internal'.")
+                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:"))
                     {
                         throw new Exception("Missing Unhandled exception header");
                     }
