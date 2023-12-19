@@ -2465,18 +2465,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     instruction       ins;
     size_t            sz; // = emitSizeOfInsDsc(id);
 
-    assert(REG_NA == (int)REG_NA);
+    assert(REG_NA == static_cast<int>(REG_NA));
 
     insOpts insOp = id->idInsOpt();
 
     switch (insOp)
     {
         case INS_OPTS_RELOC:
-        {
             dst += emitOutput_Rellocation(dst, id, &ins);
             sz = sizeof(instrDesc);
-        }
-        break;
+            break;
         case INS_OPTS_I:
         {
             ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
