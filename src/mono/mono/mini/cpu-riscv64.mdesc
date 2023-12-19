@@ -149,6 +149,7 @@ float_mul: dest:f src1:f src2:f len:4
 float_div: dest:f src1:f src2:f len:36
 
 r4const: dest:f len:16
+r4_neg: dest:f src1:f len:4
 r4_add: dest:f src1:f src2:f len:4
 r4_sub: dest:f src1:f src2:f len:4
 r4_mul: dest:f src1:f src2:f len:4
