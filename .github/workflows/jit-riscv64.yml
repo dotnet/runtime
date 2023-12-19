@@ -29,9 +29,6 @@ jobs:
         run: ./build.sh mono -c Debug --cross --arch riscv64 --ci
       - name: Cross Build Libs & host
         run: ./build.sh mono+libs+host+clr.hosts -c Release --cross --arch riscv64 --ci
-      - name: Build Tests programs
-        run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
-        working-directory: ./src/tests
 
       - name: compress files
         run: tar -zcf runtime.tar.gz ./* 
@@ -58,6 +55,15 @@ jobs:
           name: runtime.tar.gz
       - name: Decompress
         run: tar -zxf runtime.tar.gz -C ./ 
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            artifacts/tests/
+          key: ${{ runner.os }}-dotnet-cross-build
+      - name: Build Tests programs
+        run: ./build.sh -mono -release riscv64 -tree:JIT/ --ci
+        working-directory: ./src/tests
       - name: Run tests
         run: bash -c ./run.sh Release
         working-directory: ./src/tests
