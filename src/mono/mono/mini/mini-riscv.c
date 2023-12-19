@@ -1942,6 +1942,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LADD_OVF_UN:
 	case OP_LSUB_OVF:
 	case OP_IMUL_OVF:
+	case OP_IMUL_OVF_UN:
+	case OP_IMUL_OVF_UN_OOM:
 	case OP_LMUL_OVF:
 	case OP_LMUL_OVF_UN:
 	case OP_LMUL_OVF_UN_OOM:
