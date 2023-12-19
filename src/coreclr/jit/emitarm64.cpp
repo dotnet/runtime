@@ -1846,6 +1846,43 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     return insFormats[ins];
 }
 
+/*****************************************************************************
+ *
+ *  Returns the number of encodings for a given CPU instruction.
+ */
+
+unsigned emitter::emitInsNumFormats(instruction ins)
+{
+    // clang-format off
+    const static unsigned insNumFormats[] =
+    {
+        #define INST1(id, nm, info, fmt, e1                                ) 1,
+        #define INST2(id, nm, info, fmt, e1, e2                            ) 2,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) 3,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) 4,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) 5,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) 6,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) 9,
+        #include "instrs.h"
+        #define INST1(id, nm, info, fmt, e1                                                     ) 1,
+        #define INST2(id, nm, info, fmt, e1, e2                                                 ) 2,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) 3,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) 4,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) 5,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) 6,
+        #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) 7,
+        #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) 8,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) 9,
+        #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) 11,
+        #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) 13,
+        #include "instrsarm64sve.h"
+    };
+    // clang-format on
+
+    assert(ins < ArrLen(insNumFormats));
+    return insNumFormats[ins];
+}
+
 #define LD 1
 #define ST 2
 #define CMP 4
@@ -7933,7 +7970,7 @@ void emitter::emitIns_R_R_R(
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
-    insFormat fmt      = IF_NONE;
+    insFormat fmt      = emitInsFormat(ins);
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -8215,7 +8252,7 @@ void emitter::emitIns_R_R_R(
                 opt      = optMakeArrangement(size, elemsize);
             }
             assert(isValidArrangement(size, opt));
-            fmt = IF_DV_3C;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3C);
             break;
 
         case INS_fadd:
@@ -8259,7 +8296,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isValidScalarDatasize(size));
-            fmt = IF_DV_3D;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3D);
             break;
 
         case INS_faddp:
@@ -8313,7 +8350,7 @@ void emitter::emitIns_R_R_R(
             assert(isGeneralRegisterOrZR(reg1));
             assert(isGeneralRegisterOrZR(reg2));
             assert(isGeneralRegisterOrSP(reg3));
-            fmt = IF_LS_3D;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_LS_3D);
             break;
 
         case INS_casb:
@@ -8357,7 +8394,7 @@ void emitter::emitIns_R_R_R(
             assert(isGeneralRegisterOrZR(reg1));
             assert(isGeneralRegisterOrZR(reg2));
             assert(isGeneralRegisterOrSP(reg3));
-            fmt = IF_LS_3E;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_LS_3E);
             break;
 
         case INS_sha256h:
@@ -8377,7 +8414,7 @@ void emitter::emitIns_R_R_R(
                 opt      = optMakeArrangement(size, elemsize);
             }
             assert(isValidArrangement(size, opt));
-            fmt = IF_DV_3F;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3F);
             break;
 
         case INS_ld2:
@@ -8422,7 +8459,7 @@ void emitter::emitIns_R_R_R(
             assert(size == EA_8BYTE);
             assert(isValidArrangement(size, opt));
             assert(opt != INS_OPTS_1D); // The encoding size = 11, Q = x is reserved.
-            fmt = IF_DV_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3A);
             break;
 
         case INS_addhn2:
@@ -8435,7 +8472,7 @@ void emitter::emitIns_R_R_R(
             assert(size == EA_16BYTE);
             assert(isValidArrangement(size, opt));
             assert(opt != INS_OPTS_2D); // The encoding size = 11, Q = x is reserved.
-            fmt = IF_DV_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3A);
             break;
 
         case INS_sabal:
@@ -8551,7 +8588,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(isValidArrangement(size, opt));
             assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
-            fmt = IF_DV_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3A);
             break;
 
         case INS_pmull:
@@ -8560,7 +8597,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(size == EA_8BYTE);
             assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_1D));
-            fmt = IF_DV_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3A);
             break;
 
         case INS_pmull2:
@@ -8569,7 +8606,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(size == EA_16BYTE);
             assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_2D));
-            fmt = IF_DV_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_DV_3A);
             break;
 
         case INS_sdot:
@@ -8610,7 +8647,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWords(opt));
-            fmt = IF_SVE_AC_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AC_3A);
             break;
 
         case INS_sve_sabd:
@@ -8643,7 +8680,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdScalar(opt));
-            fmt = IF_SVE_AF_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AF_3A);
             break;
 
         case INS_sve_andqv:
@@ -8654,7 +8691,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdVector(opt));
-            fmt = IF_SVE_AG_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AG_3A);
             break;
 
         case INS_sve_movprfx:
@@ -8671,7 +8708,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdScalar(opt));
-            fmt = IF_SVE_AI_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AI_3A);
             break;
 
         case INS_sve_addqv:
@@ -8680,7 +8717,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdVector(opt));
-            fmt = IF_SVE_AJ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AJ_3A);
             break;
 
         case INS_sve_smaxv:
@@ -8691,7 +8728,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdScalar(opt));
-            fmt = IF_SVE_AK_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AK_3A);
             break;
 
         case INS_sve_smaxqv:
@@ -8703,7 +8740,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdVector(opt));
-            fmt = IF_SVE_AL_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AL_3A);
             break;
 
         case INS_sve_asrr:
@@ -8713,7 +8750,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
-            fmt = IF_SVE_AN_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AN_3A);
             break;
 
         case INS_sve_asr:
@@ -8751,7 +8788,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            fmt = IF_SVE_AP_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AP_3A);
             break;
 
         case INS_sve_abs:
@@ -8760,7 +8797,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
-            fmt = IF_SVE_AQ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AQ_3A);
             break;
 
         case INS_sve_sxtb:
@@ -8769,7 +8806,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableAtLeastHalf(opt));
-            fmt = IF_SVE_AQ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AQ_3A);
             break;
 
         case INS_sve_sxth:
@@ -8778,7 +8815,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWords(opt));
-            fmt = IF_SVE_AQ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AQ_3A);
             break;
 
         case INS_sve_sxtw:
@@ -8787,7 +8824,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(opt == INS_OPTS_SCALABLE_D);
-            fmt = IF_SVE_AQ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_AQ_3A);
             break;
 
         case INS_sve_compact:
@@ -8795,7 +8832,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWords(opt));
-            fmt = IF_SVE_CL_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_CL_3A);
             break;
 
         case INS_sve_clasta:
@@ -8864,7 +8901,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
-            fmt = IF_SVE_CU_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_CU_3A);
             break;
 
         case INS_sve_revb:
@@ -8872,7 +8909,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableAtLeastHalf(opt));
-            fmt = IF_SVE_CU_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_CU_3A);
             break;
 
         case INS_sve_revh:
@@ -8880,7 +8917,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWords(opt));
-            fmt = IF_SVE_CU_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_CU_3A);
             break;
 
         case INS_sve_revw:
@@ -8888,7 +8925,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(opt == INS_OPTS_SCALABLE_D);
-            fmt = IF_SVE_CU_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_CU_3A);
             break;
 
         case INS_sve_shadd:
@@ -8903,7 +8940,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
-            fmt = IF_SVE_EP_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_EP_3A);
             break;
 
         case INS_sve_sadalp:
@@ -8912,7 +8949,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableAtLeastHalf(opt));
-            fmt = IF_SVE_EQ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_EQ_3A);
             break;
 
         case INS_sve_addp:
@@ -8924,7 +8961,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
-            fmt = IF_SVE_ER_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_ER_3A);
             break;
 
         case INS_sve_sqabs:
@@ -8933,7 +8970,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableSimple(opt));
-            fmt = IF_SVE_ES_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_ES_3A);
             break;
 
         case INS_sve_urecpe:
@@ -8942,7 +8979,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(opt == INS_OPTS_SCALABLE_S);
-            fmt = IF_SVE_ES_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_ES_3A);
             break;
 
         case INS_sve_sqadd:
@@ -8988,7 +9025,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            fmt = IF_SVE_GR_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_GR_3A);
             break;
 
         case INS_sve_faddqv:
@@ -9001,7 +9038,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdVector(opt));
-            fmt = IF_SVE_GS_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_GS_3A);
             break;
 
         case INS_sve_fmaxnmv:
@@ -9014,7 +9051,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdFPScalar(opt));
             assert(isValidVectorElemsizeSveFloat(size));
-            fmt = IF_SVE_HE_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_HE_3A);
             break;
 
         case INS_sve_fadda:
@@ -9023,7 +9060,7 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWithSimdFPScalar(opt));
             assert(isValidVectorElemsizeSveFloat(size));
-            fmt = IF_SVE_HJ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_HJ_3A);
             break;
 
         case INS_sve_fabd:
@@ -9053,7 +9090,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            fmt = IF_SVE_HL_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_HL_3A);
             break;
 
         case INS_sve_frintn:
@@ -9067,7 +9104,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            fmt = IF_SVE_HQ_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_HQ_3A);
             break;
 
         case INS_sve_frecpx:
@@ -9076,7 +9113,7 @@ void emitter::emitIns_R_R_R(
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableFloat(opt));
-            fmt = IF_SVE_HR_3A;
+            assert(emitInsNumFormats(ins) == 1 && fmt == IF_SVE_HR_3A);
             break;
 
         default:
