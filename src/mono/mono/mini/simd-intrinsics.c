@@ -3825,7 +3825,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairNonTemporal, OP_ARM64_STNP},
 	{SN_StorePairScalar, OP_ARM64_STP_SCALAR},
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
-	{SN_StoreSelectedScalar, OP_ARM64_ST1_SCALAR},
+	{SN_StoreSelectedScalar},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -4059,6 +4059,11 @@ emit_arm64_intrinsics (
 			ret->inst_c0 = iid;
 			ret->inst_c1 = etype->type;
 			return ret;
+		}
+		case SN_StoreSelectedScalar: {
+			if (!is_intrinsics_vector_type (fsig->params [1]))
+				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_ST1_SCALAR, 0, arg0_type, fsig, args);
 		}
 		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:

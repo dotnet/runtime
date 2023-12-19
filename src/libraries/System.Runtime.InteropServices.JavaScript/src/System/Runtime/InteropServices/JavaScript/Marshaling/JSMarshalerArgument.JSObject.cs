@@ -43,7 +43,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 ObjectDisposedException.ThrowIf(value.IsDisposed, value);
                 slot.Type = MarshalerType.JSObject;
                 slot.JSHandle = value.JSHandle;
-                ObjectDisposedException.ThrowIf(slot.JSHandle == IntPtr.Zero, value);
             }
         }
 

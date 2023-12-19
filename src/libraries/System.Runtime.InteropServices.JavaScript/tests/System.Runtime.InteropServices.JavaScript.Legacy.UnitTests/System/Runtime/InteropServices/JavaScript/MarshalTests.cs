@@ -787,51 +787,5 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             bool success = await MarshalTask("FailedAsynchronousTask");
             Assert.False(success, "FailedAsynchronousTask didn't failed.");
         }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalSynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("SynchronousValueTask");
-            Assert.True(success, "SynchronousValueTask didn't succeeded.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalAsynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("AsynchronousValueTask");
-            Assert.True(success, "AsynchronousValueTask didn't succeeded.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static Task MarshalSynchronousValueTaskIntDoesNotWorkYet()
-        {
-            return MarshalTaskReturningInt("SynchronousValueTaskInt");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static Task MarshalAsynchronousValueTaskIntDoesNotWorkYet()
-        {
-            return MarshalTaskReturningInt("AsynchronousValueTaskInt");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalFailedSynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("FailedSynchronousValueTask");
-            Assert.False(success, "FailedSynchronousValueTask didn't failed.");
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61368")]
-        public static async Task MarshalFailedAsynchronousValueTaskDoesNotWorkYet()
-        {
-            bool success = await MarshalTask("FailedAsynchronousValueTask");
-            Assert.False(success, "FailedAsynchronousValueTask didn't failed.");
-        }
     }
 }

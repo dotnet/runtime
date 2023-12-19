@@ -10,10 +10,10 @@ can also be passed using `_ExtraTrimmerArgs` property.
 
 The command:
 
-`illink -a Program.exe`
+`illink -a Program.dll`
 
-will use the assembly `Program.exe` as root ILLink input. That means that the ILLink will
-start with the main entry point method of `Program.exe` (typically the `Main` method) and
+will use the assembly `Program.dll` as root ILLink input. That means that the ILLink will
+start with the main entry point method of `Program.dll` (typically the `Main` method) and
 process all its dependencies to determine what is necessary for this assembly to run.
 
 It's possible to use multiple input files and ILLink will use them all as multiple sources.
@@ -30,10 +30,10 @@ for multi entry-point libraries bundles.
 - `visible` - Keep all members and types visible outside of the assembly. All internals members
 are also rooted when assembly contains InternalsVisibleToAttribute.
 
-You can retain all public members of `Program.exe` application even if they are not
+You can retain all public members of `Program.dll` application even if they are not
 referenced by any dependency by calling ILLink like
 
-`illink -a Program.exe visible`
+`illink -a Program.dll visible`
 
 ### Trimming from an [XML descriptor](data-formats.md#descriptor-format)
 
@@ -97,7 +97,7 @@ for by using `-d PATH` option.
 
 Example:
 
-`illink -d ../../libs -a program.exe`
+`illink -d ../../libs -a Program.dll`
 
 ### Excluding framework features
 
@@ -136,11 +136,11 @@ You can now ask ILLink to add the custom step at the end of the pipeline:
 
 Or you can ask ILLink to add it after a specific step:
 
-`illink --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
+`illink --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a Program.dll`
 
 Or before a specific step:
 
-`illink --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
+`illink --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a Program.dll`
 
 ### Passing data to custom steps
 

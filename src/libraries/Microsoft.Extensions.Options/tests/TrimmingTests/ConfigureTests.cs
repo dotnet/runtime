@@ -46,7 +46,8 @@ class Program
             P2 = new List<string> { "1234", "12345" },
             P3 = "123456",
             P4 = "12345",
-            P5 = 7
+            P5 = 7,
+            P6 = TimeSpan.FromSeconds(5),
         };
 
         ValidateOptionsResult result = localOptionsValidator.Validate("", optionsUsingValidationAttributes);
@@ -113,6 +114,10 @@ public class OptionsUsingValidationAttributes
 
     [Range(1, 10, MinimumIsExclusive = true, MaximumIsExclusive = true)]
     public int P5 { get; set; }
+
+    [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+    public TimeSpan P6 { get; set; }
+
 }
 
 [OptionsValidator]

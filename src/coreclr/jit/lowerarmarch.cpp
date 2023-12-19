@@ -257,7 +257,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         }
 
         const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
-        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_IN_BYTE) - 1;
+        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE) - 1;
 
         if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
         {
@@ -1273,7 +1273,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-    assert(node->gtType == TYP_UBYTE);
+    assert(node->TypeIs(TYP_INT));
     assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
 
     // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
@@ -2037,13 +2037,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64
-    else if (addr->OperIs(GT_CLS_VAR_ADDR))
-    {
-        // These nodes go into an addr mode:
-        // - GT_CLS_VAR_ADDR turns into a constant.
-        // make this contained, it turns into a constant that goes into an addr mode
-        MakeSrcContained(indirNode, addr);
-    }
     else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         MakeSrcContained(indirNode, addr);
@@ -2781,7 +2774,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())
@@ -2887,7 +2880,7 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())
@@ -3035,6 +3028,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

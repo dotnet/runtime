@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public static partial class CancelablePromise
     {
         [JSImport("INTERNAL.mono_wasm_cancel_promise")]
-        private static partial void _CancelPromise(IntPtr gcvHandle);
+        private static partial void _CancelPromise(IntPtr gcHandle);
 
         public static void CancelPromise(Task promise)
         {
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript
             holder.SynchronizationContext!.Send(static (JSHostImplementation.PromiseHolder holder) =>
             {
 #endif
-            _CancelPromise(holder.GCVHandle);
+            _CancelPromise(holder.GCHandle);
 #if FEATURE_WASM_THREADS
             }, holder);
 #endif
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
             holder.SynchronizationContext!.Send((JSHostImplementation.PromiseHolder holder) =>
             {
 #endif
-                _CancelPromise(holder.GCVHandle);
+                _CancelPromise(holder.GCHandle);
                 callback.Invoke(state);
 #if FEATURE_WASM_THREADS
             }, holder);

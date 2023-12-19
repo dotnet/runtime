@@ -374,6 +374,54 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
+        public static string LibraryImportInRefStruct = """
+            using System;
+            using System.Runtime.InteropServices;
+
+            public static partial class MyClass
+            {
+                public ref partial struct RSPublic
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                internal ref partial struct RSInternal
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                private ref partial struct RSPrivate
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+            }
+
+            public ref partial struct RSContainer
+            {
+                public ref partial struct RSPublic
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                internal ref partial struct RSInternal
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                private ref partial struct RSPrivate
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+            }
+
+        """;
+
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
 
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";

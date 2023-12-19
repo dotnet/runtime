@@ -1172,6 +1172,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	MonoClass *klass;
 	MonoClass *tuple_class = NULL;
 	int findex = 0;
+#ifdef TARGET_WASM
+	gboolean has_fp = FALSE;
+#endif
 
 	// FIXME: Map 1 member structs to primitive types on platforms where its supported
 
@@ -1199,29 +1202,31 @@ get_wrapper_shared_vtype (MonoType *t)
 		args [findex ++] = ftype;
 		if (findex >= 16)
 			break;
+#ifdef TARGET_WASM
+		if (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8 || MONO_TYPE_ISSTRUCT (ftype))
+			has_fp = TRUE;
+#endif
 	}
 
 #ifdef TARGET_WASM
-	guint32 align;
-	int size = mono_class_value_size (klass, &align);
+	if (!has_fp) {
+		guint32 align;
+		int size = mono_class_value_size (klass, &align);
 
-	/* Other platforms might pass small valuestypes or valuetypes with non-int fields differently */
-	if (align == 4 && size <= 4 * 5) {
-		findex = size / align;
-		for (int i = 0; i < findex; ++i)
-			args [i] = m_class_get_byval_arg (mono_get_int32_class ());
-	} else if (align == 8 && size <= 8 * 5) {
-		findex = size / align;
-		for (int i = 0; i < findex; ++i)
-			args [i] = m_class_get_byval_arg (mono_get_int64_class ());
-	} else {
-		if (findex > 7)
-			return NULL;
+		/* Other platforms might pass small valuetypes or valuetypes with non-int fields differently */
+		if (align == 4 && size <= 4 * 5) {
+			findex = size / align;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int32_class ());
+		} else if (align == 8 && size <= 8 * 5) {
+			findex = size / align;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+		}
 	}
-#else
+#endif
 	if (findex > 7)
 		return NULL;
-#endif
 
 	switch (findex) {
 	case 0:
@@ -1394,7 +1399,6 @@ get_wrapper_shared_type (MonoType *t)
 {
 	return get_wrapper_shared_type_full (t, FALSE);
 }
-
 
 /* Returns the intptr type for types that are passed in a single register */
 static MonoType*

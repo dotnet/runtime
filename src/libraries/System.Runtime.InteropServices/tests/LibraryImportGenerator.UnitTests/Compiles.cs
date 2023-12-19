@@ -40,6 +40,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };

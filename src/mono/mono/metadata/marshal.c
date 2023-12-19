@@ -5409,7 +5409,7 @@ ptr_to_structure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureHelper (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
 {
 	MonoType *t;
 	MonoClass *klass;
@@ -5598,10 +5598,10 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionTypeHandle type, MonoError *error)
 {
 	MONO_CHECK_ARG_NULL_NAMED (src, "ptr",);
-	MONO_CHECK_ARG_NULL_HANDLE_NAMED (type, "structureType",);
+	MONO_CHECK_ARG_NULL_HANDLE_NAMED (type, "structuretype",);
 
 	if (!m_class_is_runtime_type (MONO_HANDLE_GET_CLASS (type))) {
-		mono_error_set_argument (error, "structureType", "");
+		mono_error_set_argument (error, "structuretype", "");
 		return;
 	}
 
@@ -5610,7 +5610,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 		return;
 
 	if (m_class_is_auto_layout (klass)) {
-		mono_error_set_argument (error, "structureType", "The specified structure must be blittable or have layout information.");
+		mono_error_set_argument (error, "structuretype", "The specified structure must be blittable or have layout information.");
 		return;
 	}
 

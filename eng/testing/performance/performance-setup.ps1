@@ -24,8 +24,9 @@ Param(
     [switch] $iOSMono,
     [switch] $iOSNativeAOT,
     [switch] $NoDynamicPGO,
-    [switch] $NoR2R,
     [switch] $PhysicalPromotion,
+    [switch] $NoR2R,
+    [string] $ExperimentName,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
     [switch] $HybridGlobalization,
@@ -51,9 +52,9 @@ if ($Internal) {
     switch ($LogicalMachine) {
         "perftiger" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
         "perftiger_crossgen" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
-        "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf" }
+        "perfowl" { $Queue = "Windows.11.Amd64.Owl.Perf" }
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf" }
-        "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
+        "perfpixel4a" { $Queue = "Windows.11.Amd64.Pixel.Perf" }
         "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         "cloudvm" { $Queue = "Windows.10.Amd64" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
@@ -89,12 +90,19 @@ if ($NoDynamicPGO) {
     $Configurations += " PGOType=nodynamicpgo"
 }
 
+if ($PhysicalPromotion) {
+    $Configurations += " PhysicalPromotionType=physicalpromotion"
+}
+
 if ($NoR2R) {
     $Configurations += " R2RType=nor2r"
 }
 
-if ($PhysicalPromotion) {
-    $Configurations += " PhysicalPromotionType=physicalpromotion"
+if ($ExperimentName) {
+    $Configurations += " ExperimentName=$ExperimentName"
+    if ($ExperimentName -eq "memoryRandomization") {
+        $ExtraBenchmarkDotNetArguments += " --memoryRandomization true"
+    }
 }
 
 if ($iOSMono) {
@@ -123,12 +131,16 @@ if ($NoDynamicPGO) {
     $SetupArguments = "$SetupArguments --no-dynamic-pgo"
 }
 
+if ($PhysicalPromotion) {
+    $SetupArguments = "$SetupArguments --physical-promotion"
+}
+
 if ($NoR2R) {
     $SetupArguments = "$SetupArguments --no-r2r"
 }
 
-if ($PhysicalPromotion) {
-    $SetupArguments = "$SetupArguments --physical-promotion"
+if ($ExperimentName) {
+    $SetupArguments = "$SetupArguments --experiment-name '$ExperimentName'"
 }
 
 if ($UseLocalCommitTime) {

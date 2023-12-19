@@ -399,7 +399,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
+            return digitSubstitution == -1 ? (int)DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
         }
 
         private static string IcuGetListSeparator(string? cultureName)
@@ -470,7 +470,7 @@ namespace System.Globalization
                 return Array.Empty<CultureInfo>();
             }
 
-            char [] chars = new char[bufferLength];
+            char[] chars = new char[bufferLength];
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
@@ -501,7 +501,7 @@ namespace System.Globalization
             int index = 0;
             while (index < bufferLength)
             {
-                int length = (int) chars[index++];
+                int length = (int)chars[index++];
                 if (index + length <= bufferLength)
                 {
                     CultureInfo ci = CultureInfo.GetCultureInfo(new string(chars, index, length));
@@ -575,7 +575,7 @@ namespace System.Globalization
                     {
                         if (indexOfExtensions < 0 && i < subject.Length - 2 && (subject[i + 1] is 'u' or 't') && subject[i + 2] == '-') // we have -u- or -t- which is an extension
                         {
-                            if (subject[i + 1] == 't' || i >= subject.Length - 6 || subject[i + 3] != 'c' || subject[i + 4] != 'o' || subject[i + 5] != '-' ) // not -u-co- collation extension
+                            if (subject[i + 1] == 't' || i >= subject.Length - 6 || subject[i + 3] != 'c' || subject[i + 4] != 'o' || subject[i + 5] != '-') // not -u-co- collation extension
                             {
                                 indexOfExtensions = i;
                             }

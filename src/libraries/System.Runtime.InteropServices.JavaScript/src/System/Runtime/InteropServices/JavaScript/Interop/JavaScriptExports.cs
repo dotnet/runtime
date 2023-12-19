@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -143,15 +143,27 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 var gcHandle = arg_1.slot.GCHandle;
-                if (IsGCVHandle(gcHandle) && ThreadJsOwnedHolders.Remove(gcHandle, out PromiseHolder? holder))
+                if (IsGCVHandle(gcHandle))
                 {
-                    holder.GCVHandle = IntPtr.Zero;
-                    holder.Callback!(null);
+                    if (ThreadJsOwnedHolders.Remove(gcHandle, out PromiseHolder? holder))
+                    {
+                        holder.GCHandle = IntPtr.Zero;
+                        holder.Callback!(null);
+                    }
                 }
                 else
                 {
                     GCHandle handle = (GCHandle)gcHandle;
-                    ThreadJsOwnedObjects.Remove(handle.Target!);
+                    var target = handle.Target!;
+                    if (target is PromiseHolder holder)
+                    {
+                        holder.GCHandle = IntPtr.Zero;
+                        holder.Callback!(null);
+                    }
+                    else
+                    {
+                        ThreadJsOwnedObjects.Remove(target);
+                    }
                     handle.Free();
                 }
             }
@@ -191,7 +203,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // the marshaled signature is:
-        // void CompleteTask<T>(GCVHandle holder, Exception? exceptionResult, T? result)
+        // void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
         public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
@@ -200,17 +212,31 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_3 set by caller when this is SetResult call
             try
             {
-                var callback_gcv_handle = arg_1.slot.GCHandle;
-                if (ThreadJsOwnedHolders.Remove(callback_gcv_handle, out PromiseHolder? promiseHolder) && promiseHolder.Callback != null)
+                var holderGCHandle = arg_1.slot.GCHandle;
+                if (IsGCVHandle(holderGCHandle))
                 {
-                    promiseHolder.GCVHandle = IntPtr.Zero;
-
-                    // arg_2, arg_3 are processed by the callback
-                    promiseHolder.Callback(arguments_buffer);
+                    if (ThreadJsOwnedHolders.Remove(holderGCHandle, out PromiseHolder? holder))
+                    {
+                        holder.GCHandle = IntPtr.Zero;
+                        // arg_2, arg_3 are processed by the callback
+                        holder.Callback!(arguments_buffer);
+                    }
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.NullPromiseHolder);
+                    GCHandle handle = (GCHandle)holderGCHandle;
+                    var target = handle.Target!;
+                    if (target is PromiseHolder holder)
+                    {
+                        holder.GCHandle = IntPtr.Zero;
+                        // arg_2, arg_3 are processed by the callback
+                        holder.Callback!(arguments_buffer);
+                    }
+                    else
+                    {
+                        ThreadJsOwnedObjects.Remove(target);
+                    }
+                    handle.Free();
                 }
             }
             catch (Exception ex)
@@ -246,14 +272,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_THREADS
 
+        // this is here temporarily, until JSWebWorker becomes public API
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]
         // the marshaled signature is:
         // void InstallSynchronizationContext()
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
         public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                InstallWebWorkerInterop(true, true);
+                InstallWebWorkerInterop(true);
             }
             catch (Exception ex)
             {

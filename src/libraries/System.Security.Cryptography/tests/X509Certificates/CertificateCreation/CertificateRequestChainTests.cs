@@ -534,6 +534,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 return false;
             }
 
+            if (PlatformDetection.IsBrowser)
+            {
+                // Browser doesn't support PSS or RSA at all.
+                return false;
+            }
+
             using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             using (RSA rsa = cert.GetRSAPrivateKey())
             {

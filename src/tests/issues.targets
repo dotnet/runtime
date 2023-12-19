@@ -757,9 +757,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: SAFEARRAY</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/WeakReference/WeakReferenceTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyLoadContext.LoadFromAssemblyPath</Issue>
         </ExcludeList>
@@ -787,12 +784,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsDefault/AsDefaultTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/176: VARIANT marshalling</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/ArrayWithOffset/ArrayWithOffsetTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/170</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/AsAny/AsAnyTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/169</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
@@ -816,12 +807,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/CopyCtorTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: C++/CLI</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/SafeHandleTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/168</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/ReversePInvoke/**/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/167</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
@@ -1424,9 +1409,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/SingLinkList/singlinkgen/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/ByValArray/MarshalArrayByValTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Reflection/Reflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34371</Issue>
         </ExcludeList>
@@ -1436,43 +1418,16 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/IDynamicInterfaceCastable/IDynamicInterfaceCastable/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetUnix/**">
             <Issue>https://github.com/dotnet/runtime/issues/34374</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/FunctionPointer/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/41180</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/ObjectiveCMarshalAPI/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsByValArray/AsByValArrayTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsLPArray/AsLPArrayTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsDefault/AsDefaultTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsLPArray/AsLPArrayTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/ArrayWithOffset/ArrayWithOffsetTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/AsAny/AsAnyTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CriticalHandles/ArrayTest/**">
@@ -1484,29 +1439,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CriticalHandles/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/DateTime/DateTimeTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Decimal/DecimalTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Delegate/DelegateTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/GenericsTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/**">
-            <Issue>https://github.com/dotnet/runtime/issues/69531</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/**">
             <Issue>https://github.com/dotnet/runtime/issues/48084</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/Invalid/InvalidParamIndex/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/PassingByOut/PassingByOutTest/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/PassingByRef/PassingByRefTest/**">
             <Issue>needs triage</Issue>
@@ -1517,17 +1451,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/ReversePInvoke/PassingByRef/PassingByRefTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/LPSTR/LPSTRTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutSeq/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/ReversePInvoke/ReversePInvokeTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructPacking/StructPacking/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
@@ -1902,9 +1830,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTestComWrappers/*">
             <Issue>Requires COM support, disabled on all Mono platforms</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/IEnumerator/IEnumeratorTest/*">
-            <Issue>PInvoke IEnumerator/IEnumarable marshalling not supported on Mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/DelegatePInvoke/DelegatePInvokeTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/65695</Issue>
@@ -2832,6 +2757,16 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
             <Issue>https://github.com/dotnet/runtime/issues/92727</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- These are known failures on mono-arm64 on OSX -->
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true'" >
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
         </ExcludeList>
     </ItemGroup>
 

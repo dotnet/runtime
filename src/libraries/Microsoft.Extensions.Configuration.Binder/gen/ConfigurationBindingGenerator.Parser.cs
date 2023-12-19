@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -342,6 +343,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.MultiDimArraysNotSupported);
                 }
 
+                if (IsUnsupportedType(typeSymbol.ElementType))
+                {
+                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                }
+
                 TypeRef elementTypeRef = EnqueueTransitiveType(
                     typeParseInfo,
                     typeSymbol.ElementType,
@@ -374,6 +380,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private TypeSpec CreateDictionarySpec(TypeParseInfo typeParseInfo, ITypeSymbol keyTypeSymbol, ITypeSymbol elementTypeSymbol)
             {
+                if (IsUnsupportedType(keyTypeSymbol) || IsUnsupportedType(elementTypeSymbol))
+                {
+                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                }
+
                 INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
 
                 CollectionInstantiationStrategy instantiationStrategy;
@@ -434,6 +445,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
 
                 if (!TryGetElementType(type, out ITypeSymbol? elementType))
+                {
+                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                }
+
+                if (IsUnsupportedType(elementType))
                 {
                     return CreateUnsupportedCollectionSpec(typeParseInfo);
                 }
@@ -506,6 +522,64 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
             }
 
+            private bool IsAssignableTo(ITypeSymbol source, ITypeSymbol dest)
+            {
+                Conversion conversion = _typeSymbols.Compilation.ClassifyConversion(source, dest);
+                return conversion.IsReference && conversion.IsImplicit;
+            }
+
+            private bool IsUnsupportedType(ITypeSymbol type)
+            {
+                if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                {
+                    type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.UIntPtr, type) ||
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.SerializationInfo, type) ||
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.ParameterInfo, type) ||
+                    IsAssignableTo(type, _typeSymbols.MemberInfo) ||
+                    IsAssignableTo(type, _typeSymbols.Delegate))
+                {
+                    return true;
+                }
+
+                if (type is IArrayTypeSymbol arrayTypeSymbol)
+                {
+                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType);
+                }
+
+                if (IsCollection(type))
+                {
+                    INamedTypeSymbol collectionType = (INamedTypeSymbol)type;
+
+                    if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
+                    {
+                        return IsUnsupportedType(keyType) || IsUnsupportedType(elementType);
+                    }
+                    else if (TryGetElementType(collectionType, out elementType))
+                    {
+                        return IsUnsupportedType(elementType);
+                    }
+                }
+
+                return false;
+            }
+
+            private bool ConstructorParametersContainUnsupportedType(IMethodSymbol ctor)
+            {
+                foreach (IParameterSymbol parameter in ctor.Parameters)
+                {
+                    if (IsUnsupportedType(parameter.Type))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
@@ -533,13 +607,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             parameterlessCtor = candidate;
                         }
-                        else if (parameterizedCtor is not null)
+                        else if (!ConstructorParametersContainUnsupportedType(candidate))
                         {
-                            hasMultipleParameterizedCtors = true;
-                        }
-                        else
-                        {
-                            parameterizedCtor = candidate;
+                            if (parameterizedCtor is not null)
+                            {
+                                hasMultipleParameterizedCtors = true;
+                            }
+                            else
+                            {
+                                parameterizedCtor = candidate;
+                            }
                         }
                     }
 
@@ -580,7 +657,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ImmutableArray<ISymbol> members = current.GetMembers();
                     foreach (ISymbol member in members)
                     {
-                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
+                        if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property && !IsUnsupportedType(property.Type))
                         {
                             string propertyName = property.Name;
                             TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);

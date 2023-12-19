@@ -398,7 +398,7 @@ merge_mch_parser.add_argument("--ci", action="store_true", help="Special collect
 # Helper functions
 ################################################################################
 def run_and_log(command, log_level=logging.DEBUG):
-    """ Return a command and log its output to the debug logger
+    """ Run a command and log its output to the debug logger
 
     Args:
         command (list) : Command to run
@@ -414,6 +414,27 @@ def run_and_log(command, log_level=logging.DEBUG):
     for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
         logging.log(log_level, line)
     return proc.returncode
+
+
+def run_and_log_return_output(command, log_level=logging.DEBUG):
+    """ Run a command and log its output to the debug logger, returning the output as an array of string lines
+
+    Args:
+        command (list) : Command to run
+        log_level (int) : log level to use for logging output (but not the "Invoking" text)
+
+    Returns:
+        Tuple of (Process return code, array of string lines of output)
+    """
+
+    output = []
+    logging.log(log_level, "Invoking: %s", " ".join(command))
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout_output, _ = proc.communicate()
+    for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
+        logging.log(log_level, line)
+        output.append(line)
+    return (proc.returncode, output)
 
 
 def write_file_to_log(filepath, log_level=logging.DEBUG):
@@ -843,6 +864,9 @@ class SuperPMICollect:
                 def filter_file(file):
                     if self.coreclr_args.nativeaot:
                         extensions = [".ilc.rsp"]
+                    # Skip assemblies in the 'aotsdk' folder when not running 'nativeaot'.
+                    elif os.path.dirname(file.lower()).endswith("aotsdk"):
+                        return False
                     else:
                         extensions = [".dll", ".exe"]
                     return any(file.endswith(extension) for extension in extensions) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude))
@@ -1496,6 +1520,76 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
         logging.info("%s %s%sxxxxx.mc", repro_base_command_line, repro_location, os.path.sep)
         logging.info("")
 
+
+def parse_replay_asserts(mch_file, replay_output):
+    """ Parse output from failed replay, looking for asserts and correlating them to provide the best
+        repro scenarios.
+
+        Look for lines like:
+
+        ISSUE: <ASSERT> #242532 C:\gh\runtime4\src\coreclr\jit\fgdiagnostic.cpp (2810) - Assertion failed '!"Jump into middle of try region"' in 'Test.AA:TestEntryPoint()' during 'Compute blocks reachability' (IL size 35; hash 0x367fd548; FullOpts)
+
+        Create a map of all unique asserts: <assert text> => <array of instances>
+        where an instance is a dictionary of method context number and IL size.
+        Sort the instances by increasing IL size (smallest first). The idea is that
+        reproducing a failure on the smallest IL size is preferable.
+
+    Return:
+        Returns the dictionary of asserts
+    """
+    asserts = {}
+    for line in replay_output:
+        match = re.search(r'ISSUE: <ASSERT> #([0-9]+) (.*) \(([0-9]*)\) - Assertion failed \'(.*)\' in \'.*\' during \'.*\' \(IL size ([0-9]*); hash .*\)', line)
+        if match is not None:
+            mc_num = match.group(1)
+            filename = match.group(2)
+            line_num = match.group(3)
+            assertion_text = match.group(4)
+            il_size = match.group(5)
+            assertion_key = "{} ({}:{})".format(assertion_text, filename, line_num)
+            assertion_value = {'il': int(il_size), 'mch_file': mch_file, 'mc_num': mc_num}
+            if assertion_key in asserts:
+                asserts[assertion_key].append(assertion_value)
+            else:
+                asserts[assertion_key] = [assertion_value]
+
+    return asserts
+
+
+def add_to_all_asserts(all_asserts, asserts):
+    """ Add the newly found `asserts` to the set of asserts for all MCH files.
+    """
+    if asserts:
+        for assertion_key, assertion_value in asserts.items():
+            if assertion_key in all_asserts:
+                all_asserts[assertion_key].extend(assertion_value)
+            else:
+                all_asserts[assertion_key] = assertion_value
+
+
+def report_replay_asserts(asserts, output_mch_file):
+    """ Report the replay asserts previously parsed by parse_replay_asserts.
+
+        Output each assert followed by a list of method contexts and IL size.
+
+    Args:
+        asserts (dict): dictionary of asserts in the format produced by parse_replay_asserts
+        output_mch_file (bool): True to output the MCH file name as well
+    """
+
+    if asserts:
+        logging.info("============================== Assertions:")
+        for assertion_key, assertion_value in asserts.items():
+            logging.info("%s", assertion_key)
+            # Sort the values by increasing il size
+            sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
+            for instance in sorted_instances:
+                if output_mch_file:
+                    logging.info("  %s # %s : IL size %s", instance['mch_file'], instance['mc_num'], instance['il'])
+                else:
+                    logging.info("  # %s : IL size %s", instance['mc_num'], instance['il'])
+
+
 ################################################################################
 # SuperPMI Replay
 ################################################################################
@@ -1594,6 +1688,9 @@ class SuperPMIReplay:
             # Keep track of any MCH file replay failures
             files_with_replay_failures = []
 
+            # Keep track of all asserts
+            all_asserts = {}
+
             for mch_file in self.mch_files:
 
                 logging.info("Running SuperPMI replay of %s", mch_file)
@@ -1609,7 +1706,7 @@ class SuperPMIReplay:
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
-                return_code = run_and_log(command)
+                (return_code, replay_output) = run_and_log_return_output(command)
 
                 details = read_csv(details_info_file)
                 print_superpmi_result(return_code, self.coreclr_args, self.aggregate_replay_metrics(details), None)
@@ -1621,6 +1718,9 @@ class SuperPMIReplay:
                     if return_code != 3:
                         result = False
                         files_with_replay_failures.append(mch_file)
+                        asserts = parse_replay_asserts(mch_file, replay_output)
+                        report_replay_asserts(asserts, output_mch_file=True)
+                        add_to_all_asserts(all_asserts, asserts)
 
                         if is_nonzero_length_file(fail_mcl_file):
                             # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
@@ -1636,6 +1736,8 @@ class SuperPMIReplay:
                         os.remove(fail_mcl_file)
                     fail_mcl_file = None
             ################################################################################################ end of for mch_file in self.mch_files
+
+        report_replay_asserts(all_asserts, output_mch_file=True)
 
         logging.info("Replay summary:")
 

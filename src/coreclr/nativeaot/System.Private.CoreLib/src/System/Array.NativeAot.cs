@@ -1,23 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime;
-using System.Threading;
 using System.Collections;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
+using Internal.IntrinsicSupport;
+using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-using Internal.Reflection.Core.NonPortable;
-using Internal.IntrinsicSupport;
-using MethodTable = Internal.Runtime.MethodTable;
+
 using EETypeElementType = Internal.Runtime.EETypeElementType;
+using MethodTable = Internal.Runtime.MethodTable;
 
 namespace System
 {
@@ -26,7 +27,9 @@ namespace System
     public abstract partial class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable, ICloneable
     {
         // CS0169: The field 'Array._numComponents' is never used
+        // CA1823: Unused field '_numComponents'
 #pragma warning disable 0169
+#pragma warning disable CA1823
         // This field should be the first field in Array as the runtime/compilers depend on it
         [NonSerialized]
         private int _numComponents;
@@ -58,7 +61,12 @@ namespace System
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
-            ValidateElementType(elementType);
+            if (elementType.IsByRef || elementType.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
+            if (elementType == typeof(void))
+                throw new NotSupportedException(SR.NotSupported_VoidArray);
+            if (elementType.ContainsGenericParameters)
+                throw new NotSupportedException(SR.NotSupported_OpenType);
 
             if (pLowerBounds != null)
             {
@@ -72,34 +80,59 @@ namespace System
             if (rank == 1)
             {
                 return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pLengths[0]);
-
             }
             else
             {
-                // Create a local copy of the lengths that cannot be motified by the caller
+                Type arrayType = elementType.MakeArrayType(rank);
+
+                // Create a local copy of the lengths that cannot be modified by the caller
                 int* pImmutableLengths = stackalloc int[rank];
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];
 
-                return NewMultiDimArray(elementType.MakeArrayType(rank).TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
+                return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
             }
         }
 
-#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6451
-        private static void ValidateElementType(Type elementType)
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures that if we have a TypeHandle of a Rank-1 MdArray, we also generated the SzArray.")]
+        private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
-            while (elementType.IsArray)
-            {
-                elementType = elementType.GetElementType()!;
-            }
-            if (elementType.IsByRef || elementType.IsByRefLike)
-                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
-            if (elementType == typeof(void))
-                throw new NotSupportedException(SR.NotSupported_VoidArray);
-            if (elementType.ContainsGenericParameters)
+            Debug.Assert(arrayType.IsArray);
+            Debug.Assert(arrayType.GetArrayRank() == rank);
+
+            if (arrayType.ContainsGenericParameters)
                 throw new NotSupportedException(SR.NotSupported_OpenType);
+
+            if (pLowerBounds != null)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    if (pLowerBounds[i] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+                }
+            }
+
+            EETypePtr eeType = arrayType.TypeHandle.ToEETypePtr();
+            if (rank == 1)
+            {
+                // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
+                // as an SzArray. SzArray is castable to MdArray rank 1.
+                if (!eeType.IsSzArray)
+                    eeType = arrayType.GetElementType().MakeArrayType().TypeHandle.ToEETypePtr();
+
+                return RuntimeImports.RhNewArray(eeType, pLengths[0]);
+            }
+            else
+            {
+                // Create a local copy of the lengths that cannot be modified by the caller
+                int* pImmutableLengths = stackalloc int[rank];
+                for (int i = 0; i < rank; i++)
+                    pImmutableLengths[i] = pLengths[i];
+
+                return NewMultiDimArray(eeType, pImmutableLengths, rank);
+            }
         }
-#pragma warning restore CA1859
 
         public unsafe void Initialize()
         {

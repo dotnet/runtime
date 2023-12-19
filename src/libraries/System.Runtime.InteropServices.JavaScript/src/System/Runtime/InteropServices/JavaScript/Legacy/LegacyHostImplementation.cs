@@ -3,8 +3,8 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {

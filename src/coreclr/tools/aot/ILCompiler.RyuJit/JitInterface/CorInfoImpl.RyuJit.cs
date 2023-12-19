@@ -13,6 +13,7 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -798,6 +799,14 @@ namespace Internal.JitInterface
             if (!fIsTailPrefix)
             {
                 MethodDesc caller = HandleToObject(callerHnd);
+
+                if (caller.OwningType is EcmaType ecmaOwningType
+                    && ecmaOwningType.EcmaModule.EntryPoint == caller)
+                {
+                    // Do not tailcall from the application entrypoint.
+                    // We want Main to be visible in stack traces.
+                    result = false;
+                }
 
                 if (caller.IsNoInlining)
                 {

@@ -17,11 +17,11 @@
 //    Reflection.Core.dll
 
 using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Reflection;
 
 using EETypeElementType = Internal.Runtime.EETypeElementType;
 

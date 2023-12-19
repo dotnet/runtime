@@ -552,12 +552,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Sets the <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value before logging.
+        /// Sets the <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value given its corresponding header name before logging.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
-        /// <param name="shouldRedactHeaderValue">The <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value before logging.</param>
+        /// <param name="shouldRedactHeaderValue">The <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value given its corresponding header name before logging.</param>
         /// <returns>The <see cref="IHttpClientBuilder"/>.</returns>
-        /// <remarks>The provided <paramref name="shouldRedactHeaderValue"/> predicate will be evaluated for each header value when logging. If the predicate returns <c>true</c> then the header value will be replaced with a marker value <c>*</c> in logs; otherwise the header value will be logged.
+        /// <remarks>The provided <paramref name="shouldRedactHeaderValue"/> predicate will be evaluated for each header name when logging. If the predicate returns <see langword="true"/> then the header value will be replaced with a marker value <c>*</c> in logs; otherwise the header value will be logged.
         /// </remarks>
         public static IHttpClientBuilder RedactLoggedHeaders(this IHttpClientBuilder builder, Func<string, bool> shouldRedactHeaderValue)
         {

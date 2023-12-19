@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport

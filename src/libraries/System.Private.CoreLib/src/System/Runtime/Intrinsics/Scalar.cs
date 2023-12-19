@@ -139,30 +139,55 @@ namespace System.Runtime.Intrinsics
         public static T Abs(T value)
         {
             // byte, ushort, uint, and ulong should have already been handled
-
+            // avoid Math.Abs for integers since it throws for MinValue
             if (typeof(T) == typeof(double))
             {
                 return (T)(object)Math.Abs((double)(object)value);
             }
             else if (typeof(T) == typeof(short))
             {
-                return (T)(object)Math.Abs((short)(object)value);
+                short v = (short)(object)value;
+                if (v < 0)
+                {
+                    v = (short)-v;
+                }
+                return (T)(object)v;
             }
             else if (typeof(T) == typeof(int))
             {
-                return (T)(object)Math.Abs((int)(object)value);
+                int v = (int)(object)value;
+                if (v < 0)
+                {
+                    v = -v;
+                }
+                return (T)(object)v;
             }
             else if (typeof(T) == typeof(long))
             {
-                return (T)(object)Math.Abs((long)(object)value);
+                long v = (long)(object)value;
+                if (v < 0)
+                {
+                    v = -v;
+                }
+                return (T)(object)v;
             }
             else if (typeof(T) == typeof(nint))
             {
-                return (T)(object)Math.Abs((nint)(object)value);
+                nint v = (nint)(object)value;
+                if (v < 0)
+                {
+                    v = -v;
+                }
+                return (T)(object)v;
             }
             else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)Math.Abs((sbyte)(object)value);
+                sbyte v = (sbyte)(object)value;
+                if (v < 0)
+                {
+                    v = (sbyte)-v;
+                }
+                return (T)(object)v;
             }
             else if (typeof(T) == typeof(float))
             {

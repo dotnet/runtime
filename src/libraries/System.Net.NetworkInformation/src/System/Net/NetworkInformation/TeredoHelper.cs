@@ -4,8 +4,8 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.NetworkInformation

@@ -10,17 +10,17 @@
 **
 ===========================================================*/
 
-using System.Runtime;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
 
+using CorElementType = System.Reflection.CorElementType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 using MethodTable = Internal.Runtime.MethodTable;
 using MethodTableList = Internal.Runtime.MethodTableList;
-using EETypeElementType = Internal.Runtime.EETypeElementType;
-using CorElementType = System.Reflection.CorElementType;
 
 namespace System
 {

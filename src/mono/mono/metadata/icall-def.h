@@ -189,6 +189,8 @@ NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_11, "LogThreadPoolWorkerThreadStart"
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_12, "LogThreadPoolWorkerThreadStop", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop))
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_13, "LogThreadPoolWorkerThreadWait", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait))
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_14, "LogThreadPoolWorkingThreadCount", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount))
+NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_15, "LogWaitHandleWaitStart", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart))
+NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_16, "LogWaitHandleWaitStop", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop))
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, void, 3, (MonoQCallTypeHandle, MonoArrayOut, MonoArrayOut))
@@ -454,7 +456,7 @@ HANDLES(MARSHAL_10, "GetFunctionPointerForDelegateInternal", ves_icall_System_Ru
 NOHANDLES(ICALL(MARSHAL_11, "GetLastPInvokeError", ves_icall_System_Runtime_InteropServices_Marshal_GetLastPInvokeError))
 HANDLES(MARSHAL_12, "OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf, int, 2, (MonoReflectionType, MonoString))
 HANDLES(MARSHAL_13, "PrelinkInternal", ves_icall_System_Runtime_InteropServices_Marshal_Prelink, void, 1, (MonoReflectionMethod))
-HANDLES(MARSHAL_20, "PtrToStructureInternal", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal, void, 3, (gconstpointer, MonoObject, MonoBoolean))
+HANDLES(MARSHAL_20, "PtrToStructureHelper", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureHelper, void, 3, (gconstpointer, MonoObject, MonoBoolean))
 NOHANDLES(ICALL(MARSHAL_29a, "SetLastPInvokeError", ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError))
 HANDLES(MARSHAL_31, "SizeOfHelper", ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper, guint32, 2, (MonoQCallTypeHandle, MonoBoolean))
 HANDLES(MARSHAL_34, "StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr, void, 3, (MonoObject, gpointer, MonoBoolean))

@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Numerics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
+
 using Internal.Metadata.NativeFormat;
 
 using OpenMethodInvoker = System.Reflection.Runtime.MethodInfos.OpenMethodInvoker;
-using System.Reflection.Runtime.MethodInfos;
 
 namespace Internal.Reflection.Core.Execution
 {

@@ -5017,6 +5017,33 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector512SingleCopyToTest()
+        {
+            float[] array = new float[16];
+            Vector512.Create(2.0f).CopyTo(array);
+            Assert.True(array.AsSpan().SequenceEqual([2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector512SingleCopyToOffsetTest()
+        {
+            float[] array = new float[17];
+            Vector512.Create(2.0f).CopyTo(array, 1);
+            Assert.True(array.AsSpan().SequenceEqual([0.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector512SByteAbs_MinValue()
+        {
+            Vector512<sbyte> vector = Vector512.Create(sbyte.MinValue);
+            Vector512<sbyte> abs = Vector512.Abs(vector);
+            for (int index = 0; index < Vector512<sbyte>.Count; index++)
+            {
+                Assert.Equal(sbyte.MinValue, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
