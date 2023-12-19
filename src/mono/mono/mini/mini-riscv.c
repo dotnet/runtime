@@ -1811,14 +1811,16 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
 	switch (ins->opcode) {
 	case OP_CKFINITE:
-	case OP_LADD:
-	case OP_LADD_IMM:
 	case OP_IADD:
-	case OP_IADD_IMM:
-	case OP_IADD_OVF:
-	case OP_IADD_OVF_UN:
+	case OP_LADD:
 	case OP_RADD:
 	case OP_FADD:
+	case OP_IADD_IMM:
+	case OP_LADD_IMM:
+	case OP_IADD_OVF:
+	case OP_LADD_OVF:
+	case OP_LADD_OVF_UN:
+	case OP_IADD_OVF_UN:
 	case OP_ISUB:
 	case OP_LSUB:
 	case OP_FSUB:
@@ -1826,6 +1828,10 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ISUB_IMM:
 	case OP_LSUB_IMM:
 	case OP_ISUB_OVF:
+	case OP_LSUB_OVF:
+	case OP_ISUB_OVF_UN:
+	case OP_LSUB_OVF_UN:
+
 	case OP_INEG:
 	case OP_LAND:
 	case OP_LOR:
@@ -1910,10 +1916,17 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FMUL:
 	case OP_IMUL_IMM:
 	case OP_LMUL_IMM:
+	case OP_IMUL_OVF:
+	case OP_LMUL_OVF:
+	case OP_IMUL_OVF_UN:
+	case OP_LMUL_OVF_UN:
+	case OP_IMUL_OVF_UN_OOM:
+	case OP_LMUL_OVF_UN_OOM:
 	case OP_IDIV:
 	case OP_LDIV:
-	case OP_LDIV_UN:
+	case OP_FDIV:
 	case OP_IDIV_UN:
+	case OP_LDIV_UN:
 	case OP_IDIV_IMM:
 	case OP_IDIV_UN_IMM:
 	case OP_RDIV:
@@ -1962,17 +1975,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_OVF_U8:
 	case OP_LCONV_TO_OVF_U8_UN:
 
-	case OP_LADD_OVF:
-	case OP_LADD_OVF_UN:
-	case OP_LSUB_OVF:
-	case OP_IMUL_OVF:
-	case OP_IMUL_OVF_UN:
-	case OP_IMUL_OVF_UN_OOM:
-	case OP_LMUL_OVF:
-	case OP_LMUL_OVF_UN:
-	case OP_LMUL_OVF_UN_OOM:
-
-	case OP_FDIV:
 		break;
 	default:
 		g_print ("Can't decompose the OP %s\n", mono_inst_name (ins->opcode));
