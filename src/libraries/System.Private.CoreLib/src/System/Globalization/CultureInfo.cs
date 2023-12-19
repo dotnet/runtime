@@ -104,7 +104,7 @@ namespace System.Globalization
         // The Invariant culture;
 // https://github.com/dotnet/runtime/issues/94225
 #if TARGET_BROWSER
-        private static CultureInfo? s_InvariantCultureInfo;
+        private static CultureInfo? s_InvariantCultureInfo = GlobalizationMode.Hybrid ? null : new CultureInfo(CultureData.Invariant, isReadOnly: true);
 #else
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
 #endif
@@ -469,10 +469,10 @@ namespace System.Globalization
             {
 // https://github.com/dotnet/runtime/issues/94225
 #if TARGET_BROWSER
-                s_InvariantCultureInfo ??= new CultureInfo(CultureData.Invariant, isReadOnly: true);
-#else
-                Debug.Assert(s_InvariantCultureInfo != null);
+                if (GlobalizationMode.Hybrid)
+                    s_InvariantCultureInfo ??= new CultureInfo(CultureData.Invariant, isReadOnly: true);
 #endif
+                Debug.Assert(s_InvariantCultureInfo != null);
                 return s_InvariantCultureInfo;
             }
         }
