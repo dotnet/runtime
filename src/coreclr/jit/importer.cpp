@@ -3852,9 +3852,11 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
-                op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
                 if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
                 {
+                    assert(pFieldInfo->helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE);
+                    op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR, TYP_BYREF);
+
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
                     op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
                     op1->gtFlags |= callFlags;
@@ -3864,6 +3866,9 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                     m_preferredInitCctor = CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
                     break;
                 }
+
+                op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
+
                 if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
                     (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
                      pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE))

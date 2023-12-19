@@ -16927,19 +16927,13 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree*     node  = *use;
-            GenTreeFlags flags = m_flags;
+            GenTree* node = *use;
 
-            if ((user != nullptr) && (user->OperIs(GT_COMMA)) && (user->AsOp()->gtGetOp1() == node))
-            {
-                flags &= ~GTF_IS_IN_CSE;
-            }
-
-            bool treeHasSideEffects = m_compiler->gtTreeHasSideEffects(node, flags);
+            bool treeHasSideEffects = m_compiler->gtTreeHasSideEffects(node, m_flags);
 
             if (treeHasSideEffects)
             {
-                if (m_compiler->gtNodeHasSideEffects(node, flags))
+                if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
