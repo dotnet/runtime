@@ -1806,6 +1806,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IADD:
 	case OP_IADD_IMM:
 	case OP_IADD_OVF:
+	case OP_RADD:
 	case OP_FADD:
 	case OP_ISUB:
 	case OP_LSUB:
@@ -2342,6 +2343,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Float Ext */
 		case OP_R8CONST:
+		case OP_RADD:
 		case OP_FADD:
 		case OP_FNEG:
 		case OP_ICONV_TO_R8:
@@ -4277,6 +4279,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADD_IMM:
 		case OP_LADD_IMM:
 			riscv_addi (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case OP_RADD:
+			g_assert (riscv_stdext_f);
+			riscv_fadd_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FADD:
 			g_assert (riscv_stdext_f || riscv_stdext_d);

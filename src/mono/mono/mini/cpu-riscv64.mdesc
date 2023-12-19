@@ -127,6 +127,7 @@ iconst: dest:i len:16
 i8const: dest:i len:16
 int_add: dest:i src1:i src2:i len:4
 long_add: dest:i src1:i src2:i len:4
+r4_add: dest:f src1:f src2:f len:4
 float_add: dest:f src1:f src2:f len:4
 int_sub: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
