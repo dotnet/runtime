@@ -4983,7 +4983,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_VOIDCALL:
 		case OP_CALL:
-		case OP_RCALL:
 		case OP_FCALL:
 		case OP_RCALL:
 		case OP_LCALL:
