@@ -73,9 +73,9 @@
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.props"
+  <Import Project="$(WasiProjectRoot)build\WasiApp.props"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
-  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.InTree.targets"
+  <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">

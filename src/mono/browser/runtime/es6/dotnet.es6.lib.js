@@ -102,4 +102,4 @@ function injectDependencies() {
 }
 
 
-// var methodIndexByName wil be appended below by the MSBuild in wasm.proj
+// var methodIndexByName wil be appended below by the MSBuild in browser.proj

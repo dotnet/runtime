@@ -83,14 +83,14 @@
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Condition="'$(HostOS)' == 'windows'" 
+    <PackageReference Condition="'$(HostOS)' == 'windows'"
                       Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64"
                       PrivateAssets="all"
                       Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
                       GeneratePathProperty="true" />
   </ItemGroup>
 
-  <!-- 
+  <!--
     Like Wasm, Wasi needs a 64-bit python on windows to pinvoke into libClang.dll for offset generation.
     Only wasi doesn't come with its own python and windows uses 32-bit python, so refer to the transport pack instead.
   -->
@@ -149,7 +149,7 @@
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
           Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
-    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\browser\emscripten-version.txt">
       <Output TaskParameter="Lines" ItemName="_VersionLines" />
     </ReadLinesFromFile>
 
@@ -157,7 +157,7 @@
       <EmsdkExt Condition="'$(HostOS)' != 'windows'"></EmsdkExt>
       <EmsdkExt Condition="'$(HostOS)' == 'windows'">.ps1</EmsdkExt>
       <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
-      <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
+      <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
 
@@ -170,7 +170,7 @@
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
     <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
-          WorkingDirectory="$(WasmLocalPath)"
+          WorkingDirectory="$(BrowserLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
           WorkingDirectory="$(EMSDK_PATH)"
@@ -456,8 +456,8 @@
       use $(CrossToolchainFile) and eng/common/cross/toolchain.cmake ?
       sockets,eventpipe, DENABLE_LLVM_RUNTIME
       -->
-      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include').Replace('\','/'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath($(WasiProjectRoot), 'include').Replace('\','/'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath($(WasiProjectRoot), 'mono-include').Replace('\','/'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib').Replace('\','/'))$(EscapedQuoteW)"/>
       <_MonoCFLAGS Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
