@@ -1865,6 +1865,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_ICONV_TO_I4:
 	case OP_ICONV_TO_OVF_I4:
+	case OP_ICONV_TO_OVF_I4_UN:
 	case OP_ICONV_TO_U4:
 	case OP_ICONV_TO_I8:
 	case OP_ICONV_TO_U8:
