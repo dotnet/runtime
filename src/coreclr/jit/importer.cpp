@@ -3856,7 +3856,11 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
                 {
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
+                    op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
+                    op1->gtFlags |= callFlags;
+
                     op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
+
                     m_preferredInitCctor = CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
                     break;
                 }

@@ -466,8 +466,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     BasicBlock*     block  = *pBlock;
     CorInfoHelpFunc helper = call->GetHelperNum();
 
-    bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE) ||
-                               (helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE);
+    bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE);
     if (!call->IsHelperCall() || !isExpTLSFieldAccess)
     {
         return false;

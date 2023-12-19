@@ -1557,6 +1557,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
                 //
