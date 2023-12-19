@@ -2342,16 +2342,13 @@ private:
     //
     void CheckForExit(BasicBlock* block)
     {
-        BasicBlock* exitPoint;
+        assert(!block->HasTarget() || block->HasInitializedTarget());
 
         switch (block->GetKind())
         {
-            case BBJ_COND:
-            case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-                assert(block->HasInitializedTarget());
-                exitPoint = block->KindIs(BBJ_COND) ? block->GetTrueTarget() : block->GetTarget();
+            {
+                BasicBlock* exitPoint = block->GetTarget();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
@@ -2362,15 +2359,43 @@ private:
                     // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
                     // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
                     // show up as might be expected in the dominator tree.
-                    if (block->KindIs(BBJ_ALWAYS))
+                    if (!BasicBlock::sameHndRegion(block, exitPoint))
                     {
-                        if (!BasicBlock::sameHndRegion(block, exitPoint))
-                        {
-                            break;
-                        }
+                        break;
                     }
 #endif // !defined(FEATURE_EH_FUNCLETS)
 
+                    lastExit = block;
+                    exitCount++;
+                }
+                break;
+            }
+            case BBJ_COND:
+                if (!loopBlocks.IsMember(block->GetTrueTarget()->bbNum))
+                {
+                    lastExit = block;
+                    exitCount++;
+                }
+
+                if (!loopBlocks.IsMember(block->GetFalseTarget()->bbNum))
+                {
+                    lastExit = block;
+                    exitCount++;
+                }
+                break;
+            case BBJ_CALLFINALLY:
+                // Check fallthrough successor
+                if (!loopBlocks.IsMember(block->Next()->bbNum))
+                {
+                    lastExit = block;
+                    exitCount++;
+                }
+
+                FALLTHROUGH;
+            case BBJ_CALLFINALLYRET:
+            case BBJ_EHCATCHRET:
+                if (!loopBlocks.IsMember(block->GetTarget()->bbNum))
+                {
                     lastExit = block;
                     exitCount++;
                 }
@@ -2404,13 +2429,6 @@ private:
             default:
                 noway_assert(!"Unexpected bbKind");
                 break;
-        }
-
-        if (block->bbFallsThrough() && !loopBlocks.IsMember(block->Next()->bbNum))
-        {
-            // Found a fall-through exit.
-            lastExit = block;
-            exitCount++;
         }
     }
 };
