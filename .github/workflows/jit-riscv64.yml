@@ -57,7 +57,7 @@ jobs:
         with:
           name: jit-riscv64
       - name: Decompress
-        run: tar -zxvf runtime.tar.gz -P -C /__w/runtime/runtime
+        run: tar -zxf runtime.tar.gz -P -C /__w/runtime/runtime
       - name: Run tests
         run: bash -c ./run.sh Release
         working-directory: ./src/tests
