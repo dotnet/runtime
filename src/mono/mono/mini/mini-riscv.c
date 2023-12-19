@@ -955,6 +955,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			add_valuetype (cinfo, ainfo, ptype);
 		break;
 	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF:
 		add_valuetype (cinfo, ainfo, ptype);
 		break;
 
