@@ -56,6 +56,7 @@ void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elem
 void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -417,6 +418,9 @@ static code_t insEncodeDatasizeBF(code_t code, emitAttr size);
 
 // Returns the encoding to select the vectorsize for SIMD Arm64 instructions
 static code_t insEncodeVectorsize(emitAttr size);
+
+// Returns the encoding to set the vector length specifier (vl) for an Arm64 SVE instruction
+static code_t insEncodeVectorLengthSpecifier(insOpts opt);
 
 // Returns the encoding to select 'index' for an Arm64 vector elem instruction
 static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
@@ -789,12 +793,17 @@ inline static bool isFloatReg(regNumber reg)
 
 inline static bool isPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool isLowPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LOW_LAST);
+}
+
+inline static bool isHighPredicateRegister(regNumber reg)
+{
+    return (reg > REG_PREDICATE_LOW_LAST) && (reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -898,7 +907,7 @@ inline static bool insOptsScalable(insOpts opt)
     // Opt is any of the scalable types.
     return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
             (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
-            insOptsScalableWithPredicateMerge(opt));
+            insOptsScalableWithPredicateMerge(opt) || insOptsScalableWithPredicatePair(opt));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -973,6 +982,18 @@ inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
     // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
     return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
             (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
+}
+
+inline static bool insOptsScalableWithPredicatePair(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for use with a predicate pair.
+    return ((opt >= INS_OPTS_SCALABLE_B_WITH_PREDICATE_PAIR) && (opt <= INS_OPTS_SCALABLE_D_WITH_PREDICATE_PAIR));
+}
+
+inline static bool insOptsScalableWithVectorLength(insOpts opt)
+{
+    // `opt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
+    return ((opt >= INS_OPTS_SCALABLE_B_VL_2X) && (opt <= INS_OPTS_SCALABLE_D_VL_4X));
 }
 
 static bool isValidImmCond(ssize_t imm);
