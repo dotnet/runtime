@@ -1041,6 +1041,21 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidScalarDatasize(elemsize));
             break;
 
+        // Scalable, 4 regs (location of reg3 and reg4 can switch)
+        case IF_SVE_AR_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE integer multiply-accumulate writing addend
+                           // (predicated)
+        case IF_SVE_AS_4A: // ........xx.mmmmm ...gggaaaaaddddd -- SVE integer multiply-add writing multiplicand
+                           // (predicated)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableSimple(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));        // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));  // ggg
+            assert(isVectorRegister(id->idReg3()));
+            assert(isVectorRegister(id->idReg4()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        // Scalable, 4 regs, to predicate register.
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
             assert(insOptsScalableSimple(id->idInsOpt())); // xx
@@ -10070,6 +10085,28 @@ void emitter::emitIns_R_R_R_R(instruction ins,
             fmt = IF_SVE_CX_4A;
             break;
 
+        case INS_sve_mla:
+        case INS_sve_mls:
+            assert(insOptsScalableSimple(opt));
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            assert(isVectorRegister(reg4));       // mmmmm
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_AR_4A;
+            break;
+
+        case INS_sve_mad:
+        case INS_sve_msb:
+            assert(insOptsScalableSimple(opt));
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // mmmmm
+            assert(isVectorRegister(reg4));       // aaaaa
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_AS_4A;
+            break;
+
         default:
             unreached();
             break;
@@ -14972,6 +15009,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         break;
 
+        // Scalable, 4 regs. Reg4 in mmmmm.
+        case IF_SVE_AR_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE integer multiply-accumulate writing addend
+                           // (predicated)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());                     // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg4());                   // mmmmm
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        // Scalable, 4 regs. Reg4 in aaaaa.
+        case IF_SVE_AS_4A: // ........xx.mmmmm ...gggaaaaaddddd -- SVE integer multiply-add writing multiplicand
+                           // (predicated)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_V_20_to_16(id->idReg3());                   // mmmmm
+            code |= insEncodeReg_V_9_to_5(id->idReg4());                     // aaaaa
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Scalable to general register.
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
@@ -17419,6 +17480,18 @@ void emitter::emitDispInsHelp(
             emitDispLowPredicateReg(id->idReg2(), PREDICATE_MERGE, id->idInsOpt(), true); // ggg
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                           // ddddd
             emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false);                     // mmmmm
+            break;
+
+        // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+        // <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+        case IF_SVE_AR_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE integer multiply-accumulate writing addend
+                           // (predicated)
+        case IF_SVE_AS_4A: // ........xx.mmmmm ...gggaaaaaddddd -- SVE integer multiply-add writing multiplicand
+                           // (predicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                           // ddddd
+            emitDispLowPredicateReg(id->idReg2(), PREDICATE_MERGE, id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispSveReg(id->idReg4(), id->idInsOpt(), false);
             break;
 
         // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
@@ -19917,6 +19990,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
+
+        case IF_SVE_AR_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE integer multiply-accumulate writing addend
+                           // (predicated)
+        case IF_SVE_AS_4A: // ........xx.mmmmm ...gggaaaaaddddd -- SVE integer multiply-add writing multiplicand
+                           // (predicated)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_5C;
             break;
 
         // Conditional extract operations, SIMD&FP scalar and vector forms

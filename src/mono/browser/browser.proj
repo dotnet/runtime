@@ -512,29 +512,29 @@
   </Target>
 
   <Target Name="InstallNpmPackages"
-          Inputs="$(MonoProjectRoot)wasm/runtime/package.json"
-          Outputs="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp"
+          Inputs="$(BrowserProjectRoot)runtime/package.json"
+          Outputs="$(BrowserProjectRoot)runtime/node_modules/.npm-stamp"
           >
     <!-- install typescript and rollup -->
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(BrowserProjectRoot)runtime/"/>
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(BrowserProjectRoot)runtime/"/>
 
     <!-- Delete malformed package.json used for tests, it confuses Component Governance tooling -->
-    <Delete Files="$(MonoProjectRoot)wasm/runtime/node_modules/resolve/test/resolver/malformed_package_json/package.json" ContinueOnError="true" />
+    <Delete Files="$(BrowserProjectRoot)runtime/node_modules/resolve/test/resolver/malformed_package_json/package.json" ContinueOnError="true" />
 
-    <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
+    <Touch Files="$(BrowserProjectRoot)runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
   </Target>
 
   <ItemGroup>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/*.ts"
-		   Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/dotnet-legacy.d.ts;$(MonoProjectRoot)wasm/runtime/diagnostics-mock.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/tsconfig.*"
-		   Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>
+    <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/*.ts"
+		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/dotnet-legacy.d.ts;$(BrowserProjectRoot)runtime/diagnostics-mock.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
+    <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/tsconfig.*"
+		   Exclude="$(BrowserProjectRoot)runtime/node_modules/**/tsconfig.*" />
+    <_RollupInputs Include="$(BrowserProjectRoot)runtime/workers/**/*.js"/>
+    <_RollupInputs Include="$(BrowserProjectRoot)runtimetypes/*.d.ts"/>
+    <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.json"/>
+    <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.js"/>
   </ItemGroup>
 
   <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
@@ -578,7 +578,7 @@
   <Target Name="GenerateMintopsTS"
           Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def;$(MonoProjectRoot)mono\mini\interp\interp-simd-intrins.def"
           Outputs="$(NativeGeneratedFilesDir)mintops.ts">
-      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(MonoProjectRoot)mono/mini/interp/interp-simd-intrins.def $(NativeGeneratedFilesDir)mintops.ts" />
+      <Exec Command="$(PythonCmd) $(BrowserProjectRoot)runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(MonoProjectRoot)mono/mini/interp/interp-simd-intrins.def $(NativeGeneratedFilesDir)mintops.ts" />
   </Target>
 
   <Target Name="BuildWithRollup"
@@ -587,10 +587,10 @@
 	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
           >
     <!-- code style check -->
-    <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(BrowserProjectRoot)runtime/"/>
 
     <!-- compile typescript -->
-    <RunWithEmSdkEnv Command="npm run rollup -- --environment $(MonoRollupEnvironment)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run rollup -- --environment $(MonoRollupEnvironment)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(BrowserProjectRoot)runtime/"/>
 
     <Copy SourceFiles="runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"

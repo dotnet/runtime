@@ -1699,7 +1699,6 @@ enum CORINFO_FIELD_FLAGS
     CORINFO_FLG_FIELD_FINAL                     = 0x00000004,
     CORINFO_FLG_FIELD_STATIC_IN_HEAP            = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
     CORINFO_FLG_FIELD_INITCLASS                 = 0x00000020, // initClass has to be called before accessing the field
-    CORINFO_FLG_FIELD_PROTECTED                 = 0x00000040,
 };
 
 struct CORINFO_FIELD_INFO

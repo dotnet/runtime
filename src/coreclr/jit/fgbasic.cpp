@@ -6729,12 +6729,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         // something else. We keep updating it until we've reached the 'nearBlk', to push it as
         // close to endBlk as possible.
         //
-        // TODO-Quirk: we can't use isBBCallFinallyPair because this function is called during the importer
-        // before we've replaced BBJ_CALLFINALLY/BBJ_ALWAYS with BBJ_CALLFINALLY/BBJ_CALLFINALLYRET, which
-        // leads to asserts.
-        //
-        // if (!blk->isBBCallFinallyPair())
-        if (!blk->KindIs(BBJ_CALLFINALLY) || blk->HasFlag(BBF_RETLESS_CALL))
+        if (!blk->isBBCallFinallyPair())
         {
             if (goodBlk == nullptr)
             {
