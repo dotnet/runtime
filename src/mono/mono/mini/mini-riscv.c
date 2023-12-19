@@ -1925,6 +1925,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_OVF_U_UN:
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
+	case OP_LCONV_TO_OVF_I1:
+	case OP_LCONV_TO_OVF_I1_OVF:
 	case OP_LCONV_TO_OVF_U1:
 	case OP_LCONV_TO_OVF_U1_UN:
 	case OP_LCONV_TO_OVF_U2:
@@ -2477,7 +2479,18 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				} else {
+				} else if (ins->next->opcode == OP_FBEQ) {
+					// rcmp rd, rs1, rs2; fbeq rd -> rceq rd, rs1, rs2; bne rd, X0
+					ins->opcode = OP_RCEQ;
+					ins->dreg = mono_alloc_ireg (cfg);
+					ins->sreg1 = ins->sreg1;
+					ins->sreg2 = ins->sreg2;
+
+					ins->next->opcode = OP_RISCV_BNE;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
+				} 
+				else {
 					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
 				}
