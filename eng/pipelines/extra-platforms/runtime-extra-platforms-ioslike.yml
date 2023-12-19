@@ -35,7 +35,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true /p:EnableAggressiveTrimming=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:BuildTestsOnHelix=true
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true /p:EnableAggressiveTrimming=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:BuildTestsOnHelix=true
       timeoutInMinutes: 480
       # extra steps, run tests
       postBuildSteps:
