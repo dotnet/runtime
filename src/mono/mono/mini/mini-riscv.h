@@ -232,23 +232,24 @@ typedef struct {
 } CallContext;
 
 typedef enum {
+	ArgNone, // only in void return type
 	ArgInIReg = 0x01,
-	ArgOnStack,
 	ArgInFReg,
 #ifdef TARGET_RISCV64
 	ArgInFRegR4,
 #endif
+	ArgOnStack,
 	ArgOnStackR4,
 	ArgOnStackR8,
+
 	/*
 	 * Vtype passed in consecutive int registers.
 	 */
+	ArgVtypeInIReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
-	ArgVtypeInIReg,
-	ArgVtypeInMixed,
-	ArgNone // only in void return type
+	ArgVtypeInMixed
 } ArgStorage;
 
 typedef struct {

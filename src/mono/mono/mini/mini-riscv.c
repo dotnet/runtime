@@ -1278,7 +1278,36 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 gboolean
 mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig, gboolean virtual_)
 {
-	NOT_IMPLEMENTED;
+	g_assert (caller_sig);
+	g_assert (callee_sig);
+
+	CallInfo *caller_info = get_call_info (NULL, caller_sig);
+	CallInfo *callee_info = get_call_info (NULL, callee_sig);
+
+	// Do not tail call optimize functions with varargs passed by stack.
+	gboolean res = IS_SUPPORTED_TAILCALL(callee_sig->call_convention != MONO_CALL_VARARG);
+
+	//	Byval parameters hand the function a pointer directly into the stack area
+	//	we want to reuse during a tail call. Do not tail call optimize functions with
+	//	byval parameters.
+	//
+	// Do not tail call optimize if stack is used to pass parameters.
+	const ArgInfo *ainfo;
+	ainfo = callee_info->args + callee_sig->hasthis;
+	for (int i = 0; res && i < callee_sig->param_count; ++i) {
+		res == IS_SUPPORTED_TAILCALL (ainfo [i].storage < ArgOnStack);
+	}
+
+	// Do not tail call optimize if callee uses structret semantics.
+	res &= IS_SUPPORTED_TAILCALL (callee_info->ret.storage < ArgVtypeByRef);
+
+	// Do not tail call optimize if caller uses structret semantics.
+	res &= IS_SUPPORTED_TAILCALL (caller_info->ret.storage < ArgVtypeByRef);
+
+	g_free (caller_info);
+	g_free (callee_info);
+
+	return res;
 }
 
 gboolean
@@ -1885,8 +1914,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_OVF_I8_UN:
 	case OP_ICONV_TO_OVF_U4:
 	case OP_ICONV_TO_OVF_U4_UN:
-	case OP_ICONV_TO_OVF_I8:
-	case OP_ICONV_TO_OVF_I8_UN:
 	case OP_ICONV_TO_OVF_U8:
 	case OP_ICONV_TO_OVF_U8_UN:
 	case OP_ICONV_TO_OVF_I_UN:
@@ -2200,6 +2227,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BR:
 		case OP_BR_REG:
 		case OP_JUMP_TABLE:
+		case OP_TAILCALL_PARAMETER:
+		case OP_TAILCALL:
+		case OP_TAILCALL_REG:
+		case OP_TAILCALL_MEMBASE:
 		case OP_CALL:
 		case OP_RCALL:
 		case OP_FCALL:
@@ -4720,6 +4751,79 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		/* Calls */
+		case OP_TAILCALL_PARAMETER:
+			// This opcode helps compute sizes, i.e.
+			// of the subsequent OP_TAILCALL, but contributes no code.
+			g_assert (ins->next);
+			break;
+		case OP_TAILCALL:
+		case OP_TAILCALL_REG:
+		case OP_TAILCALL_MEMBASE: {
+			int target_reg = RISCV_T1;
+			guint64 free_reg = 1 << RISCV_T1;
+			call = (MonoCallInst*)ins;
+
+			g_assert (!cfg->method->save_lmf);
+
+			switch (ins->opcode) {
+				case OP_TAILCALL:
+					break;
+				case OP_TAILCALL_REG:
+					g_assert (ins->sreg1 != -1);
+					g_assert (ins->sreg1 != RISCV_T0);
+					g_assert (ins->sreg1 != RISCV_T1);
+					g_assert (ins->sreg1 != RISCV_RA);
+					g_assert (ins->sreg1 != RISCV_SP);
+					g_assert (ins->sreg1 != RISCV_FP);
+					riscv_addi (code, target_reg, ins->sreg1, 0);
+					break;
+				case OP_TAILCALL_MEMBASE:
+					g_assert (ins->sreg1 != -1);
+					g_assert (ins->sreg1 != RISCV_T0);
+					g_assert (ins->sreg1 != RISCV_T1);
+					g_assert (ins->sreg1 != RISCV_RA);
+					g_assert (ins->sreg1 != RISCV_SP);
+					g_assert (ins->sreg1 != RISCV_FP);
+					code = mono_riscv_emit_load (code, target_reg, ins->inst_basereg, ins->inst_offset, 0);
+					break;
+				default:
+					g_assert_not_reached ();
+			}
+
+			g_assert(call->stack_usage == 0);
+
+			/* Restore registers */
+			code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
+		                                   -cfg->arch.saved_gregs_offset, FALSE);
+
+			/* Destroy frame */
+			code = mono_riscv_emit_destroy_frame (code);
+
+			switch (ins->opcode) {
+				case OP_TAILCALL:
+					if(cfg->compile_aot){
+						NOT_IMPLEMENTED;
+					}
+					else{
+						mono_add_patch_info_rel (cfg, GPTRDIFF_TO_INT (code - cfg->native_code), MONO_PATCH_INFO_METHOD_JUMP, call->method, MONO_R_RISCV_JAL);
+						riscv_jal (code, RISCV_ZERO, 0);
+					}
+					break;
+				case OP_TAILCALL_REG:
+				case OP_TAILCALL_MEMBASE:
+					// code = mono_arm_emit_brx (code, branch_reg);
+					riscv_jalr (code, RISCV_ZERO, target_reg, 0);
+					break;
+
+				default:
+					g_assert_not_reached ();
+			}
+
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
+
+			break;
+		}
 		case OP_VOIDCALL:
 		case OP_CALL:
 		case OP_RCALL:
