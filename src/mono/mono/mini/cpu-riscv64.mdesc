@@ -64,10 +64,11 @@ vcall2: len:16 clob:c
 vcall2_reg: src1:i len:16 clob:c
 vcall2_membase: src1:b len:28 clob:c
 fcall: dest:f len:8 clob:c
-rcall: dest:f len:8 clob:c
-rcall_membase: dest:f src1:b len:12 clob:c
 fcall_reg: dest:f src1:i len:8 clob:c
 fcall_membase: dest:f src1:b len:12 clob:c
+rcall: dest:f len:8 clob:c
+rcall_reg: dest:f src1:i len:8 clob:c
+rcall_membase: dest:f src1:b len:12 clob:c
 
 # Note: in RV32, it shoule be 
 # lcall: dest:l ...

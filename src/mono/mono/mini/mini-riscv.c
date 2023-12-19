@@ -2701,6 +2701,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CALL_REG:
 		case OP_LCALL_REG:
+		case OP_RCALL_REG:
 		case OP_FCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_VCALL2_REG:
@@ -4978,6 +4979,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL:
 		case OP_RCALL:
 		case OP_FCALL:
+		case OP_RCALL:
 		case OP_LCALL:
 		case OP_VCALL2: {
 			call = (MonoCallInst *)ins;
