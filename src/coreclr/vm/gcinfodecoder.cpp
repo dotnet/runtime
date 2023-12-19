@@ -415,10 +415,9 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Safepoints are encoded with a -1 adjustment
     codeOffset--;
-#endif
+
     size_t savedPos = m_Reader.GetCurrentPos();
     UINT32 safePointIndex = FindSafePoint(codeOffset);
     m_Reader.SetCurrentPos(savedPos);
@@ -461,35 +460,36 @@ UINT32 GcInfoDecoder::NarrowSafePointSearch(size_t savedPos, UINT32 breakOffset,
 UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
 {
     _ASSERTE(m_NumSafePoints > 0);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    _ASSERTE((breakOffset & 1) != 0);
-#endif
-
     UINT32 result = m_NumSafePoints;
     const size_t savedPos = m_Reader.GetCurrentPos();
-    const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
-
-    UINT32 linearSearchStart = 0;
-    UINT32 linearSearchEnd = m_NumSafePoints;
-    if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
-    {
-        linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
-    }
-
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
-    for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Safepoints are encoded with a -1 adjustment
+    if ((breakOffset & 1) != 0)
+#endif
     {
-        UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-        if(spOffset == normBreakOffset)
+        const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+        UINT32 linearSearchStart = 0;
+        UINT32 linearSearchEnd = m_NumSafePoints;
+        if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
         {
-            result = i;
-            break;
+            linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
         }
 
-        if (spOffset > normBreakOffset)
+        for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
         {
-            break;
+            UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+            if (spOffset == normBreakOffset)
+            {
+                result = i;
+                break;
+            }
+
+            if (spOffset > normBreakOffset)
+            {
+                break;
+            }
         }
     }
 
