@@ -68,9 +68,9 @@
     <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'aotsdk'))</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackLibDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <ILLinkPropsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'build', ''Microsoft.NET.ILLink.Tasks.props''))</ILLinkPropsPath>
-    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
-    <_ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'ILLink.Tasks.dll'))</_ILLinkTasksAssembly>
+    <ILLinkPropsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'net8.0', 'build', ''Microsoft.NET.ILLink.Tasks.props''))</ILLinkPropsPath>
+    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'net8.0', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
+    <_ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'net8.0', 'ILLink.Tasks.dll'))</_ILLinkTasksAssembly>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>

@@ -80,7 +80,7 @@
                                                                                  Destination="build/BuildIntegration" />
       <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
                                                                                  Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(ToolsILLinkDir)/$(NetCurrent)"         Destination="build/microsoft.net.illink.tasks" />
+      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
