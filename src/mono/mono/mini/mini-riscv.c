@@ -1838,6 +1838,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_R_UN:
 	case OP_ICONV_TO_R4:
 	case OP_LCONV_TO_R4:
+	case OP_RCONV_TO_R4:
 	case OP_RCONV_TO_R8:
 #ifdef TARGET_RISCV64
 	case OP_LXOR_IMM:
