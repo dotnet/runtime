@@ -1936,6 +1936,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_OVF_I1_UN:
 	case OP_LCONV_TO_OVF_U1:
 	case OP_LCONV_TO_OVF_U1_UN:
+	case OP_LCONV_TO_OVF_I2:
+	case OP_LCONV_TO_OVF_I2_UN:
 	case OP_LCONV_TO_OVF_U2:
 	case OP_LCONV_TO_OVF_U2_UN:
 	case OP_LCONV_TO_OVF_I4:
