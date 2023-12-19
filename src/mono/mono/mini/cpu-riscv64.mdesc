@@ -84,8 +84,8 @@ storei1_membase_reg: dest:b src1:i len:24
 storei2_membase_reg: dest:b src1:i len:24
 storei4_membase_reg: dest:b src1:i len:24
 storei8_membase_reg: dest:b src1:i len:24
-storer4_membase_reg: dest:b src1:f len:4
-storer8_membase_reg: dest:b src1:f len:4
+storer4_membase_reg: dest:b src1:f len:24
+storer8_membase_reg: dest:b src1:f len:24
 
 load_membase: dest:i src1:b len:24
 loadu1_membase: dest:i src1:b len:24
