@@ -2449,36 +2449,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case INS_OPTS_RELOC:
         {
-            regNumber reg1 = id->idReg1();
+            const regNumber reg1 = id->idReg1();
 
-            *(code_t*)dstRW = 0x00000017 | (code_t)(reg1 << 7);
-
-            dstRW += 4;
-
-#ifdef DEBUG
-            code = emitInsCode(INS_auipc);
-            assert(code == 0x00000017);
-            code = emitInsCode(INS_addi);
-            assert(code == 0x00000013);
-            code = emitInsCode(INS_ld);
-            assert(code == 0x00003003);
-#endif
+            dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
 
             if (id->idIsCnsReloc())
             {
-                ins             = INS_addi;
-                *(code_t*)dstRW = 0x00000013 | (code_t)(reg1 << 7) | (code_t)(reg1 << 15);
+                ins = INS_addi;
             }
             else
             {
                 assert(id->idIsDspReloc());
-                ins             = INS_ld;
-                *(code_t*)dstRW = 0x00003003 | (code_t)(reg1 << 7) | (code_t)(reg1 << 15);
+                ins = INS_ld;
             }
+            dst += emitOutput_ITypeInstr(dst, ins, reg1, reg1, 0);
 
-            dstRW += 4;
-
-            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
+            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
 
             sz = sizeof(instrDesc);
         }
