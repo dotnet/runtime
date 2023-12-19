@@ -28,8 +28,7 @@ public class LibraryBuilderTask : AppBuilderTask
     /// The name of the library being generated
     /// </summary>
     [Required]
-    [NotNull]
-    public string? Name { get; set; }
+    public string? Name { get; set; } = ""!;
 
     /// <summary>
     /// The name of the OS being targeted

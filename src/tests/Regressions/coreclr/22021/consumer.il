@@ -8,7 +8,7 @@
 
 .assembly consumer { }
 
-.class private auto ansi beforefieldinit Test1
+.class public auto ansi beforefieldinit Test1
        extends [System.Runtime]System.Object
        implements [provider]I1,
                   [provider]I2,
@@ -17,7 +17,7 @@
                   class [provider]IGen2`1<class [System.Runtime]System.Object>,
                   class [provider]IGen1`1<class [System.Runtime]System.Object>
 {
-  .method private hidebysig static int32 Main()
+  .method public hidebysig static int32 Main()
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

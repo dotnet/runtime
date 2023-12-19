@@ -4,12 +4,14 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using System.Collections;
+using Xunit;
 /// <summary>
 ///GetTypeCode
 /// </summary>
 public class TypeGetTypeFromHandle
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TypeGetTypeFromHandle TypeGetTypeFromHandle = new TypeGetTypeFromHandle();
 

@@ -118,7 +118,7 @@ namespace System.Reflection
             int argCount = (parameters is null) ? 0 : parameters.Length;
             if (ArgumentTypes.Length != argCount)
             {
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
             switch (argCount)

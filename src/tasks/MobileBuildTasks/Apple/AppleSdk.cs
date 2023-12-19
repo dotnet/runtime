@@ -135,6 +135,7 @@ namespace Microsoft.Apple.Build
                 "iphonesimulator" => "iPhoneSimulator",
                 "tvos" => "AppleTVOS",
                 "tvos-simulator" => "AppleTVSimulator",
+                "maccatalyst" => "MacOSX",
                 _ => throw new ArgumentException($"{targetOS} does not have a valid platform name")
             };
     }

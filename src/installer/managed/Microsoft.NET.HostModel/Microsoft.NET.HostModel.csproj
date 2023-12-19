@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Description>Abstractions for modifying .NET host binaries</Description>
     <IsShipping>false</IsShipping>
-    <IsPackable>true</IsPackable>
+    <IsPackable Condition="'$(PgoInstrument)' == ''">true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
@@ -15,7 +15,7 @@
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
-    <PackageId Condition="'$(PgoInstrument)' == 'true'">Microsoft.Net.HostModel.PGO</PackageId>
+    <DefineConstants>$(DefineConstants);HOST_MODEL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +23,17 @@
     <PackageReference Include="System.Reflection.Metadata" Version="6.0.0" />
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.cs" Link="Win32Resources\ResourceData.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Win32Resources\ResourceData.Win32Structs.cs" />
+
+    <Compile Include="$(CoreClrProjectRoot)tools\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Common\ArrayBuilder.cs" />
+  </ItemGroup>
+
 
 </Project>
 

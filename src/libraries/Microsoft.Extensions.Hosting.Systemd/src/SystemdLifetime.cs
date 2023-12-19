@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             ThrowHelper.ThrowIfNull(environment);
             ThrowHelper.ThrowIfNull(applicationLifetime);
             ThrowHelper.ThrowIfNull(systemdNotifier);
+            ThrowHelper.ThrowIfNull(loggerFactory);
 
             Environment = environment;
             ApplicationLifetime = applicationLifetime;

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
 export function is_exited() {
     return loaderHelpers.exitCode !== undefined;
@@ -14,11 +14,39 @@ export function is_runtime_running() {
 
 export function assert_runtime_running() {
     mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
-    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode}`);
+    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}`);
+}
+
+export function register_exit_handlers() {
+    if (!emscriptenModule.onAbort) {
+        emscriptenModule.onAbort = onAbort;
+    }
+    if (!emscriptenModule.onExit) {
+        emscriptenModule.onExit = onExit;
+    }
+}
+
+export function unregister_exit_handlers() {
+    if (emscriptenModule.onAbort == onAbort) {
+        emscriptenModule.onAbort = undefined;
+    }
+    if (emscriptenModule.onExit == onExit) {
+        emscriptenModule.onExit = undefined;
+    }
+}
+
+function onExit(code: number) {
+    mono_exit(code, loaderHelpers.exitReason);
+}
+
+function onAbort(reason: any) {
+    mono_exit(1, loaderHelpers.exitReason || reason);
 }
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
+    unregister_exit_handlers();
+
     // unify shape of the reason object
     const is_object = reason && typeof reason === "object";
     exit_code = (is_object && typeof reason.status === "number") ? reason.status : exit_code;
@@ -48,12 +76,13 @@ export function mono_exit(exit_code: number, reason?: any): void {
             if (!runtimeHelpers.runtimeReady) {
                 mono_log_debug("abort_startup, reason: " + reason);
                 abort_promises(reason);
-            }
-            logOnExit(exit_code, reason);
-            appendElementOnExit(exit_code);
-            if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
-            if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
-                runtimeHelpers.forceDisposeProxies(true, true);
+            } else {
+                if (runtimeHelpers.jiterpreter_dump_stats) {
+                    runtimeHelpers.jiterpreter_dump_stats(false);
+                }
+                if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
+                    runtimeHelpers.forceDisposeProxies(true, true);
+                }
             }
         }
         catch (err) {
@@ -61,7 +90,21 @@ export function mono_exit(exit_code: number, reason?: any): void {
             // don't propagate any failures
         }
 
+        try {
+            logOnExit(exit_code, reason);
+            appendElementOnExit(exit_code);
+        }
+        catch (err) {
+            mono_log_warn("mono_exit failed", err);
+            // don't propagate any failures
+        }
+
         loaderHelpers.exitCode = exit_code;
+        loaderHelpers.exitReason = reason.message;
+
+        if (!ENVIRONMENT_IS_WORKER && runtimeHelpers.runtimeReady) {
+            emscriptenModule.runtimeKeepalivePop();
+        }
     }
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
@@ -83,8 +126,16 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (is_runtime_running() && runtimeHelpers.mono_wasm_exit) {
-        runtimeHelpers.mono_wasm_exit(exit_code);
+    if (runtimeHelpers.runtimeReady && runtimeHelpers.mono_wasm_exit) {
+        runtimeHelpers.runtimeReady = false;
+        try {
+            runtimeHelpers.mono_wasm_exit(exit_code);
+        }
+        catch (err) {
+            if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {
+                mono_log_warn("mono_wasm_exit failed", err);
+            }
+        }
     }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
@@ -102,29 +153,35 @@ async function flush_node_streams() {
     try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        const process = await import(/* webpackIgnore: true */"process");
+        const process = await import(/*! webpackIgnore: true */"process");
         const flushStream = (stream: any) => {
             return new Promise<void>((resolve, reject) => {
-                stream.on("error", (error: any) => reject(error));
-                stream.write("", function () { resolve(); });
+                stream.on("error", reject);
+                stream.end("", "utf8", resolve);
             });
         };
         const stderrFlushed = flushStream(process.stderr);
         const stdoutFlushed = flushStream(process.stdout);
-        await Promise.all([stdoutFlushed, stderrFlushed]);
+        let timeoutId;
+        const timeout = new Promise(resolve => {
+            timeoutId = setTimeout(() => resolve("timeout"), 1000);
+        });
+        await Promise.race([Promise.all([stdoutFlushed, stderrFlushed]), timeout]);
+        clearTimeout(timeoutId);
     } catch (err) {
         mono_log_error(`flushing std* streams failed: ${err}`);
     }
 }
 
 function abort_promises(reason: any) {
+    loaderHelpers.exitReason = reason;
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
-    loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);
+    loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
+    loaderHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
-        runtimeHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
         runtimeHelpers.beforePreInit.promise_control.reject(reason);
         runtimeHelpers.afterPreInit.promise_control.reject(reason);
@@ -167,21 +224,16 @@ function logOnExit(exit_code: number, reason: any) {
             mono_log(JSON.stringify(reason));
         }
     }
-    if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
-        if (consoleWebSocket) {
-            const stop_when_ws_buffer_empty = () => {
-                if (consoleWebSocket.bufferedAmount == 0) {
-                    // tell xharness WasmTestMessagesProcessor we are done.
-                    // note this sends last few bytes into the same WS
-                    mono_log_info_no_prefix("WASM EXIT " + exit_code);
-                }
-                else {
-                    globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
-                }
-            };
-            stop_when_ws_buffer_empty();
-        } else {
-            mono_log_info_no_prefix("WASM EXIT " + exit_code);
+    if (loaderHelpers.config) {
+        if (loaderHelpers.config.logExitCode) {
+            if (loaderHelpers.config.forwardConsoleLogsToWS) {
+                teardown_proxy_console("WASM EXIT " + exit_code);
+            } else {
+                mono_log_info_no_prefix("WASM EXIT " + exit_code);
+            }
+        }
+        else if (loaderHelpers.config.forwardConsoleLogsToWS) {
+            teardown_proxy_console();
         }
     }
 }

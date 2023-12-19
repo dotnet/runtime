@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public delegate void MyCallback();
 
-class ForeignThreadExceptionsTest
+public class ForeignThreadExceptionsTest
 {
     [DllImport("ForeignThreadExceptionsNative")]
     public static extern void InvokeCallback(MyCallback callback);
@@ -57,7 +58,8 @@ class ForeignThreadExceptionsTest
         });
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

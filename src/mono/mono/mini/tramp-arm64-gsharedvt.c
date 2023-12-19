@@ -46,7 +46,7 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 
 	g_assert ((code - buf) < buf_len);
 
-	MINI_END_CODEGEN (buf, code - buf, -1, NULL);
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), -1, NULL);
 
 	return buf;
 }
@@ -557,9 +557,9 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert ((code - buf) < buf_len);
 
 	if (info)
-		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 
-	MINI_END_CODEGEN (buf, code - buf, -1, NULL);
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), -1, NULL);
 
 	return buf;
 }

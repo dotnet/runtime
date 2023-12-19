@@ -345,4 +345,120 @@ namespace DebuggerTests
             Console.WriteLine($"int_arr: {int_arr_3.Length}");
         }
     }
+
+    public class InlineArray
+    {
+        struct StructWithInlineArray
+        {
+            public Arr1 myInlineArray;
+        }
+        class ClassWithInlineArrayField
+        {
+            public Arr1 myInlineArray;
+            public Arr1 InlineArrayProp => myInlineArray;
+            public StructWithInlineArray myStructWithInlineArray;
+        }
+        class One {}
+        class Two {}
+        class Three {}
+        class Four {}
+        public struct E
+        {
+            public int x;
+            public int y;
+            public object o;
+        }
+
+        [System.Runtime.CompilerServices.InlineArray(Length)]
+        public struct Arr1
+        {
+            public const int Length = 42;
+            public E e;
+        }
+
+        [System.Runtime.CompilerServices.InlineArray(Length)]
+        struct Arr2
+        {
+            public const int Length = 42;
+            public int e;
+            public int InlineMethod(int n) => n + 100;
+        }
+        
+        [System.Runtime.CompilerServices.InlineArray(1)]
+        struct Arr3
+        {
+            public int e;
+        }
+
+        [System.Runtime.CompilerServices.InlineArray(Length)]
+        struct Arr4
+        {
+            public static int myStaticField = 50;
+            public const int Length = 42;
+            public E e;
+        }
+
+        private static Arr1 Initialize(Arr1 s)
+        {
+            s[0].o = new One();
+            s[0].x = 1;
+            s[0].y = 2;
+            s[1].o = new Two();
+            s[1].x = 3;
+            s[1].y = 4;
+            s[2].o = new Three();
+            s[2].x = 5;
+            s[2].y = 6;
+            s[3].o = new Four();
+            s[3].x = 7;
+            s[3].y = 8;
+            return s;
+        }
+        public static void run()
+        {
+            int a = 0;
+            int b = 1;
+            Arr1 s = default;
+            s = Initialize(s);
+            ClassWithInlineArrayField classWithInlineArrayField = new ();
+            s = Initialize(classWithInlineArrayField.myInlineArray);
+            classWithInlineArrayField.myInlineArray[0].o = new One();
+            classWithInlineArrayField.myInlineArray[0].x = 1;
+            classWithInlineArrayField.myInlineArray[0].y = 2;
+            classWithInlineArrayField.myInlineArray[1].o = new Two();
+            classWithInlineArrayField.myInlineArray[1].x = 3;
+            classWithInlineArrayField.myInlineArray[1].y = 4;            
+            //classWithInlineArrayField.InlineArrayProp[0].o = new One();
+            //classWithInlineArrayField.InlineArrayProp[0].x = 1;
+            //classWithInlineArrayField.InlineArrayProp[0].y = 2;
+            //classWithInlineArrayField.InlineArrayProp[1].o = new Two();
+            //classWithInlineArrayField.InlineArrayProp[1].x = 3;
+            //classWithInlineArrayField.InlineArrayProp[1].y = 4;
+            classWithInlineArrayField.myStructWithInlineArray.myInlineArray[0].o = new One();
+            classWithInlineArrayField.myStructWithInlineArray.myInlineArray[0].x = 1;
+            classWithInlineArrayField.myStructWithInlineArray.myInlineArray[0].y = 2;
+            classWithInlineArrayField.myStructWithInlineArray.myInlineArray[1].o = new Two();
+            classWithInlineArrayField.myStructWithInlineArray.myInlineArray[1].x = 3;
+            classWithInlineArrayField.myStructWithInlineArray.myInlineArray[1].y = 4;
+            System.Diagnostics.Debugger.Break();
+            Console.WriteLine(s[0].o.GetType().Name);
+        }
+
+        public static void run2()
+        {
+            Arr2 a2 = default; //test with primitive type
+            Arr3 a3 = default; //test with length==1
+            Arr4 a4 = default; //test with static field
+            a2[0] = 1; 
+            a3[0] = 2;
+            a4[0].o = new One();
+            a4[0].x = 1;
+            a4[0].y = 2;
+            a4[1].o = new Two();
+            a4[1].x = 3;
+            a4[1].y = 4;
+            Console.WriteLine($"olha thays - {Arr4.myStaticField}");
+            System.Diagnostics.Debugger.Break();
+        }
+    }
 }

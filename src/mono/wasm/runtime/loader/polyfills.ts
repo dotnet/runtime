@@ -32,14 +32,14 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        const process = await import(/* webpackIgnore: true */"process");
+        const process = await import(/*! webpackIgnore: true */"process");
         const minNodeVersion = 14;
         if (process.versions.node.split(".")[0] < minNodeVersion) {
             throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}. See also https://aka.ms/dotnet-wasm-features`);
         }
     }
 
-    const scriptUrlQuery =/* webpackIgnore: true */import.meta.url;
+    const scriptUrlQuery =/*! webpackIgnore: true */import.meta.url;
     const queryIndex = scriptUrlQuery.indexOf("?");
     if (queryIndex > 0) {
         loaderHelpers.modulesUniqueQuery = scriptUrlQuery.substring(queryIndex);
@@ -76,7 +76,7 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.require = await import(/* webpackIgnore: true */"module").then(mod => mod.createRequire(/* webpackIgnore: true */import.meta.url));
+        INTERNAL.require = await import(/*! webpackIgnore: true */"module").then(mod => mod.createRequire(/*! webpackIgnore: true */import.meta.url));
     } else {
         INTERNAL.require = Promise.resolve(() => { throw new Error("require not supported"); });
     }

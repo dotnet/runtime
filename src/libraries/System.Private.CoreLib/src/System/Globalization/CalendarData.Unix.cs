@@ -13,6 +13,10 @@ namespace System.Globalization
             return GlobalizationMode.Hybrid ?
                 JSLoadCalendarDataFromBrowser(localeName, calendarId) :
                 IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ?
+                LoadCalendarDataFromNative(localeName, calendarId) :
+                IcuLoadCalendarDataFromSystem(localeName, calendarId);
 #else
             return IcuLoadCalendarDataFromSystem(localeName, calendarId);
 #endif

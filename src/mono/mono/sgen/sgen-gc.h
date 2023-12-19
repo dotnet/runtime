@@ -188,7 +188,7 @@ extern unsigned int sgen_global_stop_count;
 static inline guint
 sgen_aligned_addr_hash (gconstpointer ptr)
 {
-	return GPOINTER_TO_UINT (ptr) >> 3;
+	return GCONSTPOINTER_TO_UINT (ptr) >> 3;
 }
 
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~(((mword)1 << (bits)) - 1)) == (mword)(start))

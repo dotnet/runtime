@@ -4,6 +4,10 @@
 #include "pal_log.h"
 #import <Foundation/Foundation.h>
 
+#if __has_feature(objc_arc)
+#error This file uses manual memory management and must not use ARC, but ARC is enabled.
+#endif
+
 void SystemNative_Log (uint8_t* buffer, int32_t length)
 {
     NSString *msg = [[NSString alloc] initWithBytes: buffer length: length encoding: NSUTF16LittleEndianStringEncoding];

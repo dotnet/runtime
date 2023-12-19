@@ -6,7 +6,7 @@ project(Runtime)
 # Include auto-generated files on include path
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if (CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${ARCH_SOURCES_DIR}/ThunkPoolThunks.${ASM_SUFFIX}
   )
@@ -27,8 +27,13 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_dependencies(Runtime.ServerGC aot_eventing_headers)
+
+add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
+add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortEnabled STATIC ${VXSORT_SOURCES})
@@ -38,13 +43,17 @@ endif (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
+  add_library(standalonegc-disabled.GuardCF STATIC ${STANDALONEGC_DISABLED_SOURCES})
+  set_target_properties(standalonegc-disabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
+  add_library(standalonegc-enabled.GuardCF STATIC ${STANDALONEGC_ENABLED_SOURCES})
+  set_target_properties(standalonegc-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
-  target_compile_options(Runtime.ServerGC.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
+  set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
-    target_compile_options(Runtime.VxsortEnabled.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
+    set_target_properties(Runtime.VxsortEnabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 endif (CLR_CMAKE_TARGET_WIN32)
 
@@ -55,7 +64,7 @@ set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
-    set(PREPROCESSOR_FLAGS -EP)
+    set(PREPROCESSOR_FLAGS -EP -nologo)
     set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)
@@ -94,6 +103,8 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
+install_static_library(standalonegc-disabled aotsdk nativeaot)
+install_static_library(standalonegc-enabled aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     install_static_library(Runtime.VxsortEnabled aotsdk nativeaot)
@@ -101,4 +112,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     install_static_library(Runtime.VxsortEnabled.GuardCF aotsdk nativeaot)
   endif (CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
+  add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)
+  install_static_library(standalonegc-disabled.GuardCF aotsdk nativeaot)
+  install_static_library(standalonegc-enabled.GuardCF aotsdk nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)

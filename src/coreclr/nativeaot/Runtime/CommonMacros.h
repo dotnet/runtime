@@ -64,6 +64,8 @@
 
 #ifndef __GCENV_BASE_INCLUDED__
 
+#include <cstdint>
+
 //
 // This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
 //

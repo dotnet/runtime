@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
                 m_ILStream[m_length++] = (byte)opcodeValue;
             }
 
-            UpdateStackSize(opcode, opcode.StackChange());
+            UpdateStackSize(opcode, opcode.EvaluationStackDelta);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -275,7 +275,7 @@ namespace System.Reflection.Emit
             // Gets the position in the stream of a particular label.
             // Verifies that the label exists and that it has been given a value.
 
-            int index = lbl.GetLabelValue();
+            int index = lbl.Id;
 
             if (index < 0 || index >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
@@ -308,7 +308,7 @@ namespace System.Reflection.Emit
                 m_fixupInstSize = instSize
             };
 
-            int labelIndex = lbl.GetLabelValue();
+            int labelIndex = lbl.Id;
             if (labelIndex < 0 || labelIndex >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
 
@@ -819,8 +819,8 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(local);
 
             // Puts the opcode onto the IL stream followed by the information for local variable local.
-            int tempVal = local.GetLocalIndex();
-            if (local.GetMethodBuilder() != m_methodBuilder)
+            int tempVal = local.LocalIndex;
+            if (local is not RuntimeLocalBuilder localBuilder || localBuilder.GetMethodBuilder() != m_methodBuilder)
             {
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
             }
@@ -974,7 +974,7 @@ namespace System.Reflection.Emit
             // Check if we've already set this label.
             // The only reason why we might have set this is if we have a finally block.
 
-            Label label = m_labelList![endLabel.GetLabelValue()].m_pos != -1
+            Label label = m_labelList![endLabel.Id].m_pos != -1
                 ? current.m_finallyEndLabel
                 : endLabel;
 
@@ -1115,7 +1115,7 @@ namespace System.Reflection.Emit
             // Defines a label by setting the position where that label is found within the stream.
             // Does not allow a label to be defined more than once.
 
-            int labelIndex = loc.GetLabelValue();
+            int labelIndex = loc.Id;
 
             // This should only happen if a label from another generator is used with this one.
             if (m_labelList is null || labelIndex < 0 || labelIndex >= m_labelList.Length)
@@ -1185,7 +1185,7 @@ namespace System.Reflection.Emit
             // add the localType to local signature
             m_localSignature.AddArgument(localType, pinned);
 
-            return new LocalBuilder(m_localCount++, localType, methodBuilder, pinned);
+            return new RuntimeLocalBuilder(m_localCount++, localType, methodBuilder, pinned);
         }
 
         public override void UsingNamespace(string usingNamespace)

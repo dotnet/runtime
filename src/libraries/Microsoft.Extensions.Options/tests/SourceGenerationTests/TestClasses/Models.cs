@@ -154,7 +154,7 @@ namespace TestClasses.OptionsValidation
         public string? DerivedVal { get; set; }
 
         [Required]
-        internal virtual int? VirtualValWithAttr { get; set; }
+        public virtual int? VirtualValWithAttr { get; set; }
 
         public virtual int? VirtualValWithoutAttr { get; set; }
 
@@ -164,7 +164,7 @@ namespace TestClasses.OptionsValidation
 
     public class LeafModel : DerivedModel
     {
-        internal override int? VirtualValWithAttr { get; set; }
+        public override int? VirtualValWithAttr { get; set; }
 
         [Required]
         public override int? VirtualValWithoutAttr { get; set; }
@@ -177,6 +177,21 @@ namespace TestClasses.OptionsValidation
 
         [Microsoft.Extensions.Options.ValidateObjectMembers]
         public TypeWithoutOptionsValidator? ValWithoutOptionsValidator { get; set; }
+    }
+
+    public class OptionsUsingRangeWithTimeSpan
+    {
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public TimeSpan P1 { get; set; }
+
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public TimeSpan? P2 { get; set; }
+
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public string P3 { get; set; }
+
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public string? P4 { get; set; }
     }
 
     [OptionsValidator]
@@ -246,6 +261,11 @@ namespace TestClasses.OptionsValidation
 
     [OptionsValidator]
     internal sealed partial class ComplexModelValidator : IValidateOptions<ComplexModel>
+    {
+    }
+
+    [OptionsValidator]
+    internal sealed partial class OptionsUsingRangeWithTimeSpanValidator : IValidateOptions<OptionsUsingRangeWithTimeSpan>
     {
     }
 }

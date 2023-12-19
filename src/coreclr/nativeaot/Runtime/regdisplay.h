@@ -6,6 +6,8 @@
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
+#include "PalRedhawkCommon.h" // Fp128
+
 struct REGDISPLAY
 {
     PTR_UIntNative pRax;

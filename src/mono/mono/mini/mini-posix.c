@@ -885,23 +885,15 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 }
 #endif /* !MONO_CROSS_COMPILE */
 
-static gchar *gdb_path;
-static gchar *lldb_path;
-
 void
 mono_init_native_crash_info (void)
 {
-	gdb_path = g_find_program_in_path ("gdb");
-	lldb_path = g_find_program_in_path ("lldb");
 }
 
 static gboolean
 native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)
 {
-	if (!gdb_path)
-		return FALSE;
-
-	argv [0] = gdb_path;
+	argv [0] = "gdb";
 	argv [1] = "-batch";
 	argv [2] = "-x";
 	argv [3] = commands_filename;
@@ -926,10 +918,7 @@ native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char*
 static gboolean
 native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)
 {
-	if (!lldb_path)
-		return FALSE;
-
-	argv [0] = lldb_path;
+	argv [0] = "lldb";
 	argv [1] = "--batch";
 	argv [2] = "--source";
 	argv [3] = commands_filename;
@@ -955,7 +944,7 @@ native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
-#ifdef HAVE_EXECV
+#ifdef HAVE_EXECVP
 	const char *argv [10];
 	memset (argv, 0, sizeof (char*) * 10);
 
@@ -993,12 +982,12 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 exec:
 	close (commands_handle);
-	execv (argv [0], (char**)argv);
+	execvp (argv [0], (char**)argv);
 
 	_exit (-1);
 #else
 	g_async_safe_printf ("mono_gdb_render_native_backtraces not supported on this platform\n");
-#endif // HAVE_EXECV
+#endif // HAVE_EXECVP
 }
 
 #if !defined (__MACH__)

@@ -13,6 +13,7 @@ namespace System.Linq.Expressions.Compiler
     /// Determines if variables are closed over in nested lambdas and need to
     /// be hoisted.
     /// </summary>
+    [RequiresDynamicCode(Expression.StrongBoxRequiresDynamicCode)]
     internal sealed class VariableBinder : ExpressionVisitor
     {
         private readonly AnalyzedTree _tree = new AnalyzedTree();

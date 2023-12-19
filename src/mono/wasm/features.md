@@ -6,7 +6,7 @@
 - [Hosting the application](#Hosting-the-application)
 - [Resources consumed on the target device](#Resources-consumed-on-the-target-device)
 - [Choosing the right platform target](#Choosing-the-right-platform-target)
-- [wasm-tools workload](#wasm-tools-workload)
+- [Developer tools](#Developer-tools)
 
 
 ## Configuring browser features
@@ -15,7 +15,7 @@ The WebAssembly version of .NET exposes a number of MSBuild properties that can 
 
 For a support matrix of WebAssembly features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/). †
 
-For the full set of MSBuild properties that configure a client application's use of these features, see the top of [WasmApp.targets](./build/WasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
+For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.targets](./build/BrowserWasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
 
 Some of these properties require a unique build of the runtime, which means that changing them will produce a different set of `.wasm` and `.js` files for your application. Some of these properties also require you to install the [wasm-tools workload](#wasm-tools-workload).
 
@@ -40,10 +40,14 @@ It can be enabled with `<WasmEnableSIMD>true</WasmEnableSIMD>` and disabled with
 
 For more information on this feature, see [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md).
 
+Older versions of NodeJS hosts may need `--experimental-wasm-simd` command line option.
+
 ### EH - Exception handling
 WebAssembly exception handling provides higher performance for code containing `try` blocks by allowing exceptions to be caught and thrown natively without the use of JavaScript. It is currently enabled by default and can be disabled via `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 For more information on this feature, see [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
+
+Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line option.
 
 ### BigInt
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
@@ -153,6 +157,8 @@ The following shows the structure for a Release build, but except the name in th
 
 Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
 
+Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
+
 #### `_framework` folder structure
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
@@ -189,12 +195,13 @@ See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/A
 
 ### Pre-fetching
 In order to start downloading application resources as soon as possible you can add HTML elements to `<head>` of your page similar to:
+Adding too many files into prefetch could be counterproductive.
+Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
 <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
-<link rel="prefetch" href="./_framework/dotnet.native.wasm" as="fetch" crossorigin="anonymous">
 ```
 
 See also [link rel prefetch on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/prefetch)
@@ -287,6 +294,24 @@ A WebAssembly application that works well on desktop PCs browser may take minute
 ### Shell environments - NodeJS & V8
 While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
+#### NodeJS < 20
+Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
+
+```json
+"wasmHostProperties": {
+    "perHostConfig": [
+        {
+            "name": "node",
+            ...
+            "host-args": [
+                "--experimental-wasm-simd", // 👈 Enable SIMD support
+                "--experimental-wasm-eh" // 👈 Enable exception handling support
+            ]
+        }
+    ]
+}
+```
+
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
 
@@ -312,12 +337,91 @@ it may be better if you re/write your logic in Web native technologies like HTML
 
 Sometimes it makes sense to implement a mix of both.
 
-## wasm-tools workload
+## Developer tools
+
+### wasm-tools workload
 The `wasm-tools` workload contains all of the tools and libraries necessary to perform native rebuild or AOT compilation and other optimizations of your application.
 
-Although it's optional for Blazor, we strongly recommend using it!
+Although it's optional for Blazor, **we strongly recommend using it!**
 
 You can install it by running `dotnet workload install wasm-tools` from the command line.
 
 You can also install `dotnet workload install wasm-experimental` to test out new experimental features and templates.
 It includes the WASM templates for `dotnet new` and also preview version of multi-threading flavor of the runtime pack.
+
+### Debugging
+
+You can use browser dev tools to debug the JavaScript of the application and the runtime.
+
+You could also debug the C# code using our integration with browser dev tools or Visual Studio.
+See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+
+You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
+
+### Native debug symbols
+
+You can add following elements in your .csproj
+```xml
+<PropertyGroup>
+  <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+  <WasmNativeStrip>false</WasmNativeStrip>
+</PropertyGroup>
+```
+
+See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
+For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+
+### Runtime logging and tracing
+
+You can enable detailed runtime logging.
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet
+        .withDiagnosticTracing(true) // enable JavaScript tracing
+        .withConfig({environmentVariables: {
+            "MONO_LOG_LEVEL":"debug", //enable Mono VM detailed logging by
+            "MONO_LOG_MASK":"all", // categories, could be also gc,aot,type,...
+        }})
+        .run();
+```
+
+See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
+
+### Profiling
+
+You can enable integration with browser profiler via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <WasmProfilers>browser;</WasmProfilers>
+</PropertyGroup>
+```
+
+In Blazor, you can customize the startup in your index.html
+```html
+<script src="_framework/blazor.webassembly.js" autostart="false"></script>
+<script>
+Blazor.start({
+    configureRuntime: function (builder) {
+        builder.withConfig({
+            browserProfilerOptions: {}
+        });
+    }
+});
+</script>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({browserProfilerOptions: {}}).run();
+```
+
+### Diagnostic tools
+
+We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe)
+
+At the moment it requires multi-threaded build of the runtime.
+
+For more details see [diagnostic-server.md](runtime/diagnostics/diagnostic-server.md)

@@ -55,12 +55,7 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifndef TARGET_UNIX
-// Windows uses 64kB as the null-reference area
-#define NULL_AREA_SIZE   (64 * 1024)
-#else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
-#endif // !TARGET_UNIX
+#include "exinfo.h"
 
 //----------------------------------------------------------------------------
 //
@@ -2879,6 +2874,22 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
+#ifdef USE_CHECKED_OBJECTREFS
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+    RealCOMPlusThrow(throwable, FALSE);
+}
+#endif // USE_CHECKED_OBJECTREFS
+
 // this function finds the managed callback to get a resource
 // string from the then current local domain and calls it
 // this could be a lot of work
@@ -5081,7 +5092,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
     GetExceptionMessage(throwable, result);
     UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
-    return result;
+    return SString{ result };
 }
 
 void STDMETHODCALLTYPE
@@ -5767,6 +5778,7 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
         case COR_E_BADIMAGEFORMAT:
         case COR_E_NEWER_RUNTIME:
         case COR_E_ASSEMBLYEXPECTED:
+        case CLR_E_BIND_ARCHITECTURE_MISMATCH:
             bNoGeekStuff = TRUE;
             break;
     }
@@ -6037,7 +6049,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
             ThreadPreventAsyncHolder preventAsync;
             ResetProcessorStateHolder procState;
 
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
             GCPROTECT_BEGIN(result)
 
@@ -6052,7 +6064,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
 
             GCPROTECT_END();
 
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
         EX_CATCH
         {
@@ -6553,6 +6565,48 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+{
+    WRAPPER_NO_CONTRACT;
+
+    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+    FaultingExceptionFrame *frame = &frameWithCookie;
+#if defined(FEATURE_EH_FUNCLETS)
+    *frame->GetGSCookiePtr() = GetProcessGSCookie();
+#endif // FEATURE_EH_FUNCLETS
+    pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    frame->InitAndLink(pContext);
+
+    CONTEXT ctx = {};
+    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    REGDISPLAY rd;
+    Thread *pThread = GetThread();
+
+    ExInfo exInfo(pThread, &ctx, &rd, ExKind::HardwareFault);
+
+    DWORD exceptionCode = pExceptionRecord->ExceptionCode;
+    if (exceptionCode == STATUS_ACCESS_VIOLATION)
+    {
+        if (pExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
+        {
+            exceptionCode = 0; //STATUS_REDHAWK_NULL_REFERENCE;
+        }
+    }
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
+
+    //Ex.RhThrowHwEx(exceptionCode, &exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+
+    GCPROTECT_END();
+}
+
 void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
@@ -6822,6 +6876,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         //
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            EEPolicy::HandleStackOverflow();
+        }
+#endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
 
@@ -7517,7 +7577,14 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                if (g_isNewExceptionHandlingEnabled)
+                {
+                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                }
+                else
+                {
+                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+                }
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7707,7 +7774,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
 //
-VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException)
+VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -7723,7 +7790,16 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 
     Exception::Delete(pException);
 
-    RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    {
+        DispatchManagedException(orThrowable);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+    }
 }
 
 thread_local DWORD t_dwCurrentExceptionCode;
@@ -9294,8 +9370,17 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     // being thrown, then get them.
     ThreadExceptionState *pExState = pThread->GetExceptionState();
 
+#ifdef FEATURE_EH_FUNCLETS
     // Ensure that the exception tracker exists
-    _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        _ASSERTE(pExState->GetCurrentExInfo() != NULL);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
+    }
 
     // Switch to COOP mode
     GCX_COOP();
@@ -9319,7 +9404,18 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     BOOL fIsPreallocatedException = CLRException::IsPreallocatedExceptionObject(gc.oCurrentThrowable);
 
     // Get the WatsonBucketTracker for the current exception
-    PTR_EHWatsonBucketTracker pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
+    PTR_EHWatsonBucketTracker pWatsonBucketTracker;
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        pWatsonBucketTracker = pExState->GetCurrentExInfo()->GetWatsonBucketTracker();
+
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
+    }
 
     // Get the innermost exception object (if any)
     gc.oInnerMostExceptionThrowable = ((EXCEPTIONREF)gc.oCurrentThrowable)->GetBaseException();
@@ -11027,7 +11123,7 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
     }
-    msgStr += resStr;
+    msgStr.Append(resStr);
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
@@ -11035,19 +11131,19 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
         if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
             SString suffixMsgStr;
-            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, imageName);
-            msgStr.AppendASCII(" ");
-            msgStr += suffixMsgStr;
+            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SString{ SString::Literal, imageName });
+            msgStr.Append(W(" "));
+            msgStr.Append(suffixMsgStr);
         }
     }
 
 #ifdef _DEBUG
     if (0 != strcmp(cond, "FALSE"))
     {
-        msgStr += W(" (Failed condition: "); // this is in DEBUG only - not going to localize it.
+        msgStr.Append(W(" (Failed condition: ")); // this is in DEBUG only - not going to localize it.
         SString condStr(SString::Ascii, cond);
-        msgStr += condStr;
-        msgStr += W(")");
+        msgStr.Append(condStr);
+        msgStr.Append(W(")"));
     }
 #endif
     ThrowHR(COR_E_BADIMAGEFORMAT, msgStr);
@@ -11616,7 +11712,8 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
-    if (pPEAssembly->GetPath().IsEmpty())
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    if (assemblyPath.IsEmpty())
     {
         detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
                                    sType.GetUTF8(),
@@ -11629,7 +11726,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
                                    sType.GetUTF8(),
                                    sAssemblyDisplayName.GetUTF8(),
                                    sAlcName.GetUTF8(),
-                                   pPEAssembly->GetPath().GetUTF8());
+                                   assemblyPath.GetUTF8());
     }
 
     sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());

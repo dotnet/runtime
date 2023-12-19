@@ -160,7 +160,7 @@ int signum(T val)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 // ConfigMethodRange describes a set of methods, specified via their
 // hash codes. This can be used for binary search and/or specifying an
@@ -241,7 +241,7 @@ private:
     Range*   m_ranges;    // ranges of functions to include
 };
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 class Compiler;
 
@@ -321,7 +321,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
                     ...);
 
 #ifdef DEBUG
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
+void hexDump(FILE* dmpf, BYTE* addr, size_t size);
 #endif // DEBUG
 
 /******************************************************************************
@@ -1002,7 +1002,6 @@ bool FitsIn(var_types type, T value)
     {
         case TYP_BYTE:
             return FitsIn<int8_t>(value);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return FitsIn<uint8_t>(value);
         case TYP_SHORT:

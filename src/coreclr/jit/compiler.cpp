@@ -20,7 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "rangecheck.h"
 #include "lower.h"
 #include "stacklevelsetter.h"
-#include "jittelemetry.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
 
@@ -155,7 +154,7 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     if (verbose)
     {
         va_start(args, fmt);
-        vflogf(jitstdout, fmt, args);
+        vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 
@@ -1078,7 +1077,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-                // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 
@@ -1230,13 +1229,14 @@ void DisplayNowayAssertMap()
             fout = _wfopen(strJitMeasureNowayAssertFile, W("a"));
             if (fout == nullptr)
             {
-                fprintf(jitstdout, "Failed to open JitMeasureNowayAssertFile \"%ws\"\n", strJitMeasureNowayAssertFile);
+                fprintf(jitstdout(), "Failed to open JitMeasureNowayAssertFile \"%ws\"\n",
+                        strJitMeasureNowayAssertFile);
                 return;
             }
         }
         else
         {
-            fout = jitstdout;
+            fout = jitstdout();
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
@@ -1253,7 +1253,7 @@ void DisplayNowayAssertMap()
 
         jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
-        if (fout == jitstdout)
+        if (fout == jitstdout())
         {
             // Don't output the header if writing to a file, since we'll be appending to existing dumps in that case.
             fprintf(fout, "\nnoway_assert counts:\n");
@@ -1266,7 +1266,7 @@ void DisplayNowayAssertMap()
                     nacp[i].fl.m_condStr);
         }
 
-        if (fout != jitstdout)
+        if (fout != jitstdout())
         {
             fclose(fout);
             fout = nullptr;
@@ -1331,7 +1331,7 @@ void Compiler::compStartup()
     // Static vars of ValueNumStore
     ValueNumStore::ValidateValueNumStoreStatics();
 
-    compDisplayStaticSizes(jitstdout);
+    compDisplayStaticSizes();
 }
 
 /*****************************************************************************
@@ -1364,7 +1364,7 @@ void Compiler::compShutdown()
 
     emitter::emitDone();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // Finish reading and/or writing inline xml
     if (JitConfig.JitInlineDumpXmlFile() != nullptr)
     {
@@ -1379,7 +1379,7 @@ void Compiler::compShutdown()
             InlineStrategy::FinalizeXml();
         }
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if defined(DEBUG) || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     if (genMethodCnt == 0)
@@ -1389,11 +1389,8 @@ void Compiler::compShutdown()
 #endif
 
 #if NODEBASH_STATS
-    GenTree::ReportOperBashing(jitstdout);
+    GenTree::ReportOperBashing(jitstdout());
 #endif
-
-    // Where should we write our statistics output?
-    FILE* fout = jitstdout;
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (compJitTimeLogFilename != nullptr)
@@ -1445,7 +1442,7 @@ void Compiler::compShutdown()
         unsigned countLarge = 0;
         unsigned countSmall = 0;
 
-        fprintf(fout, "\nGenTree operator counts (approximate):\n\n");
+        jitprintf("\nGenTree operator counts (approximate):\n\n");
 
         for (OperInfo oper : opers)
         {
@@ -1465,8 +1462,8 @@ void Compiler::compShutdown()
             // Let's not show anything below a threshold
             if (percentage >= 0.5)
             {
-                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName(oper.Oper), count,
-                        percentage, size);
+                jitprintf("    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName(oper.Oper), count,
+                          percentage, size);
                 remainingCount -= count;
             }
             else
@@ -1484,14 +1481,14 @@ void Compiler::compShutdown()
 
         if (remainingCount > 0)
         {
-            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n",
-                    remainingCount, 100.0 * remainingCount / totalCount, 100.0 * remainingCountSmall / totalCount,
-                    100.0 * remainingCountLarge / totalCount);
+            jitprintf("    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n", remainingCount,
+                      100.0 * remainingCount / totalCount, 100.0 * remainingCountSmall / totalCount,
+                      100.0 * remainingCountLarge / totalCount);
         }
-        fprintf(fout, "    -----------------------------------------------------\n");
-        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", totalCount,
-                100.0 * countSmall / totalCount, 100.0 * countLarge / totalCount);
-        fprintf(fout, "\n");
+        jitprintf("    -----------------------------------------------------\n");
+        jitprintf("    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", totalCount,
+                  100.0 * countSmall / totalCount, 100.0 * countLarge / totalCount);
+        jitprintf("\n");
     }
 
 #endif // COUNT_AST_OPERS
@@ -1500,49 +1497,49 @@ void Compiler::compShutdown()
 
     if (grossVMsize && grossNCsize)
     {
-        fprintf(fout, "\n");
-        fprintf(fout, "--------------------------------------\n");
-        fprintf(fout, "Function and GC info size stats\n");
-        fprintf(fout, "--------------------------------------\n");
+        jitprintf("\n");
+        jitprintf("--------------------------------------\n");
+        jitprintf("Function and GC info size stats\n");
+        jitprintf("--------------------------------------\n");
 
-        fprintf(fout, "[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, grossNCsize, Target::g_tgtCPUName,
-                100 * grossNCsize / grossVMsize, "Total (excluding GC info)");
+        jitprintf("[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, grossNCsize, Target::g_tgtCPUName,
+                  100 * grossNCsize / grossVMsize, "Total (excluding GC info)");
 
-        fprintf(fout, "[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, totalNCsize, Target::g_tgtCPUName,
-                100 * totalNCsize / grossVMsize, "Total (including GC info)");
+        jitprintf("[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, totalNCsize, Target::g_tgtCPUName,
+                  100 * totalNCsize / grossVMsize, "Total (including GC info)");
 
         if (gcHeaderISize || gcHeaderNSize)
         {
-            fprintf(fout, "\n");
+            jitprintf("\n");
 
-            fprintf(fout, "GC tables   : [%7uI,%7uN] %7u byt  (%u%% of IL, %u%% of %s).\n",
-                    gcHeaderISize + gcPtrMapISize, gcHeaderNSize + gcPtrMapNSize, totalNCsize - grossNCsize,
-                    100 * (totalNCsize - grossNCsize) / grossVMsize, 100 * (totalNCsize - grossNCsize) / grossNCsize,
-                    Target::g_tgtCPUName);
+            jitprintf("GC tables   : [%7uI,%7uN] %7u byt  (%u%% of IL, %u%% of %s).\n", gcHeaderISize + gcPtrMapISize,
+                      gcHeaderNSize + gcPtrMapNSize, totalNCsize - grossNCsize,
+                      100 * (totalNCsize - grossNCsize) / grossVMsize, 100 * (totalNCsize - grossNCsize) / grossNCsize,
+                      Target::g_tgtCPUName);
 
-            fprintf(fout, "GC headers  : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcHeaderISize,
-                    gcHeaderNSize, gcHeaderISize + gcHeaderNSize, (float)gcHeaderISize / (genMethodICnt + 0.001),
-                    (float)gcHeaderNSize / (genMethodNCnt + 0.001),
-                    (float)(gcHeaderISize + gcHeaderNSize) / genMethodCnt);
+            jitprintf("GC headers  : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcHeaderISize,
+                      gcHeaderNSize, gcHeaderISize + gcHeaderNSize, (float)gcHeaderISize / (genMethodICnt + 0.001),
+                      (float)gcHeaderNSize / (genMethodNCnt + 0.001),
+                      (float)(gcHeaderISize + gcHeaderNSize) / genMethodCnt);
 
-            fprintf(fout, "GC ptr maps : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcPtrMapISize,
-                    gcPtrMapNSize, gcPtrMapISize + gcPtrMapNSize, (float)gcPtrMapISize / (genMethodICnt + 0.001),
-                    (float)gcPtrMapNSize / (genMethodNCnt + 0.001),
-                    (float)(gcPtrMapISize + gcPtrMapNSize) / genMethodCnt);
+            jitprintf("GC ptr maps : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcPtrMapISize,
+                      gcPtrMapNSize, gcPtrMapISize + gcPtrMapNSize, (float)gcPtrMapISize / (genMethodICnt + 0.001),
+                      (float)gcPtrMapNSize / (genMethodNCnt + 0.001),
+                      (float)(gcPtrMapISize + gcPtrMapNSize) / genMethodCnt);
         }
         else
         {
-            fprintf(fout, "\n");
+            jitprintf("\n");
 
-            fprintf(fout, "GC tables   take up %u bytes (%u%% of instr, %u%% of %6s code).\n",
-                    totalNCsize - grossNCsize, 100 * (totalNCsize - grossNCsize) / grossVMsize,
-                    100 * (totalNCsize - grossNCsize) / grossNCsize, Target::g_tgtCPUName);
+            jitprintf("GC tables   take up %u bytes (%u%% of instr, %u%% of %6s code).\n", totalNCsize - grossNCsize,
+                      100 * (totalNCsize - grossNCsize) / grossVMsize, 100 * (totalNCsize - grossNCsize) / grossNCsize,
+                      Target::g_tgtCPUName);
         }
 
 #ifdef DEBUG
 #if DOUBLE_ALIGN
-        fprintf(fout, "%u out of %u methods generated with double-aligned stack\n",
-                Compiler::s_lvaDoubleAlignedProcsCount, genMethodCnt);
+        jitprintf("%u out of %u methods generated with double-aligned stack\n", Compiler::s_lvaDoubleAlignedProcsCount,
+                  genMethodCnt);
 #endif
 #endif
     }
@@ -1550,110 +1547,110 @@ void Compiler::compShutdown()
 #endif // DISPLAY_SIZES
 
 #if CALL_ARG_STATS
-    compDispCallArgStats(fout);
+    compDispCallArgStats(jitstdout());
 #endif
 
 #if COUNT_BASIC_BLOCKS
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "Basic block count frequency table:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    bbCntTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("Basic block count frequency table:\n");
+    jitprintf("--------------------------------------------------\n");
+    bbCntTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "\n");
+    jitprintf("\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "IL method size frequency table for methods with a single basic block:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    bbOneBBSizeTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("IL method size frequency table for methods with a single basic block:\n");
+    jitprintf("--------------------------------------------------\n");
+    bbOneBBSizeTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "fgComputeDoms `while (change)` iterations:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    domsChangedIterationTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("fgComputeDoms `while (change)` iterations:\n");
+    jitprintf("--------------------------------------------------\n");
+    domsChangedIterationTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "fgComputeReachabilitySets `while (change)` iterations:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    computeReachabilitySetsIterationTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
+    jitprintf("--------------------------------------------------\n");
+    computeReachabilitySetsIterationTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "fgComputeReachability `while (change)` iterations:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    computeReachabilityIterationTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("fgComputeReachability `while (change)` iterations:\n");
+    jitprintf("--------------------------------------------------\n");
+    computeReachabilityIterationTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Loop stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of methods with loops is %5u\n", totalLoopMethods);
-    fprintf(fout, "Total number of              loops is %5u\n", totalLoopCount);
-    fprintf(fout, "Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
-    fprintf(fout, "# of methods overflowing nat loop table is %5u\n", totalLoopOverflows);
-    fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
-    fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
-    fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Loop stats\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Total number of methods with loops is %5u\n", totalLoopMethods);
+    jitprintf("Total number of              loops is %5u\n", totalLoopCount);
+    jitprintf("Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
+    jitprintf("# of methods overflowing nat loop table is %5u\n", totalLoopOverflows);
+    jitprintf("Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
+    jitprintf("# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
+    jitprintf("Total number of loops with an         iterator is %5u\n", iterLoopCount);
+    jitprintf("Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "Loop count frequency table:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    loopCountTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "Loop exit count frequency table:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    loopExitCountTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("Loop count frequency table:\n");
+    jitprintf("--------------------------------------------------\n");
+    loopCountTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("Loop exit count frequency table:\n");
+    jitprintf("--------------------------------------------------\n");
+    loopExitCountTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
 
 #if MEASURE_NODE_SIZE
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "GenTree node allocation stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("GenTree node allocation stats\n");
+    jitprintf("---------------------------------------------------\n");
 
-    fprintf(fout, "Allocated %6I64u tree nodes (%7I64u bytes total, avg %4I64u bytes per method)\n",
-            genNodeSizeStats.genTreeNodeCnt, genNodeSizeStats.genTreeNodeSize,
-            genNodeSizeStats.genTreeNodeSize / genMethodCnt);
+    jitprintf("Allocated %6I64u tree nodes (%7I64u bytes total, avg %4I64u bytes per method)\n",
+              genNodeSizeStats.genTreeNodeCnt, genNodeSizeStats.genTreeNodeSize,
+              genNodeSizeStats.genTreeNodeSize / genMethodCnt);
 
-    fprintf(fout, "Allocated %7I64u bytes of unused tree node space (%3.2f%%)\n",
-            genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,
-            (float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) /
-                genNodeSizeStats.genTreeNodeSize);
+    jitprintf("Allocated %7I64u bytes of unused tree node space (%3.2f%%)\n",
+              genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,
+              (float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) /
+                  genNodeSizeStats.genTreeNodeSize);
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Distribution of per-method GenTree node counts:\n");
-    genTreeNcntHist.dump(fout);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Distribution of per-method GenTree node counts:\n");
+    genTreeNcntHist.dump(jitstdout());
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Distribution of per-method GenTree node  allocations (in bytes):\n");
-    genTreeNsizHist.dump(fout);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Distribution of per-method GenTree node  allocations (in bytes):\n");
+    genTreeNsizHist.dump(jitstdout());
 
 #endif // MEASURE_NODE_SIZE
 
 #if MEASURE_BLOCK_SIZE
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
+    jitprintf("---------------------------------------------------\n");
 
-    fprintf(fout, "Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
-            BasicBlock::s_Size, BasicBlock::s_Size / genMethodCnt);
-    fprintf(fout, "Allocated %6u flow nodes (%7u bytes total, avg %4u bytes per method)\n", genFlowNodeCnt,
-            genFlowNodeSize, genFlowNodeSize / genMethodCnt);
+    jitprintf("Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
+              BasicBlock::s_Size, BasicBlock::s_Size / genMethodCnt);
+    jitprintf("Allocated %6u flow nodes (%7u bytes total, avg %4u bytes per method)\n", genFlowNodeCnt, genFlowNodeSize,
+              genFlowNodeSize / genMethodCnt);
 
 #endif // MEASURE_BLOCK_SIZE
 
@@ -1661,21 +1658,21 @@ void Compiler::compShutdown()
 
     if (s_dspMemStats)
     {
-        fprintf(fout, "\nAll allocations:\n");
-        ArenaAllocator::dumpAggregateMemStats(jitstdout);
+        jitprintf("\nAll allocations:\n");
+        ArenaAllocator::dumpAggregateMemStats(jitstdout());
 
-        fprintf(fout, "\nLargest method:\n");
-        ArenaAllocator::dumpMaxMemStats(jitstdout);
+        jitprintf("\nLargest method:\n");
+        ArenaAllocator::dumpMaxMemStats(jitstdout());
 
-        fprintf(fout, "\n");
-        fprintf(fout, "---------------------------------------------------\n");
-        fprintf(fout, "Distribution of total memory allocated per method (in KB):\n");
-        memAllocHist.dump(fout);
+        jitprintf("\n");
+        jitprintf("---------------------------------------------------\n");
+        jitprintf("Distribution of total memory allocated per method (in KB):\n");
+        memAllocHist.dump(jitstdout());
 
-        fprintf(fout, "\n");
-        fprintf(fout, "---------------------------------------------------\n");
-        fprintf(fout, "Distribution of total memory used      per method (in KB):\n");
-        memUsedHist.dump(fout);
+        jitprintf("\n");
+        jitprintf("---------------------------------------------------\n");
+        jitprintf("Distribution of total memory used      per method (in KB):\n");
+        memUsedHist.dump(jitstdout());
     }
 
 #endif // MEASURE_MEM_ALLOC
@@ -1685,29 +1682,29 @@ void Compiler::compShutdown()
     if (JitConfig.DisplayLoopHoistStats() != 0)
 #endif // DEBUG
     {
-        PrintAggregateLoopHoistStats(jitstdout);
+        PrintAggregateLoopHoistStats(jitstdout());
     }
 #endif // LOOP_HOIST_STATS
 
 #if TRACK_ENREG_STATS
     if (JitConfig.JitEnregStats() != 0)
     {
-        s_enregisterStats.Dump(fout);
+        s_enregisterStats.Dump(jitstdout());
     }
 #endif // TRACK_ENREG_STATS
 
 #if MEASURE_PTRTAB_SIZE
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "GC pointer table stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("GC pointer table stats\n");
+    jitprintf("---------------------------------------------------\n");
 
-    fprintf(fout, "Reg pointer descriptor size (internal): %8u (avg %4u per method)\n", GCInfo::s_gcRegPtrDscSize,
-            GCInfo::s_gcRegPtrDscSize / genMethodCnt);
+    jitprintf("Reg pointer descriptor size (internal): %8u (avg %4u per method)\n", GCInfo::s_gcRegPtrDscSize,
+              GCInfo::s_gcRegPtrDscSize / genMethodCnt);
 
-    fprintf(fout, "Total pointer table size: %8u (avg %4u per method)\n", GCInfo::s_gcTotalPtrTabSize,
-            GCInfo::s_gcTotalPtrTabSize / genMethodCnt);
+    jitprintf("Total pointer table size: %8u (avg %4u per method)\n", GCInfo::s_gcTotalPtrTabSize,
+              GCInfo::s_gcTotalPtrTabSize / genMethodCnt);
 
 #endif // MEASURE_PTRTAB_SIZE
 
@@ -1715,38 +1712,42 @@ void Compiler::compShutdown()
 
     if (genMethodCnt != 0)
     {
-        fprintf(fout, "\n");
-        fprintf(fout, "A total of %6u methods compiled", genMethodCnt);
+        jitprintf("\n");
+        jitprintf("A total of %6u methods compiled", genMethodCnt);
 #if DISPLAY_SIZES
         if (genMethodICnt || genMethodNCnt)
         {
-            fprintf(fout, " (%u interruptible, %u non-interruptible)", genMethodICnt, genMethodNCnt);
+            jitprintf(" (%u interruptible, %u non-interruptible)", genMethodICnt, genMethodNCnt);
         }
 #endif // DISPLAY_SIZES
-        fprintf(fout, ".\n");
+        jitprintf(".\n");
     }
 
 #endif // MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || DISPLAY_SIZES
 
 #if EMITTER_STATS
-    emitterStats(fout);
+    emitterStats(jitstdout());
 #endif
 
 #if MEASURE_FATAL
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Fatal errors stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "   badCode:             %u\n", fatal_badCode);
-    fprintf(fout, "   noWay:               %u\n", fatal_noWay);
-    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
-    fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
-    fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Fatal errors stats\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("   badCode:             %u\n", fatal_badCode);
+    jitprintf("   noWay:               %u\n", fatal_noWay);
+    jitprintf("   implLimitation:      %u\n", fatal_implLimitation);
+    jitprintf("   NOMEM:               %u\n", fatal_NOMEM);
+    jitprintf("   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
-    fprintf(fout, "   noWayAssertBodyArgs: %u\n", fatal_noWayAssertBodyArgs);
+    jitprintf("   noWayAssertBodyArgs: %u\n", fatal_noWayAssertBodyArgs);
 #endif // DEBUG
-    fprintf(fout, "   NYI:                 %u\n", fatal_NYI);
+    jitprintf("   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+    DumpOnShutdown::DumpAll();
+#endif
 }
 
 /*****************************************************************************
@@ -1754,14 +1755,14 @@ void Compiler::compShutdown()
  */
 
 /* static */
-void Compiler::compDisplayStaticSizes(FILE* fout)
+void Compiler::compDisplayStaticSizes()
 {
 #if MEASURE_NODE_SIZE
-    GenTree::DumpNodeSizes(fout);
+    GenTree::DumpNodeSizes();
 #endif
 
 #if EMITTER_STATS
-    emitterStaticStats(fout);
+    emitterStaticStats();
 #endif
 }
 
@@ -1789,7 +1790,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
-    bRangeAllowStress = false;
+    compAllowStress = true;
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
@@ -1817,9 +1818,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     info.compMethodHashPrivate = 0;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef DEBUG
     // Opt-in to jit stress based on method hash ranges.
@@ -1829,7 +1830,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
+    compAllowStress =
+        fJitStressRange.Contains(info.compMethodHash()) &&
+        (JitConfig.JitStressOnly().isEmpty() ||
+         JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args));
+
 #endif // DEBUG
 
     eeInfoInitialized = false;
@@ -1853,19 +1858,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // Initially, no phase checks are active, and all dumps are enabled.
     activePhaseChecks = PhaseChecks::CHECK_NONE;
     activePhaseDumps  = PhaseDumps::DUMP_ALL;
-
-#ifdef FEATURE_TRACELOGGING
-    // Make sure JIT telemetry is initialized as soon as allocations can be made
-    // but no later than a point where noway_asserts can be thrown.
-    //    1. JIT telemetry could allocate some objects internally.
-    //    2. NowayAsserts are tracked through telemetry.
-    //    Note: JIT telemetry could gather data when compiler is not fully initialized.
-    //          So you have to initialize the compiler variables you use for telemetry.
-    assert((unsigned)PHASE_PRE_IMPORT == 0);
-    info.compILCodeSize = 0;
-    info.compMethodHnd  = nullptr;
-    compJitTelemetry.Initialize(this);
-#endif
 
     fgInit();
     lvaInit();
@@ -1909,17 +1901,16 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         codeGen = nullptr;
     }
 
-    compJmpOpUsed                = false;
-    compLongUsed                 = false;
-    compTailCallUsed             = false;
-    compTailPrefixSeen           = false;
-    compMayConvertTailCallToLoop = false;
-    compLocallocSeen             = false;
-    compLocallocUsed             = false;
-    compLocallocOptimized        = false;
-    compQmarkRationalized        = false;
-    compQmarkUsed                = false;
-    compFloatingPointUsed        = false;
+    compJmpOpUsed         = false;
+    compLongUsed          = false;
+    compTailCallUsed      = false;
+    compTailPrefixSeen    = false;
+    compLocallocSeen      = false;
+    compLocallocUsed      = false;
+    compLocallocOptimized = false;
+    compQmarkRationalized = false;
+    compQmarkUsed         = false;
+    compFloatingPointUsed = false;
 
     compSuppressedZeroInit = false;
 
@@ -1954,6 +1945,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif
     m_switchDescMap  = nullptr;
     m_blockToEHPreds = nullptr;
+    m_dominancePreds = nullptr;
     m_fieldSeqStore  = nullptr;
     m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
@@ -1973,7 +1965,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
-    fgSsaChecksEnabled         = false;
+    fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -2368,16 +2360,8 @@ void DummyProfilerELTStub(UINT_PTR ProfilerHandle)
 
 #endif // PROFILING_SUPPORTED
 
-bool Compiler::compShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+bool Compiler::compShouldThrowOnNoway()
 {
-#ifdef FEATURE_TRACELOGGING
-    compJitTelemetry.NotifyNowayAssert(filename, line);
-#endif
-
     // In min opts, we don't want the noway assert to go through the exception
     // path. Instead we want it to just silently go through codegen for
     // compat reasons.
@@ -2431,12 +2415,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE) || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) ||
         jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
-    {
-        opts.compFlags = CLFLG_MINOPT;
-    }
-    // Don't optimize .cctors (except prejit) or if we're an inlinee
-    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-             !compIsForInlining())
     {
         opts.compFlags = CLFLG_MINOPT;
     }
@@ -2579,7 +2557,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         pfAltJit = &JitConfig.AltJit();
     }
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         if (pfAltJit->contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
@@ -2605,7 +2583,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
         // it. You don't get to give a regular expression of methods to match.
@@ -2683,6 +2661,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
+    // Optionally suppress dumping OSR jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        verboseDump = (JitConfig.JitDumpOSR() > 0);
+    }
+
     // Optionally suppress dumping except for a specific OSR jit request.
     //
     const int dumpAtOSROffset = JitConfig.JitDumpAtOSROffset();
@@ -2753,9 +2738,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         // Optionally, disable use of profile data.
         //
-        else if (JitConfig.JitDisablePgo() > 0)
+        else if (JitConfig.JitDisablePGO() > 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePgo > 0";
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO > 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
@@ -2766,16 +2751,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         else
         {
-            static ConfigMethodRange JitEnablePgoRange;
-            JitEnablePgoRange.EnsureInit(JitConfig.JitEnablePgoRange());
+            static ConfigMethodRange JitEnablePGORange;
+            JitEnablePGORange.EnsureInit(JitConfig.JitEnablePGORange());
 
             // Base this decision on the root method hash, so a method either sees all available
             // profile data (including that for inlinees), or none of it.
             //
             const unsigned hash = impInlineRoot()->info.compMethodHash();
-            if (!JitEnablePgoRange.Contains(hash))
+            if (!JitEnablePGORange.Contains(hash))
             {
-                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePgoRange";
+                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePGORange";
                 fgPgoQueryResult = E_FAIL;
                 fgPgoData        = nullptr;
                 fgPgoSchema      = nullptr;
@@ -2851,7 +2836,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
-    opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
     opts.dspCode         = false;
@@ -2943,7 +2927,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
 #ifdef LATE_DISASM
-        if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
@@ -3548,13 +3532,7 @@ unsigned Compiler::compStressAreaHash(compStressArea area)
 //
 bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
 {
-    if (!bRangeAllowStress)
-    {
-        return false;
-    }
-
-    if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    if (!compAllowStress)
     {
         return false;
     }
@@ -4030,7 +4008,8 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (opts.OptimizationDisabled() ||
+            (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
         {
             // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
@@ -4349,23 +4328,14 @@ const char* Compiler::compGetStressMessage() const
     if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
     {
         // Is the method being jitted excluded from stress via range?
-        if (bRangeAllowStress)
+        if (compAllowStress)
         {
-            // Or is it excluded via name?
-            if (!JitConfig.JitStressOnly().isEmpty() ||
-                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-            {
-                // Not excluded -- stress can happen
-                stressMessage = " JitStress";
-            }
-            else
-            {
-                stressMessage = " NoJitStress(Only)";
-            }
+            // Not excluded -- stress can happen
+            stressMessage = " JitStress";
         }
         else
         {
-            stressMessage = " NoJitStress(Range)";
+            stressMessage = " NoJitStress";
         }
     }
 #endif // DEBUG
@@ -4560,6 +4530,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
+    // Convert BBJ_CALLFINALLY/BBJ_ALWAYS pairs to BBJ_CALLFINALLY/BBJ_CALLFINALLYRET.
+    // Temporary: eventually, do this immediately in impImportLeave
+    //
+    DoPhase(this, PHASE_UPDATE_CALLFINALLY, &Compiler::fgUpdateCallFinally);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4644,14 +4619,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
-    // Update finally target flags after EH optimizations
-    //
-    DoPhase(this, PHASE_UPDATE_FINALLY_FLAGS, &Compiler::fgUpdateFinallyTargetFlags);
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
 #if DEBUG
     if (lvaEnregEHVars)
     {
@@ -4718,7 +4685,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         // Tail merge
         //
-        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() { return fgHeadTailMerge(true); });
 
         // Merge common throw blocks
         //
@@ -4776,11 +4743,19 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgStress64RsltMul();
 #endif // DEBUG
 
+    if (opts.OptimizationEnabled())
+    {
+        // Build post-order that morph will use, and remove dead blocks
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+    }
+
     // Morph the trees in all the blocks of the method
     //
-    auto morphGlobalPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        fgMorphBlocks();
+    unsigned const preMorphBBCount = fgBBcount;
+    DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    auto postMorphPhase = [this]() {
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
@@ -4796,16 +4771,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         compCurBB = nullptr;
 #endif // DEBUG
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
-    DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
+    DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
+
+    // If we needed to create any new BasicBlocks then renumber the blocks
+    //
+    if (fgBBcount > preMorphBBCount)
+    {
+        fgRenumberBlocks();
+    }
 
     // GS security checks for unsafe buffers
     //
@@ -4835,7 +4811,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Second pass of tail merge
         //
-        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() { return fgHeadTailMerge(false); });
+
+        // Canonicalize entry to give a unique dominator tree root
+        //
+        DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
         // Compute reachability sets and dominators.
         //
@@ -4858,9 +4838,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
-        // Clear loop table info that is not used after this point, and might become invalid.
+        // Compute dominators and exceptional entry blocks
         //
-        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
+        DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
+
+        // The loop table is no longer valid.
+        optLoopTableValid = false;
+        optLoopTable      = nullptr;
+        optLoopCount      = 0;
+
+        // Old dominators and reachability sets are no longer valid.
+        fgDomsComputed         = false;
+        fgCompactRenumberQuirk = true;
     }
 
 #ifdef DEBUG
@@ -4976,23 +4965,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
+            else
+            {
+                // DFS tree is always invalid after this point.
+                //
+                fgInvalidateDfsTree();
+            }
 
             if (doCse)
             {
                 // Remove common sub-expressions
                 //
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
-            }
-
-            // Assertion prop can do arbitrary statement remorphing, which
-            // can clone code and disrupt our simpleminded SSA accounting.
-            //
-            // So, disable the ssa checks.
-            //
-            if (fgSsaChecksEnabled)
-            {
-                JITDUMP("Disabling SSA checking before assertion prop\n");
-                fgSsaChecksEnabled = false;
             }
 
             if (doAssertionProp)
@@ -5041,16 +5025,20 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 break;
             }
+
+            // We may have optimized away the canonical entry BB that SSA
+            // depends on above, so if we are going for another iteration then
+            // make sure we still have a canonical entry.
+            //
+            DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
+
             ResetOptAnnotations();
-            RecomputeLoopInfo();
+            RecomputeFlowGraphAnnotations();
         }
     }
 
-    // Dominator and reachability sets are no longer valid.
-    // The loop table is no longer valid.
-    fgDomsComputed            = false;
-    optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
+    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5068,6 +5056,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Create any throw helper blocks that might be needed
+    //
+    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
@@ -5081,6 +5073,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
+        // Conditional to Switch conversion
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
     }
 
     // Determine start of cold region if we are hot/cold splitting
@@ -5110,13 +5106,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     fgNodeThreading = NodeThreading::LIR;
 
-    // Here we do "simple lowering".  When the RyuJIT backend works for all
-    // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
-    // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
-    // range check throw blocks, in which the liveness must be correct.
-    //
-    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
@@ -5141,14 +5130,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    if (!compMacOsArm64Abi())
-    {
-        // Set stack levels; this information is necessary for x86
-        // but on other platforms it is used only in asserts.
-        // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
-        StackLevelSetter stackLevelSetter(this);
-        stackLevelSetter.Run();
-    }
+    // Set stack levels and analyze throw helper usage.
+    StackLevelSetter stackLevelSetter(this);
+    stackLevelSetter.Run();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5177,7 +5161,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if TRACK_LSRA_STATS
     if (JitConfig.DisplayLsraStats() == 2)
     {
-        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
@@ -5202,10 +5186,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     RecordStateAtEndOfCompilation();
 
-#ifdef FEATURE_TRACELOGGING
-    compJitTelemetry.NotifyEndOfCompilation();
-#endif
-
     unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
 
     if (JitConfig.JitDisasmSummary() && !compIsForInlining())
@@ -5227,10 +5207,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         char debugPart[128] = {0};
         INDEBUG(sprintf_s(debugPart, 128, ", hash=0x%08x%s", info.compMethodHash(), compGetStressMessage()));
 
+        char metricPart[128] = {0};
+#ifdef DEBUG
+        if (JitConfig.JitMetrics() > 0)
+        {
+            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount);
+        }
+#endif
+
         const bool hasProf = fgHaveProfileData();
-        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s]\n", methodsCompiled, fullName,
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
-               info.compILCodeSize, *methodCodeSize, debugPart);
+               info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
@@ -5252,6 +5240,165 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #if FEATURE_LOOP_ALIGN
 
+// TODO-Quirk: Remove
+static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
+{
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+            return true;
+
+        if (HasOldChildLoop(comp, child))
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
+//
+// Parameters:
+//   loops       - Identified natural loops
+//   blockToLoop - Map from block back to its most-nested containing natural loop
+//
+// Remarks:
+//   All innermost loops whose block weight meets a threshold are candidates for alignment.
+//   The `top` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
+//   (the loop table itself is not changed).
+//
+//   Depends on the loop table, and on block weights being set.
+//
+//   Sets `loopAlignCandidates` to the number of loop candidates for alignment.
+//
+void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop)
+{
+    loopAlignCandidates = 0;
+
+    // TODO-Cleanup: We cannot currently renumber blocks after LSRA, so we need
+    // a side map for the lexically top most block here.
+    // Since placeLoopAlignInstructions already does a lexical visit we can
+    // merge it with the identification of candidates to make all of this
+    // cheaper.
+    BasicBlock** topMostBlocks = new (this, CMK_LoopOpt) BasicBlock*[loops->NumLoops()]{};
+    for (BasicBlock* block : Blocks())
+    {
+        FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
+        if (loop == nullptr)
+        {
+            continue;
+        }
+
+        if (topMostBlocks[loop->GetIndex()] == nullptr)
+        {
+            topMostBlocks[loop->GetIndex()] = block;
+        }
+    }
+
+    for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
+    {
+        // TODO-Quirk: Remove. When removing we will likely need to add some
+        // form of "lexicality" heuristic here: only align loops whose blocks
+        // are fairly tightly packed together physically.
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+        {
+            continue;
+        }
+
+        // TODO-Quirk: Switch to loop->GetChild() != nullptr
+        if (HasOldChildLoop(this, loop))
+        {
+            JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
+            continue;
+        }
+
+        BasicBlock* top = topMostBlocks[loop->GetIndex()];
+        if (top == fgFirstBB)
+        {
+            // Adding align instruction in prolog is not supported.
+            // TODO: Insert an empty block before the loop, if want to align it, so we have a place to put
+            // the align instruction.
+            JITDUMP("Skipping alignment for " FMT_LP "; loop starts in first block\n", loop->GetIndex());
+            continue;
+        }
+
+        if (top->HasFlag(BBF_COLD))
+        {
+            JITDUMP("Skipping alignment for cold loop " FMT_LP "\n", loop->GetIndex());
+            continue;
+        }
+
+        bool hasCall = loop->VisitLoopBlocks([](BasicBlock* block) {
+            for (GenTree* tree : LIR::AsRange(block))
+            {
+                if (tree->IsCall())
+                {
+                    return BasicBlockVisit::Abort;
+                }
+            }
+
+            return BasicBlockVisit::Continue;
+        }) == BasicBlockVisit::Abort;
+
+        if (hasCall)
+        {
+            // Heuristic: it is not valuable to align loops with calls.
+            JITDUMP("Skipping alignment for " FMT_LP "; loop contains call\n", loop->GetIndex());
+            continue;
+        }
+
+        if (!top->IsFirst())
+        {
+#if FEATURE_EH_CALLFINALLY_THUNKS
+            if (top->Prev()->KindIs(BBJ_CALLFINALLY))
+            {
+                // It must be a retless BBJ_CALLFINALLY if we get here.
+                assert(!top->Prev()->isBBCallFinallyPair());
+
+                // If the block before the loop start is a retless BBJ_CALLFINALLY
+                // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
+                // because it will affect reported EH region range. For x86 (where
+                // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
+
+                JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n",
+                        loop->GetIndex());
+                continue;
+            }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+            if (top->Prev()->isBBCallFinallyPairTail())
+            {
+                // If the previous block is the BBJ_CALLFINALLYRET of a
+                // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
+                // because we can't add instructions in that block. In the
+                // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
+                // reported EH, as above.
+                JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
+                        loop->GetIndex());
+                continue;
+            }
+        }
+
+        // Now we have an innerloop candidate that might need alignment
+
+        weight_t topWeight     = top->getBBWeight(this);
+        weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT;
+        if (topWeight >= compareWeight)
+        {
+            loopAlignCandidates++;
+            assert(!top->isLoopAlign());
+            top->SetFlags(BBF_LOOP_ALIGN);
+            JITDUMP("Aligning " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " >= " FMT_WT ".\n",
+                    loop->GetIndex(), top->bbNum, topWeight, compareWeight);
+        }
+        else
+        {
+            JITDUMP("Skipping alignment for " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " < " FMT_WT ".\n",
+                    loop->GetIndex(), top->bbNum, topWeight, compareWeight);
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // placeLoopAlignInstructions: determine where to place alignment padding
 //
@@ -5270,47 +5417,79 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 PhaseStatus Compiler::placeLoopAlignInstructions()
 {
-    // Add align only if there were any loops that needed alignment
-    if (loopAlignCandidates == 0)
+    JITDUMP("*************** In placeLoopAlignInstructions()\n");
+
+    if (!codeGen->ShouldAlignLoops())
     {
+        JITDUMP("Not aligning loops; ShouldAlignLoops is false\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
-
-    bool                   madeChanges           = false;
-    weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
-    BasicBlock*            bbHavingAlign         = nullptr;
-    BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
-
-    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
+    if (!fgMightHaveNaturalLoops)
     {
-        // Adding align instruction in prolog is not supported
-        // hence just remove that loop from our list.
-        fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
-        madeChanges = true;
+#ifdef DEBUG
+        // If false, then we expect there to be no natural loops. Phases
+        // between loop finding and loop alignment that may introduce loops
+        // should conservatively set fgMightHaveNaturalLoops.
+        FlowGraphDfsTree*      dfsTree = fgComputeDfs();
+        FlowGraphNaturalLoops* loops   = FlowGraphNaturalLoops::Find(dfsTree);
+        assert(loops->NumLoops() == 0);
+#endif
+
+        JITDUMP("Not checking for any loops as fgMightHaveNaturalLoops is false\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    FlowGraphDfsTree*      dfsTree = fgComputeDfs();
+    FlowGraphNaturalLoops* loops   = FlowGraphNaturalLoops::Find(dfsTree);
+
+    // fgMightHaveNaturalLoops being true does not necessarily mean there's still any more loops left.
+    if (loops->NumLoops() == 0)
+    {
+        JITDUMP("No natural loops found\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    BlockToNaturalLoopMap* blockToLoop = BlockToNaturalLoopMap::Build(loops);
+
+    optIdentifyLoopsForAlignment(loops, blockToLoop);
+
+    // Add align only if there were any loops that needed alignment
+    if (loopAlignCandidates == 0)
+    {
+        JITDUMP("Found no candidates for loop alignment\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    JITDUMP("Inside placeLoopAlignInstructions for %d loop candidates.\n", loopAlignCandidates);
+
+    bool                  madeChanges        = false;
+    weight_t              minBlockSoFar      = BB_MAX_WEIGHT;
+    BasicBlock*           bbHavingAlign      = nullptr;
+    FlowGraphNaturalLoop* currentAlignedLoop = nullptr;
 
     int loopsToProcess = loopAlignCandidates;
 
     for (BasicBlock* const block : Blocks())
     {
-        if (currentAlignedLoopNum != BasicBlock::NOT_IN_LOOP)
+        FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
+
+        if (currentAlignedLoop != nullptr)
         {
             // We've been processing blocks within an aligned loop. Are we out of that loop now?
-            if (currentAlignedLoopNum != block->bbNatLoopNum)
+            if (currentAlignedLoop != loop)
             {
-                currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+                currentAlignedLoop = nullptr;
             }
         }
 
-        // If there is a unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        // If there is an unconditional jump (which isn't to the next block)
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->HasFlag(BBF_NONE_QUIRK))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                if (currentAlignedLoopNum == BasicBlock::NOT_IN_LOOP)
+                if (currentAlignedLoop == nullptr)
                 {
                     // Ok to insert align instruction in this block because it is not part of any aligned loop.
                     minBlockSoFar = block->bbWeight;
@@ -5321,77 +5500,34 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             // Loop alignment is disabled for cold blocks
-            assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop              = block->bbNext;
-            bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
-            bool              unmarkedLoopAlign    = false;
+            assert(!block->HasFlag(BBF_COLD));
+            BasicBlock* const loopTop = block->Next();
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (bbHavingAlign == nullptr)
             {
-                // It must be a retless BBJ_CALLFINALLY if we get here.
-                assert(!block->isBBCallAlwaysPair());
+                // If jmp was not found, then block before the loop start is where align instruction will be added.
 
-                // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
-                // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
-                // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
-                // BBJ_CALLFINALLY), we allow it.
-                isSpecialCallFinally = true;
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        loopTop->bbNum);
             }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
-
-            if (isSpecialCallFinally)
+            else
             {
-                // There are two special cases:
-                // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
-                //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
-                //    region range.
-                // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
-                //    can't add alignment because we can't add instructions in that block. In the
-                //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
-                // Currently, we don't align loops for these cases.
-
-                loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
-                madeChanges       = true;
-                unmarkedLoopAlign = true;
-            }
-            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
-            {
-                // In some odd cases we may see blocks within the loop before we see the
-                // top block of the loop. Just bail on aligning such loops.
-                //
-                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
-                madeChanges       = true;
-                unmarkedLoopAlign = true;
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, loopTop->bbNum);
             }
 
-            if (!unmarkedLoopAlign)
-            {
-                if (bbHavingAlign == nullptr)
-                {
-                    // If jmp was not found, then block before the loop start is where align instruction will be added.
+            madeChanges = true;
+            bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
 
-                    bbHavingAlign = block;
-                    JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
-                            block->bbNum, loopTop->bbNum);
-                }
-                else
-                {
-                    JITDUMP("Marking " FMT_BB
-                            " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
-                            bbHavingAlign->bbNum, loopTop->bbNum);
-                }
-
-                madeChanges = true;
-                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            }
-
-            minBlockSoFar         = BB_MAX_WEIGHT;
-            bbHavingAlign         = nullptr;
-            currentAlignedLoopNum = loopTop->bbNatLoopNum;
+            minBlockSoFar      = BB_MAX_WEIGHT;
+            bbHavingAlign      = nullptr;
+            currentAlignedLoop = blockToLoop->GetLoop(loopTop);
+            assert(currentAlignedLoop != nullptr);
 
             if (--loopsToProcess == 0)
             {
@@ -5735,9 +5871,10 @@ void Compiler::ResetOptAnnotations()
     fgResetForSsa();
     vnStore              = nullptr;
     m_blockToEHPreds     = nullptr;
+    m_dominancePreds     = nullptr;
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
-    fgSsaChecksEnabled   = false;
+    fgSsaValid           = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5754,14 +5891,14 @@ void Compiler::ResetOptAnnotations()
 }
 
 //------------------------------------------------------------------------
-// RecomputeLoopInfo: Recompute loop annotations between opt-repeat iterations.
+// RecomputeLoopInfo: Recompute flow graph annotations between opt-repeat iterations.
 //
 // Notes:
-//    The intent of this method is to update loop structure annotations, and those
-//    they depend on; these annotations may have become stale during optimization,
-//    and need to be up-to-date before running another iteration of optimizations.
+//    The intent of this method is to update all annotations computed on the flow graph
+//    these annotations may have become stale during optimization, and need to be
+//    up-to-date before running another iteration of optimizations.
 //
-void Compiler::RecomputeLoopInfo()
+void Compiler::RecomputeFlowGraphAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
@@ -5770,8 +5907,20 @@ void Compiler::RecomputeLoopInfo()
     fgDomsComputed = false;
     fgComputeReachability();
     optSetBlockWeights();
-    // Rebuild the loop tree annotations themselves
     optFindLoops();
+
+    m_dfsTree = fgComputeDfs();
+    optFindNewLoops();
+
+    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+
+    // Dominators and the loop table are computed above for old<->new loop
+    // crossreferencing, but they are not actually used for optimization
+    // anymore.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    optLoopCount      = 0;
+    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/
@@ -5879,7 +6028,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif // FUNC_INFO_LOGGING
 
-    // if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
+    // if (s_compMethodsCount==0) setvbuf(jitstdout(), NULL, _IONBF, 0);
 
     if (compIsForInlining())
     {
@@ -5914,17 +6063,17 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
-    if (TargetOS::IsMacOS)
+    if (TargetOS::IsApplePlatform)
     {
-        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_APPLE);
     }
     else if (TargetOS::IsUnix)
     {
         if (TargetArchitecture::IsX64)
         {
-            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            // Apple x64 uses the Unix jit variant in crossgen2, not a special jit
             info.compMatchedVM =
-                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_APPLE));
         }
         else
         {
@@ -6008,6 +6157,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Dczva() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+        }
+
+        if (JitConfig.EnableArm64Sve() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
 #elif defined(TARGET_XARCH)
         if (JitConfig.EnableHWIntrinsic() != 0)
@@ -6288,7 +6442,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         return param.result;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 //------------------------------------------------------------------------
 // compMethodHash: get hash code for currently jitted method
 //
@@ -6344,7 +6498,7 @@ unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
     return methodHash;
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 void Compiler::compCompileFinish()
 {
@@ -6363,7 +6517,7 @@ void Compiler::compCompileFinish()
     if (s_dspMemStats || verbose)
     {
         printf("\nAllocations for %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
-        compArenaAllocator->dumpMemStats(jitstdout);
+        compArenaAllocator->dumpMemStats(jitstdout());
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
@@ -6388,9 +6542,9 @@ void Compiler::compCompileFinish()
                                            // Small methods cannot meaningfully have a big number of locals
                                            // or arguments. We always track arguments at the start of
                                            // the prolog which requires memory
-        (info.compLocalsCount <= 32) && (!opts.MinOpts()) && // We may have too many local variables, etc
-        (getJitStressLevel() == 0) &&                        // We need extra memory for stress
-        !opts.optRepeat &&                                   // We need extra memory to repeat opts
+        (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
+        (getJitStressLevel() == 0) &&                      // We need extra memory for stress
+        !opts.optRepeat &&                                 // We need extra memory to repeat opts
         !compArenaAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
                                                       // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
@@ -6408,7 +6562,7 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_inlineStrategy->DumpData();
 
@@ -8292,7 +8446,7 @@ double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 #endif
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
+#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 const char* PhaseNames[] = {
 #define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"
@@ -9116,7 +9270,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 
 void Compiler::RecordStateAtEndOfInlining()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     m_compCyclesAtEndOfInlining    = 0;
     m_compTickCountAtEndOfInlining = 0;
@@ -9127,7 +9281,7 @@ void Compiler::RecordStateAtEndOfInlining()
     }
     m_compTickCountAtEndOfInlining = GetTickCount();
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 //------------------------------------------------------------------------
@@ -9136,7 +9290,7 @@ void Compiler::RecordStateAtEndOfInlining()
 
 void Compiler::RecordStateAtEndOfCompilation()
 {
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
     // Common portion
     m_compCycles = 0;
@@ -9150,7 +9304,7 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 }
 
 #if FUNC_INFO_LOGGING
@@ -9225,6 +9379,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cStmt,       dStmt          : Display a Statement (call gtDispStmt()).
  *      cTree,       dTree          : Display a tree (call gtDispTree()).
  *      cTreeLIR,    dTreeLIR       : Display a tree in LIR form (call gtDispLIRNode()).
+ *      cTreeRange,  dTreeRange     : Display a range of trees in LIR form (call gtDispLIRNode()).
  *      cTrees,      dTrees         : Display all the trees in a function (call fgDumpTrees()).
  *      cEH,         dEH            : Display the EH handler table (call fgDispHandlerTab()).
  *      cVar,        dVar           : Display a local variable given its number (call lvaDumpEntry()).
@@ -9239,202 +9394,233 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
  *                                    indices. These are converted to variable numbers and sorted. (Calls
  *                                    dumpConvertedVarSet()).
- *      cLoop,       dLoop          : Display the blocks of a loop, including the trees.
- *      cTreeFlags,  dTreeFlags     : Display tree flags
+ *      cLoop,       dLoop          : Display the blocks of a loop, including the trees, given a loop number (call
+ *                                    optPrintLoopInfo()).
+ *      cLoopPtr,    dLoopPtr       : Display the blocks of a loop, including the trees, given a LoopDsc* (call
+ *                                    optPrintLoopInfo()).
+ *      cLoops,      dLoops         : Display the loop table (call optPrintLoopTable()).
+ *      cNewLoops,   dNewLoops      : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
+ *                                    Compiler::m_loops.
+ *      cNewLoopsA,  dNewLoopsA     : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
+ *                                    loops arg.
+ *      cNewLoop,    dNewLoop       : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
+ *                                    loop arg.
+ *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
  *
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
  *      dBlockList                  : Display a BasicBlockList*.
+ *
+ * The following find an object in the IR and return it, as well as setting a global variable with the value that can
+ * be used in the debugger (e.g., in the watch window, or as a way to get an address for data breakpoints).
+ *      dFindTreeInTree             : Find a tree in a given tree, specifying a tree id. Sets `dbTree`.
+ *      dFindTree                   : Find a tree in the IR, specifying a tree id. Sets `dbTree` and `dbTreeBlock`.
+ *      dFindStmt                   : Find a Statement in the IR, specifying a statement id. Sets `dbStmt`.
+ *      dFindBlock                  : Find a block in the IR, specifying a block number. Sets `dbBlock`.
+ *      dFindLoop                   : Find a loop in the loop table, specifying a loop number. Sets `dbLoop`.
  */
 
-void cBlock(Compiler* comp, BasicBlock* block)
+// Make the debug helpers available (under #ifdef DEBUG) even though they are unreferenced. When the Microsoft
+// linker is using /OPT:REF, it throws away unreferenced COMDATs (typically functions). Using "/INCLUDE:symbol"
+// forces the linker to keep these anyway.
+//
+// Mark them `export "C"` so the names are not C++ name mangled. This makes it easier to refer to them in the
+// `/INCLUDE` switch, and potentially makes them easier to find by a debugger.
+//
+// On x64/arm64, "C" names are not decorated (mangled). However, on x86, the names are decorated for `__stdcall`
+// with a leading `_` and trailing `@N` for `N` bytes of arguments. To simplify, use __cdecl for x86. (Specifying
+// it for other platforms is a no-op.)
+
+#define JITDBGAPI extern "C"
+
+#if defined(_MSC_VER)
+
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
+
+// Functions which take a Compiler*
+#pragma comment(linker, "/include:cBlock")
+#pragma comment(linker, "/include:cBlocks")
+#pragma comment(linker, "/include:cBlocksV")
+#pragma comment(linker, "/include:cStmt")
+#pragma comment(linker, "/include:cTree")
+#pragma comment(linker, "/include:cTreeLIR")
+#pragma comment(linker, "/include:cTreeRange")
+#pragma comment(linker, "/include:cTrees")
+#pragma comment(linker, "/include:cEH")
+#pragma comment(linker, "/include:cVar")
+#pragma comment(linker, "/include:cVarDsc")
+#pragma comment(linker, "/include:cVars")
+#pragma comment(linker, "/include:cVarsFinal")
+#pragma comment(linker, "/include:cBlockPreds")
+#pragma comment(linker, "/include:cBlockSuccs")
+#pragma comment(linker, "/include:cReach")
+#pragma comment(linker, "/include:cDoms")
+#pragma comment(linker, "/include:cLiveness")
+#pragma comment(linker, "/include:cCVarSet")
+#pragma comment(linker, "/include:cLoop")
+#pragma comment(linker, "/include:cLoopPtr")
+#pragma comment(linker, "/include:cLoops")
+#pragma comment(linker, "/include:cNewLoops")
+#pragma comment(linker, "/include:cNewLoopsA")
+#pragma comment(linker, "/include:cNewLoop")
+#pragma comment(linker, "/include:cTreeFlags")
+
+// Functions which call the c* functions getting Compiler* using `JitTls::GetCompiler()`
+#pragma comment(linker, "/include:dBlock")
+#pragma comment(linker, "/include:dBlocks")
+#pragma comment(linker, "/include:dBlocksV")
+#pragma comment(linker, "/include:dStmt")
+#pragma comment(linker, "/include:dTree")
+#pragma comment(linker, "/include:dTreeLIR")
+#pragma comment(linker, "/include:dTreeRange")
+#pragma comment(linker, "/include:dTrees")
+#pragma comment(linker, "/include:dEH")
+#pragma comment(linker, "/include:dVar")
+#pragma comment(linker, "/include:dVarDsc")
+#pragma comment(linker, "/include:dVars")
+#pragma comment(linker, "/include:dVarsFinal")
+#pragma comment(linker, "/include:dBlockPreds")
+#pragma comment(linker, "/include:dBlockSuccs")
+#pragma comment(linker, "/include:dReach")
+#pragma comment(linker, "/include:dDoms")
+#pragma comment(linker, "/include:dLiveness")
+#pragma comment(linker, "/include:dCVarSet")
+#pragma comment(linker, "/include:dLoop")
+#pragma comment(linker, "/include:dLoopPtr")
+#pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dNewLoops")
+#pragma comment(linker, "/include:dNewLoopsA")
+#pragma comment(linker, "/include:dNewLoop")
+#pragma comment(linker, "/include:dTreeFlags")
+
+// Functions which don't require a Compiler*
+#pragma comment(linker, "/include:dRegMask")
+#pragma comment(linker, "/include:dBlockList")
+
+// Functions which search for objects in the IR
+#pragma comment(linker, "/include:dFindTreeInTree")
+#pragma comment(linker, "/include:dFindTree")
+#pragma comment(linker, "/include:dFindStmt")
+#pragma comment(linker, "/include:dFindBlock")
+#pragma comment(linker, "/include:dFindLoop")
+
+#elif defined(HOST_X86)
+
+// Functions which take a Compiler*
+#pragma comment(linker, "/include:_cBlock")
+#pragma comment(linker, "/include:_cBlocks")
+#pragma comment(linker, "/include:_cBlocksV")
+#pragma comment(linker, "/include:_cStmt")
+#pragma comment(linker, "/include:_cTree")
+#pragma comment(linker, "/include:_cTreeLIR")
+#pragma comment(linker, "/include:_cTreeRange")
+#pragma comment(linker, "/include:_cTrees")
+#pragma comment(linker, "/include:_cEH")
+#pragma comment(linker, "/include:_cVar")
+#pragma comment(linker, "/include:_cVarDsc")
+#pragma comment(linker, "/include:_cVars")
+#pragma comment(linker, "/include:_cVarsFinal")
+#pragma comment(linker, "/include:_cBlockPreds")
+#pragma comment(linker, "/include:_cBlockSuccs")
+#pragma comment(linker, "/include:_cReach")
+#pragma comment(linker, "/include:_cDoms")
+#pragma comment(linker, "/include:_cLiveness")
+#pragma comment(linker, "/include:_cCVarSet")
+#pragma comment(linker, "/include:_cLoop")
+#pragma comment(linker, "/include:_cLoopPtr")
+#pragma comment(linker, "/include:_cLoops")
+#pragma comment(linker, "/include:_cTreeFlags")
+
+// Functions which call the c* functions getting Compiler* using `JitTls:_:GetCompiler()`
+#pragma comment(linker, "/include:_dBlock")
+#pragma comment(linker, "/include:_dBlocks")
+#pragma comment(linker, "/include:_dBlocksV")
+#pragma comment(linker, "/include:_dStmt")
+#pragma comment(linker, "/include:_dTree")
+#pragma comment(linker, "/include:_dTreeLIR")
+#pragma comment(linker, "/include:_dTreeRange")
+#pragma comment(linker, "/include:_dTrees")
+#pragma comment(linker, "/include:_dEH")
+#pragma comment(linker, "/include:_dVar")
+#pragma comment(linker, "/include:_dVarDsc")
+#pragma comment(linker, "/include:_dVars")
+#pragma comment(linker, "/include:_dVarsFinal")
+#pragma comment(linker, "/include:_dBlockPreds")
+#pragma comment(linker, "/include:_dBlockSuccs")
+#pragma comment(linker, "/include:_dReach")
+#pragma comment(linker, "/include:_dDoms")
+#pragma comment(linker, "/include:_dLiveness")
+#pragma comment(linker, "/include:_dCVarSet")
+#pragma comment(linker, "/include:_dLoop")
+#pragma comment(linker, "/include:_dLoopPtr")
+#pragma comment(linker, "/include:_dLoops")
+#pragma comment(linker, "/include:_dTreeFlags")
+
+// Functions which don't require a Compiler*
+#pragma comment(linker, "/include:_dRegMask")
+#pragma comment(linker, "/include:_dBlockList")
+
+// Functions which search for objects in the IR
+#pragma comment(linker, "/include:_dFindTreeInTree")
+#pragma comment(linker, "/include:_dFindTree")
+#pragma comment(linker, "/include:_dFindStmt")
+#pragma comment(linker, "/include:_dFindBlock")
+#pragma comment(linker, "/include:_dFindLoop")
+
+#endif // HOST_*
+
+#endif // _MSC_VER
+
+JITDBGAPI void __cdecl cBlock(Compiler* comp, BasicBlock* block)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Block %u\n", sequenceNumber++);
     comp->fgTableDispBasicBlock(block);
 }
 
-void cBlocks(Compiler* comp)
+JITDBGAPI void __cdecl cBlocks(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Blocks %u\n", sequenceNumber++);
     comp->fgDispBasicBlocks();
 }
 
-void cBlocksV(Compiler* comp)
+JITDBGAPI void __cdecl cBlocksV(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *BlocksV %u\n", sequenceNumber++);
     comp->fgDispBasicBlocks(true);
 }
 
-void cStmt(Compiler* comp, Statement* statement)
+JITDBGAPI void __cdecl cStmt(Compiler* comp, Statement* statement)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Stmt %u\n", sequenceNumber++);
     comp->gtDispStmt(statement, ">>>");
 }
 
-void cTree(Compiler* comp, GenTree* tree)
+JITDBGAPI void __cdecl cTree(Compiler* comp, GenTree* tree)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Tree %u\n", sequenceNumber++);
     comp->gtDispTree(tree, nullptr, ">>>");
 }
 
-void cTreeLIR(Compiler* comp, GenTree* tree)
+JITDBGAPI void __cdecl cTreeLIR(Compiler* comp, GenTree* tree)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *TreeLIR %u\n", sequenceNumber++);
     comp->gtDispLIRNode(tree);
 }
 
-void cTrees(Compiler* comp)
+JITDBGAPI void __cdecl cTreeRange(Compiler* comp, GenTree* first, GenTree* last)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Trees %u\n", sequenceNumber++);
-    comp->fgDumpTrees(comp->fgFirstBB, nullptr);
-}
-
-void cEH(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *EH %u\n", sequenceNumber++);
-    comp->fgDispHandlerTab();
-}
-
-void cVar(Compiler* comp, unsigned lclNum)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Var %u\n", sequenceNumber++);
-    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
-    unsigned lclNum = comp->lvaGetLclNum(varDsc);
-    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cVars(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Vars %u\n", sequenceNumber++);
-    comp->lvaTableDump();
-}
-
-void cVarsFinal(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Vars %u\n", sequenceNumber++);
-    comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cBlockPreds(Compiler* comp, BasicBlock* block)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *BlockPreds %u\n", sequenceNumber++);
-    block->dspPreds();
-}
-
-void cBlockSuccs(Compiler* comp, BasicBlock* block)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *BlockSuccs %u\n", sequenceNumber++);
-    block->dspSuccs(comp);
-}
-
-void cReach(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Reach %u\n", sequenceNumber++);
-    comp->fgDispReach();
-}
-
-void cDoms(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Doms %u\n", sequenceNumber++);
-    comp->fgDispDoms();
-}
-
-void cLiveness(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Liveness %u\n", sequenceNumber++);
-    comp->fgDispBBLiveness();
-}
-
-void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
-    dumpConvertedVarSet(comp, vars);
-    printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
-}
-
-void cLoop(Compiler* comp, unsigned loopNum)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loop %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
-    printf("\n");
-}
-
-void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loop, /* verbose */ true);
-    printf("\n");
-}
-
-void cLoops(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loops %u\n", sequenceNumber++);
-    comp->optPrintLoopTable();
-}
-
-void dBlock(BasicBlock* block)
-{
-    cBlock(JitTls::GetCompiler(), block);
-}
-
-void dBlocks()
-{
-    cBlocks(JitTls::GetCompiler());
-}
-
-void dBlocksV()
-{
-    cBlocksV(JitTls::GetCompiler());
-}
-
-void dStmt(Statement* statement)
-{
-    cStmt(JitTls::GetCompiler(), statement);
-}
-
-void dTree(GenTree* tree)
-{
-    cTree(JitTls::GetCompiler(), tree);
-}
-
-void dTreeLIR(GenTree* tree)
-{
-    cTreeLIR(JitTls::GetCompiler(), tree);
-}
-
-void dTreeRange(GenTree* first, GenTree* last)
-{
-    Compiler* comp = JitTls::GetCompiler();
-    GenTree*  cur  = first;
+    printf("===================================================================== *TreeRange %u\n", sequenceNumber++);
+    GenTree* cur = first;
     while (true)
     {
-        cTreeLIR(comp, cur);
+        comp->gtDispLIRNode(cur);
         if (cur == last)
             break;
 
@@ -9442,214 +9628,141 @@ void dTreeRange(GenTree* first, GenTree* last)
     }
 }
 
-void dTrees()
-{
-    cTrees(JitTls::GetCompiler());
-}
-
-void dEH()
-{
-    cEH(JitTls::GetCompiler());
-}
-
-void dVar(unsigned lclNum)
-{
-    cVar(JitTls::GetCompiler(), lclNum);
-}
-
-void dVarDsc(LclVarDsc* varDsc)
-{
-    cVarDsc(JitTls::GetCompiler(), varDsc);
-}
-
-void dVars()
-{
-    cVars(JitTls::GetCompiler());
-}
-
-void dVarsFinal()
-{
-    cVarsFinal(JitTls::GetCompiler());
-}
-
-void dBlockPreds(BasicBlock* block)
-{
-    cBlockPreds(JitTls::GetCompiler(), block);
-}
-
-void dBlockSuccs(BasicBlock* block)
-{
-    cBlockSuccs(JitTls::GetCompiler(), block);
-}
-
-void dReach()
-{
-    cReach(JitTls::GetCompiler());
-}
-
-void dDoms()
-{
-    cDoms(JitTls::GetCompiler());
-}
-
-void dLiveness()
-{
-    cLiveness(JitTls::GetCompiler());
-}
-
-void dCVarSet(VARSET_VALARG_TP vars)
-{
-    cCVarSet(JitTls::GetCompiler(), vars);
-}
-
-void dLoop(unsigned loopNum)
-{
-    cLoop(JitTls::GetCompiler(), loopNum);
-}
-
-void dLoopPtr(const Compiler::LoopDsc* loop)
-{
-    cLoopPtr(JitTls::GetCompiler(), loop);
-}
-
-void dLoops()
-{
-    cLoops(JitTls::GetCompiler());
-}
-
-void dRegMask(regMaskTP mask)
+JITDBGAPI void __cdecl cTrees(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== dRegMask %u\n", sequenceNumber++);
-    dspRegMask(mask);
-    printf("\n"); // dspRegMask() doesn't emit a trailing newline
+    printf("===================================================================== *Trees %u\n", sequenceNumber++);
+    comp->fgDumpTrees(comp->fgFirstBB, nullptr);
 }
 
-void dBlockList(BasicBlockList* list)
+JITDBGAPI void __cdecl cEH(Compiler* comp)
 {
-    printf("WorkList: ");
-    while (list != nullptr)
-    {
-        printf(FMT_BB " ", list->block->bbNum);
-        list = list->next;
-    }
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *EH %u\n", sequenceNumber++);
+    comp->fgDispHandlerTab();
+}
+
+JITDBGAPI void __cdecl cVar(Compiler* comp, unsigned lclNum)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Var %u\n", sequenceNumber++);
+    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
+}
+
+JITDBGAPI void __cdecl cVarDsc(Compiler* comp, LclVarDsc* varDsc)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
+    unsigned lclNum = comp->lvaGetLclNum(varDsc);
+    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
+}
+
+JITDBGAPI void __cdecl cVars(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Vars %u\n", sequenceNumber++);
+    comp->lvaTableDump();
+}
+
+JITDBGAPI void __cdecl cVarsFinal(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Vars %u\n", sequenceNumber++);
+    comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
+}
+
+JITDBGAPI void __cdecl cBlockPreds(Compiler* comp, BasicBlock* block)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *BlockPreds %u\n", sequenceNumber++);
+    block->dspPreds();
+}
+
+JITDBGAPI void __cdecl cBlockSuccs(Compiler* comp, BasicBlock* block)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *BlockSuccs %u\n", sequenceNumber++);
+    block->dspSuccs(comp);
+}
+
+JITDBGAPI void __cdecl cReach(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Reach %u\n", sequenceNumber++);
+    comp->fgDispReach();
+}
+
+JITDBGAPI void __cdecl cDoms(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Doms %u\n", sequenceNumber++);
+    comp->fgDispDoms();
+}
+
+JITDBGAPI void __cdecl cLiveness(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Liveness %u\n", sequenceNumber++);
+    comp->fgDispBBLiveness();
+}
+
+JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
+    dumpConvertedVarSet(comp, vars);
+    printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
+}
+
+JITDBGAPI void __cdecl cLoop(Compiler* comp, unsigned loopNum)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
     printf("\n");
 }
 
-// Global variables available in debug mode.  That are set by debug APIs for finding
-// Trees, Stmts, and/or Blocks using id or bbNum.
-// That can be used in watch window or as a way to get address of fields for data break points.
-
-GenTree*    dbTree;
-Statement*  dbStmt;
-BasicBlock* dbTreeBlock;
-BasicBlock* dbBlock;
-
-// Debug APIs for finding Trees, Stmts, and/or Blocks.
-// As a side effect, they set the debug variables above.
-
-GenTree* dFindTree(GenTree* tree, unsigned id)
+JITDBGAPI void __cdecl cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
 {
-    if (tree == nullptr)
-    {
-        return nullptr;
-    }
-
-    if (tree->gtTreeID == id)
-    {
-        dbTree = tree;
-        return tree;
-    }
-
-    GenTree* child = nullptr;
-    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
-        child = dFindTree(child, id);
-        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
-    });
-
-    return child;
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loop, /* verbose */ true);
+    printf("\n");
 }
 
-GenTree* dFindTree(unsigned id)
+JITDBGAPI void __cdecl cLoops(Compiler* comp)
 {
-    Compiler* comp = JitTls::GetCompiler();
-    GenTree*  tree;
-
-    dbTreeBlock = nullptr;
-    dbTree      = nullptr;
-
-    for (BasicBlock* const block : comp->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            tree = dFindTree(stmt->GetRootNode(), id);
-            if (tree != nullptr)
-            {
-                dbTreeBlock = block;
-                return tree;
-            }
-        }
-    }
-
-    return nullptr;
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
+    comp->optPrintLoopTable();
 }
 
-Statement* dFindStmt(unsigned id)
+JITDBGAPI void __cdecl cNewLoops(Compiler* comp)
 {
-    Compiler* comp = JitTls::GetCompiler();
-
-    dbStmt = nullptr;
-
-    unsigned stmtId = 0;
-    for (BasicBlock* const block : comp->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            stmtId++;
-            if (stmtId == id)
-            {
-                dbStmt = stmt;
-                return stmt;
-            }
-        }
-    }
-
-    return nullptr;
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
+    FlowGraphNaturalLoops::Dump(comp->m_loops);
 }
 
-BasicBlock* dFindBlock(unsigned bbNum)
+JITDBGAPI void __cdecl cNewLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
 {
-    Compiler*   comp  = JitTls::GetCompiler();
-    BasicBlock* block = nullptr;
-
-    dbBlock = nullptr;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
-    {
-        if (block->bbNum == bbNum)
-        {
-            dbBlock = block;
-            break;
-        }
-    }
-
-    return block;
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    FlowGraphNaturalLoops::Dump(loops);
 }
 
-Compiler::LoopDsc* dFindLoop(unsigned loopNum)
+JITDBGAPI void __cdecl cNewLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 {
-    Compiler* comp = JitTls::GetCompiler();
-
-    if (loopNum >= comp->optLoopCount)
-    {
-        printf("loopNum %u out of range\n", loopNum);
-        return nullptr;
-    }
-
-    return &comp->optLoopTable[loopNum];
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    FlowGraphNaturalLoop::Dump(loop);
 }
 
-void cTreeFlags(Compiler* comp, GenTree* tree)
+JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
 {
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *TreeFlags %u\n", sequenceNumber++);
+
     int chars = 0;
 
     if (tree->gtFlags != 0)
@@ -9876,7 +9989,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 
                 switch (handleKind)
                 {
-
                     case GTF_ICON_SCOPE_HDL:
 
                         chars += printf("[ICON_SCOPE_HDL]");
@@ -10101,6 +10213,26 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
+                    {
+                        chars += printf("[CALL_MD_STRESS_TAILCALL]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_DEVIRTUALIZED)
+                    {
+                        chars += printf("[CALL_MD_DEVIRTUALIZED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_GUARDED)
+                    {
+                        chars += printf("[CALL_MD_GUARDED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_UNBOXED)
+                    {
+                        chars += printf("[CALL_MD_UNBOXED]");
+                    }
                 }
                 break;
             default:
@@ -10208,9 +10340,269 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
     }
 }
 
-void dTreeFlags(GenTree* tree)
+JITDBGAPI void __cdecl dBlock(BasicBlock* block)
+{
+    cBlock(JitTls::GetCompiler(), block);
+}
+
+JITDBGAPI void __cdecl dBlocks()
+{
+    cBlocks(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dBlocksV()
+{
+    cBlocksV(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dStmt(Statement* statement)
+{
+    cStmt(JitTls::GetCompiler(), statement);
+}
+
+JITDBGAPI void __cdecl dTree(GenTree* tree)
+{
+    cTree(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dTreeLIR(GenTree* tree)
+{
+    cTreeLIR(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dTreeRange(GenTree* first, GenTree* last)
+{
+    cTreeRange(JitTls::GetCompiler(), first, last);
+}
+
+JITDBGAPI void __cdecl dTrees()
+{
+    cTrees(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dEH()
+{
+    cEH(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dVar(unsigned lclNum)
+{
+    cVar(JitTls::GetCompiler(), lclNum);
+}
+
+JITDBGAPI void __cdecl dVarDsc(LclVarDsc* varDsc)
+{
+    cVarDsc(JitTls::GetCompiler(), varDsc);
+}
+
+JITDBGAPI void __cdecl dVars()
+{
+    cVars(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dVarsFinal()
+{
+    cVarsFinal(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dBlockPreds(BasicBlock* block)
+{
+    cBlockPreds(JitTls::GetCompiler(), block);
+}
+
+JITDBGAPI void __cdecl dBlockSuccs(BasicBlock* block)
+{
+    cBlockSuccs(JitTls::GetCompiler(), block);
+}
+
+JITDBGAPI void __cdecl dReach()
+{
+    cReach(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dDoms()
+{
+    cDoms(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dLiveness()
+{
+    cLiveness(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dCVarSet(VARSET_VALARG_TP vars)
+{
+    cCVarSet(JitTls::GetCompiler(), vars);
+}
+
+JITDBGAPI void __cdecl dLoop(unsigned loopNum)
+{
+    cLoop(JitTls::GetCompiler(), loopNum);
+}
+
+JITDBGAPI void __cdecl dLoopPtr(const Compiler::LoopDsc* loop)
+{
+    cLoopPtr(JitTls::GetCompiler(), loop);
+}
+
+JITDBGAPI void __cdecl dLoops()
+{
+    cLoops(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dNewLoops()
+{
+    cNewLoops(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dNewLoopsA(FlowGraphNaturalLoops* loops)
+{
+    cNewLoopsA(JitTls::GetCompiler(), loops);
+}
+
+JITDBGAPI void __cdecl dNewLoop(FlowGraphNaturalLoop* loop)
+{
+    cNewLoop(JitTls::GetCompiler(), loop);
+}
+
+JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
 {
     cTreeFlags(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dRegMask(regMaskTP mask)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dRegMask %u\n", sequenceNumber++);
+    dspRegMask(mask);
+    printf("\n"); // dspRegMask() doesn't emit a trailing newline
+}
+
+JITDBGAPI void __cdecl dBlockList(BasicBlockList* list)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dBlockList %u\n", sequenceNumber++);
+    while (list != nullptr)
+    {
+        printf(FMT_BB " ", list->block->bbNum);
+        list = list->next;
+    }
+    printf("\n");
+}
+
+// Global variables available in debug mode.  That are set by debug APIs for finding
+// Trees, Stmts, and/or Blocks using id or bbNum.
+// That can be used in watch window or as a way to get address of fields for data breakpoints.
+
+GenTree*           dbTree;
+Statement*         dbStmt;
+BasicBlock*        dbTreeBlock;
+BasicBlock*        dbBlock;
+Compiler::LoopDsc* dbLoop;
+
+// Debug APIs for finding Trees, Stmts, and/or Blocks.
+// As a side effect, they set the debug variables above.
+
+JITDBGAPI GenTree* __cdecl dFindTreeInTree(GenTree* tree, unsigned id)
+{
+    if (tree == nullptr)
+    {
+        return nullptr;
+    }
+
+    if (tree->gtTreeID == id)
+    {
+        dbTree = tree;
+        return tree;
+    }
+
+    GenTree* child = nullptr;
+    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
+        child = dFindTreeInTree(child, id);
+        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    });
+
+    return child;
+}
+
+JITDBGAPI GenTree* __cdecl dFindTree(unsigned id)
+{
+    Compiler* comp = JitTls::GetCompiler();
+
+    dbTreeBlock = nullptr;
+    dbTree      = nullptr;
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* const tree = dFindTreeInTree(stmt->GetRootNode(), id);
+            if (tree != nullptr)
+            {
+                dbTreeBlock = block;
+                dbTree      = tree;
+                return tree;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+JITDBGAPI Statement* __cdecl dFindStmt(unsigned id)
+{
+    Compiler* comp = JitTls::GetCompiler();
+
+    dbStmt = nullptr;
+
+    unsigned stmtId = 0;
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            stmtId++;
+            if (stmtId == id)
+            {
+                dbStmt = stmt;
+                return stmt;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+JITDBGAPI BasicBlock* __cdecl dFindBlock(unsigned bbNum)
+{
+    Compiler* comp = JitTls::GetCompiler();
+
+    dbBlock = nullptr;
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        if (block->bbNum == bbNum)
+        {
+            dbBlock = block;
+            return block;
+        }
+    }
+
+    return nullptr;
+}
+
+JITDBGAPI Compiler::LoopDsc* __cdecl dFindLoop(unsigned loopNum)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    dbLoop         = nullptr;
+
+    if (loopNum >= comp->optLoopCount)
+    {
+        printf("loopNum %u out of range\n", loopNum);
+        return nullptr;
+    }
+
+    dbLoop = &comp->optLoopTable[loopNum];
+    return dbLoop;
 }
 
 #endif // DEBUG
@@ -10349,7 +10741,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);
-    block->bbFlags |= BBF_HAS_NULLCHECK;
+    block->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
 

@@ -3,7 +3,10 @@
 
 #nullable enable
 
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.Json.Nodes;
 using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
@@ -19,7 +22,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         _provider.BundleDirName = "AppBundle";
     }
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
+    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
     {
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -31,9 +34,15 @@ public abstract class WasmTemplateTestBase : BuildTestBase
               <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                   <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
               </Target>
+
+              <Import Project="WasmOverridePacks.targets" Condition="'$(WBTOverrideRuntimePack)' == 'true'" />
             </Project>
             """);
+        if (UseWBTOverridePackTargets)
+            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
+        if (addFrameworkArg)
+            extraArgs += $" -f {DefaultTargetFramework}";
         new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
                 .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
@@ -45,33 +54,61 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
 
-        // TODO: Can be removed after updated templates propagate in.
-        string extraItems = string.Empty;
-        if (template == "wasmbrowser")
-            extraItems += "<WasmExtraFilesToDeploy Include=\"main.js\" />";
-        else
-            extraItems += "<WasmExtraFilesToDeploy Include=\"main.mjs\" />";
+        if (template == "wasmconsole")
+        {
+            UpdateRuntimeconfigTemplateForNode(_projectDir);
+        }
 
-        AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
+        AddItemsPropertiesToProject(projectfile, extraProperties);
 
         return projectfile;
     }
 
+    private static void UpdateRuntimeconfigTemplateForNode(string projectDir)
+    {
+        // TODO: Can be removed once Node >= 20
+
+        string runtimeconfigTemplatePath = Path.Combine(projectDir, "runtimeconfig.template.json");
+        string runtimeconfigTemplateContent = File.ReadAllText(runtimeconfigTemplatePath);
+        var runtimeconfigTemplate = JsonObject.Parse(runtimeconfigTemplateContent);
+        if (runtimeconfigTemplate == null)
+            throw new Exception($"Unable to parse runtimeconfigtemplate at '{runtimeconfigTemplatePath}'");
+
+        var perHostConfigs = runtimeconfigTemplate?["wasmHostProperties"]?["perHostConfig"]?.AsArray();
+        if (perHostConfigs == null || perHostConfigs.Count == 0 || perHostConfigs[0] == null)
+            throw new Exception($"Unable to find perHostConfig in runtimeconfigtemplate at '{runtimeconfigTemplatePath}'");
+
+        perHostConfigs[0]!["host-args"] = new JsonArray(
+            "--experimental-wasm-simd",
+            "--experimental-wasm-eh"
+        );
+
+        File.WriteAllText(runtimeconfigTemplatePath, runtimeconfigTemplate!.ToString());
+    }
+
     public (string projectDir, string buildOutput) BuildTemplateProject(BuildArgs buildArgs,
         string id,
-        BuildProjectOptions buildProjectOptions,
-        AssertTestMainJsAppBundleOptions? assertAppBundleOptions = null)
+        BuildProjectOptions buildProjectOptions)
     {
+        if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
+            buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
+        buildProjectOptions.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)
             _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
 
         if (buildProjectOptions.AssertAppBundle)
-            AssertBundle(buildArgs, buildProjectOptions, res.Output, assertAppBundleOptions);
+        {
+            if (buildProjectOptions.IsBrowserProject)
+                AssertWasmSdkBundle(buildArgs, buildProjectOptions, res.Output);
+            else
+                AssertTestMainJsBundle(buildArgs, buildProjectOptions, res.Output);
+        }
         return (_projectDir!, res.Output);
     }
 
-    public void AssertBundle(BuildArgs buildArgs,
+    public void AssertTestMainJsBundle(BuildArgs buildArgs,
                               BuildProjectOptions buildProjectOptions,
                               string? buildOutput = null,
                               AssertTestMainJsAppBundleOptions? assertAppBundleOptions = null)
@@ -79,11 +116,37 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (buildOutput is not null)
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
 
-        // TODO: templates don't use wasm sdk yet
         var testMainJsProvider = new TestMainJsProjectProvider(_testOutput, _projectDir!);
         if (assertAppBundleOptions is not null)
             testMainJsProvider.AssertBundle(assertAppBundleOptions);
         else
             testMainJsProvider.AssertBundle(buildArgs, buildProjectOptions);
+    }
+
+    public void AssertWasmSdkBundle(BuildArgs buildArgs,
+                              BuildProjectOptions buildProjectOptions,
+                              string? buildOutput = null,
+                              AssertWasmSdkBundleOptions? assertAppBundleOptions = null)
+    {
+        if (buildOutput is not null)
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildProjectOptions.TargetFramework ?? DefaultTargetFramework);
+
+        var projectProvider = new WasmSdkBasedProjectProvider(_testOutput, _projectDir!);
+        if (assertAppBundleOptions is not null)
+            projectProvider.AssertBundle(assertAppBundleOptions);
+        else
+            projectProvider.AssertBundle(buildArgs, buildProjectOptions);
+    }
+
+    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
+    protected void UpdateBrowserMainJs(Func<string, string> transform, string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    {
+        string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
+        string mainJsContent = File.ReadAllText(mainJsPath);
+
+        mainJsContent = transform(mainJsContent);
+
+        File.WriteAllText(mainJsPath, mainJsContent);
     }
 }

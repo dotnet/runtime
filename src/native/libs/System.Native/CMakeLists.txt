@@ -4,12 +4,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
-if (CLR_CMAKE_TARGET_LINUX_MUSL)
-    # Fix up the thread stack size for MUSL to more reasonable size.
-    # TODO: https://github.com/dotnet/runtimelab/issues/791
-    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
-endif ()
-
 if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()
@@ -67,56 +61,45 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-    list (APPEND NATIVE_SOURCES pal_autoreleasepool.m)
-    set_source_files_properties(pal_autoreleasepool.m PROPERTIES COMPILE_FLAGS "-fno-objc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
-else()
-    list (APPEND NATIVE_SOURCES pal_autoreleasepool.c)
-endif()
-
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    list (APPEND NATIVE_SOURCES pal_environment.m)
-    set_source_files_properties(pal_environment.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
-else()
-    list (APPEND NATIVE_SOURCES pal_environment.c)
-endif()
-
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_datetime.m)
-    set_source_files_properties(pal_datetime.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
-endif()
-
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_log.m
-        pal_searchpath.m)
-    set_source_files_properties(pal_log.m pal_searchpath.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
-elseif (CLR_CMAKE_TARGET_OSX)
-    list (APPEND NATIVE_SOURCES
+    list (APPEND NATIVE_SOURCES_OBJC_NO_ARC
+        pal_autoreleasepool.m
+        pal_environment.m
         pal_searchpath.m
-        pal_console.c
-        pal_log.c)
-    set_source_files_properties(pal_searchpath.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
-elseif (CLR_CMAKE_TARGET_WASI)
-    list (APPEND NATIVE_SOURCES
-        pal_searchpath.c
-        pal_console_wasi.c
-        pal_log.c)
-else ()
-    list (APPEND NATIVE_SOURCES
-        pal_searchpath.c
-        pal_console.c
-        pal_log.c)
-endif ()
+        pal_datetime.m)
 
-if (CLR_CMAKE_TARGET_MACCATALYST)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_iossupportversion.m)
-    set_source_files_properties(pal_iossupportversion.m PROPERTIES COMPILE_FLAGS ${CLR_CMAKE_COMMON_OBJC_FLAGS})
-else ()
+    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+        list (APPEND NATIVE_SOURCES_OBJC_NO_ARC pal_log.m)
+
+        if (CLR_CMAKE_TARGET_MACCATALYST)
+            list (APPEND NATIVE_SOURCES_OBJC_NO_ARC pal_iossupportversion.m)
+        else()
+            list (APPEND NATIVE_SOURCES pal_iossupportversion.c)
+        endif ()
+    elseif (CLR_CMAKE_TARGET_OSX)
+        list (APPEND NATIVE_SOURCES
+            pal_console.c
+            pal_log.c
+            pal_iossupportversion.c)
+    else()
+        message(FATAL_ERROR "Unsupported Apple platform")
+    endif ()
+
+    set_source_files_properties(${NATIVE_SOURCES_OBJC_NO_ARC} PROPERTIES COMPILE_FLAGS "-fno-objc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
+    list (APPEND NATIVE_SOURCES ${NATIVE_SOURCES_OBJC_NO_ARC})
+else()
     list (APPEND NATIVE_SOURCES
+        pal_autoreleasepool.c
+        pal_environment.c
+        pal_searchpath.c
+        pal_log.c
         pal_iossupportversion.c)
-endif ()
+
+    if (CLR_CMAKE_TARGET_WASI)
+        list (APPEND NATIVE_SOURCES pal_console_wasi.c)
+    else()
+        list (APPEND NATIVE_SOURCES pal_console.c)
+    endif()
+endif()
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES pal_networkchange.c)

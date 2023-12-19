@@ -778,7 +778,7 @@ public:
     static EEClass * CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 #endif // !DACCESS_COMPILE
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Add a new method to an already loaded type for EnC
     static HRESULT AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc** ppMethod);
 private:
@@ -799,7 +799,7 @@ private:
         FieldDesc** ppNewFD);
 public:
     static VOID    FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdFieldDef fieldDef);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     inline DWORD IsComImport()
     {
@@ -1319,7 +1319,7 @@ public:
         m_VMFlags |= VMFLAG_DELEGATE;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     inline BOOL HasEnCStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1330,7 +1330,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_ENC_STATIC_FIELDS;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     BOOL HasFixedAddressVTStatics()
     {
@@ -1707,9 +1707,9 @@ public:
 #endif
         VMFLAG_DELEGATE                        = 0x00000002,
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
         VMFLAG_ENC_STATIC_FIELDS               = 0x00000004,
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
         // VMFLAG_UNUSED                       = 0x00000018,
 

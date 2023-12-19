@@ -8,16 +8,8 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-unsafe class Validate
+public unsafe class Validate
 {
-    [InlineArray(1)]
-    [StructLayout(LayoutKind.Explicit)]
-    private struct Explicit
-    {
-        [FieldOffset(0)]
-        public Guid Guid;
-    }
-
     [Fact]
     public static void Explicit_Fails()
     {
@@ -28,12 +20,6 @@ unsafe class Validate
         {
             return sizeof(Explicit);
         });
-    }
-
-    [InlineArray(0)]
-    private struct ZeroLength
-    {
-        public int field;
     }
 
     [Fact]
@@ -74,12 +60,6 @@ unsafe class Validate
         });
     }
 
-    [InlineArray(-1)]
-    private struct NegativeLength
-    {
-        public long field;
-    }
-
     [Fact]
     public static void NegativeLength_Fails()
     {
@@ -96,13 +76,6 @@ unsafe class Validate
         });
     }
 
-
-    [InlineArray(123)]
-    private struct NoFields
-    {
-        public static int x;
-    }
-
     [Fact]
     public static void NoFields_Fails()
     {
@@ -113,13 +86,6 @@ unsafe class Validate
         {
             return (new NoFields()).ToString();
         });
-    }
-
-    [InlineArray(1)]
-    private struct TwoFields
-    {
-        int a;
-        int b;
     }
 
     [Fact]

@@ -40,9 +40,19 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
-      <Version>$(JITToolsVersion)</Version>
-    </PackageReference>
+    <PackageDownload Condition="'$(DotNetBuildFromSource)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
+      <Version>[$(JITToolsVersion)]</Version>
+    </PackageDownload>
   </ItemGroup>
+
+  <Target Name="CopyJitTools" AfterTargets="Build">
+    <ItemGroup>
+      <JitToolsFiles Include="$(NuGetPackageRoot)\runtime.$(JITToolsRid).microsoft.netcore.runtime.jit.tools\$(JITToolsVersion)\runtimes\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(JitToolsFiles)"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          DestinationFolder="$(OutputPath)\runtimes\%(RecursiveDir)" />
+  </Target>
 
 </Project>

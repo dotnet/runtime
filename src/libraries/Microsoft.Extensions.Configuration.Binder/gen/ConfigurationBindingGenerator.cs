@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //#define LAUNCH_DEBUGGER
-using System.Collections.Immutable;
+using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -15,7 +15,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        internal const string ProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
+        private static readonly string ProjectName = Emitter.s_assemblyName.Name!;
+
+        public const string GenSpecTrackingName = nameof(SourceGenerationSpec);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -31,49 +33,72 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocation> inputCalls = context.SyntaxProvider
+            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>?)> genSpec = context.SyntaxProvider
                 .CreateSyntaxProvider(
-                    (node, _) => node is InvocationExpressionSyntax invocation,
+                    (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
                     BinderInvocation.Create)
-                .Where(operation => operation is not null);
+                .Where(invocation => invocation is not null)
+                .Collect()
+                .Combine(compilationData)
+                .Select((tuple, cancellationToken) =>
+                {
+                    if (tuple.Right is not CompilationData compilationData)
+                    {
+                        return (null, null);
+                    }
 
-            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
+                    try
+                    {
+                        Parser parser = new(compilationData);
+                        SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left, cancellationToken);
+                        ImmutableEquatableArray<DiagnosticInfo>? diagnostics = parser.Diagnostics?.ToImmutableEquatableArray();
+                        return (spec, diagnostics);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                })
+                .WithTrackingName(GenSpecTrackingName);
 
-            context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
+            context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
         }
 
         /// <summary>
-        /// Generates source code to optimize binding with ConfigurationBinder.
+        /// Instrumentation helper for unit tests.
         /// </summary>
-        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
+        public Action<SourceGenerationSpec>? OnSourceEmitting { get; init; }
+
+        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo>? Diagnostics) input)
         {
-            if (inputCalls.IsDefaultOrEmpty)
+            if (input.Diagnostics is ImmutableEquatableArray<DiagnosticInfo> diagnostics)
             {
-                return;
+                foreach (DiagnosticInfo diagnostic in diagnostics)
+                {
+                    sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                }
             }
 
-            if (compilationData?.LanguageVersionIsSupported is not true)
+            if (input.SourceGenerationSpec is SourceGenerationSpec spec)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Parser.Diagnostics.LanguageVersionNotSupported, location: null));
-                return;
-            }
-
-            Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
-            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec { } spec)
-            {
-                Emitter emitter = new(context, spec);
-                emitter.Emit();
+                OnSourceEmitting?.Invoke(spec);
+                Emitter emitter = new(spec);
+                emitter.Emit(sourceProductionContext);
             }
         }
 
-        private sealed record CompilationData
+        internal sealed class CompilationData
         {
             public bool LanguageVersionIsSupported { get; }
             public KnownTypeSymbols? TypeSymbols { get; }
 
             public CompilationData(CSharpCompilation compilation)
             {
-                LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.CSharp11;
+                // We don't have a CSharp21 value available yet. Polyfill the value here for forward compat, rather than use the LanguageVersion.Preview enum value.
+                // https://github.com/dotnet/roslyn/blob/168689931cb4e3150641ec2fb188a64ce4b3b790/src/Compilers/CSharp/Portable/LanguageVersion.cs#L218-L232
+                const int LangVersion_CSharp12 = 1200;
+                LanguageVersionIsSupported = (int)compilation.LanguageVersion >= LangVersion_CSharp12;
+
                 if (LanguageVersionIsSupported)
                 {
                     TypeSymbols = new KnownTypeSymbols(compilation);

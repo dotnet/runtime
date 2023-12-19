@@ -485,10 +485,6 @@ ep_rt_utf8_string_compare_ignore_case (
 	const ep_char8_t *str2);
 
 static
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str);
-
-static
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str);
 
@@ -518,13 +514,11 @@ ep_rt_utf8_string_replace (
 
 static
 ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
-	const ep_char8_t *str,
-	size_t len);
+ep_rt_utf16_string_dup (const ep_char16_t *str);
 
 static
-ep_char16_t *
-ep_rt_utf16_string_dup (const ep_char16_t *str);
+ep_char8_t *
+ep_rt_utf8_string_alloc (size_t len);
 
 static
 void
@@ -535,16 +529,8 @@ size_t
 ep_rt_utf16_string_len (const ep_char16_t *str);
 
 static
-ep_char8_t *
-ep_rt_utf16_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len);
-
-static
-ep_char8_t *
-ep_rt_utf16le_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len);
+ep_char16_t *
+ep_rt_utf16_string_alloc (size_t len);
 
 static
 void

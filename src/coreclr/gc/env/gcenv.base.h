@@ -45,10 +45,6 @@
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 #endif
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
 #ifndef _INC_WINDOWS
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -58,8 +54,11 @@
 typedef int BOOL;
 typedef uint32_t DWORD;
 typedef uint64_t DWORD64;
+#ifdef _MSC_VER
+typedef unsigned long ULONG;
+#else
 typedef uint32_t ULONG;
-
+#endif
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 

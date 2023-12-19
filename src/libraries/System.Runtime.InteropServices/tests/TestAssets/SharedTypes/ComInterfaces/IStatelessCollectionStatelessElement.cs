@@ -47,12 +47,12 @@ namespace SharedTypes.ComInterfaces
     [ContiguousCollectionMarshaller]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(StatelessCollectionMarshaller<,>.ManagedToUnmanaged))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.UnmanagedToManagedOut, typeof(StatelessCollectionMarshaller<,>.ManagedToUnmanaged))]
-    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementIn, typeof(StatelessCollectionMarshaller<,>.ManagedToUnmanaged))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(StatelessCollectionMarshaller<,>.UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.UnmanagedToManagedIn, typeof(StatelessCollectionMarshaller<,>.UnmanagedToManaged))]
-    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementOut, typeof(StatelessCollectionMarshaller<,>.UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.UnmanagedToManagedRef, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ManagedToUnmanagedRef, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementIn, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementOut, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessCollection<>), MarshalMode.ElementRef, typeof(StatelessCollectionMarshaller<,>.Bidirectional))]
     internal static unsafe class StatelessCollectionMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
@@ -109,7 +109,6 @@ namespace SharedTypes.ComInterfaces
             }
 
             public static void Free(NativeCollection<T> unmanaged) => throw new NotImplementedException();
-
         }
 
         internal static class UnmanagedToManaged

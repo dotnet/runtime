@@ -525,7 +525,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             // have updated PDBs from EnC, we can at best look at the module's version number as a rough guess
             // to if this file has been updated.
             bool fIsEnc = false;
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
             if (pModule->IsEditAndContinueEnabled())
             {
                 EditAndContinueModule *eacm = (EditAndContinueModule *)pModule;
@@ -785,10 +785,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString assemblyPath = pPEAssembly->GetIdentityPath();
+                        const SString& assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
-                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
+                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath.GetUnicode());
                             pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
                         }
                     }

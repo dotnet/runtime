@@ -49,6 +49,7 @@ public class NativeLibraryTests : IDisposable
     [Fact]
     public void LoadLibraryRelativePaths_NameOnly()
     {
+        
         {
             string libName = Path.Combine("..", NativeLibraryToLoad.InvalidName, NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.InvalidName));
             EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
@@ -187,6 +188,16 @@ public class NativeLibraryTests : IDisposable
             Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{assembly.GetName().Name}{suffix}.dll"));
             EXPECT(LoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
             EXPECT(TryLoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+        }
+
+        if (TestLibrary.Utilities.IsNativeAot)
+        {
+            // For NativeAOT, validate the case where the native library is next to the AOT application.
+            // The passing of DllImportSearchPath.System32 is done to ensure on Windows the runtime won't fallback
+            // and try to search the application directory by default.
+            string libNameAot = $"{NativeLibraryToLoad.Name}-in-native";
+            EXPECT(LoadLibrary_WithAssembly(libNameAot, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+            EXPECT(TryLoadLibrary_WithAssembly(libNameAot, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
         }
 
         if (OperatingSystem.IsWindows())

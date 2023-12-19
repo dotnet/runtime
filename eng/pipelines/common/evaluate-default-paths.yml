@@ -6,7 +6,8 @@ parameters:
   # do not set them when using the template
   _const_paths:
     _wasm_specific_only: [
-        eng/testing/ProvisioningVersions.props
+        eng/testing/bump-chrome-version.proj
+        eng/testing/ChromeVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
@@ -14,8 +15,9 @@ parameters:
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
         eng/testing/workloads-testing.targets
-        src/libraries/sendtohelix-wasm.targets
+        src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
+        src/libraries/sendtohelix-wasm.targets
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
@@ -31,6 +33,7 @@ parameters:
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
         src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/*
+        src/tasks/Microsoft.NET.WebAssembly.Webcil/*
         src/tests/Common/wasm-test-runner/*
     ]
     _wasm_pipelines: [
@@ -45,6 +48,19 @@ parameters:
         src/native/libs/System.Globalization.Native/*
         src/native/libs/System.IO.Compression.Native/*
         src/native/libs/System.Native/*
+    ]
+    _wasm_chrome: [
+        eng/testing/bump-chrome-version.proj
+        eng/testing/ChromeVersions.props
+    ]
+    _perf_pipeline_specific_only: [
+        eng/pipelines/runtime-wasm-perf.yml
+        eng/pipelines/coreclr/perf*.yml
+        eng/pipelines/coreclr/templates/perf-job.yml
+        eng/pipelines/coreclr/templates/*-perf-*
+        eng/pipelines/coreclr/templates/run-perf*
+        eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        eng/testing/performance/*
     ]
 
     # src/workloads is only used in runtime-official builds
@@ -84,6 +100,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: mono_excluding_wasm
       include:
@@ -95,6 +112,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
       - eng/Version.Details.xml
       - docs/*
@@ -124,6 +142,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: runtimetests
       combined: true
@@ -131,10 +150,12 @@ jobs:
       - src/tests/*
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - global.json
 
     - subset: installer
       include:
@@ -153,6 +174,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
@@ -181,8 +203,9 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
-        eng/testing/ProvisioningVersions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/tests.browser.targets
+      - eng/testing/tests.was*.targets
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
@@ -190,6 +213,7 @@ jobs:
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
+      - src/mono/mono.proj
       - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
@@ -204,17 +228,24 @@ jobs:
       - src/mono/wasm/host/*
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
+      - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasi/build/*
+      - src/mono/wasi/runtime/*
+      - src/mono/wasi/testassets/*
+      - src/mono/wasi/Wasi.Build.Tests/*
+      - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: wasmdebuggertests
       combined: true
       include:
-      - eng/testing/ProvisioningVersions.props
+      - ${{ parameters._const_paths._wasm_chrome }}
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
@@ -225,6 +256,7 @@ jobs:
       exclude:
       - src/mono/nuget/*
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # wasm/runtimetests need to be run
     - subset: wasm_runtimetests
@@ -240,11 +272,15 @@ jobs:
       - src/mono/tools/*
       - src/mono/wasi/*
       - src/mono/wasm/debugger/*
+      - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
+      - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # Wasm except Wasm.build.Tests, and debugger
+    # Wasm except Wasm.build.Tests, Wasi.build.Tests and debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
@@ -257,12 +293,24 @@ jobs:
       - eng/testing/workloads-testing.targets
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/wasm/debugger/*
+      - src/mono/wasm/host/*
+      - src/mono/wasm/templates/*
+      - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/wasi/build/*
+      - src/mono/wasi/runtime/*
+      - src/mono/wasi/testassets/*
+      - src/mono/wasi/Wasi.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
         src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
+
+    - subset: wasm_chrome
+      include:
+      - ${{ parameters._const_paths._wasm_chrome }}
 
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
@@ -271,6 +319,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
       - eng/testing/tests.mobile.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*

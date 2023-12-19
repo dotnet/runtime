@@ -15,9 +15,6 @@
 #include "finalizerthread.h"
 #include "dbginterface.h"
 
-// from ntstatus.h
-#define STATUS_SUSPEND_COUNT_EXCEEDED    ((NTSTATUS)0xC000004AL)
-
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -357,12 +354,6 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
             {
                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "In Thread::SuspendThread ::SuspendThread returned %x\n", dwSuspendCount);
             }
-
-            // Our callers generally expect that STR_Failure means that
-            // the thread has exited.
-#ifndef TARGET_UNIX
-            _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
-#endif // !TARGET_UNIX
 
             str = STR_Failure;
             break;
@@ -962,6 +953,13 @@ BOOL Thread::ReadyForAsyncException()
         STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  AsyncPrevented\n");
         return FALSE;
     }
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled && IsAbortPrevented())
+    {
+        return FALSE;
+    }
+#endif // FEATURE_EH_FUNCLETS
 
     REGDISPLAY rd;
 
@@ -2255,7 +2253,16 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            DispatchManagedException(exceptObj);
+        }
+        else
+#endif // FEATURE_EH_FUNCLETS
+        {
+            RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        }
     }
 
     END_PRESERVE_LAST_ERROR;
@@ -3955,10 +3962,27 @@ ThrowControlForThread(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
-    // Here we raise an exception.
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER
-    RaiseComPlusException();
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        GCX_COOP();
+
+        EXCEPTION_RECORD exceptionRecord = {0};
+        exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
+        exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+        exceptionRecord.ExceptionFlags = 0;
+
+        OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+        DispatchManagedException(throwable);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        // Here we raise an exception.
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        RaiseComPlusException();
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+    }
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)

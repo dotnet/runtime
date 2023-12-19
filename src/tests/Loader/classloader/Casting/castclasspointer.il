@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib { }
 
-.class value MyGen`1<T>
+.class public value MyGen`1<T>
 {
   .field !T _fld;
 }

@@ -112,12 +112,11 @@ namespace Rotate_rotarg_float_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Node root = new Node();
             root.growTree(4, "");
             root.rotateTree(ref root.m_leftChild.m_weight, ref root.m_rightChild.m_weight);
-            return 100;
         }
     }
 }

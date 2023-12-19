@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.IO;
+using Xunit;
 
 public class TestSet
 {
@@ -17,7 +18,8 @@ public class TestSet
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int nSuccesses = 0;
         int nFailures = 0;

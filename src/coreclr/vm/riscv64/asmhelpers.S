@@ -46,7 +46,7 @@ LEAF_END GetCurrentSP, _TEXT
 // and each entry can be written atomically
 //
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
-    // a0-a7 will contain intended new state
+    // a0-a7 and t3 will contain intended new state
     // t0 will preserve skipEphemeralCheck
     // t2 will be used for pointers
 
@@ -64,30 +64,33 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #ifdef WRITE_BARRIER_CHECK
     lla  a2, g_GCShadow
     ld  a2, 0(a2)
-#endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    lla  a3, g_sw_ww_table
+    lla a3, g_GCShadowEnd
     ld  a3, 0(a3)
 #endif
 
-    lla  a4, g_ephemeral_low
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    lla  a4, g_sw_ww_table
     ld  a4, 0(a4)
+#endif
 
-    lla  a5, g_ephemeral_high
+    lla  a5, g_ephemeral_low
     ld  a5, 0(a5)
+
+    lla  a6, g_ephemeral_high
+    ld  a6, 0(a6)
 
     beq  t0, zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  a4, zero, 0
-    addi  a5, zero, -1
+    ori  a5, zero, 0
+    addi  a6, zero, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
-    lla  a6, g_lowest_address
-    ld  a6, 0(a6)
-
-    lla  a7, g_highest_address
+    lla  a7, g_lowest_address
     ld  a7, 0(a7)
+
+    lla  t3, g_highest_address
+    ld  t3, 0(t3)
 
     // Update wbs state
     lla  t2, JIT_WriteBarrier_Table_Loc
@@ -102,6 +105,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     sd  a5, 40(t2)
     sd  a6, 48(t2)
     sd  a7, 56(t2)
+    sd  t3, 64(t2)
 
     EPILOG_RETURN
 
@@ -190,7 +194,6 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
-
     // TODO: sync_release (runtime detection required)
     fence rw, rw
 
@@ -214,7 +217,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     add  t0, t6, t1
 
     // if (pShadow >= g_GCShadowEnd) goto end
-    lla  t6, g_GCShadowEnd
+    lla t6, wbs_GCShadowEnd
     ld  t6, 0(t6)
 
     slt  t6, t0, t6
@@ -306,6 +309,8 @@ wbs_card_table:
 wbs_card_bundle_table:
     .quad 0
 wbs_GCShadow:
+    .quad 0
+wbs_GCShadowEnd:
     .quad 0
 wbs_sw_ww_table:
     .quad 0
@@ -534,6 +539,46 @@ LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
     call  JIT_GetSharedGCStaticBase_Helper
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
+// Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
+#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+
+.macro GenerateRedirectedStubWithFrame stub, target
+
+    //
+    // This is the primary function to which execution will be redirected to.
+    //
+    NESTED_ENTRY \stub, _TEXT, NoHandler
+
+        //
+        // IN: ra: original IP before redirect
+        //
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 16
+
+        // alloc stack for FaultingExceptionFrame.
+        addi  sp, sp, -FaultingExceptionFrame_StackAlloc
+
+        // stack must be 16 bytes aligned
+        CHECK_STACK_ALIGNMENT
+
+        // Save pointer to FEF for GetFrameFromRedirectedStubStackFrame
+        addi  a0, sp, FaultingExceptionFrame_FrameOffset
+
+        // Prepare to initialize to NULL
+        sd    zero, 0(a0)  // Initialize vtbl (it is not strictly necessary)
+        sd    zero, FaultingExceptionFrame__m_fFilterExecuted(a0)  // Initialize BOOL for personality routine
+
+        call   C_FUNC(\target)
+        // Target should not return.
+        EMIT_BREAKPOINT
+
+    NESTED_END \stub, _TEXT
+
+.endm
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
+
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -642,7 +687,7 @@ LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x88
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x90
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
@@ -679,7 +724,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   s7, s8, 64
     EPILOG_RESTORE_REG_PAIR   s9, s10, 80
     EPILOG_RESTORE_REG  s11, 96 
-    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x88
+    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x90
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -711,7 +756,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 120, 0
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 128, 0
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
@@ -751,7 +796,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   s11, gp, 96
     EPILOG_RESTORE_REG tp, 112
 
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 120 
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 128
     EPILOG_RETURN
 NESTED_END CallEHFunclet, _TEXT
 
@@ -890,42 +935,35 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
-    //   t1 = functionIDOrClientID
-    //   t2 = profiledSp
+    //   t0 = functionIDOrClientID
+    //   t1 = profiledSp
     //   t6 = throwable
     //
     // On exit:
     //   Values of a0-a7, fa0-fa7, fp are preserved.
     //   Values of other volatile registers are not preserved.
 
+    // Fill in PROFILE_PLATFORM_SPECIFIC_DATA struct
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS sp, 16          // Save t0 and argument registers (a0-a7).
-    sd     zero, 88(sp)                     // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96    // Save floating-point/SIMD registers (fa0-fa7).
-    addi     t6, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    sd  t6, 224(sp)            // Save probeSp.
-    sd  t2, 232(sp)            // Save profiledSp.
-
-    sd    zero, 240(sp)        // Clear hiddenArg.
+    SAVE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    sd     zero, PROFILE_PLATFORM_SPECIFIC_DATA__functionId(sp)
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    addi     t6, sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    sd  t6, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp(sp)
+    sd  t1, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp(sp)
+    sd  zero, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg(sp)
     addi  t6, zero, \flags
-    sw  t6, 248(sp)            // Save flags.
-    sw  zero, 252(sp)          // clear unused field.
+    sd  t6, PROFILE_PLATFORM_SPECIFIC_DATA__flags(sp)
 
-    addi  a1, t1, 0
-    addi  a2, sp, 0
+    addi  a0, t0, 0
+    addi  a1, sp, 0
     call  C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS sp, 16       // Restore t0 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96 // Restore floating-point/SIMD registers.
+    RESTORE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN
 

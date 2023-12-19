@@ -39,7 +39,7 @@ class CrashInfo;
 struct user_fpregs_struct
 {
   unsigned long long  fpregs[32];
-  unsigned long       fpscr;
+  unsigned long       fcsr;
 } __attribute__((__packed__));
 #endif
 
@@ -56,7 +56,7 @@ struct user_vfpregs_struct
 #endif
 
 #if defined(__loongarch64)
-#define user_fpregs_struct user_fp_struct
+#define user_fpregs_struct lasx_context
 #endif
 
 #define STACK_OVERFLOW_EXCEPTION    0x800703e9

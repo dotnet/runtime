@@ -1004,14 +1004,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Setup();
                 // Log("JavaScriptTestHelper.mjs imported");
             }
+
+            // this gives browser chance to serve UI thread event loop before every test
+            await Task.Yield();
         }
 
         public static Task DisposeAsync()
         {
             _module.Dispose();
             _module = null;
-            // you can set verbose: true to see which proxies are left to the GC to collect
-            ForceDisposeProxies(false, verbose: false);
             return Task.CompletedTask;
         }
     }

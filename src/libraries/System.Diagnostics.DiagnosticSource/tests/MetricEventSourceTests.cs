@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Diagnostics.Metrics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95210", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;
@@ -29,9 +32,9 @@ namespace System.Diagnostics.Metrics.Tests
         public void MultipleListeners_DifferentCounters()
         {
             using Meter meter = new Meter("TestMeter1");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
-            using Meter meter2 = new Meter("TestMeter2");
+            using Meter meter2 = new Meter("TestMeter2", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
             EventWrittenEventArgs[] events, events2;
@@ -71,10 +74,10 @@ namespace System.Diagnostics.Metrics.Tests
         public void MultipleListeners_ReuseCounter()
         {
             using Meter meter = new Meter("TestMeter1");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
-            using Meter meter2 = new Meter("TestMeter2");
-            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+            using Meter meter2 = new Meter("TestMeter2", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2", null, null, new TagList() { { "cCk1", "cCv1" }, { "cCk2", "cCv2" } });
 
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
@@ -115,11 +118,11 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_CollectAfterDisableListener()
         {
-            using Meter meter = new Meter("TestMeter1");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
+            using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
+            Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
-            using Meter meter2 = new Meter("TestMeter2");
-            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+            using Meter meter2 = new Meter("TestMeter2", null, new TagList() { { "MMk1", "MMv1" } }, new object());
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2", null, null, new TagList() { { "cCk1", "cCv1" }, { "cCk2", "cCv2" } });
 
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
@@ -166,10 +169,10 @@ namespace System.Diagnostics.Metrics.Tests
             using Meter meter = new Meter("TestMeter1");
             Counter<int> c = meter.CreateCounter<int>("counter1");
 
-            using Meter meter2 = new Meter("TestMeter2");
+            using Meter meter2 = new Meter("TestMeter2", null, new TagList() { { "Mk1", "Mv1" } }, new object());
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
-            using Meter meter3 = new Meter("TestMeter3");
+            using Meter meter3 = new Meter("TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
             Counter<int> c3 = meter3.CreateCounter<int>("counter3");
 
             EventWrittenEventArgs[] events, events2, events3;
@@ -217,11 +220,11 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_OverlappingListeners()
         {
-            using Meter meter = new Meter("TestMeter1");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
+            using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" } }, new object());
+            Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             using Meter meter2 = new Meter("TestMeter2");
-            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2", null, null, new TagList() { { "cCk1", "cCv1" }, { "cCk2", "cCv2" } });
 
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
@@ -256,14 +259,14 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_UnsharedSessionRejectsUnsharedListener()
         {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            using Meter meter = new Meter("TestMeter7", null, new TagList() { { "Mk1", "Mv1" } }, new object());
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "ock1", "ocv1" }, { "ock2", "ocv2" } });
             int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!", new TagList() { { "ogk1", "ogv1" } });
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udck1", "udcv1" }, { "udck2", "udcv2" } });
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
@@ -301,8 +304,8 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_UnsharedSessionRejectsSharedListener()
         {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            using Meter meter = new Meter("TestMeter7", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
@@ -310,7 +313,8 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () =>
+                    { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
@@ -347,12 +351,12 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_SharedSessionRejectsUnsharedListener()
         {
-            using Meter meter = new Meter("TestMeter7");
+            using Meter meter = new Meter("TestMeter7", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!", new TagList());
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
@@ -393,8 +397,8 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_SharedSessionRejectsListenerWithDifferentArgs()
         {
-            using Meter meter = new Meter("TestMeter7");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            using Meter meter = new Meter("TestMeter7", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } });
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             EventWrittenEventArgs[] events, events2;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 10, 12, "TestMeter7"))
@@ -459,13 +463,13 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_SharedSessionRejectsListenerWithDifferentInterval()
         {
-            using Meter meter = new Meter("TestMeter7");
+            using Meter meter = new Meter("TestMeter7", null, new TagList() { { "Mk1", null }, { "Mk2", null } }, new object());
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "Ck1", null }, { "Ck2", "" } });
             int gaugeState = 0;
             ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "hv2" }, { "hk3", "hv3" } });
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
@@ -508,14 +512,14 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_DisposeMeterBeforeSecondListener()
         {
-            using Meter meterA = new Meter("TestMeter8");
-            using Meter meterB = new Meter("TestMeter9");
+            using Meter meterA = new Meter("TestMeter8", null, null, new object());
+            using Meter meterB = new Meter("TestMeter9", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } });
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
-            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int gaugeState = 0;
             ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "hv2" } });
             UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
@@ -546,7 +550,7 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
             }
 
-            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, h); // only h occurs twice because meterA is disposed before listener2 is created 
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, h); // only h occurs twice because meterA is disposed before listener2 is created
             AssertBeginInstrumentReportingEventsPresent(events2, h);
             AssertInitialEnumerationCompleteEventPresent(events, 2);
             AssertInitialEnumerationCompleteEventPresent(events2);
@@ -564,15 +568,15 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_DisposeMetersDuringAndAfterSecondListener()
         {
-            using Meter meterA = new Meter("TestMeter8");
-            using Meter meterB = new Meter("TestMeter9");
-            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "1Mk1", "1Mv1" }, { "1Mk2", "Mv2" } });
+            using Meter meterB = new Meter("TestMeter9", null, new TagList() { { "2Mk1", "2Mv1" } }, new object());
+            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
             ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
             Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udCk1", "udCv1" }, { "udCk2", "udCv2" } });
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
@@ -625,9 +629,9 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_PublishingInstruments()
         {
-            using Meter meterA = new Meter("TestMeter10");
-            using Meter meterB = new Meter("TestMeter11");
-            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            using Meter meterA = new Meter("TestMeter10", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2"}, { "Mk3", null }});
+            using Meter meterB = new Meter("TestMeter11", null, null, new object());
+            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
@@ -659,7 +663,7 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
-            using Meter meter = new Meter("TestMeter1");
+            using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
             Counter<int> c = meter.CreateCounter<int>("counter1");
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
@@ -701,13 +705,13 @@ namespace System.Diagnostics.Metrics.Tests
         public void EventSourcePublishesTimeSeriesWithMetadata()
         {
             using Meter meter = new Meter("TestMeter2");
-            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; } , "MB", "Size of universe");
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; } , "MB", "Size of universe", new TagList() { { "oCk1", "oCv1" } });
             int gaugeState = 0;
-            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!", new TagList() { { "ogk1", null } });
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udCk1", "udCv1" }, { "udCk2", "udCv2" } });
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
@@ -816,13 +820,13 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 // Instruments are created after the EventSource was already monitoring
-                c = meter.CreateCounter<int>("counter1");
+                c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
                 int counterState = 3;
                 oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; });
                 int gaugeState = 0;
                 og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; });
                 h = meter.CreateHistogram<int>("histogram1");
-                udc = meter.CreateUpDownCounter<int>("upDownCounter1");
+                udc = meter.CreateUpDownCounter<int>("upDownCounter1", null, null, new TagList() { { "udCk1", "udCv1" } });
                 int upDownCounterState = 0;
                 oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; });
 
@@ -933,9 +937,10 @@ namespace System.Diagnostics.Metrics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/79749", TargetFrameworkMonikers.NetFramework)]
         public void EventSourceFiltersInstruments()
         {
-            using Meter meterA = new Meter("TestMeterA");
-            using Meter meterB = new Meter("TestMeterB");
-            using Meter meterC = new Meter("TestMeterC");
+            object scope = new object();
+            using Meter meterA = new Meter("TestMeterA", null, new TagList() { { "1Mk1", null } }, scope);
+            using Meter meterB = new Meter("TestMeterB", null, new TagList() { { "2Mk1", "" }}, scope);
+            using Meter meterC = new Meter("TestMeterC", null, new TagList() { { "3Mk1", "Mv1" }, { "3Mk2", "Mv2" } }, scope);
             Counter<int> c1a = meterA.CreateCounter<int>("counter1");
             Counter<int> c2a = meterA.CreateCounter<int>("counter2");
             Counter<int> c3a = meterA.CreateCounter<int>("counter3");
@@ -994,8 +999,8 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesMissingDataPoints()
         {
-            using Meter meter = new Meter("TestMeter6");
-            Counter<int> c = meter.CreateCounter<int>("counter1");
+            using Meter meter = new Meter("TestMeter6", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } }, new object());
+            Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int counterState = 3;
             int counterCollectInterval = 0;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () =>
@@ -1082,14 +1087,15 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesEndEventsOnMeterDispose()
         {
-            using Meter meterA = new Meter("TestMeter8");
-            using Meter meterB = new Meter("TestMeter9");
+            object scope = new object();
+            using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
+            using Meter meterB = new Meter("TestMeter9", null, new TagList() { { "Mk1", null }, { "Mk2", "Mv2" } }, scope);
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
             int gaugeState = 0;
             ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "hv2" }, { "hk3", "hv3" } });
             UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
@@ -1132,15 +1138,19 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesInstruments()
         {
-            using Meter meterA = new Meter("TestMeter10");
-            using Meter meterB = new Meter("TestMeter11");
+            object scope = new object();
+
+            using Meter meterA = new Meter("TestMeter10", null, null, scope);
+            using Meter meterB = new Meter("TestMeter11", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
-            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe",
+                                            new TagList() { { "ock1", "ocv1" }, { "ock2", "ocv2" }, { "ock3", "ocv3" } });
             int gaugeState = 0;
-            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
-            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
-            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!",
+                                            new TagList() { { "ogk1", "ogv1" } });
+            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "" }, {"hk3", null } });
+            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udk1", "udv1" } });
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
@@ -1393,9 +1403,8 @@ namespace System.Diagnostics.Metrics.Tests
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
         {
-            using Meter meter = new Meter("TestMeter17");
-            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
-
+            using Meter meter = new Meter("TestMeter17", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } });
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1", null, null, new TagList() { { "hk1", "hv1" }, { "hk2", "hv2" } });
 
             EventWrittenEventArgs[] events;
             // MaxTimeSeries = 3, MaxHistograms = 2
@@ -1429,6 +1438,39 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
+        private static string FormatScopeHash(object? scope) =>
+            scope is null ? string.Empty : RuntimeHelpers.GetHashCode(scope).ToString(CultureInfo.InvariantCulture);
+
+        private static string FormatTags(IEnumerable<KeyValuePair<string, object?>>? tags)
+        {
+            if (tags is null)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            bool first = true;
+            foreach (KeyValuePair<string, object?> tag in tags)
+            {
+                if (first)
+                {
+                    first = false;
+                }
+                else
+                {
+                    sb.Append(',');
+                }
+
+                sb.Append(tag.Key).Append('=');
+
+                if (tag.Value is not null)
+                {
+                    sb.Append(tag.Value.ToString());
+                }
+            }
+            return sb.ToString();
+        }
+
         private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
@@ -1439,7 +1481,10 @@ namespace System.Diagnostics.Metrics.Tests
                     InstrumentName = e.Payload[3].ToString(),
                     InstrumentType = e.Payload[4].ToString(),
                     Unit = e.Payload[5].ToString(),
-                    Description = e.Payload[6].ToString()
+                    Description = e.Payload[6].ToString(),
+                    InstrumentTags = e.Payload[7].ToString(),
+                    MeterTags = e.Payload[8].ToString(),
+                    ScopeHash = e.Payload[9].ToString()
                 }).ToArray();
 
             foreach(Instrument i in expectedInstruments)
@@ -1450,6 +1495,9 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i.GetType().Name, e.InstrumentType);
                 Assert.Equal(i.Unit ?? "", e.Unit);
                 Assert.Equal(i.Description ?? "", e.Description);
+                Assert.Equal(FormatTags(i.Tags), e.InstrumentTags);
+                Assert.Equal(FormatTags(i.Meter.Tags), e.MeterTags);
+                Assert.Equal(FormatScopeHash(i.Meter.Scope), e.ScopeHash);
             }
 
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
@@ -1465,7 +1513,10 @@ namespace System.Diagnostics.Metrics.Tests
                     InstrumentName = e.Payload[3].ToString(),
                     InstrumentType = e.Payload[4].ToString(),
                     Unit = e.Payload[5].ToString(),
-                    Description = e.Payload[6].ToString()
+                    Description = e.Payload[6].ToString(),
+                    InstrumentTags = e.Payload[7].ToString(),
+                    MeterTags = e.Payload[8].ToString(),
+                    ScopeHash = e.Payload[9].ToString()
                 }).ToArray();
 
             foreach (Instrument i in expectedInstruments)
@@ -1476,6 +1527,9 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i.GetType().Name, e.InstrumentType);
                 Assert.Equal(i.Unit ?? "", e.Unit);
                 Assert.Equal(i.Description ?? "", e.Description);
+                Assert.Equal(FormatTags(i.Tags), e.InstrumentTags);
+                Assert.Equal(FormatTags(i.Meter.Tags), e.MeterTags);
+                Assert.Equal(FormatScopeHash(i.Meter.Scope), e.ScopeHash);
             }
 
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
@@ -1511,7 +1565,10 @@ namespace System.Diagnostics.Metrics.Tests
                     InstrumentName = e.Payload[3].ToString(),
                     InstrumentType = e.Payload[4].ToString(),
                     Unit = e.Payload[5].ToString(),
-                    Description = e.Payload[6].ToString()
+                    Description = e.Payload[6].ToString(),
+                    InstrumentTags = e.Payload[7].ToString(),
+                    MeterTags = e.Payload[8].ToString(),
+                    ScopeHash = e.Payload[9].ToString()
                 }).ToArray();
 
             foreach (Instrument i in expectedInstruments)
@@ -1522,6 +1579,9 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i.GetType().Name, e.InstrumentType);
                 Assert.Equal(i.Unit ?? "", e.Unit);
                 Assert.Equal(i.Description ?? "", e.Description);
+                Assert.Equal(FormatTags(i.Tags), e.InstrumentTags);
+                Assert.Equal(FormatTags(i.Meter.Tags), e.MeterTags);
+                Assert.Equal(FormatScopeHash(i.Meter.Scope), e.ScopeHash);
             }
 
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
@@ -1845,7 +1905,7 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     _output.WriteLine($"  {eventData.PayloadNames[i]}: {eventData.Payload[i]}");
                 }
-                
+
             }
             _autoResetEvent.Set();
         }

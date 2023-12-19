@@ -18,23 +18,23 @@ declare interface Int32Ptr extends NativePointer {
     __brand: "Int32Ptr";
 }
 declare interface EmscriptenModule {
-    /** @deprecated Please use growableHeapI8() instead.*/
+    /** @deprecated Please use localHeapViewI8() instead.*/
     HEAP8: Int8Array;
-    /** @deprecated Please use growableHeapI16() instead.*/
+    /** @deprecated Please use localHeapViewI16() instead.*/
     HEAP16: Int16Array;
-    /** @deprecated Please use growableHeapI32() instead. */
+    /** @deprecated Please use localHeapViewI32() instead. */
     HEAP32: Int32Array;
-    /** @deprecated Please use growableHeapI64() instead. */
+    /** @deprecated Please use localHeapViewI64() instead. */
     HEAP64: BigInt64Array;
-    /** @deprecated Please use growableHeapU8() instead. */
+    /** @deprecated Please use localHeapViewU8() instead. */
     HEAPU8: Uint8Array;
-    /** @deprecated Please use growableHeapU16() instead. */
+    /** @deprecated Please use localHeapViewU16() instead. */
     HEAPU16: Uint16Array;
-    /** @deprecated Please use growableHeapU32() instead */
+    /** @deprecated Please use localHeapViewU32() instead */
     HEAPU32: Uint32Array;
-    /** @deprecated Please use growableHeapF32() instead */
+    /** @deprecated Please use localHeapViewF32() instead */
     HEAPF32: Float32Array;
-    /** @deprecated Please use growableHeapF64() instead. */
+    /** @deprecated Please use localHeapViewF64() instead. */
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
@@ -130,6 +130,10 @@ type MonoConfig = {
      */
     cacheBootResources?: boolean;
     /**
+     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
+     */
+    cachedResourcesPurgeDelay?: number;
+    /**
      * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean;
@@ -156,6 +160,16 @@ type MonoConfig = {
      */
     startupMemoryCache?: boolean;
     /**
+     * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
+     *  on future runs of the application
+     */
+    interpreterPgo?: boolean;
+    /**
+     * Configures how long to wait before saving the interpreter PGO list. If your application takes
+     *  a while to start you should adjust this value.
+     */
+    interpreterPgoSaveDelay?: number;
+    /**
      * application environment
      */
     applicationEnvironment?: string;
@@ -177,6 +191,15 @@ type MonoConfig = {
     extensions?: {
         [name: string]: any;
     };
+    /**
+     * This is initial working directory for the runtime on the virtual file system. Default is "/".
+     */
+    virtualWorkingDirectory?: string;
+    /**
+     * This is the arguments to the Main() method of the program when called with dotnet.run() Default is [].
+     * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
+     */
+    applicationArguments?: string[];
 };
 type ResourceExtensions = {
     [extensionName: string]: ResourceList;
@@ -262,7 +285,12 @@ interface AssetEntry {
      * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
-    buffer?: ArrayBuffer;
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>;
     /**
      * It's metadata + fetch-like Promise<Response>
      * If provided, the runtime doesn't have to initiate the download. It would just await the response.
@@ -360,8 +388,8 @@ type DotnetModuleConfig = {
     exports?: string[];
 } & Partial<EmscriptenModule>;
 type APIType = {
-    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
-    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>;
+    runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>;
+    runMainAndExit: (mainAssemblyName: string, args?: string[]) => Promise<number>;
     setEnvironmentVariable: (name: string, value: string) => void;
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;

@@ -24,6 +24,11 @@ class EHClauseInfo;
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
 
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+#endif // !FEATURE_EH_FUNCLETS
+
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
 // Since we have two different implementations, this class is needed to unify
@@ -145,11 +150,23 @@ private:
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTracker    m_pCurrentTracker;
     ExceptionTracker        m_OOMTracker;
+    PTR_ExInfo m_pExInfo;
 public:
     PTR_ExceptionTracker    GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
+    }
+    PTR_ExInfo    GetCurrentExInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pExInfo;
+    }
+
+    void SetCurrentExInfo(PTR_ExInfo pExInfo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pExInfo = pExInfo;
     }
 #else
     ExInfo                  m_currentExInfo;

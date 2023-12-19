@@ -8,12 +8,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
-
 using Internal.Win32;
-
 using REG_TZI_FORMAT = Interop.Kernel32.REG_TZI_FORMAT;
-using TIME_ZONE_INFORMATION = Interop.Kernel32.TIME_ZONE_INFORMATION;
 using TIME_DYNAMIC_ZONE_INFORMATION = Interop.Kernel32.TIME_DYNAMIC_ZONE_INFORMATION;
+using TIME_ZONE_INFORMATION = Interop.Kernel32.TIME_ZONE_INFORMATION;
 
 namespace System
 {

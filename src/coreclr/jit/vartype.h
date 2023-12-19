@@ -126,7 +126,6 @@ inline var_types varTypeToSigned(T vt)
     {
         switch (type)
         {
-            case TYP_BOOL:
             case TYP_UBYTE:
                 return TYP_BYTE;
             case TYP_USHORT:
@@ -178,15 +177,9 @@ inline bool varTypeIsArithmetic(T vt)
 }
 
 template <class T>
-inline unsigned varTypeGCtype(T vt)
-{
-    return (unsigned)(varTypeClassification[TypeGet(vt)] & (VTF_GCR | VTF_BYR));
-}
-
-template <class T>
 inline bool varTypeIsGC(T vt)
 {
-    return (varTypeGCtype(vt) != 0);
+    return ((varTypeClassification[TypeGet(vt)] & (VTF_GCR | VTF_BYR)) != 0);
 }
 
 template <class T>
@@ -204,7 +197,7 @@ inline bool varTypeIsEnregisterable(T vt)
 template <class T>
 inline bool varTypeIsByte(T vt)
 {
-    return (TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_UBYTE);
+    return (TypeGet(vt) == TYP_BYTE) || (TypeGet(vt) == TYP_UBYTE);
 }
 
 template <class T>
@@ -215,12 +208,6 @@ inline bool varTypeIsShort(T vt)
 
 template <class T>
 inline bool varTypeIsSmall(T vt)
-{
-    return (TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_USHORT);
-}
-
-template <class T>
-inline bool varTypeIsSmallInt(T vt)
 {
     return (TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_USHORT);
 }
@@ -238,13 +225,13 @@ inline bool varTypeIsIntOrI(T vt)
 template <class T>
 inline bool genActualTypeIsInt(T vt)
 {
-    return ((TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_UINT));
+    return ((TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_UINT));
 }
 
 template <class T>
 inline bool genActualTypeIsIntOrI(T vt)
 {
-    return ((TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_U_IMPL));
+    return ((TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_U_IMPL));
 }
 
 template <class T>
@@ -348,6 +335,8 @@ inline bool varTypeUsesFloatArgReg(T vt)
 {
 #ifdef TARGET_ARM64
     // Arm64 passes SIMD types in floating point registers.
+    // Exception: Windows arm64 native varargs passes them using general-purpose (integer) registers or
+    // by value on the stack, or split between registers and stack.
     return varTypeUsesFloatReg(vt);
 #else
     // Other targets pass them as regular structs - by reference or by value.

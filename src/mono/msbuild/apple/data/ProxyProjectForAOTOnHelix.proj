@@ -1,23 +1,35 @@
-<Project DefaultTargets="BundleTestAppleApp">
-  <Import Project="Directory.Build.props" />
+<Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <MonoEnableLLVM>true</MonoEnableLLVM>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\apple_build\</TestRootDir>
-    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\apple_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'apple_build'))</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'apple_build'))</TestRootDir>
 
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
-    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
-    <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
+    <OriginalPublishDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'publish'))</OriginalPublishDir>
+    <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
     <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
-
-    <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
-  <Import Project="$(_PropsFile)" />
+  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <_IsApplePlatform>true</_IsApplePlatform>
+    <TargetsAppleMobile>true</TargetsAppleMobile>
+    <_targetOS>$(TargetOS)</_targetOS>
+
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <DirectPInvoke Include="__Internal" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
@@ -26,17 +38,13 @@
              Importance="High" />
 
     <PropertyGroup>
+      <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
+    
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
-
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
-      <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-    </PropertyGroup>
 
     <ItemGroup>
       <!-- Figure out if we can support JustInterp mode -->
@@ -48,6 +56,16 @@
       <AppleNativeFilesToBundle Include="@(_ExtraFiles)" Exclude="$(OriginalPublishDir)\*.dll" />
       <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <RuntimeComponents Include="diagnostics_tracing" />
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
+
   </Target>
 
   <Target Name="_PublishRuntimePack"
@@ -80,6 +98,4 @@
 
     <Message Importance="High" Text="App moved to: $(_XHarnessAppPath)"/>
   </Target>
-
-  <Import Project="Directory.Build.targets" />
 </Project>

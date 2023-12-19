@@ -226,6 +226,27 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
 #endif
     }
 #elif defined(__loongarch64)
+    if (flags & CONTEXT_CONTROL)
+    {
+        context->Ra = MCREG_Ra(m_gpRegisters);
+        context->Sp = MCREG_Sp(m_gpRegisters);
+        context->Fp = MCREG_Fp(m_gpRegisters);
+        context->Pc = MCREG_Pc(m_gpRegisters);
+    }
+    if (flags & CONTEXT_INTEGER)
+    {
+        context->Tp = m_gpRegisters.regs[2];
+        memcpy(&context->A0, &m_gpRegisters.regs[4], sizeof(context->A0)*(21 - 4 + 1));
+        memcpy(&context->S0, &m_gpRegisters.regs[23], sizeof(context->S0)*9);
+    }
+    if (flags & CONTEXT_FLOATING_POINT)
+    {
+        assert(sizeof(context->F) == sizeof(m_fpRegisters.regs));
+        memcpy(context->F, m_fpRegisters.regs, sizeof(context->F));
+        context->Fcsr = m_fpRegisters.fcsr;
+        context->Fcc  = m_fpRegisters.fcc;
+    }
+#elif defined(__riscv)
     if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         context->Ra = MCREG_Ra(m_gpRegisters);
@@ -233,21 +254,44 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         context->Fp = MCREG_Fp(m_gpRegisters);
         context->Pc = MCREG_Pc(m_gpRegisters);
     }
-    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+
+    if (flags & CONTEXT_INTEGER)
     {
-        context->Tp = m_gpRegisters.regs[2];
-        memcpy(&context->A0, &m_gpRegisters.regs[4], sizeof(context->A0)*(21 - 4 + 1));
-        memcpy(&context->S0, &m_gpRegisters.regs[23], sizeof(context->S0)*9);
+        context->Gp = m_gpRegisters.gp;
+        context->Tp = m_gpRegisters.tp;
+        context->T0 = m_gpRegisters.t0;
+        context->T1 = m_gpRegisters.t1;
+        context->T2 = m_gpRegisters.t2;
+        context->S1 = m_gpRegisters.s1;
+        context->A0 = m_gpRegisters.a0;
+        context->A1 = m_gpRegisters.a1;
+        context->A2 = m_gpRegisters.a2;
+        context->A3 = m_gpRegisters.a3;
+        context->A4 = m_gpRegisters.a4;
+        context->A5 = m_gpRegisters.a5;
+        context->A6 = m_gpRegisters.a6;
+        context->A7 = m_gpRegisters.a7;
+        context->S2 = m_gpRegisters.s2;
+        context->S3 = m_gpRegisters.s3;
+        context->S4 = m_gpRegisters.s4;
+        context->S5 = m_gpRegisters.s5;
+        context->S6 = m_gpRegisters.s6;
+        context->S7 = m_gpRegisters.s7;
+        context->S8 = m_gpRegisters.s8;
+        context->S9 = m_gpRegisters.s9;
+        context->S10 = m_gpRegisters.s10;
+        context->S11 = m_gpRegisters.s11;
+        context->T3 = m_gpRegisters.t3;
+        context->T4 = m_gpRegisters.t4;
+        context->T5 = m_gpRegisters.t5;
+        context->T6 = m_gpRegisters.t6;
     }
-    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    if (flags & CONTEXT_FLOATING_POINT)
     {
-        assert(sizeof(context->F) == sizeof(m_fpRegisters.fpr));
-        memcpy(context->F, m_fpRegisters.fpr, sizeof(context->F));
+        assert(sizeof(context->F) == sizeof(m_fpRegisters.fpregs));
+        memcpy(context->F, m_fpRegisters.fpregs, sizeof(context->F));
         context->Fcsr = m_fpRegisters.fcsr;
-        context->Fcc  = m_fpRegisters.fcc;
     }
-#elif defined(__riscv)
-    assert(!"TODO RISCV64 NYI");
 #else
 #error Platform not supported
 #endif

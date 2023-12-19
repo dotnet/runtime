@@ -30,7 +30,7 @@
     do                                                                                                                 \
     {                                                                                                                  \
         Logger::LogExceptionMessage(__FUNCTION__, __FILE__, __LINE__, exCode, msg, __VA_ARGS__);                       \
-        ThrowSpmiException(exCode, msg, __VA_ARGS__);                                                                      \
+        ThrowSpmiException(exCode, msg, __VA_ARGS__);                                                                  \
     } while (0)
 
 // These are specified as flags so subsets of the logging functionality can be enabled/disabled at once

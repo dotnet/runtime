@@ -231,6 +231,12 @@ public:
     // A second special value, used to indicate that a function evaluation would cause infinite recursion.
     static const ValueNum RecursiveVN = UINT32_MAX - 1;
 
+    // Special value used to represent something that isn't in a loop for VN functions that take loop parameters.
+    static const unsigned NoLoop = UINT32_MAX;
+    // Special value used to represent something that may or may not be in a loop, so needs to be handled
+    // conservatively.
+    static const unsigned UnknownLoop = UINT32_MAX - 1;
+
     // ==================================================================================================
     // VNMap - map from something to ValueNum, where something is typically a constant value or a VNFunc
     //         This class has two purposes - to abstract the implementation and to validate the ValueNums
@@ -284,12 +290,12 @@ private:
     static const unsigned VNFOA_KnownNonNullShift     = 5;
     static const unsigned VNFOA_SharedStaticShift     = 6;
 
-    static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
-    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
-    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-    static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
-    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
+    static_assert_no_msg(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
+    static_assert_no_msg(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
+    static_assert_no_msg(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert_no_msg(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+    static_assert_no_msg(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
+    static_assert_no_msg(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -684,13 +690,13 @@ public:
     ValueNum VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     // A method that does the work for VNForMapSelect and may call itself recursively.
-    ValueNum VNForMapSelectWork(ValueNumKind          vnk,
-                                var_types             type,
-                                ValueNum              map,
-                                ValueNum              index,
-                                int*                  pBudget,
-                                bool*                 pUsedRecursiveVN,
-                                ArrayStack<ValueNum>* loopMemoryDependencies);
+    ValueNum VNForMapSelectWork(ValueNumKind            vnk,
+                                var_types               type,
+                                ValueNum                map,
+                                ValueNum                index,
+                                int*                    pBudget,
+                                bool*                   pUsedRecursiveVN,
+                                class SmallValueNumSet& loopMemoryDependencies);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
@@ -875,8 +881,8 @@ public:
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn) const;
 
-    // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
-    BasicBlock::loopNumber LoopOfVN(ValueNum vn);
+    // Returns nullptr if the given value number is not dependent on memory defined in a loop.
+    class FlowGraphNaturalLoop* LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a constant.
     bool IsVNConstant(ValueNum vn);
@@ -1821,8 +1827,8 @@ private:
     public:
         ValueNum Result;
 
-        void SetMemoryDependencies(CompAllocator alloc, ArrayStack<ValueNum>& deps, unsigned startIndex);
-        void GetMemoryDependencies(ArrayStack<ValueNum>& deps);
+        void SetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
+        void GetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
     };
 
     typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;

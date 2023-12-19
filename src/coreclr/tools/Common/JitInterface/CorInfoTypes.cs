@@ -812,7 +812,7 @@ namespace Internal.JitInterface
     {
         CORINFO_WINNT,
         CORINFO_UNIX,
-        CORINFO_MACOS,
+        CORINFO_APPLE,
     }
 
     public enum CORINFO_RUNTIME_ABI
@@ -1121,7 +1121,6 @@ namespace Internal.JitInterface
         CORINFO_FLG_FIELD_FINAL = 0x00000004,
         CORINFO_FLG_FIELD_STATIC_IN_HEAP = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
         CORINFO_FLG_FIELD_INITCLASS = 0x00000020, // initClass has to be called before accessing the field
-        CORINFO_FLG_FIELD_PROTECTED = 0x00000040,
     }
 
     public unsafe struct CORINFO_FIELD_INFO
@@ -1365,6 +1364,9 @@ namespace Internal.JitInterface
 
         // token comes from devirtualizing a method
         CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+        // token comes from resolved static virtual method
+        CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

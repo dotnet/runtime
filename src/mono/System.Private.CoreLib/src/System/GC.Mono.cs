@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Tracing;
 
 namespace System
 {
@@ -281,8 +281,6 @@ namespace System
         public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
             if (pinned) {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
                 return Unsafe.As<T[]>(AllocPinnedArray(typeof(T[]), length));
             }
 
@@ -322,7 +320,6 @@ namespace System
             return new System.Collections.Generic.Dictionary<string, object>();
         }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             throw new PlatformNotSupportedException();

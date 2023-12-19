@@ -120,6 +120,8 @@ target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
 add_definitions(-DBUILD_AS_STANDALONE)
+add_definitions(-DFEATURE_CONSERVATIVE_GC)
+
 add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
 add_definitions(-DVERIFY_HEAP)
 if(CLR_CMAKE_HOST_APPLE)

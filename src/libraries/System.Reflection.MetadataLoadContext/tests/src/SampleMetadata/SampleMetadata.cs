@@ -377,24 +377,14 @@ namespace SampleMetadata
         [MarshalAs(UnmanagedType.IDispatch, IidParameterIndex = 42)]
         public int F4;
 
-        // We are explicitly testing ByValArray without a SizeConst
-        // CS9125: Attribute parameter 'SizeConst' must be specified.
-
-#pragma warning disable CS9125
-        [MarshalAs(UnmanagedType.ByValArray)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
         public int F5;
-#pragma warning restore CS9125
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)]
         public int F6;
 
-        // We are explicitly testing ByValArray without a SizeConst
-        // CS9125: Attribute parameter 'SizeConst' must be specified.
-
-#pragma warning disable CS9125
-        [MarshalAs(UnmanagedType.ByValArray, ArraySubType = UnmanagedType.FunctionPtr)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1, ArraySubType = UnmanagedType.FunctionPtr)]
         public int F7;
-#pragma warning restore CS9125
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 87, ArraySubType = UnmanagedType.FunctionPtr)]
         public int F8;

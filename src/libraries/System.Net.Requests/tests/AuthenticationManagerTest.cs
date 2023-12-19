@@ -6,6 +6,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 #pragma warning disable CS0618 // obsolete warnings
+#pragma warning disable SYSLIB0009 // The class is obsolete
 
 namespace System.Net.Tests
 {
@@ -14,10 +15,8 @@ namespace System.Net.Tests
         [Fact]
         public void Authenticate_NotSupported()
         {
-#pragma warning disable SYSLIB0009 // The methods are obsolete
             Assert.Throws<PlatformNotSupportedException>(() => AuthenticationManager.Authenticate(null, null, null));
             Assert.Throws<PlatformNotSupportedException>(() => AuthenticationManager.PreAuthenticate(null, null));
-#pragma warning restore SYSLIB0009
         }
 
         [Fact]

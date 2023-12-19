@@ -8,6 +8,8 @@
 
 #ifdef INTERP_ENABLE_SIMD
 
+gboolean interp_simd_enabled = TRUE;
+
 typedef gint64 v128_i8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint64 v128_u8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef gint32 v128_i4 __attribute__ ((vector_size (SIZEOF_V128)));
@@ -213,57 +215,57 @@ interp_v128_i2_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 static void
 interp_v128_i4_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i4*)res = *(v128_i4*)v1 << *(gint32*)s1;
+	*(v128_i4*)res = *(v128_i4*)v1 << (*(gint32*)s1 & 31);
 }
 
 static void
 interp_v128_i8_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i8*)res = *(v128_i8*)v1 << *(gint32*)s1;
+	*(v128_i8*)res = *(v128_i8*)v1 << (*(gint32*)s1 & 63);
 }
 
 // op_RightShift
 static void
 interp_v128_i1_op_right_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i1*)res = *(v128_i1*)v1 >> *(gint32*)s1;
+	*(v128_i1*)res = *(v128_i1*)v1 >> (*(gint32*)s1 & 7);
 }
 
 static void
 interp_v128_i2_op_right_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i2*)res = *(v128_i2*)v1 >> *(gint32*)s1;
+	*(v128_i2*)res = *(v128_i2*)v1 >> (*(gint32*)s1 & 15);
 }
 
 static void
 interp_v128_i4_op_right_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i4*)res = *(v128_i4*)v1 >> *(gint32*)s1;
+	*(v128_i4*)res = *(v128_i4*)v1 >> (*(gint32*)s1 & 31);
 }
 
 // op_UnsignedRightShift
 static void
 interp_v128_i1_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u1*)res = *(v128_u1*)v1 >> *(gint32*)s1;
+	*(v128_u1*)res = *(v128_u1*)v1 >> (*(gint32*)s1 & 7);
 }
 
 static void
 interp_v128_i2_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u2*)res = *(v128_u2*)v1 >> *(gint32*)s1;
+	*(v128_u2*)res = *(v128_u2*)v1 >> (*(gint32*)s1 & 15);
 }
 
 static void
 interp_v128_i4_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u4*)res = *(v128_u4*)v1 >> *(gint32*)s1;
+	*(v128_u4*)res = *(v128_u4*)v1 >> (*(gint32*)s1 & 31);
 }
 
 static void
 interp_v128_i8_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u8*)res = *(v128_u8*)v1 >> *(gint32*)s1;
+	*(v128_u8*)res = *(v128_u8*)v1 >> (*(gint32*)s1 & 63);
 }
 
 // op_OnesComplement
@@ -411,6 +413,43 @@ static void
 interp_v128_i8_equals (gpointer res, gpointer v1, gpointer v2)
 {
 	*(v128_i8*)res = *(v128_i8*)v1 == *(v128_i8*)v2;
+}
+
+// EqualsAny
+static void
+interp_v128_i1_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i1 resv = *(v128_i1*)v1 == *(v128_i1*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i2_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i2 resv = *(v128_i2*)v1 == *(v128_i2*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i4_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i4 resv = *(v128_i4*)v1 == *(v128_i4*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i8_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i8 resv = *(v128_i8*)v1 == *(v128_i8*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
 }
 
 // CreateScalar

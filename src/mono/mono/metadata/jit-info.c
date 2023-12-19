@@ -43,7 +43,6 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/coree.h>
 
 static MonoJitInfoTable * volatile jit_info_table;
 static MonoJitInfoTable * volatile aot_modules;

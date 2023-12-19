@@ -12,9 +12,9 @@
 #include "switches.h"
 #include "stresslog.h"
 #include "clrhost.h"
+#include "ex.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
-#include "ex.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS

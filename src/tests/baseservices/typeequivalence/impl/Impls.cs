@@ -19,6 +19,12 @@ public class EmptyType : IEmptyType
     }
 }
 
+[TypeIdentifier("MyScope", "MyTypeId")]
+public struct EquivalentValueType
+{
+    public int A;
+}
+
 /// <summary>
 /// Implementation of interfaces that have no impact on inputs.
 /// </summary>

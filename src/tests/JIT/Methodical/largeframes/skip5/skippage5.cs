@@ -22,7 +22,7 @@ public class Program
     }
 
     [Fact]
-    public static int TestEntryPoint() => Test(new C());
+    public static void TestEntryPoint() => Test(new C());
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Call(int r0, int r1, int r2, int r3, int r4, int r5, int r6, S s)
@@ -30,11 +30,11 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int Test(C c)
+    static void Test(C c)
     {
         Call(0, 1, 2, 3, 4, 5, 42, c.s);
         Console.WriteLine("TEST PASSED");
-        return 100; // If we don't crash, we pass
+        // If we don't crash, we pass
     }
 }
 }

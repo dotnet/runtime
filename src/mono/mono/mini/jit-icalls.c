@@ -544,7 +544,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 		return 0;
 	}
 
-	return res;
+	return GINT64_TO_INT32 (res);
 }
 
 gint32
@@ -559,7 +559,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 
 gint32
@@ -574,7 +574,7 @@ mono_imul_ovf_un_oom (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 #endif
 
@@ -1358,7 +1358,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	error_init (error);
 
-	if (mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) {
+	if ((mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) && !m_method_is_static (cmethod)) {
 		MonoObject *this_obj;
 
 		is_iface = mono_class_is_interface (klass);
@@ -1390,7 +1390,12 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		}
 	}
 
-	if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
+	if (m_method_is_static (cmethod)) {
+		/*
+		 * Static calls don't have this arg
+		 */
+		*this_arg = NULL;
+	} else if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
@@ -1445,7 +1450,8 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 		break;
 	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
 		/* Calling a ref method with a ref receiver */
-		this_arg = *(gpointer*)mp;
+		/* Static calls don't have this arg */
+		this_arg = m_method_is_static (cmethod) ? NULL : *(gpointer*)mp;
 		m = info->method;
 		break;
 	default:
@@ -1477,7 +1483,8 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 		g_assert (fsig->param_count < 16);
 		memcpy (new_args, args, fsig->param_count * sizeof (gpointer));
 		for (int i = 0; i < fsig->param_count; ++i) {
-			if (deref_args [i])
+			// If the argument is not a vtype or nullable, deref it
+			if (deref_args [i] != MONO_GSHAREDVT_BOX_TYPE_VTYPE && deref_args [i] != MONO_GSHAREDVT_BOX_TYPE_NULLABLE)
 				new_args [i] = *(gpointer*)new_args [i];
 		}
 		args = new_args;
@@ -1680,6 +1687,22 @@ mono_throw_invalid_program (const char *msg)
 {
 	ERROR_DECL (error);
 	mono_error_set_invalid_program (error, "Invalid IL due to: %s", msg);
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_type_load (MonoClass* klass)
+{
+	ERROR_DECL (error);
+
+	if (G_UNLIKELY(!klass)) {
+		mono_error_set_generic_error (error, "System", "TypeLoadException", "");
+	} else {
+		char* klass_name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
+		g_free (klass_name);
+	}
+	
 	mono_error_set_pending_exception (error);
 }
 

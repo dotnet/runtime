@@ -5,9 +5,9 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
 import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
-import { mono_log_debug } from "./logging";
+import { mono_log_debug, mono_log_warn } from "./logging";
 import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
@@ -78,8 +78,6 @@ const containedInSnapshotByAssetTypes: {
     "pdb": true,
     "heap": true,
     "icu": true,
-    ...jsModulesAssetTypes,
-    "dotnetwasm": true,
 };
 
 // these assets are instantiated differently than the main flow
@@ -95,7 +93,7 @@ export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convert_single_asset(modulesAssets: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+function convert_single_asset(assetsCollection: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
     const keys = Object.keys(resource || {});
     mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
 
@@ -110,7 +108,7 @@ function convert_single_asset(modulesAssets: AssetEntryInternal[], resource: Res
     set_single_asset(asset);
 
     // so that we can use it on the worker too
-    modulesAssets.push(asset);
+    assetsCollection.push(asset);
     return asset;
 }
 
@@ -129,27 +127,27 @@ function get_single_asset(behavior: SingleAssetBehaviors): AssetEntryInternal {
 
 export function resolve_single_asset_path(behavior: SingleAssetBehaviors): AssetEntryInternal {
     const asset = get_single_asset(behavior);
-    asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
+    if (!asset.resolvedUrl) {
+        asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
-    if (jsRuntimeModulesAssetTypes[asset.behavior]) {
-        // give loadBootResource chance to override the url for JS modules with 'dotnetjs' type
-        const customLoadResult = invokeLoadBootResource(asset);
-        if (customLoadResult) {
-            mono_assert(typeof customLoadResult === "string", "loadBootResource response for 'dotnetjs' type should be a URL string");
-            asset.resolvedUrl = customLoadResult;
-        } else {
-            asset.resolvedUrl = appendUniqueQuery(asset.resolvedUrl, asset.behavior);
+        if (jsRuntimeModulesAssetTypes[asset.behavior]) {
+            // give loadBootResource chance to override the url for JS modules with 'dotnetjs' type
+            const customLoadResult = invokeLoadBootResource(asset);
+            if (customLoadResult) {
+                mono_assert(typeof customLoadResult === "string", "loadBootResource response for 'dotnetjs' type should be a URL string");
+                asset.resolvedUrl = customLoadResult;
+            } else {
+                asset.resolvedUrl = appendUniqueQuery(asset.resolvedUrl, asset.behavior);
+            }
+        } else if (asset.behavior !== "dotnetwasm") {
+            throw new Error(`Unknown single asset behavior ${behavior}`);
         }
-    } else if (asset.behavior !== "dotnetwasm") {
-        throw new Error(`Unknown single asset behavior ${behavior}`);
     }
     return asset;
 }
 
 export async function mono_download_assets(): Promise<void> {
     mono_log_debug("mono_download_assets");
-    loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
-    loaderHelpers.enableDownloadRetry = loaderHelpers.config.enableDownloadRetry || loaderHelpers.enableDownloadRetry;
     try {
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
 
@@ -168,15 +166,12 @@ export async function mono_download_assets(): Promise<void> {
             countAndStartDownload(asset);
         }
 
-        // continue after the dotnet.runtime.js was loaded
-        await loaderHelpers.runtimeModuleLoaded.promise;
-
         // continue after we know if memory snapshot is available or not
-        await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
+        await loaderHelpers.memorySnapshotSkippedOrDone.promise;
 
         // start fetching assets in parallel, only if memory snapshot is not available.
         for (const asset of containedInSnapshotAssets) {
-            if (!runtimeHelpers.loadedMemorySnapshot) {
+            if (!runtimeHelpers.loadedMemorySnapshotSize) {
                 countAndStartDownload(asset);
             } else {
                 // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
@@ -193,6 +188,8 @@ export async function mono_download_assets(): Promise<void> {
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
+
+        // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
 
         const promises_of_asset_instantiation: Promise<void>[] = [];
@@ -201,16 +198,16 @@ export async function mono_download_assets(): Promise<void> {
                 const asset = await downloadPromise;
                 if (asset.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
+                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
                         mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
                         const url = asset.resolvedUrl!;
-                        const data = new Uint8Array(asset.buffer!);
+                        const buffer = await asset.buffer;
+                        const data = new Uint8Array(buffer);
                         cleanupAsset(asset);
 
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
 
                         await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
                 } else {
@@ -283,7 +280,7 @@ export function prepareAssets() {
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
         mono_assert(!MonoWasmThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
-        convert_single_asset(modulesAssets, resources.wasmNative, "dotnetwasm");
+        convert_single_asset(alwaysLoadedAssets, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (MonoWasmThreads) {
@@ -487,7 +484,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         return asset.pendingDownloadInternal.response;
     }
     if (asset.buffer) {
-        const buffer = asset.buffer;
+        const buffer = await asset.buffer;
         if (!asset.resolvedUrl) {
             asset.resolvedUrl = "undefined://" + asset.name;
         }
@@ -707,6 +704,7 @@ export function cleanupAsset(asset: AssetEntryInternal) {
     asset.pendingDownloadInternal = null as any; // GC
     asset.pendingDownload = null as any; // GC
     asset.buffer = null as any; // GC
+    asset.moduleExports = null as any; // GC
 }
 
 function fileName(name: string) {
@@ -715,4 +713,38 @@ function fileName(name: string) {
         lastIndexOfSlash++;
     }
     return name.substring(lastIndexOfSlash);
+}
+
+export async function streamingCompileWasm() {
+    try {
+        const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
+        await start_asset_download(wasmModuleAsset);
+        mono_assert(wasmModuleAsset && wasmModuleAsset.pendingDownloadInternal && wasmModuleAsset.pendingDownloadInternal.response, "Can't load dotnet.native.wasm");
+        const response = await wasmModuleAsset.pendingDownloadInternal.response;
+        const contentType = response.headers && response.headers.get ? response.headers.get("Content-Type") : undefined;
+        let compiledModule: WebAssembly.Module;
+        if (typeof WebAssembly.compileStreaming === "function" && contentType === "application/wasm") {
+            compiledModule = await WebAssembly.compileStreaming(response);
+        } else {
+            if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
+                mono_log_warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            mono_log_debug("instantiate_wasm_module buffered");
+            if (ENVIRONMENT_IS_SHELL) {
+                // workaround for old versions of V8 with https://bugs.chromium.org/p/v8/issues/detail?id=13823
+                compiledModule = await Promise.resolve(new WebAssembly.Module(arrayBuffer));
+            } else {
+                compiledModule = await WebAssembly.compile(arrayBuffer!);
+            }
+        }
+        wasmModuleAsset.pendingDownloadInternal = null as any; // GC
+        wasmModuleAsset.pendingDownload = null as any; // GC
+        wasmModuleAsset.buffer = null as any; // GC
+        wasmModuleAsset.moduleExports = null as any; // GC
+        loaderHelpers.wasmCompilePromise.promise_control.resolve(compiledModule);
+    }
+    catch (err) {
+        loaderHelpers.wasmCompilePromise.promise_control.reject(err);
+    }
 }

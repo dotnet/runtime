@@ -913,7 +913,6 @@ PCODE MethodDesc::GetNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
-
     if (HasNativeCodeSlot())
     {
         // When profiler is enabled, profiler may ask to rejit a code even though we
@@ -935,7 +934,7 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
-PCODE MethodDesc::GetNativeCodeReJITAware()
+PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -946,19 +945,23 @@ PCODE MethodDesc::GetNativeCodeReJITAware()
         return pDefaultCode;
     }
 
+    else
     {
         CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
-        if (!ilVersion.IsDefaultVersion())
+        ILCodeVersionCollection ilVersionCollection = pCodeVersionManager->GetILCodeVersions(PTR_MethodDesc(this));
+        for (ILCodeVersionIterator curIL = ilVersionCollection.Begin(), endIL = ilVersionCollection.End(); curIL != endIL; curIL++)
         {
-            NativeCodeVersion activeNativeCodeVersion = ilVersion.GetActiveNativeCodeVersion(PTR_MethodDesc(this));
-            if (!activeNativeCodeVersion.IsNull())
+            NativeCodeVersionCollection nativeCollection = curIL->GetNativeCodeVersions(PTR_MethodDesc(this));
+            for (NativeCodeVersionIterator curNative = nativeCollection.Begin(), endNative = nativeCollection.End(); curNative != endNative; curNative++)
             {
-                return activeNativeCodeVersion.GetNativeCode();
+                PCODE native = curNative->GetNativeCode();
+                if(native != NULL)
+                {
+                    return native;
+                }
             }
         }
-
         return NULL;
     }
 }
@@ -3035,8 +3038,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement - These methods have no IL that could be optimized
         !IsWrapperStub() &&
 
-        // Policy - Generating optimized code is not disabled
-        !IsJitOptimizationDisabledForSpecificMethod())
+        // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
+        !IsJitOptimizationLevelRequested())
     {
         m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
@@ -3060,6 +3063,17 @@ bool MethodDesc::IsJitOptimizationDisabled()
 bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
 {
     return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+}
+
+bool MethodDesc::IsJitOptimizationLevelRequested()
+{
+    if (IsNoMetadata())
+    {
+        return false;
+    }
+
+    const DWORD attrs = GetImplAttrs();
+    return IsMiNoOptimization(attrs) || IsMiAggressiveOptimization(attrs);
 }
 
 bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
@@ -3297,13 +3311,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         }
 #endif
 
-        PTR_PCODE pSlot = GetAddrOfNativeCodeSlot();
-        NativeCodeSlot expected;
-
-        expected = *pSlot;
-
-        return InterlockedCompareExchangeT(reinterpret_cast<TADDR*>(pSlot),
-            (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
+        return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
     _ASSERTE(pExpected == NULL);

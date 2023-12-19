@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "eventpipeadapter.h"
+#include "gcenv.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -90,7 +90,7 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogThreadPoolIOPack
     FireEtwThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult)
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult)
 {
     FireEtwExceptionThrown_V1(exceptionTypeName,
         exceptionMessage,
@@ -98,6 +98,16 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(
         hresult,
         0,
         GetClrInstanceId());
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+{
+    FireEtwWaitHandleWaitStart(WaitSource, reinterpret_cast<const void*>(AssociatedObjectID), ClrInstanceID);
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
+{
+    FireEtwWaitHandleWaitStop(ClrInstanceID);
 }
 
 #endif // FEATURE_PERFTRACING

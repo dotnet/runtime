@@ -16,11 +16,10 @@ namespace Test
     public class BB
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             double local3 = 133.28;
             AA.Static1(local3, AA.m_auForward3[2]);
-            return 100;
         }
     }
 }

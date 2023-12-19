@@ -21,6 +21,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using Microsoft.Diagnostics.Tools.Pgo;
@@ -164,8 +165,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 .UseVersion()
                 .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
 
         public static void PrintWarning(string warning)
@@ -1343,6 +1343,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 double excludeEventsBefore = Get(_command.ExcludeEventsBefore);
                 double excludeEventsAfter = Get(_command.ExcludeEventsAfter);
+                Regex excludeEventsBeforeJittingMethod = !string.IsNullOrEmpty(Get(_command.ExcludeEventsBeforeJittingMethod)) ? new Regex(Get(_command.ExcludeEventsBeforeJittingMethod)) : null;
+                Regex excludeEventsAfterJittingMethod = !string.IsNullOrEmpty(Get(_command.ExcludeEventsAfterJittingMethod)) ? new Regex(Get(_command.ExcludeEventsAfterJittingMethod)) : null;
+                Regex includeMethods = !string.IsNullOrEmpty(Get(_command.IncludeMethods)) ? new Regex(Get(_command.IncludeMethods)) : null;
+                Regex excludeMethods = !string.IsNullOrEmpty(Get(_command.ExcludeMethods)) ? new Regex(Get(_command.ExcludeMethods)) : null;
+
+                // Find all the R2RLoad events.
                 if (_command.ProcessR2REvents)
                 {
                     foreach (var e in p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>())
@@ -1351,6 +1357,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         string retArg = e.MethodSignature.Substring(0, parenIndex);
                         string paramsArgs = e.MethodSignature.Substring(parenIndex);
                         string methodNameFromEventDirectly = retArg + e.MethodNamespace + "." + e.MethodName + paramsArgs;
+
                         if (e.ClrInstanceID != clrInstanceId)
                         {
                             if (!_command.Warnings)
@@ -1359,6 +1366,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             PrintWarning($"Skipped R2REntryPoint {methodNameFromEventDirectly} due to ClrInstanceID of {e.ClrInstanceID}");
                             continue;
                         }
+
                         MethodDesc method = null;
                         string extraWarningText = null;
                         bool failedDueToNonloadableModule = false;
@@ -1382,8 +1390,80 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
                         }
 
-                        if ((e.TimeStampRelativeMSec >= excludeEventsBefore) && (e.TimeStampRelativeMSec <= excludeEventsAfter))
+                        if (e.TimeStampRelativeMSec < excludeEventsBefore)
+                        {
+                            continue;
+                        }
+
+                        if (e.TimeStampRelativeMSec > excludeEventsAfter)
+                        {
+                            break;
+                        }
+
+                        string perfviewMethodName = e.MethodNamespace + "." + e.MethodName + paramsArgs;
+                        if (PassesMethodFilter(includeMethods, excludeMethods, perfviewMethodName))
+                        {
                             methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "R2RLoad"));
+                        }
+                    }
+                }
+
+                // In case requesting events before/after jitting a method, discover the
+                // corresponding excludeEventsBefore/excludeEventsAfter in event stream based
+                // on filter criterias.
+                if (_command.ProcessJitEvents && (excludeEventsBeforeJittingMethod != null || excludeEventsAfterJittingMethod != null))
+                {
+                    double firstMatchEventsBeforeJittingMethod = double.PositiveInfinity;
+                    double lastMatchEventsAfterJittingMethod = double.NegativeInfinity;
+                    foreach (var e in p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>())
+                    {
+                        if (e.ClrInstanceID != clrInstanceId)
+                        {
+                            continue;
+                        }
+
+                        MethodDesc method = null;
+                        bool failedDueToNonloadableModule = false;
+                        try
+                        {
+                            method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, false);
+                        }
+                        catch { }
+
+                        if (method == null)
+                        {
+                            continue;
+                        }
+
+                        int parenIndex = e.MethodSignature.IndexOf('(');
+                        string paramsArgs = e.MethodSignature.Substring(parenIndex);
+                        string perfviewMethodName = e.MethodNamespace + "." + e.MethodName + paramsArgs;
+
+                        if (e.TimeStampRelativeMSec > excludeEventsBefore && e.TimeStampRelativeMSec < firstMatchEventsBeforeJittingMethod && excludeEventsBeforeJittingMethod != null && excludeEventsBeforeJittingMethod.IsMatch(perfviewMethodName))
+                        {
+                            firstMatchEventsBeforeJittingMethod = e.TimeStampRelativeMSec;
+                        }
+
+                        if (e.TimeStampRelativeMSec < excludeEventsAfter && e.TimeStampRelativeMSec > lastMatchEventsAfterJittingMethod && excludeEventsAfterJittingMethod != null && excludeEventsAfterJittingMethod.IsMatch(perfviewMethodName))
+                        {
+                            lastMatchEventsAfterJittingMethod = e.TimeStampRelativeMSec;
+                        }
+                    }
+
+                    if (firstMatchEventsBeforeJittingMethod < double.PositiveInfinity)
+                    {
+                        excludeEventsBefore = firstMatchEventsBeforeJittingMethod;
+                    }
+
+                    if (lastMatchEventsAfterJittingMethod > double.NegativeInfinity)
+                    {
+                        excludeEventsAfter = lastMatchEventsAfterJittingMethod;
+                    }
+
+                    if (excludeEventsBefore > excludeEventsAfter)
+                    {
+                        PrintError($"Exclude events before timestamp: \"{excludeEventsBefore}\" can't be later than exclude events after timestamp: \"{excludeEventsAfter}\"");
+                        return -1;
                     }
                 }
 
@@ -1396,6 +1476,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         string retArg = e.MethodSignature.Substring(0, parenIndex);
                         string paramsArgs = e.MethodSignature.Substring(parenIndex);
                         string methodNameFromEventDirectly = retArg + e.MethodNamespace + "." + e.MethodName + paramsArgs;
+
                         if (e.ClrInstanceID != clrInstanceId)
                         {
                             if (!_command.Warnings)
@@ -1428,8 +1509,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             continue;
                         }
 
-                        if ((e.TimeStampRelativeMSec >= excludeEventsBefore) && (e.TimeStampRelativeMSec <= excludeEventsAfter))
+                        if (e.TimeStampRelativeMSec < excludeEventsBefore)
+                        {
+                            continue;
+                        }
+
+                        if (e.TimeStampRelativeMSec > excludeEventsAfter)
+                        {
+                            break;
+                        }
+
+                        string perfviewMethodName = e.MethodNamespace + "." + e.MethodName + paramsArgs;
+                        if (PassesMethodFilter(includeMethods, excludeMethods, perfviewMethodName))
+                        {
                             methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
+                        }
                     }
                 }
 
@@ -1781,6 +1875,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
             return 0;
+        }
+
+        private static bool PassesMethodFilter(Regex includeMethods, Regex excludeMethods, string methodName)
+        {
+            if (includeMethods != null || excludeMethods != null)
+            {
+                if (includeMethods != null && !includeMethods.IsMatch(methodName))
+                {
+                    return false;
+                }
+
+                if (excludeMethods != null && excludeMethods.IsMatch(methodName))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, JitTraceOptions jittraceOptions)

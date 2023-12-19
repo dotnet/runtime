@@ -742,17 +742,8 @@ namespace System.Net.Http
 
             if (connection is not null)
             {
-                // Register for shutdown notification.
-                // Do this before we return the connection to the pool, because that may result in it being disposed.
-                ValueTask shutdownTask = connection.WaitForShutdownAsync();
-
                 // Add the new connection to the pool.
                 ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
-
-                // Wait for connection shutdown.
-                await shutdownTask.ConfigureAwait(false);
-
-                InvalidateHttp2Connection(connection);
             }
             else
             {
@@ -946,14 +937,12 @@ namespace System.Net.Http
                     throw;
                 }
 
-                //TODO: NegotiatedApplicationProtocol not yet implemented.
-#if false
                 if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                 {
                     BlocklistAuthority(authority);
-                    throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
+                    throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                 }
-#endif
+
                 // if the authority was sent as an option through alt-svc then include alt-used header
                 http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;

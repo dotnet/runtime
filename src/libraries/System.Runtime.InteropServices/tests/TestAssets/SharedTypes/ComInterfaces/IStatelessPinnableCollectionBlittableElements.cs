@@ -50,12 +50,12 @@ namespace SharedTypes.ComInterfaces
     [ContiguousCollectionMarshaller]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(StatelessPinnableCollectionMarshaller<,>.ManagedToUnmanaged))]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.UnmanagedToManagedOut, typeof(StatelessPinnableCollectionMarshaller<,>.ManagedToUnmanaged))]
-    [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ElementIn, typeof(StatelessPinnableCollectionMarshaller<,>.ManagedToUnmanaged))]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(StatelessPinnableCollectionMarshaller<,>.UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.UnmanagedToManagedIn, typeof(StatelessPinnableCollectionMarshaller<,>.UnmanagedToManaged))]
-    [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ElementOut, typeof(StatelessPinnableCollectionMarshaller<,>.UnmanagedToManaged))]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.UnmanagedToManagedRef, typeof(StatelessPinnableCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ManagedToUnmanagedRef, typeof(StatelessPinnableCollectionMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ElementIn, typeof(StatelessPinnableCollectionMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ElementOut, typeof(StatelessPinnableCollectionMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(StatelessPinnableCollection<>), MarshalMode.ElementRef, typeof(StatelessPinnableCollectionMarshaller<,>.Bidirectional))]
     internal static unsafe class StatelessPinnableCollectionMarshaller<T, TUnmanagedElement>
         where T : unmanaged

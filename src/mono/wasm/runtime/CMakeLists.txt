@@ -4,9 +4,10 @@ project(mono-wasm-runtime C)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
 option(DISABLE_LEGACY_JS_INTEROP "defined if the build does not support legacy JavaScript interop" OFF)
+option(ENABLE_JS_INTEROP_BY_VALUE "defined when JS interop without pointers to managed objects" OFF)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
-add_executable(dotnet.native corebindings.c driver.c pinvoke.c)
+add_executable(dotnet.native runtime.c corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet.native PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
 target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1 ${CONFIGURATION_COMPILE_OPTIONS})
@@ -25,6 +26,7 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
+    ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
@@ -33,8 +35,8 @@ target_link_libraries(dotnet.native
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
 
 set_target_properties(dotnet.native PROPERTIES
-    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/pal_random.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"
-    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-link.rsp ${CONFIGURATION_LINK_FLAGS} --pre-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js --js-library ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js --js-library ${NATIVE_BIN_DIR}/src/pal_random.lib.js --extern-post-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js "
+    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"
+    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-link.rsp ${CONFIGURATION_LINK_FLAGS} --pre-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js --js-library ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js --extern-post-js ${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js "
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")

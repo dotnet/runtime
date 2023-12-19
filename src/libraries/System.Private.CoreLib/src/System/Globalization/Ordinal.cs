@@ -78,39 +78,73 @@ namespace System.Globalization
             return OrdinalCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
         }
 
-        private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, int length)
+        private static bool EqualsIgnoreCase_Vector<TVector>(ref char charA, ref char charB, int length)
+            where TVector : struct, ISimdVector<TVector, ushort>
         {
-            Debug.Assert(length >= Vector128<ushort>.Count);
-            Debug.Assert(Vector128.IsHardwareAccelerated);
+            Debug.Assert(length >= TVector.Count);
 
             nuint lengthU = (nuint)length;
-            nuint lengthToExamine = lengthU - (nuint)Vector128<ushort>.Count;
+            nuint lengthToExamine = lengthU - (nuint)TVector.Count;
             nuint i = 0;
-            Vector128<ushort> vec1;
-            Vector128<ushort> vec2;
+            TVector vec1;
+            TVector vec2;
+            TVector loweringMask = TVector.Create(0x20);
+            TVector vecA = TVector.Create('a');
+            TVector vecZMinusA = TVector.Create('z' - 'a');
             do
             {
-                vec1 = Vector128.LoadUnsafe(ref charA, i);
-                vec2 = Vector128.LoadUnsafe(ref charB, i);
+                vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
 
-                if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
+                if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
                 {
                     goto NON_ASCII;
                 }
 
-                if (!Utf16Utility.Vector128OrdinalIgnoreCaseAscii(vec1, vec2))
+                TVector notEquals = ~TVector.Equals(vec1, vec2);
+                if (!notEquals.Equals(TVector.Zero))
                 {
-                    return false;
-                }
+                    // not exact match
 
-                i += (nuint)Vector128<ushort>.Count;
+                    vec1 |= loweringMask;
+                    vec2 |= loweringMask;
+                    if (TVector.GreaterThanAny((vec1 - vecA) & notEquals, vecZMinusA) || !vec1.Equals(vec2))
+                    {
+                        return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                    }
+                }
+                i += (nuint)TVector.Count;
             } while (i <= lengthToExamine);
 
-            // Use scalar path for trailing elements
-            return i == lengthU || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+            // Handle trailing elements
+            if (i != lengthU)
+            {
+                i = lengthU - (nuint)TVector.Count;
+                vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+
+                if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                TVector notEquals = ~TVector.Equals(vec1, vec2);
+                if (!notEquals.Equals(TVector.Zero))
+                {
+                    // not exact match
+
+                    vec1 |= loweringMask;
+                    vec2 |= loweringMask;
+                    if (TVector.GreaterThanAny((vec1 - vecA) & notEquals, vecZMinusA) || !vec1.Equals(vec2))
+                    {
+                        return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                    }
+                }
+            }
+            return true;
 
         NON_ASCII:
-            if (Utf16Utility.AllCharsInVector128AreAscii(vec1) || Utf16Utility.AllCharsInVector128AreAscii(vec2))
+            if (Utf16Utility.AllCharsInVectorAreAscii(vec1) || Utf16Utility.AllCharsInVectorAreAscii(vec2))
             {
                 // No need to use the fallback if one of the inputs is full-ASCII
                 return false;
@@ -129,8 +163,15 @@ namespace System.Globalization
             {
                 return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
             }
-
-            return EqualsIgnoreCase_Vector128(ref charA, ref charB, length);
+            if (Vector512.IsHardwareAccelerated && length >= Vector512<ushort>.Count)
+            {
+                return EqualsIgnoreCase_Vector<Vector512<ushort>>(ref charA, ref charB, length);
+            }
+            if (Vector256.IsHardwareAccelerated && length >= Vector256<ushort>.Count)
+            {
+                return EqualsIgnoreCase_Vector<Vector256<ushort>>(ref charA, ref charB, length);
+            }
+            return EqualsIgnoreCase_Vector<Vector128<ushort>>(ref charA, ref charB, length);
         }
 
         internal static bool EqualsIgnoreCase_Scalar(ref char charA, ref char charB, int length)

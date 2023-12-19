@@ -10,6 +10,8 @@
     <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- this unit test depends on JavaScript interop and doesn't need heavy threading. So we can run it in UI thread. TODO: Drop this when we have automatic JSInterop dispatch to UI thread. -->
+    <_XUnitBackgroundExec>false</_XUnitBackgroundExec>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />

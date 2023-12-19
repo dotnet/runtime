@@ -596,7 +596,8 @@ namespace DebuggerTests
                                            await CheckProps (c, new {
                                                            Field1 = TNumber(123),
                                                            Field2 = TString("spqr"),
-                                                   }, "c", num_fields: 2);
+                                                           Field3Unused = TString(null),
+                                                   }, "c", num_fields: 3);
                                        });
         }
 
@@ -626,6 +627,68 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Into, $"dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 119, 12, "ApplyUpdateReferencedAssembly.MethodBody10.StaticMethod1");
         }
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewMethodAndThrowException()
+        {
+            //await SetPauseOnException("all");
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 129, 12, use_regex: true);
+            var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 133, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody11", "StaticMethod1", expectBpResolvedEvent: true, sourcesToWait: new string [] { "MethodBody0.cs", "MethodBody1.cs" });
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 129, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody11", "NewMethodStaticWithThrow", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody11.NewMethodStaticWithThrow", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 133, 12, scripts, top_frame["location"]);
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 134, 12, "ApplyUpdateReferencedAssembly.MethodBody11.NewMethodStaticWithThrow",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "i", 20);
+                    await Task.CompletedTask;
+                }
+            );
+
+            await SetPauseOnException("all");
+
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "System.Exception",
+                uncaught = false
+            }), "exception0.data");
+
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+            try
+            {
+                pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+            }
+            catch (System.Exception ae)
+            {
+                System.Console.WriteLine(ae);
+                var eo = JObject.Parse(ae.Message);
+
+                AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
+
+                await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
+                {
+                    type = "object",
+                    subtype = "error",
+                    className = "Error"
+                }), "exception");
+            }
+        }
         // Enable this test when https://github.com/dotnet/hotreload-utils/pull/264 flows into dotnet/runtime repo
         // [ConditionalFact(nameof(RunningOnChrome))]
         // public async Task DebugHotReloadMethod_ChangeParameterName()

@@ -14,7 +14,10 @@
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiApp.targets" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiApp.Native.*" TargetPath="Sdk" />
+
+    <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Common.props" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Common.targets" TargetPath="Sdk" />
+
     <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiSdk.Defaults.props" TargetPath="Sdk" />
   </ItemGroup>
 
@@ -30,7 +33,7 @@
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/Sdk.targets.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(SdkTargetsPath)" />
 
     <ItemGroup>

@@ -13,7 +13,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 #if !NETCOREAPP
 	[RemovedAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
 #endif
-	[SkipPeVerify]
 	public class CoreLibraryUnusedAssemblyAttributesAreRemoved
 	{
 		public static void Main ()

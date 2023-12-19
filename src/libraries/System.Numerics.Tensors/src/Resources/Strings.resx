@@ -117,52 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArrayMustContainElements" xml:space="preserve">
-    <value>Array must contain elements.</value>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
   </data>
-  <data name="CannotCompare" xml:space="preserve">
-    <value>Cannot compare {0} to {1}.</value>
+  <data name="Argument_SpansMustBeNonEmpty" xml:space="preserve">
+    <value>Input span arguments must not be empty.</value>
   </data>
-  <data name="CannotCompareToWithDifferentDimension" xml:space="preserve">
-    <value>Cannot compare {0} to {1} with different dimension {2}, {3} != {4}.</value>
+  <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
+    <value>Input span arguments must all have the same length.</value>
   </data>
-  <data name="CannotCompareWithDifferentDimension" xml:space="preserve">
-    <value>Cannot compare {0} with different dimension {1}, {2} != {3}.</value>
-  </data>
-  <data name="CannotCompareWithRank" xml:space="preserve">
-    <value>Cannot compare {0} with Rank {1} to {2} with Rank {3}.</value>
-  </data>
-  <data name="CannotComputeDiagonal" xml:space="preserve">
-    <value>Cannot compute diagonal of {0} with Rank less than 2.</value>
-  </data>
-  <data name="CannotComputeDiagonalWithOffset" xml:space="preserve">
-    <value>Cannot compute diagonal with offset {0}.</value>
-  </data>
-  <data name="MustHaveAtLeastOneDimension" xml:space="preserve">
-    <value>Tensor {0} must have at least one dimension.</value>
-  </data>
-  <data name="CannotComputeTriangle" xml:space="preserve">
-    <value>Cannot compute triangle of {0} with Rank less than 2.</value>
-  </data>
-  <data name="CannotReshapeArrayDueToMismatchInLengths" xml:space="preserve">
-    <value>Cannot reshape array due to mismatch in lengths, currently {0} would become {1}.</value>
-  </data>
-  <data name="DimensionsMustBePositiveAndNonZero" xml:space="preserve">
-    <value>Dimensions must be positive and non-zero.</value>
-  </data>
-  <data name="DimensionsMustContainElements" xml:space="preserve">
-    <value>Dimensions must contain elements.</value>
-  </data>
-  <data name="LengthMustMatch" xml:space="preserve">
-    <value>Length of {0} ({1}) must match product of {2} ({3}).</value>
-  </data>
-  <data name="NumberGreaterThenAvailableSpace" xml:space="preserve">
-    <value>The number of elements in the Tensor is greater than the available space from index to the end of the destination array.</value>
-  </data>
-  <data name="OnlySingleDimensionalArraysSupported" xml:space="preserve">
-    <value>Only single dimensional arrays are supported for the requested action.</value>
-  </data>
-  <data name="ValueIsNotOfType" xml:space="preserve">
-    <value>The value "{0}" is not of type "{1}" and cannot be used in this generic collection.</value>
+  <data name="Argument_InputAndDestinationSpanMustNotOverlap" xml:space="preserve">
+    <value>The destination span may only overlap with an input span if the two spans start at the same memory location.</value>
   </data>
 </root>

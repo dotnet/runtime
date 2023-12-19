@@ -138,7 +138,7 @@ bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
             LogError("LoadRealJitLib - No real jit path");
             return false;
         }
-        jitLib = ::LoadLibraryW(jitLibPath);
+        jitLib = ::LoadLibraryExW(jitLibPath, NULL, 0);
         if (jitLib == NULL)
         {
             LogError("LoadRealJitLib - LoadLibrary failed to load '%ws' (0x%08x)", jitLibPath, ::GetLastError());

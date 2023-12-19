@@ -1,4 +1,4 @@
-<Project>
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Needed for PublishTrimmed -->
@@ -6,7 +6,18 @@
     <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
   </PropertyGroup>
 
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <!-- Use live illink bits. It is necessary to both import the package props and override
+       the tasks assembly, because the live package props in the build output do not use
+       the same layout as the NuGet package. -->
+  <!-- This must be done after the usual nuget props imports, to override the implicitly referenced
+       Microsoft.NET.ILLink.Tasks.props from the SDK. -->
+  <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
+
+  <PropertyGroup>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
+  </PropertyGroup>
 
   <PropertyGroup>
     <TargetFramework>{TargetFramework}</TargetFramework>
@@ -83,7 +94,5 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

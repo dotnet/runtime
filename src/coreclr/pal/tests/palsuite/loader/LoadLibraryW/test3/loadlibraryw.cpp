@@ -26,15 +26,15 @@ PALTEST(loader_LoadLibraryW_test3_paltest_loadlibraryw_test3, "loader/LoadLibrar
     }
 
     /* load a module with a NULL module name */
-    ModuleHandle = LoadLibraryW(NULL);
+    ModuleHandle = LoadLibraryExW(NULL);
     if(NULL != ModuleHandle)
     {
         Fail("\nFailed to call loadlibraryw API for a negative test, "
             "call loadibraryw with NULL moudle name, a NULL module "
             "handle is expected, but no NULL module handle is returned, "
-            "error code =%u\n", GetLastError());   
+            "error code =%u\n", GetLastError());
     }
-  
+
     PAL_Terminate();
     return PASS;
 }

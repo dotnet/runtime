@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- By default, build the NetCoreAppCurrent vertical only. -->
     <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
+     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -24,11 +26,6 @@
     <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-ref.proj" />
   </ItemGroup>
-
-  <ImportGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-    <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
-    <Import Project="$(RepositoryEngineeringDir)illink.targets" />
-  </ImportGroup>
 
   <Target Name="GetTrimOOBAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">

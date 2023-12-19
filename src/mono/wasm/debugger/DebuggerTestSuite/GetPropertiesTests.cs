@@ -260,7 +260,6 @@ namespace DebuggerTests
         [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
         [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
         [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => 
             await InspectTypeInheritedMembersInternal(type_name, own_properties, accessors_only, expected_names, all_props, is_async, AutoEvaluate.Unset);
 

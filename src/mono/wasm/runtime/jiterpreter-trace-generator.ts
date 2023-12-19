@@ -8,8 +8,8 @@ import {
     getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned, localHeapViewU8,
 } from "./memory";
 import {
-    WasmOpcode, WasmSimdOpcode,
-    getOpcodeName, OpcodeInfoType,
+    WasmOpcode, WasmSimdOpcode, WasmValtype,
+    getOpcodeName,
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -17,14 +17,17 @@ import {
 } from "./mintops";
 import cwraps from "./cwraps";
 import {
-    MintOpcodePtr, WasmValtype, WasmBuilder,
+    OpcodeInfoType, JiterpMember, BailoutReason,
+    JiterpCounter,
+} from "./jiterpreter-enums";
+import {
+    MintOpcodePtr, WasmBuilder,
     append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
-    try_append_memmove_fast, counters, getOpcodeTableValue,
-    getMemberOffset, JiterpMember, BailoutReason,
-    isZeroPageReserved, CfgBranchType, append_safepoint
+    try_append_memmove_fast, getOpcodeTableValue,
+    getMemberOffset, isZeroPageReserved, CfgBranchType,
+    append_safepoint, modifyCounter, simdFallbackCounters,
 } from "./jiterpreter-support";
-import { compileSimdFeatureDetect } from "./jiterpreter-feature-detect";
 import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
 
@@ -33,7 +36,7 @@ import {
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
-    abortAtJittedLoopBodies, traceNullCheckOptimizations,
+    traceNullCheckOptimizations,
     nullCheckCaching, traceBackBranches,
     maxCallHandlerReturnAddresses,
 
@@ -53,42 +56,7 @@ import {
     simdLoadTable, simdStoreTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
-import { mono_assert } from "./globals";
-
-/*
-struct MonoVTable {
-    MonoClass  *klass; // 0
-    MonoGCDescriptor gc_descr; // 4
-    MonoDomain *domain; // 8
-    gpointer    type; // 12
-    guint8     *interface_bitmap; // 16
-    guint32     max_interface_id; // 20
-    guint8      rank; // 21
-    guint8      initialized; // 22
-    guint8      flags;
-*/
-
-/*
-struct InterpFrame {
-    InterpFrame    *parent; // 0
-    InterpMethod   *imethod; // 4
-    stackval       *retval; // 8
-    stackval       *stack; // 12
-    InterpFrame    *next_free; // 16
-    InterpState state; // 20
-};
-
-struct InterpMethod {
-       MonoMethod *method;
-       InterpMethod *next_jit_code_hash;
-
-       // Sort pointers ahead of integers to minimize padding for alignment.
-
-       unsigned short *code;
-       MonoPIFunc func;
-       MonoExceptionClause *clauses; // num_clauses
-       void **data_items;
-*/
+import { mono_assert, runtimeHelpers } from "./globals";
 
 // indexPlusOne so that ip[1] in the interpreter becomes getArgU16(ip, 1)
 function getArgU16(ip: MintOpcodePtr, indexPlusOne: number) {
@@ -102,11 +70,6 @@ function getArgI16(ip: MintOpcodePtr, indexPlusOne: number) {
 function getArgI32(ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getI32_unaligned(src);
-}
-
-function getArgU32(ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = <any>ip + (2 * indexPlusOne);
-    return getU32_unaligned(src);
 }
 
 function getArgF32(ip: MintOpcodePtr, indexPlusOne: number) {
@@ -173,13 +136,11 @@ export function generateWasmBody(
 ): number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, isConditionallyExecuted = false,
-        firstOpcodeInBlock = true, containsSimd = false,
+        containsSimd = false,
         pruneOpcodes = false, hasEmittedUnreachable = false;
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
-    const traceIp = ip;
-
     eraseInferredState();
 
     // Skip over the enter opcode
@@ -197,7 +158,7 @@ export function generateWasmBody(
         builder.cfg.ip = ip;
 
         if (ip >= endOfBody) {
-            record_abort(traceIp, ip, traceName, "end-of-body");
+            record_abort(builder.traceIndex, ip, traceName, "end-of-body");
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} exited at end of body @${(<any>ip).toString(16)}`);
             break;
@@ -210,7 +171,7 @@ export function generateWasmBody(
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
-            record_abort(traceIp, ip, traceName, "trace-too-big");
+            record_abort(builder.traceIndex, ip, traceName, "trace-too-big");
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} exited because of size limit at @${(<any>ip).toString(16)} (spaceLeft=${spaceLeft}b)`);
             break;
@@ -281,7 +242,6 @@ export function generateWasmBody(
             //  branching to the top of the loop we would blow away eip
             append_branch_target_block(builder, ip, isBackBranchTarget);
             isConditionallyExecuted = true;
-            firstOpcodeInBlock = true;
             eraseInferredState();
             // Monitoring wants an opcode count that is a measurement of how many opcodes
             //  we definitely executed, so we want to ignore any opcodes that might
@@ -488,39 +448,6 @@ export function generateWasmBody(
 
             case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
                 opcodeValue = 0;
-                // If we hit an enter opcode and we're not currently in a branch block
-                //  or the enter opcode is the first opcode in a branch block, this likely
-                //  indicates that we've reached a loop body that was already jitted before
-                //  we were, and we should stop our trace here.
-                // Most loops have a prologue before them and having the loop body inside
-                //  the prologue trace is not going to especially boost throughput, while it
-                //  will make the prologue trace bigger (and thus slower to compile.)
-                // We don't want to abort before our trace is long enough though, since that
-                //  will result in decent trace candidates becoming nops which adds overhead
-                //  and leaves us in the interp.
-                if (
-                    abortAtJittedLoopBodies &&
-                    (result >= builder.options.minimumTraceValue) &&
-                    // This is an unproductive heuristic if backward branches are on
-                    !builder.options.noExitBackwardBranches
-                ) {
-                    if (!isConditionallyExecuted || firstOpcodeInBlock) {
-                        // Use mono_jiterp_trace_transfer to call the target trace recursively
-                        // Ideally we would import the trace function to do a direct call instead
-                        //  of an indirect one, but right now the import section is generated
-                        //  before we generate the function body, so it would be non-trivial to
-                        //  do this. It's still faster than returning to the interpreter main loop
-                        const targetTrace = getArgU32(ip, 1);
-                        builder.ip_const(ip);
-                        builder.i32_const(targetTrace);
-                        builder.local("frame");
-                        builder.local("pLocals");
-                        builder.local("cinfo");
-                        builder.callImport("transfer");
-                        builder.appendU8(WasmOpcode.return_);
-                        ip = abort;
-                    }
-                }
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -624,7 +551,7 @@ export function generateWasmBody(
                     // load string ptr and stash it
                     // if the string ptr is null, the length check will fail and we will bail out,
                     //  so the null check is not necessary
-                    counters.nullChecksFused++;
+                    modifyCounter(JiterpCounter.NullChecksFused, 1);
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                     ptrLocal = "src_ptr";
                     builder.local(ptrLocal, WasmOpcode.tee_local);
@@ -865,7 +792,7 @@ export function generateWasmBody(
                     bailoutOnFailure = (opcode === MintOpcode.MINT_CASTCLASS_INTERFACE),
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
-                    record_abort(traceIp, ip, traceName, "null-klass");
+                    record_abort(builder.traceIndex, ip, traceName, "null-klass");
                     ip = abort;
                     continue;
                 }
@@ -876,7 +803,7 @@ export function generateWasmBody(
                     // Null check fusion is possible, so (obj->vtable) will be 0 for !obj
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                     builder.local("dest_ptr", WasmOpcode.tee_local);
-                    counters.nullChecksFused++;
+                    modifyCounter(JiterpCounter.NullChecksFused, 1);
                 } else {
                     builder.block(); // depth 0 -> 1 (null check block)
                     // src
@@ -950,7 +877,7 @@ export function generateWasmBody(
                         (opcode === MintOpcode.MINT_CASTCLASS_COMMON),
                     destOffset = getArgU16(ip, 1);
                 if (!klass) {
-                    record_abort(traceIp, ip, traceName, "null-klass");
+                    record_abort(builder.traceIndex, ip, traceName, "null-klass");
                     ip = abort;
                     continue;
                 }
@@ -961,7 +888,7 @@ export function generateWasmBody(
                     // Null check fusion is possible, so (obj->vtable)->klass will be 0 for !obj
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                     builder.local("dest_ptr", WasmOpcode.tee_local);
-                    counters.nullChecksFused++;
+                    modifyCounter(JiterpCounter.NullChecksFused, 1);
                 } else {
                     builder.block(); // depth 0 -> 1 (null check block)
                     // src
@@ -1084,7 +1011,7 @@ export function generateWasmBody(
                     elementClass = getU32_unaligned(klass + elementClassOffset);
 
                 if (!klass || !elementClass) {
-                    record_abort(traceIp, ip, traceName, "null-klass");
+                    record_abort(builder.traceIndex, ip, traceName, "null-klass");
                     ip = abort;
                     continue;
                 }
@@ -1093,7 +1020,7 @@ export function generateWasmBody(
                     // Null check fusion is possible, so (obj->vtable)->klass will be 0 for !obj
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                     builder.local("dest_ptr", WasmOpcode.tee_local);
-                    counters.nullChecksFused++;
+                    modifyCounter(JiterpCounter.NullChecksFused, 1);
                 } else {
                     append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                     builder.local("dest_ptr", WasmOpcode.tee_local);
@@ -1673,7 +1600,7 @@ export function generateWasmBody(
         } else {
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} aborted for opcode ${opname} @${(<any>_ip).toString(16)}`);
-            record_abort(traceIp, _ip, traceName, opcode);
+            record_abort(builder.traceIndex, _ip, traceName, opcode);
         }
     }
 
@@ -1865,7 +1792,7 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
         !isAddressTaken(builder, localOffset);
 
     if (optimize) {
-        counters.nullChecksEliminated++;
+        modifyCounter(JiterpCounter.NullChecksEliminated, 1);
         if (nullCheckCaching && (cknullOffset === localOffset)) {
             if (traceNullCheckOptimizations)
                 mono_log_info(`(0x${(<any>ip).toString(16)}) cknull_ptr == locals[${localOffset}], not null since 0x${notNullSince.get(localOffset)!.toString(16)}`);
@@ -1883,7 +1810,7 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
         if (nullCheckValidation) {
             builder.local("cknull_ptr");
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
-            builder.i32_const(builder.base);
+            builder.i32_const(builder.traceIndex);
             builder.i32_const(ip);
             builder.callImport("notnull");
         }
@@ -2167,13 +2094,13 @@ function emit_fieldop(
                     mono_log_info(`(0x${(<any>ip).toString(16)}) locals[${objectOffset}] not null since 0x${notNullSince.get(objectOffset)!.toString(16)}`);
 
                 builder.appendU8(WasmOpcode.drop);
-                counters.nullChecksEliminated++;
+                modifyCounter(JiterpCounter.NullChecksEliminated, 1);
 
                 if (nullCheckValidation) {
                     // cknull_ptr was not used here so all we can do is verify that the target object is not null
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
-                    builder.i32_const(builder.base);
+                    builder.i32_const(builder.traceIndex);
                     builder.i32_const(ip);
                     builder.callImport("notnull");
                 }
@@ -2698,7 +2625,7 @@ function emit_branch(
                     if (isCallHandler)
                         append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
-                    counters.backBranchesEmitted++;
+                    modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
                     return true;
                 } else {
                     if (destination < builder.cfg.entryIp) {
@@ -2712,7 +2639,7 @@ function emit_branch(
                     cwraps.mono_jiterp_boost_back_branch_target(destination);
                     // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, BailoutReason.BackwardBranch);
-                    counters.backBranchesNotEmitted++;
+                    modifyCounter(JiterpCounter.BackBranchesNotEmitted, 1);
                     return true;
                 }
             } else {
@@ -2783,7 +2710,7 @@ function emit_branch(
             if (traceBackBranches > 1)
                 mono_log_info(`performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.cfg.branch(destination, true, isSafepoint ? CfgBranchType.SafepointConditional : CfgBranchType.Conditional);
-            counters.backBranchesEmitted++;
+            modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
         } else {
             if (destination < builder.cfg.entryIp) {
                 if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
@@ -2797,7 +2724,7 @@ function emit_branch(
             builder.block(WasmValtype.void, WasmOpcode.if_);
             append_bailout(builder, destination, BailoutReason.BackwardBranch);
             builder.endBlock();
-            counters.backBranchesNotEmitted++;
+            modifyCounter(JiterpCounter.BackBranchesNotEmitted, 1);
         }
     } else {
         // Branching is enabled, so set eip and exit the current branch block
@@ -3134,7 +3061,7 @@ function append_getelema1(
     if (builder.options.zeroPageOptimization && isZeroPageReserved()) {
         // load array ptr and stash it
         // if the array ptr is null, the length check will fail and we will bail out
-        counters.nullChecksFused++;
+        modifyCounter(JiterpCounter.NullChecksFused, 1);
         append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
         ptrLocal = "src_ptr";
         builder.local(ptrLocal, WasmOpcode.tee_local);
@@ -3340,15 +3267,9 @@ function getIsWasmSimdSupported(): boolean {
     if (wasmSimdSupported !== undefined)
         return wasmSimdSupported;
 
-    // Probe whether the current environment can handle wasm v128 opcodes.
-    try {
-        // Load and compile a test module that uses i32x4.splat. See wasm-simd-feature-detect.wat/wasm
-        const module = compileSimdFeatureDetect();
-        wasmSimdSupported = !!module;
-    } catch (exc) {
-        mono_log_info("Disabling WASM SIMD support due to JIT failure", exc);
-        wasmSimdSupported = false;
-    }
+    wasmSimdSupported = runtimeHelpers.featureWasmSimd === true;
+    if (!wasmSimdSupported)
+        mono_log_info("Disabling Jiterpreter SIMD");
 
     return wasmSimdSupported;
 }
@@ -3427,7 +3348,7 @@ function emit_simd(
             return true;
         }
         case MintOpcode.MINT_SIMD_INTRINS_P_P: {
-            counters.simdFallback[opname] = (counters.simdFallback[opname] || 0) + 1;
+            simdFallbackCounters[opname] = (simdFallbackCounters[opname] || 0) + 1;
             // res
             append_ldloca(builder, getArgU16(ip, 1), sizeOfV128);
             // src
@@ -3437,7 +3358,7 @@ function emit_simd(
             return true;
         }
         case MintOpcode.MINT_SIMD_INTRINS_P_PP: {
-            counters.simdFallback[opname] = (counters.simdFallback[opname] || 0) + 1;
+            simdFallbackCounters[opname] = (simdFallbackCounters[opname] || 0) + 1;
             // res
             append_ldloca(builder, getArgU16(ip, 1), sizeOfV128);
             // src
@@ -3448,7 +3369,7 @@ function emit_simd(
             return true;
         }
         case MintOpcode.MINT_SIMD_INTRINS_P_PPP: {
-            counters.simdFallback[opname] = (counters.simdFallback[opname] || 0) + 1;
+            simdFallbackCounters[opname] = (simdFallbackCounters[opname] || 0) + 1;
             // res
             append_ldloca(builder, getArgU16(ip, 1), sizeOfV128);
             // src

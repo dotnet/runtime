@@ -32,14 +32,12 @@ public class Runtime_87597
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
             System.Threading.Thread.Sleep(16);
             TestL1(new GenericType<string>());
         }
-
-        return 100;
     }
 }

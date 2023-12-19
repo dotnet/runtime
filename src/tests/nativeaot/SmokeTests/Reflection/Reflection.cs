@@ -40,7 +40,9 @@ internal static class ReflectionTest
         TestByRefLikeTypeMethod.Run();
 #endif
         TestILScanner.Run();
+        TestTypeGetType.Run();
         TestUnreferencedEnum.Run();
+        TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
@@ -67,6 +69,7 @@ internal static class ReflectionTest
         TestByRefTypeLoad.Run();
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
+        TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
 
         //
         // Mostly functionality tests
@@ -1034,6 +1037,34 @@ internal static class ReflectionTest
         }
     }
 
+    class TestTypesInMethodSignatures
+    {
+        interface IUnreferenced { }
+
+        class UnreferencedBaseType : IUnreferenced { }
+        class UnreferencedMidType : UnreferencedBaseType { }
+        class ReferencedDerivedType : UnreferencedMidType { }
+
+        static void DoSomething(ReferencedDerivedType d) { }
+
+        public static void Run()
+        {
+            var mi = typeof(TestTypesInMethodSignatures).GetMethod(nameof(DoSomething), BindingFlags.Static | BindingFlags.NonPublic);
+            Type t = mi.GetParameters()[0].ParameterType;
+            int count = 0;
+            while (t != typeof(object))
+            {
+                t = t.BaseType;
+                count++;
+            }
+
+            Assert.Equal(count, 3);
+
+            // This one could in theory fail if we start trimming interface lists
+            Assert.Equal(1, mi.GetParameters()[0].ParameterType.GetInterfaces().Length);
+        }
+    }
+
     class TestAttributeInheritance
     {
         class BaseAttribute : Attribute
@@ -1467,6 +1498,21 @@ internal static class ReflectionTest
             TestRefReturnOfPointer();
             TestNullRefReturnOfPointer();
             TestByRefLikeRefReturn();
+        }
+    }
+
+    class TestTypeGetType
+    {
+        public static void Run()
+        {
+            try
+            {
+                Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+            }
+            catch { }
+
+            if (Type.GetType("MyClassOnlyReferencedFromTypeGetType") == null)
+                throw new Exception();
         }
     }
 
@@ -2457,6 +2503,35 @@ internal static class ReflectionTest
         }
     }
 
+    class TestTypeHandlesVisibleFromIDynamicInterfaceCastable
+    {
+        class MyAttribute : Attribute { }
+
+        [My]
+        interface IUnusedInterface { }
+
+        class Foo : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+            {
+                Type t = Type.GetTypeFromHandle(interfaceType);
+                if (t.GetCustomAttribute<MyAttribute>() == null)
+                    throw new Exception();
+
+                return true;
+            }
+        }
+
+        public static void Run()
+        {
+            object myObject = new Foo();
+            if (myObject is not IUnusedInterface)
+                throw new Exception();
+        }
+    }
+
     class TestEntryPoint
     {
         public static void Run()
@@ -2581,3 +2656,4 @@ class MyUnusedClass
     public static void TotallyUnreferencedMethod() { }
     public static void GenericMethod<T>() { }
 }
+class MyClassOnlyReferencedFromTypeGetType { }

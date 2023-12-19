@@ -159,5 +159,112 @@ private:
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExInfo pStartingEHTracker);
 #endif // TARGET_X86
 
+#else // !FEATURE_EH_FUNCLETS
+
+enum RhEHClauseKind
+{
+    RH_EH_CLAUSE_TYPED = 0,
+    RH_EH_CLAUSE_FAULT = 1,
+    RH_EH_CLAUSE_FILTER = 2,
+    RH_EH_CLAUSE_UNUSED = 3,
+};
+
+struct RhEHClause
+{
+    RhEHClauseKind _clauseKind;
+    unsigned _tryStartOffset;
+    unsigned _tryEndOffset;
+    BYTE *_filterAddress;
+    BYTE *_handlerAddress;
+    void *_pTargetType;
+    BOOL _isSameTry;
+};
+
+enum class ExKind : uint8_t
+{
+    None = 0,
+    Throw = 1,
+    HardwareFault = 2,
+    KindMask = 3,
+
+    RethrowFlag = 4,
+
+    SupersededFlag = 8,
+
+    InstructionFaultFlag = 0x10
+};
+
+struct ExInfo
+{
+    ExInfo(Thread *pThread, CONTEXT *pCtx, REGDISPLAY *pRD, ExKind exceptionKind);
+
+    void MakeCallbacksRelatedToHandler(
+        bool fBeforeCallingHandler,
+        Thread*                pThread,
+        MethodDesc*            pMD,
+        EE_ILEXCEPTION_CLAUSE* pEHClause,
+        DWORD_PTR              dwHandlerStartPC,
+        StackFrame             sf);
+
+    // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
+    PTR_ExInfo m_pPrevExInfo;
+    // Context used by the stack frame iterator
+    CONTEXT* m_pExContext;
+    // actual exception object reference
+    OBJECTREF m_exception;
+    // Kind of the exception (software, hardware, rethrown)
+    ExKind m_kind;
+    // Exception handling pass (1 or 2)
+    uint8_t m_passNumber;
+    // Index of the current exception handling clause
+    uint32_t m_idxCurClause;
+    // Stack frame iterator used to walk stack frames while handling the exception
+    StackFrameIterator m_frameIter;
+    volatile size_t m_notifyDebuggerSP;
+    REGDISPLAY *m_pRD;
+    // Stack trace of the current exception
+    StackTraceInfo m_stackTraceInfo;
+    // Initial explicit frame
+    Frame* m_pFrame;
+
+    // Low and high bounds of the stack unwound by the exception. They are updated during 2nd pass only.
+    StackFrame          m_sfLowBound;
+    StackFrame          m_sfHighBound;
+    // Stack frame of the caller of the currently running exception handling clause (catch, finally, filter)
+    CallerStackFrame    m_csfEHClause;
+    // Stack frame of the caller of the code that encloses the currently running exception handling clause
+    CallerStackFrame    m_csfEnclosingClause;
+    // Stack frame of the caller of the catch handler
+    StackFrame          m_sfCallerOfActualHandlerFrame;
+    // The exception handling clause for the catch handler that was identified during pass 1
+    EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
+
+#ifdef TARGET_UNIX
+    // Exception propagation callback and context for ObjectiveC exception propagation support
+    void(*m_propagateExceptionCallback)(void* context);
+    void *m_propagateExceptionContext;
+#endif // TARGET_UNIX
+
+    // thrown exception object handle
+    OBJECTHANDLE    m_hThrowable;
+
+    // The following fields are for profiler / debugger use only
+    EE_ILEXCEPTION_CLAUSE m_CurrentClause;
+    DebuggerExState m_DebuggerExState;
+    EHClauseInfo   m_EHClauseInfo;
+    ExceptionFlags m_ExceptionFlags;
+
+#ifndef TARGET_UNIX
+    EHWatsonBucketTracker m_WatsonBucketTracker;
+
+    inline PTR_EHWatsonBucketTracker GetWatsonBucketTracker()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
+    }
+#endif // !TARGET_UNIX
+
+};
+
 #endif // !FEATURE_EH_FUNCLETS
 #endif // __ExInfo_h__

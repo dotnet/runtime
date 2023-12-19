@@ -199,6 +199,7 @@
       Microsoft.Extensions.DependencyInjection;
       Microsoft.Extensions.DependencyInjection.Abstractions;
       Microsoft.Extensions.Diagnostics;
+      Microsoft.Extensions.Diagnostics.Abstractions;
       Microsoft.Extensions.FileProviders.Abstractions;
       Microsoft.Extensions.FileProviders.Composite;
       Microsoft.Extensions.FileProviders.Physical;

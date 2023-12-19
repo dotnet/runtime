@@ -147,8 +147,8 @@
   <data name="NullToManagedCallback" xml:space="preserve">
     <value>ToManagedCallback is null.</value>
   </data>
-  <data name="NullTaskCallback" xml:space="preserve">
-    <value>TaskCallback is null.</value>
+  <data name="NullPromiseHolder" xml:space="preserve">
+    <value>PromiseHolder is null.</value>
   </data>
   <data name="EmptyProfileData" xml:space="preserve">
     <value>Empty profile data.</value>
@@ -162,8 +162,8 @@
   <data name="FailedToMarshalException" xml:space="preserve">
     <value>Failed to marshal exception.</value>
   </data>
-  <data name="FailedToMarshalTaskCallback" xml:space="preserve">
-    <value>Failed to marshal Task callback.</value>
+  <data name="FailedToMarshalPromiseHolder" xml:space="preserve">
+    <value>Failed to marshal Promise callback.</value>
   </data>
   <data name="InvalidInFlightCounter" xml:space="preserve">
     <value>Invalid InFlightCounter for JSObject {0}, expected: {1}, actual: {2}.</value>

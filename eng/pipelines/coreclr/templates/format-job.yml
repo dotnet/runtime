@@ -35,13 +35,21 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'
-
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
 
+    - ${{ if eq(parameters.osGroup, 'linux') }}:
+      - name: LinuxCrossArg
+        value: '--cross'
+    - ${{ if ne(parameters.osGroup, 'linux') }}:
+      - name: LinuxCrossArg
+        value: ''
+
     condition: ${{ parameters.condition }}
+
     steps:
+
     - task: UseDotNet@2
       # This should match what jitutils YML uses to build.
       displayName: 'Install .NET SDK'
@@ -50,12 +58,14 @@ jobs:
         version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -r $(Build.SourcesDirectory) -o $(osGroup) -a $(archType) $(LinuxCrossArg)
       displayName: Run jitformat.py
+
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/src/coreclr/format.patch'
+        PathtoPublish: '$(Build.SourcesDirectory)/format.patch'
         ArtifactName: format.$(osGroup).$(archType).patch
       continueOnError: true
       condition: failed()

@@ -576,95 +576,109 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingNegative() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
-                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
+                var (_, res) = await EvaluateOnCallFrame(id, "cc.idx0[2]", expect_ok: false );
+                Assert.Equal("Unable to evaluate element access 'cc.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(576, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
-                (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
-                Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["result"]?["description"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "c[1]", expect_ok: false );
+                Assert.Equal( "Unable to evaluate element access 'c[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.ClassWithIndexers'", res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
         public async Task EvaluateIndexingsByConstant() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f.numList[0]", TNumber(1)),
-                   ("f.textList[1]", TString("2")),
-                   ("f.numArray[1]", TNumber(2)),
-                   ("f.textArray[0]", TString("1")));
+                   ("cc.numList[0]", TNumber(1)),
+                   ("cc.textList[1]", TString("2")),
+                   ("cc.numArray[1]", TNumber(2)),
+                   ("cc.textArray[0]", TString("1")));
            });
 
         [Fact]
         public async Task EvaluateIndexingByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f.numList[i]", TNumber(1)),
-                   ("f.textList[j]", TString("2")),
-                   ("f.numArray[j]", TNumber(2)),
-                   ("f.textArray[i]", TString("1")));
+                   ("cc.numList[i]", TNumber(1)),
+                   ("cc.textList[j]", TString("2")),
+                   ("cc.numArray[j]", TNumber(2)),
+                   ("cc.textArray[i]", TString("1")));
            });
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateObjectIndexingByNonIntConst() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("f[\"longstring\"]", TBool(true)),
-                    ("f[\"-\"]", TBool(false)),
-                    ("f[\'-\']", TString("res_-")),
-                    ("f[true]", TString("True")),
-                    //("f[1.23]", TNumber(1)) // Not supported yet - float/double
-                    ("f.indexedByStr[\"1\"]", TBool(true)),
-                    ("f.indexedByStr[\"111\"]", TBool(false)),
-                    ("f.indexedByStr[\"true\"]", TBool(true)),
-                    ("f.indexedByChar[\'i\']", TString("I")),
-                    ("f.indexedByChar[\'5\']", TString("5")),
-                    ("f.indexedByBool[true]", TString("TRUE")),
-                    ("f.indexedByBool[false]", TString("FALSE"))
+                    ("c[\"longstring\"]", TBool(true)), // class
+                    ("c[\"-\"]", TBool(false)),
+                    ("c[\'-\']", TString("res_-")),
+                    ("c[true]", TString("True")),
+                    ("c[1.23]", TNumber(1)),
+                    ("s[\"longstring\"]", TBool(true)), // struct
+                    ("s[\"-\"]", TBool(false)),
+                    ("s[\'-\']", TString("res_-")),
+                    ("s[true]", TString("True")),
+                    ("s[1.23]", TNumber(1)),
+                    ("cc.indexedByStr[\"1\"]", TBool(true)),
+                    ("cc.indexedByStr[\"111\"]", TBool(false)),
+                    ("cc.indexedByStr[\"true\"]", TBool(true)),
+                    ("cc.indexedByChar[\'i\']", TString("I")),
+                    ("cc.indexedByChar[\'5\']", TString("5")),
+                    ("cc.indexedByBool[true]", TString("TRUE")),
+                    ("cc.indexedByBool[false]", TString("FALSE"))
                 );
-                var (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[\"invalid\"]", expect_ok: false);
-                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[\"invalid\"]", StringComparison.Ordinal)); 
-                (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[null]", expect_ok: false);
-                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[null]", StringComparison.Ordinal)); 
+                var (_, res) = await EvaluateOnCallFrame(id,"cc.indexedByStr[\"invalid\"]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(cc.indexedByStr[\"invalid\"]", StringComparison.Ordinal)); 
+                (_, res) = await EvaluateOnCallFrame(id,"cc.indexedByStr[null]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(cc.indexedByStr[null]", StringComparison.Ordinal)); 
             });
 
         [Fact]
         public async Task EvaluateObjectByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 15, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("f[longString]", TBool(true)),
-                    ("f[aBool]", TString("True")),
-                    ("f[aChar]", TString("res_9")),
-                    ("f[shortString]", TBool(false))
-                    // ("f[aFloat]", TNumber(1)),
-                    // ("f[aDouble]", TNumber(2)),
-
-                    // FixMe: https://github.com/dotnet/runtime/issues/76014
-                    // ("f[aDecimal]", TNumber(3)) // object
+                    ("c[longString]", TBool(true)),
+                    ("c[aBool]", TString("True")),
+                    ("c[aChar]", TString("res_9")),
+                    ("c[shortString]", TBool(false)),
+                    ("c[aFloat]", TNumber(1)),
+                    ("c[aDouble]", TNumber(2)),
+                    ("c[aDecimal]", TNumber(3)),
+                    ("c[arr]", TChar('t')),
+                    ("c[objIdx]", TNumber(123)),
+                    ("s[longString]", TBool(true)),
+                    ("s[aBool]", TString("True")),
+                    ("s[aChar]", TString("res_9")),
+                    ("s[shortString]", TBool(false)),
+                    ("s[aFloat]", TNumber(1)),
+                    ("s[aDouble]", TNumber(2)),
+                    ("s[aDecimal]", TNumber(3)),
+                    ("s[arr]", TChar('t')),
+                    ("s[objIdx]", TNumber(123))
                 );
             });
 
@@ -676,24 +690,26 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("f[f.textArray[0]]", TBool(false)), // f["1"]
-                    ("f[f.textArray[j]]", TBool(false)) // f["2"]
+                    ("c[cc.textArray[0]]", TBool(false)), // c["1"]
+                    ("c[cc.textArray[j]]", TBool(false)), // c["2"]
+                    ("s[cc.textArray[0]]", TBool(false)), // s["1"]
+                    ("s[cc.textArray[j]]", TBool(false)) // s["2"]
                 );
             });
 
         // ToDo: https://github.com/dotnet/runtime/issues/76015
         [Fact]
         public async Task EvaluateIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("f.numList[i + 1]", TNumber(2)),
-                    ("f.textList[(2 * j) - 1]", TString("2")),
-                    ("f.textList[j - 1]", TString("1")),
-                    ("f.numArray[f.numList[j - 1]]", TNumber(2))
+                    ("cc.numList[i + 1]", TNumber(2)),
+                    ("cc.textList[(2 * j) - 1]", TString("2")),
+                    ("cc.textList[j - 1]", TString("1")),
+                    ("cc.numArray[cc.numList[j - 1]]", TNumber(2))
                 );
             });
 
@@ -714,63 +730,63 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingByExpressionNegative() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 // indexing with expression of a wrong type
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false );
-                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
+                var (_, res) = await EvaluateOnCallFrame(id, "cc.numList[\"a\" + 1]", expect_ok: false );
+                Assert.Equal("Unable to evaluate element access 'cc.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(576, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingByExpressionContainingUnknownIdentifier() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 // indexing with expression of a wrong type
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + x]", expect_ok: false);
+                var (_, res) = await EvaluateOnCallFrame(id, "cc.numList[\"a\" + x]", expect_ok: false);
                 Assert.Equal("The name x does not exist in the current context", res.Error["result"]?["description"]?.Value<string>());
             });
 
         [Fact]
         public async Task EvaluateIndexingByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f.idx0", TNumber(0)),
-                   ("f.idx1", TNumber(1)),
-                   ("f.numList[f.idx0]", TNumber(1)),
-                   ("f.textList[f.idx1]", TString("2")),
-                   ("f.numArray[f.idx1]", TNumber(2)),
-                   ("f.textArray[f.idx0]", TString("1")));
+                   ("cc.idx0", TNumber(0)),
+                   ("cc.idx1", TNumber(1)),
+                   ("cc.numList[cc.idx0]", TNumber(1)),
+                   ("cc.textList[cc.idx1]", TString("2")),
+                   ("cc.numArray[cc.idx1]", TNumber(2)),
+                   ("cc.textArray[cc.idx0]", TString("1")));
            });
 
         [Fact]
         public async Task EvaluateIndexingNested() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f.idx0", TNumber(0)),
-                   ("f.numList[f.numList[f.idx0]]", TNumber(2)),
-                   ("f.textList[f.numList[f.idx0]]", TString("2")),
-                   ("f.numArray[f.numArray[f.idx0]]", TNumber(2)),
-                   ("f.textArray[f.numArray[f.idx0]]", TString("2")));
+                   ("cc.idx0", TNumber(0)),
+                   ("cc.numList[cc.numList[cc.idx0]]", TNumber(2)),
+                   ("cc.textList[cc.numList[cc.idx0]]", TString("2")),
+                   ("cc.numArray[cc.numArray[cc.idx0]]", TNumber(2)),
+                   ("cc.textArray[cc.numArray[cc.idx0]]", TString("2")));
 
            });
 
@@ -841,7 +857,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingJagged() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 6, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -849,19 +865,21 @@ namespace DebuggerTests
 
                await EvaluateOnCallFrameAndCheck(id,
                    ("j", TNumber(1)),
-                   ("f.idx1", TNumber(1)),
-                   ("f.numArrayOfArrays[1][1]", TNumber(2)),
-                   ("f.numArrayOfArrays[j][j]", TNumber(2)),
-                   ("f.numArrayOfArrays[f.idx1][f.idx1]", TNumber(2)),
-                   ("f.numListOfLists[1][1]", TNumber(2)),
-                   ("f.numListOfLists[j][j]", TNumber(2)),
-                   ("f.numListOfLists[f.idx1][f.idx1]", TNumber(2)),
-                   ("f.textArrayOfArrays[1][1]", TString("2")),
-                   ("f.textArrayOfArrays[j][j]", TString("2")),
-                   ("f.textArrayOfArrays[f.idx1][f.idx1]", TString("2")),
-                   ("f.textListOfLists[1][1]", TString("2")),
-                   ("f.textListOfLists[j][j]", TString("2")),
-                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
+                   ("cc.idx1", TNumber(1)),
+                   ("cc.numArrayOfArrays[1][1]", TNumber(2)),
+                   ("cc.numArrayOfArrays[j][j]", TNumber(2)),
+                   ("cc.numArrayOfArrays[cc.idx1][cc.idx1]", TNumber(2)),
+                   ("cc.numListOfLists[1][1]", TNumber(2)),
+                   ("cc.numListOfLists[j][j]", TNumber(2)),
+                   ("cc.numListOfLists[cc.idx1][cc.idx1]", TNumber(2)),
+                   ("cc.textArrayOfArrays[1][1]", TString("2")),
+                   ("cc.textArrayOfArrays[j][j]", TString("2")),
+                   ("cc.textArrayOfArrays[cc.idx1][cc.idx1]", TString("2")),
+                   ("cc.textListOfLists[1][1]", TString("2")),
+                   ("cc.textListOfLists[j][j]", TString("2")),
+                   ("cc.textListOfLists[cc.idx1][cc.idx1]", TString("2")),
+                   ("cc.numArrayOfArrays[cc.numArray[cc.numList[1]]][cc.numList[0]]", TNumber(2))
+                   );
 
            });
 

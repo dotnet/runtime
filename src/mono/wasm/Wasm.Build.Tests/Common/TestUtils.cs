@@ -74,12 +74,20 @@ public static class TestUtils
             Assert.DoesNotContain(substring, full);
     }
 
+    public static void AssertMatches(string regex, string full, bool contains)
+    {
+        if (contains)
+            Assert.Matches(regex, full);
+        else
+            Assert.DoesNotMatch(regex, full);
+    }
+
     public static void AssertEqual(object expected, object actual, string label)
     {
         if (expected?.Equals(actual) == true)
             return;
 
-        throw new AssertActualExpectedException(
+        throw EqualException.ForMismatchedValues(
             expected, actual,
             $"[{label}]\n");
     }

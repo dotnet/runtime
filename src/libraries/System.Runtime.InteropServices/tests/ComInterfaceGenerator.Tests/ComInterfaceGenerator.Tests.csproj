@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EnabledGenerators Include="ComInterfaceGenerator" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
   </ItemGroup>

@@ -807,6 +807,7 @@ struct LC_ArrayDeref
 #endif
 };
 
+struct NaturalLoopIterInfo;
 /**
  *
  *  The "context" represents data that is used for making loop-cloning decisions.
@@ -841,15 +842,27 @@ struct LoopCloneContext
     // The array of block levels of conditions for each loop. (loop x level x conditions)
     jitstd::vector<JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>*> blockConditions;
 
+    jitstd::vector<NaturalLoopIterInfo*> iterInfo;
+
     LoopCloneContext(unsigned loopCount, CompAllocator alloc)
-        : alloc(alloc), optInfo(alloc), conditions(alloc), arrayDerefs(alloc), objDerefs(alloc), blockConditions(alloc)
+        : alloc(alloc)
+        , optInfo(alloc)
+        , conditions(alloc)
+        , arrayDerefs(alloc)
+        , objDerefs(alloc)
+        , blockConditions(alloc)
+        , iterInfo(alloc)
     {
         optInfo.resize(loopCount, nullptr);
         conditions.resize(loopCount, nullptr);
         arrayDerefs.resize(loopCount, nullptr);
         objDerefs.resize(loopCount, nullptr);
         blockConditions.resize(loopCount, nullptr);
+        iterInfo.resize(loopCount, nullptr);
     }
+
+    NaturalLoopIterInfo* GetLoopIterInfo(unsigned loopNum);
+    void SetLoopIterInfo(unsigned loopNum, NaturalLoopIterInfo* info);
 
     // Evaluate conditions into a JTRUE stmt and put it in a new block after `insertAfter`.
     BasicBlock* CondToStmtInBlock(Compiler*                          comp,

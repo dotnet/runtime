@@ -1,21 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.IO;
-using System.Xml.Serialization;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data.Common
 {
     internal sealed class ObjectStorage : DataStorage
     {
-        private enum Families { DATETIME, NUMBER, STRING, BOOLEAN, ARRAY };
+        private enum Families
+        {
+            DATETIME,
+            NUMBER,
+            STRING,
+            BOOLEAN,
+            ARRAY
+        };
 
         private object?[] _values = default!; // Late-initialized
         private readonly bool _implementsIXmlSerializable;

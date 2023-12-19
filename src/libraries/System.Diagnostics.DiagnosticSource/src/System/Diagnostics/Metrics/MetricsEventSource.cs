@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -114,7 +115,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
-        [Event(4, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -134,7 +135,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue);
         }
 
-        [Event(6, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -144,29 +145,51 @@ namespace System.Diagnostics.Metrics
             WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum);
         }
 
-        // Sent when we begin to monitor the value of a intrument, either because new session filter arguments changed subscriptions
+        // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
-        [Event(7, Keywords = Keywords.TimeSeriesValues)]
+        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void BeginInstrumentReporting(string sessionId, string meterName, string? meterVersion, string instrumentName, string instrumentType, string? unit, string? description)
+        public void BeginInstrumentReporting(
+                        string sessionId,
+                        string meterName,
+                        string? meterVersion,
+                        string instrumentName,
+                        string instrumentType,
+                        string? unit,
+                        string? description,
+                        string instrumentTags,
+                        string meterTags,
+                        string meterScopeHash)
         {
-            WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
+            WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
+                    instrumentTags, meterTags, meterScopeHash);
         }
 
-        // Sent when we stop monitoring the value of a intrument, either because new session filter arguments changed subscriptions
+        // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
-        [Event(8, Keywords = Keywords.TimeSeriesValues)]
+        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void EndInstrumentReporting(string sessionId, string meterName, string? meterVersion, string instrumentName, string instrumentType, string? unit, string? description)
+        public void EndInstrumentReporting(
+                        string sessionId,
+                        string meterName,
+                        string? meterVersion,
+                        string instrumentName,
+                        string instrumentType,
+                        string? unit,
+                        string? description,
+                        string instrumentTags,
+                        string meterTags,
+                        string meterScopeHash)
         {
-            WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
+            WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
+                    instrumentTags, meterTags, meterScopeHash);
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
@@ -181,14 +204,25 @@ namespace System.Diagnostics.Metrics
             WriteEvent(10, sessionId);
         }
 
-        [Event(11, Keywords = Keywords.InstrumentPublishing)]
+        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void InstrumentPublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string instrumentType, string? unit, string? description)
+        public void InstrumentPublished(
+                        string sessionId,
+                        string meterName,
+                        string? meterVersion,
+                        string instrumentName,
+                        string instrumentType,
+                        string? unit,
+                        string? description,
+                        string instrumentTags,
+                        string meterTags,
+                        string meterScopeHash)
         {
-            WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
+            WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
+                    instrumentTags, meterTags, meterScopeHash);
         }
 
         [Event(12, Keywords = Keywords.TimeSeriesValues)]
@@ -215,7 +249,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
-        [Event(16, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -264,7 +298,7 @@ namespace System.Diagnostics.Metrics
                 Parent = parent;
             }
 
-            public MetricsEventSource Parent { get; private set;}
+            public MetricsEventSource Parent { get; private set; }
 
             public bool IsSharedSession(string commandSessionId)
             {
@@ -403,9 +437,12 @@ namespace System.Diagnostics.Metrics
                             (i, s) => TransmitMetricValue(i, s, sessionId),
                             (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
                             (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
-                            i => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            i => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            i => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
+                                    FormatTags(i.Tags), FormatTags(i.Meter.Tags), FormatScopeHash(i.Meter.Scope)),
+                            i => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
+                                    FormatTags(i.Tags), FormatTags(i.Meter.Tags), FormatScopeHash(i.Meter.Scope)),
+                            i => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
+                                    FormatTags(i.Tags), FormatTags(i.Meter.Tags), FormatScopeHash(i.Meter.Scope)),
                             () => Parent.InitialInstrumentEnumerationComplete(sessionId),
                             e => Parent.Error(sessionId, e.ToString()),
                             () => Parent.TimeSeriesLimitReached(sessionId),
@@ -646,6 +683,39 @@ namespace System.Diagnostics.Metrics
                 {
                     Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles), histogramStats.Count, histogramStats.Sum);
                 }
+            }
+
+            private static string FormatScopeHash(object? scope) =>
+                scope is null ? string.Empty : RuntimeHelpers.GetHashCode(scope).ToString(CultureInfo.InvariantCulture);
+
+            private static string FormatTags(IEnumerable<KeyValuePair<string, object?>>? tags)
+            {
+                if (tags is null)
+                {
+                    return string.Empty;
+                }
+
+                StringBuilder sb = new StringBuilder();
+                bool first = true;
+                foreach (KeyValuePair<string, object?> tag in tags)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.Append(',');
+                    }
+
+                    sb.Append(tag.Key).Append('=');
+
+                    if (tag.Value is not null)
+                    {
+                        sb.Append(tag.Value.ToString());
+                    }
+                }
+                return sb.ToString();
             }
 
             private static string FormatTags(KeyValuePair<string, string>[] labels)

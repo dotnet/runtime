@@ -775,8 +775,8 @@ public:
 #endif
 
 #if defined(TARGET_RISCV64)
-    static bool IsRiscv64OnlyOneField(MethodTable * pMT);
-    static int GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static bool IsRiscV64OnlyOneField(MethodTable * pMT);
+    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -859,7 +859,7 @@ public:
 
     void AllocateRegularStaticBoxes();
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
     void CheckRestore();
 
@@ -2246,6 +2246,7 @@ public:
     void SetHasCriticalFinalizer()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
         SetFlag(enum_flag_HasCriticalFinalizer);
     }
     // Does this class have non-trivial finalization requirements?
@@ -2259,7 +2260,7 @@ public:
     DWORD HasCriticalFinalizer() const
     {
         LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasCriticalFinalizer);
+        return !HasComponentSize() && GetFlag(enum_flag_HasCriticalFinalizer);
     }
 
     //-------------------------------------------------------------------
@@ -3291,15 +3292,15 @@ private:
         // apply to Strings / Arrays.
 
         enum_flag_UNUSED_ComponentSize_1    = 0x00000001,
-
-        enum_flag_StaticsMask               = 0x00000006,
+        // GC depends on this bit
+        enum_flag_HasCriticalFinalizer      = 0x00000002, // finalizer must be run on Appdomain Unload
+        enum_flag_StaticsMask               = 0x0000000C,
         enum_flag_StaticsMask_NonDynamic    = 0x00000000,
-        enum_flag_StaticsMask_Dynamic       = 0x00000002,   // dynamic statics (EnC, reflection.emit)
+        enum_flag_StaticsMask_Dynamic       = 0x00000008,   // dynamic statics (EnC, reflection.emit)
         enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x00000006, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000002, // helper constant to get rid of unnecessary check
+        enum_flag_StaticsMask_CrossModuleGenerics       = 0x0000000C, // cross module generics statics (NGen)
+        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000008, // helper constant to get rid of unnecessary check
 
-        enum_flag_NotInPZM                  = 0x00000008,   // True if this type is not in its PreferredZapModule
 
         enum_flag_GenericsMask              = 0x00000030,
         enum_flag_GenericsMask_NonGeneric   = 0x00000000,   // no instantiation
@@ -3328,9 +3329,10 @@ private:
 
         enum_flag_IsByRefLike               = 0x00001000,
 
+        enum_flag_NotInPZM                  = 0x00002000,   // True if this type is not in its PreferredZapModule
+
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_5    = 0x00002000,
         enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
@@ -3342,7 +3344,8 @@ private:
         // As you change the flags in WFLAGS_LOW_ENUM you also need to change this
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
-        enum_flag_StringArrayValues = SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
+        enum_flag_StringArrayValues = SET_FALSE(enum_flag_HasCriticalFinalizer) |
+                                      SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
                                       SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
@@ -3387,9 +3390,10 @@ private:
         enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
 
 
+        // GC depends on this bit
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        enum_flag_IDynamicInterfaceCastable   = 0x00200000, // class implements IDynamicInterfaceCastable interface
+        enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3401,8 +3405,8 @@ private:
 
         enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
 
-        enum_flag_HasCriticalFinalizer        = 0x08000000, // finalizer must be run on Appdomain Unload
-        enum_flag_Collectible                 = 0x10000000,
+        // GC depends on this bit
+        enum_flag_Collectible                 = 0x00200000,
         enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and
                                                               // to detect this condition when restoring
 

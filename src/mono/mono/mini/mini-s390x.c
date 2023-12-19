@@ -3933,75 +3933,138 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_CEQ:
-		case OP_ICEQ:
-		case OP_LCEQ: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jz  (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_CLT:
-		case OP_ICLT:
-		case OP_LCLT: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jl  (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_CLT_UN:
-		case OP_ICLT_UN:
-		case OP_LCLT_UN: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jlo (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
+                case OP_ICEQ:
+                case OP_LCEQ: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_locghiz(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi  (code, ins->dreg, 0);
+                                s390_lghi  (code, s390_r13, 1);
+                                s390_locgrz(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jz  (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
+                case OP_CLT:
+                case OP_ICLT:
+                case OP_LCLT: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_locghil(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi  (code, ins->dreg, 0);
+                                s390_lghi  (code, s390_r13, 1);
+                                s390_locgrl(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jl  (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
+                case OP_CLT_UN:
+                case OP_ICLT_UN:
+                case OP_LCLT_UN: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi    (code, ins->dreg, 0);
+                                s390_locghilo(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_lghi   (code, s390_r13, 1);
+                                s390_locgrlo(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jlo (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
 		case OP_CGT:
-		case OP_ICGT:
-		case OP_LCGT: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jh  (code, 4);
-			s390_lghi(code, ins->dreg, 0);
+                case OP_ICGT:
+                case OP_LCGT: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_locghih(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi  (code, ins->dreg, 0);
+                                s390_lghi  (code, s390_r13, 1);
+                                s390_locgrh(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jh  (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
 		}
 			break;
 		case OP_CGT_UN:
-		case OP_ICGT_UN:
-		case OP_LCGT_UN: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jho (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_ICNEQ: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jne (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_ICGE: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jhe (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_ICLE: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jle (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_ICGE_UN: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jhe (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
-		case OP_ICLE_UN: {
-			s390_lghi(code, ins->dreg, 1);
-			s390_jle (code, 4);
-			s390_lghi(code, ins->dreg, 0);
-		}
-			break;
+                case OP_ICGT_UN:
+                case OP_LCGT_UN: {
+			if (mono_hwcap_s390x_has_lsoc2) {
+				s390_lghi    (code, ins->dreg, 0);
+				s390_locghiho(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_lghi   (code, s390_r13, 1);
+                                s390_locgrho(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jho (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
+                case OP_ICNEQ: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi    (code, ins->dreg, 0);
+                                s390_locghine(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_lghi   (code, s390_r13, 1);
+                                s390_locgrne(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jne (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
+                case OP_ICLE_UN:
+                case OP_ICLE: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi    (code, ins->dreg, 0);
+                                s390_locghile(code, ins->dreg, 1);
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_lghi   (code, s390_r13, 1);
+                                s390_locgrle(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jle (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
+                case OP_ICGE:
+                case OP_ICGE_UN: {
+                        if (mono_hwcap_s390x_has_lsoc2) {
+                                s390_lghi    (code, ins->dreg, 0);
+                                s390_locghihe(code, ins->dreg, 1);
+
+                        } else if (mono_hwcap_s390x_has_mlt) {
+                                s390_lghi   (code, ins->dreg, 0);
+                                s390_lghi   (code, s390_r13, 1);
+                                s390_locgrhe(code, ins->dreg, s390_r13);
+                        } else {
+                                s390_lghi(code, ins->dreg, 1);
+                                s390_jhe (code, 4);
+                                s390_lghi(code, ins->dreg, 0);
+                        }
+                }
+                        break;
 		case OP_COND_EXC_EQ:
 		case OP_COND_EXC_IEQ:
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_EQ, ins->inst_p1);

@@ -1609,11 +1609,7 @@ HMODULE ShimProcess::GetDacModule(PathString& dacModulePath)
             ThrowLastError();
         }
 
-        // Dac Dll is named:
-        //   mscordaccore.dll  <-- coreclr
-        //   mscordacwks.dll   <-- desktop
         PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
-
         wszAccessDllPath.Append(eeFlavor);
     }
     hDacDll = WszLoadLibrary(wszAccessDllPath);

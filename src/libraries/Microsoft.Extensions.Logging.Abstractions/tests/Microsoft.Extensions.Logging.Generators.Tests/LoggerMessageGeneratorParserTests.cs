@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -108,7 +110,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {{
                     [LoggerMessage({argumentList})]
                     static partial void M1(ILogger logger, string foo);
-                    
+
                     [LoggerMessage({argumentList})]
                     static partial void M2(ILogger logger, LogLevel level, string foo);
                 }}
@@ -909,6 +911,56 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodHasBody.Id, diagnostics[0].Id);
+        }
+
+        [Fact]
+        public async Task LanguageVersionTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Logging;
+
+                internal partial class Program
+                {
+                    static void Main() { }
+
+                    [LoggerMessage(
+                        EventId = 0,
+                        Level = LogLevel.Critical,
+                        Message = "Could not open socket to `{hostName}`")]
+                    static partial void CouldNotOpenSocket(ILogger logger, string hostName);
+                }
+            """;
+
+            Assembly[]? refs = new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly };
+
+            // Run the generator with C# 7.0 and verify that it fails.
+            var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                new LoggerMessageGenerator(), refs, new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp7).ConfigureAwait(false);
+
+            Assert.NotEmpty(diagnostics);
+            Assert.Equal("SYSLIB1026", diagnostics[0].Id);
+            Assert.Empty(generatedSources);
+
+            // Run the generator with C# 8.0 and verify that it succeeds.
+            (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                new LoggerMessageGenerator(), refs, new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp8).ConfigureAwait(false);
+
+            Assert.Empty(diagnostics);
+            Assert.Single(generatedSources);
+
+            // Compile the generated code with C# 7.0 and verify that it fails.
+            CSharpParseOptions parseOptions = new CSharpParseOptions(LanguageVersion.CSharp7);
+            SyntaxTree syntaxTree = SyntaxFactory.ParseSyntaxTree(generatedSources[0].SourceText.ToString(), parseOptions);
+            var diags = syntaxTree.GetDiagnostics().ToArray();
+            Assert.Equal(1, diags.Length);
+            // error CS8107: Feature 'nullable reference types' is not available in C# 7.0. Please use language version 8.0 or greater.
+            Assert.Equal("CS8107", diags[0].Id);
+
+            // Compile the generated code with C# 8.0 and verify that it succeeds.
+            parseOptions = new CSharpParseOptions(LanguageVersion.CSharp8);
+            syntaxTree = SyntaxFactory.ParseSyntaxTree(generatedSources[0].SourceText.ToString(), parseOptions);
+            diags = syntaxTree.GetDiagnostics().ToArray();
+            Assert.Equal(0, diags.Length);
         }
 
         private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(

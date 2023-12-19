@@ -73,6 +73,13 @@ namespace System.Linq
             public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
+
+                if (count == 1)
+                {
+                    // If GetCount returns 1, then _source is empty and only _item should be returned
+                    return new List<TSource>(1) { _item };
+                }
+
                 List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
                 if (!_appending)
                 {
@@ -122,17 +129,8 @@ namespace System.Linq
 
                 TSource[] array = builder.ToArray();
 
-                int index = 0;
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                {
-                    array[index++] = node.Item;
-                }
-
-                index = array.Length - 1;
-                for (SingleLinkedNode<TSource>? node = _appended; node != null; node = node.Linked)
-                {
-                    array[index--] = node.Item;
-                }
+                _prepended?.Fill(array);
+                _appended?.FillReversed(array);
 
                 return array;
             }
@@ -181,17 +179,11 @@ namespace System.Linq
                 int count = GetCount(onlyIfCheap: true);
                 List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
 
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                {
-                    list.Add(node.Item);
-                }
+                _prepended?.Fill(SetCountAndGetSpan(list, _prependCount));
 
                 list.AddRange(_source);
 
-                if (_appended != null)
-                {
-                    list.AddRange(_appended.ToArray(_appendCount));
-                }
+                _appended?.FillReversed(SetCountAndGetSpan(list, list.Count + _appendCount));
 
                 return list;
             }

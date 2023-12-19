@@ -39,7 +39,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern MethodBase? GetCurrentMethod();
 
-        internal virtual ParameterInfo[] GetParametersNoCopy()
+        internal virtual ReadOnlySpan<ParameterInfo> GetParametersAsSpan()
         {
             return GetParametersInternal();
         }

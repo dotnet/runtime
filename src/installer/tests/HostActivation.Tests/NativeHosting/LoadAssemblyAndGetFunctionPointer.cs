@@ -65,13 +65,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData(true, true, false)]
         public void CallDelegateOnApplicationContext(bool validPath, bool validType, bool validMethod)
         {
-            var appProject = sharedState.ApplicationFixture.TestProject;
+            var app = sharedState.FrameworkDependentApp;
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
             string[] args =
             {
                 AppLoadAssemblyAndGetFunctionPointerArg,
                 sharedState.HostFxrPath,
-                appProject.AppDll,
+                app.AppDll,
                 validPath ? componentProject.AppDll : "BadPath...",
                 validType ? sharedState.ComponentTypeName : $"Component.BadType, {componentProject.AssemblyName}",
                 validMethod ? sharedState.ComponentEntryPoint1 : "BadMethod",
@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForApp(appProject.AppDll);
+                .InitializeContextForApp(app.AppDll);
 
             if (validPath && validType && validMethod)
             {
@@ -97,13 +97,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void CallDelegateOnSelfContainedApplicationContext()
         {
-            var appProject = sharedState.SelfContainedApplicationFixture.TestProject;
+            var app = sharedState.SelfContainedApp;
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
             string[] args =
             {
                 AppLoadAssemblyAndGetFunctionPointerArg,
-                appProject.HostFxrDll,
-                appProject.AppDll,
+                app.HostFxrDll,
+                app.AppDll,
                 componentProject.AppDll,
                 sharedState.ComponentTypeName,
                 sharedState.ComponentEntryPoint1,
@@ -112,7 +112,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForApp(appProject.AppDll)
+                .InitializeContextForApp(app.AppDll)
                 .And.Pass()
                 .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
                 .And.ExecuteInIsolatedContext(componentProject.AssemblyName);
@@ -239,9 +239,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string HostFxrPath { get; }
             public string DotNetRoot { get; }
 
-            public TestProjectFixture ApplicationFixture { get; }
             public TestProjectFixture ComponentWithNoDependenciesFixture { get; }
-            public TestProjectFixture SelfContainedApplicationFixture { get; }
+            public TestApp FrameworkDependentApp { get; }
+            public TestApp SelfContainedApp { get; }
+
             public string ComponentTypeName { get; }
             public string ComponentEntryPoint1 => "ComponentEntryPoint1";
             public string ComponentEntryPoint2 => "ComponentEntryPoint2";
@@ -249,30 +250,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
-                DotNetRoot = dotNet.BinPath;
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = TestContext.BuiltDotNet.BinPath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
-                ApplicationFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
                 ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
                     .EnsureRestored()
                     .PublishProject();
-                SelfContainedApplicationFixture = new TestProjectFixture("StandaloneApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject(selfContained: true);
+
+                FrameworkDependentApp = TestApp.CreateFromBuiltAssets("HelloWorld");
+
+                SelfContainedApp = TestApp.CreateFromBuiltAssets("HelloWorld");
+                SelfContainedApp.PopulateSelfContained(TestApp.MockedComponent.None);
+
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
             }
 
             protected override void Dispose(bool disposing)
             {
-                if (ApplicationFixture != null)
-                    ApplicationFixture.Dispose();
                 if (ComponentWithNoDependenciesFixture != null)
                     ComponentWithNoDependenciesFixture.Dispose();
-                if (SelfContainedApplicationFixture != null)
-                    SelfContainedApplicationFixture.Dispose();
+
+                FrameworkDependentApp?.Dispose();
+                SelfContainedApp?.Dispose();
 
                 base.Dispose(disposing);
             }

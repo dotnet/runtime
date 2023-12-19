@@ -19,49 +19,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sharedTestState = fixture;
         }
 
-        [Fact]
-        public void Breadcrumb_thread_finishes_when_app_closes_normally()
-        {
-            var fixture = sharedTestState.PortableAppFixture.Copy();
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec(appDll)
-                .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
-        }
-
-        [Fact]
-        public void Breadcrumb_thread_does_not_finish_when_app_has_unhandled_exception()
-        {
-            var fixture = sharedTestState.PortableAppWithExceptionFixture.Copy();
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec(appDll)
-                .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
-                .EnableTracingAndCaptureOutputs()
-                .Execute(expectedToFail: true)
-                .Should().Fail()
-                .And.HaveStdErrContaining("Unhandled exception.")
-                .And.HaveStdErrContaining("System.Exception: Goodbye World")
-                .And.NotHaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
-        }
-
         private class SdkResolutionFixture
         {
-            private readonly TestProjectFixture _fixture;
+            private readonly TestApp _app;
 
             public DotNetCli Dotnet { get; }
-            public string AppDll => _fixture.TestProject.AppDll;
-            public string ExeDir => Path.Combine(_fixture.TestProject.ProjectDirectory, "ed");
+            public string AppDll => _app.AppDll;
+            public string ExeDir => Path.Combine(_app.Location, "ed");
             public string ProgramFiles => Path.Combine(ExeDir, "pf");
             public string SelfRegistered => Path.Combine(ExeDir, "sr");
-            public string WorkingDir => Path.Combine(_fixture.TestProject.ProjectDirectory, "wd");
+            public string WorkingDir => Path.Combine(_app.Location, "wd");
             public string ProgramFilesGlobalSdkDir => Path.Combine(ProgramFiles, "dotnet", "sdk");
             public string ProgramFilesGlobalFrameworksDir => Path.Combine(ProgramFiles, "dotnet", "shared");
             public string SelfRegisteredGlobalSdkDir => Path.Combine(SelfRegistered, "sdk");
@@ -86,9 +53,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SdkResolutionFixture(SharedTestState state)
             {
-                Dotnet = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet);
+                Dotnet = TestContext.BuiltDotNet;
 
-                _fixture = state.HostApiInvokerAppFixture.Copy();
+                _app = state.HostApiInvokerApp.Copy();
 
                 Directory.CreateDirectory(WorkingDir);
 
@@ -266,9 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
-            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
-
-            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_hostfxr_set_error_writer")
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -482,9 +447,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostpolicy_corehost_set_error_writer_test()
         {
-            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
-
-            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_corehost_set_error_writer")
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_corehost_set_error_writer")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -494,65 +457,47 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void HostRuntimeContract_get_runtime_property()
         {
-            var fixture = sharedTestState.HostApiInvokerAppFixture;
-
-            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+            TestApp app = sharedTestState.HostApiInvokerApp;
+            TestContext.BuiltDotNet.Exec(app.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
-                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {RepoDirectoriesProvider.Default.BuildRID}")
+                .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(app.AppDll)}")
+                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {TestContext.BuildRID}")
                 .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
-                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
+                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {app.AssemblyName}");
+        }
+
+        [Fact]
+        public void HostRuntimeContract_bundle_probe()
+        {
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "host_runtime_contract.bundle_probe", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("host_runtime_contract.bundle_probe is not set");
         }
 
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture HostApiInvokerAppFixture { get; }
-            public TestProjectFixture PortableAppFixture { get; }
-            public TestProjectFixture PortableAppWithExceptionFixture { get; }
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
-            public string BreadcrumbLocation { get; }
+            public TestApp HostApiInvokerApp { get; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
-                HostApiInvokerAppFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
-                    .EnsureRestored()
-                    .BuildProject();
-
-                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
-
-                PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
+                HostApiInvokerApp = TestApp.CreateFromBuiltAssets("HostApiInvokerApp");
 
                 if (!OperatingSystem.IsWindows())
                 {
-                    BreadcrumbLocation = Path.Combine(
-                        PortableAppWithExceptionFixture.TestProject.OutputDirectory,
-                        "opt",
-                        "corebreadcrumbs");
-                    Directory.CreateDirectory(BreadcrumbLocation);
-
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
-                    var fixture = HostApiInvokerAppFixture;
-                    FileUtils.CopyIntoDirectory(
-                        fixture.BuiltDotnet.GreatestVersionHostFxrFilePath,
-                        Path.GetDirectoryName(fixture.TestProject.AppDll));
+                    File.Copy(Binaries.HostFxr.FilePath, Path.Combine(HostApiInvokerApp.Location, Binaries.HostFxr.FileName));
                 }
             }
 
             public void Dispose()
             {
-                HostApiInvokerAppFixture.Dispose();
-                PortableAppFixture.Dispose();
-                PortableAppWithExceptionFixture.Dispose();
+                HostApiInvokerApp?.Dispose();
             }
         }
     }

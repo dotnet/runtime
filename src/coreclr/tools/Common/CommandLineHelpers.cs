@@ -127,7 +127,7 @@ namespace System.CommandLine
             return command;
         }
 
-        public static CliRootCommand UseExtendedHelp(this CliRootCommand command, Func<HelpContext, IEnumerable<Action<HelpContext>>> customizer)
+        public static CliRootCommand UseExtendedHelp(this CliRootCommand command, Func<HelpContext, IEnumerable<Func<HelpContext, bool>>> customizer)
         {
             foreach (CliOption option in command.Options)
             {
@@ -210,7 +210,7 @@ namespace System.CommandLine
                 foreach (CliOption option in res.CommandResult.Command.Options)
                 {
                     OptionResult optionResult = res.GetResult(option);
-                    if (optionResult is null || option.Name == "make-repro-path")
+                    if (optionResult is null || option.Name == "--make-repro-path")
                     {
                         continue;
                     }
@@ -233,7 +233,7 @@ namespace System.CommandLine
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {
-                                    rspFile.Add($"--{option.Name}:{ConvertFromOriginalPathToReproPackagePath(input: true, inputFile)}");
+                                    rspFile.Add($"{option.Name}:{ConvertFromOriginalPathToReproPackagePath(input: true, inputFile)}");
                                 }
                             }
                             else
@@ -241,7 +241,7 @@ namespace System.CommandLine
                                 foreach (string optInList in values)
                                 {
                                     if (!string.IsNullOrEmpty(optInList))
-                                        rspFile.Add($"--{option.Name}:{optInList}");
+                                        rspFile.Add($"{option.Name}:{optInList}");
                                 }
                             }
                         }
@@ -254,11 +254,11 @@ namespace System.CommandLine
                                     // if output option is used, overwrite the path to the repro package
                                     stringVal = ConvertFromOriginalPathToReproPackagePath(input: false, stringVal);
                                 }
-                                rspFile.Add($"--{option.Name}:{stringVal}");
+                                rspFile.Add($"{option.Name}:{stringVal}");
                             }
                             else
                             {
-                                rspFile.Add($"--{option.Name}:{val}");
+                                rspFile.Add($"{option.Name}:{val}");
                             }
                         }
                     }

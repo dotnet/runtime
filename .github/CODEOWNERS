@@ -39,7 +39,7 @@
 /src/mono/mono/mini @vargaz @lambdageek @SamMonoRT
 /src/mono/mono/mini/*cfgdump* @vargaz
 /src/mono/mono/mini/*exceptions* @vargaz @BrzVlad
-/src/mono/mono/mini/*llvm* @vargaz
+/src/mono/mono/mini/*llvm* @vargaz @fanyang-mono
 /src/mono/mono/mini/*ppc* @vargaz
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
 /src/mono/mono/mini/*riscv* @vargaz @lambdageek
@@ -47,6 +47,7 @@
 /src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @lambdageek
 /src/mono/mono/mini/interp/* @BrzVlad @vargaz @kotlarmilos
 /src/mono/mono/mini/interp/*jiterp* @kg
+/src/mono/mono/mini/*simd* @fanyang-mono
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
 /src/mono/mono/sgen @BrzVlad @lambdageek @SamMonoRT
@@ -62,7 +63,9 @@
 
 /src/native/public/mono @marek-safar @lambdageek
 
+/src/libraries/sendtohelix-browser.targets @radical
 /src/libraries/sendtohelix-wasm.targets @radical
+/src/libraries/sendtohelix-wasi.targets @radical
 /src/mono/wasm @lewing @pavelsavara @kg
 /src/mono/wasm/debugger @thaystg @radical
 /src/mono/wasm/build @radical

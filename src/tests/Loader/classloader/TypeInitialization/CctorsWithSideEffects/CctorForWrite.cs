@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class CorrectException : Exception
 {
@@ -17,7 +18,8 @@ public class CCC
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Call() => throw new CorrectException();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

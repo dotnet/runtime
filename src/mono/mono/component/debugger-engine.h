@@ -345,6 +345,8 @@ mono_debugger_get_thread_state (DebuggerTlsData *ref);
 void mono_de_cleanup (void);
 void mono_de_set_log_level (int level, FILE *file);
 
+void mono_de_set_using_icordbg (void);
+
 //locking - we expose the lock object from the debugging engine to ensure we keep the same locking semantics of sdb.
 void mono_de_lock (void);
 void mono_de_unlock (void);

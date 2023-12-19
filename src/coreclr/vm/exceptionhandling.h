@@ -22,6 +22,9 @@ ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
+VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
+
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
 enum TrackerMemoryType
@@ -37,6 +40,19 @@ enum EHFuncletType
     Filter = 0x0001,
     FaultFinally = 0x0002,
     Catch = 0x0004,
+};
+
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+
+// These values are or-ed into the InlinedCallFrame::m_Datum field.
+// The bit 0 is used for unrelated purposes (see comments on the
+// InlinedCallFrame::m_Datum field for details).
+enum class InlinedCallFrameMarker
+{
+    ExceptionHandlingHelper = 2,
+    SecondPassFuncletCaller = 4,
+    Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
 };
 
 typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
@@ -243,6 +259,7 @@ public:
     static StackFrame GetStackFrameForParentCheck(CrawlFrame * pCF);
 
     static bool IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExceptionTracker pExceptionTracker);
+    static bool IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExInfo pExInfo);
     static bool IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF);
 
     static bool HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF);

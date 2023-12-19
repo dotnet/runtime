@@ -2,7 +2,8 @@
   <PropertyGroup>
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AppleGenerateAppBundle>
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
-    <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true'">false</AppleGenerateAppBundle>
+    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
+    <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">false</AppleGenerateAppBundle>
     <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
@@ -15,6 +16,11 @@
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" 
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <Import Condition="Exists('$(ILCompilerTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
+          Project="$(ILCompilerTargetsPath)" />
+  <Import Condition="Exists('$(ILLinkTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
+          Project="$(ILLinkTargetsPath)" />
 
   <Target Name="_CleanPublish" 
           BeforeTargets="Build">
@@ -47,14 +53,16 @@
       <AppleBundleDir Condition="'$(AppleBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AppleBundleDir>
 
       <BundleDir>$(AppleBundleDir)</BundleDir>
-      <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
+      <_MonoHeaderPath Condition="'$(UseNativeAOTRuntime)' != 'true'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)"/>
+      <!-- Make sure marshal-ilgen is included in the components list. -->
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
 
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
@@ -75,7 +83,7 @@
     <PropertyGroup>
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
-      <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == ''">true</UseConsoleUITemplate>
+      <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == '' and '$(UseNativeAOTRuntime)' != 'true'">true</UseConsoleUITemplate>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
@@ -100,47 +108,35 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences">
-    <PropertyGroup Condition="'$(RuntimeComponents)'=='*'">
-      <ForceAllComponents>true</ForceAllComponents>
-    </PropertyGroup>
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences" Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseAllRuntimeComponents)' != 'true'">
 
-    <ItemGroup Condition="'$(ForceAllComponents)'!='true'">
-      <RuntimeComponentList Include="$(RuntimeComponents)" />
+    <ItemGroup>
       <AssembliesToScan Include="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
 
-    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)" Condition="'$(ForceAllComponents)'!='true'">
+    <MarshalingPInvokeScanner Assemblies="@(AssembliesToScan)">
       <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
     </MarshalingPInvokeScanner>
 
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' > 0">
-      <RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+      <RuntimeComponents Include="marshal-ilgen" KeepDuplicates="false"/>
     </ItemGroup>
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' == 0">
-      <RuntimeComponentList Remove="marshal-ilgen" />
+      <RuntimeComponents Remove="marshal-ilgen" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(ForceAllComponents)'!='true'">
-      <RuntimeComponents>@(RuntimeComponentList)</RuntimeComponents>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_ProcessRuntimeComponentsForLibraryMode" DependsOnTargets="_ScanAssembliesDecideLightweightMarshaler" BeforeTargets="_BuildNativeLibrary">
     <ItemGroup>
-      <!-- add all non stub libs first -->
-      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
-      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
-
-      <_UsedComponents 
-        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
-        Include="$(RuntimeComponents)" />
-
+      <!-- include all libraries except components -->
       <_RuntimeLibraries Include="$(AppleBuildDir)\*.a" Exclude="$(AppleBuildDir)\libmono-component-*.a" />
+      <!-- include all component stub libraries -->
       <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-*-stub-static.a" />
-      <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+      <!-- if RuntimeComponents is not empty, remove stubs for the required components and include the actual component library -->
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Remove="$(AppleBuildDir)\libmono-component-%(RuntimeComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Include="$(AppleBuildDir)\libmono-component-%(RuntimeComponents.Identity)-static.a" />
+      <!-- if RuntimeComponents is empty, do nothing as we already included all the component stubs above -->
     </ItemGroup>
   </Target>
 
@@ -237,17 +233,23 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_CompilerBinaryPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</_CompilerBinaryPath>
+      <_MonoLLVMPath>$(MonoAotCrossDir)</_MonoLLVMPath>
+      <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
+    </PropertyGroup>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="$(_CompilerBinaryPath)"
         DedupAssembly="$(_iOSLikeDedupAssembly)"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
-        LLVMPath="$(MonoAotCrossDir)"
+        LLVMPath="$(_MonoLLVMPath)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
@@ -263,6 +265,8 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="_AppleNativeAotCompile"
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile" />
 
   <Target Name="_AppleGenerateAppBundle" 
           Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -279,6 +283,13 @@
     </ItemGroup>
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
+
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+      <NativeDependencies Condition="$(NativeDependencies) == ''" Include="%(ManagedBinary.IlcOutputFile)" />
+      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
+      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
+      <ExtraAppLinkerArgs Include="@(LinkerArg)" />
+    </ItemGroup>
 
     <AppleAppBuilderTask
       AppDir="$(AppleBuildDir)"
@@ -304,7 +315,7 @@
       Optimized="$(Optimized)"
       OutputDirectory="$(AppleBundleDir)"
       ProjectName="$(AppName)"
-      RuntimeComponents="$(RuntimeComponents)"
+      RuntimeComponents="@(RuntimeComponents)"
       StripSymbolTable="$(StripDebugSymbols)"
       TargetOS="$(TargetOS)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)"

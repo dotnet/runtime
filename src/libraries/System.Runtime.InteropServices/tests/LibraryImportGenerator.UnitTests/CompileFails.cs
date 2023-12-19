@@ -350,56 +350,6 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments("MarshalAsAttribute", "t")
             }};
 
-            // Unsupported [In, Out] attributes usage
-
-            // By ref with [In, Out] attributes
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier("in int", "In"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments("The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.", "p")
-            } };
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier("ref int", "In"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments("The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.", "p")
-            } };
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier("ref int", "In, Out"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments("The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.", "p")
-            } };
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier("out int", "Out"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments("The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.", "p")
-            } };
-
-            // By value non-array with [In, Out] attributes
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("{|#1:In|}"), new [] {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(1)
-                    .WithArguments(SR.InOutAttributes, "p", SR.InAttributeOnlyIsDefault)
-                    .WithSeverity(DiagnosticSeverity.Info)
-            } };
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("Out"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
-            } };
-
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
-            } };
-
             // LCIDConversion
             yield return new object[] { ID(), CodeSnippets.LCIDConversionAttribute, new[] {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
@@ -831,13 +781,6 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments("ref return", "Basic.RefReadonlyReturn()"),
-            } };
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(10)
-                    .WithArguments("[In] and [Out] attributes", "p", SR.InAttributeOnlyIsDefault)
             } };
         }
 

@@ -6,7 +6,7 @@ import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
+import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
 
 export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
 {
@@ -47,8 +47,8 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
 
 function getAmPmDesignators(locale: any)
 {
-    const pmTime = new Date("August 19, 1975 12:15:30"); // do not change, some PM hours result in hour digits change, e.g. 13 -> 01 or 1
-    const amTime = new Date("August 19, 1975 11:15:30"); // do not change, some AM hours result in hour digits change, e.g. 9 -> 09
+    const pmTime = new Date("August 19, 1975 12:15:33"); // do not change, some PM hours result in hour digits change, e.g. 13 -> 01 or 1
+    const amTime = new Date("August 19, 1975 11:15:33"); // do not change, some AM hours result in hour digits change, e.g. 9 -> 09
     const pmDesignator = getDesignator(pmTime, locale);
     const amDesignator = getDesignator(amTime, locale);
     return {
@@ -59,7 +59,14 @@ function getAmPmDesignators(locale: any)
 
 function getDesignator(time: Date, locale: string)
 {
-    const withDesignator = time.toLocaleTimeString(locale, { hourCycle: "h12"});
+    let withDesignator = time.toLocaleTimeString(locale, { hourCycle: "h12"});
+    const localizedZero = (0).toLocaleString(locale);
+    if (withDesignator.includes(localizedZero))
+    {
+        // in v8>=11.8 "12" changes to "0" for ja-JP
+        const localizedTwelve = (12).toLocaleString(locale);
+        withDesignator = withDesignator.replace(localizedZero, localizedTwelve);
+    }
     const withoutDesignator = time.toLocaleTimeString(locale, { hourCycle: "h24"});
     const designator = withDesignator.replace(withoutDesignator, "").trim();
     if (new RegExp("[0-9]$").test(designator)){
@@ -102,8 +109,7 @@ function getLongTimePattern(locale: string | undefined, designators: any) : stri
         hourPattern = hasPrefix ? "hh" : "h";
         pattern = pattern.replace(hasPrefix ? hour12WithPrefix : localizedHour12, hourPattern);
     }
-
-    return pattern;
+    return normalizeSpaces(pattern);
 }
 
 function getShortTimePattern(pattern: string) : string

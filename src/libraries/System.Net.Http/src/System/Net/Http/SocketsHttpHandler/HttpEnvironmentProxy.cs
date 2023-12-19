@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Net.Http;
-using System.Net;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
 
 namespace System.Net.Http
 {

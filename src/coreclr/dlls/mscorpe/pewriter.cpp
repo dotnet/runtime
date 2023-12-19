@@ -14,12 +14,9 @@
 
 static const char* const RelocName[] = {
     "Absolute", "Unk1",    "Unk2",    "HighLow", "Unk4", "MapToken",
-    "Relative", "FilePos", "CodeRel", "Movl64",  "Dir64", "PcRel25", "PcRel64",
-    "AbsTag" };
+    "Relative", "FilePos", "CodeRel", "Dir64", "AbsTag" };
 static const char RelocSpaces[] = "        ";
 
-static INT64 s_minPcRel25;
-static INT64 s_maxPcRel25;
 #endif
 
     /* This is the stub program that says it can't be run in DOS mode */
@@ -312,14 +309,6 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         if (!isPE32 && (curType == srRelocHighLow))
             curType = srRelocDir64;
 
-        /* If we have an IA64 instruction fixup then extract the slot number and adjust curOffset */
-        if ((curType == srRelocIA64PcRel25) || (curType == srRelocIA64Imm64) || (curType == srRelocIA64PcRel64))
-        {
-            _ASSERTE((curOffset & 0x3) == 0);
-            slotNum = (curOffset & 0xf) >> 2;
-            curOffset &= ~0xf;
-        }
-
         DWORD curRVA = m_baseRVA;    // RVA in the PE image of the reloc site
         IfFailRet(AddOvf_RVA(curRVA, curOffset));
         DWORD UNALIGNED * pos = (DWORD *) m_blobFetcher.ComputePointer(curOffset);
@@ -363,26 +352,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
                 IfFailRet(UnsignedFitsIn32Bits(targetOffset));  // Check for overflow
                 SET_UNALIGNED_VAL32(pos, targetOffset);
             }
-            else if (curType == srRelocIA64Imm64) {
-                _ASSERTE(slotNum == 1);
-                ptr = (char *) ((intptr_t) GetIA64Imm64((UINT64 *) ptr));
-                oldStarPos   = (SSIZE_T) ptr;
-                targetOffset = externalAddress ? (size_t) ptr
-                                               : cur->section->computeOffset(ptr);
-                _ASSERTE(!isPE32);
-                PutIA64Imm64((UINT64 *)pos, targetOffset);
-            }
-            else if (curType == srRelocIA64PcRel64) {
-                _ASSERTE(slotNum == 1);
-                ptr = (char *) ((intptr_t) GetIA64Rel64((UINT64 *) ptr));
-                oldStarPos   = (SSIZE_T) ptr;
-                targetOffset = externalAddress ? (size_t) ptr
-                                               : cur->section->computeOffset(ptr);
-                _ASSERTE(!isPE32);
-                PutIA64Rel64((UINT64 *)pos, targetOffset);
-            }
             else {
-                _ASSERTE(curType != srRelocIA64PcRel25);
                 ptr = (char *) GET_UNALIGNED_VALPTR(ptr);
                 oldStarPos   = (SSIZE_T) ptr;
                 targetOffset = externalAddress ? (size_t) ptr
@@ -397,26 +367,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
         else
         {
-            if (curType == srRelocIA64PcRel25)
-            {
-                oldStarPos = GetIA64Rel25((UINT64 *) pos, slotNum);
-            }
-            else
-            {
-                if (curType == srRelocIA64PcRel64)
-                {
-                    _ASSERTE(slotNum == 1);
-                    oldStarPos = GetIA64Rel64((UINT64 *) pos);
-                }
-                else if (curType == srRelocIA64Imm64)
-                {
-                    oldStarPos = GetIA64Imm64((UINT64 *)pos);
-                }
-                else
-                {
-                    oldStarPos = GET_UNALIGNED_VAL32(pos);
-                }
-            }
+            oldStarPos = GET_UNALIGNED_VAL32(pos);
         }
 #endif
 
@@ -495,100 +446,6 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
             SET_UNALIGNED_VAL32(pos, newStarPos);
 
         }
-        else if (curType == srRelocIA64PcRel25)
-        {
-            _ASSERTE((m_baseRVA & 15) == 0);
-            _ASSERTE((cur->section->m_baseRVA & 15) == 0);
-
-            newStarPos = GetIA64Rel25((UINT64 *) pos, slotNum);
-            IfFailRet(SubOvf_S_U32(newStarPos, curRVA));
-            if (externalAddress)
-                IfFailRet(SubOvf_S_U(newStarPos, imageBase));
-            else
-                IfFailRet(AddOvf_S_U32(newStarPos, cur->section->m_baseRVA));
-
-            INT64 hiBits = newStarPos >> 24;
-
-            _ASSERTE((hiBits==0) || (hiBits==-1));
-
-            IfFailRet(AddOvf_S_U32(newStarPos, GetIA64Rel25((UINT64 *) pos, slotNum)));
-
-            hiBits = newStarPos >> 24;
-
-            _ASSERTE((hiBits==0) || (hiBits==-1));
-
-            INT32 delta32 = (INT32) newStarPos;
-
-            PutIA64Rel25((UINT64 *) pos, slotNum, delta32);
-
-            _ASSERTE(GetIA64Rel25((UINT64 *) pos, slotNum) == delta32);
-
-#ifdef LOGGING
-            if (newStarPos < s_minPcRel25)
-                s_minPcRel25 = newStarPos;
-            if (newStarPos > s_maxPcRel25)
-                s_maxPcRel25 = newStarPos;
-#endif
-        }
-        else if (curType == srRelocIA64PcRel64)
-        {
-            _ASSERTE((m_baseRVA & 15) == 0);
-            _ASSERTE(slotNum == 1);
-
-            newStarPos = GetIA64Rel64((UINT64 *) pos);
-            IfFailRet(SubOvf_S_U32(newStarPos, m_baseRVA));
-
-            if (externalAddress)
-                IfFailRet(SubOvf_S_U(newStarPos, imageBase));
-            else
-            {
-                _ASSERTE((cur->section->m_baseRVA & 15) == 0);
-                IfFailRet(AddOvf_S_U32(newStarPos, cur->section->m_baseRVA));
-            }
-
-            INT64 hiBits = newStarPos >> 24;
-
-            fNeedBrl = (hiBits != 0) && (hiBits != -1);
-
-            /* Can we convert the brl.call into a br.call? */
-            if (!fNeedBrl)
-            {
-                INT32 delta32 = (INT32) newStarPos;
-
-                UINT64  temp0 = ((UINT64 *) pos)[0];
-                UINT64  temp1 = ((UINT64 *) pos)[1];
-#ifdef _DEBUG
-                //
-                // make certain we're decoding a brl opcode, with template 4 or 5
-                //
-                UINT64  templa = (temp0 >>  0) & 0x1f;
-                UINT64  opcode = (temp1 >> 60) & 0xf;
-
-                _ASSERTE(((opcode == 0xC) || (opcode == 0xD)) &&
-                         ((templa == 0x4) || (templa == 0x5)));
-#endif
-                const UINT64 mask0 = UI64(0x00003FFFFFFFFFE1);
-                const UINT64 mask1 = UI64(0x7700000FFF800000);
-
-                /* Clear all bits used as part of the slot1 and slot2 */
-                temp0 &= mask0;   // opcode becomes 4 or 5
-                temp1 &= mask1;
-
-                temp0 |= 0x10;    // template becomes 0x10 or 0x11
-                temp1 |= 0x200;   // slot 1 becomes nop.i
-
-                ((UINT64 *) pos)[0] = temp0;
-                ((UINT64 *) pos)[1] = temp1;
-
-                PutIA64Rel25((UINT64 *) pos, 2, delta32);
-                _ASSERTE(GetIA64Rel25((UINT64 *) pos, 2) == delta32);
-            }
-            else
-            {
-                PutIA64Rel64((UINT64 *) pos, newStarPos);
-                _ASSERTE(GetIA64Rel64((UINT64 *) pos) == newStarPos);
-            }
-        }
         else if (curType == srRelocHighLow)
         {
             _ASSERTE(isPE32);
@@ -627,27 +484,6 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
             }
 
             *p_value   = targetOffset;
-            newStarPos = targetOffset;
-            fBaseReloc = true;
-        }
-        else if (curType == srRelocIA64Imm64)
-        {
-            _ASSERTE(!isPE32);
-            _ASSERTE((curRVA & 15) == 0);       // This reloc should be 16-byte aligned
-
-            // we have a 64-bit value encoded in the instruction at pos
-            targetOffset = GetIA64Imm64((UINT64 *)pos);
-
-            if (!externalAddress)
-            {
-                // The upper bits of targetOffset must be zero
-                IfFailRet(UnsignedFitsIn32Bits(targetOffset));
-
-                IfFailRet(AddOvf_U_U32(targetOffset, cur->section->m_baseRVA));
-                IfFailRet(AddOvf_U_U(targetOffset, imageBase));
-            }
-
-            PutIA64Imm64((UINT64 *)pos, targetOffset);
             newStarPos = targetOffset;
             fBaseReloc = true;
         }

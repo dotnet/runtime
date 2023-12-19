@@ -363,13 +363,11 @@ namespace Internal.ReadyToRunConstants
 
         GetRuntimeType,
 
+        CheckCastInterface,
         CheckCastClass,
         CheckCastClassSpecial,
-        CheckInstanceClass,
-        CheckCastArray,
-        CheckInstanceArray,
-        CheckCastInterface,
         CheckInstanceInterface,
+        CheckInstanceClass,
 
         MonitorEnterStatic,
         MonitorExitStatic,

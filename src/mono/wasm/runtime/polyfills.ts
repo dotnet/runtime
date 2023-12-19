@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 
 const dummyPerformance = {
@@ -30,20 +30,12 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.fetch = loaderHelpers.fetch_like;
 
     // misc
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+    replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
-    if (MonoWasmThreads) {
-        if (replacements.pthreadReplacements) {
-            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
-        }
+    if (MonoWasmThreads && replacements.modulePThread) {
+        replaceEmscriptenPThreadLibrary(replacements.modulePThread);
     }
-
-    // memory
-    const originalUpdateMemoryViews = replacements.updateMemoryViews;
-    runtimeHelpers.updateMemoryViews = replacements.updateMemoryViews = () => {
-        originalUpdateMemoryViews();
-    };
 }
 
 export async function init_polyfills_async(): Promise<void> {
@@ -146,7 +138,7 @@ export async function init_polyfills_async(): Promise<void> {
         }
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.process = await import(/* webpackIgnore: true */"process");
+        INTERNAL.process = await import(/*! webpackIgnore: true */"process");
 
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};

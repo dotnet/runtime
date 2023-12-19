@@ -147,14 +147,24 @@
         <target state="translated">L'hosting COM .NET con 'EnableComHosting' non supporta le interfacce con 'GeneratedComInterfaceAttribute'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">L'utilizzo di 'GeneratedComInterfaceAttribute' non segue le raccomandazioni.{0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="translated">L'utilizzo di 'GeneratedComInterfaceAttribute' non segue le raccomandazioni.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <target state="translated">Il valore restituito nella definizione gestita verrà convertito in un parametro 'out' quando si chiama il metodo COM non gestito. Se il valore restituito deve essere il codice HRESULT restituito dal metodo COM non gestito, utilizzare '[PreserveSig]' sul metodo.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <target state="translated">Il valore restituito nella definizione gestita verrà convertito in un parametro 'out' aggiuntivo alla fine dell'elenco di parametri quando si chiama il metodo COM non gestito.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -437,6 +447,21 @@
         <target state="translated">Il grafico specificato contiene cicli e non può essere ordinato in modo topologico.</target>
         <note />
       </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
+        <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
+        <target state="translated">Il tipo '{0}' verrà considerato come uno struct nella firma nativa, non come HRESULT nativo. Per considerare questo valore come HRESULT, aggiungere '[return:MarshalAs(UnmanagedType.Error)]' al metodo.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
+        <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
+        <target state="translated">Questo tipo verrà considerato come uno struct nella firma nativa, non come HRESULT nativo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="translated">L'attributo '[In]' è supportato solo sui parametri di matrice. I parametri per valore sono considerati di sola lettura per impostazione predefinita.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
         <target state="translated">L'attributo '[In]' non è supportato a meno che non venga usato anche l'attributo '[Out]'. Le matrici copiabili da BLT non possono essere sottoposte a marshalling solo come '[In]'.</target>
@@ -445,11 +470,6 @@
       <trans-unit id="InAttributeOnlyIsDefault">
         <source>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
         <target state="translated">L'attributo '[In]' non è necessario a meno che non venga usato anche l'attributo '[Out]'. Il comportamento dell'attributo '[In]' senza l'attributo '[Out]' è uguale a quello predefinito.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InAttributeOnlyNotSupportedOnPinnedParameters">
-        <source>This parameter is marshalled by pinning and does not support the '[In]' attribute without the '[Out]' attribute.</source>
-        <target state="translated">Il marshalling di questo parametro viene eseguito tramite aggiunta e non supporta l'attributo '[In]' senza l'attributo '[Out]'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
@@ -462,14 +482,19 @@
         <target state="translated">Gli attributi '[In]' e '[Out]' specificati per questo parametro non sono supportati in questo parametro.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="translated">Gli attributi [In]' e '[Out]' sono supportati solo nei parametri di matrice. Provare a usare le parole chiave 'ref' per rendere modificabile il parametro.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">Attributi [In] e [Out]</target>
         <note />
       </trans-unit>
-      <trans-unit id="InRefKindIsNotSupportedOnPinnedParameters">
-        <source>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</source>
-        <target state="translated">La parola chiave 'in' non è supportata nei parametri di cui viene eseguito il marshalling tramite l'aggiunta. In alternativa, usare 'ref' oppure 'out'.</target>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -702,6 +727,16 @@
         <target state="translated">Utilizzo di 'VirtualMethodIndexAttribute' non valido</target>
         <note />
       </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">L'utilizzo di 'LibraryImportAttribute' non segue le raccomandazioni. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="translated">L'utilizzo di 'LibraryImportAttribute' non segue le raccomandazioni.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
         <target state="translated">Il tipo di elemento di 'ReadOnlySpan' restituito da 'GetManagedValuesSource' deve essere uguale al tipo di elemento restituito da 'GetManagedValuesDestination'.</target>
@@ -903,8 +938,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">L'attributo '[Out]' è supportato solo nei parametri di matrice e nei parametri di cui è stato eseguito il marshalling tramite l'aggiunta. Provare a usare parole chiave 'out' o 'ref' per rendere modificabile il parametro.</target>
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="translated">L'attributo '[Out]' è supportato solo nei parametri di matrice. Provare a usare le parole chiave 'out' o 'ref' per rendere modificabile il parametro.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -917,9 +952,9 @@
         <target state="translated">Il tipo '{0}' specifica che supporta il marshalling nella direzione 'Out', ma non fornisce un metodo 'ToManaged' che restituisce il tipo gestito</target>
         <note />
       </trans-unit>
-      <trans-unit id="PinnedMarshallingIsInOutByDefault">
-        <source>This parameter is marshalled by pinning and is '[In, Out]' by default.</source>
-        <target state="translated">Il marshalling di questo parametro viene eseguito tramite aggiunta ed è '[In, Out]' per impostazione predefinita.</target>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="translated">È consigliabile usare attributi '[In]' e '[Out]' espliciti nei parametri di matrice.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -992,24 +1027,19 @@
         <target state="translated">Il marshalling di runtime in questo progetto deve essere disabilitato applicando 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' all'assembly per abilitare il marshalling di questo tipo.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Non è possibile effettuare il marshalling per riferimento di un tipo astratto derivato da 'SafeHandle'. Il tipo specificato deve essere concreto.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <target state="translated">Le dimensioni del parametro '{0}' di cui viene eseguito il marshalling al destinatario della chiamata devono essere definite quando viene chiamato il metodo, ma il parametro conteggio '{1}' è un parametro 'out'.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <target state="translated">Le dimensioni del parametro '{0}' di cui viene eseguito il marshalling al destinatario della chiamata devono essere definite quando viene chiamato il metodo, ma il valore restituito viene utilizzato come dimensione della raccolta.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
+        <target state="translated">Le dimensioni di una raccolta di cui viene eseguito il marshalling al destinatario della chiamata devono essere definite quando viene chiamato il metodo.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1162,11 +1192,6 @@
         <target state="translated">'{0}' ha accessibilità '{1}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeDoesNotSupportByValueMarshalingAttributes">
-        <source>'[In]' and '[Out]' attributes are not supported on this type.</source>
-        <target state="translated">Gli attributi '[In]' e '[Out]' non sono supportati in questo tipo.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
         <target state="translated">Il tipo non gestito per un marshaller personalizzato deve essere un tipo non gestito C#.</target>
@@ -1234,7 +1259,7 @@
         <target state="translated">Il tipo specificato non è supportato dai P/Invoke generati dall'origine</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle1">
+      <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
         <target state="translated">Il tipo specificato non è supportato da COM generati dall'origine</target>
         <note />

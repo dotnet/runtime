@@ -681,7 +681,7 @@ push_all (ScanData *data)
 {
 	GCObject *obj = data->obj;
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor_safe (obj);
+	SgenDescriptor desc = sgen_obj_get_descriptor_safe (obj);
 
 #if DUMP_GRAPH
 	printf ("+scanning %s (%p) index %d color %p\n", safe_name_bridge (data->obj), data->obj, data->index, data->color);
@@ -741,7 +741,7 @@ compute_low (ScanData *data)
 {
 	GCObject *obj = data->obj;
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor_safe (obj);
+	SgenDescriptor desc = sgen_obj_get_descriptor_safe (obj);
 
 	#include "sgen/sgen-scan-object.h"
 }

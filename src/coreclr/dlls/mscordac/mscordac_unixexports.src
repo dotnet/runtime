@@ -128,8 +128,7 @@ nativeStringResourceTable_mscorrc
 #GetTempPathW
 #InitializeCriticalSection
 #LeaveCriticalSection
-#LoadLibraryA
-#LoadLibraryW
+#LoadLibraryExA
 #LoadLibraryExW
 #MapViewOfFile
 #MapViewOfFileEx

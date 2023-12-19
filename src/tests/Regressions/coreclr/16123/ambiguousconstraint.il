@@ -42,7 +42,7 @@
 {
 }
 
-.class private auto ansi beforefieldinit Gen`1<(IFoo) T>
+.class public auto ansi beforefieldinit Gen`1<(IFoo) T>
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32 Check(!T x) cil managed

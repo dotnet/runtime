@@ -1,15 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Buffers;
+using System.Text;
 
 namespace System
 {
     internal static class UriHelper
     {
+        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        {
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(span.Length, (IntPtr)(&span), static (buffer, spanPtr) =>
+            {
+                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+#pragma warning restore CS8500
+        }
+
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -290,7 +301,7 @@ namespace System
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
 
-            for (int next = start; next < end; )
+            for (int next = start; next < end;)
             {
                 char ch = (char)0;
 

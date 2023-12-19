@@ -24,6 +24,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
+    internal sealed record VariableDefinition(
+        string IdName,
+        JObject Obj,
+        string Definition);
+
     internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
@@ -47,7 +52,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             private int visitCount;
             public bool hasMethodCalls;
             public bool hasElementAccesses;
-            internal List<string> variableDefinitions = new List<string>();
+            public bool hasStringExpressionStatement;
+            internal List<VariableDefinition> variableDefinitions = new ();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -90,6 +96,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (visitCount == 1)
                         elementAccess.Add(node as ElementAccessExpressionSyntax);
                     hasElementAccesses = true;
+                }
+
+                if (node is BinaryExpressionSyntax)
+                {
+                    var binaryExpression = node as BinaryExpressionSyntax;
+                    if (binaryExpression.Left.Kind() == SyntaxKind.StringLiteralExpression || binaryExpression.Right.Kind() == SyntaxKind.StringLiteralExpression)
+                        hasStringExpressionStatement = true;
                 }
 
                 if (node is AssignmentExpressionSyntax)
@@ -188,7 +201,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string node_str = ies.ToString();
                         if (!methodCallToParamName.TryGetValue(node_str, out string id_name))
                         {
-                            throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                            throw new Exception($"BUG: Expected to find an id name for the invokation expression string: {node_str}");
                         }
                         AddLocalVariableWithValue(id_name, value);
                     }
@@ -214,7 +227,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
+                    variableDefinitions.Add(new (idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
                 }
             }
         }
@@ -374,12 +387,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var values = new List<JObject>();
             JObject index = null;
+            List<JObject> nestedIndexers = new();
             IEnumerable<ElementAccessExpressionSyntax> elementAccesses = replacer.elementAccess;
             foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, index, replacer.variableDefinitions, token);
+                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, nestedIndexers, replacer.variableDefinitions, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
+                nestedIndexers.Add(index);
             }
             values.Add(index);
             return values;
@@ -445,12 +460,49 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 syntaxTree = replacer.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
-
             expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
+            var variableDef = await GetVariableDefinitions(resolver, replacer.variableDefinitions, invokeToStringInObject: replacer.hasStringExpressionStatement, token);
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, variableDef, logger, token);
+        }
 
-            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+        internal static async Task<List<string>> GetVariableDefinitions(MemberReferenceResolver resolver, List<VariableDefinition> variableDefinitions, bool invokeToStringInObject, CancellationToken token)
+        {
+            var variableDefStrings = new List<string>();
+            foreach (var definition in variableDefinitions)
+            {
+                if (!invokeToStringInObject || definition.Obj?["type"]?.Value<string>() != "object")
+                {
+                    variableDefStrings.Add(definition.Definition);
+                    continue;
+                }
+
+                if (definition.Obj["subtype"]?.Value<string>()?.Equals("null") == true)
+                {
+                    variableDefStrings.Add($"string {definition.IdName} = \"\";");
+                    continue;
+                }
+
+                if (DotnetObjectId.TryParse(definition.Obj?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
+                {
+                    if (objectId.IsValueType)
+                    {
+                        variableDefStrings.Add($"string {definition.IdName} = \"{definition.Obj["description"].Value<string>()}\";");
+                    }
+                    else
+                    {
+                        var typeIds = await resolver.GetContext().SdbAgent.GetTypeIdsForObject(objectId.Value, withParents: true, token);
+                        var toString = await resolver.GetContext().SdbAgent.InvokeToStringAsync(typeIds, isValueType: false, isEnum: false, objectId.Value, BindingFlags.DeclaredOnly, invokeToStringInObject: true, token);
+                        variableDefStrings.Add($"string {definition.IdName} = \"{toString}\";");
+                    }
+                }
+                else
+                {
+                    variableDefStrings.Add(definition.Definition);
+                }
+            }
+            return variableDefStrings;
         }
 
         internal static async Task<JObject> EvaluateSimpleExpression(

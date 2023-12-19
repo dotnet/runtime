@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
         <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
-        <target state="new">The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</target>
+        <target state="translated">JsonConverterAttribute’tan türetilen özel öznitelik '{0}' kaynak oluşturucu tarafından desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
         <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
-        <target state="new">Attributes deriving from JsonConverterAttribute are not supported by the source generator.</target>
+        <target state="translated">JsonConverterAttribute’tan türetilen öznitelikler kaynak oluşturucu tarafından desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="needs-review-translation">{0} adını taşıyan birden çok tür var. Kaynak, algılanan ilk tür için oluşturuldu. Bu çarpışmayı çözmek için 'JsonSerializableAttribute.TypeInfoPropertyName' özelliğini kullanın.</target>
+        <target state="translated">'{0}' adını taşıyan birden çok tür var. Kaynak, algılanan ilk tür için oluşturuldu. Bu çarpışmayı çözmek için 'JsonSerializableAttribute.TypeInfoPropertyName' özelliğini kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
@@ -94,12 +94,12 @@
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
         <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
-        <target state="new">The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</target>
+        <target state="translated">'{0}' türü, JsonSerializableAttribute ile ek açıklama eklenmiş ancak JsonSerializerContext'ten türetmiyor. Kaynak kodu oluşturulmayacak.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
         <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
-        <target state="new">Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</target>
+        <target state="translated">JsonSerializableAttribute ile not eklenen türler, JsonSerializerContext'ten türetilen sınıflar olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
@@ -113,8 +113,8 @@
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
-        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
-        <target state="translated">System.Text.Json kaynak oluşturucusu C# '{0}' içinde kullanılamıyor. Lütfen dil sürümü {1} veya üstü sürümü kullanın.</target>
+        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json kaynak oluşturucusu C# {0}'ta mevcut değildir. Lütfen {1} dil sürümünü veya daha üstünü kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionTitle">
