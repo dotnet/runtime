@@ -1810,6 +1810,7 @@ void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
 	switch (ins->opcode) {
+	case OP_CKFINITE:
 	case OP_LADD:
 	case OP_LADD_IMM:
 	case OP_IADD:
@@ -2250,6 +2251,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	{
 	loop_start:
 		switch (ins->opcode) {
+		case OP_CKFINITE:
 		case OP_BREAK:
 		case OP_IL_SEQ_POINT:
 		case OP_SEQ_POINT:
@@ -4285,6 +4287,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mono_riscv_patch (branch_label, code, MONO_R_RISCV_BNE);
 			break;
+		}
+		case OP_CKFINITE: {
+			g_assert (riscv_stdext_d || riscv_stdext_f);
+			/* Check for infinity and nans */
+			if (riscv_stdext_d)
+				riscv_fclass_d (code, RISCV_T0, ins->sreg1);
+			else
+				riscv_fclass_s (code, RISCV_T0, ins->sreg1);
+			riscv_andi (code, RISCV_T0, RISCV_T0, 0b0001111110);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
+												"ArithmeticException");
 		}
 		case OP_BREAK:
 			/*

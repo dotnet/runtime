@@ -296,6 +296,9 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 __attribute__ ((warn_unused_result)) guint8 *
 mono_riscv_emit_imm (guint8 *code, int rd, gsize imm);
 
+__attribute__ ((warn_unused_result)) guint8 *
+mono_riscv_emit_float_imm (guint8 *code, int rd, gsize f_imm, gboolean isSingle);
+
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *code,
                                                                         int rd,
                                                                         gsize f_imm,
