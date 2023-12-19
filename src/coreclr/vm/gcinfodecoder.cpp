@@ -602,7 +602,7 @@ bool GcInfoDecoder::GetIsVarArg()
 bool GcInfoDecoder::HasTailCalls()
 {
     _ASSERTE( m_Flags & DECODE_HAS_TAILCALLS );
-    return ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
+    return ((m_headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 }
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 

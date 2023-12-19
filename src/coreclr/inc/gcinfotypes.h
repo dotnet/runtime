@@ -47,19 +47,22 @@ __forceinline size_t SAFE_SHIFT_RIGHT(size_t x, size_t count)
 
 inline UINT32 CeilOfLog2(size_t x)
 {
-    // we are ok even if bsr is used vs. lzcnt
+    // we want lzcnt, but bsr is ok too
     _ASSERTE(x > 0);
 
     x = (x << 1) - 1;
+
 #ifdef TARGET_64BIT
 #ifdef _MSC_VER
-    UINT32 lzcountCeil = (UINT32)__lzcnt64((unsigned __int64)x);
+    DWORD lzcountCeil;
+    _BitScanReverse64(&lzcountCeil, (unsigned long)x);
 #else // _MSC_VER
     UINT32 lzcountCeil = (UINT32)__builtin_clzl((unsigned long)x);
 #endif // _MSC_VER
 #else // TARGET_64BIT
 #ifdef _MSC_VER
-    UINT32 lzcountCeil = (UINT32)__lzcnt((unsigned int)x);
+    DWORD lzcountCeil;
+    _BitScanReverse(&lzcountCeil, (unsigned long)x);
 #else // _MSC_VER
     UINT32 lzcountCeil = (UINT32)__builtin_clz((unsigned int)x);
 #endif // _MSC_VER
