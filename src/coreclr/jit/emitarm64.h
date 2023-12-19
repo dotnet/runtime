@@ -906,9 +906,10 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
-    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
-            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
-            insOptsScalableWithPredicateMerge(opt) || insOptsScalableWithPredicatePair(opt));
+    return insOptsScalableSimple(opt) || insOptsScalableWide(opt) || insOptsScalableWithSimdScalar(opt) ||
+            insOptsScalableWithScalar(opt) || insOptsScalableWithSimdVector(opt) ||
+            insOptsScalableWithPredicateMerge(opt) || insOptsScalableWithPredicatePair(opt) ||
+            insOptsScalableWithVectorLength(opt);
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
