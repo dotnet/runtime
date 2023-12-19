@@ -93,8 +93,8 @@
     <ItemGroup>
       <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
       <AppleAssembliesToBundle Include="@(_ResolvedFileToPublishAlways->'$(PublishDir)%(RelativePath)')" />
-      <Delete Files="@(_RemovedManagedAssembly)" />
     </ItemGroup>
+    <Delete Files="@(_RemovedManagedAssembly)" />
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
