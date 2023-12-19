@@ -3871,10 +3871,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                 {
                     // Keep class handle attached to the helper call since it's difficult to restore it.
                     op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
-                    if (pFieldInfo->useEnclosingTypeOnly)
-                    {
-                        op1->AsCall()->SetArgNeedsEnclosingType();
-                    }
                 }
 
                 op1->gtFlags |= callFlags;
@@ -9111,10 +9107,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
                     GenTree* helperNode = impInitClass(&resolvedToken);
-                    if (fieldInfo.useEnclosingTypeOnly)
-                    {
-                        helperNode->AsCall()->SetArgNeedsEnclosingType();
-                    }
                     if (compDonotInline())
                     {
                         return;

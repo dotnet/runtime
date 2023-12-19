@@ -12287,7 +12287,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     CallArgs* args                    = &call->gtArgs;
     bool      generateUniqueVN        = false;
     bool      useEntryPointAddrAsArg0 = false;
-    bool      useEnclosingTypeAsArg0  = false;
 
     switch (vnf)
     {
@@ -12349,25 +12348,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_ReadyToRunStaticBaseGC:
         case VNF_ReadyToRunStaticBaseNonGC:
-        {
-            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-            {
-                if (call->IsArgNeedsEnclosingType())
-                {
-                    useEnclosingTypeAsArg0 = true;
-                    assert((call->gtInitClsHnd != NO_CLASS_HANDLE) && ((ssize_t)call->gtInitClsHnd != 0xcccccccc));
-                }
-                else
-                {
-                    useEntryPointAddrAsArg0 = true;
-                }
-            }
-            else
-            {
-                useEntryPointAddrAsArg0 = true;
-            }
-        }
-        break;
         case VNF_ReadyToRunStaticBaseThread:
         case VNF_ReadyToRunStaticBaseThreadNonGC:
         case VNF_ReadyToRunGenericStaticBase:
@@ -12413,7 +12393,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // added this arg, so we do not need to use EntryPointAddrAsArg0
         // because the indirection cell itself allows us to disambiguate.
         useEntryPointAddrAsArg0 = false;
-        useEnclosingTypeAsArg0  = false;
     }
 
     CallArg* curArg = args->Args().begin().GetArg();
@@ -12437,12 +12416,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         if (useEntryPointAddrAsArg0)
         {
             ssize_t  addrValue  = (ssize_t)call->gtEntryPoint.addr;
-            ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
-            vnp0                = ValueNumPair(callAddrVN, callAddrVN);
-        }
-        else if (useEnclosingTypeAsArg0)
-        {
-            ssize_t  addrValue  = (ssize_t)call->gtInitClsHnd;
             ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
             vnp0                = ValueNumPair(callAddrVN, callAddrVN);
         }

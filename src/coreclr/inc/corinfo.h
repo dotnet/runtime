@@ -1721,7 +1721,6 @@ struct CORINFO_FIELD_INFO
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
     CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
-    bool                    useEnclosingTypeOnly; // Used by NativeAOT
 };
 
 //----------------------------------------------------------------------------

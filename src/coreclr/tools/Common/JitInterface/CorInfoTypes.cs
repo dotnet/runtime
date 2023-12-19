@@ -1144,9 +1144,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP fieldLookup;
-
-        // Used by NativeAOT
-        public bool useEnclosingTypeOnly;
     };
 
     public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
