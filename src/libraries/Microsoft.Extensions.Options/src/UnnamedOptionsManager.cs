@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Options
 
                 lock (_syncObj ?? Interlocked.CompareExchange(ref _syncObj, new object(), null) ?? _syncObj)
                 {
-                    return (TOptions)(_factoryOrValue ??= ((IOptionsFactory<TOptions>)_factoryOrValue).Create(Options.DefaultName));
+                    return (TOptions)(_factoryOrValue ??= ((IOptionsFactory<TOptions>)_factoryOrValue!).Create(Options.DefaultName));
                 }
             }
         }
