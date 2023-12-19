@@ -1277,6 +1277,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	case OP_LCONV_TO_R8:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
+	case OP_FCONV_TO_U8:
 	case OP_RCONV_TO_R8:
 #endif
 		return !mono_arch_is_soft_float ();
