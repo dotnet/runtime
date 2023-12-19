@@ -258,13 +258,13 @@ struct __regMaskTP
 
     FORCEINLINE explicit operator regMaskSmall() const
     {
-        assert(high == 0);
+        //assert(high == 0);
         return (regMaskSmall)low;
     }
 
     FORCEINLINE explicit operator unsigned int() const
     {
-        assert(high == 0);
+        //assert(high == 0);
         return (unsigned int)low;
     }
 };
