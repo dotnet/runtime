@@ -350,6 +350,7 @@ GcInfoDecoder::GcInfoDecoder(
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     m_NumSafePoints = (UINT32) DENORMALIZE_NUM_SAFE_POINTS(m_Reader.DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE));
+    m_SafePointIndex = m_NumSafePoints;
 #endif
 
     if (slimHeader)
@@ -362,18 +363,14 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES))
+    if(flags & (DECODE_GC_LIFETIMES))
     {
         if(m_NumSafePoints)
         {
             m_SafePointIndex = FindSafePoint(m_InstructionOffset);
         }
-        else
-        {
-            m_SafePointIndex = 0;
-        }
     }
-    else if(flags & DECODE_FOR_RANGES_CALLBACK)
+    else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
