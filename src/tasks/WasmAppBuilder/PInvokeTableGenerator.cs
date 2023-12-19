@@ -458,7 +458,7 @@ internal sealed class PInvokeTableGenerator
 
             if (!type.IsValueType)
             {
-                log.Info("WASM0060", "Type {0} is not blittable: Not a ValueType", type);
+                log.InfoHigh("WASM0060", "Type {0} is not blittable: Not a ValueType", type);
                 return false;
             }
 
@@ -466,7 +466,7 @@ internal sealed class PInvokeTableGenerator
 
             if (!type.IsLayoutSequential && (fields.Length > 1))
             {
-                log.Info("WASM0061", "Type {0} is not blittable: LayoutKind is not Sequential", type);
+                log.InfoHigh("WASM0061", "Type {0} is not blittable: LayoutKind is not Sequential", type);
                 return false;
             }
 
@@ -474,7 +474,7 @@ internal sealed class PInvokeTableGenerator
             {
                 if (!IsBlittable(ft.FieldType, log))
                 {
-                    log.Info("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
+                    log.InfoHigh("WASM0062", "Type {0} is not blittable: Field {1} is not blittable", type, ft.Name);
                     return false;
                 }
                 // HACK: Skip literals since they're complicated
@@ -482,12 +482,11 @@ internal sealed class PInvokeTableGenerator
                 //  we rely on being able to pass types like System.Guid which are readonly
                 if (ft.IsLiteral)
                 {
-                    log.Info("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
+                    log.InfoHigh("WASM0063", "Type {0} is not blittable: Field {1} is literal", type, ft.Name);
                     return false;
                 }
             }
 
-            // log.Info("WASM0069", "ValueType {0} is blittable", type);
             return true;
         }
     }
