@@ -267,7 +267,7 @@ namespace System
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when trimming
-        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsEnvironmentVariableTrue("EnableAggressiveTrimming");
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.

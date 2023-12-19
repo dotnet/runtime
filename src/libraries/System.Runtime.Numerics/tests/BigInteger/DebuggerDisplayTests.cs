@@ -11,10 +11,10 @@ namespace System.Numerics.Tests
     public class DebuggerDisplayTests
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         [InlineData(new uint[] { 0, 0, 1 }, "18446744073709551616")]
         [InlineData(new uint[] { 0, 0, 0, 0, 1 }, "3.40282367e+38")]
         [InlineData(new uint[] { 0, 0x12345678, 0, 0xCC00CC00, 0x80808080 }, "7.33616508e+47")]
-        [SkipOnPlatform(TestPlatforms.Browser, "DebuggerDisplayAttribute is stripped on wasm")]
         public void TestDebuggerDisplay(uint[] bits, string displayString)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
