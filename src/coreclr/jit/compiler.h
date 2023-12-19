@@ -2141,6 +2141,7 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
+
 public:
     BasicBlock* GetHeader() const
     {
@@ -2230,6 +2231,10 @@ public:
     bool AnalyzeIteration(NaturalLoopIterInfo* info);
 
     bool HasDef(unsigned lclNum);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoop* loop);
+#endif // DEBUG
 };
 
 // Represents a collection of the natural loops in the flow graph. See
@@ -2253,6 +2258,7 @@ class FlowGraphNaturalLoops
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
@@ -2330,6 +2336,10 @@ public:
     }
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoops* loops);
+#endif // DEBUG
 };
 
 // Represents the dominator tree of the flow graph.
@@ -4149,7 +4159,7 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
 
 #if defined(TARGET_64BIT)
-        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
+        assert(compAppleArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
@@ -5198,6 +5208,8 @@ public:
 
     PhaseStatus fgImport();
 
+    PhaseStatus fgUpdateCallFinally();
+
     PhaseStatus fgTransformIndirectCalls();
 
     PhaseStatus fgTransformPatchpoints();
@@ -5983,7 +5995,9 @@ public:
 
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
-    void fgRemoveBlock(BasicBlock* block, bool unreachable);
+    BasicBlock* fgRemoveBlock(BasicBlock* block, bool unreachable);
+
+    void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
     bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
@@ -7201,10 +7215,6 @@ protected:
 
     // Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
-
-    // Requires that "from" and "to" have the same "bbKind" (perhaps because "to" is a clone
-    // of "from".)  Copies the jump destination from "from" to "to".
-    void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
 
     // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
     bool optIsLoopEntry(BasicBlock* block) const;

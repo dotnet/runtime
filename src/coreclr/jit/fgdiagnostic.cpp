@@ -132,15 +132,12 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        bool prevIsCallAlwaysPair = block->isBBCallAlwaysPairTail();
-
         // Check for an unnecessary jumps to the next block
         bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
 
         if (block->KindIs(BBJ_COND))
         {
-            // A conditional branch should never jump to the next block
-            // as it can be folded into a BBJ_ALWAYS;
+            // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
             doAssertOnJumpToNextBlock = true;
         }
 
@@ -152,19 +149,11 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        /* Make sure BBF_KEEP_BBJ_ALWAYS is set correctly */
-
-        if (block->KindIs(BBJ_ALWAYS) && prevIsCallAlwaysPair)
-        {
-            noway_assert(block->HasFlag(BBF_KEEP_BBJ_ALWAYS));
-        }
-
-        /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
-        /* an BBJ_ALWAYS block with BBF_INTERNAL set */
-        /* or that it's a BBF_RETLESS_CALL */
+        // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
+        // or that it's a BBF_RETLESS_CALL.
         if (block->KindIs(BBJ_CALLFINALLY))
         {
-            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
+            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallFinallyPair());
         }
 
         /* no un-compacted blocks */
@@ -2082,17 +2071,16 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                        maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
+            case BBJ_CALLFINALLYRET:
+                printf("-> " FMT_BB "%*s (callfr)", block->GetFinallyContinuation()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetFinallyContinuation()->bbNum), 2), "");
+                break;
+
             case BBJ_ALWAYS:
-                if (flags & BBF_KEEP_BBJ_ALWAYS)
-                {
-                    printf("-> " FMT_BB "%*s (ALWAYS)", block->GetTarget()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
-                }
-                else
-                {
-                    printf("-> " FMT_BB "%*s (always)", block->GetTarget()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
-                }
+                const char* label;
+                label = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
+                printf("-> " FMT_BB "%*s (%s)", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "", label);
                 break;
 
             case BBJ_LEAVE:
@@ -2398,7 +2386,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     }
     else if (JitConfig.JitDumpFgBlockOrder() == 2)
     {
-
         jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBIDCmp());
         inDefaultOrder = false;
     }
@@ -2785,11 +2772,13 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     }
 
     // The end of a finally region is a BBJ_EHFINALLYRET block (during importing, BBJ_LEAVE) which
-    // is marked as "returning" to the BBJ_ALWAYS block following the BBJ_CALLFINALLY
-    // block that does a local call to the finally. This BBJ_ALWAYS is within
-    // the try region protected by the finally (for x86, ARM), but that's ok.
+    // is marked as "returning" to the BBJ_CALLFINALLYRET block following the BBJ_CALLFINALLY
+    // block that does a local call to the finally. This BBJ_CALLFINALLYRET is within
+    // the try region protected by the finally (for x86), but that's ok.
     BasicBlock* prevBlock = block->Prev();
-    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_ALWAYS) && blockPred->KindIs(BBJ_EHFINALLYRET))
+    // TODO-Quirk: the BBJ_ALWAYS below is a quirk, until fgUpdateCallFinally is removed
+    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) &&
+        blockPred->KindIs(BBJ_EHFINALLYRET))
     {
         return true;
     }
@@ -2850,6 +2839,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
 
         case BBJ_ALWAYS:
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             assert(blockPred->TargetIs(block));

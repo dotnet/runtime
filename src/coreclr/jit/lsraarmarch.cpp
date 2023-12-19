@@ -455,7 +455,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
         assert(!src->isContained());
         srcCount = BuildOperandUses(src);
 #if defined(FEATURE_SIMD)
-        if (compMacOsArm64Abi() && argNode->GetStackByteSize() == 12)
+        if (compAppleArm64Abi() && argNode->GetStackByteSize() == 12)
         {
             // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
             // To assemble the vector properly we would need an additional int register.

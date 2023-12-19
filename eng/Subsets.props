@@ -473,11 +473,11 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)\System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" Category="mono" />
-    <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
+    <ProjectToBuild Include="$(BrowserProjectRoot)browser.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasiruntime+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)wasi\wasi.proj" Category="mono" />
+    <ProjectToBuild Include="$(WasiProjectRoot)wasi.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
