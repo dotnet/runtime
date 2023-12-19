@@ -2333,6 +2333,11 @@ unsigned code_t emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsig
     return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2, imm12), sizeof(code_t));
 }
 
+unsigned code_t emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm20) const
+{
+    return emitOutput_Instr(dst, insEncodeUTypeInstr(ins, rd, imm20), sizeof(code_t));
+}
+
 void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                                 instrDescJmp*   jmp,
                                                 UNATIVE_OFFSET& dstOffs,
