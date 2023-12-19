@@ -4941,8 +4941,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					g_assert_not_reached ();
 			}
 
-			g_assert(call->stack_usage == 0);
-
 			/* Restore registers */
 			code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
 		                                   -cfg->arch.saved_gregs_offset, FALSE);
