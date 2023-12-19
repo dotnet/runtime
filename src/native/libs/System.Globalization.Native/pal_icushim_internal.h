@@ -25,8 +25,7 @@
 #include <unicode/uchar.h>
 #include <unicode/uidna.h>
 #include <unicode/utypes.h>
-#endif
-#if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
+#else
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
