@@ -1956,6 +1956,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_RDIV:
 	case OP_IREM:
 	case OP_LREM:
+	case OP_FREM:
 	case OP_IREM_IMM:
 	case OP_LREM_IMM:
 	case OP_IREM_UN:
