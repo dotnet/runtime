@@ -5495,7 +5495,7 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    m_newToOldLoop = m_loops->NumLoops() == 0 ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
+    m_newToOldLoop = (m_loops->NumLoops() == 0) ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
     m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
 
     // Unnatural loops can quickly become natural if we manage to remove some
