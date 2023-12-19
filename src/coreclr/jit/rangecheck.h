@@ -554,9 +554,20 @@ struct RangeOps
         {
             return Limit(Limit::keUnknown);
         }
+
+        const int hi = range.UpperLimit().GetConstant();
+        const int lo = range.LowerLimit().GetConstant();
+
+        // Give up on edge cases
+        if ((hi == INT_MIN) || (lo == INT_MIN))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        // Example: [0..7] => [-7..0]
         Range result  = Limit(Limit::keConstant);
-        result.lLimit = Limit(Limit::keConstant, -range.UpperLimit().GetConstant());
-        result.uLimit = Limit(Limit::keConstant, -range.LowerLimit().GetConstant());
+        result.lLimit = Limit(Limit::keConstant, -hi);
+        result.uLimit = Limit(Limit::keConstant, -lo);
         return result;
     }
 };
