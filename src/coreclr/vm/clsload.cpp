@@ -3673,7 +3673,7 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
 
     _ASSERTE(insertedEntry != NULL);
     COUNT_T exportedEntryIndex = RidFromToken(cl) - 1;
-    if (classEntryIndex < exportedEntries->GetCount())
+    if (exportedEntryIndex < exportedEntries->GetCount())
     {
         (*exportedEntries)[exportedEntryIndex] = insertedEntry;
     }
