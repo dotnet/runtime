@@ -1262,6 +1262,7 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	case OP_FBGT_UN:
 	case OP_RCONV_TO_I2:
 	case OP_RCONV_TO_I4:
+	case OP_RCONV_TO_U4:
 	case OP_ICONV_TO_R4:
 	case OP_FCONV_TO_I1:
 	case OP_FCONV_TO_U1:
@@ -1844,6 +1845,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_I2:
 	case OP_ICONV_TO_U2:
 	case OP_RCONV_TO_I4:
+	case OP_RCONV_TO_U4:
 	case OP_FCONV_TO_I1:
 	case OP_FCONV_TO_U1:
 	case OP_FCONV_TO_I2:
@@ -2390,6 +2392,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCONV_TO_R8:
 		case OP_RCONV_TO_I8:
 		case OP_RCONV_TO_I4:
+		case OP_RCONV_TO_U4:
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_U4:
 		case OP_FCONV_TO_R4:
@@ -4796,6 +4799,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCONV_TO_I4: {
 			g_assert (riscv_stdext_f);
 			riscv_fcvt_w_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			break;
+		}
+		case OP_RCONV_TO_U4: {
+			g_assert (riscv_stdext_f);
+			riscv_fcvt_wu_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_FCONV_TO_I4: {
