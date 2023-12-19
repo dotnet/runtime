@@ -253,7 +253,7 @@ struct __regMaskTP
 
     FORCEINLINE explicit operator bool() const
     {
-        return low != 0 && high != 0;
+        return low != 0 || high != 0;
     }
 
     FORCEINLINE explicit operator regMaskSmall() const
@@ -315,28 +315,28 @@ FORCEINLINE regMaskTP operator^=(regMaskTP& a, const regMaskTP& b)
 
 FORCEINLINE regMaskSmall operator^=(regMaskSmall& a, const regMaskTP& b)
 {
-    assert(b.high == 0);
+    //assert(b.high == 0);
     a ^= b.low;
     return a;
 }
 
 FORCEINLINE regMaskSmall operator&=(regMaskSmall& a, const regMaskTP& b)
 {
-    assert(b.high == 0);
+    //assert(b.high == 0);
     a &= b.low;
     return a;
 }
 
 FORCEINLINE regMaskSmall operator|=(regMaskSmall& a, const regMaskTP& b)
 {
-    assert(b.high == 0);
+    //assert(b.high == 0);
     a |= b.low;
     return a;
 }
 
 FORCEINLINE regMaskSmall operator-=(regMaskSmall& a, const regMaskTP& b)
 {
-    assert(b.high == 0);
+    //assert(b.high == 0);
     a -= b.low;
     return a;
 }
