@@ -205,6 +205,7 @@ long_xor: dest:i src1:i src2:i len:4
 long_or_imm: dest:i src1:i len:4
 long_shl: dest:i src1:i src2:i len:4
 long_shl_imm: dest:i src1:i len:4
+long_shr: dest:i src1:i src2:i len:4
 long_shr_un: dest:i src1:i src2:i len:4
 long_shr_imm: dest:i src1:i len:4
 long_shr_un_imm: dest:i src1:i len:4

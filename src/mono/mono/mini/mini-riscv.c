@@ -1892,6 +1892,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ISHL_IMM:
 	case OP_LSHL_IMM:
 	case OP_ISHR:
+	case OP_LSHR:
 	case OP_ISHR_UN:
 	case OP_LSHR_UN:
 	case OP_ISHR_IMM:
@@ -2319,6 +2320,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHR_IMM:
 		case OP_SHR_UN_IMM:
 		case OP_ISHR_UN_IMM:
+		case OP_LSHR:
 		case OP_LSHR_UN:
 		case OP_LSHR_IMM:
 		case OP_LSHR_UN_IMM:
