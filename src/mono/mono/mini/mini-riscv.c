@@ -2588,14 +2588,18 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else if (ins->next->opcode == OP_FBEQ) {
 					// rcmp rd, rs1, rs2; fbeq rd -> rceq rd, rs1, rs2; bne rd, X0
 					ins->opcode = OP_RCEQ;
-					ins->dreg = mono_alloc_ireg (cfg);
-					ins->sreg1 = ins->sreg1;
-					ins->sreg2 = ins->sreg2;
 
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				} 
+				} else if (ins->next->opcode == OP_FBNE_UN) {
+					// rcmp rd, rs1, rs2; fbne rd -> rceq rd, rs1, rs2; beq rd, X0
+					ins->opcode = OP_RCEQ;
+					
+					ins->next->opcode = OP_RISCV_BEQ;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
+				}
 				else {
 					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
