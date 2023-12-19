@@ -112,6 +112,7 @@ unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm2
 BYTE* emitOutputInstr_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_Addi(BYTE* dst, const instrDesc* id);
 BYTE* emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
+BYTE* emitOutputInstr_Addi32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
