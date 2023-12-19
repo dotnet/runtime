@@ -1807,6 +1807,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IADD:
 	case OP_IADD_IMM:
 	case OP_IADD_OVF:
+	case OP_IADD_OVF_UN:
 	case OP_RADD:
 	case OP_FADD:
 	case OP_ISUB:
@@ -2657,13 +2658,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS_BEFORE (cfg, ins, temp, OP_FCONV_TO_R4);
 				temp->dreg = mono_alloc_freg (cfg);
 				temp->sreg1 = ins->sreg1;
-
 				ins->sreg1 = temp->dreg;
 			}
 			// check if offset is valid I-type Imm
 			if (!RISCV_VALID_I_IMM (ins->inst_offset)) {
-				g_assert (ins->opcode != OP_STORER4_MEMBASE_REG);
-
 				/**
 				 * iconst t0, offset
 				 * add t0, rd, t0
