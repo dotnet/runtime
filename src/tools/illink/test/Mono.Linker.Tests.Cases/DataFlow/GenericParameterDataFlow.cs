@@ -8,10 +8,10 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// NativeAOT differences in behavior:
+	// NativeAOT/analyzer differences in behavior compared to ILLink:
 	//
 	// See the description on top of GenericParameterWarningLocation for the expected differences in behavior
-	// for NativeAOT.
+	// for NativeAOT and the analyzer.
 	// The tests affected by this are marked with "NativeAOT_StorageSpaceType"
 	//
 

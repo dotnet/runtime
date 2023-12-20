@@ -9,7 +9,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// NativeAOT differences in behavior:
+	// NativeAOT/analyzer differences in behavior compared to ILLink:
 	//
 	// Validation of generic parameters only matters if the instantiation can be used to run code with the substituted type.
 	// So for generic methods the validation has to happen basically always (since any access to the method can lead to the code
@@ -17,11 +17,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// For generic types though the situation is different. Code on the type can only run if the type is instantiated (new)
 	// or if static members are accessed on it (method calls, or fields accesses both can lead to static .cctor execution).
 	// Others usages of the type cannot themselves lead to code execution in the type, and thus don't need to be validated.
-	// Currently linker and analyzer both validate every time there's a type occurrence in the code.
-	// NativeAOT on the other hand only validates the cases which can lead to code execution (this is partially because the compiler
-	// doesn't care about the type in other situations really).
+	// Currently linker validates every time there's a type occurrence in the code.
+	// NativeAOT and the analyzer on the other hand only validate the cases which can lead to code execution (this is partially
+	// because the compiler doesn't care about the type in other situations really).
 	// So for example local variables of a given type, or method parameters of that type alone will not cause code execution
-	// inside that type and thus won't be validated by NativeAOT compiler.
+	// inside that type and thus won't be validated by NativeAOT compiler or the analyzer.
 	//
 	// Below this explanation/fact is referred to as "NativeAOT_StorageSpaceType"
 	//   Storage space - declaring a storage space as having a specific type doesn't in itself do anything with that type as per
