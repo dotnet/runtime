@@ -51,25 +51,26 @@ namespace System.Net.Mail
 
         internal string Encode(int charsConsumed, bool allowUnicode)
         {
-            StringBuilder? encodedAddresses = null;
+            var encodedAddresses = new ValueStringBuilder(stackalloc char[256]);
 
             //encode each address individually (except the first), fold and separate with a comma
             foreach (MailAddress address in this)
             {
-                if (encodedAddresses is null)
+                if (encodedAddresses.Length == 0)
                 {
                     //no need to append a comma to the first one because it may be the only one.
-                    encodedAddresses = new(address.Encode(charsConsumed, allowUnicode));
+                    encodedAddresses.Append(address.Encode(charsConsumed, allowUnicode));
                 }
                 else
                 {
                     //appending another one, append a comma to separate and then fold and add the encoded address
                     //the charsConsumed will be 1 because only the first line needs to account for the header itself for
                     //line length; subsequent lines have a single whitespace character because they are folded here
-                    encodedAddresses.Append(", ").Append(address.Encode(1, allowUnicode));
+                    encodedAddresses.Append(", ");
+                    encodedAddresses.Append(address.Encode(1, allowUnicode));
                 }
             }
-            return encodedAddresses?.ToString() ?? string.Empty;
+            return encodedAddresses.ToString();
         }
     }
 }
