@@ -1970,11 +1970,15 @@ class FlowGraphDfsTree
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
 
+    // Whether the DFS that produced the tree found any backedges.
+    bool m_hasCycle;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
+        , m_hasCycle(hasCycle)
     {
     }
 
@@ -2002,6 +2006,11 @@ public:
     BitVecTraits PostOrderTraits() const
     {
         return BitVecTraits(m_postOrderCount, m_comp);
+    }
+
+    bool HasCycle() const
+    {
+        return m_hasCycle;
     }
 
     bool Contains(BasicBlock* block) const;
@@ -2141,6 +2150,7 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
+
 public:
     BasicBlock* GetHeader() const
     {
@@ -2230,6 +2240,10 @@ public:
     bool AnalyzeIteration(NaturalLoopIterInfo* info);
 
     bool HasDef(unsigned lclNum);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoop* loop);
+#endif // DEBUG
 };
 
 // Represents a collection of the natural loops in the flow graph. See
@@ -2246,13 +2260,10 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
-    // Whether or not we saw any non-natural loop cycles, also known as
-    // irreducible loops.
-    unsigned m_improperLoopHeaders = 0;
-
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
@@ -2262,11 +2273,6 @@ public:
     size_t NumLoops()
     {
         return m_loops.size();
-    }
-
-    bool HaveNonNaturalLoopCycles()
-    {
-        return m_improperLoopHeaders > 0;
     }
 
     FlowGraphNaturalLoop* GetLoopByIndex(unsigned index);
@@ -2330,6 +2336,10 @@ public:
     }
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoops* loops);
+#endif // DEBUG
 };
 
 // Represents the dominator tree of the flow graph.
@@ -5198,8 +5208,6 @@ public:
 
     PhaseStatus fgImport();
 
-    PhaseStatus fgUpdateCallFinally();
-
     PhaseStatus fgTransformIndirectCalls();
 
     PhaseStatus fgTransformPatchpoints();
@@ -6076,8 +6084,8 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
-    template<typename TFuncAssignPreorder, typename TFuncAssignPostorder>
-    unsigned fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPostorder assignPostorder);
+    template<typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
 
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
