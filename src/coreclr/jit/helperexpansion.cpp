@@ -286,13 +286,13 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->Next(), true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->GetFalseTarget(), true);
 
     assert(fallbackBb->JumpsToNext());
-    fallbackBb->bbFlags |= BBF_NONE_QUIRK;
+    fallbackBb->SetFlags(BBF_NONE_QUIRK);
 
-    // Set nullcheckBb's real jump target
-    nullcheckBb->SetJumpDest(fallbackBb);
+    // Set nullcheckBb's true jump target
+    nullcheckBb->SetTrueTarget(fallbackBb);
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
@@ -352,7 +352,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
-        prevBb->SetJumpDest(sizeCheckBb);
+        prevBb->SetTarget(sizeCheckBb);
         fgAddRefPred(sizeCheckBb, prevBb);
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         fgAddRefPred(nullcheckBb, sizeCheckBb);
@@ -365,7 +365,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
-        prevBb->SetJumpDest(nullcheckBb);
+        prevBb->SetTarget(nullcheckBb);
         fgAddRefPred(nullcheckBb, prevBb);
         // No size check, nullcheckBb jumps to fast path
         fgAddRefPred(fastPathBb, nullcheckBb);
@@ -599,19 +599,19 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     }
-    else if (TargetOS::IsMacOS)
+    else if (TargetOS::IsApplePlatform)
     {
-        // For OSX x64/arm64, we need to get the address of relevant __thread_vars section of
+        // For Apple x64/arm64, we need to get the address of relevant __thread_vars section of
         // the thread local variable `t_ThreadStatics`. Address of `tlv_get_address` is stored
         // in this entry, which we dereference and invoke it, passing the __thread_vars address
         // present in `threadVarsSection`.
         //
-        // Code sequence to access thread local variable on osx/x64:
+        // Code sequence to access thread local variable on Apple/x64:
         //
         //      mov rdi, threadVarsSection
         //      call     [rdi]
         //
-        // Code sequence to access thread local variable on osx/arm64:
+        // Code sequence to access thread local variable on Apple/arm64:
         //
         //      mov x0, threadVarsSection
         //      mov x1, [x0]
@@ -780,17 +780,17 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
 
-    // Set maxThreadStaticBlocksCondBB's real jump target
-    maxThreadStaticBlocksCondBB->SetJumpDest(fallbackBb);
+    // Set maxThreadStaticBlocksCondBB's true jump target
+    maxThreadStaticBlocksCondBB->SetTrueTarget(fallbackBb);
 
-    // Set threadStaticBlockNullCondBB's real jump target
-    threadStaticBlockNullCondBB->SetJumpDest(fastPathBb);
+    // Set threadStaticBlockNullCondBB's true jump target
+    threadStaticBlockNullCondBB->SetTrueTarget(fastPathBb);
 
     //
     // Update preds in all new blocks
     //
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    prevBb->SetJumpDest(maxThreadStaticBlocksCondBB);
+    prevBb->SetTarget(maxThreadStaticBlocksCondBB);
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(maxThreadStaticBlocksCondBB, prevBb);
 
@@ -1095,9 +1095,10 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // Fallback basic block
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
-    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->Next(), true);
+    BasicBlock* helperCallBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->GetFalseTarget(), true);
     assert(helperCallBb->JumpsToNext());
-    helperCallBb->bbFlags |= BBF_NONE_QUIRK;
+    helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
     GenTree* replacementNode = nullptr;
     if (retValKind == SHRV_STATIC_BASE_PTR)
@@ -1165,8 +1166,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // prevBb always flows into isInitedBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    prevBb->SetJumpDest(isInitedBb);
-    prevBb->bbFlags |= BBF_NONE_QUIRK;
+    prevBb->SetTarget(isInitedBb);
+    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
     fgAddRefPred(isInitedBb, prevBb);
 
@@ -1429,7 +1430,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
     BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true, block);
-    lengthCheckBb->bbFlags |= BBF_INTERNAL;
+    lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
     GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
@@ -1450,9 +1451,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // In theory, we could just emit the const U8 data to the data section and use GT_BLK here
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
-    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->Next());
+    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->GetFalseTarget());
     assert(fastpathBb->JumpsToNext());
-    fastpathBb->bbFlags |= (BBF_INTERNAL | BBF_NONE_QUIRK);
+    fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
     // The widest type we can use for loads
     const var_types maxLoadType = roundDownMaxType(srcLenU8);
@@ -1508,8 +1509,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fgRemoveRefPred(block, prevBb);
     // prevBb flows into lengthCheckBb
     assert(prevBb->KindIs(BBJ_ALWAYS));
-    prevBb->SetJumpDest(lengthCheckBb);
-    prevBb->bbFlags |= BBF_NONE_QUIRK;
+    prevBb->SetTarget(lengthCheckBb);
+    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
     fgAddRefPred(lengthCheckBb, prevBb);
     // lengthCheckBb has two successors: block and fastpathBb

@@ -1275,14 +1275,14 @@ void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
 //
 // Remarks:
 //   This function will determine how the argument size needs to be rounded. On
-//   most ABIs all arguments are rounded to stack pointer size, but macOS arm64
+//   most ABIs all arguments are rounded to stack pointer size, but Apple arm64
 //   ABI is an exception as it allows packing some small arguments into the
 //   same stack slot.
 //
 void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa)
 {
     unsigned roundedByteSize;
-    if (compMacOsArm64Abi())
+    if (compAppleArm64Abi())
     {
         // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
         if (isStruct && !isFloatHfa)
@@ -2763,6 +2763,7 @@ AGAIN:
                 }
                 return true;
 
+            case GT_NOP:
             case GT_LABEL:
                 return true;
 
@@ -4512,7 +4513,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_types type)
 {
     GenTree* addrComma = addr;
-    addr               = addr->gtEffectiveVal(/* commaOnly */ true);
+    addr               = addr->gtEffectiveVal();
 
     // These are "out" parameters on the call to genCreateAddrMode():
     bool rev;      // This will be true if the operands will need to be reversed. At this point we
@@ -5334,6 +5335,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 0;
                 break;
 
+            case GT_NOP:
+                level  = 0;
+                costEx = 0;
+                costSz = 0;
+                break;
+
             default:
                 level  = 1;
                 costEx = 1;
@@ -5447,11 +5454,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 6;
                     }
 
-                    break;
-
-                case GT_NOP:
-                    costEx = 0;
-                    costSz = 0;
                     break;
 
                 case GT_INTRINSIC:
@@ -6444,6 +6446,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_NOP:
             return false;
 
         // Standard unary operators
@@ -6473,7 +6476,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_RETURNTRAP:
-        case GT_NOP:
         case GT_RETURN:
         case GT_RETFILT:
         case GT_BSWAP:
@@ -8641,8 +8643,8 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 #endif // TARGET_ARM64
 
     bool     isSignedDivide = OperIs(GT_DIV, GT_MOD);
-    GenTree* dividend       = gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
-    GenTree* divisor        = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+    GenTree* dividend       = gtGetOp1()->gtEffectiveVal();
+    GenTree* divisor        = gtGetOp2()->gtEffectiveVal();
 
 #if !defined(TARGET_64BIT)
     if (dividend->OperIs(GT_LONG))
@@ -8764,7 +8766,7 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
     {
         // Now set DONT_CSE on the GT_CNS_INT divisor, note that
         // with ValueNumbering we can have a non GT_CNS_INT divisor
-        GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
+        GenTree* divisor = gtGetOp2()->gtEffectiveVal();
         if (divisor->OperIs(GT_CNS_INT))
         {
             divisor->gtFlags |= GTF_DONT_CSE;
@@ -9211,6 +9213,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_CATCH_ARG:
             case GT_NO_OP:
+            case GT_NOP:
             case GT_LABEL:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
@@ -10099,6 +10102,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_NOP:
             m_state = -1;
             return;
 
@@ -10142,7 +10146,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         // Unary operators with an optional operand
-        case GT_NOP:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -12126,6 +12129,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         // Vanilla leaves. No qualifying information available. So do nothing
 
+        case GT_NOP:
         case GT_NO_OP:
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
@@ -14011,12 +14015,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
 {
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
-
-    // Walk through any wrapping nop.
-    if ((tree->gtOper == GT_NOP) && (tree->gtType == TYP_I_IMPL))
-    {
-        tree = tree->AsOp()->gtOp1;
-    }
 
     // The handle could be a literal constant
     if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
@@ -18239,7 +18237,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
     }
 
     // Tunnel through commas.
-    GenTree*         obj   = tree->gtEffectiveVal(false);
+    GenTree*         obj   = tree->gtEffectiveVal();
     const genTreeOps objOp = obj->OperGet();
 
     switch (objOp)
@@ -18561,6 +18559,32 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             *pIsNonNull = helperResultNonNull;
             break;
         }
+
+        case CORINFO_HELP_BOX:
+        case CORINFO_HELP_BOX_NULLABLE:
+        {
+            GenTree* typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            if (typeArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                const bool isNullableHelper = (helper == CORINFO_HELP_BOX_NULLABLE);
+
+                objClass = gtGetHelperArgClassHandle(typeArg);
+                if ((objClass != NO_CLASS_HANDLE) && isNullableHelper)
+                {
+                    // Nullable<T> is boxed as just T (via CORINFO_HELP_BOX_NULLABLE)
+                    objClass = info.compCompHnd->getTypeForBox(objClass);
+                }
+
+                if (objClass != NO_CLASS_HANDLE)
+                {
+                    // CORINFO_HELP_BOX_NULLABLE may return null
+                    // CORINFO_HELP_BOX always returns non-null
+                    *pIsNonNull = !isNullableHelper;
+                    *pIsExact   = true;
+                }
+            }
+        }
+        break;
 
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTANY:

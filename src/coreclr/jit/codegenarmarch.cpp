@@ -805,7 +805,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             regNumber srcReg = genConsumeReg(source);
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
 
-            assert(compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+            assert(compAppleArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
 
 #ifdef TARGET_ARM64
             if (treeNode->GetStackByteSize() == 12)
@@ -825,7 +825,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
 
         var_types slotType = genActualType(source);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             // Small typed args do not get their own full stack slots, so make
             // sure we do not overwrite adjacent arguments.
@@ -5428,7 +5428,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 

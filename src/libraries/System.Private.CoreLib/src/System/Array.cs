@@ -954,7 +954,7 @@ namespace System
 
                         return (result >= 0) ? (index + result) : ~(index + ~result);
 
-                        static int GenericBinarySearch<T>(Array array, int adjustedIndex, int length, object value) where T: struct, IComparable<T>
+                        static int GenericBinarySearch<T>(Array array, int adjustedIndex, int length, object value) where T : struct, IComparable<T>
                             => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).BinarySearch(Unsafe.As<byte, T>(ref value.GetRawData()));
                     }
                 }
@@ -2102,7 +2102,7 @@ namespace System
                             return;
                     }
 
-                    static void GenericSort<T>(Array keys, Array? items, int adjustedIndex, int length) where T: struct
+                    static void GenericSort<T>(Array keys, Array? items, int adjustedIndex, int length) where T : struct
                     {
                         Span<T> keysSpan = UnsafeArrayAsSpan<T>(keys, adjustedIndex, length);
                         if (items != null)

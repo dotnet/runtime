@@ -2787,6 +2787,7 @@ lookup_start:
 	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_OTHER) {
 		if (mono_llvm_only) {
 			/* Signal to the caller that AOTed code is not found */
+			g_assert (method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 			return NULL;
 		}
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
@@ -3400,7 +3401,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
+		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
 		}
@@ -3509,8 +3510,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		gboolean use_interp = FALSE;
 
-		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
-			/* The runtime invoke wrappers contain clauses so they are not AOTed */
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP && method->string_ctor)
 			use_interp = TRUE;
 
 		if (callee) {
@@ -3621,7 +3621,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 			if (m_type_is_byref (t)) {
 				args [pindex ++] = &params [i];
-			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
+			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
 				args [pindex ++] = &params [i];
 			} else {
 				args [pindex ++] = params [i];

@@ -3954,6 +3954,17 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector64SByteAbs_MinValue()
+        {
+            Vector64<sbyte> vector = Vector64.Create(sbyte.MinValue);
+            Vector64<sbyte> abs = Vector64.Abs(vector);
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal(sbyte.MinValue, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]

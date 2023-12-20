@@ -28,7 +28,8 @@
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'solaris' Or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
     <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</PublishReadyToRun>
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+    <PublishReadyToRun Condition="'$(DotnetBuildVertical)' == 'true' AND '$(CrossBuild)' == 'true'">false</PublishReadyToRun>
+    <PublishReadyToRunComposite>$(PublishReadyToRun)</PublishReadyToRunComposite>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

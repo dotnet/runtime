@@ -447,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DWORD lpString2,
             DWORD cchCount2
             );*/
-        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int CompareString(
             uint locale,
             uint dwCmpFlags,

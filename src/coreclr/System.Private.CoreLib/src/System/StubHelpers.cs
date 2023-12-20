@@ -231,7 +231,7 @@ namespace System.StubHelpers
             }
             else
             {
-                bool hasTrailByte = strManaged.TryGetTrailByte(out byte trailByte);
+                bool hasTrailByte = StubHelpers.TryGetStringTrailByte(strManaged, out byte trailByte);
 
                 uint lengthInBytes = (uint)strManaged.Length * 2;
 
@@ -315,7 +315,7 @@ namespace System.StubHelpers
                 if ((length & 1) == 1)
                 {
                     // odd-sized strings need to have the trailing byte saved in their sync block
-                    ret.SetTrailByte(((byte*)bstr)[length - 1]);
+                    StubHelpers.SetStringTrailByte(ret, ((byte*)bstr)[length - 1]);
                 }
 
                 return ret;
@@ -538,14 +538,37 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
     internal static partial class InterfaceMarshaler
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
+        internal static IntPtr ConvertToNative(object? objSrc, IntPtr itfMT, IntPtr classMT, int flags)
+        {
+            if (objSrc == null)
+                return IntPtr.Zero;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
+            return ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), itfMT, classMT, flags);
+        }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
-        internal static partial void ClearNative(IntPtr pUnk);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
+        private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag);
+
+        internal static object? ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags)
+        {
+            if (ppUnk == IntPtr.Zero)
+                return null;
+
+            object? retObject = null;
+            ConvertToManaged(ref ppUnk, itfMT, classMT, flags, ObjectHandleOnStack.Create(ref retObject));
+            return retObject;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToManaged")]
+        private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject);
+
+        internal static void ClearNative(IntPtr pUnk)
+        {
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 
@@ -1119,8 +1142,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetLastError();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ThrowInteropParamException(int resID, int paramIdx);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
+        internal static partial void ThrowInteropParamException(int resID, int paramIdx);
 
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
@@ -1249,12 +1272,72 @@ namespace System.StubHelpers
             }
         }
 
+        // Try to retrieve the extra byte - returns false if not present.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative);
+        internal static extern bool TryGetStringTrailByte(string str, out byte data);
+
+        // Set extra byte for odd-sized strings that came from interop as BSTR.
+        internal static void SetStringTrailByte(string str, byte data)
+        {
+            SetStringTrailByte(new StringHandleOnStack(ref str!), data);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_SetStringTrailByte")]
+        private static partial void SetStringTrailByte(StringHandleOnStack str, byte data);
+
+        internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            nuint size;
+            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
+            Debug.Assert(success);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Marshal, ref pCleanupWorkList);
+            }
+            else
+            {
+                Buffer.Memmove(ref *pNative, ref obj.GetRawData(), size);
+            }
+        }
+
+        internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            nuint size;
+            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
+            Debug.Assert(success);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            }
+            else
+            {
+                Buffer.Memmove(ref obj.GetRawData(), ref *pNative, size);
+            }
+        }
+
+        internal static unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+
+            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            nuint size;
+            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
+            Debug.Assert(success);
+
+            if (structMarshalStub != null)
+            {
+                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateInternal(IntPtr typeHandle);
 

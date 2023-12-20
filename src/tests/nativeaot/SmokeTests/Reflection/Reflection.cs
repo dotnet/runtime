@@ -42,6 +42,7 @@ internal static class ReflectionTest
         TestILScanner.Run();
         TestTypeGetType.Run();
         TestUnreferencedEnum.Run();
+        TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
@@ -1033,6 +1034,34 @@ internal static class ReflectionTest
             str = ConstructorInvoker.Create(ctor).Invoke(new char[] { 'a' }, 0, 1 );
             if ((string)str != "a")
                 throw new Exception();
+        }
+    }
+
+    class TestTypesInMethodSignatures
+    {
+        interface IUnreferenced { }
+
+        class UnreferencedBaseType : IUnreferenced { }
+        class UnreferencedMidType : UnreferencedBaseType { }
+        class ReferencedDerivedType : UnreferencedMidType { }
+
+        static void DoSomething(ReferencedDerivedType d) { }
+
+        public static void Run()
+        {
+            var mi = typeof(TestTypesInMethodSignatures).GetMethod(nameof(DoSomething), BindingFlags.Static | BindingFlags.NonPublic);
+            Type t = mi.GetParameters()[0].ParameterType;
+            int count = 0;
+            while (t != typeof(object))
+            {
+                t = t.BaseType;
+                count++;
+            }
+
+            Assert.Equal(count, 3);
+
+            // This one could in theory fail if we start trimming interface lists
+            Assert.Equal(1, mi.GetParameters()[0].ParameterType.GetInterfaces().Length);
         }
     }
 

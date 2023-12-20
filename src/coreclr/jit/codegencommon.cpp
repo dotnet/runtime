@@ -356,13 +356,13 @@ void CodeGen::genMarkLabelsForCodegen()
     // No label flags should be set before this.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert((block->bbFlags & BBF_HAS_LABEL) == 0);
+        assert(!block->HasFlag(BBF_HAS_LABEL));
     }
 #endif // DEBUG
 
     // The first block is special; it always needs a label. This is to properly set up GC info.
     JITDUMP("  " FMT_BB " : first block\n", compiler->fgFirstBB->bbNum);
-    compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+    compiler->fgFirstBB->SetFlags(BBF_HAS_LABEL);
 
     // The current implementation of switch tables requires the first block to have a label so it
     // can generate offsets to the switch label targets.
@@ -371,15 +371,14 @@ void CodeGen::genMarkLabelsForCodegen()
     if (compiler->fgHasSwitch)
     {
         JITDUMP("  " FMT_BB " : function has switch; mark first block\n", compiler->fgFirstBB->bbNum);
-        compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+        compiler->fgFirstBB->SetFlags(BBF_HAS_LABEL);
     }
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
-            case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
-            {
+            case BBJ_ALWAYS:
                 // If we can skip this jump, don't create a label for the target
                 if (block->CanRemoveJumpToNext(compiler))
                 {
@@ -387,18 +386,22 @@ void CodeGen::genMarkLabelsForCodegen()
                 }
 
                 FALLTHROUGH;
-            }
-            case BBJ_COND:
+
             case BBJ_EHCATCHRET:
-                JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
-                block->GetJumpDest()->bbFlags |= BBF_HAS_LABEL;
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTarget()->bbNum);
+                block->GetTarget()->SetFlags(BBF_HAS_LABEL);
+                break;
+
+            case BBJ_COND:
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
+                block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
                 break;
 
             case BBJ_SWITCH:
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
-                    bTarget->bbFlags |= BBF_HAS_LABEL;
+                    JITDUMP("  " FMT_BB " : switch target\n", bTarget->bbNum);
+                    bTarget->SetFlags(BBF_HAS_LABEL);
                 }
                 break;
 
@@ -409,32 +412,37 @@ void CodeGen::genMarkLabelsForCodegen()
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 {
-                    // For callfinally thunks, we need to mark the block following the callfinally/always pair,
+                    // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
                     BasicBlock* bbToLabel = block->Next();
-                    if (block->isBBCallAlwaysPair())
+                    if (block->isBBCallFinallyPair())
                     {
-                        bbToLabel = bbToLabel->Next(); // skip the BBJ_ALWAYS
+                        bbToLabel = bbToLabel->Next(); // skip the BBJ_CALLFINALLYRET
                     }
                     if (bbToLabel != nullptr)
                     {
                         JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
-                        bbToLabel->bbFlags |= BBF_HAS_LABEL;
+                        bbToLabel->SetFlags(BBF_HAS_LABEL);
                     }
                 }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
                 break;
 
+            case BBJ_CALLFINALLYRET:
+                JITDUMP("  " FMT_BB " : finally continuation\n", block->GetFinallyContinuation()->bbNum);
+                block->GetFinallyContinuation()->SetFlags(BBF_HAS_LABEL);
+                break;
+
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
+            case BBJ_EHFILTERRET: // The filter-handler will get marked when processing the EH handlers, below.
             case BBJ_RETURN:
             case BBJ_THROW:
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
     }
@@ -443,32 +451,32 @@ void CodeGen::genMarkLabelsForCodegen()
     for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add; add = add->acdNext)
     {
         JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-        add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
+        add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
     }
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
-        HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
-        HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
+        HBtab->ebdTryBeg->SetFlags(BBF_HAS_LABEL);
+        HBtab->ebdHndBeg->SetFlags(BBF_HAS_LABEL);
 
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
         if (!HBtab->ebdTryLast->IsLast())
         {
-            HBtab->ebdTryLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdTryLast->Next()->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->Next()->bbNum);
         }
 
         if (!HBtab->ebdHndLast->IsLast())
         {
-            HBtab->ebdHndLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdHndLast->Next()->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->Next()->bbNum);
         }
 
         if (HBtab->HasFilter())
         {
-            HBtab->ebdFilter->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdFilter->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : filter begin\n", HBtab->ebdFilter->bbNum);
         }
     }
@@ -872,11 +880,11 @@ BasicBlock* CodeGen::genCreateTempLabel()
 #endif
 
     JITDUMP("Mark " FMT_BB " as label: codegen temp block\n", block->bbNum);
-    block->bbFlags |= BBF_HAS_LABEL;
+    block->SetFlags(BBF_HAS_LABEL);
 
     // Use coldness of current block, as this label will
     // be contained in it.
-    block->bbFlags |= (compiler->compCurBB->bbFlags & BBF_COLD);
+    block->CopyFlags(compiler->compCurBB, BBF_COLD);
 
 #ifdef DEBUG
 #ifdef UNIX_X86_ABI
@@ -968,7 +976,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 
     if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
-        noway_assert(block->bbFlags & BBF_HAS_LABEL);
+        noway_assert(block->HasFlag(BBF_HAS_LABEL));
 
         SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
@@ -1262,11 +1270,6 @@ AGAIN:
             break;
 #endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-        case GT_NOP:
-
-            op1 = op1->AsOp()->gtOp1;
-            goto AGAIN;
-
         case GT_COMMA:
 
             op1 = op1->AsOp()->gtOp2;
@@ -1340,11 +1343,6 @@ AGAIN:
             }
             break;
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-        case GT_NOP:
-
-            op2 = op2->AsOp()->gtOp1;
-            goto AGAIN;
 
         case GT_COMMA:
 
@@ -1449,7 +1447,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
@@ -1629,7 +1627,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
-    if (block->bbFlags & BBF_FUNCLET_BEG)
+    if (block->HasFlag(BBF_FUNCLET_BEG))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
@@ -1788,9 +1786,9 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" - Windows");
         }
-        else if (TargetOS::IsMacOS)
+        else if (TargetOS::IsApplePlatform)
         {
-            printf(" - MacOS");
+            printf(" - Apple");
         }
         else if (TargetOS::IsUnix)
         {
@@ -2565,12 +2563,12 @@ void CodeGen::genReportEH()
 
                 hndBeg = compiler->ehCodeOffset(block);
 
-                // How big is it? The BBJ_ALWAYS has a null bbEmitCookie! Look for the block after, which must be
-                // a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
+                // How big is it? The BBJ_CALLFINALLYRET has a null bbEmitCookie! Look for the block after, which must
+                // be a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
                 BasicBlock* bbLabel = block->Next();
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
-                    bbLabel = bbLabel->Next(); // skip the BBJ_ALWAYS
+                    bbLabel = bbLabel->Next(); // skip the BBJ_CALLFINALLYRET
                 }
                 if (bbLabel == nullptr)
                 {
@@ -5157,7 +5155,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     /* The return value is special-cased: make sure it goes live for the epilog */
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     if (IsFullPtrRegMapRequired() && !jmpEpilog)
     {

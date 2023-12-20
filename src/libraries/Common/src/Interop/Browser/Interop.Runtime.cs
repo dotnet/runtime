@@ -24,14 +24,17 @@ internal static partial class Interop
         public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ResolveOrRejectPromise(void* data);
+
+#if !ENABLE_JS_INTEROP_BY_VALUE
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr RegisterGCRoot(IntPtr start, int bytesSize, IntPtr name);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void DeregisterGCRoot(IntPtr handle);
+#endif
 
 #if FEATURE_WASM_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InstallWebWorkerInterop();
+        public static extern void InstallWebWorkerInterop(IntPtr proxyContextGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
 #endif

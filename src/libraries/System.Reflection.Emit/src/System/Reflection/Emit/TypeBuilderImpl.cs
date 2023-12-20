@@ -28,11 +28,15 @@ namespace System.Reflection.Emit
 
         internal TypeDefinitionHandle _handle;
         internal int _firstFieldToken;
-        internal int _firsMethodToken;
+        internal int _firstMethodToken;
+        internal int _firstPropertyToken;
+        internal int _firstEventToken;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
         internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
         internal readonly List<ConstructorBuilderImpl> _constructorDefinitions = new();
         internal List<Type>? _interfaces;
+        internal readonly List<PropertyBuilderImpl> _propertyDefinitions = new();
+        internal readonly List<EventBuilderImpl> _eventDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
@@ -179,7 +183,15 @@ namespace System.Reflection.Emit
             return constBuilder;
         }
 
-        protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
+        protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
+        {
+            ArgumentNullException.ThrowIfNull(eventtype);
+            ThrowIfCreated();
+
+            EventBuilderImpl eventBuilder = new EventBuilderImpl(name, attributes, eventtype, this);
+            _eventDefinitions.Add(eventBuilder);
+            return eventBuilder;
+        }
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
@@ -238,7 +250,15 @@ namespace System.Reflection.Emit
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
-        protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
+
+        protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers,
+            Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+        {
+            PropertyBuilderImpl property = new PropertyBuilderImpl(name, attributes, callingConvention, returnType, parameterTypes, this);
+            _propertyDefinitions.Add(property);
+            return property;
+        }
+
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override bool IsCreatedCore() => _isCreated;

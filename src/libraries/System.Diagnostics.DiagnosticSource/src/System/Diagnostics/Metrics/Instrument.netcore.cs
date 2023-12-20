@@ -109,6 +109,6 @@ namespace System.Diagnostics.Metrics
             }
 
             RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in tagList.Tag1), tagList.Count));
-       }
+        }
     }
 }
