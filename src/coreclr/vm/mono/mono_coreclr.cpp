@@ -1472,12 +1472,6 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_thread_has_sufficient_execution_st
     return TRUE;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_type_get_class(MonoType *type)
-{
-    TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
-    return (MonoClass*)handle.AsMethodTable();
-}
-
 extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name(MonoType *type)
 {
     // To be compatible with Mono behavior.

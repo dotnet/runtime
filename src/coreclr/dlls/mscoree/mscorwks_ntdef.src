@@ -96,7 +96,6 @@ EXPORTS
         mono_thread_current
         mono_thread_detach
         mono_thread_has_sufficient_execution_stack
-        mono_type_get_class
         mono_type_get_name
         mono_type_get_name_full
         mono_type_get_type
