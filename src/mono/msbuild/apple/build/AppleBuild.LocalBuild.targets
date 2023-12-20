@@ -89,12 +89,25 @@
       <TrimmerRootAssembly
           Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
           Include="%(AppleAssembliesToBundle.FullPath)" />
-      <TrimmerRootAssembly
-          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'System.Private.CoreLib.dll'"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
       <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
           which doesn't exist at the path when BuildTestsOnHelix -->
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+
+      <!-- Test-specific assemblies -->
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'mscorlib.dll'"
+          Include="%(AppleAssembliesToBundle.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'System.Threading.Overlapped.dll'"
+          Include="%(AppleAssembliesToBundle.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'TestILAssembly.dll'"
+          Include="%(AppleAssembliesToBundle.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'TestLoadAssembly.dll'"
+          Include="%(AppleAssembliesToBundle.FullPath)" />
+          
+          
     </ItemGroup>
 
     <ItemGroup>
