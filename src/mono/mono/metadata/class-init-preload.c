@@ -61,14 +61,14 @@ preload_is_visiting (MonoClass *klass)
 }
 
 static void
-preload_begin_visiting (MonoClass *klass)
+preload_mark_begin_visiting (MonoClass *klass)
 {
 	GHashTable *hash = preload_visiting_hash ();
 	g_hash_table_insert (hash, klass, klass);
 }
 
 static void
-preload_done_visiting (MonoClass *klass)
+preload_mark_done_visiting (MonoClass *klass)
 {
 	GHashTable *hash = preload_visiting_hash ();
 	g_hash_table_remove (hash, klass);
@@ -106,8 +106,6 @@ preload_done_visiting (MonoClass *klass)
 static void
 preload_visit_classkind (MonoClass *klass);
 static void
-preload_visit_classdef (MonoClass *klass);
-static void
 preload_visit_parent (MonoClass *klass);
 static void
 preload_visit_interfaces (MonoClass *klass);
@@ -135,53 +133,87 @@ static uint32_t
 preload_resolve_from_name (MonoImage *image, const char *nspace, const char *name);
 static void
 preload_visit_generic_class (MonoGenericClass *generic_class);
+static void
+preload_visit_msig (MonoMethodSignature *msig);
 
+
+static gboolean
+preload_visit_begin_visit (MonoClass *klass);
+
+static void
+preload_visit_finish_visit (MonoClass *klass);
 
 void
 mono_class_preload_class (MonoClass *klass)
 {
-	preload_visit_classdef (klass);
+	if (!preload_visit_begin_visit (klass))
+		return;
+	preload_visit_classkind (klass);
+	preload_visit_finish_visit (klass);
 }
 
-static void
-preload_visit_classdef (MonoClass *klass)
+static gboolean
+is_classdef (MonoClass *klass)
+{
+	int class_kind = m_class_get_class_kind (klass);
+	return class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD;
+}
+
+/* returns TRUE if we should visit this class, false otherwise */
+static gboolean
+preload_visit_begin_visit (MonoClass *klass)
 {
 	/* we should only come here without the loader lock */
 	g_assert (!mono_loader_lock_tracking() || !mono_loader_lock_is_owned_by_self());
 	/* if someone already visited this class, don't visit it again */
 	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT))
-		return;
+		return FALSE;
 	
-	/* corlib classes are already loaded and corlib doesn't depend on any other assemblies. */
+	/* corlib class definitions are already loaded and corlib doesn't depend on any other assemblies. */
 	/* micro-optimization: don't bother adding them to the visiting hash, just get out quickly. */
-	if (m_class_get_image (klass) == mono_defaults.corlib) {
+	/* WISH: it would be nice if we could quickly tell that a ginst or an array lives in corelib
+           - but right now that itself requires a traversal of the MonoType (see
+           collect_type_images() in metadata.c) */
+	if (m_class_get_image (klass) == mono_defaults.corlib && is_classdef (klass)) {
 		m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
-		return;
+		return FALSE;
 	}
-
-	int class_kind = m_class_get_class_kind (klass);
-	g_assert (class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD);
 
 	/* if we're already visiting this class, don't go again. */
 	if (preload_is_visiting (klass))
-		return;
-
+		return FALSE;
 	/* mark the that we started visiting the class */
-	/* WISH: it would be nice if we could avoid visiting a class is another thread already put
-           it into the PRELOAD_STARTED state.  But that seems hard: the loser thread would need to
-           somehow wait for the other thread to finish preloading the class.  On the other hand if
-           we have a loop, we don't want both threads to wait for each other and deadlock.  Simplest
-           approach is just to let both threads explore everything and use a thread-local visiting
-           table to avoid looping in any one thread. */
-	preload_begin_visiting (klass);
+	/* WISH: it would be nice if we could avoid visiting a class is another thread already
+           started preloading it.  But that seems hard: the loser thread would need to somehow wait
+           for the other thread to finish preloading the class.  On the other hand if we have a
+           cycle, we don't want both threads to wait for each other and deadlock.  Simplest approach
+           is just to let both threads explore everything and use a thread-local visiting table to
+           avoid looping in any one thread. */
+	preload_mark_begin_visiting (klass);
+
+	return TRUE;
+}
+
+static void
+preload_visit_finish_visit (MonoClass *klass)
+{
+	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
+
+	preload_mark_done_visiting (klass);
+}
+
+static void
+preload_visit_classdef (MonoClass *klass)
+{
+	g_assert (is_classdef (klass));
+
+	// This is the main point of the preloading step.
+	// Given a class definition, ensure that we trigger assembly loading of its parent and interfaces.
 
 	preload_visit_parent (klass);
 	preload_visit_interfaces (klass);
-	if (class_kind == MONO_CLASS_GTD)
+	if (m_class_get_class_kind (klass) == MONO_CLASS_GTD)
 		preload_visit_class_generic_param_constraints (klass);
-
-	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
-	preload_done_visiting (klass);
 }
 
 static void
@@ -192,28 +224,17 @@ preload_visit_classkind (MonoClass *klass)
 	case MONO_CLASS_GTD:
 		preload_visit_classdef (klass);
 		break;
-	case MONO_CLASS_GINST:
-		if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT))
-			break;
-		preload_visit_mono_type (m_class_get_byval_arg (klass));
-		break;
 	case MONO_CLASS_GPARAM:
 		// don't expect to do anything - the MonoGenericContainer constraints should've been
 		// visited in the class def.
 		break;
+	case MONO_CLASS_GINST:
 	case MONO_CLASS_ARRAY:
-		// assumption: mono_class_create_array_type always sets m_class_get_byval_arg(klass) at BAREBONES, so that we can get the
-		// element type from byval_arg
-		g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (klass)->type == MONO_TYPE_ARRAY);
-		preload_visit_mono_type (m_class_get_byval_arg (klass));
-		break;
 	case MONO_CLASS_POINTER:
-		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) {
-			g_assert_not_reached (); // TODO: visit a pointer type
-		} else {
-			g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR);
-			g_assert_not_reached (); // TODO: visit a fnptr type
-		}
+		// assumption: array, pointer and fn pointer and ginst MonoClass at BAREBONES has
+		// byval_arg set, so we can get at the element type, or the MonoGenericClass using
+		// the MonoType.
+		preload_visit_mono_type (m_class_get_byval_arg (klass));
 		break;
 	default:
 		g_assert_not_reached ();
@@ -446,7 +467,7 @@ preload_visit_typedef (MonoImage *image, uint32_t typedef_index)
 		mono_error_cleanup (preload_error);
 		return;
 	}
-	preload_visit_classdef (barebones);
+	mono_class_preload_class (barebones);
 }
 
 /* FIXME: share more code with mono_class_from_typeref_checked */
@@ -625,15 +646,15 @@ preload_visit_type_switch (MonoType *ty)
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		preload_visit_classdef (ty->data.klass);
+		mono_class_preload_class (ty->data.klass);
 		break;
 	case MONO_TYPE_SZARRAY:
-		preload_visit_classkind (ty->data.klass);
+		mono_class_preload_class (ty->data.klass);
 		break;
 	case MONO_TYPE_ARRAY: {
 		MonoArrayType *at = ty->data.array;
 		MonoClass *eklass = at->eklass;
-		preload_visit_classkind (eklass);
+		mono_class_preload_class (eklass);
 		break;
 	}
 	case MONO_TYPE_PTR: {
@@ -642,9 +663,15 @@ preload_visit_type_switch (MonoType *ty)
 		break;
 	}
 	case MONO_TYPE_FNPTR:
-		g_assert_not_reached(); // TODO finish me
+		preload_visit_msig (ty->data.method);
+		break;
 	case MONO_TYPE_MVAR:
-		g_assert_not_reached(); // don't expect to see method vars during class preloading
+		// we might see an mvar when we're working on a generic instance.
+		
+		// FIXME: would we ever see an mvar with a constraint that hasn't been preloaded?
+		// (and would we need to access that constraint during EXACT_PARENT of the ginst?)
+		// For now assume that this doesn't happen.
+		break;
 	case MONO_TYPE_VAR:
 		/* nothing to do, the generic context has already been preloaded */
 		break;
@@ -684,11 +711,20 @@ preload_visit_generic_class (MonoGenericClass *generic_class)
 
 	MonoClass *gtd = generic_class->container_class;
 
-	preload_visit_classkind (gtd);
+	mono_class_preload_class (gtd);
 	MonoGenericInst *class_inst = generic_class->context.class_inst;
 	g_assert (class_inst != NULL);
 	g_assert (generic_class->context.method_inst == NULL);
 	for (unsigned int i = 0; i < class_inst->type_argc; i++) {
 		preload_visit_mono_type (class_inst->type_argv[i]);
+	}
+}
+
+static void
+preload_visit_msig (MonoMethodSignature *msig)
+{
+	preload_visit_mono_type (msig->ret);
+	for (unsigned int i = 0; i < msig->param_count; i++) {
+		preload_visit_mono_type (msig->params[i]);
 	}
 }

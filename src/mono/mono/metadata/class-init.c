@@ -64,6 +64,9 @@ typedef struct {
 /* Low level lock which protects data structures in this module */
 static mono_mutex_t classes_mutex;
 
+/* Low level lock which protects the mono_class_create_fnptr cache */
+static mono_mutex_t fnptr_cache_mutex;
+
 static gboolean class_kind_may_contain_generic_instances (MonoTypeKind kind);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd);
 static int generic_array_methods (MonoClass *klass);
@@ -1043,16 +1046,20 @@ mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassRead
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
-	// FIXME: preload - verify that all this stuff is in the same readiness level as the typedef gklass
+	mono_class_preload_class (klass);
 
-	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT); // FIXME: is this true?
-
+	g_assert (m_class_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT));
 	if (max_ready_level == MONO_CLASS_READY_APPROX_PARENT)
 		return klass;
 
 	mono_class_init_to_ready_level (gklass, MONO_CLASS_READY_EXACT_PARENT);
 
 	mono_loader_lock ();
+	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
+		// someone else got here first
+		mono_loader_unlock();
+		return klass;
+	}
 
 	if (mono_get_runtime_callbacks ()->init_class)
 		mono_get_runtime_callbacks ()->init_class (klass);
@@ -1401,9 +1408,8 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 	if (max_ready_level == MONO_CLASS_READY_BAREBONES)
 		return klass;
 	
-	m_class_set_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT);
+	mono_class_preload_class (klass); // ready_level becomes APPROX_PARENT
 
-	// FIXME: preload - only go past here if we need more initialization
 	if (m_class_ready_level_at_least (klass, max_ready_level))
 		return klass;
 
@@ -1461,7 +1467,11 @@ mono_class_create_bounded_array_at_level (MonoClass *eclass, guint32 rank, gbool
 	}
 
 	mono_loader_lock ();
-
+	if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_EXACT_PARENT)) {
+		// someone got here first
+		mono_loader_unlock();
+		return klass;
+	}
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
@@ -1686,7 +1696,7 @@ mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level)
 	MonoMemoryManager *mm;
 	gboolean alloc_class = TRUE;
 
-	el_class = mono_class_from_mono_type_internal (type);
+	el_class = mono_class_from_mono_type_at_level (type, MONO_CLASS_READY_BAREBONES);
 	image = el_class->image;
 	// FIXME: Optimize this
 	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_mem_manager_for_class (el_class) : NULL;
@@ -1731,7 +1741,6 @@ mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level)
 		result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
 		result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
 		result->this_arg.byref__ = TRUE;
-		m_class_set_ready_level_at_least (result, MONO_CLASS_READY_APPROX_PARENT);
 
 		if (mm) {
 			MonoClass *result2;
@@ -1751,12 +1760,24 @@ mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level)
 	}
 	ptr_cache_unlock (mm, image);
 	
+	if (max_ready_level == MONO_CLASS_READY_BAREBONES)
+		return result;
+
+	mono_class_preload_class (result);
+
+	g_assert (m_class_ready_level_at_least (result, MONO_CLASS_READY_APPROX_PARENT));
+
 	if (max_ready_level == MONO_CLASS_READY_APPROX_PARENT)
 		return result;
 
 	mono_class_init_to_ready_level (el_class, max_ready_level);
 
 	mono_loader_lock ();
+	if (m_class_ready_level_at_least (result, MONO_CLASS_READY_INITED)) {
+		// someone else got here first
+		mono_loader_unlock ();
+		return result;
+	}
 	MONO_PROFILER_RAISE (class_loading, (result));
 
 	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_INITED);
@@ -1782,58 +1803,87 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	return mono_class_create_fnptr_at_level (sig, MONO_CLASS_READY_EXACT_PARENT);
 }
 
+static void
+fnptr_cache_lock (void)
+{
+	mono_os_mutex_lock (&fnptr_cache_mutex);
+}
+
+static void
+fnptr_cache_unlock (void)
+{
+	mono_os_mutex_unlock (&fnptr_cache_mutex);
+}
+
 MonoClass *
 mono_class_create_fnptr_at_level (MonoMethodSignature *sig, MonoClassReady max_ready_level)
 {
 	MonoClass *result, *cached;
 	static GHashTable *ptr_hash = NULL;
 
-	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: other ready levels
+	gboolean alloc_class = TRUE;
 
 	/* FIXME: These should be allocate from a mempool as well, but which one ? */
 
-	mono_loader_lock ();
+	fnptr_cache_lock ();
 	if (!ptr_hash)
 		ptr_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	cached = (MonoClass *)g_hash_table_lookup (ptr_hash, sig);
-	mono_loader_unlock ();
-	if (cached)
-		return cached;
+	if (cached) {
+		if (m_class_ready_level_at_least (cached, max_ready_level)) {
+			fnptr_cache_unlock ();
+			return cached;
+		}
+		alloc_class = FALSE;
+		result = cached;
+	}
+	if (alloc_class) {
+		result = g_new0 (MonoClass, 1);
 
-	result = g_new0 (MonoClass, 1);
+		result->parent = NULL; /* no parent for PTR types */
+		result->name_space = "System";
+		result->name = "MonoFNPtrFakeClass";
+		result->class_kind = MONO_CLASS_POINTER;
 
-	result->parent = NULL; /* no parent for PTR types */
-	result->name_space = "System";
-	result->name = "MonoFNPtrFakeClass";
-	result->class_kind = MONO_CLASS_POINTER;
+		result->image = mono_defaults.corlib; /* need to fix... */
+		result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
+		result->min_align = sizeof (gpointer);
+		result->cast_class = result->element_class = result;
+		result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
+		result->this_arg.data.method = result->_byval_arg.data.method = sig;
+		result->this_arg.byref__ = TRUE;
+		result->blittable = TRUE;
 
-	result->image = mono_defaults.corlib; /* need to fix... */
-	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
-	result->min_align = sizeof (gpointer);
-	result->cast_class = result->element_class = result;
-	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
-	result->this_arg.data.method = result->_byval_arg.data.method = sig;
-	result->this_arg.byref__ = TRUE;
-	result->blittable = TRUE;
-	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_INITED);
+		g_hash_table_insert (ptr_hash, sig, result);
+	}
+	fnptr_cache_unlock ();
+
+	if (max_ready_level == MONO_CLASS_READY_BAREBONES)
+		return result;
+	
+	mono_class_preload_class (result);
+	g_assert (m_class_ready_level_at_least (result, MONO_CLASS_READY_APPROX_PARENT));
+
+	if (max_ready_level == MONO_CLASS_READY_APPROX_PARENT)
+		return result;
 
 	mono_class_setup_supertypes (result);
 
 	mono_loader_lock ();
 
-	cached = (MonoClass *)g_hash_table_lookup (ptr_hash, sig);
-	if (cached) {
-		g_free (result);
+	if (m_class_ready_level_at_least (result, MONO_CLASS_READY_EXACT_PARENT)) {
 		mono_loader_unlock ();
-		return cached;
+		return result;
 	}
-
+		
 	MONO_PROFILER_RAISE (class_loading, (result));
 
+	// could be EXACT_PARENT, but fnptr types are actually fully inited at this point, there's
+	// no work for mono_class_init_internal to do.
+	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_INITED);
+	
 	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
 	++class_pointer_count;
-
-	g_hash_table_insert (ptr_hash, sig, result);
 
 	mono_loader_unlock ();
 
@@ -4464,7 +4514,10 @@ mono_class_init_to_ready_level (MonoClass *klass, MonoClassReady ready_level)
 			break;
 		}
 		case MONO_TYPE_FNPTR: {
-			g_assert_not_reached (); // TODO
+			MonoMethodSignature *msig = m_class_get_byval_arg (klass)->data.method;
+			MonoClass *klass2 = mono_class_create_fnptr_at_level (msig, ready_level);
+			g_assert (klass2 == klass);
+			break;
 		}
 		default:
 			g_assert_not_reached (); // pointer MonoClass should have a PTR or FNPTR MonoType
@@ -4504,6 +4557,8 @@ void
 mono_classes_init (void)
 {
 	mono_os_mutex_init (&classes_mutex);
+
+	mono_os_mutex_init (&fnptr_cache_mutex);
 
 	mono_native_tls_alloc (&setup_fields_tls_id, NULL);
 	mono_native_tls_alloc (&init_pending_tls_id, NULL);
