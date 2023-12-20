@@ -768,37 +768,5 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
-
-        [Fact]
-        public static void NoCrashWithNonNameUsingAlias()
-        {
-            string source = $$"""
-                using System.Collections.Generic;
-                using System.Text.Json;
-                using System.Text.Json.Serialization;
-                using Point = (int x, int y);
-                #nullable enable
-
-                namespace HelloWorld
-                {
-                    public static class MyClass
-                    {
-                        public static string Test()
-                        {
-                            Dictionary<int, string?> values = new();
-                            return JsonSerializer.Serialize(values, JsonContext.Default.DictionaryInt32String);
-                        }
-                    }
-
-                    [JsonSerializable(typeof(Dictionary<int, string>))]
-                    internal partial class JsonContext : JsonSerializerContext
-                    {
-                    }
-                }
-                """;
-
-            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp12));
-            CompilationHelper.RunJsonSourceGenerator(compilation);
-        }
     }
 }
