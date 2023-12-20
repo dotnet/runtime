@@ -4622,21 +4622,22 @@ initialize_clause_bblocks (TransformData *td)
 
 	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
-		InterpBasicBlock *bb;
+		InterpBasicBlock *try_bb, *bb;
 
 		for (uint32_t j = c->handler_offset; j < c->handler_offset + c->handler_len; j++) {
 			if (td->clause_indexes [j] == -1)
 				td->clause_indexes [j] = i;
 		}
 
-		bb = td->offset_to_bb [c->try_offset];
-		g_assert (bb);
-		bb->eh_block = TRUE;
+		try_bb = td->offset_to_bb [c->try_offset];
+		g_assert (try_bb);
+		try_bb->preserve = TRUE;
 
 		/* We never inline methods with clauses, so we can hard code stack heights */
 		bb = td->offset_to_bb [c->handler_offset];
 		g_assert (bb);
-		bb->eh_block = TRUE;
+		bb->preserve = TRUE;
+		bb->try_bblock = try_bb;
 
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 			bb->stack_height = 0;
@@ -4652,7 +4653,9 @@ initialize_clause_bblocks (TransformData *td)
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			bb = td->offset_to_bb [c->data.filter_offset];
 			g_assert (bb);
-			bb->eh_block = TRUE;
+			bb->preserve = TRUE;
+			bb->try_bblock = try_bb;
+
 			bb->stack_height = 1;
 			bb->stack_state = (StackInfo*) mono_mempool_alloc0 (td->mempool, sizeof (StackInfo));
 			bb->stack_state [0].type = STACK_TYPE_O;
@@ -7549,7 +7552,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			} else {
 				handle_branch (td, MINT_BR, target_offset);
 			}
-			td->last_ins->info.target_bb->eh_block = TRUE;
+			td->last_ins->info.target_bb->preserve = TRUE;
 
 			if (*td->ip == CEE_LEAVE)
 				td->ip += 5;

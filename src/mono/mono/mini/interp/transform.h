@@ -144,13 +144,15 @@ struct _InterpBasicBlock {
 	int index;
 	int jump_targets;
 
+	InterpBasicBlock *try_bblock;
+
 	// This will hold a list of last sequence points of incoming basic blocks
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
 	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
-	guint eh_block : 1;
+	guint preserve : 1;
 	guint dead: 1;
 	// This bblock is detectead early as being dead, we don't inline into it
 	guint no_inlining: 1;
