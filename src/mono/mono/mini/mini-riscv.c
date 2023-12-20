@@ -2243,11 +2243,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		mono_bblock_insert_before_ins (bb, ins, (dest));                                                               \
 	} while (0)
 
-#define NEW_INS_AFTER(cfg, ins, dest, op)                                                                              \
+#define NEW_INS_AFTER(cfg, ins, next_ins, dest, op)                                                                    \
 	do {                                                                                                               \
 		MONO_INST_NEW ((cfg), (dest), (op));                                                                           \
 		(dest)->cil_code = (ins)->cil_code;                                                                            \
 		mono_bblock_insert_after_ins (bb, ins, (dest));                                                                \
+		next_ins = dest;																						   	   \
 	} while (0)
 
 /*
@@ -2259,7 +2260,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins, *n, *temp;
+	MonoInst *ins, *last_ins, *next_ins, *temp;
 	if (cfg->verbose_level > 2) {
 		g_print ("BASIC BLOCK %d (before lowering)\n", bb->block_num);
 		MONO_BB_FOR_EACH_INS (bb, ins)
@@ -2268,7 +2269,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	}
 
-	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins)
+	MONO_BB_FOR_EACH_INS_SAFE (bb, next_ins, ins)
 	{
 	loop_start:
 		switch (ins->opcode) {
@@ -2450,7 +2451,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_FCEQ;
 			else
 				ins->opcode = OP_RCEQ;
-			NEW_INS_AFTER (cfg, ins, temp, OP_CEQ);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_CEQ);
 			temp->dreg = ins->dreg;
 			temp->sreg1 = temp->dreg;
 			temp->sreg2 = RISCV_ZERO;
@@ -2470,13 +2471,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			// fconv_to_i1 rd, fs1 => fconv_to_i{4|8} rs1, fs1; {i|l}conv_to_i1 rd, rs1
 			int rd = ins->dreg;
 #ifdef TARGET_RISCV64
-			NEW_INS_AFTER (cfg, ins, temp, OP_LCONV_TO_I1);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_LCONV_TO_I1);
 			if (ins->opcode == OP_FCONV_TO_I1)
 				ins->opcode = OP_FCONV_TO_I8;
 			else
 				ins->opcode = OP_RCONV_TO_I8;
 #else
-			NEW_INS_AFTER (cfg, ins, temp, OP_ICONV_TO_I1);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_ICONV_TO_I1);
 			if (ins->opcode == OP_FCONV_TO_I1)
 				ins->opcode = OP_FCONV_TO_I4;
 			else
@@ -2493,13 +2494,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			// fconv_to_u1 rd, fs1 => fconv_to_u{4|8} rs1, fs1; {i|l}conv_to_u1 rd, rs1
 			int rd = ins->dreg;
 #ifdef TARGET_RISCV64
-			NEW_INS_AFTER (cfg, ins, temp, OP_LCONV_TO_U1);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_LCONV_TO_U1);
 			if (ins->opcode == OP_FCONV_TO_U1)
 				ins->opcode = OP_FCONV_TO_U8;
 			else
 				ins->opcode = OP_RCONV_TO_U8;
 #else
-			NEW_INS_AFTER (cfg, ins, temp, OP_ICONV_TO_U1);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_ICONV_TO_U1);
 			if (ins->opcode == OP_FCONV_TO_U1)
 				ins->opcode = OP_FCONV_TO_U4;
 			else
@@ -2516,13 +2517,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			// fconv_to_i2 rd, fs1 => fconv_to_i{4|8} rs1, fs1; {i|l}conv_to_i2 rd, rs1
 			int rd = ins->dreg;
 #ifdef TARGET_RISCV64
-			NEW_INS_AFTER (cfg, ins, temp, OP_LCONV_TO_I2);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_LCONV_TO_I2);
 			if (ins->opcode == OP_FCONV_TO_I2)
 				ins->opcode = OP_FCONV_TO_I8;
 			else
 				ins->opcode = OP_RCONV_TO_I8;
 #else
-			NEW_INS_AFTER (cfg, ins, temp, OP_ICONV_TO_I2);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_ICONV_TO_I2);
 			if (ins->opcode == OP_FCONV_TO_I2)
 				ins->opcode = OP_FCONV_TO_I4;
 			else
@@ -2539,13 +2540,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			// fconv_to_u2 rd, fs1 => fconv_to_u{4|8} rs1, fs1; {i|l}conv_to_u2 rd, rs1
 			int rd = ins->dreg;
 #ifdef TARGET_RISCV64
-			NEW_INS_AFTER (cfg, ins, temp, OP_LCONV_TO_U2);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_LCONV_TO_U2);
 			if (ins->opcode == OP_FCONV_TO_U2)
 				ins->opcode = OP_FCONV_TO_U8;
 			else
 				ins->opcode = OP_RCONV_TO_U8;
 #else
-			NEW_INS_AFTER (cfg, ins, temp, OP_ICONV_TO_U2);
+			NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_ICONV_TO_U2);
 			if (ins->opcode == OP_FCONV_TO_U2)
 				ins->opcode = OP_FCONV_TO_U4;
 			else
@@ -2565,15 +2566,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_RCOMPARE: {
-			if (ins->next) {
-				if (ins->next->opcode == OP_FBLT || ins->next->opcode == OP_FBLT_UN) {
+			if (next_ins) {
+				if (next_ins->opcode == OP_FBLT || next_ins->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_RCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBGT || ins->next->opcode == OP_FBGT_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBGT || next_ins->opcode == OP_FBGT_UN) {
 					// rcmp rd, rs1, rs2; fbgt rd -> rcgt rd, rs1, rs2; bne rd, X0
 					// rcgt rd, rs1, rs2 -> flt.s rd, rs2, rs1
 					ins->opcode = OP_RCLT;
@@ -2582,10 +2583,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->sreg1 = ins->sreg2;
 					ins->sreg2 = tmp_reg;
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBGE || next_ins->opcode == OP_FBGE_UN) {
 					// rcmp rd, rs1, rs2; fbge rd -> rcle rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_RCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2593,35 +2594,35 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->sreg1 = ins->sreg2;
 					ins->sreg2 = tmp_reg;
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBLE || ins->next->opcode == OP_FBLE_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBLE || next_ins->opcode == OP_FBLE_UN) {
 					ins->opcode = OP_RCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBEQ) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBEQ) {
 					// rcmp rs1, rs2; fbeq rd -> rceq rd, rs1, rs2; bne rd, X0
 					ins->opcode = OP_RCEQ;
 					ins->dreg = mono_alloc_ireg (cfg);
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBNE_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBNE_UN) {
 					// rcmp rs1, rs2; fbne rd -> rceq rd, rs1, rs2; beq rd, X0
 					ins->opcode = OP_RCEQ;
 					ins->dreg = mono_alloc_ireg (cfg);
 					
-					ins->next->opcode = OP_RISCV_BEQ;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
+					next_ins->opcode = OP_RISCV_BEQ;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
 				}
 				else {
-					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (ins->next->opcode));
+					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
 					NOT_IMPLEMENTED;
 				}
 			} else {
@@ -2630,15 +2631,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FCOMPARE: {
-			if (ins->next) {
-				if (ins->next->opcode == OP_FBLT || ins->next->opcode == OP_FBLT_UN) {
+			if (next_ins) {
+				if (next_ins->opcode == OP_FBLT || next_ins->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_FCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBGT || ins->next->opcode == OP_FBGT_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBGT || next_ins->opcode == OP_FBGT_UN) {
 					// fcmp rd, rs1, rs2; fbgt rd -> fclt rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_FCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2646,10 +2647,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->sreg1 = ins->sreg2;
 					ins->sreg2 = tmp_reg;
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBGE || next_ins->opcode == OP_FBGE_UN) {
 					// fcmp rd, rs1, rs2; fbge rd -> fcle rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_FCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2657,38 +2658,38 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->sreg1 = ins->sreg2;
 					ins->sreg2 = tmp_reg;
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBLE || ins->next->opcode == OP_FBLE_UN){
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBLE || next_ins->opcode == OP_FBLE_UN){
 					ins->opcode = OP_FCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBNE_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBNE_UN) {
 					// fcmp rd, rs1, rs2; fbne rd -> fceq rd, rs1, rs2; beq rd, X0
 					ins->opcode = OP_FCEQ;
 					ins->dreg = mono_alloc_ireg (cfg);
 					ins->sreg1 = ins->sreg1;
 					ins->sreg2 = ins->sreg2;
 
-					ins->next->opcode = OP_RISCV_BEQ;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
-				} else if (ins->next->opcode == OP_FBEQ) {
+					next_ins->opcode = OP_RISCV_BEQ;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
+				} else if (next_ins->opcode == OP_FBEQ) {
 					// fcmp rd, rs1, rs2; fbeq rd -> fceq rd, rs1, rs2; bne rd, X0
 					ins->opcode = OP_FCEQ;
 					ins->dreg = mono_alloc_ireg (cfg);
 					ins->sreg1 = ins->sreg1;
 					ins->sreg2 = ins->sreg2;
 
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->sreg2 = RISCV_ZERO;
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->sreg2 = RISCV_ZERO;
 				} else {
-					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (ins->next->opcode));
+					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
 					NOT_IMPLEMENTED;
 				}
 			} else {
@@ -2856,57 +2857,57 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE_IMM:
 		case OP_ICOMPARE_IMM:
 		case OP_LCOMPARE_IMM: {
-			if (ins->next) {
-				if (ins->next->opcode == OP_LCEQ || ins->next->opcode == OP_ICEQ) {
+			if (next_ins) {
+				if (next_ins->opcode == OP_LCEQ || next_ins->opcode == OP_ICEQ) {
 					if (RISCV_VALID_I_IMM (ins->inst_imm)) {
 						// compare rs1, imm; lceq rd => addi rs2, rs1, -imm; sltiu rd, rs2, 1
 						ins->opcode = OP_ADD_IMM;
 						ins->dreg = mono_alloc_ireg (cfg);
 						ins->inst_imm = -ins->inst_imm;
 
-						ins->next->opcode = OP_RISCV_SLTIU;
-						ins->next->sreg1 = ins->dreg;
-						ins->next->inst_imm = 1;
+						next_ins->opcode = OP_RISCV_SLTIU;
+						next_ins->sreg1 = ins->dreg;
+						next_ins->inst_imm = 1;
 						break;
 					}
 				}
-				if (ins->next->opcode == OP_ICNEQ) {
+				if (next_ins->opcode == OP_ICNEQ) {
 					if (RISCV_VALID_I_IMM (ins->inst_imm)) {
 						// compare rs1, imm; lcneq rd => addi rs2, rs1, -imm; sltu rd, X0, rs2
 						ins->opcode = OP_ADD_IMM;
 						ins->dreg = mono_alloc_ireg (cfg);
 						ins->inst_imm = -ins->inst_imm;
 
-						ins->next->opcode = OP_RISCV_SLTU;
-						ins->next->sreg1 = RISCV_ZERO;
-						ins->next->sreg2 = ins->dreg;
+						next_ins->opcode = OP_RISCV_SLTU;
+						next_ins->sreg1 = RISCV_ZERO;
+						next_ins->sreg2 = ins->dreg;
 						break;
 					}
-				} else if (ins->next->opcode == OP_LCGT_UN || ins->next->opcode == OP_ICGT_UN) {
+				} else if (next_ins->opcode == OP_LCGT_UN || next_ins->opcode == OP_ICGT_UN) {
 					if (RISCV_VALID_I_IMM (ins->inst_imm + 1)) {
 						// compare rs1, imm; lcgt_un rd => sltiu rd, rs1, imm; xori rd, rd, 1
 						ins->opcode = OP_RISCV_SLTIU;
-						ins->dreg = ins->next->dreg;
+						ins->dreg = next_ins->dreg;
 						ins->sreg1 = ins->sreg1;
 						ins->inst_imm = ins->inst_imm + 1;
 
-						ins->next->opcode = OP_XOR_IMM;
-						ins->next->dreg = ins->dreg;
-						ins->next->sreg1 = ins->dreg;
-						ins->next->inst_imm = 1;
+						next_ins->opcode = OP_XOR_IMM;
+						next_ins->dreg = ins->dreg;
+						next_ins->sreg1 = ins->dreg;
+						next_ins->inst_imm = 1;
 						break;
 					}
-				} else if (ins->next->opcode == OP_LCGT || ins->next->opcode == OP_ICGT) {
+				} else if (next_ins->opcode == OP_LCGT || next_ins->opcode == OP_ICGT) {
 					if (RISCV_VALID_I_IMM (ins->inst_imm + 1)) {
 						ins->opcode = OP_RISCV_SLTI;
-						ins->dreg = ins->next->dreg;
+						ins->dreg = next_ins->dreg;
 						ins->sreg1 = ins->sreg1;
 						ins->inst_imm = ins->inst_imm + 1;
 
-						ins->next->opcode = OP_XOR_IMM;
-						ins->next->dreg = ins->dreg;
-						ins->next->sreg1 = ins->dreg;
-						ins->next->inst_imm = 1;
+						next_ins->opcode = OP_XOR_IMM;
+						next_ins->dreg = ins->dreg;
+						next_ins->sreg1 = ins->dreg;
+						next_ins->inst_imm = 1;
 						break;
 					}
 				}
@@ -2931,135 +2932,135 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE:
 		case OP_ICOMPARE:
 		case OP_LCOMPARE: {
-			if (ins->next) {
-				if (ins->next->opcode == OP_COND_EXC_EQ || ins->next->opcode == OP_COND_EXC_IEQ) {
-					ins->next->opcode = OP_RISCV_EXC_BEQ;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+			if (next_ins) {
+				if (next_ins->opcode == OP_COND_EXC_EQ || next_ins->opcode == OP_COND_EXC_IEQ) {
+					next_ins->opcode = OP_RISCV_EXC_BEQ;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_NE_UN) {
-					ins->next->opcode = OP_RISCV_EXC_BNE;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_COND_EXC_NE_UN) {
+					next_ins->opcode = OP_RISCV_EXC_BNE;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_LT || ins->next->opcode == OP_COND_EXC_ILT) {
-					ins->next->opcode = OP_RISCV_EXC_BLT;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_COND_EXC_LT || next_ins->opcode == OP_COND_EXC_ILT) {
+					next_ins->opcode = OP_RISCV_EXC_BLT;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_LT_UN || ins->next->opcode == OP_COND_EXC_ILT_UN) {
-					ins->next->opcode = OP_RISCV_EXC_BLTU;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_COND_EXC_LT_UN || next_ins->opcode == OP_COND_EXC_ILT_UN) {
+					next_ins->opcode = OP_RISCV_EXC_BLTU;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_LE_UN) {
-					ins->next->opcode = OP_RISCV_EXC_BGEU;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+				} else if (next_ins->opcode == OP_COND_EXC_LE_UN) {
+					next_ins->opcode = OP_RISCV_EXC_BGEU;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_IGT || ins->next->opcode == OP_COND_EXC_GT) {
-					ins->next->opcode = OP_RISCV_EXC_BLT;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+				} else if (next_ins->opcode == OP_COND_EXC_IGT || next_ins->opcode == OP_COND_EXC_GT) {
+					next_ins->opcode = OP_RISCV_EXC_BLT;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_COND_EXC_IGT_UN || ins->next->opcode == OP_COND_EXC_GT_UN) {
-					ins->next->opcode = OP_RISCV_EXC_BLTU;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+				} else if (next_ins->opcode == OP_COND_EXC_IGT_UN || next_ins->opcode == OP_COND_EXC_GT_UN) {
+					next_ins->opcode = OP_RISCV_EXC_BLTU;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBEQ || ins->next->opcode == OP_IBEQ) {
-					ins->next->opcode = OP_RISCV_BEQ;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LBEQ || next_ins->opcode == OP_IBEQ) {
+					next_ins->opcode = OP_RISCV_BEQ;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBNE_UN || ins->next->opcode == OP_IBNE_UN) {
-					ins->next->opcode = OP_RISCV_BNE;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LBNE_UN || next_ins->opcode == OP_IBNE_UN) {
+					next_ins->opcode = OP_RISCV_BNE;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBGE_UN || ins->next->opcode == OP_IBGE_UN) {
-					ins->next->opcode = OP_RISCV_BGEU;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LBGE_UN || next_ins->opcode == OP_IBGE_UN) {
+					next_ins->opcode = OP_RISCV_BGEU;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBGE || ins->next->opcode == OP_IBGE) {
-					ins->next->opcode = OP_RISCV_BGE;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LBGE || next_ins->opcode == OP_IBGE) {
+					next_ins->opcode = OP_RISCV_BGE;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBGT_UN || ins->next->opcode == OP_IBGT_UN) {
-					ins->next->opcode = OP_RISCV_BLTU;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+				} else if (next_ins->opcode == OP_LBGT_UN || next_ins->opcode == OP_IBGT_UN) {
+					next_ins->opcode = OP_RISCV_BLTU;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBGT || ins->next->opcode == OP_IBGT) {
-					ins->next->opcode = OP_RISCV_BLT;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+				} else if (next_ins->opcode == OP_LBGT || next_ins->opcode == OP_IBGT) {
+					next_ins->opcode = OP_RISCV_BLT;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBLE || ins->next->opcode == OP_IBLE) {
+				} else if (next_ins->opcode == OP_LBLE || next_ins->opcode == OP_IBLE) {
 					// ble rs1, rs2  -> bge rs2, rs1
-					ins->next->opcode = OP_RISCV_BGE;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+					next_ins->opcode = OP_RISCV_BGE;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBLE_UN || ins->next->opcode == OP_IBLE_UN) {
+				} else if (next_ins->opcode == OP_LBLE_UN || next_ins->opcode == OP_IBLE_UN) {
 					// ble rs1, rs2  -> bge rs2, rs1
-					ins->next->opcode = OP_RISCV_BGEU;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+					next_ins->opcode = OP_RISCV_BGEU;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBLT_UN || ins->next->opcode == OP_IBLT_UN) {
-					ins->next->opcode = OP_RISCV_BLTU;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LBLT_UN || next_ins->opcode == OP_IBLT_UN) {
+					next_ins->opcode = OP_RISCV_BLTU;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LBLT || ins->next->opcode == OP_IBLT) {
-					ins->next->opcode = OP_RISCV_BLT;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LBLT || next_ins->opcode == OP_IBLT) {
+					next_ins->opcode = OP_RISCV_BLT;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LCLT || ins->next->opcode == OP_ICLT) {
-					ins->next->opcode = OP_RISCV_SLT;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LCLT || next_ins->opcode == OP_ICLT) {
+					next_ins->opcode = OP_RISCV_SLT;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LCLT_UN || ins->next->opcode == OP_ICLT_UN) {
-					ins->next->opcode = OP_RISCV_SLTU;
-					ins->next->sreg1 = ins->sreg1;
-					ins->next->sreg2 = ins->sreg2;
+				} else if (next_ins->opcode == OP_LCLT_UN || next_ins->opcode == OP_ICLT_UN) {
+					next_ins->opcode = OP_RISCV_SLTU;
+					next_ins->sreg1 = ins->sreg1;
+					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LCEQ || ins->next->opcode == OP_ICEQ) {
+				} else if (next_ins->opcode == OP_LCEQ || next_ins->opcode == OP_ICEQ) {
 					// compare rs1, rs2; lceq rd => xor rd, rs1, rs2; sltiu rd, rd, 1
 					ins->opcode = OP_IXOR;
-					ins->dreg = ins->next->dreg;
+					ins->dreg = next_ins->dreg;
 
-					ins->next->opcode = OP_RISCV_SLTIU;
-					ins->next->sreg1 = ins->dreg;
-					ins->next->inst_imm = 1;
-				} else if (ins->next->opcode == OP_ICNEQ) {
+					next_ins->opcode = OP_RISCV_SLTIU;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->inst_imm = 1;
+				} else if (next_ins->opcode == OP_ICNEQ) {
 					// compare rs1, rs2; lcneq rd => xor rd, rs1, rs2; sltu rd, X0, rd
 					ins->opcode = OP_IXOR;
-					ins->dreg = ins->next->dreg;
+					ins->dreg = next_ins->dreg;
 
-					ins->next->opcode = OP_RISCV_SLTU;
-					ins->next->sreg1 = RISCV_ZERO;
-					ins->next->sreg2 = ins->dreg;
-				} else if (ins->next->opcode == OP_LCGT || ins->next->opcode == OP_ICGT) {
-					ins->next->opcode = OP_RISCV_SLT;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+					next_ins->opcode = OP_RISCV_SLTU;
+					next_ins->sreg1 = RISCV_ZERO;
+					next_ins->sreg2 = ins->dreg;
+				} else if (next_ins->opcode == OP_LCGT || next_ins->opcode == OP_ICGT) {
+					next_ins->opcode = OP_RISCV_SLT;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_LCGT_UN || ins->next->opcode == OP_ICGT_UN) {
-					ins->next->opcode = OP_RISCV_SLTU;
-					ins->next->sreg1 = ins->sreg2;
-					ins->next->sreg2 = ins->sreg1;
+				} else if (next_ins->opcode == OP_LCGT_UN || next_ins->opcode == OP_ICGT_UN) {
+					next_ins->opcode = OP_RISCV_SLTU;
+					next_ins->sreg1 = ins->sreg2;
+					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
-				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
-				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
-				           ins->next->opcode == OP_LOADI8_MEMBASE || ins->next->opcode == OP_ICONST ||
-				           ins->next->opcode == OP_I8CONST || ins->next->opcode == OP_ADD_IMM) {
+				} else if (next_ins->opcode == OP_IL_SEQ_POINT || next_ins->opcode == OP_MOVE ||
+				           next_ins->opcode == OP_LOAD_MEMBASE || next_ins->opcode == OP_NOP ||
+				           next_ins->opcode == OP_LOADI4_MEMBASE || next_ins->opcode == OP_BR ||
+				           next_ins->opcode == OP_LOADI8_MEMBASE || next_ins->opcode == OP_ICONST ||
+				           next_ins->opcode == OP_I8CONST || next_ins->opcode == OP_ADD_IMM) {
 					/**
 					 * there is compare without branch OP followed
 					 *
@@ -3072,7 +3073,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					break;
 				} else {
 					g_print ("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",
-					         mono_inst_name (ins->next->opcode));
+					         mono_inst_name (next_ins->opcode));
 					NOT_IMPLEMENTED;
 				}
 			} else
@@ -3107,9 +3108,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_LSUB;
 			else
 				ins->opcode = OP_ISUB;
-			MonoInst *branch_ins = ins->next;
+			MonoInst *branch_ins = next_ins;
 			if (branch_ins) {
-				if (branch_ins->opcode == OP_COND_EXC_OV || ins->next->opcode == OP_COND_EXC_IOV ||
+				if (branch_ins->opcode == OP_COND_EXC_OV || next_ins->opcode == OP_COND_EXC_IOV ||
 					branch_ins->opcode == OP_COND_EXC_NC || branch_ins->opcode == OP_COND_EXC_C) {
 					// bne t1, t2, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
@@ -3157,7 +3158,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 				ins->opcode = OP_IADD;
 
-			MonoInst *branch_ins = ins->next;
+			MonoInst *branch_ins = next_ins;
 			if (branch_ins) {
 				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_IC || 
 					branch_ins->opcode == OP_COND_EXC_OV || branch_ins->opcode == OP_COND_EXC_IOV) {
@@ -4810,6 +4811,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fcvt_l_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
+		case OP_FCONV_TO_I8: {
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fcvt_l_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			else
+				riscv_fcvt_l_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			break;
+		}
+		case OP_FCONV_TO_U8: {
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fcvt_lu_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			else
+				riscv_fcvt_lu_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
+			break;
+		}
 		case OP_RCONV_TO_I4: {
 			g_assert (riscv_stdext_f);
 			riscv_fcvt_w_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
@@ -4826,14 +4843,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fcvt_w_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			else
 				riscv_fcvt_w_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
-			break;
-		}
-		case OP_FCONV_TO_I8: {
-			g_assert (riscv_stdext_f || riscv_stdext_d);
-			if (riscv_stdext_d)
-				riscv_fcvt_l_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
-			else
-				riscv_fcvt_l_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_FCONV_TO_U4:{
