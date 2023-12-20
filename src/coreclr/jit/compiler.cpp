@@ -9994,9 +9994,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
                 if (handleKind != 0)
                 {
-                    chars += printf("[");
-                    chars += GenTree::gtDispHandleKind(handleKind);
-                    chars += printf("]");
+                    chars += printf("[%s]", GenTree::gtGetHandleKindString(handleKind));
                 }
             }
             break;

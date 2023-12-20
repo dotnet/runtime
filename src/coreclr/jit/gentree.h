@@ -2244,7 +2244,7 @@ public:
 
 #ifdef DEBUG
     static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
-    static int gtDispHandleKind(GenTreeFlags flags);
+    static const char* gtGetHandleKindString(GenTreeFlags flags);
 #endif
 
     // cast operations
