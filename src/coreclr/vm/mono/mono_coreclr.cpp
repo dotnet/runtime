@@ -786,13 +786,6 @@ static inline uintptr_t handle_to_uintptr(OBJECTHANDLE h, bool pinned)
     return p;
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free_v2(uintptr_t gchandle)
-{
-    OBJECTHANDLE objectHandle = handle_from_uintptr(gchandle);
-
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(objectHandle);
-}
-
 static ASSEMBLYREF ASSEMBLYREF_From_AssemblyIntPtrHandle(MonoImage* assemblyIntPtrHandle)
 {
     OBJECTHANDLE assemblyHandle = handle_from_uintptr((uintptr_t)assemblyIntPtrHandle);
