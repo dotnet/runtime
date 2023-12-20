@@ -73,6 +73,20 @@ namespace System.Diagnostics.Tests
                     GetValue(section);
             }
         }
+
+        [Fact]
+        public void UnsupportedAttributesAreRejected()
+        {
+            using var temp = new TempConfig(DiagnosticsTestData.Sample);
+            var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+            // FIXME: There seems to be no way to get ConfigurationManager.GetSection() to look in the configuration
+            //        we just loaded. As a result, the code below throws no exception at all.
+            TraceConfiguration.Register();
+            var traceSource = new TraceSource("TraceSourceApp", SourceLevels.Off);
+            // When the config is loaded and TraceUtil.CopyStringDictionary() works, you get
+            //   System.ArgumentException : 'foo' is not a valid attribute for type 'System.Diagnostics.TraceSource'.
+            Assert.Throws<ArgumentException>(() => traceSource.TraceInformation("Test"));
+        }
     }
 }
 
