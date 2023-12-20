@@ -52,8 +52,6 @@ mono_field_get_flags
 mono_field_get_name
 mono_field_get_offset
 mono_field_get_parent
-mono_field_get_type
-mono_field_get_type_specific
 mono_gc_collect
 mono_gchandle_free_v2
 mono_get_object_class

@@ -767,37 +767,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_field_get_parent(MonoClassField 
     return (MonoClass*)fieldDesc->GetApproxEnclosingMethodTable();
 }
 
-extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type(MonoClassField *field)
-{
-    CONTRACTL
-    {
-        PRECONDITION(field != NULL);
-    }
-    CONTRACTL_END;
-
-    auto field_clr = (MonoClassField_clr*)field;
-
-    MonoType_clr typeHandle = field_clr->GetFieldTypeHandleThrowing();
-
-    return MonoType_clr_to_MonoType(typeHandle);
-}
-
-extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type_specific(MonoClassField *field, MonoClass* owner)
-{
-    CONTRACTL
-    {
-        PRECONDITION(field != NULL);
-    }
-    CONTRACTL_END;
-
-    auto field_clr = (MonoClassField_clr*)field;
-    auto klass_clr = (MonoClass_clr*)owner;
-
-    MonoType_clr typeHandle = field_clr->GetExactFieldType(klass_clr);
-
-    return MonoType_clr_to_MonoType(typeHandle);
-}
-
 extern "C" EXPORT_API void EXPORT_CC mono_gc_collect(int generation)
 {
     FCALL_CONTRACT;
