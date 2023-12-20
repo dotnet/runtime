@@ -241,10 +241,10 @@ preload_visit_interfaces (MonoClass *klass)
 	MonoImage *image = m_class_get_image (klass);
 	uint32_t klass_token = m_class_get_type_token (klass);
 	MonoGenericContainer *container = mono_class_try_get_generic_container (klass);
-	guint count = 0;
+	unsigned int count = 0;
 	uint32_t *itf_tokens = NULL;
 	preload_visit_interfaces_from_typedef (image, klass_token, &itf_tokens, &count);
-	for (int i = 0; i < count; i++) {
+	for (unsigned int i = 0; i < count; i++) {
 		preload_visit_dor (image, container, itf_tokens[i]);
 	}
 	g_free (itf_tokens);
@@ -291,7 +291,7 @@ table_locator (const void *a, const void *b)
 
 /* FIXME: don't copy/paste mono_metadata_interfaces_from_typedef_full, make an iterator function */
 static void
-preload_visit_interfaces_from_typedef (MonoImage *meta, guint32 index, uint32_t **interface_tokens, guint *count)
+preload_visit_interfaces_from_typedef (MonoImage *meta, guint32 index, uint32_t **interface_tokens, unsigned int *count)
 {
 	gboolean heap_alloc_result = TRUE;
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
@@ -674,7 +674,7 @@ preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class)
 	MonoGenericInst *class_inst = generic_class->context.class_inst;
 	g_assert (class_inst != NULL);
 	g_assert (generic_class->context.method_inst == NULL);
-	for (int i = 0; i < class_inst->type_argc; i++) {
+	for (unsigned int i = 0; i < class_inst->type_argc; i++) {
 		preload_visit_type_and_cmods (image, class_inst->type_argv[i]);
 	}
 }

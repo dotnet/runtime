@@ -980,7 +980,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 MonoClass*
 mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassReady max_ready_level)
 {
-	MonoClass *klass, *gklass;
+	MonoClass *klass = NULL;
 	gboolean allocate_class = TRUE;
 
 	if (gclass->cached_class) {
@@ -995,7 +995,7 @@ mono_class_create_generic_inst_at_level (MonoGenericClass *gclass, MonoClassRead
 	if (allocate_class)
 		klass = (MonoClass *)mono_mem_manager_alloc0 (memory_manager, sizeof (MonoClassGenericInst));
 
-	gklass = gclass->container_class;
+	MonoClass *gklass = gclass->container_class;
 
 	if (gklass->nested_in) {
 		/* The nested_in type should not be inflated since it's possible to produce a nested type with less generic arguments*/
