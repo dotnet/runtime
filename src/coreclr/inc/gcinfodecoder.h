@@ -369,23 +369,36 @@ public:
     // See the corresponding methods on BitStreamWriter for more information on the format
     //--------------------------------------------------------------------------
 
-    inline size_t DecodeVarLengthUnsigned( int base )
+    size_t DecodeVarLengthUnsignedMore ( int base )
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
         size_t numEncodings = size_t{ 1 } << base;
-        size_t result = 0;
-        for(int shift=0; ; shift+=base)
+        size_t result = numEncodings;
+        for(int shift=base; ; shift+=base)
         {
             _ASSERTE(shift+base <= (int)BITS_PER_SIZE_T);
 
             size_t currentChunk = Read(base+1);
-            result |= (currentChunk & (numEncodings-1)) << shift;
+            result ^= (currentChunk & (numEncodings-1)) << shift;
             if(!(currentChunk & numEncodings))
             {
                 // Extension bit is not set, we're done.
                 return result;
             }
         }
+    }
+
+    __forceinline size_t DecodeVarLengthUnsigned(int base)
+    {
+        _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
+
+        size_t result = Read(base + 1);
+        if (result & ((size_t)1 << base))
+        {
+            result ^= DecodeVarLengthUnsignedMore(base);
+        }
+
+        return result;
     }
 
     inline SSIZE_T DecodeVarLengthSigned( int base )
