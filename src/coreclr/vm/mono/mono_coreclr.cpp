@@ -1624,12 +1624,6 @@ extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* cont
 }
 #endif
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_field_is_literal (MonoClassField * field)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
-}
-
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass * klass)
 {
 #ifndef DACCESS_COMPILE
