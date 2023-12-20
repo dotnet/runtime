@@ -1656,65 +1656,110 @@ mono_class_create_ptr (MonoType *type)
 	return mono_class_create_ptr_at_level (type, MONO_CLASS_READY_EXACT_PARENT);
 }
 
+static void
+ptr_cache_lock (MonoMemoryManager *mm, MonoImage *image)
+{
+	if (mm) {
+		mono_mem_manager_lock (mm);
+	} else {
+		mono_image_lock (image);
+	}
+}
+
+static void
+ptr_cache_unlock (MonoMemoryManager *mm, MonoImage *image)
+{
+	if (mm) {
+		mono_mem_manager_unlock (mm);
+	} else {
+		mono_image_unlock (image);
+	}
+}
+
 MonoClass *
 mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level)
 {
-	MonoClass *result;
+	MonoClass *result = NULL;
 	MonoClass *el_class;
 	MonoImage *image;
 	char *name;
 	MonoMemoryManager *mm;
-
-	g_assert (max_ready_level == MONO_CLASS_READY_EXACT_PARENT); // FIXME: preload: other ready levels
+	gboolean alloc_class = TRUE;
 
 	el_class = mono_class_from_mono_type_internal (type);
 	image = el_class->image;
 	// FIXME: Optimize this
 	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_mem_manager_for_class (el_class) : NULL;
 
+	ptr_cache_lock (mm, image);
 	if (mm) {
-		mono_mem_manager_lock (mm);
 		if (!mm->ptr_cache)
 			mm->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		result = (MonoClass *)g_hash_table_lookup (mm->ptr_cache, el_class);
-		mono_mem_manager_unlock (mm);
-		if (result)
-			return result;
+		if (result) {
+			alloc_class = FALSE;
+		}
 	} else {
-		mono_image_lock (image);
 		if (image->ptr_cache) {
 			if ((result = (MonoClass *)g_hash_table_lookup (image->ptr_cache, el_class))) {
-				mono_image_unlock (image);
-				return result;
+				alloc_class = FALSE;
 			}
 		}
-		mono_image_unlock (image);
+	}
+	if (result && m_class_ready_level_at_least (result, max_ready_level)) {
+		ptr_cache_unlock (mm, image);
+		return result;
 	}
 
-	result = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
+	if (alloc_class) {
+		result = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
 
-	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
-	++class_pointer_count;
+		UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
+		++class_pointer_count;
 
-	result->parent = NULL; /* no parent for PTR types */
-	result->name_space = el_class->name_space;
-	name = g_strdup_printf ("%s*", el_class->name);
-	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
-	result->class_kind = MONO_CLASS_POINTER;
-	g_free (name);
+		result->parent = NULL; /* no parent for PTR types */
+		result->name_space = el_class->name_space;
+		name = g_strdup_printf ("%s*", el_class->name);
+		result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
+		result->class_kind = MONO_CLASS_POINTER;
+		g_free (name);
+		result->image = el_class->image;
+		result->min_align = sizeof (gpointer);
+		result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
+		result->element_class = el_class;
+		result->blittable = TRUE;
+		result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
+		result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
+		result->this_arg.byref__ = TRUE;
+		m_class_set_ready_level_at_least (result, MONO_CLASS_READY_APPROX_PARENT);
 
-	// FIXME: preload - only go past here if we need more preloading - we start to use the element class past here.
-	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_APPROX_PARENT);
+		if (mm) {
+			MonoClass *result2;
+			result2 = (MonoClass *)g_hash_table_lookup (mm->ptr_cache, el_class);
+			g_assert (result2 == NULL);
+			g_hash_table_insert (mm->ptr_cache, el_class, result);
+		} else {
+			if (image->ptr_cache) {
+				MonoClass *result2;
+				result2 = (MonoClass *)g_hash_table_lookup (image->ptr_cache, el_class);
+				g_assert (result2 == NULL);
+			} else {
+				image->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+			}
+			g_hash_table_insert (image->ptr_cache, el_class, result);
+		}
+	}
+	ptr_cache_unlock (mm, image);
 	
+	if (max_ready_level == MONO_CLASS_READY_APPROX_PARENT)
+		return result;
 
+	mono_class_init_to_ready_level (el_class, max_ready_level);
+
+	mono_loader_lock ();
 	MONO_PROFILER_RAISE (class_loading, (result));
 
-	result->image = el_class->image;
 	m_class_set_ready_level_at_least (result, MONO_CLASS_READY_INITED);
-	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
-	result->min_align = sizeof (gpointer);
-	result->element_class = el_class;
-	result->blittable = TRUE;
 
 	if (el_class->enumtype)
 		result->cast_class = el_class->element_class;
@@ -1722,40 +1767,11 @@ mono_class_create_ptr_at_level (MonoType *type, MonoClassReady max_ready_level)
 		result->cast_class = el_class;
 	class_composite_fixup_cast_class (result, TRUE);
 
-	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
-	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
-	result->this_arg.byref__ = TRUE;
-
 	mono_class_setup_supertypes (result);
 
-	if (mm) {
-		mono_mem_manager_lock (mm);
-		MonoClass *result2;
-		result2 = (MonoClass *)g_hash_table_lookup (mm->ptr_cache, el_class);
-		if (!result2)
-			g_hash_table_insert (mm->ptr_cache, el_class, result);
-		mono_mem_manager_unlock (mm);
-		if (result2) {
-			MONO_PROFILER_RAISE (class_failed, (result));
-			return result2;
-		}
-	} else {
-		mono_image_lock (image);
-		if (image->ptr_cache) {
-			MonoClass *result2;
-			if ((result2 = (MonoClass *)g_hash_table_lookup (image->ptr_cache, el_class))) {
-				mono_image_unlock (image);
-				MONO_PROFILER_RAISE (class_failed, (result));
-				return result2;
-			}
-		} else {
-			image->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		}
-		g_hash_table_insert (image->ptr_cache, el_class, result);
-		mono_image_unlock (image);
-	}
-
 	MONO_PROFILER_RAISE (class_loaded, (result));
+
+	mono_loader_unlock ();
 
 	return result;
 }
@@ -4439,8 +4455,22 @@ mono_class_init_to_ready_level (MonoClass *klass, MonoClassReady ready_level)
 	}
 	case MONO_CLASS_GPARAM:
 		g_assert_not_reached (); // TODO
-	case MONO_CLASS_POINTER:
-		g_assert_not_reached (); // TODO
+	case MONO_CLASS_POINTER: {
+		switch (m_class_get_byval_arg (klass)->type) {
+		case MONO_TYPE_PTR: {
+			MonoClass *el_class = m_class_get_element_class (klass);
+			MonoClass *klass2 = mono_class_create_ptr_at_level (m_class_get_byval_arg (el_class), ready_level);
+			g_assert (klass2 == klass);
+			break;
+		}
+		case MONO_TYPE_FNPTR: {
+			g_assert_not_reached (); // TODO
+		}
+		default:
+			g_assert_not_reached (); // pointer MonoClass should have a PTR or FNPTR MonoType
+		}
+		break;
+	}
 	case MONO_CLASS_GINST: {
 		MonoGenericClass *generic_class = m_class_get_byval_arg (klass)->data.generic_class;
 		MonoClass *klass2 = mono_class_create_generic_inst_at_level (generic_class, ready_level);
