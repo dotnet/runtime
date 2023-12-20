@@ -102,12 +102,7 @@ namespace System.Globalization
         private static volatile CultureInfo? s_userDefaultUICulture;
 
         // The Invariant culture;
-// https://github.com/dotnet/runtime/issues/94225
-#if TARGET_BROWSER
-        private static CultureInfo? s_InvariantCultureInfo = GlobalizationMode.Hybrid ? null : new CultureInfo(CultureData.Invariant, isReadOnly: true);
-#else
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
-#endif
 
         // These are defaults that we use if a thread has not opted into having an explicit culture
         private static volatile CultureInfo? s_DefaultThreadCurrentUICulture;
@@ -467,12 +462,7 @@ namespace System.Globalization
         {
             get
             {
-// https://github.com/dotnet/runtime/issues/94225
-#if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid)
-                    s_InvariantCultureInfo ??= new CultureInfo(CultureData.Invariant, isReadOnly: true);
-#endif
-                Debug.Assert(s_InvariantCultureInfo != null);
+                Debug.Assert(s_InvariantCultureInfo != null, "[CultureInfo.InvariantCulture] s_InvariantCultureInfo is null");
                 return s_InvariantCultureInfo;
             }
         }
