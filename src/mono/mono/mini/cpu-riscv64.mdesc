@@ -97,8 +97,8 @@ loadi2_membase: dest:i src1:b len:24
 loadu4_membase: dest:i src1:b len:24
 loadi4_membase: dest:i src1:b len:24
 loadi8_membase: dest:i src1:b len:24
-loadr4_membase: dest:f src1:b len:16
-loadr8_membase: dest:f src1:b len:16
+loadr4_membase: dest:f src1:b len:24
+loadr8_membase: dest:f src1:b len:24
 
 memory_barrier: len:4
 atomic_add_i4: dest:i src1:i src2:i len:4
