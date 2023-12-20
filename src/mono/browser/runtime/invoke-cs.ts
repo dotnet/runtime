@@ -9,7 +9,7 @@ import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js, end_marshal_task_to_js } from "./marshal-to-js";
 import {
     get_arg, get_sig, get_signature_argument_count, is_args_exception,
-    bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
+    bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type, set_args_context,
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { monoStringToString } from "./strings";
@@ -356,12 +356,25 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
     assert_bindings();
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
+        set_args_context(args);
         const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
-        if (fail) throw new Error("ERR24: Unexpected error: " + monoStringToString(fail_root));
+        if (fail) runtimeHelpers.abort("ERR24: Unexpected error: " + monoStringToString(fail_root));
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
         }
+    }
+    finally {
+        fail_root.release();
+    }
+}
+
+export function invoke_method_raw(method: MonoMethod): void {
+    assert_bindings();
+    const fail_root = mono_wasm_new_root<MonoString>();
+    try {
+        const fail = cwraps.mono_wasm_invoke_method_raw(method, fail_root.address);
+        if (fail) runtimeHelpers.abort("ERR24: Unexpected error: " + monoStringToString(fail_root));
     }
     finally {
         fail_root.release();

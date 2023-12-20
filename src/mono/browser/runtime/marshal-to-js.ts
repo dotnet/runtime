@@ -265,7 +265,7 @@ export function end_marshal_task_to_js(args: JSMarshalerArguments, res_converter
     }
 
     // otherwise drop the eagerPromise's handle
-    const js_handle = get_arg_js_handle(res);
+    const js_handle = mono_wasm_get_js_handle(eagerPromise);
     mono_wasm_release_cs_owned_object(js_handle);
 
     // get the synchronous result

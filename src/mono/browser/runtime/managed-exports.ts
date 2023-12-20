@@ -7,7 +7,7 @@ import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } fro
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
-import { invoke_method_and_handle_exception } from "./invoke-cs";
+import { invoke_method_and_handle_exception, invoke_method_raw } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
@@ -24,8 +24,8 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const install_sync_context = MonoWasmThreads ? get_method("InstallSynchronizationContext") : undefined;
-    mono_assert(!MonoWasmThreads || install_sync_context, "Can't find InstallSynchronizationContext method");
+    const install_main_synchronization_context = MonoWasmThreads ? get_method("InstallMainSynchronizationContext") : undefined;
+    mono_assert(!MonoWasmThreads || install_main_synchronization_context, "Can't find InstallMainSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
@@ -188,17 +188,8 @@ export function init_managed_exports(): void {
             Module.stackRestore(sp);
         }
     };
-
-    if (MonoWasmThreads && install_sync_context) {
-        runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
-            const sp = Module.stackSave();
-            try {
-                const args = alloc_stack_frame(2);
-                invoke_method_and_handle_exception(install_sync_context, args);
-            } finally {
-                Module.stackRestore(sp);
-            }
-        };
+    if (MonoWasmThreads && install_main_synchronization_context) {
+        runtimeHelpers.javaScriptExports.install_main_synchronization_context = () => invoke_method_raw(install_main_synchronization_context);
     }
 }
 

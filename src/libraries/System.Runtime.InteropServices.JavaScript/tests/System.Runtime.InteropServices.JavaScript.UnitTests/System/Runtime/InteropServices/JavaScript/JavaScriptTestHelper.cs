@@ -999,11 +999,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             if (_module == null)
             {
-                // Log("JavaScriptTestHelper.mjs importing");
-                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
-                await Setup();
-                // Log("JavaScriptTestHelper.mjs imported");
+                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
+                await Setup(); ;
             }
+
+            var p = echopromise_String("aaa");
+            await p;
 
             // this gives browser chance to serve UI thread event loop before every test
             await Task.Yield();
@@ -1011,7 +1012,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static Task DisposeAsync()
         {
-            _module.Dispose();
+            _module?.Dispose();
             _module = null;
             return Task.CompletedTask;
         }

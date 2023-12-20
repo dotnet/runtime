@@ -42,7 +42,7 @@ extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *ca
 #endif /* DISABLE_LEGACY_JS_INTEROP */
 
 #ifndef DISABLE_THREADS
-extern void mono_wasm_install_js_worker_interop ();
+extern void mono_wasm_install_js_worker_interop (int context_gc_handle);
 extern void mono_wasm_uninstall_js_worker_interop ();
 #endif /* DISABLE_THREADS */
 

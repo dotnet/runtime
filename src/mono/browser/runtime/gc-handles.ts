@@ -98,6 +98,7 @@ export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
     }
 }
 
+// note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
 export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {
@@ -108,6 +109,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     else if (is_jsv_handle(js_handle)) {
         obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
         _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
+        // see free list in JSProxyContext.FreeJSVHandle
     }
     mono_assert(obj !== undefined && obj !== null, "ObjectDisposedException");
     if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {
