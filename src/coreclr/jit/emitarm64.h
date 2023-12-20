@@ -59,6 +59,7 @@ void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bo
 void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispVectorLengthSpecifier(insOpts opt);
 void emitDispArrangement(insOpts opt);
+void emitDispSveArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);

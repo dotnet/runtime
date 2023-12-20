@@ -270,7 +270,9 @@ enum insOpts : unsigned
     INS_OPTS_1D,
     INS_OPTS_2D,
 
-    INS_OPTS_SCALABLE_B,
+    // There should be no overlap between non-SVE and SVE values,
+    // so reset value to 1 here
+    INS_OPTS_SCALABLE_B = 1,
     INS_OPTS_SCALABLE_H,
     INS_OPTS_SCALABLE_S,
     INS_OPTS_SCALABLE_D,

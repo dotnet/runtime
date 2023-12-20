@@ -15647,7 +15647,7 @@ void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
     assert(insOptsScalable(opt));
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
-    emitDispArrangement(opt);
+    emitDispSveArrangement(opt);
 
     if (addComma)
         emitDispComma();
@@ -15835,6 +15835,7 @@ void emitter::emitDispVectorLengthSpecifier(insOpts opt)
 //
 void emitter::emitDispArrangement(insOpts opt)
 {
+    assert(!insOptsScalable(opt));
     const char* str = "???";
 
     switch (opt)
@@ -15843,6 +15844,44 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "8b";
             break;
         case INS_OPTS_16B:
+            str = "16b";
+            break;
+        case INS_OPTS_4H:
+            str = "4h";
+            break;
+        case INS_OPTS_8H:
+            str = "8h";
+            break;
+        case INS_OPTS_2S:
+            str = "2s";
+            break;
+        case INS_OPTS_4S:
+            str = "4s";
+            break;
+        case INS_OPTS_1D:
+            str = "1d";
+            break;
+        case INS_OPTS_2D:
+            str = "2d";
+            break;
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    printf(".");
+    printf(str);
+}
+
+//------------------------------------------------------------------------
+// emitDispSveArrangement: Display a SVE register arrangement suffix
+//
+void emitter::emitDispSveArrangement(insOpts opt)
+{
+    assert(insOptsScalable(opt));
+    const char* str = "???";
+
+    switch (opt)
+    {
         case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
             str = "16b";
             break;
@@ -15853,10 +15892,6 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE:
             str = "b";
             break;
-        case INS_OPTS_4H:
-            str = "4h";
-            break;
-        case INS_OPTS_8H:
         case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
             str = "8h";
             break;
@@ -15867,10 +15902,6 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE:
             str = "h";
             break;
-        case INS_OPTS_2S:
-            str = "2s";
-            break;
-        case INS_OPTS_4S:
         case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
             str = "4s";
             break;
@@ -15881,10 +15912,6 @@ void emitter::emitDispArrangement(insOpts opt)
         case INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE:
             str = "s";
             break;
-        case INS_OPTS_1D:
-            str = "1d";
-            break;
-        case INS_OPTS_2D:
         case INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR:
             str = "2d";
             break;
@@ -15896,7 +15923,7 @@ void emitter::emitDispArrangement(insOpts opt)
             break;
 
         default:
-            assert(!"Invalid insOpt for vector register");
+            assert(!"Invalid SVE insOpt");
     }
     printf(".");
     printf(str);
