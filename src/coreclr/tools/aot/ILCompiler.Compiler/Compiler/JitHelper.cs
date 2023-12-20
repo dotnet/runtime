@@ -183,6 +183,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2UInt:
                     mangledName = "RhpDbl2UInt";
                     break;
+                case ReadyToRunHelper.Flt2UInt:
+                    mangledName = "RhpFlt2UInt";
+                    break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");

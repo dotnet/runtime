@@ -678,6 +678,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
                     id = ReadyToRunHelper.Dbl2UInt;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLT2UINT:
+                    id = ReadyToRunHelper.Flt2UInt;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
                     id = ReadyToRunHelper.Dbl2UIntOvf;
                     break;

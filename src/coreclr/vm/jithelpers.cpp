@@ -594,7 +594,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double uint64_max_plus_1 = -2.0 * (double)INT64_MIN;
-    return (val < 0) ? 0 : (val != val || val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val;
+    return (val != val || val < 0) ? 0 : (val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val;
 
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
@@ -608,6 +608,19 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     }
     return ret;
 #endif // TARGET_X86 || TARGET_AMD64
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(INT64, JIT_Flt2UInt, float val)
+{
+    FCALL_CONTRACT;
+#if defined(TARGET_AMD64)
+    float uint_max_plus_1 = (float)UINT32_MAX;
+    return (val != val || val <= 0) ? 0 : (val >= uint_max_plus_1) ? UINT32_MAX : (UINT32)val;
+#else
+    return((UINT32)val);
+#endif //TARGET_AMD64
 }
 HCIMPLEND
 
