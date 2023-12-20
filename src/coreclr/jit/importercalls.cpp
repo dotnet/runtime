@@ -3158,6 +3158,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
                 if (gtIsTypeof(impStackTop().val, &hClass))
                 {
+                    assert(hClass != NO_CLASS_HANDLE);
                     switch (ni)
                     {
                         case NI_System_Type_get_IsEnum:
@@ -3179,13 +3180,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
                         case NI_System_Type_get_IsPrimitive:
-                            if (info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::Must)
-                            {
-                                // Since asCorInfoType returns underlying type for enums, we need to check
-                                // it explicitly and return false.
-                                retNode = gtNewFalse();
-                            }
-                            else
+                            retNode = gtNewFalse();
+
+                            // Since asCorInfoType returns underlying types for enums, we need to check
+                            // it explicitly and return false (enums are not primitive types).
+                            if (info.compCompHnd->isEnum(hClass, nullptr) != TypeCompareState::Must)
                             {
                                 switch (info.compCompHnd->asCorInfoType(hClass))
                                 {
@@ -3205,13 +3204,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                     case CORINFO_TYPE_DOUBLE:
                                         retNode = gtNewTrue();
                                         break;
+
                                     default:
                                         // The rest of the types are not primitive, e.g.:
                                         // * Function and regular pointers
                                         // * Nullable<T>
                                         // * Shared generics
                                         // * etc.
-                                        retNode = gtNewFalse();
                                         break;
                                 }
                             }
