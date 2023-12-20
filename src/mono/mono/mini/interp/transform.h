@@ -142,6 +142,7 @@ struct _InterpBasicBlock {
 	StackInfo *stack_state;
 
 	int index;
+	InterpBasicBlock *try_bblock;
 
 	// This will hold a list of last sequence points of incoming basic blocks
 	SeqPoint **pred_seq_points;
@@ -149,7 +150,7 @@ struct _InterpBasicBlock {
 
 	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
-	guint eh_block : 1;
+	guint preserve : 1;
 	guint dead: 1;
 	// If patchpoint is set we will store mapping information between native offset and bblock index within
 	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the

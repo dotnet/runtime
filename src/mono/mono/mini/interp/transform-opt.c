@@ -554,14 +554,15 @@ interp_compute_dfs_indexes (TransformData *td)
 
 	// Visit also bblocks reachable from eh handlers. These bblocks are not linked
 	// to the main cfg (where we do dominator computation, ssa transformation etc)
-	for (int i = 0; i < td->header->num_clauses; i++) {
-		MonoExceptionClause *c = td->header->clauses + i;
-		InterpBasicBlock *bb = td->offset_to_bb [c->handler_offset];
-		dfs_visit (bb, &dfs_index, td->bblocks);
-
-		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			bb = td->offset_to_bb [c->data.filter_offset];
-			dfs_visit (bb, &dfs_index, td->bblocks);
+	if (td->header->num_clauses > 0) {
+		InterpBasicBlock *current = td->entry_bb;
+		while (current != NULL) {
+			if (current->reachable && current->dfs_index == -1) {
+				current->dfs_index = dfs_index;
+				td->bblocks [dfs_index] = current;
+				dfs_index++;
+			}
+			current = current->next_bb;
 		}
 	}
 	td->bblocks_count_eh = dfs_index;
@@ -592,8 +593,7 @@ dom_intersect (InterpBasicBlock **idoms, InterpBasicBlock *bb1, InterpBasicBlock
 static gboolean
 is_bblock_ssa_cfg (TransformData *td, InterpBasicBlock *bb)
 {
-	// FIXME Don't mark leave target as eh_block
-	//  g_assert (bb->dfs_index != -1);
+	// bblocks with uninitialized dfs_index are unreachable
 	if (bb->dfs_index == -1)
 		return FALSE;
 	if (bb->dfs_index < td->bblocks_count)
@@ -756,6 +756,8 @@ compute_eh_var_cb (TransformData *td, int *pvar, gpointer data)
 static void
 interp_compute_eh_vars (TransformData *td)
 {
+	// FIXME we can now remove EH bblocks. This means some vars can stop being EH vars
+
 	// EH bblocks are stored separately and are not reachable from the non-EF control flow
 	// path. Any var reachable from EH bblocks will not be in SSA form.
 	for (int i = td->bblocks_count; i < td->bblocks_count_eh; i++) {
@@ -1533,7 +1535,7 @@ interp_unlink_bblocks (InterpBasicBlock *from, InterpBasicBlock *to)
 }
 
 static void
-interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *prev_bb)
+interp_handle_unreachable_bblock (TransformData *td, InterpBasicBlock *bb)
 {
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_LDLOCA_S) {
@@ -1544,7 +1546,17 @@ interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 				td->need_optimization_retry = TRUE;
 			}
 		}
+
+		// If preserve is set, even if we know this bblock is unreachable, we still have to keep
+		// it alive (for now at least). We just remove all instructions from it in this case.
+		if (bb->preserve)
+			interp_clear_ins (ins);
 	}
+}
+
+static void
+interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *prev_bb)
+{
 	while (bb->in_count)
 		interp_unlink_bblocks (bb->in_bb [0], bb);
 	while (bb->out_count)
@@ -1599,21 +1611,16 @@ interp_mark_reachable_bblocks (TransformData *td)
 	int cur_index = 0;
 	int next_position = 0;
 
-	// FIXME There is no need to force eh bblocks to remain alive
 	current = td->entry_bb;
 	while (current != NULL) {
-		if (current->eh_block) {
-			queue [next_position++] = current;
-			current->reachable = TRUE;
-		} else {
-			current->reachable = FALSE;
-		}
+		current->reachable = FALSE;
 		current = current->next_bb;
 	}
 
 	queue [next_position++] = td->entry_bb;
 	td->entry_bb->reachable = TRUE;
 
+retry:
 	// We have the roots, traverse everything else
 	while (cur_index < next_position) {
 		current = queue [cur_index++];
@@ -1624,6 +1631,23 @@ interp_mark_reachable_bblocks (TransformData *td)
 				child->reachable = TRUE;
 			}
 		}
+	}
+
+	if (td->header->num_clauses) {
+		gboolean needs_retry = FALSE;
+		current = td->entry_bb;
+		while (current != NULL) {
+			if (current->try_bblock && !current->reachable && current->try_bblock->reachable) {
+				// Try bblock is reachable and the handler is not yet marked
+				queue [next_position++] = current;
+				current->reachable = TRUE;
+				needs_retry = TRUE;
+			}
+			current = current->next_bb;
+		}
+
+		if (needs_retry)
+			goto retry;
 	}
 }
 
@@ -1715,7 +1739,7 @@ interp_reorder_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-		if (bb->eh_block)
+		if (bb->preserve)
 			continue;
 		// We do optimizations below where we reduce the in count of bb, but it is ideal to have
 		// this bblock remain alive so we can correctly resolve mapping from unoptimized method.
@@ -1841,11 +1865,17 @@ interp_optimize_bblocks (TransformData *td)
 		if (!next_bb)
 			break;
 		if (!next_bb->reachable) {
-			if (td->verbose_level)
-				g_print ("Removed BB%d\n", next_bb->index);
-			interp_remove_bblock (td, next_bb, bb);
-			continue;
-		} else if (bb->out_count == 1 && bb->out_bb [0] == next_bb && next_bb->in_count == 1 && !next_bb->eh_block && !next_bb->patchpoint_data) {
+			interp_handle_unreachable_bblock (td, next_bb);
+			if (next_bb->preserve) {
+				if (td->verbose_level)
+					g_print ("Removed BB%d, cleared instructions only\n", next_bb->index);
+			} else {
+				if (td->verbose_level)
+					g_print ("Removed BB%d\n", next_bb->index);
+				interp_remove_bblock (td, next_bb, bb);
+				continue;
+			}
+		} else if (bb->out_count == 1 && bb->out_bb [0] == next_bb && next_bb->in_count == 1 && !next_bb->preserve && !next_bb->patchpoint_data) {
 			g_assert (next_bb->in_bb [0] == bb);
 			interp_merge_bblocks (td, bb, next_bb);
 			if (td->verbose_level)
