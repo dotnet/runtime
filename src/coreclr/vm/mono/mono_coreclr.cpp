@@ -727,11 +727,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_exit_internal_call(MonoInternalCallFra
     frame->~FrameWithCookie<HelperMethodFrame>();
 }
 
-extern "C" EXPORT_API guint32 EXPORT_CC mono_field_get_flags(MonoClassField *field)
-{
-    return ((FieldDesc*)field)->GetAttributes();
-}
-
 extern "C" EXPORT_API const char* EXPORT_CC mono_field_get_name(MonoClassField *field)
 {
     CONTRACTL

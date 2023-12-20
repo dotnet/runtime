@@ -48,7 +48,6 @@ mono_debugger_install_attach_detach_callback
 mono_debugger_set_generate_debug_info
 mono_enter_internal_call
 mono_exit_internal_call
-mono_field_get_flags
 mono_field_get_name
 mono_field_get_offset
 mono_field_get_parent
