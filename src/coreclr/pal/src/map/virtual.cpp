@@ -477,6 +477,11 @@ static LPVOID VIRTUALReserveMemory(
 
     TRACE( "Reserving the memory now..\n");
 
+    if (newMemory != NULL)
+    {
+        *newMemory = false;
+    }
+
     // First, figure out where we're trying to reserve the memory and
     // how much we need. On most systems, requests to mmap must be
     // page-aligned and at multiples of the page size. Unlike on Windows, on
@@ -511,7 +516,7 @@ static LPVOID VIRTUALReserveMemory(
         }
         pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize, flAllocationType);
 
-        if (newMemory != NULL)
+        if (newMemory != NULL && pRetVal != NULL)
         {
             *newMemory = true;
         }
