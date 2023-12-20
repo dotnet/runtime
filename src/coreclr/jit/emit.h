@@ -1139,7 +1139,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned  idCodeSize() const
+        unsigned idCodeSize() const
         {
             return _idCodeSize;
         }
