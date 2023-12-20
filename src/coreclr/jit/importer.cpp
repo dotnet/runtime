@@ -9469,12 +9469,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             if (allocSize <= maxSize)
                             {
-                                ClassLayout* layout = typGetBlkLayout((unsigned)allocSize);
-
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
                                 JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
-                                lvaSetStruct(stackallocAsLocal, layout, false);
+                                lvaSetStruct(stackallocAsLocal, typGetBlkLayout((unsigned)allocSize), false);
                                 lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
                                 op1                                          = gtNewLclVarAddrNode(stackallocAsLocal);
