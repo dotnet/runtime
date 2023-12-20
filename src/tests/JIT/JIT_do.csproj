@@ -3,5 +3,6 @@
     <MergedWrapperProjectReference Include="*/**/*_do.??proj" />
   </ItemGroup>
 
-  <Import Project="JIT_merged.targets" />
+  <Import Project="JIT_RemoveMergedTests.projitems" />
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
