@@ -99,7 +99,6 @@ EXPORTS
         mono_type_get_name
         mono_type_get_name_full
         mono_type_get_type
-        mono_type_is_byref
         mono_unity_allocation_granularity
         mono_unity_class_field_is_literal
         mono_unity_class_has_failure

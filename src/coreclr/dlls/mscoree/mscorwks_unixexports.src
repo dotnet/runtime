@@ -85,7 +85,6 @@ mono_thread_has_sufficient_execution_stack
 mono_type_get_name
 mono_type_get_name_full
 mono_type_get_type
-mono_type_is_byref
 mono_unity_allocation_granularity
 mono_unity_backtrace_from_context
 mono_unity_class_field_is_literal

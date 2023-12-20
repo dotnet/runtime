@@ -1609,12 +1609,6 @@ retry:
     }
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_type_is_byref (MonoType * type)
-{
-    TypeHandle clrType = TypeHandle::FromPtr(reinterpret_cast<PTR_VOID>(type));
-    return clrType.IsByRef();
-}
-
 extern "C" EXPORT_API uint32_t EXPORT_CC mono_unity_allocation_granularity ()
 {
     ASSERT_NOT_IMPLEMENTED;
