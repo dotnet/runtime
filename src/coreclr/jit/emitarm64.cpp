@@ -12012,8 +12012,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isPredicateRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 0;
+    assert((ureg >= 8) && (ureg <= 15));
+    return (ureg - 8) << 0;
 }
 
 /*****************************************************************************
