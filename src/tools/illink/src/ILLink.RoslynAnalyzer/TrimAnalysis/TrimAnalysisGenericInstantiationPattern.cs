@@ -11,10 +11,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisGenericInstantiationPattern
 	{
-		public ISymbol GenericInstantiation { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
-		public FeatureContext FeatureContext { init; get; }
+		public ISymbol GenericInstantiation { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisGenericInstantiationPattern (
 			ISymbol genericInstantiation,
