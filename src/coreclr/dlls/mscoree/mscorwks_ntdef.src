@@ -108,6 +108,4 @@ EXPORTS
         mono_unity_managed_callstack
         mono_unity_set_vprintf_func
         mono_unity_type_get_name_full_chunked
-        mono_unity_type_is_pointer_type
-        mono_unity_type_is_static
         unity_coreclr_create_delegate

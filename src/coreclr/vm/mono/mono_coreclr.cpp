@@ -1678,18 +1678,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_type_get_name_full_chunked(MonoT
     ASSERT_NOT_IMPLEMENTED;
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_type_is_pointer_type(MonoType * type)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_type_is_static(MonoType * type)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
-}
-
 #ifdef _DEBUG
 extern "C" void EXPORT_CC mono_debug_assert_dialog(const char *szFile, int iLine, const char *szExpr)
 {
