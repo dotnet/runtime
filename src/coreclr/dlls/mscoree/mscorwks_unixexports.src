@@ -53,7 +53,6 @@ mono_field_get_offset
 mono_field_get_parent
 mono_gc_collect
 mono_gchandle_free_v2
-mono_get_object_class
 mono_image_get_table_rows
 mono_is_debugger_attached
 mono_jit_info_table_find

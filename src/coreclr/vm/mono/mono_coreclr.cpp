@@ -793,11 +793,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free_v2(uintptr_t gchandle)
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(objectHandle);
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_object_class()
-{
-    return (MonoClass*)CoreLibBinder::GetClass(CLASS__OBJECT);
-}
-
 static ASSEMBLYREF ASSEMBLYREF_From_AssemblyIntPtrHandle(MonoImage* assemblyIntPtrHandle)
 {
     OBJECTHANDLE assemblyHandle = handle_from_uintptr((uintptr_t)assemblyIntPtrHandle);
