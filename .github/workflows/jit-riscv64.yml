@@ -71,7 +71,7 @@ jobs:
         run: ./build.sh -mono -Debug riscv64 -tree:JIT/ --ci
         working-directory: ./src/tests
       - name: Run tests
-        run: /crossrootfs/riscv64/bin/qemu-riscv64-static /crossrootfs/riscv64/bin/bash -c ./run.sh Debug --test-env=/home/wuxinlong/workspace/runtime/src/tests/setTestEnv.sh
+        run: /crossrootfs/riscv64/bin/qemu-riscv64-static /crossrootfs/riscv64/bin/bash -c ./run.sh Debug
         working-directory: ./src/tests
       - name: Upload Test error Log
         if: ${{ failure() }}
