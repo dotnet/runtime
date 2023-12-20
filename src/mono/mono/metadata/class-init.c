@@ -554,6 +554,9 @@ mono_class_create_from_typedef_at_level (MonoImage *image, guint32 type_token, M
 			canonical_inst->type = MONO_TYPE_GENERICINST;
 			canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
 		}
+	} else if (mono_class_is_gtd (klass)) {
+		MonoGenericContainer *generic_container = mono_class_get_generic_container (klass);
+		context = &generic_container->context;
 	}
 
 	if (allocate_class)
