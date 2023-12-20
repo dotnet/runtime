@@ -395,7 +395,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
                     // Generate the control table for VFIXUPIMMSD
                     // The behavior we want is to saturate negative values to 0.
-                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+                    // GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
 
                     // QNAN: 0b1000:
                     // SNAN: 0b1000
