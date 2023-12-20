@@ -1037,7 +1037,7 @@ protected:
             {
                 return iiaEncodedInstr;
             }
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_RISCV64)
 
         } _idAddrUnion;
 
