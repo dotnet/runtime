@@ -5563,9 +5563,10 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preser
 
     EXCEPTION_RECORD exceptionRecord;
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
-    exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
-    exceptionRecord.ExceptionAddress = NULL;
+    exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
+    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF, bool))&DispatchManagedException;
     exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation, hr);
+    exceptionRecord.ExceptionRecord = NULL;
 
     CONTEXT exceptionContext;
     RtlCaptureContext(&exceptionContext);
@@ -8374,7 +8375,12 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             if (pThis->m_crawl.GetFrame() == FRAME_TOP)
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
+#ifdef HOST_WINDOWS
+                CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+                RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, pTopExInfo->m_ptrs.ContextRecord, 0);
+#else
                 CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
+#endif
             }
             goto Exit;
         }

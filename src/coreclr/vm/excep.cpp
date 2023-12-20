@@ -8659,7 +8659,11 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     // But if the tracker exists, simply copy the bucket details to the UE Watson Bucket
     // tracker for use by the "WatsonLastChance" path.
     BOOL fDoWeHaveWatsonBuckets = FALSE;
-    if (pExState->GetCurrentExceptionTracker() != NULL)
+    if ((pExState->GetCurrentExceptionTracker() != NULL)
+#ifdef FEATURE_EH_FUNCLETS
+        || (pExState->GetCurrentExInfo() != NULL)
+#endif // FEATURE_EH_FUNCLETS
+    )
     {
         // Check the exception state if we have Watson bucket details
         fDoWeHaveWatsonBuckets = pExState->GetFlags()->GotWatsonBucketDetails();
