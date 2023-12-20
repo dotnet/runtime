@@ -2553,6 +2553,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
@@ -3143,6 +3144,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
             {
                 // Optimize
@@ -3176,6 +3178,45 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             retNode = gtNewIconNode(
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
+                        case NI_System_Type_get_IsPrimitive:
+                            if (info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::Must)
+                            {
+                                // Since asCorInfoType returns underlying type for enums, we need to check
+                                // it explicitly and return false.
+                                retNode = gtNewFalse();
+                            }
+                            else
+                            {
+                                switch (info.compCompHnd->asCorInfoType(hClass))
+                                {
+                                    case CORINFO_TYPE_BOOL:
+                                    case CORINFO_TYPE_CHAR:
+                                    case CORINFO_TYPE_BYTE:
+                                    case CORINFO_TYPE_UBYTE:
+                                    case CORINFO_TYPE_SHORT:
+                                    case CORINFO_TYPE_USHORT:
+                                    case CORINFO_TYPE_INT:
+                                    case CORINFO_TYPE_UINT:
+                                    case CORINFO_TYPE_LONG:
+                                    case CORINFO_TYPE_ULONG:
+                                    case CORINFO_TYPE_NATIVEINT:
+                                    case CORINFO_TYPE_NATIVEUINT:
+                                    case CORINFO_TYPE_FLOAT:
+                                    case CORINFO_TYPE_DOUBLE:
+                                        retNode = gtNewTrue();
+                                        break;
+                                    default:
+                                        // The rest of the types are not primitive, e.g.:
+                                        // * Function and regular pointers
+                                        // * Nullable<T>
+                                        // * Shared generics
+                                        // * etc.
+                                        retNode = gtNewFalse();
+                                        break;
+                                }
+                            }
+                            break;
+
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
@@ -8806,6 +8847,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_IsValueType") == 0)
                         {
                             result = NI_System_Type_get_IsValueType;
+                        }
+                        else if (strcmp(methodName, "get_IsPrimitive") == 0)
+                        {
+                            result = NI_System_Type_get_IsPrimitive;
                         }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {
