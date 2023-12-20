@@ -805,8 +805,8 @@ def run_tests(args,
         test_env_script_path  : Path to script to use to set the test environment, if any.
     """
 
-    # Set default per-test timeout to 5 minutes (in milliseconds).
-    per_test_timeout = 5*60*1000
+    # Set default per-test timeout to 2 minutes (in milliseconds).
+    per_test_timeout = 2*60*1000
 
     # Setup the environment
     if args.long_gc:
