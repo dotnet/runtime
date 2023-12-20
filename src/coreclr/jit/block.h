@@ -565,11 +565,14 @@ public:
 
     void SetPrev(BasicBlock* prev)
     {
+        assert(prev != nullptr);
         bbPrev = prev;
-        if (prev)
-        {
-            prev->bbNext = this;
-        }
+        prev->bbNext = this;
+    }
+
+    void SetPrevToNull()
+    {
+        bbPrev = nullptr;
     }
 
     BasicBlock* Next() const
