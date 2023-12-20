@@ -128,13 +128,13 @@ preload_visit_typeref (MonoImage *image, uint32_t typeref_index);
 static void
 preload_visit_typespec (MonoImage *image, uint32_t typespec_index);
 static void
-preload_visit_type_and_cmods (MonoImage *image, MonoType *ty);
+preload_visit_mono_type (MonoType *ty);
 static void
-preload_visit_and_inflate_mono_type (MonoImage *image, MonoType *ty);
+preload_visit_type_switch (MonoType *ty);
 static uint32_t
 preload_resolve_from_name (MonoImage *image, const char *nspace, const char *name);
 static void
-preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class);
+preload_visit_generic_class (MonoGenericClass *generic_class);
 
 
 void
@@ -195,7 +195,7 @@ preload_visit_classkind (MonoClass *klass)
 	case MONO_CLASS_GINST:
 		if (m_class_ready_level_at_least (klass, MONO_CLASS_READY_APPROX_PARENT))
 			break;
-		preload_visit_type_and_cmods (m_class_get_image (klass), m_class_get_byval_arg (klass));
+		preload_visit_mono_type (m_class_get_byval_arg (klass));
 		break;
 	case MONO_CLASS_GPARAM:
 		// don't expect to do anything - the MonoGenericContainer constraints should've been
@@ -205,7 +205,7 @@ preload_visit_classkind (MonoClass *klass)
 		// assumption: mono_class_create_array_type always sets m_class_get_byval_arg(klass) at BAREBONES, so that we can get the
 		// element type from byval_arg
 		g_assert (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (klass)->type == MONO_TYPE_ARRAY);
-		preload_visit_type_and_cmods (m_class_get_image (klass), m_class_get_byval_arg (klass));
+		preload_visit_mono_type (m_class_get_byval_arg (klass));
 		break;
 	case MONO_CLASS_POINTER:
 		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) {
@@ -578,11 +578,21 @@ preload_resolve_from_name (MonoImage *image, const char *nspace, const char *nam
  * inflate them as we go.
  */
 static void
-preload_visit_type_and_cmods (MonoImage *image, MonoType *ty)
+preload_visit_mono_type (MonoType *ty)
 {
-	preload_visit_and_inflate_mono_type (image, ty);
+	preload_visit_type_switch (ty);
 	if (G_UNLIKELY (ty->has_cmods)) {
-		g_assert_not_reached (); // TODO: visit the cmods
+		unsigned int count = mono_type_custom_modifier_count (ty);
+		for (unsigned int i = 0; i < count; i++) {
+			ERROR_DECL (cmod_error);
+			gboolean required = FALSE;
+			MonoType *cmod = mono_type_get_custom_modifier (ty, i, &required, cmod_error);
+			if (!is_ok (cmod_error)) {
+				mono_error_cleanup (cmod_error);
+				continue;
+			}
+			preload_visit_mono_type (cmod);
+		}
 	}
 }
 
@@ -590,7 +600,7 @@ preload_visit_type_and_cmods (MonoImage *image, MonoType *ty)
  * Preload all the classes in the given type
  */
 static void
-preload_visit_and_inflate_mono_type (MonoImage *image, MonoType *ty)
+preload_visit_type_switch (MonoType *ty)
 {
 	switch (ty->type) {
 	case MONO_TYPE_VOID:
@@ -620,11 +630,15 @@ preload_visit_and_inflate_mono_type (MonoImage *image, MonoType *ty)
 	case MONO_TYPE_SZARRAY:
 		preload_visit_classkind (ty->data.klass);
 		break;
-	case MONO_TYPE_ARRAY:
-		g_assert_not_reached(); // TODO finish me
+	case MONO_TYPE_ARRAY: {
+		MonoArrayType *at = ty->data.array;
+		MonoClass *eklass = at->eklass;
+		preload_visit_classkind (eklass);
+		break;
+	}
 	case MONO_TYPE_PTR: {
 		MonoType *etype = ty->data.type;
-		preload_visit_type_and_cmods (image, etype);
+		preload_visit_mono_type (etype);
 		break;
 	}
 	case MONO_TYPE_FNPTR:
@@ -635,7 +649,7 @@ preload_visit_and_inflate_mono_type (MonoImage *image, MonoType *ty)
 		/* nothing to do, the generic context has already been preloaded */
 		break;
 	case MONO_TYPE_GENERICINST:
-		preload_visit_generic_class (image, ty->data.generic_class);
+		preload_visit_generic_class (ty->data.generic_class);
 		break;
 	default:
 		g_assert_not_reached();
@@ -655,11 +669,11 @@ preload_visit_typespec (MonoImage *image, uint32_t typespec_index)
 		return;
 	}
 	
-	preload_visit_type_and_cmods (image, t);
+	preload_visit_mono_type (t);
 }
 
 static void
-preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class)
+preload_visit_generic_class (MonoGenericClass *generic_class)
 {
 	if (generic_class->cached_class) {
 		/* if there's a cached MonoClass, for this generic instance, see if it's already
@@ -675,6 +689,6 @@ preload_visit_generic_class (MonoImage *image, MonoGenericClass *generic_class)
 	g_assert (class_inst != NULL);
 	g_assert (generic_class->context.method_inst == NULL);
 	for (unsigned int i = 0; i < class_inst->type_argc; i++) {
-		preload_visit_type_and_cmods (image, class_inst->type_argv[i]);
+		preload_visit_mono_type (class_inst->type_argv[i]);
 	}
 }
