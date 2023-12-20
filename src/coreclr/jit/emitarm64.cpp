@@ -1056,14 +1056,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         // Scalable, 4 regs, to predicate register.
-        case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
         case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
             assert(isScalableVectorSize(elemsize));
-            assert(isPredicateRegister(id->idReg1()));     // DDDD
-            assert(isLowPredicateRegister(id->idReg2()));  // ggg
-            assert(isVectorRegister(id->idReg3()));        // mmmmm
-            assert(isVectorRegister(id->idReg4()));        // nnnnn
+            assert(isPredicateRegister(id->idReg1()));    // DDDD
+            assert(isLowPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg3()));       // mmmmm
+            assert(isVectorRegister(id->idReg4()));       // nnnnn
             if (id->idInsFmt() == IF_SVE_CX_4A)
             {
                 assert(insOptsScalableSimple(id->idInsOpt())); // xx
@@ -17429,7 +17429,7 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
-        case IF_SVE_CX_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
+        case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), true); // DDDD
             emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true);  // ggg
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);                        // mmmmm
@@ -17441,7 +17441,7 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), true); // DDDD
             emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true);  // ggg
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);                        // mmmmm
-            emitDispSveReg(id->idReg4(), INS_OPTS_SCALABLE_D, false);                       // nnnnn
+            emitDispSveReg(id->idReg4(), INS_OPTS_SCALABLE_D, false);                  // nnnnn
             break;
 
         // <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
