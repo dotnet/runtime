@@ -1852,8 +1852,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_RCONV_TO_U2:
 	case OP_RCONV_TO_I4:
 	case OP_RCONV_TO_U4:
-	case OP_RCONV_TO_I8:
-	case OP_RCONV_TO_U8:
 	case OP_FCONV_TO_I1:
 	case OP_FCONV_TO_U1:
 	case OP_FCONV_TO_I2:
@@ -1910,7 +1908,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_ICONV_TO_R8:
 	case OP_LCONV_TO_R8:
-	case OP_RCONV_TO_I2:
 	case OP_FCONV_TO_R4:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
@@ -1918,6 +1915,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FCONV_TO_OVF_I8:
 	case OP_FCONV_TO_OVF_U8:
 	case OP_RCONV_TO_I8:
+	case OP_RCONV_TO_U8:
 	case OP_RCONV_TO_OVF_I8:
 	case OP_RCONV_TO_OVF_U8:
 #endif
