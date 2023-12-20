@@ -936,7 +936,7 @@ protected:
 // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
 // about reading what we think is here, to avoid unexpected corruption issues.
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock* iiaBBlabel;
@@ -990,18 +990,18 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64)
             struct
             {
+                unsigned int iiaEncodedInstr; // instruction's binary encoding.
                 regNumber    _idReg3 : REGNUM_BITS;
                 regNumber    _idReg4 : REGNUM_BITS;
-                unsigned int iiaEncodedInstr; // instruction's binary encoding.
             };
 
             struct
             {
-                emitLclVarAddr iiaLclVar;
                 int            iiaJmpOffset; // temporary saving the offset of jmp or data.
+                emitLclVarAddr iiaLclVar;
             };
 
             void iiaSetInstrEncode(unsigned int encode)
@@ -1020,6 +1020,22 @@ protected:
             int iiaGetJmpOffset() const
             {
                 return iiaJmpOffset;
+            }
+#elif defined(TARGET_RISCV64)
+            struct
+            {
+                regNumber    _idReg3 : REGNUM_BITS;
+                regNumber    _idReg4 : REGNUM_BITS;
+                unsigned int iiaEncodedInstr; // instruction's binary encoding.
+            };
+
+            void iiaSetInstrEncode(unsigned int encode)
+            {
+                iiaEncodedInstr = encode;
+            }
+            unsigned int iiaGetInstrEncode() const
+            {
+                return iiaEncodedInstr;
             }
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
