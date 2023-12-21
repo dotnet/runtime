@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // First, check if we have encountered this call site before to prevent visiting call site trees that have already been visited
             // If firstScopedServiceInCallSiteTree is null there are no scoped dependencies in this service's call site tree
-            // If firstScopedServiceInCallSiteTree has a value, it contains the first scoped service in this service's call site truee
+            // If firstScopedServiceInCallSiteTree has a value, it contains the first scoped service in this service's call site tree
             if (_scopedServices.TryGetValue(callSite.Cache.Key, out Type? firstScopedServiceInCallSiteTree))
             {
                 return firstScopedServiceInCallSiteTree;
