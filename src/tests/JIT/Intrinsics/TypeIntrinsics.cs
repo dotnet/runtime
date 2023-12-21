@@ -174,6 +174,7 @@ public partial class Program
         IsFalse(typeof(UInt128).IsPrimitive);
         IsFalse(typeof(string).IsPrimitive);
         IsFalse(typeof(object).IsPrimitive);
+        IsFalse(typeof(RuntimeArgumentHandle).IsPrimitive);
         IsFalse(typeof(int[]).IsPrimitive);
         IsFalse(typeof(int[,]).IsPrimitive);
         IsFalse(typeof(int*).IsPrimitive);
