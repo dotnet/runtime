@@ -443,7 +443,8 @@ internal sealed class Xcode
         }
 
         string appLinkLibraries = $"    {frameworks}{Environment.NewLine}";
-        string extraLinkerArgsConcat = $"\"{string.Join('\n', extraLinkerArgs)}\"";
+        string extraLinkerArgsConcatEscapeQuotes = string.Join('\n', extraLinkerArgs).Replace("\"", "\\\"");
+        string extraLinkerArgsConcat = $"\"{extraLinkerArgsConcatEscapeQuotes}\"";
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%APP_LINK_LIBRARIES%", appLinkLibraries);

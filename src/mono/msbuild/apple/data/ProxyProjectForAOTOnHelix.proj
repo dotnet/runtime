@@ -13,7 +13,7 @@
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
-    <_UseLibraryModeBundling Condition="'$(NativeLib)' != ''">true</_UseLibraryModeBundling>
+    <_UseNativeAOTLibraryModeBundling Condition="'$(NativeLib)' == 'Shared'">true</_UseNativeAOTLibraryModeBundling>
 
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
@@ -23,7 +23,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseLibraryModeBundling)' != 'true'">
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true'">
     <!-- TODO: we probably want to recreate everything in the intermediate directory instead (see library mode bellow) -->
     <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <NativeLib>static</NativeLib>
@@ -31,7 +31,7 @@
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
   </PropertyGroup>
   <!-- In library mode we depend on NativeAOT publish integration targets -->
-  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseLibraryModeBundling)' == 'true'">
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'">
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <OutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'bin'))</OutputPath>
@@ -74,9 +74,9 @@
     </ItemGroup>
 
     <!-- For NativeAOT library mode we need to manually create the 'obj' dir and copy all assemblies in there to properly build the library -->
-    <MakeDir Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseLibraryModeBundling)' == 'true'"
+    <MakeDir Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'"
       Directories="$(IntermediateOutputPath)" />
-    <Copy Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(_UseLibraryModeBundling)' == 'true'"
+    <Copy Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'"
       SourceFiles="@(AppleAssembliesToBundle)"
       DestinationFolder="$(IntermediateOutputPath)" />
 
