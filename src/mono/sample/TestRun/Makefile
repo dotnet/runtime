@@ -8,7 +8,8 @@ TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
-ANY_PATH= /home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.riscv64.Debug/JIT/jit64/regress/ddb/127931/127931/127931.dll
+CORE_BASELINE_ROOT=/home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.x64.Debug/Tests/Core_Root
+ANY_PATH= /home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.x64.Debug/JIT/Directed/Directed_3/Directed_3.dll
 
 GitHubKey=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
 
@@ -16,7 +17,7 @@ GitHubKey=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
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = "-v"
+MONO_ENV_DEBUG_OPTIONS = "-v --trace=all --break StrAccess1:Run"
 MONO_ENV_RUN_OPTIONS=""
 
 build: TestRun.cs
@@ -30,13 +31,13 @@ run-baseline: build
 run-any-baseline:
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
-	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet \
-	$(ANY_PATH)
+	CORE_ROOT=${CORE_BASELINE_ROOT} \
+	${CORE_BASELINE_ROOT}/corerun -p System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=true $(ANY_PATH)
 
 run: build
 	@COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
-	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet TestRun.exe
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net9.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet TestRun.exe
 	
 run-any: 
 	COMPlus_DebugWriteToStdErr=1 \
@@ -90,8 +91,8 @@ debug-any:
 	-iex "add-auto-load-safe-path /home/wuxinlong/workspace/runtime/src/mono/sample/TestRun/" \
 	-ex "set sysroot $(TOP).tools/rootfs/riscv64" \
 	-ex "set solib-search-path ${CORE_ROOT}" \
-	-ex "b mini.c:2161" \
-	-ex "handle SIG35 print nostop ignore" \
+	-ex "b mono_break" \
+	-ex "handle SIGXCPU SIG33 SIG35 SIG36 SIG37 SIG38 SIGPWR print nostop ignore" \
 	${CORE_ROOT}/corerun
 
 remote_gdb:
@@ -130,6 +131,6 @@ clean:
 
 # ROOTFS_DIR="" ./build.sh mono+libs+host -c Debug  --ninja /p:KeepNativeSymbols=true
 # ./build.sh mono+libs+host+clr.host -c Debug --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true --build
-
+# CORT_ROOT=/home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.x64.Debug
 # ./build.sh -mono -debug riscv64 -ninja /p:KeepNativeSymbols=true
 # ./build.sh clr.hosts --cross --arch riscv64 --ninja /p:KeepNativeSymbols=true
