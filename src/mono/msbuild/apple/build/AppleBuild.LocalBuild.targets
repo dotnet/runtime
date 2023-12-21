@@ -85,34 +85,17 @@
           as a root -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)').EndsWith('TestRunner.dll'))"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
+          Include="%(AppleAssembliesToBundle.Identity)" />
       <TrimmerRootAssembly
           Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
+          Include="%(AppleAssembliesToBundle.Identity)" />
       <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
           which doesn't exist at the path when BuildTestsOnHelix -->
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
 
-      <!-- Test-specific assemblies -->
-      <TrimmerRootAssembly
-          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'mscorlib.dll'"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
-      <TrimmerRootAssembly
-          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'System.Threading.Overlapped.dll'"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
-      <TrimmerRootAssembly
-          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'TestILAssembly.dll'"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
-      <TrimmerRootAssembly
-          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'TestLoadAssembly.dll'"
-          Include="%(AppleAssembliesToBundle.FullPath)" />
-          
-          
-    </ItemGroup>
-
-    <ItemGroup>
-      <TrimmerRootDescriptor Include="$(_AppleTargetsDir)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
-      <TrimmerRootDescriptor Include="$(_AppleTargetsDir)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+      <ManagedAssemblyToLink Include="@(AppleAssembliesToBundle)">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      </ManagedAssemblyToLink>
     </ItemGroup>
   </Target>
 

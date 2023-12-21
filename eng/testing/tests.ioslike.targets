@@ -74,6 +74,7 @@
       <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
       <ExtraFiles Condition="'%(AppleAssembliesToBundle._IsNative)' == 'true'"
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
+      <ExtraFiles Include="@(TrimmerRootDescriptor)"          TargetDir="extraFiles" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">

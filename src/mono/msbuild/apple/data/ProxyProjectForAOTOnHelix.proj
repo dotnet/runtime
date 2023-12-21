@@ -71,9 +71,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
-      <ManagedAssemblyToLink Include="@(AppleAssembliesToBundle)" >
-        <RelativePath>%(Filename)%(Extension)</RelativePath>
-      </ManagedAssemblyToLink>
+       <TrimmerRootDescriptor Include="$(ExtraFilesPath)**\*.xml" />
     </ItemGroup>
   </Target>
 
@@ -90,11 +88,11 @@
   </Target>
 
   <Target Name="_TrimApp" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
+    <Delete Files="@(_RemovedManagedAssembly)" />
     <ItemGroup>
       <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
-      <AppleAssembliesToBundle Include="@(_ResolvedFileToPublishAlways->'$(PublishDir)%(RelativePath)')" />
+      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
     </ItemGroup>
-    <Delete Files="@(_RemovedManagedAssembly)" />
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
