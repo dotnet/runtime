@@ -100,5 +100,19 @@ namespace Microsoft.Extensions.Logging.Console
                 _maxQueuedMessages = value;
             }
         }
+
+        private bool _disableMessageQueue = false;
+
+        /// <summary>
+        /// Enable or disable the message queue behavior. Default false.
+        /// </summary>
+        public bool DisableMessageQueue
+        {
+            get => _disableMessageQueue;
+            set
+            {
+                _disableMessageQueue = value;
+            }
+        }
     }
 }
