@@ -566,7 +566,7 @@ public:
     void SetPrev(BasicBlock* prev)
     {
         assert(prev != nullptr);
-        bbPrev = prev;
+        bbPrev       = prev;
         prev->bbNext = this;
     }
 
@@ -582,17 +582,20 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
-        if (next)
-        {
-            next->bbPrev = this;
-        }
+        assert(next != nullptr);
+        bbNext       = next;
+        next->bbPrev = this;
 
         // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
         // For now, if a BBJ_COND's bbTrueTarget is not taken, we expect to fall through,
         // so bbFalseTarget must be the next block.
         // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
         bbFalseTarget = next;
+    }
+
+    void SetNextToNull()
+    {
+        bbNext = nullptr;
     }
 
     bool IsFirst() const

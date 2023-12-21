@@ -5162,10 +5162,14 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
     }
     else
     {
-        block->Prev()->SetNext(block->Next());
         if (block == fgLastBB)
         {
             fgLastBB = block->Prev();
+            fgLastBB->SetNextToNull();
+        }
+        else
+        {
+            block->Prev()->SetNext(block->Next());
         }
     }
 }
@@ -5198,13 +5202,15 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
-    bPrev->SetNext(bEnd->Next());
-
     /* If we removed the last block in the method then update fgLastBB */
     if (fgLastBB == bEnd)
     {
         fgLastBB = bPrev;
-        noway_assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
+    }
+    else
+    {
+        bPrev->SetNext(bEnd->Next());
     }
 
     // If bEnd was the first Cold basic block update fgFirstColdBlock
@@ -5792,15 +5798,18 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 
     /* relink [bStart .. bEnd] into the flow graph */
 
-    bEnd->SetNext(insertAfterBlk->Next());
-    insertAfterBlk->SetNext(bStart);
-
     /* If insertAfterBlk was fgLastBB then update fgLastBB */
     if (insertAfterBlk == fgLastBB)
     {
         fgLastBB = bEnd;
-        noway_assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
     }
+    else
+    {
+        bEnd->SetNext(insertAfterBlk->Next());
+    }
+
+    insertAfterBlk->SetNext(bStart);
 }
 
 /*****************************************************************************
@@ -6364,14 +6373,17 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
  */
 void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 {
-    newBlk->SetNext(insertAfterBlk->Next());
-    insertAfterBlk->SetNext(newBlk);
-
     if (fgLastBB == insertAfterBlk)
     {
         fgLastBB = newBlk;
-        assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
     }
+    else
+    {
+        newBlk->SetNext(insertAfterBlk->Next());
+    }
+
+    insertAfterBlk->SetNext(newBlk);
 }
 
 // We have two edges (bAlt => bCur) and (bCur => bNext).

@@ -1070,7 +1070,7 @@ bool BasicBlock::bbFallsThrough() const
             return false;
 
         case BBJ_COND:
-            return NextIs(GetFalseTarget());
+            return true;
 
         case BBJ_CALLFINALLY:
             return !HasFlag(BBF_RETLESS_CALL);
