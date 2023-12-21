@@ -9705,7 +9705,7 @@ public:
             return false;
         }
 
-        if (!predBlock->KindIs(BBJ_COND) || predBlock->JumpsToNext())
+        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueTargetIs(predBlock->GetFalseTarget()))
         {
             return true;
         }
