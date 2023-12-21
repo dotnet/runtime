@@ -4530,11 +4530,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // Convert BBJ_CALLFINALLY/BBJ_ALWAYS pairs to BBJ_CALLFINALLY/BBJ_CALLFINALLYRET.
-    // Temporary: eventually, do this immediately in impImportLeave
-    //
-    DoPhase(this, PHASE_UPDATE_CALLFINALLY, &Compiler::fgUpdateCallFinally);
-
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -5483,8 +5478,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump that won't be removed
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->CanRemoveJumpToNext(this))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)

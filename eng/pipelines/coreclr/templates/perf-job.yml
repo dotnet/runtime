@@ -90,7 +90,7 @@ jobs:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
         - ${{ 'build_android_arm64_release_AndroidMono' }}
-        - ${{ 'Build_ios_arm64_release_PerfBDNApp' }}
+        # - ${{ 'Build_ios_arm64_release_PerfBDNApp' }} Disabled per: https://github.com/dotnet/performance/issues/3655
       - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
         - ${{ 'build_ios_arm64_release_iOSMono' }}
       - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT')}}:
@@ -228,13 +228,14 @@ jobs:
           artifactFileName: 'AndroidMonoarm64.tar.gz'
           artifactName: 'AndroidMonoarm64'
           displayName: 'Mono Android HelloWorld'
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(Build.SourcesDirectory)
-          cleanUnpackFolder: false
-          artifactFileName: 'AndroidBDNApk.tar.gz'
-          artifactName: 'AndroidBDNApk'
-          displayName: 'Mono Android BDN Apk'
+      # Disabled per: https://github.com/dotnet/performance/issues/3655
+      # - template: /eng/pipelines/common/download-artifact-step.yml
+      #   parameters:
+      #     unpackFolder: $(Build.SourcesDirectory)
+      #     cleanUnpackFolder: false
+      #     artifactFileName: 'AndroidBDNApk.tar.gz'
+      #     artifactName: 'AndroidBDNApk'
+      #     displayName: 'Mono Android BDN Apk'
 
     # Download iOSMono and Native AOT tests
     - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:

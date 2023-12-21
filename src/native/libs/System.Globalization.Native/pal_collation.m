@@ -11,8 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
 // Enum that corresponds to C# CompareOptions
 typedef enum
 {
@@ -72,7 +71,7 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
     return options;
 }
 
-NSString *ConvertToKatakana(NSString *input)
+static NSString *ConvertToKatakana(NSString *input)
 {
     NSMutableString *mutableString = [input mutableCopy];
     CFStringTransform((__bridge CFMutableStringRef)mutableString, NULL, kCFStringTransformHiraganaKatakana, false);
