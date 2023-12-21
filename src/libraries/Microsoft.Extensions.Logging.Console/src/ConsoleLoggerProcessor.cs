@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private readonly Queue<LogMessageEntry> _messageQueue;
         private volatile int _messagesDropped;
+        private bool _disableMessageQueue;
         private bool _isAddingCompleted;
         private int _maxQueuedMessages = ConsoleLoggerOptions.DefaultMaxQueueLengthValue;
         public int MaxQueueLength
@@ -60,8 +61,9 @@ namespace Microsoft.Extensions.Logging.Console
         public IConsole Console { get; }
         public IConsole ErrorConsole { get; }
 
-        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength)
+        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength, bool disableMessageQueue)
         {
+            _disableMessageQueue = disableMessageQueue;
             _messageQueue = new Queue<LogMessageEntry>();
             FullMode = fullMode;
             MaxQueueLength = maxQueueLength;
@@ -78,11 +80,30 @@ namespace Microsoft.Extensions.Logging.Console
 
         public virtual void EnqueueMessage(LogMessageEntry message)
         {
+            if (_disableMessageQueue)
+            {
+                DirectWriteMessage(message);
+                return;
+            }
+            
             // cannot enqueue when adding is completed
             if (!Enqueue(message))
             {
                 WriteMessage(message);
             }
+        }
+
+        internal void DirectWriteMessage(BmgLogMessageEntry entry)
+        {
+            _ = Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    IConsole console = entry.LogAsError ? ErrorConsole : Console;
+                    console.Write(entry.Message);
+                }
+                catch (Exception) { } //Ignore to protect application
+            });
         }
 
         // internal for testing
