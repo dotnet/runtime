@@ -3180,16 +3180,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
                         case NI_System_Type_get_IsPrimitive:
-                        {
-                            retNode        = gtNewFalse();
-                            uint32_t attrs = info.compCompHnd->getClassAttribs(hClass);
-                            if (((attrs & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0) &&
-                                (info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) != CORINFO_TYPE_UNDEF))
+                            // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
+                            // because enums are not primitive types.
+                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
+                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
                             {
                                 retNode = gtNewTrue();
                             }
-                        }
-                        break;
+                            else
+                            {
+                                retNode = gtNewFalse();
+                            }
+                            break;
 
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
