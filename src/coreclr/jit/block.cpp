@@ -457,7 +457,7 @@ void BasicBlock::dspBlockILRange() const
 //------------------------------------------------------------------------
 // dspFlags: Print out the block's flags
 //
-void BasicBlock::dspFlags()
+void BasicBlock::dspFlags() const
 {
     static const struct
     {
@@ -524,7 +524,7 @@ void BasicBlock::dspFlags()
  *  Returns the number of characters printed.
  */
 
-unsigned BasicBlock::dspPreds()
+unsigned BasicBlock::dspPreds() const
 {
     unsigned count = 0;
     for (FlowEdge* const pred : PredEdges())
@@ -592,7 +592,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     }
     else
     {
-        for (BasicBlock* const succ : Succs(compiler))
+        for (const BasicBlock* const succ : Succs(compiler))
         {
             printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
             first = false;
@@ -603,7 +603,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // Display a compact representation of the bbKind, that is, where this block branches.
 // This is similar to code in Compiler::fgTableDispBasicBlock(), but doesn't have that code's requirements to align
 // things strictly.
-void BasicBlock::dspKind()
+void BasicBlock::dspKind() const
 {
     switch (bbKind)
     {
@@ -717,7 +717,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
                                 bool      showFlags /*= false*/,
                                 bool      showPreds /*= true*/)
 {
-    printf(FMT_BB " ", bbNum);
+    printf("%s ", dspToString());
     dspBlockILRange();
     if (showKind)
     {
@@ -741,7 +741,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     printf("\n");
 }
 
-const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
+const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */) const
 {
     static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
     static int  nextBufferIndex = 0;
