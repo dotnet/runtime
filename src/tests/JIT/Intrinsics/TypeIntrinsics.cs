@@ -130,7 +130,60 @@ public partial class Program
 
         GetEnumUnderlyingType.TestGetEnumUnderlyingType();
 
+        IsPrimitiveTests();
+
         return 100 + _errors;
+    }
+
+    private static void IsPrimitiveTests()
+    {
+        IsTrue(typeof(bool).IsPrimitive);
+        IsTrue(typeof(char).IsPrimitive);
+        IsTrue(typeof(sbyte).IsPrimitive);
+        IsTrue(typeof(byte).IsPrimitive);
+        IsTrue(typeof(short).IsPrimitive);
+        IsTrue(typeof(ushort).IsPrimitive);
+        IsTrue(typeof(int).IsPrimitive);
+        IsTrue(typeof(uint).IsPrimitive);
+        IsTrue(typeof(long).IsPrimitive);
+        IsTrue(typeof(ulong).IsPrimitive);
+        IsTrue(typeof(float).IsPrimitive);
+        IsTrue(typeof(double).IsPrimitive);
+        IsTrue(typeof(nint).IsPrimitive);
+        IsTrue(typeof(nuint).IsPrimitive);
+        IsTrue(typeof(IntPtr).IsPrimitive);
+        IsTrue(typeof(UIntPtr).IsPrimitive);
+
+        IsFalse(typeof(Enum).IsPrimitive);
+        IsFalse(typeof(ValueType).IsPrimitive);
+        IsFalse(typeof(SimpleEnum).IsPrimitive);
+        IsFalse(typeof(IntPtrEnum).IsPrimitive);
+        IsFalse(typeof(FloatEnum).IsPrimitive);
+        IsFalse(typeof(SimpleEnum?).IsPrimitive);
+        IsFalse(typeof(int?).IsPrimitive);
+        IsFalse(typeof(IntPtr?).IsPrimitive);
+        IsFalse(typeof(decimal).IsPrimitive);
+        IsFalse(typeof(TimeSpan).IsPrimitive);
+        IsFalse(typeof(DateTime).IsPrimitive);
+        IsFalse(typeof(DateTimeOffset).IsPrimitive);
+        IsFalse(typeof(Guid).IsPrimitive);
+        IsFalse(typeof(Rune).IsPrimitive);
+        IsFalse(typeof(Half).IsPrimitive);
+        IsFalse(typeof(DateOnly).IsPrimitive);
+        IsFalse(typeof(TimeOnly).IsPrimitive);
+        IsFalse(typeof(Int128).IsPrimitive);
+        IsFalse(typeof(UInt128).IsPrimitive);
+        IsFalse(typeof(string).IsPrimitive);
+        IsFalse(typeof(object).IsPrimitive);
+        IsFalse(typeof(int[]).IsPrimitive);
+        IsFalse(typeof(int[,]).IsPrimitive);
+
+        // C# doesn't support these types as generic arguments,
+        // so checking them separately.
+        if (typeof(int*).IsPrimitive || typeof(delegate*<int>).IsPrimitive)
+            throw new InvalidOperationException();
+        if (typeof(Nullable<>).IsPrimitive || typeof(Dictionary<,>).IsPrimitive)
+            throw new InvalidOperationException();
     }
 
     private static int _varInt = 42;
