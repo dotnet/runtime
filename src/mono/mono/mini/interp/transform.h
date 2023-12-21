@@ -18,11 +18,6 @@
 // are added in the code, since new instructions won't have this flag set.
 #define INTERP_INST_FLAG_LIVENESS_MARKER 256
 
-#define INTERP_LIVENESS_INS_INDEX_BITS 18
-#define INTERP_LIVENESS_BB_INDEX_BITS (8 * sizeof (gint32) - INTERP_LIVENESS_INS_INDEX_BITS)
-#define INTERP_LIVENESS_INS_INDEX_MASK ((1 << INTERP_LIVENESS_INS_INDEX_BITS) - 1)
-#define INTERP_LIVENESS_BB_INDEX_MASK (((1 << INTERP_LIVENESS_BB_INDEX_BITS) - 1) << INTERP_LIVENESS_INS_INDEX_BITS)
-
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
 typedef struct _InterpCallInfo InterpCallInfo;
@@ -52,6 +47,11 @@ typedef struct
 #define VAR_VALUE_COUNT 6
 
 typedef struct {
+	guint32 bb_index;
+	guint32 ins_index;
+} InterpLivenessPosition;
+
+typedef struct {
 	// Indicates the type of the stored information. It can be another var or a constant
 	int type;
 	// Holds the local index or the actual constant value
@@ -64,7 +64,7 @@ typedef struct {
 	// The instruction that writes this local.
 	InterpInst *def;
 	// Liveness marker of the definition
-	guint32 liveness;
+	InterpLivenessPosition liveness;
 	// The number of times this var is referenced. After optimizations
 	// this can become 0, in which case we can clear the def instruction.
 	int ref_count;
@@ -237,7 +237,7 @@ typedef struct {
 	// This liveness is bblock only. It is used during cprop to determine whether we
 	// can move the definition of a renamed fixed var earlier (if there are no conflicts with
 	// other renamed vars from the same var)
-	guint32 last_use_liveness;
+	InterpLivenessPosition last_use_liveness;
 
 	// Var that is global and might take part in phi opcodes
 	guint ssa_global : 1;
@@ -255,7 +255,7 @@ typedef struct {
 	// Bit set of bblocks where the renamed var is live at the bb end
 	// This means that within these bblocks we can freely increase the var liveness
 	MonoBitSet *live_out_bblocks;
-	// This is a list of (bb_index, inst_index), that indicates that in bblock with
+	// This is a list of InterpLivenessPosition*, that indicates that in bblock with
 	// index bb_index, the var can have its liveness extended to at most inst_index
 	GSList *live_limit_bblocks;
 } InterpRenamedFixedVar;

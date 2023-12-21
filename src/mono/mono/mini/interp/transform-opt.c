@@ -841,7 +841,7 @@ get_var_value (TransformData *td, int var)
 
 	// No ssa var, check if we have a def set for the current bblock
 	if (td->var_values [var].def) {
-		if ((td->var_values [var].liveness >> INTERP_LIVENESS_INS_INDEX_BITS) == td->cbb->index)
+		if (td->var_values [var].liveness.bb_index == td->cbb->index)
 			return &td->var_values [var];
 	}
 	return NULL;
@@ -1221,14 +1221,16 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 			break;
 	}
 
-	guint32 current_liveness = bb->index << INTERP_LIVENESS_INS_INDEX_BITS;
+	InterpLivenessPosition current_liveness;
+	current_liveness.bb_index = bb->index;
+	current_liveness.ins_index = 0;
 
 	// Use renamed definition for sources
 	for (; ins != NULL; ins = ins->next) {
 		if (interp_ins_is_nop (ins))
 			continue;
 		ins->flags |= INTERP_INST_FLAG_LIVENESS_MARKER;
-		current_liveness++;
+		current_liveness.ins_index++;
 
 		interp_foreach_ins_svar (td, ins, NULL, rename_ins_var_cb);
 		if (!mono_interp_op_dregs [ins->opcode] || td->vars [ins->dreg].ext_index == -1)
@@ -1245,7 +1247,9 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 				int renamed_var = (int)(gsize)td->renamable_vars [renamable_ext_index].ssa_stack->data;
 				g_assert (td->vars [renamed_var].renamed_ssa_fixed);
 				int renamed_var_ext = td->vars [renamed_var].ext_index;
-				td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks = g_slist_prepend (td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks, (gpointer)(gsize)current_liveness);
+				InterpLivenessPosition *liveness_ptr = (InterpLivenessPosition*)mono_mempool_alloc (td->mempool, sizeof (InterpLivenessPosition));
+				*liveness_ptr = current_liveness;
+				td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks = g_slist_prepend (td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks, liveness_ptr);
 			}
 			ins->dreg = get_renamed_var (td, ins->dreg, FALSE);
 		}
@@ -1312,12 +1316,8 @@ rename_vars (TransformData *td)
 			g_print ("\tLIVE LIMIT BBLOCKS: {");
 			GSList *live_limit_bblocks = td->renamed_fixed_vars [i].live_limit_bblocks;
 			while (live_limit_bblocks) {
-				guint32 live_limit = (guint32)(gsize)live_limit_bblocks->data;
-				int bb_index = live_limit >> INTERP_LIVENESS_INS_INDEX_BITS;
-				int inst_index = live_limit & INTERP_LIVENESS_INS_INDEX_MASK;
-
-				g_print (" (BB%d, %d)", bb_index, inst_index);
-
+				InterpLivenessPosition *live_limit = (InterpLivenessPosition*)live_limit_bblocks->data;
+				g_print (" (BB%d, %d)", live_limit->bb_index, live_limit->ins_index);
 				live_limit_bblocks = live_limit_bblocks->next;
 			}
 			g_print (" }\n");
@@ -2422,23 +2422,22 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, InterpInst *i
 }
 
 static gboolean
-can_extend_var_liveness (TransformData *td, int var, guint32 liveness)
+can_extend_var_liveness (TransformData *td, int var, InterpLivenessPosition cur_liveness)
 {
 	if (!td->vars [var].renamed_ssa_fixed)
 		return TRUE;
 
 	InterpRenamedFixedVar *fixed_var_ext = &td->renamed_fixed_vars [td->vars [var].ext_index];
-	int cur_bb = liveness >> INTERP_LIVENESS_INS_INDEX_BITS;
 
 	// If var was already live at the end of this bblocks, there is no liveness extension happening
-	if (fixed_var_ext->live_out_bblocks && mono_bitset_test_fast (fixed_var_ext->live_out_bblocks, cur_bb))
+	if (fixed_var_ext->live_out_bblocks && mono_bitset_test_fast (fixed_var_ext->live_out_bblocks, cur_liveness.bb_index))
 		return TRUE;
 
 	GSList *bb_liveness = fixed_var_ext->live_limit_bblocks;
 	while (bb_liveness) {
-		guint32 liveness_limit = (guint32)(gsize)bb_liveness->data;
-		if (cur_bb == (liveness_limit >> INTERP_LIVENESS_INS_INDEX_BITS)) {
-			if (liveness <= liveness_limit)
+		InterpLivenessPosition *liveness_limit = (InterpLivenessPosition*)bb_liveness->data;
+		if (cur_liveness.bb_index == liveness_limit->bb_index) {
+			if (cur_liveness.ins_index <= liveness_limit->ins_index)
 				return TRUE;
 			else
 				return FALSE;
@@ -2476,7 +2475,7 @@ replace_svar_uses (TransformData *td, InterpInst *first, InterpInst *last, int o
 }
 
 static void
-cprop_svar (TransformData *td, InterpInst *ins, int *pvar, guint32 current_liveness)
+cprop_svar (TransformData *td, InterpInst *ins, int *pvar, InterpLivenessPosition current_liveness)
 {
 	int var = *pvar;
 	if (var_has_indirects (td, var))
@@ -2499,7 +2498,7 @@ cprop_svar (TransformData *td, InterpInst *ins, int *pvar, guint32 current_liven
 				can_cprop = can_extend_var_liveness (td, cprop_var, current_liveness);
 			} else {
 				InterpVarValue *cprop_var_val = get_var_value (td, cprop_var);
-				gboolean var_def_in_cur_bb = (val->liveness >> INTERP_LIVENESS_INS_INDEX_BITS) == td->cbb->index;
+				gboolean var_def_in_cur_bb = val->liveness.bb_index == td->cbb->index;
 				if (!var_def_in_cur_bb) {
 					// var definition was not in current bblock so it might no longer contain
 					// the current value of cprop_var because cprop_var is not in ssa form and
@@ -2514,7 +2513,8 @@ cprop_svar (TransformData *td, InterpInst *ins, int *pvar, guint32 current_liven
 					// Previously in this bblock, var is recorded as having the value of cprop_var and
 					// cprop_var is defined in the current bblock. This means that var will contain the
 					// value of cprop_var only if last known cprop_var redefinition was before the var definition.
-					can_cprop = cprop_var_val->liveness < val->liveness;
+					g_assert (cprop_var_val->liveness.bb_index == val->liveness.bb_index);
+					can_cprop = cprop_var_val->liveness.ins_index < val->liveness.ins_index;
 				}
 			}
 
@@ -2554,7 +2554,7 @@ can_cprop_dreg (TransformData *td, InterpInst *mov_ins)
 	if (!sreg_val)
 		return FALSE;
 	// We only apply this optimization if the definition is in the same bblock as this use
-	if ((sreg_val->liveness >> INTERP_LIVENESS_INS_INDEX_BITS) != td->cbb->index)
+	if (sreg_val->liveness.bb_index != td->cbb->index)
 		return FALSE;
 	if (td->var_values [sreg].def->opcode == MINT_DEF_ARG)
 		return FALSE;
@@ -2567,9 +2567,9 @@ can_cprop_dreg (TransformData *td, InterpInst *mov_ins)
 	if (var_is_ssa_form (td, sreg)) {
 		// check if dreg is a renamed ssa fixed var (likely to remain alive)
 		if (td->vars [dreg].renamed_ssa_fixed && !td->vars [sreg].renamed_ssa_fixed) {
-			int last_use_liveness = td->renamable_vars [td->renamed_fixed_vars [td->vars [dreg].ext_index].renamable_var_ext_index].last_use_liveness;
-			if ((last_use_liveness >> INTERP_LIVENESS_INS_INDEX_BITS) != td->cbb->index ||
-					sreg_val->liveness >= last_use_liveness) {
+			InterpLivenessPosition last_use_liveness = td->renamable_vars [td->renamed_fixed_vars [td->vars [dreg].ext_index].renamable_var_ext_index].last_use_liveness;
+			if (last_use_liveness.bb_index != td->cbb->index ||
+					sreg_val->liveness.ins_index >= last_use_liveness.ins_index) {
 				// No other conflicting renamed fixed vars (of dreg) are used in this bblock, or their
 				// last use predates the definition. This means we can tweak def of sreg to store directly
 				// into dreg and patch all intermediary instructions to use dreg instead.
@@ -2610,7 +2610,9 @@ interp_cprop (TransformData *td)
 			g_string_free (bb_info, TRUE);
 		}
 
-		guint32 current_liveness = bb->index << INTERP_LIVENESS_INS_INDEX_BITS;
+		InterpLivenessPosition current_liveness;
+		current_liveness.bb_index = bb->index;
+		current_liveness.ins_index = 0;
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
@@ -2619,7 +2621,7 @@ interp_cprop (TransformData *td)
 			gint32 dreg;
 			// LIVENESS_MARKER is set only for non-eh bblocks
 			if (bb->dfs_index >= td->bblocks_count || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
-				current_liveness++;
+				current_liveness.ins_index++;
 
 			if (interp_ins_is_nop (ins))
 				continue;
@@ -3182,7 +3184,7 @@ interp_super_instructions (TransformData *td)
 				InterpVarValue *dval = &td->var_values [ins->dreg];
 				dval->type = VAR_VALUE_NONE;
 				dval->def = ins;
-				dval->liveness = bb->index << INTERP_LIVENESS_INS_INDEX_BITS;
+				dval->liveness.bb_index = bb->index; // only to check if defined in current bblock
 			}
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
@@ -3647,10 +3649,6 @@ interp_prepare_no_ssa_opt (TransformData *td)
 void
 interp_optimize_code (TransformData *td)
 {
-	// Give up on huge methods. We can easily work around this if decide to care.
-	if (td->bb_count > ((1 << INTERP_LIVENESS_BB_INDEX_BITS) - 1))
-		return;
-
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
