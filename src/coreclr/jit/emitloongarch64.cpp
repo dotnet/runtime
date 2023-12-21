@@ -4021,16 +4021,49 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
-            offs21 >>= 9;
-            printf("beqz         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                offs21 >>= 11;
+                printf("beqz         %s, #pc", rj);
+                if (offs21 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs21 << 2), -offs21);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs21 << 2), offs21);
+                }
+            }
+            else
+            {
+                offs21 >>= 9;
+                // TODO-LoongArch64: will change the branch format in future, just leave this format.
+                printf("beqz         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
+            }
             return;
         }
         case LA_1RI21_BNEZ: // 0x11
         {
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
-            offs21 >>= 9;
-            printf("bnez         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                offs21 >>= 11;
+                printf("bnez         %s, #pc", rj);
+                if (offs21 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs21 << 2), -offs21);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs21 << 2), offs21);
+                }
+            }
+            else
+            {
+                offs21 >>= 9;
+                printf("bnez         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
+            }
             return;
         }
         case 0x12:
@@ -4079,15 +4112,49 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case LA_I26_B: // 0x14
         {
             int offs26 = (((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6;
-            offs26 >>= 4;
-            printf("b            0x%llx\n", (int64_t)insAdr + offs26);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                offs26 >>= 6;
+                printf("b            #pc");
+                if (offs26 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs26 << 2), -offs26);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs26 << 2), offs26);
+                }
+            }
+            else
+            {
+                offs26 >>= 4;
+                // TODO-LoongArch64: will optimize the branch later, so just leave this format.
+                printf("b            0x%llx\n", (int64_t)insAdr + offs26);
+            }
             return;
         }
         case LA_I26_BL: // 0x15
         {
             int offs26 = (((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6;
-            offs26 >>= 4;
-            printf("bl           0x%llx\n", (int64_t)insAdr + offs26);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                offs26 >>= 6;
+                printf("bl           #pc");
+                if (offs26 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs26 << 2), -offs26);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs26 << 2), offs26);
+                }
+            }
+            else
+            {
+                offs26 >>= 4;
+                // TODO-LoongArch64: will optimize the branch later, so just leave this format.
+                printf("bl           0x%llx\n", (int64_t)insAdr + offs26);
+            }
             return;
         }
         case LA_2RI16_BEQ: // 0x16
@@ -4095,8 +4162,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd     = RegNames[code & 0x1f];
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("beq          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                printf("beq          %s, %s, #pc", rj, rd);
+                if (offs16 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs16 << 2), -offs16);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs16 << 2), offs16);
+                }
+            }
+            else
+            {
+                offs16 <<= 2;
+                printf("beq          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            }
             return;
         }
         case LA_2RI16_BNE: // 0x17
@@ -4104,8 +4186,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd     = RegNames[code & 0x1f];
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bne          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                printf("bne          %s, %s, #pc", rj, rd);
+                if (offs16 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs16 << 2), -offs16);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs16 << 2), offs16);
+                }
+            }
+            else
+            {
+                offs16 <<= 2;
+                printf("bne          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            }
             return;
         }
         case LA_2RI16_BLT: // 0x18
@@ -4113,8 +4210,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd     = RegNames[code & 0x1f];
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("blt          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                printf("blt          %s, %s, #pc", rj, rd);
+                if (offs16 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs16 << 2), -offs16);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs16 << 2), offs16);
+                }
+            }
+            else
+            {
+                offs16 <<= 2;
+                printf("blt          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            }
             return;
         }
         case LA_2RI16_BGE: // 0x19
@@ -4122,8 +4234,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd     = RegNames[code & 0x1f];
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bge          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                printf("bge          %s, %s, #pc", rj, rd);
+                if (offs16 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs16 << 2), -offs16);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs16 << 2), offs16);
+                }
+            }
+            else
+            {
+                offs16 <<= 2;
+                printf("bge          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            }
             return;
         }
         case LA_2RI16_BLTU: // 0x1a
@@ -4131,8 +4258,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd     = RegNames[code & 0x1f];
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bltu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                printf("bltu         %s, %s, #pc", rj, rd);
+                if (offs16 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs16 << 2), -offs16);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs16 << 2), offs16);
+                }
+            }
+            else
+            {
+                offs16 <<= 2;
+                printf("bltu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            }
             return;
         }
         case LA_2RI16_BGEU: // 0x1b
@@ -4140,8 +4282,23 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd     = RegNames[code & 0x1f];
             const char* rj     = RegNames[(code >> 5) & 0x1f];
             int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bgeu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                printf("bgeu         %s, %s, #pc", rj, rd);
+                if (offs16 < 0)
+                {
+                    printf("-%d (%d ins)\n", (-offs16 << 2), -offs16);
+                }
+                else
+                {
+                    printf("+%d (%d ins)\n", (offs16 << 2), offs16);
+                }
+            }
+            else
+            {
+                offs16 <<= 2;
+                printf("bgeu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
+            }
             return;
         }
 
