@@ -3180,41 +3180,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
                         case NI_System_Type_get_IsPrimitive:
-                            retNode = gtNewFalse();
-
-                            // Since asCorInfoType returns underlying types for enums, we need to check
-                            // it explicitly and return false (enums are not primitive types).
-                            if (info.compCompHnd->isEnum(hClass, nullptr) != TypeCompareState::Must)
+                        {
+                            retNode        = gtNewFalse();
+                            uint32_t attrs = info.compCompHnd->getClassAttribs(hClass);
+                            if (((attrs & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0) &&
+                                (info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) != CORINFO_TYPE_UNDEF))
                             {
-                                switch (info.compCompHnd->asCorInfoType(hClass))
-                                {
-                                    case CORINFO_TYPE_BOOL:
-                                    case CORINFO_TYPE_CHAR:
-                                    case CORINFO_TYPE_BYTE:
-                                    case CORINFO_TYPE_UBYTE:
-                                    case CORINFO_TYPE_SHORT:
-                                    case CORINFO_TYPE_USHORT:
-                                    case CORINFO_TYPE_INT:
-                                    case CORINFO_TYPE_UINT:
-                                    case CORINFO_TYPE_LONG:
-                                    case CORINFO_TYPE_ULONG:
-                                    case CORINFO_TYPE_NATIVEINT:
-                                    case CORINFO_TYPE_NATIVEUINT:
-                                    case CORINFO_TYPE_FLOAT:
-                                    case CORINFO_TYPE_DOUBLE:
-                                        retNode = gtNewTrue();
-                                        break;
-
-                                    default:
-                                        // The rest of the types are not primitive, e.g.:
-                                        // * Function and regular pointers
-                                        // * Nullable<T>
-                                        // * Shared generics
-                                        // * etc.
-                                        break;
-                                }
+                                retNode = gtNewTrue();
                             }
-                            break;
+                        }
+                        break;
 
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
