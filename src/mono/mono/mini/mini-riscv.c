@@ -1814,6 +1814,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
 	switch (ins->opcode) {
 	case OP_CKFINITE:
+	case OP_FMOVE:
+	case OP_RMOVE:
 	case OP_IADD:
 	case OP_LADD:
 	case OP_RADD:
