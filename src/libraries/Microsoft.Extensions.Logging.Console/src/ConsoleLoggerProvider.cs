@@ -59,7 +59,8 @@ namespace Microsoft.Extensions.Logging.Console
                 console,
                 errorConsole,
                 options.CurrentValue.QueueFullMode,
-                options.CurrentValue.MaxQueueLength);
+                options.CurrentValue.MaxQueueLength,
+                options.CurrentValue.DisableMessageQueue);
 
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
