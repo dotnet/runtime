@@ -2788,7 +2788,12 @@ namespace Internal.JitInterface
             if (type.IsPrimitiveNumeric)
                 return asCorInfoType(type);
 
-            return CorInfoType.CORINFO_TYPE_UNDEF;
+            return type.Category switch
+                {
+                    TypeFlags.Boolean => CorInfoType.CORINFO_TYPE_BOOL,
+                    TypeFlags.Char => CorInfoType.CORINFO_TYPE_CHAR,
+                    _ => CorInfoType.CORINFO_TYPE_UNDEF
+                };
         }
 
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
