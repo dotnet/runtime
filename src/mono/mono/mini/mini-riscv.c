@@ -3104,7 +3104,14 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * slt t2, rd, rs1
 			 * bne t1, t2, overflow
 			*/
-			if (ins->opcode == OP_LSUBCC)
+			if (ins->opcode == OP_SUBCC){
+#ifdef TARGET_RISCV64
+				ins->opcode = OP_LSUB;
+#else
+				ins->opcode = OP_ISUB;
+#endif
+			}
+			else if (ins->opcode == OP_LSUBCC)
 				ins->opcode = OP_LSUB;
 			else
 				ins->opcode = OP_ISUB;
@@ -3151,7 +3158,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * slt t4,t0,t1
 			 * bne t3, t4, overflow
 			 */
-
 #ifdef TARGET_RISCV64
 			if (ins->opcode == OP_ADDCC)
 				ins->opcode = OP_LADD;
