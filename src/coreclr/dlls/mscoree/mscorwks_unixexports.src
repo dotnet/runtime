@@ -62,6 +62,7 @@ mono_is_debugger_attached
 mono_jit_info_table_find
 mono_jit_init
 mono_jit_init_version
+coreclr_initialize_domain
 mono_metadata_signature_equal
 mono_metadata_type_equal
 mono_method_full_name

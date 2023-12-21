@@ -940,6 +940,20 @@ void list_tpa(const SString& searchPath, SString& tpa)
     }
 }
 
+extern "C" EXPORT_API void EXPORT_CC coreclr_initialize_domain(void* runtimeHost, unsigned int rootDomainId)
+{
+    AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
+
+    // Disable Windows message processing during waits
+    // On Windows by default waits will processing some messages (COM, WM_PAINT, ...) leading to reentrancy issues
+    pCurDomain->SetForceTrivialWaitOperations();
+
+    gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;
+
+    g_CLRRuntimeHost = (ICLRRuntimeHost*)runtimeHost;
+    g_RootDomainId = rootDomainId;
+}
+
 extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *file, const char* runtime_version)
 {
     gboolean useRealGC = false;
