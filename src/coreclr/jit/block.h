@@ -584,12 +584,6 @@ public:
         {
             next->bbPrev = this;
         }
-
-        // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
-        // For now, if a BBJ_COND's bbTrueTarget is not taken, we expect to fall through,
-        // so bbFalseTarget must be the next block.
-        // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
-        bbFalseTarget = next;
     }
 
     bool IsFirst() const
@@ -710,8 +704,9 @@ public:
     void SetCond(BasicBlock* target)
     {
         assert(target != nullptr);
-        bbKind       = BBJ_COND;
-        bbTrueTarget = target;
+        bbKind        = BBJ_COND;
+        bbTrueTarget  = target;
+        bbFalseTarget = bbNext;
     }
 
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)

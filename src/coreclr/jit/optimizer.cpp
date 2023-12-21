@@ -2270,6 +2270,7 @@ private:
 
                 // Redirect the Conditional JUMP to go to `oldNext`
                 block->SetTrueTarget(oldNext);
+                block->SetFalseTarget(newNext);
             }
             else
             {
@@ -8227,7 +8228,8 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 }
                 else
                 {
-                    noway_assert((entry == top) && (predBlock == head) && predBlock->FalseTargetIs(preHead));
+                    noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
+                    predBlock->SetFalseTarget(preHead);
                 }
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);

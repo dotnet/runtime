@@ -4770,6 +4770,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     {
         case BBJ_COND:
             newBlock = BasicBlock::New(this, BBJ_COND, curr->GetTrueTarget());
+            newBlock->SetFalseTarget(curr->GetFalseTarget());
             break;
 
         case BBJ_EHFINALLYRET:
@@ -5467,6 +5468,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
+                bPrev->SetFalseTarget(block->Next());
+
                 /* Check if both sides of the BBJ_COND now jump to the same block */
                 if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
                 {
@@ -5615,6 +5618,10 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
         {
             bSrc->SetFlags(BBF_NONE_QUIRK);
+        }
+        else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
+        {
+            bSrc->SetFalseTarget(bDst);
         }
     }
 

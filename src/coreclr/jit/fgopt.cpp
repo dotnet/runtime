@@ -6234,6 +6234,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         // Optimize the Conditional JUMP to go to the new target
                         block->SetTrueTarget(bNext->GetTarget());
+                        block->SetFalseTarget(bNext->Next());
 
                         fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
 

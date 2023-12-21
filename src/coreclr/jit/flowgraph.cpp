@@ -267,26 +267,24 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top            = block;
-        BasicBlock*   topFallThrough = nullptr;
-        BasicBlock*   topJumpTarget;
+        BasicBlock*   top                = block;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        if (top->KindIs(BBJ_COND))
+        BasicBlock*   poll        = fgNewBBafter(BBJ_ALWAYS, top, true);
+        BBKinds       oldJumpKind = top->GetKind();
+        unsigned char lpIndex     = top->bbNatLoopNum;
+
+        if (oldJumpKind == BBJ_COND)
         {
-            topFallThrough     = top->GetFalseTarget();
-            topJumpTarget      = top->GetTrueTarget();
-            lpIndexFallThrough = topFallThrough->bbNatLoopNum;
+            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
+            bottom             = fgNewBBafter(BBJ_COND, poll, true, top->GetTrueTarget());
+            bottom->SetFalseTarget(bottom->Next());
         }
         else
         {
-            topJumpTarget = top->GetTarget();
+            bottom = fgNewBBafter(oldJumpKind, poll, true, top->GetTarget());
         }
 
-        BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetKind(), poll, true, topJumpTarget);
-        BBKinds       oldJumpKind = top->GetKind();
-        unsigned char lpIndex     = top->bbNatLoopNum;
         poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
 
