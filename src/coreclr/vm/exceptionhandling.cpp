@@ -8374,13 +8374,21 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
 
             if (pThis->m_crawl.GetFrame() == FRAME_TOP)
             {
-                LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
+                if (pTopExInfo->m_passNumber == 1)
+                {
+                    LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
 #ifdef HOST_WINDOWS
-                CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
-                RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, pTopExInfo->m_ptrs.ContextRecord, 0);
-#else
-                CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
+                    CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
 #endif
+                }
+                else
+                {
+#ifdef HOST_WINDOWS
+                    RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, pTopExInfo->m_ptrs.ContextRecord, 0);
+#else
+                    CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
+#endif
+                }
             }
             goto Exit;
         }
