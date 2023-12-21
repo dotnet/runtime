@@ -4834,6 +4834,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fcvt_lu_s (code, RISCV_ROUND_TZ, ins->dreg, ins->sreg1);
 			break;
 		}
+		case OP_FCONV_TO_U8: {
+			g_assert (riscv_stdext_f);
+			riscv_fcvt_lu_s (code, RISCV_ROUND_TZ, ins->dreg, ins->sreg1);
+			break;
+		}
 		case OP_RCONV_TO_I4: {
 			g_assert (riscv_stdext_f);
 			riscv_fcvt_w_s (code, RISCV_ROUND_TZ, ins->dreg, ins->sreg1);
