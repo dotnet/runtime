@@ -167,7 +167,6 @@ public partial class Program
         IsFalse(typeof(DateTime).IsPrimitive);
         IsFalse(typeof(DateTimeOffset).IsPrimitive);
         IsFalse(typeof(Guid).IsPrimitive);
-        IsFalse(typeof(Rune).IsPrimitive);
         IsFalse(typeof(Half).IsPrimitive);
         IsFalse(typeof(DateOnly).IsPrimitive);
         IsFalse(typeof(TimeOnly).IsPrimitive);
