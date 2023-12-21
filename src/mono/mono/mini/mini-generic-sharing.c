@@ -71,6 +71,9 @@ partial_sharing_supported (void)
 		return TRUE;
 	if (partial_supported)
 		return TRUE;
+#ifdef TARGET_WASM
+	return FALSE;
+#endif
 	return FALSE;
 }
 
