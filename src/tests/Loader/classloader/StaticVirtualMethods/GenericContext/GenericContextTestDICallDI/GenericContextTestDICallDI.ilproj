@@ -6,8 +6,8 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="GenericContextCommonAndImplementation.ilproj" />
+    <ProjectReference Include="GenericContextCommonAndImplementationDICallDI.ilproj" />
     <ProjectReference Include="../GenericContextCommonCs.csproj" />
-    <Compile Include="GenericContextTestDefaultImpCallDefaultImp.il" />
+    <Compile Include="GenericContextTestDICallDI.il" />
   </ItemGroup>
 </Project>

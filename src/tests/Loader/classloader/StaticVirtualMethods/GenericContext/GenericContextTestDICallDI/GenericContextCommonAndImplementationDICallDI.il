@@ -7,7 +7,7 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern GenericContextCommonCs {}
-.assembly GenericContextCommonAndImplementation {}
+.assembly GenericContextCommonAndImplementationDICallDI {}
 .class interface public abstract auto ansi IFaceNonGeneric
 {
     .method public newslot virtual abstract static void NormalMethod() {}
