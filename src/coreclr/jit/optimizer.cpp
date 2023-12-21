@@ -2982,6 +2982,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
             fgSetEHRegionForNewLoopHead(newH, t);
 
+            h->SetFalseTarget(newH);
             fgRemoveRefPred(t, h);
             fgAddRefPred(t, newH);
             fgAddRefPred(newH, h);
@@ -3163,6 +3164,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     {
         BasicBlock* const hj = h->GetTrueTarget();
         assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
+        h->SetFalseTarget(newT);
     }
     else
     {
@@ -4374,15 +4376,19 @@ PhaseStatus Compiler::optUnrollLoops()
                 //
                 BasicBlock* const clonedTop     = blockMap[loop.lpTop];
                 BasicBlock*       clonedTopPrev = clonedTop->Prev();
-                assert(clonedTopPrev->KindIs(BBJ_ALWAYS, BBJ_COND));
 
                 if (clonedTopPrev->KindIs(BBJ_ALWAYS))
                 {
                     assert(!clonedTopPrev->HasInitializedTarget());
                     clonedTopPrev->SetTarget(clonedTop);
                 }
+                else
+                {
+                    assert(clonedTopPrev->KindIs(BBJ_COND));
+                    clonedTopPrev->SetFalseTarget(clonedTop);
+                }
 
-                fgAddRefPred(clonedTop, clonedTop->Prev());
+                fgAddRefPred(clonedTop, clonedTopPrev);
 
                 /* update the new value for the unrolled iterator */
 
@@ -5024,6 +5030,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Update pred info
     //
+    bNewCond->SetFalseTarget(bTop);
     fgAddRefPred(bJoin, bNewCond);
     fgAddRefPred(bTop, bNewCond);
 

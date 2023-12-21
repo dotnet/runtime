@@ -5093,6 +5093,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     if (curr->KindIs(BBJ_COND))
     {
+        curr->SetFalseTarget(curr->Next());
         fgReplacePred(succ, curr, newBlock);
         if (curr->TrueTargetIs(succ))
         {
@@ -5556,6 +5557,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     // Add a new block after bSrc which jumps to 'bDst'
                     jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
+                    bSrc->SetFalseTarget(jmpBlk);
                     fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
 
                     // Record the loop number in the new block

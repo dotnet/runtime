@@ -3713,6 +3713,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     //
     assert(!target->IsLast());
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
+    block->SetFalseTarget(next);
 
     // The new block 'next' will inherit its weight from 'block'
     //
@@ -6199,6 +6200,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             if (bDest->KindIs(BBJ_COND))
                             {
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
+                                bDest->SetFalseTarget(bFixup);
                                 bFixup->inheritWeight(bDestNext);
 
                                 fgRemoveRefPred(bDestNext, bDest);
