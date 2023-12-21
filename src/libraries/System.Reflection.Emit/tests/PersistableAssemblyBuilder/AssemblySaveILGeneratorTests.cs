@@ -3,6 +3,8 @@
 using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -428,15 +430,15 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(120, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
                 Assert.Equal(0xFE, bodyBytes[18]); // Stloc instruction occupies 2 bytes 0xfe0e
                 Assert.Equal(0x0E, bodyBytes[19]);
-                Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(20, 4))); // index 2 of 'il.Emit(OpCodes.Stloc, 2);' instruction
+                Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(20, 4))); // index 2 of 'il2.Emit(OpCodes.Stloc, 2);' instruction
                 Assert.Equal((byte)OpCodes.Ldloc_2.Value, bodyBytes[24]);
                 Assert.Equal(0xFE, bodyBytes[25]); // Ldloc = 0xfe0c
                 Assert.Equal(0x0C, bodyBytes[26]);
-                Assert.Equal(0, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
+                Assert.Equal(0, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il2.Emit(OpCodes.Ldloc, 0);' instruction
                 Assert.Equal((byte)OpCodes.Add.Value, bodyBytes[31]);
                 Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[32]);
                 Assert.Equal((byte)OpCodes.Ldloca_S.Value, bodyBytes[33]);
-                Assert.Equal(0, bodyBytes[34]); // intLocal index is 0 for 'il.Emit(OpCodes.Ldloca, intLocal);' instruction
+                Assert.Equal(0, bodyBytes[34]); // intLocal index is 0 for 'il2.Emit(OpCodes.Ldloca, intLocal);' instruction
                 Assert.Equal((byte)OpCodes.Ldind_I.Value, bodyBytes[35]);
                 Assert.Equal((byte)OpCodes.Stloc_3.Value, bodyBytes[36]);
                 Assert.Equal((byte)OpCodes.Ldloc_3.Value, bodyBytes[37]);
@@ -1484,6 +1486,168 @@ internal class Dummy
                 Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[3].Flags);
                 Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[4].Flags);
                 Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[5].Flags);
+            }
+        }
+
+        [Fact]
+        public void EmitCall_VarArgsMethodInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder mb1 = tb.DefineMethod("VarargMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.VarArgs, null, [typeof(string)]);
+                ILGenerator il1 = mb1.GetILGenerator();
+                LocalBuilder locAi = il1.DeclareLocal(typeof(ArgIterator));
+                LocalBuilder locNext = il1.DeclareLocal(typeof(bool));
+                Label labelCheckCondition = il1.DefineLabel();
+                Label labelNext = il1.DefineLabel();
+                // Load the fixed argument and print it.
+                il1.Emit(OpCodes.Ldarg_0);
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(string)]));
+                // Load the address of the local variable represented by
+                // locAi, which will hold the ArgIterator.
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                // Load the address of the argument list, and call the ArgIterator
+                // constructor that takes an array of runtime argument handles.
+                il1.Emit(OpCodes.Arglist);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetConstructor([typeof(RuntimeArgumentHandle)]));
+                // Enter the loop at the point where the remaining argument
+                // count is tested.
+                il1.Emit(OpCodes.Br_S, labelCheckCondition);
+                // At the top of the loop, call GetNextArg to get the next
+                // argument from the ArgIterator. Convert the typed reference
+                // to an object reference and write the object to the console.
+                il1.MarkLabel(labelNext);
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetNextArg", Type.EmptyTypes));
+                il1.Emit(OpCodes.Call, typeof(TypedReference).GetMethod("ToObject"));
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(object)]));
+                il1.MarkLabel(labelCheckCondition);
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetRemainingCount"));
+                // If the remaining count is greater than zero, go to
+                // the top of the loop.
+                il1.Emit(OpCodes.Ldc_I4_0);
+                il1.Emit(OpCodes.Cgt);
+                il1.Emit(OpCodes.Stloc_1);
+                il1.Emit(OpCodes.Ldloc_1);
+                il1.Emit(OpCodes.Brtrue_S, labelNext);
+                il1.Emit(OpCodes.Ret);
+
+                // Create a method that contains a call to the vararg method.
+                MethodBuilder mb2 = tb.DefineMethod("CallVarargMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard);
+                ILGenerator il2 = mb2.GetILGenerator();
+                // Push arguments on the stack: one for the fixed string
+                // parameter, and two for the list.
+                il2.Emit(OpCodes.Ldstr, "Hello ");
+                il2.Emit(OpCodes.Ldstr, "world ");
+                il2.Emit(OpCodes.Ldc_I4, 2006);
+                // Call the vararg method, specifying the types of the
+                // arguments in the list.
+                il2.EmitCall(OpCodes.Call, mb1, [typeof(string), typeof(int)]);
+                il2.Emit(OpCodes.Ret);
+                Type type = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo varargMethodFromDisk = typeFromDisk.GetMethod("VarargMethod");
+                Assert.Equal(CallingConventions.VarArgs, varargMethodFromDisk.CallingConvention);
+                ParameterInfo[] parameters = varargMethodFromDisk.GetParameters();
+                Assert.Equal(1, parameters.Length); // TODO: how to get the vararg parameter?
+            }
+        }
+
+        [Fact]
+        public void EmitCalli_CallFixedAndVarargMethodsInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodInfo getpid = typeof(AssemblySaveILGeneratorTests).GetMethod("getpid", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo print = typeof(AssemblySaveILGeneratorTests).GetMethod("Print", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodBuilder mb2 = tb.DefineMethod("CallingMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard);
+                ILGenerator il2 = mb2.GetILGenerator();
+                LocalBuilder local = il2.DeclareLocal(typeof(int));
+                il2.EmitWriteLine("Calling native functions");
+                il2.Emit(OpCodes.Ldftn, getpid);
+                il2.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, typeof(int), Type.EmptyTypes);
+                il2.Emit(OpCodes.Stloc_0);
+                il2.Emit(OpCodes.Ldstr, "Hello ");
+                il2.Emit(OpCodes.Ldstr, "world ");
+                il2.Emit(OpCodes.Ldloc_0);
+                il2.Emit(OpCodes.Ldftn, print);
+                il2.EmitCalli(OpCodes.Calli, CallingConventions.VarArgs, typeof(void), [typeof(string)], [typeof(string), typeof(int)]);
+                il2.Emit(OpCodes.Ret);
+                Type type = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo varargMethodFromDisk = typeFromDisk.GetMethod("VarargMethod");
+            } 
+        }
+
+        [DllImport("libSystem.dylib")]
+        private static extern int getpid();
+
+        internal static void Print(string format, params object[] args)
+        {
+            Console.WriteLine(format, args);
+        }
+
+        [Fact]
+        public void Emit_CallBySignature()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder mb1 = tb.DefineMethod("VarargMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.VarArgs, null, [typeof(string)]);
+                ILGenerator il1 = mb1.GetILGenerator();
+                LocalBuilder locAi = il1.DeclareLocal(typeof(ArgIterator));
+                LocalBuilder locNext = il1.DeclareLocal(typeof(bool));
+                Label labelCheckCondition = il1.DefineLabel();
+                Label labelNext = il1.DefineLabel();
+                il1.Emit(OpCodes.Ldarg_0);
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(string)]));
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Arglist);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetConstructor([typeof(RuntimeArgumentHandle)]));
+                il1.Emit(OpCodes.Br_S, labelCheckCondition);
+                il1.MarkLabel(labelNext);
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetNextArg", Type.EmptyTypes));
+                il1.Emit(OpCodes.Call, typeof(TypedReference).GetMethod("ToObject"));
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(object)]));
+                il1.MarkLabel(labelCheckCondition);
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetRemainingCount"));
+                il1.Emit(OpCodes.Ldc_I4_0);
+                il1.Emit(OpCodes.Cgt);
+                il1.Emit(OpCodes.Stloc_1);
+                il1.Emit(OpCodes.Ldloc_1);
+                il1.Emit(OpCodes.Brtrue_S, labelNext);
+                il1.Emit(OpCodes.Ret);
+
+                MethodBuilder mb2 = tb.DefineMethod("CallingMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard);
+                ILGenerator il2 = mb2.GetILGenerator();
+                il2.Emit(OpCodes.Ldstr, "Hello ");
+                il2.Emit(OpCodes.Ldstr, "world ");
+                il2.Emit(OpCodes.Ldc_I4, 2024);
+                il2.Emit(OpCodes.Ldftn, mb1);
+                SignatureHelper signature = SignatureHelper.GetMethodSigHelper(CallingConventions.VarArgs, typeof(void));
+                signature.AddArgument(typeof(string));
+                signature.AddSentinel();
+                signature.AddArgument(typeof(string));
+                signature.AddArgument(typeof(int));
+                il2.Emit(OpCodes.Calli, signature);
+                il2.Emit(OpCodes.Ret);
+                Type type = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo varargMethodFromDisk = typeFromDisk.GetMethod("VarargMethod");
             }
         }
     }

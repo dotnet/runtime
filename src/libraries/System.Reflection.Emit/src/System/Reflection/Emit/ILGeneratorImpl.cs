@@ -12,7 +12,8 @@ namespace System.Reflection.Emit
     internal sealed class ILGeneratorImpl : ILGenerator
     {
         private const int DefaultSize = 16;
-        private readonly MethodBuilder _methodBuilder;
+        private readonly MethodBuilderImpl _methodBuilder;
+        private readonly ModuleBuilderImpl _moduleBuilder;
         private readonly BlobBuilder _builder;
         private readonly InstructionEncoder _il;
         private readonly ControlFlowBuilder _cfBuilder;
@@ -21,12 +22,13 @@ namespace System.Reflection.Emit
         private int _currentStack;
         private List<LocalBuilder> _locals = new();
         private Dictionary<Label, LabelHandle> _labelTable = new(2);
-        private List<KeyValuePair<MemberInfo, BlobWriter>> _memberReferences = new();
+        private List<KeyValuePair<object, BlobWriter>> _memberReferences = new();
         private List<ExceptionBlock> _exceptionStack = new();
 
-        internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
+        internal ILGeneratorImpl(MethodBuilderImpl methodBuilder, int size)
         {
             _methodBuilder = methodBuilder;
+            _moduleBuilder = (ModuleBuilderImpl)methodBuilder.Module;
             // For compat, runtime implementation doesn't throw for negative or zero value.
             _builder = new BlobBuilder(Math.Max(size, DefaultSize));
             _cfBuilder = new ControlFlowBuilder();
@@ -34,7 +36,7 @@ namespace System.Reflection.Emit
         }
 
         internal int GetMaxStackSize() => _maxStackSize;
-        internal List<KeyValuePair<MemberInfo, BlobWriter>> GetMemberReferences() => _memberReferences;
+        internal List<KeyValuePair<object, BlobWriter>> GetMemberReferences() => _memberReferences;
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
         internal List<LocalBuilder> Locals => _locals;
@@ -76,9 +78,8 @@ namespace System.Reflection.Emit
 
                 currentExBlock.HandleStart = DefineLabel();
                 currentExBlock.HandleEnd = DefineLabel();
-                ModuleBuilderImpl module = (ModuleBuilderImpl)_methodBuilder.Module;
                 _cfBuilder.AddCatchRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                    _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], module.GetTypeHandle(exceptionType));
+                    _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], _moduleBuilder.GetTypeHandle(exceptionType));
                 MarkLabel(currentExBlock.HandleStart);
             }
 
@@ -183,12 +184,9 @@ namespace System.Reflection.Emit
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
-            if (_methodBuilder is not MethodBuilderImpl methodBuilder)
-                throw new NotSupportedException();
-
             ArgumentNullException.ThrowIfNull(localType);
 
-            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, methodBuilder, pinned);
+            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, _methodBuilder, pinned);
             _locals.Add(local);
 
             return local;
@@ -207,9 +205,8 @@ namespace System.Reflection.Emit
             _maxStackSize = Math.Max(_maxStackSize, _currentStack);
         }
 
-        private void UpdateStackSize(OpCode opCode, int stackChange)
+        private void UpdateStackSize(int stackChange)
         {
-            _currentStack += opCode.EvaluationStackDelta;
             _currentStack += stackChange;
             _maxStackSize = Math.Max(_maxStackSize, _currentStack);
         }
@@ -348,12 +345,9 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, string str)
         {
-            // Puts the opcode onto the IL stream followed by the metadata token
-            // represented by str.
-            ModuleBuilder modBuilder = (ModuleBuilder)_methodBuilder.Module;
-            int tempVal = modBuilder.GetStringMetadataToken(str);
+            // Puts the opcode onto the IL stream followed by the metadata token represented by str.
             EmitOpcode(opcode);
-            _il.Token(tempVal);
+            _il.Token(_moduleBuilder.GetStringMetadataToken(str));
         }
 
         public override void Emit(OpCode opcode, ConstructorInfo con)
@@ -384,10 +378,24 @@ namespace System.Reflection.Emit
                 stackChange--;
             }
 
-            UpdateStackSize(opcode, stackChange);
-            _il.OpCode((ILOpCode)opcode.Value);
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (con, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+            EmitOpcode(opcode);
+            UpdateStackSize(stackChange);
+            WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(con), con);
+        }
+
+        private void WriteOrReserveToken(int token, object member)
+        {
+            if (token == -1)
+            {
+                // The member is a `*BuilderImpl` and its token is not yet defined.
+                // Reserve the token bytes and write them later when its ready
+                _memberReferences.Add(new KeyValuePair<object, BlobWriter>
+                    (member, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+            }
+            else
+            {
+                _il.Token(token);
+            }
         }
 
         public override void Emit(OpCode opcode, Label label)
@@ -449,13 +457,33 @@ namespace System.Reflection.Emit
             UpdateStackSize(opcode);
         }
 
-        public override void Emit(OpCode opcode, SignatureHelper signature) => throw new NotImplementedException();
+        public override void Emit(OpCode opcode, SignatureHelper signature)
+        {
+            ArgumentNullException.ThrowIfNull(signature);
+
+            EmitOpcode(opcode);
+            // The only IL instruction that has VarPop behaviour, that takes a Signature
+            // token as a parameter is Calli. Pop the parameters and the native function
+            // pointer. Used reflection since ArgumentCount property is not public.
+            if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
+            {
+                Debug.Assert(opcode.Equals(OpCodes.Calli), "Unexpected opcode encountered for StackBehaviour VarPop.");
+                // Pop the arguments.
+                PropertyInfo argCountProperty = typeof(SignatureHelper).GetProperty("ArgumentCount", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                int stackChange = -(int)argCountProperty.GetValue(signature)!;
+                // Pop native function pointer off the stack.
+                stackChange--;
+                UpdateStackSize(stackChange);
+            }
+            _il.Token(_moduleBuilder.GetSignatureMetadataToken(signature));
+        }
 
         public override void Emit(OpCode opcode, FieldInfo field)
         {
             ArgumentNullException.ThrowIfNull(field);
 
-            EmitMember(opcode, field);
+            EmitOpcode(opcode);
+            WriteOrReserveToken(_moduleBuilder.GetFieldMetadataToken(field), field);
         }
 
         public override void Emit(OpCode opcode, MethodInfo meth)
@@ -468,15 +496,9 @@ namespace System.Reflection.Emit
             }
             else
             {
-                EmitMember(opcode, meth);
+                EmitOpcode(opcode);
+                WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(meth), meth);
             }
-        }
-
-        private void EmitMember(OpCode opcode, MemberInfo member)
-        {
-            EmitOpcode(opcode);
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (member, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
         }
 
         public override void Emit(OpCode opcode, Type cls)
@@ -484,8 +506,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(cls);
 
             EmitOpcode(opcode);
-            ModuleBuilder module = (ModuleBuilder)_methodBuilder.Module;
-            _il.Token(module.GetTypeMetadataToken(cls));
+            WriteOrReserveToken(_moduleBuilder.GetTypeMetadataToken(cls), cls);
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -497,10 +518,17 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
             }
 
-            _il.OpCode((ILOpCode)opcode.Value);
-            UpdateStackSize(opcode, GetStackChange(opcode, methodInfo, optionalParameterTypes));
-            _memberReferences.Add(new KeyValuePair<MemberInfo, BlobWriter>
-                (methodInfo, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));
+            EmitOpcode(opcode);
+            UpdateStackSize(GetStackChange(opcode, methodInfo, optionalParameterTypes));
+            if (optionalParameterTypes == null || optionalParameterTypes.Length == 0)
+            {
+                WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(methodInfo), methodInfo);
+            }
+            else
+            {
+                WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(methodInfo, optionalParameterTypes),
+                    new KeyValuePair<MethodInfo, Type[]>(methodInfo, optionalParameterTypes));
+            }
         }
 
         private static int GetStackChange(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -539,8 +567,61 @@ namespace System.Reflection.Emit
             return stackChange;
         }
 
-        public override void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) => throw new NotImplementedException();
-        public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
+        public override void EmitCalli(OpCode opcode, CallingConventions callingConvention,
+            Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes)
+        {
+            if (optionalParameterTypes != null)
+            {
+                if ((callingConvention & CallingConventions.VarArgs) == 0)
+                {
+                    // Client should not supply optional parameter in default calling convention
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
+                }
+            }
+
+            int stackChange = GetStackChange(returnType, parameterTypes);
+
+            // Pop off vararg arguments.
+            if (optionalParameterTypes != null)
+            {
+                stackChange -= optionalParameterTypes.Length;
+            }
+            // Pop the this parameter if the method has a this parameter.
+            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis)
+            {
+                stackChange--;
+            }
+
+            UpdateStackSize(stackChange);
+            EmitOpcode(OpCodes.Calli);
+            _il.Token(_moduleBuilder.GetSignatureToken(callingConvention, returnType, parameterTypes, optionalParameterTypes));
+        }
+
+        public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
+        {
+            int stackChange = GetStackChange(returnType, parameterTypes);
+            UpdateStackSize(stackChange);
+            Emit(OpCodes.Calli);
+            _il.Token(_moduleBuilder.GetSignatureToken(unmanagedCallConv, returnType, parameterTypes));
+        }
+
+        private static int GetStackChange(Type? returnType, Type[]? parameterTypes)
+        {
+            int stackChange = 0;
+            // If there is a non-void return type, push one.
+            if (returnType != typeof(void))
+            {
+                stackChange++;
+            }
+            // Pop off arguments if any.
+            if (parameterTypes != null)
+            {
+                stackChange -= parameterTypes.Length;
+            }
+            // Pop the native function pointer.
+            stackChange--;
+            return stackChange;
+        }
 
         public override void EndExceptionBlock()
         {
@@ -574,7 +655,10 @@ namespace System.Reflection.Emit
             _exceptionStack.Remove(currentExBlock);
         }
 
-        public override void EndScope() => throw new NotImplementedException();
+        public override void EndScope()
+        {
+            // TODO:
+        }
 
         public override void MarkLabel(Label loc)
         {
@@ -588,7 +672,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void UsingNamespace(string usingNamespace) => throw new NotImplementedException();
+        public override void UsingNamespace(string usingNamespace)
+        {
+            // TODO: looks does nothing
+        }
     }
 
     internal sealed class ExceptionBlock

@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
 
         internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
-        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
+        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.GetMethodSignature(_module,
             _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)

@@ -228,4 +228,7 @@
   <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
     <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
   </data>
+  <data name="InvalidOperation_NotAVarArgCallingConvention" xml:space="preserve">
+    <value>Calling convention must be VarArgs.</value>
+  </data>
 </root>
