@@ -54,6 +54,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Trace_Write_Indents()
         {
             // This test when run alone verifies Trace.Write indentation, even on first call, is correct.
@@ -74,6 +75,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Trace_WriteLine_WontIndentAfterWrite()
         {
             Trace.Indent();
@@ -129,6 +131,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Trace_UpdatingDebugIndentation_UpdatesTraceIndentation_AndViceVersa()
         {
             int before = Debug.IndentSize * Debug.IndentLevel;
@@ -181,6 +184,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Trace_Refresh_ResetsIndentSize()
         {
             int before = Debug.IndentSize * Debug.IndentLevel;
@@ -196,6 +200,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Trace_ClearTraceListeners_StopsWritingToDebugger()
         {
             VerifyLogged(() => Debug.Write("pizza"), "pizza");
@@ -211,6 +216,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void TraceWriteIf()
         {
             VerifyLogged(() => Trace.WriteIf(true, 5), "5");
@@ -229,6 +235,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void TraceWriteLineIf()
         {
             VerifyLogged(() => Trace.WriteLineIf(true, 5), "5" + Environment.NewLine);

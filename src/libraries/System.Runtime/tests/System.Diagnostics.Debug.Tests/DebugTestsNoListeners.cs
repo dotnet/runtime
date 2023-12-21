@@ -20,6 +20,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Debug_Write_Indents()
         {
             // This test when run alone verifies Debug.Write indentation, even on first call, is correct.
@@ -67,6 +68,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Debug_WriteLineNull_IndentsEmptyStringProperly()
         {
             Debug.Indent();
@@ -100,6 +102,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void Write()
         {
             VerifyLogged(() => Debug.Write(5), "5");
@@ -159,6 +162,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void WriteLineIf()
         {
             VerifyLogged(() => Debug.WriteLineIf(true, 5), "5" + Environment.NewLine);
