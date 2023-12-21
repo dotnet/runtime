@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Logging.Console
 {
