@@ -805,7 +805,7 @@ inline static bool isLowPredicateRegister(regNumber reg)
 
 inline static bool isHighPredicateRegister(regNumber reg)
 {
-    return (reg > REG_PREDICATE_LOW_LAST) && (reg <= REG_PREDICATE_LAST);
+    return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)

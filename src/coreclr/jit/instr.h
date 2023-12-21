@@ -270,6 +270,33 @@ enum insOpts : unsigned
     INS_OPTS_1D,
     INS_OPTS_2D,
 
+    INS_OPTS_MSL,         // Vector Immediate (shifting ones variant)
+
+    INS_OPTS_S_TO_4BYTE,  // Single to INT32
+    INS_OPTS_D_TO_4BYTE,  // Double to INT32
+
+    INS_OPTS_S_TO_8BYTE,  // Single to INT64
+    INS_OPTS_D_TO_8BYTE,  // Double to INT64
+
+    INS_OPTS_4BYTE_TO_S,  // INT32 to Single
+    INS_OPTS_4BYTE_TO_D,  // INT32 to Double
+
+    INS_OPTS_8BYTE_TO_S,  // INT64 to Single
+    INS_OPTS_8BYTE_TO_D,  // INT64 to Double
+
+    INS_OPTS_S_TO_D,      // Single to Double
+    INS_OPTS_D_TO_S,      // Double to Single
+
+    INS_OPTS_H_TO_S,      // Half to Single
+    INS_OPTS_H_TO_D,      // Half to Double
+
+    INS_OPTS_S_TO_H,      // Single to Half
+    INS_OPTS_D_TO_H,      // Double to Half
+
+#if FEATURE_LOOP_ALIGN
+    INS_OPTS_ALIGN,       // Align instruction
+#endif
+
     // There should be no overlap between non-SVE and SVE values,
     // so reset value to 1 here
     INS_OPTS_SCALABLE_B = 1,
@@ -314,33 +341,6 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_S_VL_4X,
     INS_OPTS_SCALABLE_D_VL_2X,
     INS_OPTS_SCALABLE_D_VL_4X,
-
-    INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
-
-    INS_OPTS_S_TO_4BYTE,  // Single to INT32
-    INS_OPTS_D_TO_4BYTE,  // Double to INT32
-
-    INS_OPTS_S_TO_8BYTE,  // Single to INT64
-    INS_OPTS_D_TO_8BYTE,  // Double to INT64
-
-    INS_OPTS_4BYTE_TO_S,  // INT32 to Single
-    INS_OPTS_4BYTE_TO_D,  // INT32 to Double
-
-    INS_OPTS_8BYTE_TO_S,  // INT64 to Single
-    INS_OPTS_8BYTE_TO_D,  // INT64 to Double
-
-    INS_OPTS_S_TO_D,      // Single to Double
-    INS_OPTS_D_TO_S,      // Double to Single
-
-    INS_OPTS_H_TO_S,      // Half to Single
-    INS_OPTS_H_TO_D,      // Half to Double
-
-    INS_OPTS_S_TO_H,      // Single to Half
-    INS_OPTS_D_TO_H       // Double to Half
-
-#if FEATURE_LOOP_ALIGN
-    , INS_OPTS_ALIGN      // Align instruction
-#endif
 };
 
 enum insCond : unsigned
