@@ -4763,26 +4763,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // (We need the successors of 'curr' to be correct when we do this.)
     BasicBlock* newBlock;
 
-    // For each successor of the original block, set the new block as their predecessor.
-    // Note we are using the "rational" version of the successor iterator that does not hide the finallyret arcs.
-    // Without these arcs, a block 'b' may not be a member of succs(preds(b))
-    switch (curr->GetKind())
-    {
-        case BBJ_COND:
-            newBlock = BasicBlock::New(this, BBJ_COND, curr->GetTrueTarget());
-            break;
-
-        case BBJ_EHFINALLYRET:
-            newBlock = BasicBlock::New(this, curr->GetEhfTargets());
-            break;
-
-        case BBJ_SWITCH:
-            newBlock = BasicBlock::New(this, curr->GetSwitchTargets());
-            break;
-
-        default:
-            newBlock = BasicBlock::New(this, curr->GetKind(), curr->GetTarget());
-    }
+    newBlock = BasicBlock::New(this);
 
     // Start the new block with no refs. When we set the preds below, this will get updated correctly.
     newBlock->bbRefs = 0;
@@ -4795,6 +4776,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     }
     else
     {
+        // For each successor of the original block, set the new block as their predecessor.
+
         for (BasicBlock* const succ : curr->Succs(this))
         {
             if (succ != newBlock)
@@ -4805,6 +4788,10 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
             }
         }
     }
+
+    // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
+    // above code.
+    newBlock->TransferTarget(curr);
 
     newBlock->inheritWeight(curr);
 
@@ -4834,11 +4821,12 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Remove flags from the old block that are no longer possible.
     curr->RemoveFlags(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
-    // Default to fallthru, and add the arc for that.
-    curr->SetFlags(BBF_NONE_QUIRK);
+    // Default to fallthrough, and add the arc for that.
     curr->SetKindAndTarget(BBJ_ALWAYS, newBlock);
-    fgAddRefPred(newBlock, curr);
+    curr->SetFlags(BBF_NONE_QUIRK);
     assert(curr->JumpsToNext());
+
+    fgAddRefPred(newBlock, curr);
 
     return newBlock;
 }
