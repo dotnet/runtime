@@ -2340,19 +2340,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOR:
 		case OP_ISHL:
 		case OP_LSHL:
-		case OP_SHL_IMM:
-		case OP_ISHL_IMM:
-		case OP_LSHL_IMM:
 		case OP_ISHR:
 		case OP_ISHR_UN:
-		case OP_SHR_IMM:
-		case OP_ISHR_IMM:
-		case OP_SHR_UN_IMM:
-		case OP_ISHR_UN_IMM:
 		case OP_LSHR:
 		case OP_LSHR_UN:
-		case OP_LSHR_IMM:
-		case OP_LSHR_UN_IMM:
 		case OP_LOCALLOC:
 
 		/* skip dummy IL */
@@ -3234,7 +3225,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XOR_IMM:
 		case OP_IXOR_IMM:
 		case OP_LXOR_IMM:
-			if (!RISCV_VALID_I_IMM (ins->inst_imm))
+		case OP_SHL_IMM:
+		case OP_ISHL_IMM:
+		case OP_LSHL_IMM:
+		case OP_LSHR_IMM:
+		case OP_LSHR_UN_IMM:
+		case OP_SHR_IMM:
+		case OP_ISHR_IMM:
+		case OP_SHR_UN_IMM:
+		case OP_ISHR_UN_IMM:
+			if (!RISCV_VALID_LS_AMOUNT (ins->inst_imm))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
 		case OP_INOT:
