@@ -926,13 +926,6 @@ namespace System.Reflection.Emit
             {
                 throw new InvalidOperationException(SR.Argument_GenericParameter);
             }
-
-            // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
-            // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
-            if (IsSZArray && interfaceType.IsGenericType)
-            {
-                throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
-            }
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]

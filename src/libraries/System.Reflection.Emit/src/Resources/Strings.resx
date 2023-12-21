@@ -237,9 +237,6 @@
   <data name="Argument_InvalidMethodOverride" xml:space="preserve">
     <value>Type '{0}' tried to override method '{1}' but does not implement or inherit that method.</value>
   </data>
-  <data name="Argument_ArrayGetInterfaceMap" xml:space="preserve">
-    <value>Interface maps for generic interfaces on arrays cannot be retrieved.</value>
-  </data>
   <data name="Argument_InterfaceNotFound" xml:space="preserve">
     <value>Interface not found.</value>
   </data>
