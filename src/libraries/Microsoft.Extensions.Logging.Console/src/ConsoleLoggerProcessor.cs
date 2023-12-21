@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        internal void DirectWriteMessage(BmgLogMessageEntry entry)
+        internal void DirectWriteMessage(LogMessageEntry entry)
         {
             _ = Task.Factory.StartNew(() =>
             {
