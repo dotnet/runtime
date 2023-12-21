@@ -3943,7 +3943,7 @@ mono_riscv_emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_typ
 static guint8 *
 mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg1, int sreg2, const char *exc_name)
 {
-	riscv_auipc (code, RISCV_T0, 0);
+	riscv_auipc (code, RISCV_RA, 0);
 	switch (opcode) {
 	case OP_RISCV_EXC_BEQ:
 		riscv_bne (code, sreg1, sreg2, 8);
@@ -4834,7 +4834,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fcvt_lu_s (code, RISCV_ROUND_TZ, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_FCONV_TO_U8: {
+		case OP_RCONV_TO_U8: {
 			g_assert (riscv_stdext_f);
 			riscv_fcvt_lu_s (code, RISCV_ROUND_TZ, ins->dreg, ins->sreg1);
 			break;
@@ -5241,7 +5241,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", ji->data.name);
 		code = mono_riscv_emit_imm (code, RISCV_A0, m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF);
 		/* A1 = throw ip */
-		riscv_addi (code, RISCV_A1, RISCV_T0, 0);
+		riscv_addi (code, RISCV_A1, RISCV_RA, 0);
 		/* Branch to the corlib exception throwing trampoline */
 		ji->ip.i = code - cfg->native_code;
 		ji->type = MONO_PATCH_INFO_JIT_ICALL_ID;
