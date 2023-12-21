@@ -177,13 +177,11 @@ public partial class Program
         IsFalse(typeof(object).IsPrimitive);
         IsFalse(typeof(int[]).IsPrimitive);
         IsFalse(typeof(int[,]).IsPrimitive);
-
-        // C# doesn't support these types as generic arguments,
-        // so checking them separately.
-        if (typeof(int*).IsPrimitive || typeof(delegate*<int>).IsPrimitive)
-            throw new InvalidOperationException();
-        if (typeof(Nullable<>).IsPrimitive || typeof(Dictionary<,>).IsPrimitive)
-            throw new InvalidOperationException();
+        IsFalse(typeof(int*).IsPrimitive);
+        IsFalse(typeof(void*).IsPrimitive);
+        IsFalse(typeof(delegate*<int>).IsPrimitive);
+        IsFalse(typeof(Nullable<>).IsPrimitive);
+        IsFalse(typeof(Dictionary<,>).IsPrimitive);
     }
 
     private static int _varInt = 42;
@@ -219,6 +217,7 @@ public partial class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static dynamic CreateDynamic2() => new { Name = "Test" };
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (!expression)
@@ -228,6 +227,7 @@ public partial class Program
         }
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsFalse(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (expression)
