@@ -2373,12 +2373,20 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* Atomic Ext */
 		case OP_MEMORY_BARRIER:
 		case OP_ATOMIC_ADD_I4:
+		case OP_ATOMIC_STORE_I1:
 		case OP_ATOMIC_STORE_U1:
+		case OP_ATOMIC_STORE_I2:
+		case OP_ATOMIC_STORE_U2:
 		case OP_ATOMIC_STORE_I4:
+		case OP_ATOMIC_STORE_U4:
 		case OP_ATOMIC_STORE_I8:
 		case OP_ATOMIC_STORE_U8:
+		case OP_ATOMIC_LOAD_I1:
 		case OP_ATOMIC_LOAD_U1:
+		case OP_ATOMIC_LOAD_I2:
+		case OP_ATOMIC_LOAD_U2:
 		case OP_ATOMIC_LOAD_I4:
+		case OP_ATOMIC_LOAD_U4:
 		case OP_ATOMIC_LOAD_I8:
 		case OP_ATOMIC_LOAD_U8:
 		case OP_ATOMIC_CAS_I4:
@@ -4695,18 +4703,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_I8:
 			riscv_amoadd_d (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
-		case OP_ATOMIC_LOAD_I4: {
-			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
-			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
-			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
-			break;
-		}
+		case OP_ATOMIC_LOAD_I1:
 		case OP_ATOMIC_LOAD_U1: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 1);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
+		case OP_ATOMIC_LOAD_U2:
+		case OP_ATOMIC_LOAD_I2: {
+			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 2);
+			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
+		}
+		case OP_ATOMIC_LOAD_I4:
+		case OP_ATOMIC_LOAD_U4: {
+			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
+			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
+			break;
+		}
+		case OP_ATOMIC_STORE_I1: 
 		case OP_ATOMIC_STORE_U1: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 1);
@@ -4714,7 +4731,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_STORE_I4: {
+		case OP_ATOMIC_STORE_I2: 
+		case OP_ATOMIC_STORE_U2: {
+			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
+			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 2);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+			break;
+		}
+		case OP_ATOMIC_STORE_I4: 
+		case OP_ATOMIC_STORE_U4: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 4);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)

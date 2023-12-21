@@ -103,12 +103,20 @@ loadr8_membase: dest:f src1:b len:24
 memory_barrier: len:4
 atomic_add_i4: dest:i src1:i src2:i len:4
 atomic_add_i8: dest:i src1:i src2:i len:4
+atomic_store_i1: dest:b src1:i len:8
 atomic_store_u1: dest:b src1:i len:8
+atomic_store_i2: dest:b src1:i len:8
+atomic_store_u2: dest:b src1:i len:8
 atomic_store_i4: dest:b src1:i len:8
-atomic_store_u8: dest:b src1:i len:8
+atomic_store_u4: dest:b src1:i len:8
 atomic_store_i8: dest:b src1:i len:8
+atomic_store_u8: dest:b src1:i len:8
+atomic_load_i1: dest:b src1:i len:12
 atomic_load_u1: dest:b src1:i len:12
+atomic_load_i2: dest:b src1:i len:12
+atomic_load_u2: dest:b src1:i len:12
 atomic_load_i4: dest:b src1:i len:12
+atomic_load_u4: dest:b src1:i len:12
 atomic_load_i8: dest:b src1:i len:12
 atomic_load_u8: dest:b src1:i len:12
 atomic_cas_i4: dest:i src1:i src2:i src3:i len:24
