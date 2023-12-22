@@ -18,7 +18,6 @@
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -26,7 +25,6 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"
@@ -35,7 +33,6 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
@@ -356,19 +353,19 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutp
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
 
-EXTERN_C NATIVEAOT_API void* __cdecl RhRegisterFrozenSegment(void * pSection, size_t allocSize, size_t commitSize, size_t reservedSize)
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
-    return RedhawkGCInterface::RegisterFrozenSegment(pSection, allocSize, commitSize, reservedSize);
-}
+    ASSERT(pObj1->GetMethodTable() == pObj2->GetMethodTable());
+    ASSERT(pObj1->GetMethodTable()->IsValueType());
 
-EXTERN_C NATIVEAOT_API void __cdecl RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)
-{
-    RedhawkGCInterface::UpdateFrozenSegment((GcSegmentHandle)pSegmentHandle, allocated, committed);
-}
+    MethodTable* pEEType = pObj1->GetMethodTable();
+    size_t cbFields = pEEType->GetBaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
-EXTERN_C NATIVEAOT_API void __cdecl RhUnregisterFrozenSegment(void* pSegmentHandle)
-{
-    RedhawkGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
+    uint8_t* pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
+    uint8_t* pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
+
+    // memcmp is ok in this COOP method as we are comparing structs which are typically small.
+    FC_RETURN_BOOL(memcmp(pbFields1, pbFields2, cbFields) == 0);
 }
 
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle *pModule, int32_t headerId, int32_t* length))

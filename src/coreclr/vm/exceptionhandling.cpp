@@ -4935,9 +4935,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
                 if (Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext) == 0)
                 {
-                    // There are no managed frames on the stack, so we need to continue unwinding using C++ exception
-                    // handling
-                    break;
+                    // There are no managed frames on the stack, so the exception was not handled
+                    LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
+                    _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+                    CrashDumpAndTerminateProcess(1);
+                    UNREACHABLE();
                 }
 
                 UINT_PTR firstManagedFrameSP = GetSP(&frameContext);

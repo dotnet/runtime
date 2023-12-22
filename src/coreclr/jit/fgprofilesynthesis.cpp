@@ -152,6 +152,7 @@ void ProfileSynthesis::AssignLikelihoods()
                 break;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -410,6 +411,7 @@ void ProfileSynthesis::RepairLikelihoods()
                 break;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -501,6 +503,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 break;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -809,7 +812,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
     //
     if (capped && (loop->ExitEdges().size() > 0))
     {
-        // Figure out how much flow exits the loop with the capped probablility
+        // Figure out how much flow exits the loop with the capped probability
         // and current block frequencies and exit likelihoods.
         //
         weight_t cappedExitWeight = 0.0;

@@ -410,7 +410,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
 #endif
 
-    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+    if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     if (pArrayMT->ContainsPointers())
@@ -426,7 +426,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     {
 #ifndef FEATURE_64BIT_ALIGNMENT
         if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
-            (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
+            (totalSize < GCHeapUtilities::GetGCHeap()->GetLOHThreshold() - MIN_OBJECT_SIZE))
         {
             // Creation of an array of doubles, not in the large object heap.
             // We want to align the doubles to 8 byte boundaries, but the GC gives us pointers aligned
@@ -706,7 +706,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 #endif
 
-    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+    if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     if (pArrayMT->ContainsPointers())
@@ -913,7 +913,7 @@ STRINGREF AllocateString( DWORD cchStringLength )
     SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
 
     GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
-    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+    if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     StringObject* orString = (StringObject*)Alloc(totalSize, flags);
@@ -1062,7 +1062,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             flags |= GC_ALLOC_FINALIZE;
 
         DWORD totalSize = pMT->GetBaseSize();
-        if (totalSize >= g_pConfig->GetGCLOHThreshold())
+        if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
             flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
