@@ -2706,6 +2706,29 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     return dst;
 }
 
+BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, const insGroup* ig, instruction* ins)
+{
+    regNumber reg1      = id->idReg1();
+    ssize_t   immediate = emitOutputInstrJumpDistance(dst + writeableOffset, dst, ig, jmp) - 4;
+    assert((immediate & 0x03) == 0);
+
+    *ins = jmp->idIns();
+    assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JALR: not used by now!!!
+    switch (jmp->idCodeSize())
+    {
+        case 8:
+            return nullptr;
+        case 24:
+            return nullptr;
+        case 28:
+            return nullptr;
+        default:
+            break;
+    }
+    unreached();
+    return nullptr;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
