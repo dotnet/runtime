@@ -2445,26 +2445,34 @@ BYTE* emitter::emitOutputInstr_Rellocation(BYTE* dst, const instrDesc* id, instr
     return dst;
 }
 
-static ssize_t TakeImm20(ssize_t immediate)
+static ssize_t Upper20BitsOfWord(ssize_t word)
 {
     static constexpr unsigned kImm20Mask = 0xfffff;
 
     return (immediate >> 12) & kImm20Mask;
 }
 
-static ssize_t TakeImm12(ssize_t immediate)
+static ssize_t Upper20BitsOfWordSignExtend(ssize_t word)
+{
+    static constexpr unsigned kImm20Mask = 0xfffff;
+    static constexpr unsigned kSignExtend = 1 << 11;
+
+    return ((immediate + kSignExtend) >> 12) & kImm20Mask;
+}
+
+static ssize_t Lower12BitsOfWord(ssize_t word)
 {
     static constexpr unsigned kImm12Mask = 0xfff;
 
-    return immediate & 0xfff;
+    return immediate & kImm12Mask;
 }
 
-static ssize_t TakeUpperWord(ssize_t immediate)
+static ssize_t UpperWordOfDoubleWord(ssize_t immediate)
 {
     return immediate >> 32;
 }
 
-static ssize_t TakeLowerWord(ssize_t immediate)
+static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
 {
     static constexpr size_t kWordMask = 0xffffffff;
 
@@ -2500,8 +2508,8 @@ BYTE* emitter::emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t imm
     }
     else
     {
-        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, TakeImm20(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, TakeImm12(immediate));
+        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, Upper20BitsOfWord(immediate));
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, Lower12BitsOfWord(immediate));
     }
     return dst;
 }
@@ -2509,8 +2517,8 @@ BYTE* emitter::emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t imm
 BYTE* emitter::emitOutputInstr_Addi32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
 {
     ssize_t upperWord = TakeUpperWord(immediate);
-    dst += emitOutput_UTypeInstr(dst, INS_lui, reg, TakeImm20(upperWord));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, TakeImm12(upperWord));
+    dst += emitOutput_UTypeInstr(dst, INS_lui, reg, Upper20BitsOfWord(upperWord));
+    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, Lower12BitsOfWord(upperWord));
     ssize_t lowerWord = TakeLowerWord(immediate);
     dst += emitOutput_RTypeInstr(dst, INS_slli, reg1, reg1, 11);
     // TODO
