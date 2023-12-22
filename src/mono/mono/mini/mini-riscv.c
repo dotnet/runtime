@@ -3085,7 +3085,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* Math */
 		case OP_INEG:
 		case OP_LNEG:
-			ins->opcode = OP_ISUB;
+			if (ins->opcode == OP_INEG)
+				ins->opcode = OP_ISUB;
+			else
+				ins->opcode = OP_LSUB;
 			ins->sreg2 = ins->sreg1;
 			ins->sreg1 = RISCV_ZERO;
 			break;
