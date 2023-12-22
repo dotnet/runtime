@@ -3975,6 +3975,7 @@ mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg
 		NOT_IMPLEMENTED;
 	}
 	mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, exc_name, MONO_R_RISCV_JAL);
+	cfg->thunk_area += THUNK_SIZE;
 	riscv_jal (code, RISCV_ZERO, 0);
 	return code;
 }
@@ -4529,17 +4530,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FDIV:
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d) {
-				riscv_fmv_d_x (code, RISCV_FT0, RISCV_ZERO);
-				riscv_feq_d (code, RISCV_T0, ins->sreg2, RISCV_FT0);
-				code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BNE, RISCV_T0, RISCV_ZERO,
-				                                   "DivideByZeroException");
 				riscv_fdiv_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			} else {
 				NOT_IMPLEMENTED;
-				riscv_fmv_w_x (code, RISCV_FT0, RISCV_ZERO);
-				riscv_feq_s (code, RISCV_T0, ins->sreg2, RISCV_FT0);
-				code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BNE, RISCV_T0, RISCV_ZERO,
-				                                   "DivideByZeroException");
 				riscv_fdiv_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			}
 			break;
@@ -4901,17 +4894,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_RDIV: {
 			g_assert (riscv_stdext_f);
-			/**
-			 * insert inst for the case Divide By 0
-			 * fmv.w.x ft0, zero
-			 * feq.s   t0, sreg2, ft0
-			 * beqz	   t0, zero
-			 */
-			riscv_fmv_w_x (code, RISCV_FT0, RISCV_ZERO);
-			riscv_feq_s (code, RISCV_T0, ins->sreg2, RISCV_FT0);
-
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BNE, RISCV_T0, RISCV_ZERO,
-			                                   "DivideByZeroException");
 			riscv_fdiv_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		}
@@ -5038,6 +5020,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 					else{
 						mono_add_patch_info_rel (cfg, GPTRDIFF_TO_INT (code - cfg->native_code), MONO_PATCH_INFO_METHOD_JUMP, call->method, MONO_R_RISCV_JAL);
+						cfg->thunk_area += THUNK_SIZE;
 						riscv_jal (code, RISCV_ZERO, 0);
 					}
 					break;
