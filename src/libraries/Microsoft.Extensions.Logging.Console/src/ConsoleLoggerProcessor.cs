@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Logging.Console
         public IConsole Console { get; }
         public IConsole ErrorConsole { get; }
 
-        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength, bool disableMessageQueue)
+        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength, bool disableMessageQueue = false)
         {
             _disableMessageQueue = disableMessageQueue;
             _messageQueue = new Queue<LogMessageEntry>();
