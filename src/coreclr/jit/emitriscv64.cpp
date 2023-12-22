@@ -2514,7 +2514,7 @@ static ssize_t UpperNBitsOfWord(ssize_t word)
 {
     static constexpr size_t kShift = 32 - MaskSize;
 
-    return LowerNBitsOfWord(word >> kShift);
+    return LowerNBitsOfWord<MaskSize>(word >> kShift);
 }
 
 template <uint8_t MaskSize>
