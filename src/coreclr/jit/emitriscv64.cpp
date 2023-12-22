@@ -2471,7 +2471,7 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, c
 
 static constexpr size_t NBitMask(uint8_t bits)
 {
-    return (bits == 63) ? 0xefffffffffffffff : (static_cast<size_t>(1) << (bits + 1)) - 1;
+    return (static_cast<size_t>(1) << bits) - 1;
 }
 
 template <uint8_t MaskSize>
@@ -2508,7 +2508,7 @@ static ssize_t UpperWordOfDoubleWord(ssize_t immediate)
 
 static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
 {
-    static constexpr size_t kWordMask = 0xffffffff;
+    static constexpr size_t kWordMask = NBitMask(32);
 
     return immediate & kWordMask;
 }
