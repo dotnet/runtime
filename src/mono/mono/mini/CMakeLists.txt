@@ -62,14 +62,6 @@ if(HAVE_SYS_ICU)
       entrypoints.c
       ${pal_icushim_sources_base})
 
-if(CLR_CMAKE_TARGET_IOS)
-    add_definitions(-DTARGET_IOS)
-elseif(CLR_CMAKE_TARGET_TVOS)
-    add_definitions(-DTARGET_TVOS)
-elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    add_definitions(-DTARGET_MACCATALYST)
-endif()
-
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     set(icu_shim_sources_base
       ${icu_shim_sources_base}
@@ -87,6 +79,13 @@ endif()
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
   if (TARGET_DARWIN)
+    if(CLR_CMAKE_TARGET_IOS)
+      add_definitions(-DTARGET_IOS)
+    elseif(CLR_CMAKE_TARGET_TVOS)
+      add_definitions(-DTARGET_TVOS)
+    elseif(CLR_CMAKE_TARGET_MACCATALYST)
+      add_definitions(-DTARGET_MACCATALYST)
+    endif()
     set(icu_shim_darwin_sources_base
         pal_locale.m
         pal_collation.m
