@@ -2549,6 +2549,14 @@ static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
     return doubleWord + (kLowerSignExtend | kUpperSignExtend);
 }
 
+template <uint8_t UpperMaskSize>
+static ssize_t UpperWordDoubleWordSignExtend(ssize_t doubleWord)
+{
+    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
+
+    return UpperWordOfDoubleWord(doubleWord + kUpperSignExtend);
+}
+
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
 static ssize_t UpperWordOfDoubleWordSignExtend(ssize_t doubleWord)
 {
@@ -2733,9 +2741,8 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, const insGroup* ig, instruction* ins)
+BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
 {
-    regNumber reg1      = id->idReg1();
     ssize_t   immediate = emitOutputInstrJumpDistance(dst + writeableOffset, dst, ig, jmp) - 4;
     assert((immediate & 0x03) == 0);
 
@@ -2744,9 +2751,9 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, cons
     switch (jmp->idCodeSize())
     {
         case 8:
-            return emitOutputInstr_OptsJalr8(dst, jmp, ins, immediate, reg1);
+            return emitOutputInstr_OptsJalr8(dst, jmp, *ins, immediate, jmp->idReg1());
         case 24:
-            return nullptr;
+            return emitOutputInstr_OptsJalr24(dst, *ins, immediate);
         case 28:
             return nullptr;
         default:
@@ -2764,8 +2771,29 @@ BYTE* emitter::emitOutputInstr_OptsJalr8(
 
     regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
 
-    dst += emitOutput_BTypeInstr_InvertComparation(ins, reg1, reg2, 0x10);
-    dst += emitOutput_JTypeInstr(INS_Jal, REG_ZER0, immediate);
+    dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, reg1, reg2, 0x10);
+    dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, immediate);
+    return dst;
+}
+
+BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, instruction ins, ssize_t immediate)
+{
+    assert((ins == INS_jal) || (ins == INS_j));
+    // Make target address with offset, then jump (JALR) with the target address
+    immediate -= 2 * 4;
+    ssize_t high = UpperWordDoubleWordSignExtend<0>(immediate);
+
+    dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
+    dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
+    dst += emitOutput_ITypeInstr(dst, INS_slli, REG_RA, REG_RA, 32);
+
+    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+    ssize_t low = LowerWordOfDoubleWord(immediate);
+
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(low));
+    dst += emitOutput_RTypeInstr(dst, INS_add, rsvdReg, REG_RA, rsvdReg);
+    dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, rsvdReg, LowerNBitsOfWord<12>(low));
+
     return dst;
 }
 

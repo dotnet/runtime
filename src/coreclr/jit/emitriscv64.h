@@ -121,8 +121,9 @@ BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
 BYTE* emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
-BYTE* emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate, regNumber reg1);
+BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, instruction ins, ssize_t immediate);
 
 static constexpr unsigned kZeroRegister = 0;
 
