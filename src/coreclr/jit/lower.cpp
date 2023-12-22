@@ -1314,9 +1314,6 @@ bool Lowering::TryLowerSwitchToBitTest(
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
         bbSwitch->SetCond(bbCase1);
-
-        comp->fgAddRefPred(bbCase0, bbSwitch);
-        comp->fgAddRefPred(bbCase1, bbSwitch);
     }
     else
     {
@@ -1325,10 +1322,10 @@ bool Lowering::TryLowerSwitchToBitTest(
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
         bbSwitch->SetCond(bbCase0);
-
-        comp->fgAddRefPred(bbCase0, bbSwitch);
-        comp->fgAddRefPred(bbCase1, bbSwitch);
     }
+
+    comp->fgAddRefPred(bbCase0, bbSwitch);
+    comp->fgAddRefPred(bbCase1, bbSwitch);
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
