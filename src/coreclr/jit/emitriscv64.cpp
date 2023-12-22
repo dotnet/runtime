@@ -2555,7 +2555,7 @@ BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id)
     return nullptr;
 }
 
-BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, ssize_t immediate, regNumber reg1)
 {
     if (id->idReg2())
     {
@@ -2572,7 +2572,7 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1)
 {
     ssize_t upperWord = UpperWordOfDoubleWord(immediate);
     dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
@@ -2606,12 +2606,12 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
     if (id->idIsReloc())
     {
-        return emitOutputInstr_OptsRcReloc(dst, id, ins, reg1);
+        return emitOutputInstr_OptsRcReloc(dst, ins, reg1);
     }
-    return emitOutputInstr_OptsRcNoReloc(dst, id, ins, offset, reg1);
+    return emitOutputInstr_OptsRcNoReloc(dst, ins, offset, reg1);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instruction* ins, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumber reg1)
 {
     ssize_t immediate = BitCast<ssize_t>(emitConsBlock) - BitCast<ssize_t>(dst);
     assert(immediate > 0);
@@ -2634,8 +2634,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instr
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcNoReloc(
-    BYTE* dst, const instrDesc* id, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     ssize_t immediate = BitCast<ssize_t>(emitConsBlock) + offset;
     assert((immediate >> 40) == 0);
@@ -2649,6 +2648,25 @@ BYTE* emitter::emitOutputInstr_OptsRcNoReloc(
     dst += emitOutput_RTypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
+}
+
+BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins)
+{
+    insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
+    id->idAddr()->iiaIGlabel = targetInsGroup;
+
+    regNumber reg1 = id->idReg1();
+    assert(isGeneralRegister(reg1));
+    if (id->idIsReloc())
+    {
+        return emitOutputInstr_OptsRlReloc(dst, targetInsGroup->igOffs, ins);
+    }
+    return nullptr;
+}
+
+BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, instruction* ins, regNumber reg1)
+{
+
 }
 
 /*****************************************************************************
