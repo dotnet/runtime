@@ -126,6 +126,7 @@ L1:     ldarg.s      0x1
         cgt         
         shr.un      
         neg         
+        conv.u1
         ret 
   } // end of method DevDiv_545500:Test
 
