@@ -44,6 +44,11 @@ class CoffNativeCodeManager : public ICodeManager
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
 
+    int m_indexCount;
+    uint32_t* m_indices[8];
+
+    int LookupUnwindInfoIdx(uint32_t relativePc);
+
 public:
     CoffNativeCodeManager(TADDR moduleBase,
                           PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,

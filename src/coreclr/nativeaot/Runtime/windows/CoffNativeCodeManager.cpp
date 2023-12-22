@@ -164,63 +164,72 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 #endif
 }
 
+// index nodes are searched linearly.
+// 16 * sizeof(uint32_t) == 64, which is a typical cache line size
+// thus we expect at most one cache miss on every level of the index
+#define INDEX_BRANCHING_FACTOR 16
+// T_RUNTIME_FUNCTION is larger than uint32_t, so we have a smaller granularity at last level
+#define FUNCTABLE_INDEX_GRANULARITY 8
+#define INDEX_ALIGNMENT 64
 
 CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                                              PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
                                              PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
     : m_moduleBase(moduleBase),
-      m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
-      m_pRuntimeFunctionTable(pRuntimeFunctionTable), m_nRuntimeFunctionTable(nRuntimeFunctionTable),
-      m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
+    m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
+    m_pRuntimeFunctionTable(pRuntimeFunctionTable), m_nRuntimeFunctionTable(nRuntimeFunctionTable),
+    m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
+    // max offset is beyond the range of managed methods.
+    int maxOffset = (int)((TADDR)pvManagedCodeStartRange + cbManagedCodeRange - moduleBase);
+
+    // lets build the index for the runtime table. for every granule that has elements we will have an index entry
+    uint32_t indexSize = (nRuntimeFunctionTable + FUNCTABLE_INDEX_GRANULARITY - 1) / FUNCTABLE_INDEX_GRANULARITY;
+    uint32_t indexCount = 0;
+    uint32_t* index = m_indices[indexCount++] = (uint32_t*)_aligned_malloc(indexSize * sizeof(uint32_t), INDEX_ALIGNMENT);
+    if (!index)
+        abort(); // can't allocate some modest amount of memory at startup
+
+    // in every index N we will put the lowest value from the granule N + 1
+    // when we will scan the value N in the indices and see that it is higher than the target, we will know
+    // that the granule N must be scnned for the entry as the next granule will have higher addresses.
+    for (uint32_t i = 1; i < indexSize; i++)
+    {
+        _ASSERTE(i * FUNCTABLE_INDEX_GRANULARITY < nRuntimeFunctionTable);
+        index[i - 1] = pRuntimeFunctionTable[i * FUNCTABLE_INDEX_GRANULARITY].BeginAddress;
+    }
+
+    // we put the maxOffset at the end of the index.
+    // there is no N + 1 granule to get the value from, so the last slot will contain the sentinel.
+    index[indexSize - 1] = maxOffset;
+
+    // Now build the N-ary tree of indices.
+    // At branching factor 16 a program with 32K methods will have 3 sub-index levels.
+    uint32_t* prevIdx = index;
+    while (indexSize > INDEX_BRANCHING_FACTOR)
+    {
+        uint32_t prevSize = indexSize;
+        indexSize = (indexSize + INDEX_BRANCHING_FACTOR - 1) / INDEX_BRANCHING_FACTOR;
+        index = m_indices[indexCount++] = (uint32_t*)_aligned_malloc(indexSize * sizeof(uint32_t), INDEX_ALIGNMENT);
+        if (!index)
+            abort();  // can't allocate some modest amout of memory at startup
+
+        for (uint32_t i = 1; i < indexSize; i++)
+        {
+            _ASSERTE(i * INDEX_BRANCHING_FACTOR < prevSize);
+            index[i - 1] = prevIdx[i * INDEX_BRANCHING_FACTOR];
+        }
+
+        index[indexSize - 1] = maxOffset;
+        prevIdx = index;
+    }
+
+    m_indexCount = indexCount;
 }
 
 CoffNativeCodeManager::~CoffNativeCodeManager()
 {
-}
-
-static int LookupUnwindInfoForMethod(uint32_t relativePc,
-                                     PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
-                                     int low,
-                                     int high)
-{
-    // Binary search the RUNTIME_FUNCTION table
-    // Use linear search once we get down to a small number of elements
-    // to avoid Binary search overhead.
-    while (high - low > 10)
-    {
-       int middle = low + (high - low) / 2;
-
-       PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + middle;
-       if (relativePc < pFunctionEntry->BeginAddress)
-       {
-           high = middle - 1;
-       }
-       else
-       {
-           low = middle;
-       }
-    }
-
-    for (int i = low; i < high; i++)
-    {
-        PTR_RUNTIME_FUNCTION pNextFunctionEntry = pRuntimeFunctionTable + (i + 1);
-        if (relativePc < pNextFunctionEntry->BeginAddress)
-        {
-            high = i;
-            break;
-        }
-    }
-
-    PTR_RUNTIME_FUNCTION pFunctionEntry = pRuntimeFunctionTable + high;
-    if (relativePc >= pFunctionEntry->BeginAddress)
-    {
-        return high;
-    }
-
-    ASSERT_UNCONDITIONALLY("Invalid code address");
-    return -1;
 }
 
 struct CoffNativeMethodInfo
@@ -233,6 +242,33 @@ struct CoffNativeMethodInfo
 // Ensure that CoffNativeMethodInfo fits into the space reserved by MethodInfo
 static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMethodInfo too big");
 
+int CoffNativeCodeManager::LookupUnwindInfoIdx(uint32_t relativePc)
+{
+    uint32_t idx = 0;
+    for (int j = m_indexCount - 1; j >= 0; j--)
+    {
+        uint32_t* index = m_indices[j];
+        idx *= INDEX_BRANCHING_FACTOR;
+
+        while ((uint32_t)index[idx] < relativePc)
+            idx++;
+    }
+
+    for (idx *= FUNCTABLE_INDEX_GRANULARITY; idx < m_nRuntimeFunctionTable; idx++)
+    {
+        uint32_t curAddr = m_pRuntimeFunctionTable[idx].BeginAddress;
+        if (curAddr == relativePc)
+            return idx;
+
+        if (curAddr > relativePc)
+            return idx - 1;
+    }
+
+    // We can only get here if called with invalid address or m_pRuntimeFunctionTable is corrupted.
+    // Either way we cannot recover as we expect every managed method to have a method info.
+    UNREACHABLE();
+}
+
 bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
                                            MethodInfo *    pMethodInfoOut)
 {
@@ -244,16 +280,10 @@ bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     }
 
     CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethodInfoOut;
-
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
-
-    int MethodIndex = LookupUnwindInfoForMethod((uint32_t)relativePC, m_pRuntimeFunctionTable,
-        0, m_nRuntimeFunctionTable - 1);
-    if (MethodIndex < 0)
-        return false;
+    int MethodIndex = LookupUnwindInfoIdx((uint32_t)relativePC);
 
     PTR_RUNTIME_FUNCTION pRuntimeFunction = m_pRuntimeFunctionTable + MethodIndex;
-
     pMethodInfo->runtimeFunction = pRuntimeFunction;
 
     // The runtime function could correspond to a funclet.  We need to get to the
@@ -965,10 +995,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     }
 
     TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
-
-    int MethodIndex = LookupUnwindInfoForMethod((uint32_t)relativePC, m_pRuntimeFunctionTable, 0, m_nRuntimeFunctionTable - 1);
-    if (MethodIndex < 0)
-        return NULL;
+        int MethodIndex = LookupUnwindInfoIdx((uint32_t)relativePC);
 
     PTR_RUNTIME_FUNCTION pRuntimeFunction = m_pRuntimeFunctionTable + MethodIndex;
 
