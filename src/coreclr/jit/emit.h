@@ -2079,7 +2079,7 @@ protected:
     static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
     unsigned emitInsCount;
 
     /************************************************************************/

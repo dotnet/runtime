@@ -2595,7 +2595,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     int dataOffs = id->idAddr()->iiaGetJitDataOffset();
     assert(dataOffs >= 0);
 
-    ssize_t immediate = emitGetInsSc(id);
+    ssize_t immediate = emitGetInsSC(id);
     assert((immediate >= 0) && (immediate < 0x4000)); // 0x4000 is arbitrary, currently 'imm' is always 0.
 
     unsigned offset = static_cast<unsigned>(dataOffs + immediate);
@@ -2608,7 +2608,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     {
         return emitOutputInstr_OptsRcReloc(dst, id, ins, reg1);
     }
-    return emitOutputInstr_OptsRcNoReloc(dst, id, *ins, offset, reg1);
+    return emitOutputInstr_OptsRcNoReloc(dst, id, ins, offset, reg1);
 }
 
 BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instruction* ins, regNumber reg1)
@@ -2635,19 +2635,19 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instr
 }
 
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(
-    BYTE* dst, const instrDesc* id, instruction ins, unsigned offset, regNumber reg1)
+    BYTE* dst, const instrDesc* id, instruction* ins, unsigned offset, regNumber reg1)
 {
     ssize_t immediate = BitCast<ssize_t>(emitConsBlock) + offset;
     assert((immediate >> 40) == 0);
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
-    instruction lastIns = (ins == INS_jal) ? INS_addi : ins;
-    ssize_t     high    = immediate >> 11;
+    instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
+    UINT32      high = immediate >> 11;
 
-    dst += emitOutput_UTypeInstr(INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
-    dst += emitOutput_ITypeInstr(INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_RTypeInstr(INS_slli, rsvdReg, rsvdReg, 11);
-    dst += emitOutput_ITypeInstr(lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
+    dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
+    dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
+    dst += emitOutput_RTypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
+    dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
 }
 
@@ -2687,143 +2687,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_RC:
-        {
-            // Reference to JIT data
-            assert(id->idAddr()->iiaIsJitDataOffset());
-            assert(id->idGCref() == GCT_NONE);
-
-            int doff = id->idAddr()->iiaGetJitDataOffset();
-            assert(doff >= 0);
-
-            ssize_t imm = emitGetInsSC(id);
-            assert((imm >= 0) && (imm < 0x4000)); // 0x4000 is arbitrary, currently 'imm' is always 0.
-
-            unsigned dataOffs = (unsigned)(doff + imm);
-
-            assert(dataOffs < emitDataSize());
-
-            ins            = id->idIns();
-            regNumber reg1 = id->idReg1();
-
-            if (id->idIsReloc())
-            {
-                // get the addr-offset of the data.
-                imm = (ssize_t)emitConsBlock - (ssize_t)(dstRW - writeableOffset) + dataOffs;
-                assert(imm > 0);
-                assert(!(imm & 3));
-
-                doff = (int)(imm & 0xfff);
-                assert(isValidSimm20((imm + 0x800) >> 12));
-
-#ifdef DEBUG
-                code = emitInsCode(INS_auipc);
-                assert(code == 0x00000017);
-#endif
-                code            = 0x00000017 | (codeGen->rsGetRsvdReg() << 7);
-                *(code_t*)dstRW = code | ((code_t)((imm + 0x800) & 0xfffff000));
-                dstRW += 4;
-
-                if (ins == INS_jal)
-                {
-                    assert(isGeneralRegister(reg1));
-                    ins = INS_addi;
-#ifdef DEBUG
-                    code = emitInsCode(INS_addi);
-                    assert(code == 0x00000013);
-#endif
-                    code            = 0x00000013 | (codeGen->rsGetRsvdReg() << 15);
-                    *(code_t*)dstRW = code | ((code_t)reg1 << 7) | (((code_t)doff & 0xfff) << 20);
-                }
-                else
-                {
-                    code = emitInsCode(ins);
-                    code |= (code_t)(reg1 & 0x1f) << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)(doff & 0xfff) << 20;
-                    *(code_t*)dstRW = code;
-                }
-                dstRW += 4;
-            }
-            else
-            {
-                // get the addr of the data.
-                imm = (ssize_t)emitConsBlock + dataOffs;
-
-                code = emitInsCode(INS_lui);
-                if (ins == INS_jal)
-                {
-                    assert((imm >> 40) == 0);
-
-                    doff = imm & 0x7ff;
-
-                    UINT32 high = imm >> 11;
-
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                    code |= (code_t)(((high + 0x800) >> 12) << 12);
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)(high & 0xFFF) << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_slli);
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)11 << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    ins  = INS_addi;
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)doff << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-                }
-                else
-                {
-                    assert((imm >> 40) == 0);
-
-                    doff        = imm & 0x7ff;
-                    UINT32 high = imm >> 11;
-
-                    code |= (code_t)(codeGen->rsGetRsvdReg() << 7);
-                    code |= (code_t)(((high + 0x800) >> 12) << 12);
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)(high & 0xFFF) << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_slli);
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)11 << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(ins);
-                    code |= (code_t)(reg1 & 0x1f) << 7;
-                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                    code |= (code_t)doff << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-                }
-            }
-
-            sz = sizeof(instrDesc);
-        }
-        break;
-
+            dst = emitOutputInstr_OptsRc(dst, id, &ins);
+            sz  = sizeof(instrDesc);
+            break;
         case INS_OPTS_RL:
         {
             insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
