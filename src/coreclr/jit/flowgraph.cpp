@@ -270,23 +270,21 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         BasicBlock*   top                = block;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        BasicBlock*   poll        = fgNewBBafter(BBJ_ALWAYS, top, true);
         BBKinds       oldJumpKind = top->GetKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         if (oldJumpKind == BBJ_COND)
         {
             lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
-            bottom             = fgNewBBafter(BBJ_COND, poll, true, top->GetTrueTarget());
-            bottom->SetFalseTarget(bottom->Next());
         }
-        else
-        {
-            bottom = fgNewBBafter(oldJumpKind, poll, true, top->GetTarget());
-        }
+
+        BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
+        bottom           = fgNewBBafter(top->GetKind(), poll, true);
 
         poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
+
+        bottom->TransferTarget(top);
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;

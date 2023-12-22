@@ -104,6 +104,11 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
     block->bbRefs++;
 
+    if (blockPred->KindIs(BBJ_COND) && !blockPred->TrueTargetIs(block) && blockPred->NextIs(block))
+    {
+        assert(blockPred->FalseTargetIs(block));
+    }
+
     // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
     // optFindNaturalLoops from innermost to outermost.
     //
