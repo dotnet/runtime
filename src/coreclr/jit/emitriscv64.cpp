@@ -2717,7 +2717,7 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, cons
     switch (jmp->idCodeSize())
     {
         case 8:
-            return nullptr;
+            return emitOutputInstr_OptsJalr8(dst, jmp, ins, immediate, reg1);
         case 24:
             return nullptr;
         case 28:
@@ -2727,6 +2727,24 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, cons
     }
     unreached();
     return nullptr;
+}
+
+static instruction ReverseBranchCondition(instruction ins)
+{
+    return ins ^ 0x1000;
+}
+
+BYTE* emitter::emitOutputInstr_OptsJalr8(
+    BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate, regNumber reg1)
+{
+    assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) || (INS_bnez == ins) ||
+           (INS_beqz == ins));
+
+    regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
+
+    dst += emitOutput_BTypeInstr(ReverseBranchCondition(ins), reg1, reg2, 0x10);
+    dst += emitOutput_JTypeInstr(INS_Jal, REG_ZER0, immediate);
+    return dst;
 }
 
 /*****************************************************************************
