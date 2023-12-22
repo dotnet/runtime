@@ -2512,21 +2512,14 @@ static ssize_t LowerNBitsOfWord(ssize_t word)
 template <uint8_t MaskSize>
 static ssize_t UpperNBitsOfWord(ssize_t word)
 {
-    static_assert(MaskSize < 32, "Given mask size is bigger tham the word itself");
-    static_assert(MaskSize > 0, "Given mask size cannot be zero");
-
-    static constexpr size_t kMask = NBitMask(MaskSize);
     static constexpr size_t kShift = 32 - MaskSize;
 
-    return (word >> kShift) & kMask;
+    return LowerNBitsOfWord(word >> kShift);
 }
 
 template <uint8_t MaskSize>
 static ssize_t UpperNBitsOfWordSignExtend(ssize_t word)
 {
-    static_assert(MaskSize < 32, "Given mask size is bigger tham the word itself");
-    static_assert(MaskSize > 0, "Given mask size cannot be zero");
-
     static constexpr unsigned kSignExtend = 1 << (32 - MaskSize - 1);
 
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
