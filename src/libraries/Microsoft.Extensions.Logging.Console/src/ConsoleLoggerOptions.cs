@@ -101,18 +101,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private bool _disableMessageQueue = false;
-
         /// <summary>
         /// Enable or disable the message queue behavior. Default false.
         /// </summary>
-        public bool DisableMessageQueue
-        {
-            get => _disableMessageQueue;
-            set
-            {
-                _disableMessageQueue = value;
-            }
-        }
+        public bool DisableMessageQueue { get; set; }
     }
 }
