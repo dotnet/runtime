@@ -2587,6 +2587,58 @@ BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, const instrDesc* id, ssize_t i
     return dst;
 }
 
+BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins)
+{
+#ifdef DEBUG
+    assert(id->idAddr()->iiaIsJitDataOffset());
+    assert(id->idGCref() == GCT_NONE);
+
+    int dataOffs = id->idAddr()->iiaGetJitDataOffset();
+    assert(dataOffs >= 0);
+
+    ssize_t immediate = emitGetInsSc(id);
+    assert((immediate >= 0) && (immediate < 0x4000)); // 0x4000 is arbitrary, currently 'imm' is always 0.
+
+    unsigned offset = static_cast<unsigned>(dataOffs + immediate);
+    assert(offset < emitDataSize());
+#endif // DEBUG
+
+    *ins           = id->idIns();
+    regNumber reg1 = id->idReg1();
+
+    if (id->idIsReloc())
+    {
+        return emitOutputInstr_OptsRcReloc(dst, id, ins, reg1);
+    }
+    return nullptr;
+}
+
+BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instruction* ins, regNumber reg1)
+{
+    ssize_t immediate = BitCast<ssize_t>(emitConsBlock) - BitCast<ssize_t>(dst);
+    assert(immediate > 0);
+    assert((immediate & 0x03) == 0);
+
+    ssize_t offset = LowerNBitsOfWord<12>(immediate);
+    assert(isValidSimm20(UpperNBitsOfWordSignExtend<20>(immediate)));
+
+    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
+
+    if (*ins == INS_jal)
+    {
+        assert(isGeneralRegister(reg1));
+        *ins = INS_addi;
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, rsvdReg, offset);
+    }
+    else
+    {
+        assert(((reg1 & NBitMask(7)) == reg1));
+        dst += emitOutput_ITypeInstr(dst, *ins, reg1, rsvdReg, offset);
+    }
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
