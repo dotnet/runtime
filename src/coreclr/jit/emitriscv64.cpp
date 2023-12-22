@@ -2291,6 +2291,14 @@ static constexpr unsigned kInstructionOpcodeMask = 0x7f;
 static constexpr unsigned kInstructionFunct3Mask = 0x7000;
 static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 R-Type instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
+
 unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, unsigned rs2) const
 {
 #ifdef DEBUG
@@ -2307,6 +2315,13 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd,
     return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7));
 }
 
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 I-Type instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
+
 unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const
 {
 #ifdef DEBUG
@@ -2320,6 +2335,13 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd,
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, imm12));
 }
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 S-Type instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
 
 unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm12) const
 {
@@ -2335,11 +2357,25 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1
     return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2, imm12));
 }
 
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 U-Type instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
+
 unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm20) const
 {
     unsigned insCode = emitInsCode(ins);
     return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, rd, imm20));
 }
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 B-Type instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
 
 unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const
 {
@@ -2354,6 +2390,13 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13));
 }
+
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 J-Type instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
 
 unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm21) const
 {
@@ -2385,6 +2428,12 @@ void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
     dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
     dstAddr = emitOffsetToPtr(dstOffs);
 }
+
+/*****************************************************************************
+ *
+ *  Calculates a current jump instruction distance
+ *
+ */
 
 ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
 {
