@@ -2589,7 +2589,6 @@ BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, const instrDesc* id, ssize_t i
 
 BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
-#ifdef DEBUG
     assert(id->idAddr()->iiaIsJitDataOffset());
     assert(id->idGCref() == GCT_NONE);
 
@@ -2601,7 +2600,6 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
     unsigned offset = static_cast<unsigned>(dataOffs + immediate);
     assert(offset < emitDataSize());
-#endif // DEBUG
 
     *ins           = id->idIns();
     regNumber reg1 = id->idReg1();
@@ -2610,7 +2608,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     {
         return emitOutputInstr_OptsRcReloc(dst, id, ins, reg1);
     }
-    return nullptr;
+    return emitOutputInstr_OptsRcNoReloc(dst, id, ins, offset, reg1);
 }
 
 BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instruction* ins, regNumber reg1)
@@ -2630,12 +2628,33 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instr
         assert(isGeneralRegister(reg1));
         *ins = INS_addi;
         dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, rsvdReg, offset);
+        return dst;
     }
-    else
+    assert(((reg1 & NBitMask(7)) == reg1));
+    dst += emitOutput_ITypeInstr(dst, *ins, reg1, rsvdReg, offset);
+    return dst;
+}
+
+BYTE* emitter::emitOutputInstr_OptsRcNoReloc(
+    BYTE* dst, const instrDesc* id, instruction* ins, unsigned offset, regNumber reg1)
+{
+    ssize_t immediate = BitCast<ssize_t>(emitConsBlock) + offset;
+    assert((immediate >> 40) == 0);
+    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+    ssize_t   high    = immediate >> 11;
+
+    if (*ins == INS_jal)
     {
-        assert(((reg1 & NBitMask(7)) == reg1));
-        dst += emitOutput_ITypeInstr(dst, *ins, reg1, rsvdReg, offset);
+        dst += emitOutput_UTypeInstr(INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
+        dst += emitOutput_ITypeInstr(INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
+        dst += emitOutput_RTypeInstr(INS_ssli, rsvdReg, rsvdReg, 11);
+        dst += emitOutput_ITypeInstr(INS_addi, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
+        return dst;
     }
+    dst += emitOutput_UTypeInstr(INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
+    dst += emitOutput_ITypeInstr(INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
+    dst += emitOutput_RTypeInstr(INS_slli, rsvdReg, rsvdReg, 11);
+    dst += emitOutput_ITypeInstr(*ins, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
 }
 
