@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Console
                 DirectWriteMessage(message);
                 return;
             }
-            
+
             // cannot enqueue when adding is completed
             if (!Enqueue(message))
             {
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Logging.Console
                     console.Write(entry.Message);
                 }
                 catch (Exception) { } //Ignore to protect application
-            });
+            }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
         }
 
         // internal for testing
