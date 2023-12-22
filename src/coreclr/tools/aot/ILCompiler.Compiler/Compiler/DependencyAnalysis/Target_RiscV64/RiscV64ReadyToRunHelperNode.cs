@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
-                            encoder.EmitJE(encoder.TargetRegister.Arg3, helper);
+                            encoder.EmitJMPIfZero(encoder.TargetRegister.Arg3, helper);
 
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }

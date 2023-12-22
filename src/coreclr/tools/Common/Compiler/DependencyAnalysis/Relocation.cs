@@ -412,7 +412,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetLoongArch64JIR(pCode) == imm38);
         }
 
-        private static unsafe int GetRiscV64PC12(uint* pCode)
+        private static unsafe int GetRiscV64PC(uint* pCode)
         {
             uint auipcInstr = *pCode;
             Debug.Assert((auipcInstr & 0x7f) == 0x00000017);
@@ -433,7 +433,7 @@ namespace ILCompiler.DependencyAnalysis
         //  case:EA_PTR_DSP_RELOC
         //   auipc  reg, off-hi-20bits
         //   ld     reg, reg, off-lo-12bits
-        private static unsafe void PutRiscV64PC12(uint* pCode, long imm32)
+        private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
             Debug.Assert((int)imm32 == imm32);
@@ -450,7 +450,7 @@ namespace ILCompiler.DependencyAnalysis
             addiInstr |= (uint)((doff & 0xfff) << 20);
             *(pCode + 1) = addiInstr;
 
-            Debug.Assert(GetRiscV64PC12(pCode) == imm32);
+            Debug.Assert(GetRiscV64PC(pCode) == imm32);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
@@ -498,7 +498,7 @@ namespace ILCompiler.DependencyAnalysis
                     PutLoongArch64JIR((uint*)location, value);
                     break;
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                    PutRiscV64PC12((uint*)location, value);
+                    PutRiscV64PC((uint*)location, value);
                     break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -563,7 +563,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     return (long)GetLoongArch64JIR((uint*)location);
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                    return (long)GetRiscV64PC12((uint*)location);
+                    return (long)GetRiscV64PC((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;

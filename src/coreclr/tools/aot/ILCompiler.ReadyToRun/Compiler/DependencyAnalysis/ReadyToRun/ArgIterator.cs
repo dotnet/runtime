@@ -2040,9 +2040,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private int _loongarch64OfsStack;   // Offset of next stack location to be assigned a value
         private int _loongarch64IdxFPReg;   // Next FP register to be assigned a value
 
-        private int _riscv64IdxGenReg;  // Next general register to be assigned a value
-        private int _riscv64OfsStack;   // Offset of next stack location to be assigned a value
-        private int _riscv64IdxFPReg;   // Next FP register to be assigned a value
+        private int _riscv64IdxGenReg;      // Next general register to be assigned a value
+        private int _riscv64OfsStack;       // Offset of next stack location to be assigned a value
+        private int _riscv64IdxFPReg;       // Next FP register to be assigned a value
 
         // These are enum flags in CallingConventions.h, but that's really ugly in C#, so I've changed them to bools.
         private bool _ITERATION_STARTED; // Started iterating over arguments

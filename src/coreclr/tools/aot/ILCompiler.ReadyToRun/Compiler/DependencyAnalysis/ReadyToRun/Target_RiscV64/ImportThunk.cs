@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         // li t0, #index
                         int index = _containingImportSection.IndexFromBeginningOfArray;
-                        instructionEncoder.EmitLI(Register.X5, checked((ushort)index));
+                        instructionEncoder.EmitLI(Register.X5, index);
                     }
                     // get pc
                     // auipc t1, 0

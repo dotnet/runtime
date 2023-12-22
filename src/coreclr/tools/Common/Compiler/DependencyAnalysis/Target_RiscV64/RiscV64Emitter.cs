@@ -25,9 +25,10 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             Builder.EmitUInt(0x00100073);
         }
 
-        public void EmitLI(Register regDst, ushort imm12)
+        public void EmitLI(Register regDst, int offset)
         {
-            EmitADDI(regDst, Register.X0, imm12);
+            Debug.Assert((offset >= -2048) && (offset <= 2047));
+            EmitADDI(regDst, Register.X0, offset);
         }
 
         public void EmitMOV(Register regDst, Register regSrc)
@@ -122,9 +123,9 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             EmitRET();
         }
 
-        public void EmitJE(Register regSrc, ISymbolNode symbol)
+        public void EmitJMPIfZero(Register regSrc, ISymbolNode symbol)
         {
-            uint offset = symbol.RepresentsIndirectionCell ? 14u : 4u;
+            uint offset = symbol.RepresentsIndirectionCell ? 28u : 8u;
             uint encodedOffset = ((offset & 0x1e) << 7) | ((offset & 0x7e0) << 20) | ((offset & 0x800) >> 4) | ((offset & 0x1000) << 19);
             // bne regSrc, x0, offset
             Builder.EmitUInt((uint)(0x00001063 | ((uint)regSrc << 15) | encodedOffset));

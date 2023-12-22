@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
                 if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
                 {
-                    encoder.EmitLI(result, (ushort)0);
+                    encoder.EmitLI(result, 0);
                     return;
                 }
             }
