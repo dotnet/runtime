@@ -2753,7 +2753,8 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insG
         case 8:
             return emitOutputInstr_OptsJalr8(dst, jmp, *ins, immediate);
         case 24:
-            return emitOutputInstr_OptsJalr24(dst, *ins, immediate);
+            assert((*ins == INS_jal) || (*ins == INS_j));
+            return emitOutputInstr_OptsJalr24(dst, immediate);
         case 28:
             return emitOutputInstr_OptsJalr28(dst, jmp, *ins, immediate);
         default:
@@ -2775,9 +2776,8 @@ BYTE* emitter::emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ins
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, instruction ins, ssize_t immediate)
+BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
 {
-    assert((ins == INS_jal) || (ins == INS_j));
     // Make target address with offset, then jump (JALR) with the target address
     immediate -= 2 * 4;
     ssize_t high = UpperWordDoubleWordSignExtend<0>(immediate);
@@ -2800,25 +2800,11 @@ BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, in
 {
     assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) || (INS_bnez == ins) ||
            (INS_beqz == ins));
-    // Make target address with offset, then jump (JALR) with the target address
-    immediate -= 2 * 4;
 
     regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? id->idReg2() : REG_R0;
-    ssize_t   high = UpperWordDoubleWordSignExtend<0>(immediate);
-
     dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x1c);
-    dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, REG_RA, REG_RA, 32);
 
-    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-    ssize_t   low     = LowerWordOfDoubleWord(immediate);
-
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(low));
-    dst += emitOutput_RTypeInstr(dst, INS_add, rsvdReg, REG_RA, rsvdReg);
-    dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, rsvdReg, LowerNBitsOfWord<12>(low));
-
-    return dst;
+    return emitOutputIntr_OptsJalr24(dst, immediate);
 }
 
 /*****************************************************************************
