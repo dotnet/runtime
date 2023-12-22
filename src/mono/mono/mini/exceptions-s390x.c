@@ -537,7 +537,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		memcpy (&regs[16], &ctx->uc_mcontext.fpregs.fprs, 16 * sizeof(host_mgreg_t));
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
 						   (guint8 *) ji->code_start + ji->code_size,
-						   ip, epilog ? &epilog : NULL, regs, 32, save_locations,
+						   ip, epilog ? &epilog : NULL, regs, 32, FALSE, save_locations,
 						   MONO_MAX_IREGS, &cfa);
 
 		if (!success)

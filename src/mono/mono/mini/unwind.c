@@ -46,8 +46,18 @@ static int unwind_info_size;
 #define unwind_unlock() mono_os_mutex_unlock (&unwind_mutex)
 
 #ifdef TARGET_AMD64
-static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+static int map_hw_reg_to_dwarf_reg [] = {
+	0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16
+#ifdef AMD64_CALLEE_SAVED_XREGS
+	, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+#endif
+};
+
+#ifdef AMD64_CALLEE_SAVED_XREGS
+#define NUM_DWARF_REGS (AMD64_NREG + AMD64_XMM_NREG)
+#else
 #define NUM_DWARF_REGS AMD64_NREG
+#endif
 #define DWARF_DATA_ALIGN (-8)
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (AMD64_RIP))
 #elif defined(TARGET_ARM)
@@ -545,7 +555,7 @@ typedef struct {
 gboolean
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
-				   mono_unwind_reg_t *regs, int nregs,
+				   mono_unwind_reg_t *regs, int nregs, gboolean readonly_regs,
 				   host_mgreg_t **save_locations, int save_locations_len,
 				   guint8 **out_cfa)
 {
@@ -587,6 +597,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			reg_saved [hwreg] = TRUE;
 			locations [hwreg].loc_type = LOC_OFFSET;
 			locations [hwreg].offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
+
 			break;
 		case 0: {
 			int ext_op = *p;
@@ -694,14 +705,18 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	for (hwreg = 0; hwreg < NUM_HW_REGS; ++hwreg) {
 		if (reg_saved [hwreg] && locations [hwreg].loc_type == LOC_OFFSET) {
 			int dwarfreg = mono_hw_reg_to_dwarf_reg (hwreg);
-			if (hwreg >= nregs) {
+			if (!readonly_regs && hwreg >= nregs) {
 				mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
 				return FALSE;
 			}
-			if (IS_DOUBLE_REG (dwarfreg))
-				regs [hwreg] = GUINT64_TO_HMREG (*(guint64*)(cfa_val + locations [hwreg].offset));
-			else
-				regs [hwreg] = *(host_mgreg_t*)(cfa_val + locations [hwreg].offset);
+
+			if (!readonly_regs) {
+				if (IS_DOUBLE_REG (dwarfreg))
+					regs [hwreg] = GUINT64_TO_HMREG (*(guint64*)(cfa_val + locations [hwreg].offset));
+				else
+					regs [hwreg] = *(host_mgreg_t*)(cfa_val + locations [hwreg].offset);
+			}
+
 			if (save_locations && hwreg < save_locations_len)
 				save_locations [hwreg] = (host_mgreg_t*)(cfa_val + locations [hwreg].offset);
 		}

@@ -514,15 +514,7 @@ mono_amd64_get_exception_trampolines (gboolean aot);
 int
 mono_amd64_get_tls_gs_offset (void);
 
-#if defined(TARGET_WIN32) && !defined(DISABLE_JIT)
-
-#define MONO_ARCH_HAVE_UNWIND_TABLE 1
-#define MONO_ARCH_HAVE_CODE_CHUNK_TRACKING 1
-
-#ifdef ENABLE_CHECKED_BUILD
-#define ENABLE_CHECKED_BUILD_UNWINDINFO
-#endif
-
+#if defined(TARGET_WIN32)
 #define MONO_MAX_UNWIND_CODES 22
 
 typedef enum _UNWIND_OP_CODES {
@@ -532,7 +524,7 @@ typedef enum _UNWIND_OP_CODES {
     UWOP_SET_FPREG,       /* no info, FP = RSP + UNWIND_INFO.FPRegOffset*16 */
     UWOP_SAVE_NONVOL,     /* info == register number, offset in next slot */
     UWOP_SAVE_NONVOL_FAR, /* info == register number, offset in next 2 slots */
-    UWOP_SAVE_XMM128,     /* info == XMM reg number, offset in next slot */
+    UWOP_SAVE_XMM128 = 8, /* info == XMM reg number, offset in next slot */
     UWOP_SAVE_XMM128_FAR, /* info == XMM reg number, offset in next 2 slots */
     UWOP_PUSH_MACHFRAME   /* info == 0: no error-code, 1: error-code */
 } UNWIND_CODE_OPS;
@@ -561,6 +553,15 @@ typedef struct _UNWIND_INFO {
  *	};
  *	OPTIONAL ULONG ExceptionData[]; */
 } UNWIND_INFO, *PUNWIND_INFO;
+
+#if !defined(DISABLE_JIT)
+
+#define MONO_ARCH_HAVE_UNWIND_TABLE 1
+#define MONO_ARCH_HAVE_CODE_CHUNK_TRACKING 1
+
+#ifdef ENABLE_CHECKED_BUILD
+#define ENABLE_CHECKED_BUILD_UNWINDINFO
+#endif
 
 static inline guint
 mono_arch_unwindinfo_get_size (guchar code_count)
@@ -603,7 +604,8 @@ mono_arch_code_chunk_new (void *chunk, int size);
 void
 mono_arch_code_chunk_destroy (void *chunk);
 
-#endif /* defined(TARGET_WIN32) && !defined(DISABLE_JIT) */
+#endif /* !defined(DISABLE_JIT) */
+#endif /* defined(TARGET_WIN32) */
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
 // Allocate additional size for max 3 unwind ops (push + fp or sp small|large) + unwind info struct trailing code buffer.

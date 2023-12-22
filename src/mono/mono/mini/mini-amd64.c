@@ -1782,6 +1782,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 			offset += sizeof (target_mgreg_t);
 		}
+
+#if defined(AMD64_CALLEE_SAVED_XREGS)
+	if (cfg->method->save_lmf) {
+#if defined(MONO_HAVE_SIMD_REG)
+		int xreg_size = sizeof (MonoContextSimdReg);
+#else
+		int xreg_size = sizeof (double);
+#endif
+		offset = ALIGN_TO (offset, xreg_size);
+		for (guint i = 0; i < AMD64_XMM_NREG; ++i) {
+			if (AMD64_IS_CALLEE_SAVED_XREG (i)) {
+				offset += xreg_size;
+			}
+		}
+	}
+#endif
+
 	if (!cfg->arch.omit_fp)
 		cfg->arch.reg_save_area_offset = -offset;
 
@@ -8045,6 +8062,38 @@ MONO_RESTORE_WARNING
 			async_exc_point (code);
 		}
 	}
+
+#if defined(AMD64_CALLEE_SAVED_XREGS)
+	if (method->save_lmf) {
+#if defined(MONO_HAVE_SIMD_REG)
+		int xreg_size = sizeof (MonoContextSimdReg);
+#else
+		int xreg_size = sizeof (double);
+#endif
+		save_area_offset = ALIGN_TO (save_area_offset, xreg_size);
+
+		for (guint16 i = 0; i < AMD64_XMM_NREG; ++i) {
+			if (AMD64_IS_CALLEE_SAVED_XREG (i)) {
+#if defined(MONO_HAVE_SIMD_REG)
+				amd64_movdqu_membase_reg (code, cfg->frame_reg, save_area_offset, i);
+#else
+				amd64_movsd_membase_reg (code, cfg->frame_reg, save_area_offset, i);
+#endif
+				if (cfg->arch.omit_fp) {
+					mono_emit_unwind_op_offset (cfg, code, AMD64_NREG + i, - (cfa_offset - save_area_offset));
+					/* These are handled automatically by the stack marking code */
+					mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
+				} else {
+					mono_emit_unwind_op_offset (cfg, code, AMD64_NREG + i, - (-save_area_offset + (2 * 8)));
+					// FIXME: GC
+				}
+
+				save_area_offset += xreg_size;
+				async_exc_point (code);
+			}
+		}
+	}
+#endif
 
 	/* store runtime generic context */
 	if (cfg->rgctx_var) {
