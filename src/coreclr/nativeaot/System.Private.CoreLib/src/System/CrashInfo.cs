@@ -172,7 +172,7 @@ namespace System
             if (!OpenValue(key, '{'))
                 return false;
 
-            ulong address = *(nuint*)Unsafe.AsPointer(ref exception);
+            ulong address = Unsafe.As<Exception, nuint>(ref exception);
             if (!WriteHexValue("address"u8, address))
                 return false;
 
