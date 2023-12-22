@@ -109,10 +109,10 @@ unsigned emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm2
 unsigned emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const;
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm21) const;
 
-BYTE* emitOutputInstr_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_Addi(BYTE* dst, const instrDesc* id);
-BYTE* emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
-BYTE* emitOutputInstr_Addi32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
+BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
+BYTE* emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id);
+BYTE* emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
+BYTE* emitOutputInstr_OptsI32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
 
 /************************************************************************/
 /*           Public inline informational methods                        */

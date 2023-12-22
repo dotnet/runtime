@@ -2291,7 +2291,6 @@ static constexpr unsigned kInstructionOpcodeMask = 0x7f;
 static constexpr unsigned kInstructionFunct3Mask = 0x7000;
 static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 
-
 /*****************************************************************************
  *
  *  Emit a 32-bit RISCV64 R-Type instruction to the given buffer. Returns a
@@ -2470,31 +2469,8 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, c
     return distVal;
 }
 
-BYTE* emitter::emitOutputInstr_Rellocation(BYTE* dst, const instrDesc* id, instruction* ins)
+static constexpr size_t NBitMask(uint8_t bits)
 {
-    BYTE* const     dstBase = dst;
-    const regNumber reg1    = id->idReg1();
-
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
-
-    if (id->idIsCnsReloc())
-    {
-        *ins = INS_addi;
-    }
-    else
-    {
-        assert(id->idIsDspReloc());
-        *ins = INS_ld;
-    }
-
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
-
-    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
-
-    return dst;
-}
-
-static constexpr size_t NBitMask(uint8_t bits) {
     return (bits == 63) ? 0xefffffffffffffff : (static_cast<size_t>(1) << (bits + 1)) - 1;
 }
 
@@ -2537,7 +2513,31 @@ static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
     return immediate & kWordMask;
 }
 
-BYTE* emitter::emitOutputInstr_Addi(BYTE* dst, const instrDesc* id)
+BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
+{
+    BYTE* const     dstBase = dst;
+    const regNumber reg1    = id->idReg1();
+
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
+
+    if (id->idIsCnsReloc())
+    {
+        *ins = INS_addi;
+    }
+    else
+    {
+        assert(id->idIsDspReloc());
+        *ins = INS_ld;
+    }
+
+    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
+
+    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
+
+    return dst;
+}
+
+BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id)
 {
     ssize_t         immediate = BitCast<ssize_t>(id->idAddr()->iiaAddr);
     const regNumber reg1      = id->idReg1();
@@ -2545,9 +2545,9 @@ BYTE* emitter::emitOutputInstr_Addi(BYTE* dst, const instrDesc* id)
     switch (id->idCodeSize())
     {
         case 8:
-            return emitOutputInstr_Addi8(dst, id, immediate, reg1);
+            return emitOutputInstr_OptsI8(dst, id, immediate, reg1);
         case 32:
-            return emitOutputInstr_Addi32(dst, id, immediate, reg1);
+            return emitOutputInstr_OptsI32(dst, id, immediate, reg1);
         default:
             break;
     }
@@ -2555,7 +2555,7 @@ BYTE* emitter::emitOutputInstr_Addi(BYTE* dst, const instrDesc* id)
     return nullptr;
 }
 
-BYTE* emitter::emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
 {
     if (id->idReg2())
     {
@@ -2572,7 +2572,7 @@ BYTE* emitter::emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t imm
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_Addi32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
 {
     ssize_t upperWord = UpperWordOfDoubleWord(immediate);
     dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
@@ -2614,123 +2614,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (insOp)
     {
         case INS_OPTS_RELOC:
-            dst = emitOutputInstr_Rellocation(dst, id, &ins);
+            dst = emitOutputInstr_OptsReloc(dst, id, &ins);
             sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_I:
-        {
-            ins            = INS_addi;
-            ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
-            regNumber reg1 = id->idReg1();
-
-            switch (id->idCodeSize())
-            {
-                case 8:
-                {
-                    if (id->idReg2())
-                    { // special for INT64_MAX or UINT32_MAX;
-                        code = emitInsCode(INS_addi);
-                        code |= (code_t)reg1 << 7;
-                        code |= (code_t)REG_R0 << 15;
-                        code |= 0xfff << 10;
-
-                        *(code_t*)dstRW = code;
-                        dstRW += 4;
-
-                        ssize_t ui6 = (imm == INT64_MAX) ? 1 : 32;
-                        code        = emitInsCode(INS_srli);
-                        code |= ((code_t)(reg1 << 7) | ((code_t)(reg1 << 15)) | (ui6 << 20));
-                        *(code_t*)dstRW = code;
-                    }
-                    else
-                    {
-                        code = emitInsCode(INS_lui);
-                        code |= (code_t)(reg1 << 7);
-                        code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
-
-                        *(code_t*)dstRW = code;
-                        dstRW += 4;
-
-                        code = emitInsCode(INS_addi);
-                        code |= (code_t)reg1 << 7;
-                        code |= (code_t)reg1 << 15;
-                        code |= (code_t)(imm & 0xfff) << 20;
-                        *(code_t*)dstRW = code;
-                    }
-                    break;
-                }
-                case 32:
-                {
-                    ssize_t high = (imm >> 32) & 0xffffffff;
-                    code         = emitInsCode(INS_lui);
-                    code |= (code_t)reg1 << 7;
-                    code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
-
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)(high & 0xfff) << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    ssize_t low = imm & 0xffffffff;
-
-                    code = emitInsCode(INS_slli);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)11 << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)((low >> 21) & 0x7ff) << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_slli);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)11 << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)((low >> 10) & 0x7ff) << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_slli);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)10 << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)((low)&0x3ff) << 20;
-                    *(code_t*)dstRW = code;
-                    break;
-                }
-                default:
-                    unreached();
-                    break;
-            }
-
+            dst = emitOutputInstr_OptsI(dst, id);
             ins = INS_addi;
-            dstRW += 4;
-
-            sz = sizeof(instrDesc);
-        }
-        break;
+            sz  = sizeof(instrDesc);
+            break;
         case INS_OPTS_RC:
         {
             // Reference to JIT data
