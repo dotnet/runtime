@@ -2298,7 +2298,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
  *
  */
 
-unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, unsigned rs2) const
+unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const
 {
 #ifdef DEBUG
     static constexpr unsigned kInstructionMask =
@@ -2321,7 +2321,7 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, unsigned rd,
  *
  */
 
-unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd, unsigned rs1, int imm12) const
+unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, int imm12) const
 {
 #ifdef DEBUG
     static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
@@ -2342,7 +2342,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, unsigned rd,
  *
  */
 
-unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm12) const
+unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm12) const
 {
 #ifdef DEBUG
     static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
@@ -2363,7 +2363,7 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, unsigned rs1
  *
  */
 
-unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm20) const
+unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm20) const
 {
     unsigned insCode = emitInsCode(ins);
     return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, rd, imm20));
@@ -2376,7 +2376,7 @@ unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, unsigned rd,
  *
  */
 
-unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1, unsigned rs2, int imm13) const
+unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
 {
 #ifdef DEBUG
     static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
@@ -2397,7 +2397,7 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, unsigned rs1
  *
  */
 
-unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, unsigned rd, int imm21) const
+unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm21) const
 {
     unsigned insCode = emitInsCode(ins);
     return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21));
@@ -2517,9 +2517,9 @@ template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
 static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
 {
     static constexpr size_t kLowerSignExtend = 1 << (31 - LowerMaskSize);
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
+    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
 
-    return doubleWord + kLowerSignExtend + kUpperSignExtend;
+    return doubleWord + (kLowerSignExtend | kUpperSignExtend);
 }
 
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
@@ -2696,7 +2696,7 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     assert((immediate >> (32 + 20)) == 0);
 
     regNumber rsvdReg      = codeGen->rsGetRsvdReg();
-    ssize_t   upperSignExt = UpperWordOfDoubleWordSignExtend<12, 24>(immediate);
+    ssize_t   upperSignExt = UpperWordOfDoubleWordSignExtend<0, 12>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
@@ -2746,79 +2746,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_RL:
-        {
-            insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
-            id->idAddr()->iiaIGlabel = tgtIG;
-
-            regNumber reg1 = id->idReg1();
-            assert(isGeneralRegister(reg1));
-
-            if (id->idIsReloc())
-            {
-                ssize_t imm = (ssize_t)tgtIG->igOffs;
-                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)(dstRW - writeableOffset);
-                assert((imm & 3) == 0);
-
-                int doff = (int)(imm & 0xfff);
-                assert(isValidSimm20((imm + 0x800) >> 12));
-
-                code            = 0x00000017;
-                *(code_t*)dstRW = code | (code_t)reg1 << 7 | ((imm + 0x800) & 0xfffff000);
-                dstRW += 4;
-#ifdef DEBUG
-                code = emitInsCode(INS_auipc);
-                assert(code == 0x00000017);
-                code = emitInsCode(INS_addi);
-                assert(code == 0x00000013);
-#endif
-                ins             = INS_addi;
-                *(code_t*)dstRW = 0x00000013 | ((code_t)reg1 << 7) | ((code_t)reg1 << 15) | ((doff & 0xfff) << 20);
-            }
-            else
-            {
-                ssize_t imm = (ssize_t)tgtIG->igOffs + (ssize_t)emitCodeBlock;
-                assert((imm >> (32 + 20)) == 0);
-
-                code = emitInsCode(INS_lui);
-                code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
-
-                *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                code = emitInsCode(INS_addi);
-                code |= (code_t)codeGen->rsGetRsvdReg() << 7;
-                code |= (code_t)codeGen->rsGetRsvdReg() << 15;
-                code |= (code_t)(imm & 0xfff) << 20;
-                *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                code = emitInsCode(INS_addi);
-                code |= (code_t)reg1 << 7;
-                code |= (((imm + 0x80000800) >> 32) & 0xfff) << 20;
-                *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                code = emitInsCode(INS_slli);
-                code |= (code_t)reg1 << 7;
-                code |= (code_t)reg1 << 15;
-                code |= (code_t)32 << 20;
-                *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                ins  = INS_add;
-                code = emitInsCode(INS_add);
-                code |= (code_t)reg1 << 7;
-                code |= (code_t)reg1 << 15;
-                code |= (code_t)codeGen->rsGetRsvdReg() << 20;
-                *(code_t*)dstRW = code;
-            }
-
-            dstRW += 4;
-
-            sz = sizeof(instrDesc);
-        }
-        break;
+            dst = emitOutputInstr_OptsRl(dst, id, &ins);
+            sz  = sizeof(instrDesc);
+            break;
         case INS_OPTS_JALR:
         {
             instrDescJmp* jmp = (instrDescJmp*)id;
