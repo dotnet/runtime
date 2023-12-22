@@ -264,9 +264,13 @@ int CoffNativeCodeManager::LookupUnwindInfoIdx(uint32_t relativePc)
             return idx - 1;
     }
 
-    // We can only get here if called with invalid address or m_pRuntimeFunctionTable is corrupted.
-    // Either way we cannot recover as we expect every managed method to have a method info.
-    UNREACHABLE();
+    // we can only get here if we are looking for a location inside the very last managed function.
+    _ASSERTE(m_pRuntimeFunctionTable[idx - 1].BeginAddress < relativePc);
+#if defined(TARGET_AMD64)
+    _ASSERTE(m_pRuntimeFunctionTable[idx - 1].EndAddress > relativePc);
+#endif
+
+    return idx - 1;
 }
 
 bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
