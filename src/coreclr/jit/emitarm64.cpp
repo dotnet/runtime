@@ -15835,7 +15835,6 @@ void emitter::emitDispVectorLengthSpecifier(insOpts opt)
 //
 void emitter::emitDispArrangement(insOpts opt)
 {
-    assert(!insOptsScalable(opt));
     const char* str = "???";
 
     switch (opt)
@@ -15877,7 +15876,6 @@ void emitter::emitDispArrangement(insOpts opt)
 //
 void emitter::emitDispSveArrangement(insOpts opt)
 {
-    assert(insOptsScalable(opt));
     const char* str = "???";
 
     switch (opt)
