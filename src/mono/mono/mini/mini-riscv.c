@@ -2862,7 +2862,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (next_ins->opcode == OP_LCEQ || next_ins->opcode == OP_ICEQ) {
 					if (RISCV_VALID_I_IMM (ins->inst_imm)) {
 						// compare rs1, imm; lceq rd => addi rs2, rs1, -imm; sltiu rd, rs2, 1
-						ins->opcode = OP_ADD_IMM;
+						if (next_ins->opcode == OP_ICEQ)
+							ins->opcode = OP_IADD_IMM;
+						else
+							ins->opcode = OP_LADD_IMM;
 						ins->dreg = mono_alloc_ireg (cfg);
 						ins->inst_imm = -ins->inst_imm;
 
@@ -2875,7 +2878,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (next_ins->opcode == OP_ICNEQ) {
 					if (RISCV_VALID_I_IMM (ins->inst_imm)) {
 						// compare rs1, imm; lcneq rd => addi rs2, rs1, -imm; sltu rd, X0, rs2
-						ins->opcode = OP_ADD_IMM;
+						ins->opcode = OP_IADD_IMM;
 						ins->dreg = mono_alloc_ireg (cfg);
 						ins->inst_imm = -ins->inst_imm;
 
@@ -4456,8 +4459,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LADD:
 			riscv_add (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case OP_ADD_IMM:
 		case OP_IADD_IMM:
+#ifdef TARGET_RISCV64
+			riscv_addiw (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+#endif
+		case OP_ADD_IMM:
 		case OP_LADD_IMM:
 			riscv_addi (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
