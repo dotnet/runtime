@@ -2617,9 +2617,6 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumbe
     assert(immediate > 0);
     assert((immediate & 0x03) == 0);
 
-    ssize_t offset = LowerNBitsOfWord<12>(immediate);
-    assert(isValidSimm20(UpperNBitsOfWordSignExtend<20>(immediate)));
-
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
     dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
 
@@ -2630,7 +2627,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumbe
         assert(isGeneralRegister(reg1));
         *ins = lastIns = INS_addi;
     }
-    dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, offset);
+    dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<12>(immediate));
     return dst;
 }
 
@@ -2659,14 +2656,19 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     assert(isGeneralRegister(reg1));
     if (id->idIsReloc())
     {
-        return emitOutputInstr_OptsRlReloc(dst, targetInsGroup->igOffs, ins);
+        return emitOutputInstr_OptsRlReloc(dst, BitCast<ssize_t>(targetInsGroup->igOffs), ins);
     }
     return nullptr;
 }
 
 BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, instruction* ins, regNumber reg1)
 {
+    ssize_t immediate = BitCast<ssize_t>(emitCodeBlock) + igOffs - BitCast<ssize_t>(dst);
+    assert((immediate)&0x03 == 0); // Is 32-bit instruction
 
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
+    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
+    return dst;
 }
 
 /*****************************************************************************
