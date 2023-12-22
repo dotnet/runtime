@@ -1086,4 +1086,14 @@ bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
 }
 
+template <typename T, typename U>
+T BitCast(const U& value)
+{
+    static_assert(sizeof(U) == sizeof(T), "T and U have to have the same size");
+
+    T result;
+    memcpy(&result, &value, sizeof(T));
+    return result;
+}
+
 #endif // _UTILS_H_

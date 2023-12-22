@@ -2494,26 +2494,42 @@ BYTE* emitter::emitOutputInstr_Rellocation(BYTE* dst, const instrDesc* id, instr
     return dst;
 }
 
-static ssize_t Upper20BitsOfWord(ssize_t word)
-{
-    static constexpr unsigned kImm20Mask = 0xfffff;
-
-    return (immediate >> 12) & kImm20Mask;
+static constexpr size_t NBitMask(uint8_t bits) {
+    return (bits == 63) ? 0xefffffffffffffff : (static_cast<size_t>(1) << (bits + 1)) - 1;
 }
 
-static ssize_t Upper20BitsOfWordSignExtend(ssize_t word)
+template <uint8_t MaskSize>
+static ssize_t LowerNBitsOfWord(ssize_t word)
 {
-    static constexpr unsigned kImm20Mask = 0xfffff;
-    static constexpr unsigned kSignExtend = 1 << 11;
+    static_assert(MaskSize < 32, "Given mask size is bigger tham the word itself");
+    static_assert(MaskSize > 0, "Given mask size cannot be zero");
 
-    return ((immediate + kSignExtend) >> 12) & kImm20Mask;
+    static constexpr size_t kMask = NBitMask(MaskSize);
+
+    return word & kMask;
 }
 
-static ssize_t Lower12BitsOfWord(ssize_t word)
+template <uint8_t MaskSize>
+static ssize_t UpperNBitsOfWord(ssize_t word)
 {
-    static constexpr unsigned kImm12Mask = 0xfff;
+    static_assert(MaskSize < 32, "Given mask size is bigger tham the word itself");
+    static_assert(MaskSize > 0, "Given mask size cannot be zero");
 
-    return immediate & kImm12Mask;
+    static constexpr size_t kMask = NBitMask(MaskSize);
+    static constexpr size_t kShift = 32 - MaskSize;
+
+    return (word >> kShift) & kMask;
+}
+
+template <uint8_t MaskSize>
+static ssize_t UpperNBitsOfWordSignExtend(ssize_t word)
+{
+    static_assert(MaskSize < 32, "Given mask size is bigger tham the word itself");
+    static_assert(MaskSize > 0, "Given mask size cannot be zero");
+
+    static constexpr unsigned kSignExtend = 1 << (32 - MaskSize - 1);
+
+    return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
 static ssize_t UpperWordOfDoubleWord(ssize_t immediate)
@@ -2530,7 +2546,7 @@ static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
 
 BYTE* emitter::emitOutputInstr_Addi(BYTE* dst, const instrDesc* id)
 {
-    ssize_t         immediate = static_cast<ssize_t>(id->idAddr()->iiaAddr);
+    ssize_t         immediate = BitCast<ssize_t>(id->idAddr()->iiaAddr);
     const regNumber reg1      = id->idReg1();
 
     switch (id->idCodeSize())
@@ -2557,20 +2573,24 @@ BYTE* emitter::emitOutputInstr_Addi8(BYTE* dst, const instrDesc* id, ssize_t imm
     }
     else
     {
-        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, Upper20BitsOfWord(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, Lower12BitsOfWord(immediate));
+        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
     }
     return dst;
 }
 
 BYTE* emitter::emitOutputInstr_Addi32(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
 {
-    ssize_t upperWord = TakeUpperWord(immediate);
-    dst += emitOutput_UTypeInstr(dst, INS_lui, reg, Upper20BitsOfWord(upperWord));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, Lower12BitsOfWord(upperWord));
-    ssize_t lowerWord = TakeLowerWord(immediate);
+    ssize_t upperWord = UpperWordOfDoubleWord(immediate);
+    dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
+    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
+    ssize_t lowerWord = LowerWordOfDoubleWord(immediate);
     dst += emitOutput_RTypeInstr(dst, INS_slli, reg1, reg1, 11);
-    // TODO
+    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
+    dst += emitOutput_RTypeInstr(dst, INS_slli, reg1, reg1, 11);
+    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 10));
+    dst += emitOutput_RTypeInstr(dst, INS_slli, reg1, reg1, 10);
+    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<10>(lowerWord));
     return dst;
 }
 
