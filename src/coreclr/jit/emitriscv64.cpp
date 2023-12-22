@@ -2608,7 +2608,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     {
         return emitOutputInstr_OptsRcReloc(dst, id, ins, reg1);
     }
-    return emitOutputInstr_OptsRcNoReloc(dst, id, ins, offset, reg1);
+    return emitOutputInstr_OptsRcNoReloc(dst, id, *ins, offset, reg1);
 }
 
 BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instruction* ins, regNumber reg1)
@@ -2623,38 +2623,31 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, const instrDesc* id, instr
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
     dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
 
+    instruction lastIns = *ins;
+
     if (*ins == INS_jal)
     {
         assert(isGeneralRegister(reg1));
-        *ins = INS_addi;
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, rsvdReg, offset);
-        return dst;
+        *ins = lastIns = INS_addi;
     }
-    assert(((reg1 & NBitMask(7)) == reg1));
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, rsvdReg, offset);
+    dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, offset);
     return dst;
 }
 
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(
-    BYTE* dst, const instrDesc* id, instruction* ins, unsigned offset, regNumber reg1)
+    BYTE* dst, const instrDesc* id, instruction ins, unsigned offset, regNumber reg1)
 {
     ssize_t immediate = BitCast<ssize_t>(emitConsBlock) + offset;
     assert((immediate >> 40) == 0);
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
-    ssize_t   high    = immediate >> 11;
 
-    if (*ins == INS_jal)
-    {
-        dst += emitOutput_UTypeInstr(INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
-        dst += emitOutput_ITypeInstr(INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
-        dst += emitOutput_RTypeInstr(INS_ssli, rsvdReg, rsvdReg, 11);
-        dst += emitOutput_ITypeInstr(INS_addi, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
-        return dst;
-    }
+    instruction lastIns = (ins == INS_jal) ? INS_addi : ins;
+    ssize_t     high    = immediate >> 11;
+
     dst += emitOutput_UTypeInstr(INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
     dst += emitOutput_RTypeInstr(INS_slli, rsvdReg, rsvdReg, 11);
-    dst += emitOutput_ITypeInstr(*ins, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
+    dst += emitOutput_ITypeInstr(lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
 }
 
