@@ -107,6 +107,8 @@ unsigned emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumb
 unsigned emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm12) const;
 unsigned emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm20) const;
 unsigned emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const;
+unsigned emitOutput_BTypeInstr_InvertComparation(
+    BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const;
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm21) const;
 
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);

@@ -2392,6 +2392,33 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
 
 /*****************************************************************************
  *
+ *  Emit a 32-bit RISCV64 B-Type instruction with inverted comparation to
+ *  the given buffer. Returns a length of an encoded instruction opcode
+ *
+ *  Note: Replaces:
+ *      - beqz with bnez and vice versa
+ *      - beq with bne and vide versa
+ *      - blt with bge and vide versa
+ *      - bltu with bgeu and vice versa
+ */
+
+unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
+    BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
+{
+#ifdef DEBUG
+    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+
+    assert((ins & kInstructionMask) == 0);
+#endif // DEBUG
+
+    unsigned insCode = emitInsCode(ins) ^ 0x1000;
+    unsigned opcode  = insCode & kInstructionOpcodeMask;
+    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
+    return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13));
+}
+
+/*****************************************************************************
+ *
  *  Emit a 32-bit RISCV64 J-Type instruction to the given buffer. Returns a
  *  length of an encoded instruction opcode
  *
@@ -2729,11 +2756,6 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, const instrDescJmp* jmp, cons
     return nullptr;
 }
 
-static instruction ReverseBranchCondition(instruction ins)
-{
-    return ins ^ 0x1000;
-}
-
 BYTE* emitter::emitOutputInstr_OptsJalr8(
     BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate, regNumber reg1)
 {
@@ -2742,7 +2764,7 @@ BYTE* emitter::emitOutputInstr_OptsJalr8(
 
     regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
 
-    dst += emitOutput_BTypeInstr(ReverseBranchCondition(ins), reg1, reg2, 0x10);
+    dst += emitOutput_BTypeInstr_InvertComparation(ins, reg1, reg2, 0x10);
     dst += emitOutput_JTypeInstr(INS_Jal, REG_ZER0, immediate);
     return dst;
 }
