@@ -33,7 +33,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
-      <CrossCompileRid Condition="$(_hostOS) != $(_originalTargetOS) or !$(RuntimeIdentifier.EndsWith('-$(_hostArchitecture)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="'$(_hostOS)' != '$(_originalTargetOS)' or '$(_hostArchitecture)' != '$(_targetArchitecture)'">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
@@ -79,9 +79,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_AppleSdkName Condition="'$(_targetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
       <_AppleSdkName Condition="'$(_targetOS)' == 'maccatalyst'">macosx</_AppleSdkName>
 
-      <_AppleTripleArch Condition="'$(_targetArchitecture)' == 'x64'">x86_64</_AppleTripleArch>
-      <_AppleTripleArch Condition="'$(_targetArchitecture)' == 'arm64'">arm64</_AppleTripleArch>
-
       <_AppleTripleOS Condition="'$(_targetOS)' == 'maccatalyst' or $(_targetOS.StartsWith('ios'))">ios</_AppleTripleOS>
       <_AppleTripleOS Condition="$(_targetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
 
@@ -89,12 +86,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_AppleTripleAbi Condition="'$(_targetOS)' == 'maccatalyst'">macabi</_AppleTripleAbi>
       <_AppleTripleAbi Condition="$(_targetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
 
-      <TargetTriple>$(_AppleTripleArch)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
+      <TargetTriple>$(CrossCompileArch)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
       <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(NativeLib)' == 'Shared'">@rpath/$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
     </PropertyGroup>
 
-    <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(_AppleTripleArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
-      Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' _AppleTripleArch = '$(_AppleTripleArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
+    <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
+      Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' CrossCompileArch = '$(CrossCompileArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
 
     <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == '' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
