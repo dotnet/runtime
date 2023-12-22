@@ -5516,7 +5516,7 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 // fgConnectFallThrough: fix flow from a block that previously had a fall through
 //
 // Arguments:
-//   bSrc - source of fall through (may be null?)
+//   bSrc - source of fall through
 //   bDst - target of fall through
 //
 // Returns:
@@ -5525,81 +5525,77 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 //
 BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
+    assert(bSrc != nullptr);
     assert(fgPredsComputed);
     BasicBlock* jmpBlk = nullptr;
 
-    /* If bSrc is non-NULL */
+    /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-    if (bSrc != nullptr)
+    if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
     {
-        /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
+        // Add a new block after bSrc which jumps to 'bDst'
+        jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
+        bSrc->SetFalseTarget(jmpBlk);
+        fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
 
-        if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
+        // Record the loop number in the new block
+        jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
+
+        // When adding a new jmpBlk we will set the bbWeight and bbFlags
+        //
+        if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
         {
-            // Add a new block after bSrc which jumps to 'bDst'
-            jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
-            bSrc->SetFalseTarget(jmpBlk);
-            fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
+            FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
-            // Record the loop number in the new block
-            jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
-
-            // When adding a new jmpBlk we will set the bbWeight and bbFlags
-            //
-            if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
+            jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
+            if (bSrc->bbWeight == BB_ZERO_WEIGHT)
             {
-                FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
+                jmpBlk->bbWeight = BB_ZERO_WEIGHT;
+            }
 
-                jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
-                if (bSrc->bbWeight == BB_ZERO_WEIGHT)
-                {
-                    jmpBlk->bbWeight = BB_ZERO_WEIGHT;
-                }
+            if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
+            {
+                jmpBlk->SetFlags(BBF_RUN_RARELY);
+            }
 
-                if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
-                {
-                    jmpBlk->SetFlags(BBF_RUN_RARELY);
-                }
-
-                weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
-                weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
-                //
-                // If the [min/max] values for our edge weight is within the slop factor
-                //  then we will set the BBF_PROF_WEIGHT flag for the block
-                //
-                if (weightDiff <= slop)
-                {
-                    jmpBlk->SetFlags(BBF_PROF_WEIGHT);
-                }
+            weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
+            weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
+            //
+            // If the [min/max] values for our edge weight is within the slop factor
+            //  then we will set the BBF_PROF_WEIGHT flag for the block
+            //
+            if (weightDiff <= slop)
+            {
+                jmpBlk->SetFlags(BBF_PROF_WEIGHT);
+            }
+        }
+        else
+        {
+            // We set the bbWeight to the smaller of bSrc->bbWeight or bDst->bbWeight
+            if (bSrc->bbWeight < bDst->bbWeight)
+            {
+                jmpBlk->bbWeight = bSrc->bbWeight;
+                jmpBlk->CopyFlags(bSrc, BBF_RUN_RARELY);
             }
             else
             {
-                // We set the bbWeight to the smaller of bSrc->bbWeight or bDst->bbWeight
-                if (bSrc->bbWeight < bDst->bbWeight)
-                {
-                    jmpBlk->bbWeight = bSrc->bbWeight;
-                    jmpBlk->CopyFlags(bSrc, BBF_RUN_RARELY);
-                }
-                else
-                {
-                    jmpBlk->bbWeight = bDst->bbWeight;
-                    jmpBlk->CopyFlags(bDst, BBF_RUN_RARELY);
-                }
+                jmpBlk->bbWeight = bDst->bbWeight;
+                jmpBlk->CopyFlags(bDst, BBF_RUN_RARELY);
             }
+        }
 
-            fgReplacePred(bDst, bSrc, jmpBlk);
+        fgReplacePred(bDst, bSrc, jmpBlk);
 
-            JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
-                    bSrc->bbNum);
-        }
-        else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
-        {
-            bSrc->SetFlags(BBF_NONE_QUIRK);
-        }
-        else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
-        {
-            bSrc->SetFalseTarget(bDst);
-        }
+        JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
+                bSrc->bbNum);
+    }
+    else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
+    {
+        bSrc->SetFlags(BBF_NONE_QUIRK);
+    }
+    else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
+    {
+        bSrc->SetFalseTarget(bDst);
     }
 
     return jmpBlk;
