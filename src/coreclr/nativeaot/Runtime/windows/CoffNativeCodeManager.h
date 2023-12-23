@@ -44,7 +44,7 @@ class CoffNativeCodeManager : public ICodeManager
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
 
-    int m_indexCount;
+    uint32_t m_indexCount;
     uint32_t* m_indices[8];
 
     int LookupUnwindInfoIdx(uint32_t relativePc);
@@ -55,6 +55,8 @@ public:
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions);
     ~CoffNativeCodeManager();
+
+    bool InitFuncTableIndex();
 
     //
     // Code manager methods
