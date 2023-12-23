@@ -27,16 +27,13 @@ static void LogFromCoreDisToolsHelper(LogLevel level, const char* msg, va_list a
     Logger::LogVprintf(__func__, __FILE__, __LINE__, level, argList, msg);
 }
 
-#define LOGGER(L)                                                                                                      \
-    \
-static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                            \
-    \
-{                                                                                                               \
-        va_list argList;                                                                                               \
-        va_start(argList, msg);                                                                                        \
-        LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
-        va_end(argList);                                                                                               \
-    \
+#define LOGGER(L)                                                                                                  \
+static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                        \
+{                                                                                                                  \
+    va_list argList;                                                                                               \
+    va_start(argList, msg);                                                                                        \
+    LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
+    va_end(argList);                                                                                               \
 }
 
 LOGGER(VERBOSE)
@@ -49,6 +46,7 @@ const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, Cor
 #endif // USE_COREDISTOOLS
 
 #ifdef USE_COREDISTOOLS
+NewDiffer_t*          g_PtrNewDiffer          = nullptr; // For temporary backwards-compatibility with older coredistools
 NewDiffer2_t*         g_PtrNewDiffer2         = nullptr;
 FinishDiff_t*         g_PtrFinishDiff         = nullptr;
 NearDiffCodeBlocks_t* g_PtrNearDiffCodeBlocks = nullptr;
@@ -98,11 +96,17 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
+        g_PtrNewDiffer = (NewDiffer_t*)::GetProcAddress(hCoreDisToolsLib, "NewDiffer");
+        if (g_PtrNewDiffer == nullptr)
+        {
+            LogError("GetProcAddress 'NewDiffer' failed (0x%08x)", ::GetLastError());
+            return false;
+        }
         g_PtrNewDiffer2 = (NewDiffer2_t*)::GetProcAddress(hCoreDisToolsLib, "NewDiffer2");
         if (g_PtrNewDiffer2 == nullptr)
         {
-            LogError("GetProcAddress 'NewDiffer2' failed (0x%08x)", ::GetLastError());
-            return false;
+            // Just a warning; fall back to NewDiffer
+            LogWarning("GetProcAddress 'NewDiffer2' failed (0x%08x)", ::GetLastError());
         }
         g_PtrFinishDiff = (FinishDiff_t*)::GetProcAddress(hCoreDisToolsLib, "FinishDiff");
         if (g_PtrFinishDiff == nullptr)
@@ -150,8 +154,17 @@ bool NearDiffer::InitAsmDiff()
                 LogError("Illegal target architecture '%s'", TargetArchitecture);
             }
         }
-        corAsmDiff = (*g_PtrNewDiffer2)(coreDisTargetArchitecture, &CorPrinter,
-            NearDiffer::CoreDisCompareOffsetsCallback, Munger);
+
+        if (g_PtrNewDiffer2 == nullptr)
+        {
+            corAsmDiff = (*g_PtrNewDiffer)(coreDisTargetArchitecture, &CorPrinter,
+                NearDiffer::CoreDisCompareOffsetsCallback);
+        }
+        else
+        {
+            corAsmDiff = (*g_PtrNewDiffer2)(coreDisTargetArchitecture, &CorPrinter,
+                NearDiffer::CoreDisCompareOffsetsCallback, Munger);
+        }
     }
 #endif // USE_COREDISTOOLS
 
