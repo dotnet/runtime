@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 /***********************************************************************
 *
-* File: dis.cpp
+* File: disasm.cpp
 *
-
-*
-* File Comments:
-*
-*  This file handles disassembly. It is adapted from the MS linker.
+*  This file handles disassembly for the "late disassembler".
 *
 ***********************************************************************/
 
@@ -20,6 +16,11 @@
 /*****************************************************************************/
 #ifdef LATE_DISASM
 /*****************************************************************************/
+
+#ifdef USE_COREDISTOOLS
+// TODO: make this local to DisAssembler class and pass it on to coredistools?
+FILE* disAsmFileCorDisTools;
+#endif // USE_COREDISTOOLS
 
 // Define DISASM_DEBUG to get verbose output of late disassembler inner workings.
 //#define DISASM_DEBUG
@@ -36,6 +37,8 @@
 #endif // !DISASM_DEBUG
 
 /*****************************************************************************/
+
+#ifdef USE_MSVCDIS
 
 #define MAX_CLASSNAME_LENGTH 1024
 
@@ -75,7 +78,9 @@
     linker,                                                                                                            \
     "/ALTERNATENAME:__imp_?PfncchfixupSet@DIS@@QAEP6GIPBV1@_KIPAGIPA_K@ZP6GI01I2I3@Z@Z=__imp_?PfncchfixupSet@DIS@@QAEP6GIPBV1@_KIPA_WIPA_K@ZP6GI01I2I3@Z@Z")
 
-#endif
+#endif // HOST_*
+
+#endif // USE_MSVCDIS
 
 /*****************************************************************************
  * Given an absolute address from the beginning of the code
@@ -97,6 +102,8 @@ typedef struct codeBlk
 {
     codeFix* cbFixupLst;
 } * codeBlkPtr;
+
+#ifdef USE_MSVCDIS
 
 /*****************************************************************************
  * The following is the callback for jump label and direct function calls fixups.
@@ -856,6 +863,8 @@ size_t DisAssembler::disCchRegMember(const DIS* pdis, DIS::REGA reg, _In_reads_(
 #endif // 0
 }
 
+#endif // USE_MSVCDIS
+
 /*****************************************************************************
  * Helper function to lazily create a map from code address to CORINFO_METHOD_HANDLE.
  */
@@ -891,6 +900,8 @@ AddrToAddrMap* DisAssembler::GetRelocationMap()
     }
     return disRelocationMap;
 }
+
+#ifdef USE_MSVCDIS
 
 /*****************************************************************************
  * Return the count of bytes disassembled.
@@ -1250,7 +1261,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 #elif defined(TARGET_AMD64)
     pdis = DIS::PdisNew(DIS::distX8664);
 #elif defined(TARGET_ARM64)
-    pdis = DIS::PdisNew(DIS::distArm64);
+    pdis                      = DIS::PdisNew(DIS::distArm64);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -1337,6 +1348,8 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
     delete pdis;
 }
 
+#endif // USE_MSVCDIS
+
 /*****************************************************************************
  * Given a linear offset into the code, find a pointer to the actual code (either in the hot or cold section)
  *
@@ -1418,12 +1431,12 @@ void DisAssembler::disSetMethod(size_t addr, CORINFO_METHOD_HANDLE methHnd)
     if (disComp->eeGetHelperNum(methHnd))
     {
         DISASM_DUMP("Helper function: %p => %p\n", addr, methHnd);
-        GetHelperAddrToMethodHandleMap()->Set(addr, methHnd);
+        GetHelperAddrToMethodHandleMap()->Set(addr, methHnd, AddrToMethodHandleMap::SetKind::Overwrite);
     }
     else
     {
         DISASM_DUMP("Function: %p => %p\n", addr, methHnd);
-        GetAddrToMethodHandleMap()->Set(addr, methHnd);
+        GetAddrToMethodHandleMap()->Set(addr, methHnd, AddrToMethodHandleMap::SetKind::Overwrite);
     }
 }
 
@@ -1517,6 +1530,7 @@ void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCo
     disLabels = new (disComp, CMK_DebugOnly) BYTE[disTotalCodeSize]();
 
     DisasmBuffer(disAsmFile, /* printIt */ true);
+
     fprintf(disAsmFile, "\n");
 
     if (disAsmFile != jitstdout())
@@ -1544,6 +1558,145 @@ void DisAssembler::disOpenForLateDisAsm(const char* curMethodName, const char* c
     disCurClassName  = curClassName;
 }
 
+#ifdef USE_COREDISTOOLS
+
+// Helper functions to print messages from CoreDisTools Library
+// The file/linenumber information is from this helper itself,
+// since we are only linking with the CoreDisTools library.
+
+// Currently all loggers are the same
+#define LOGGER(L)                                                                                                      \
+    \
+static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                            \
+    \
+{                                                                                                               \
+        va_list argList;                                                                                               \
+        va_start(argList, msg);                                                                                        \
+        vflogf(disAsmFileCorDisTools, msg, argList);                                                                   \
+        va_end(argList);                                                                                               \
+        fprintf(disAsmFileCorDisTools, "\n");                                                                          \
+    \
+}
+
+LOGGER(VERBOSE)
+LOGGER(ERROR)
+LOGGER(WARNING)
+
+const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, CorDisToolsLogVERBOSE,
+                                 CorDisToolsLogVERBOSE};
+
+NewDisasm_t*       g_PtrNewDisasm       = nullptr;
+DumpInstruction_t* g_PtrDumpInstruction = nullptr;
+FinishDisasm_t*    g_PtrFinishDisasm    = nullptr;
+
+// Coredistools disassembler initialization.
+//
+// Returns true on success, false on failure.
+//
+bool DisAssembler::InitCoredistoolsDisasm()
+{
+    const WCHAR* coreDisToolsLibrary = MAKEDLLNAME_W("coredistools");
+
+#ifdef TARGET_UNIX
+    // Unix will require the full path to coredistools. Assume that the
+    // location is next to the full path to the superpmi.so.
+
+    WCHAR   coreCLRLoadedPath[MAX_LONGPATH];
+    HMODULE result    = 0;
+    int     returnVal = ::GetModuleFileNameW(result, coreCLRLoadedPath, MAX_LONGPATH);
+
+    if (returnVal == 0)
+    {
+        printf("GetModuleFileNameW failed (0x%08x)", ::GetLastError());
+        return false;
+    }
+
+    WCHAR* ptr = (WCHAR*)u16_strrchr(coreCLRLoadedPath, '/');
+
+    // Move past the / character.
+    ptr = ptr + 1;
+
+    const WCHAR* coreDisToolsLibraryName = MAKEDLLNAME_W("coredistools");
+    ::wcscpy_s(ptr, &coreCLRLoadedPath[MAX_LONGPATH] - ptr, coreDisToolsLibraryName);
+    coreDisToolsLibrary = coreCLRLoadedPath;
+#endif // TARGET_UNIX
+
+    HMODULE hCoreDisToolsLib = ::LoadLibraryExW(coreDisToolsLibrary, NULL, 0);
+    if (hCoreDisToolsLib == 0)
+    {
+        printf("LoadLibrary(%s) failed (0x%08x)", MAKEDLLNAME_A("coredistools"), ::GetLastError());
+        return false;
+    }
+
+    g_PtrNewDisasm = (NewDisasm_t*)::GetProcAddress(hCoreDisToolsLib, "NewDisasm");
+    if (g_PtrNewDisasm == nullptr)
+    {
+        printf("GetProcAddress 'NewDisasm' failed (0x%08x)", ::GetLastError());
+        return false;
+    }
+    g_PtrDumpInstruction = (DumpInstruction_t*)::GetProcAddress(hCoreDisToolsLib, "DumpInstruction");
+    if (g_PtrDumpInstruction == nullptr)
+    {
+        printf("GetProcAddress 'DumpInstruction' failed (0x%08x)", ::GetLastError());
+        return false;
+    }
+    g_PtrFinishDisasm = (FinishDisasm_t*)::GetProcAddress(hCoreDisToolsLib, "FinishDisasm");
+    if (g_PtrFinishDisasm == nullptr)
+    {
+        printf("GetProcAddress 'FinishDisasm' failed (0x%08x)", ::GetLastError());
+        return false;
+    }
+
+    TargetArch coreDisTargetArchitecture = Target_Host;
+
+#if defined(TARGET_ARM64)
+    coreDisTargetArchitecture = Target_Arm64;
+#elif defined(TARGET_ARM)
+    coreDisTargetArchitecture = Target_Thumb;
+#elif defined(TARGET_X86)
+    coreDisTargetArchitecture = Target_X86;
+#elif defined(TARGET_AMD64)
+    coreDisTargetArchitecture = Target_X64;
+#else
+#error Unsupported target for LATE_DISASM with USE_COREDISTOOLS
+#endif
+
+    corDisasm = (*g_PtrNewDisasm)(coreDisTargetArchitecture, &CorPrinter);
+
+    disAsmFileCorDisTools = nullptr;
+
+    return true;
+}
+
+void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
+{
+    disAsmFileCorDisTools = pfile;
+
+    auto disasmRegion = [&](size_t executionAddress, size_t blockAddress, size_t blockSize) {
+        uint8_t* address       = (uint8_t*)executionAddress;
+        uint8_t* codeBytes     = (uint8_t*)blockAddress;
+        size_t   codeSizeBytes = blockSize;
+        while (codeSizeBytes > 0)
+        {
+            size_t instrLen = (*g_PtrDumpInstruction)(corDisasm, address, codeBytes, codeSizeBytes);
+            if (instrLen == 0)
+            {
+                // error
+                break;
+            }
+            assert(instrLen <= codeSizeBytes);
+            address += instrLen;
+            codeBytes += instrLen;
+            codeSizeBytes -= instrLen;
+        }
+    };
+
+    disasmRegion(0, disHotCodeBlock, disHotCodeSize);
+    disasmRegion(disHotCodeSize, disColdCodeBlock, disColdCodeSize);
+}
+
+#endif // USE_COREDISTOOLS
+
 /*****************************************************************************/
 
 void DisAssembler::disInit(Compiler* pComp)
@@ -1557,6 +1710,12 @@ void DisAssembler::disInit(Compiler* pComp)
     disRelocationMap               = nullptr;
     disDiffable                    = false;
     disAsmFile                     = nullptr;
+
+#ifdef USE_COREDISTOOLS
+    InitCoredistoolsDisasm();
+
+// TODO: call g_PtrFinishDisasm sometime?
+#endif // USE_COREDISTOOLS
 }
 
 /*****************************************************************************/

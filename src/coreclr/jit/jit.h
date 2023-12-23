@@ -304,6 +304,17 @@ typedef ptrdiff_t ssize_t;
 #include "utils.h"
 #include "targetosarch.h"
 
+// Late disassembly is OFF by default. Can be turned ON by
+// adding /DLATE_DISASM=1 on the command line.
+// Always OFF in the non-debug version
+#ifdef DEBUG
+#define LATE_DISASM 1
+#define USE_COREDISTOOLS
+#endif // DEBUG
+#if defined(LATE_DISASM) && (LATE_DISASM == 0)
+#undef LATE_DISASM
+#endif
+
 #ifdef DEBUG
 #define INDEBUG(x) x
 #define DEBUGARG(x) , x
@@ -454,14 +465,6 @@ public:
 #include "vartype.h"
 
 /*****************************************************************************/
-
-// Late disassembly is OFF by default. Can be turned ON by
-// adding /DLATE_DISASM=1 on the command line.
-// Always OFF in the non-debug version
-
-#if defined(LATE_DISASM) && (LATE_DISASM == 0)
-#undef LATE_DISASM
-#endif
 
 /*****************************************************************************/
 

@@ -6,7 +6,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
 XX                          DisAsm                                           XX
 XX                                                                           XX
-XX  The dis-assembler to display the native code generated                   XX
+XX  The "late disassembler" to display the native code generated             XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -17,6 +17,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _DIS_H_
 /*****************************************************************************/
 #ifdef LATE_DISASM
+
+#ifdef USE_COREDISTOOLS
+#include "coredistools.h"
+#endif // USE_COREDISTOOLS
+
+#ifdef USE_MSVCDIS
 
 // free() is deprecated (we should only allocate and free memory through CLR hosting interfaces)
 // and is redefined in clrhost.h to cause a compiler error.
@@ -54,6 +60,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif                          // CHECK_STRUCT_PADDING
 
 /*****************************************************************************/
+
+#endif // USE_MSVCDIS
 
 #ifdef HOST_64BIT
 template <typename T>
@@ -176,6 +184,8 @@ private:
 #pragma warning(pop)
     }
 
+#ifdef USE_MSVCDIS
+
     /* Callbacks from msdis */
 
     static size_t __stdcall disCchAddr(
@@ -220,6 +230,16 @@ private:
                          bool        printit       = false,
                          bool        dispOffs      = false,
                          bool        dispCodeBytes = false);
+
+#endif // USE_MSVCDIS
+
+#ifdef USE_COREDISTOOLS
+
+    bool InitCoredistoolsDisasm();
+
+    CorDisasm* corDisasm;
+
+#endif // USE_COREDISTOOLS
 };
 
 /*****************************************************************************/

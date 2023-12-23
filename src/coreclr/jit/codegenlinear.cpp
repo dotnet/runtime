@@ -2682,7 +2682,7 @@ void CodeGen::genEmitterUnitTests()
 {
     const WCHAR* unitTestSection = JitConfig.JitDumpEmitUnitTests();
 
-    if ((!verbose) || (unitTestSection == nullptr))
+    if (unitTestSection == nullptr)
     {
         return;
     }
