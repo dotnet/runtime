@@ -1566,14 +1566,14 @@ void DisAssembler::disOpenForLateDisAsm(const char* curMethodName, const char* c
 
 // Currently all loggers are the same
 #define LOGGER(L)                                                                                                      \
-static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                            \
-{                                                                                                                      \
+    static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                        \
+    {                                                                                                                  \
         va_list argList;                                                                                               \
         va_start(argList, msg);                                                                                        \
         vflogf(disAsmFileCorDisTools, msg, argList);                                                                   \
         va_end(argList);                                                                                               \
         fprintf(disAsmFileCorDisTools, "\n");                                                                          \
-}
+    }
 
 LOGGER(VERBOSE)
 LOGGER(ERROR)
