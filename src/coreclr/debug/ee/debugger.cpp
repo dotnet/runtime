@@ -63,8 +63,6 @@ SVAL_IMPL_INIT(BOOL, Debugger, s_fCanChangeNgenFlags, TRUE);
 // process is waiting for JIT debugging attach.
 GVAL_IMPL_INIT(ULONG, CLRJitAttachState, 0);
 
-bool g_EnableSIS = false;
-
 // The following instances are used for invoking overloaded new/delete
 InteropSafe interopsafe;
 
@@ -1829,9 +1827,6 @@ HRESULT Debugger::Startup(void)
 #endif // !TARGET_UNIX
     {
         DebuggerLockHolder dbgLockHolder(this);
-
-        // Stubs in Stacktraces are always enabled.
-        g_EnableSIS = true;
 
         // We can get extra Interop-debugging test coverage by having some auxiliary unmanaged
         // threads running and throwing debug events. Keep these stress procs separate so that
@@ -7958,12 +7953,6 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
             e = pFrame->GetTransitionType();
         }
 #endif
-    }
-
-    // @todo - when Stubs-In-Stacktraces is always enabled, remove this.
-    if (!g_EnableSIS)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
     }
 
     // Stubs don't have an IL offset.
