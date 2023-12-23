@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="JitBlue/DevDiv_545500/DevDiv_545500.ilproj" />
+    <MergedWrapperProjectReference Include="JitBlue/**/*.??proj" />
     <MergedWrapperProjectReference Remove="JitBlue/Runtime_*/**/*.??proj" />
   </ItemGroup>
 
