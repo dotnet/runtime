@@ -173,13 +173,14 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 #define INDEX_ALIGNMENT 64
 
 CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase,
-                                             PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
-                                             PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
-                                             PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
+    PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
+    PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
+    PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
     : m_moduleBase(moduleBase),
     m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
     m_pRuntimeFunctionTable(pRuntimeFunctionTable), m_nRuntimeFunctionTable(nRuntimeFunctionTable),
-    m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions), m_indexCount(0)
+    m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions),
+    m_initializedIndices(0), m_indexCount(0), m_indices{ 0 }
 {
 }
 
@@ -198,18 +199,39 @@ CoffNativeCodeManager::~CoffNativeCodeManager()
     m_indexCount = 0;
 }
 
-bool CoffNativeCodeManager::InitFuncTableIndex()
+bool CoffNativeCodeManager::AllocFuncTableIndex()
 {
-    // max offset is beyond the range of managed methods.
-    int maxOffset = (int)((TADDR)m_pvManagedCodeStartRange + m_cbManagedCodeRange - m_moduleBase);
-
-    // lets build the index for the runtime table. for every granule that has elements we will have an index entry
     uint32_t indexSize = (m_nRuntimeFunctionTable + FUNCTABLE_INDEX_GRANULARITY - 1) / FUNCTABLE_INDEX_GRANULARITY;
     uint32_t* index = m_indices[m_indexCount] = (uint32_t*)_aligned_malloc(indexSize * sizeof(uint32_t), INDEX_ALIGNMENT);
     if (!index)
         return false;
 
     m_indexCount++;
+
+    while (indexSize > INDEX_BRANCHING_FACTOR)
+    {
+        uint32_t prevSize = indexSize;
+        indexSize = (indexSize + INDEX_BRANCHING_FACTOR - 1) / INDEX_BRANCHING_FACTOR;
+        index = m_indices[m_indexCount] = (uint32_t*)_aligned_malloc(indexSize * sizeof(uint32_t), INDEX_ALIGNMENT);
+        if (!index)
+            return false;
+
+        m_indexCount++;
+    }
+
+    return true;
+}
+
+NOINLINE
+uint32_t** CoffNativeCodeManager::InitFuncTableIndex()
+{
+    // max offset is beyond the range of managed methods.
+    int maxOffset = (int)((TADDR)m_pvManagedCodeStartRange + m_cbManagedCodeRange - m_moduleBase);
+
+    // lets build the index for the runtime table. for every granule that has elements we will have an index entry
+    uint32_t indexSize = (m_nRuntimeFunctionTable + FUNCTABLE_INDEX_GRANULARITY - 1) / FUNCTABLE_INDEX_GRANULARITY;
+    uint32_t indexCount = 0;
+    uint32_t* index = m_indices[indexCount++];
 
     // in every index N we will put the lowest value from the granule N + 1
     // when we will scan the value N in the indices and see that it is higher than the target, we will know
@@ -231,11 +253,7 @@ bool CoffNativeCodeManager::InitFuncTableIndex()
     {
         uint32_t prevSize = indexSize;
         indexSize = (indexSize + INDEX_BRANCHING_FACTOR - 1) / INDEX_BRANCHING_FACTOR;
-        index = m_indices[m_indexCount] = (uint32_t*)_aligned_malloc(indexSize * sizeof(uint32_t), INDEX_ALIGNMENT);
-        if (!index)
-            return false;
-
-        m_indexCount++;
+        index = m_indices[indexCount++];
 
         for (uint32_t i = 1; i < indexSize; i++)
         {
@@ -247,7 +265,8 @@ bool CoffNativeCodeManager::InitFuncTableIndex()
         prevIdx = index;
     }
 
-    return true;
+    WriteRelease64((LONG64*)&m_initializedIndices, (LONG64)m_indices);
+    return m_initializedIndices;
 }
 
 struct CoffNativeMethodInfo
@@ -262,10 +281,14 @@ static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMet
 
 int CoffNativeCodeManager::LookupUnwindInfoIdx(uint32_t relativePc)
 {
+    uint32_t** indices = m_initializedIndices;
+    if (!indices)
+        indices = InitFuncTableIndex();
+
     uint32_t idx = 0;
     for (int j = m_indexCount - 1; j >= 0; j--)
     {
-        uint32_t* index = m_indices[j];
+        uint32_t* index = indices[j];
         idx *= INDEX_BRANCHING_FACTOR;
 
         while ((uint32_t)index[idx] < relativePc)
@@ -1054,7 +1077,7 @@ bool RhRegisterOSModule(void * pModule,
     if (pCoffNativeCodeManager == nullptr)
         return false;
 
-    if (!pCoffNativeCodeManager->InitFuncTableIndex())
+    if (!pCoffNativeCodeManager->AllocFuncTableIndex())
         return false;
 
     RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);

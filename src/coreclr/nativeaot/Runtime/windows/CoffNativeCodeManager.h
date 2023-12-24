@@ -44,6 +44,7 @@ class CoffNativeCodeManager : public ICodeManager
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
 
+    uint32_t** volatile m_initializedIndices;
     uint32_t m_indexCount;
     uint32_t* m_indices[8];
 
@@ -56,7 +57,8 @@ public:
                           PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions);
     ~CoffNativeCodeManager();
 
-    bool InitFuncTableIndex();
+    bool AllocFuncTableIndex();
+    uint32_t** InitFuncTableIndex();
 
     //
     // Code manager methods
