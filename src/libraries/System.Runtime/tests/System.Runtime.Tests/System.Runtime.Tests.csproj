@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
@@ -25,6 +25,11 @@
 
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Delete once https://github.com/dotnet/runtime/issues/96279 is fixed -->
+    <IlcArg Include="--nopreinitstatics" />
   </ItemGroup>
 
   <ItemGroup>
