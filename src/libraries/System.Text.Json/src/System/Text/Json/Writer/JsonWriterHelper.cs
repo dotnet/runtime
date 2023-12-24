@@ -16,15 +16,21 @@ namespace System.Text.Json
 
             // Based on perf tests, the break-even point where vectorized Fill is faster
             // than explicitly writing the space in a loop is 8.
-            if (indent is < 8)
+            if (indent < 8)
             {
                 int i = 0;
-                while (i < indent)
+                while (i + 1 < indent)
                 {
                     buffer[i++] = indentByte;
+                    buffer[i++] = indentByte;
+                }
+
+                if (i < indent)
+                {
+                    buffer[i] = indentByte;
                 }
             }
-            else if (indent is not 0)
+            else
             {
                 buffer.Slice(0, indent).Fill(indentByte);
             }
