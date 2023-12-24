@@ -206,6 +206,7 @@ bool CoffNativeCodeManager::AllocFuncTableIndex()
     if (!index)
         return false;
 
+    memset(index, 0, indexSize * sizeof(uint32_t));
     m_indexCount++;
 
     while (indexSize > INDEX_BRANCHING_FACTOR)
@@ -216,6 +217,7 @@ bool CoffNativeCodeManager::AllocFuncTableIndex()
         if (!index)
             return false;
 
+        memset(index, 0, indexSize * sizeof(uint32_t));
         m_indexCount++;
     }
 
@@ -228,26 +230,46 @@ uint32_t** CoffNativeCodeManager::InitFuncTableIndex()
     // max offset is beyond the range of managed methods.
     int maxOffset = (int)((TADDR)m_pvManagedCodeStartRange + m_cbManagedCodeRange - m_moduleBase);
 
+    // It is possible to see several threads come here at once.
+    // We can spin-wait for one thread to do the work or just let all threads do the initialization.
+    // Either way it will take roughly the same time as for the first thread to complete the work.
+    // Yet we can make this complete faster if threads help each other by working on different
+    // parts of the index.
+    uint32_t perThreadBias = (uint32_t)(((size_t)&perThreadBias * 11400714819323198485ul) >> 32);
+
     // lets build the index for the runtime table. for every granule that has elements we will have an index entry
     uint32_t indexSize = (m_nRuntimeFunctionTable + FUNCTABLE_INDEX_GRANULARITY - 1) / FUNCTABLE_INDEX_GRANULARITY;
     uint32_t indexCount = 0;
     uint32_t* index = m_indices[indexCount++];
 
-    // in every index N we will put the lowest value from the granule N + 1
+    // every index N will contain the lowest value from the granule N + 1
     // when we will scan the value N in the indices and see that it is higher than the target, we will know
-    // that the granule N must be scanned for the entry as the next granule will have higher addresses.
-    for (uint32_t i = 1; i < indexSize; i++)
+    // that the granule N must be searched for the entry as the next granule will have higher addresses.
+    uint32_t start = (perThreadBias % indexSize) | 1;
+    for (uint32_t i = start; i < indexSize; i++)
     {
-        _ASSERTE(i * FUNCTABLE_INDEX_GRANULARITY < m_nRuntimeFunctionTable);
-        index[i - 1] = m_pRuntimeFunctionTable[i * FUNCTABLE_INDEX_GRANULARITY].BeginAddress;
+        if (index[i - 1] == 0)
+        {
+            _ASSERTE(i * FUNCTABLE_INDEX_GRANULARITY < m_nRuntimeFunctionTable);
+            index[i - 1] = m_pRuntimeFunctionTable[i * FUNCTABLE_INDEX_GRANULARITY].BeginAddress;
+        }
+    }
+
+    for (uint32_t i = 1; i < start; i++)
+    {
+        if (index[i - 1] == 0)
+        {
+            _ASSERTE(i * FUNCTABLE_INDEX_GRANULARITY < m_nRuntimeFunctionTable);
+            index[i - 1] = m_pRuntimeFunctionTable[i * FUNCTABLE_INDEX_GRANULARITY].BeginAddress;
+        }
     }
 
     // we put the maxOffset at the end of the index.
     // there is no N + 1 granule to get the value from, so the last slot will contain the sentinel.
     index[indexSize - 1] = maxOffset;
 
-    // Now build the N-ary tree of indices.
-    // At branching factor 16 a program with 32K methods will have 3 sub-index levels.
+    // Now build an N-ary tree of indices.
+    // Example: at branching factor 16 a program with 32K methods will have 3 sub-index levels.
     uint32_t* prevIdx = index;
     while (indexSize > INDEX_BRANCHING_FACTOR)
     {
@@ -255,7 +277,14 @@ uint32_t** CoffNativeCodeManager::InitFuncTableIndex()
         indexSize = (indexSize + INDEX_BRANCHING_FACTOR - 1) / INDEX_BRANCHING_FACTOR;
         index = m_indices[indexCount++];
 
-        for (uint32_t i = 1; i < indexSize; i++)
+        start = (perThreadBias % indexSize) | 1;
+        for (uint32_t i = start; i < indexSize; i++)
+        {
+            _ASSERTE(i * INDEX_BRANCHING_FACTOR < prevSize);
+            index[i - 1] = prevIdx[i * INDEX_BRANCHING_FACTOR];
+        }
+
+        for (uint32_t i = 1; i < start; i++)
         {
             _ASSERTE(i * INDEX_BRANCHING_FACTOR < prevSize);
             index[i - 1] = prevIdx[i * INDEX_BRANCHING_FACTOR];
