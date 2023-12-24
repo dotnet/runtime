@@ -37,7 +37,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [InlineData(true, '\t', 1, true, 0)]
-        [InlineData(true, ' ', 1, false, 1)]
+        [InlineData(true, ' ', 127, false, 1)]
         [InlineData(false, ' ', 0, true, 1024)]
         [InlineData(false, ' ', 4, false, 1024 * 1024)]
         public static void JsonWriterOptions(bool indented, char indentCharacter, int indentSize, bool skipValidation, int maxDepth)
@@ -58,6 +58,56 @@ namespace System.Text.Json.Tests
                 MaxDepth = maxDepth,
             };
             Assert.Equal(expectedOption, options);
+        }
+
+        [Theory]
+        [InlineData(true, '\t', 1, true, 0)]
+        [InlineData(true, ' ', 127, false, 1)]
+        [InlineData(false, ' ', 0, true, 1024)]
+        [InlineData(false, ' ', 4, false, 1024 * 1024)]
+        public static void JsonWriterOptions_Properties(bool indented, char indentCharacter, int indentSize, bool skipValidation, int maxDepth)
+        {
+            var options = new JsonWriterOptions();
+            options.Indented = indented;
+            options.IndentCharacter = indentCharacter;
+            options.IndentSize = indentSize;
+            options.SkipValidation = skipValidation;
+            options.MaxDepth = maxDepth;
+
+            Assert.Equal(indented, options.Indented);
+            Assert.Equal(indentCharacter, options.IndentCharacter);
+            Assert.Equal(indentSize, options.IndentSize);
+            Assert.Equal(skipValidation, options.SkipValidation);
+            Assert.Equal(maxDepth, options.MaxDepth);
+        }
+
+        [Fact]
+        public static void JsonWriterOptions_MultipleValues()
+        {
+            JsonWriterOptions defaultOptions = default;
+            var options = new JsonWriterOptions();
+
+            options.Indented = true;
+            options.Indented = defaultOptions.Indented;
+            Assert.Equal(defaultOptions.Indented, options.Indented);
+
+            options.IndentCharacter = '\t';
+            options.IndentCharacter = defaultOptions.IndentCharacter;
+            Assert.Equal(defaultOptions.IndentCharacter, options.IndentCharacter);
+
+            options.IndentSize = 127;
+            options.IndentSize = defaultOptions.IndentSize;
+            Assert.Equal(defaultOptions.IndentSize, options.IndentSize);
+
+            options.SkipValidation = true;
+            options.SkipValidation = defaultOptions.SkipValidation;
+            Assert.Equal(defaultOptions.SkipValidation, options.SkipValidation);
+
+            options.MaxDepth = 1024 * 1024;
+            options.MaxDepth = defaultOptions.MaxDepth;
+            Assert.Equal(defaultOptions.MaxDepth, options.MaxDepth);
+
+            Assert.Equal(defaultOptions, options);
         }
 
         [Theory]

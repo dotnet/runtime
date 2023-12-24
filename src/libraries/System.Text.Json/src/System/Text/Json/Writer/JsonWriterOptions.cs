@@ -17,10 +17,8 @@ namespace System.Text.Json
 
         private int _maxDepth;
         private int _optionsMask;
-        private byte? _indentByte;
-        private int? _indentSize;
 
-        internal readonly byte IndentByte => _indentByte ?? JsonConstants.Space;
+        internal readonly byte IndentByte => (_optionsMask & IndentCharacterBit) != 0 ? JsonConstants.Tab : JsonConstants.Space;
 
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
@@ -58,7 +56,10 @@ namespace System.Text.Json
             set
             {
                 JsonWriterHelper.ValidateIndentCharacter(value);
-                _indentByte = (byte)value;
+                if (value is not JsonConstants.DefaultIndentCharacter)
+                    _optionsMask |= IndentCharacterBit;
+                else
+                    _optionsMask &= ~IndentCharacterBit;
             }
         }
 
@@ -69,13 +70,20 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
         public int IndentSize
         {
-            readonly get => _indentSize ?? JsonConstants.DefaultIndentSize;
+            readonly get => HandleDefaultIndentSize((_optionsMask & IndentSizeMask) >> 3);
             set
             {
                 JsonWriterHelper.ValidateIndentSize(value);
-                _indentSize = value;
+                _optionsMask = (_optionsMask & ~IndentSizeMask) + (HandleDefaultIndentSize(value) << 3);
             }
         }
+
+        private static int HandleDefaultIndentSize(int value) => value switch
+        {
+            0 => JsonConstants.DefaultIndentSize,
+            JsonConstants.DefaultIndentSize => 0,
+            _ => value
+        };
 
         /// <summary>
         /// Gets or sets the maximum depth allowed when writing JSON, with the default (i.e. 0) indicating a max depth of 1000.
@@ -127,9 +135,11 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IndentedOrNotSkipValidation => _optionsMask != SkipValidationBit; // Equivalent to: Indented || !SkipValidation;
+        internal bool IndentedOrNotSkipValidation => Indented || !SkipValidation;
 
         private const int IndentBit = 1;
         private const int SkipValidationBit = 2;
+        private const int IndentCharacterBit = 4;
+        private const int IndentSizeMask = JsonConstants.MaximumIndentSize << 3;
     }
 }
