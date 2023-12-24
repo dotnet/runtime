@@ -2762,8 +2762,8 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonOptions_TestData))]
         public void WritingTooDeepProperty(JsonWriterOptions options)
         {
-            var output = new ArrayBufferWriter<byte>(1024);
-
+            var capacity = 3 + 1000 * (11 + 1001 * options.IndentSize / 2);
+            var output = new ArrayBufferWriter<byte>(capacity);
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
@@ -2775,6 +2775,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStartArray("name"));
             }
 
+            output = new ArrayBufferWriter<byte>(capacity);
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
@@ -2785,6 +2786,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStartArray("name"u8));
             }
 
+            output = new ArrayBufferWriter<byte>(capacity);
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
