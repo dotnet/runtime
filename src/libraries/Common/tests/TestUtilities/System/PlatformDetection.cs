@@ -415,6 +415,13 @@ namespace System
 
         private static Version GetICUVersion()
         {
+            try
+            {
+                // Ensure that ICU has been loaded
+                GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
+            }
+            catch { }
+
             int version = 0;
             try
             {
