@@ -2568,6 +2568,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_RCOMPARE: {
 			if (next_ins) {
+				// insert two OP_RISCV_FBNAN in case unordered compare
+				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_RBNAN);
+				temp->sreg1 = ins->sreg1;
+				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+				temp->inst_true_bb = next_ins->inst_true_bb;
+				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_RBNAN);
+				temp->sreg1 = ins->sreg2;
+				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+				temp->inst_true_bb = next_ins->inst_true_bb;
 				if (next_ins->opcode == OP_FBLT || next_ins->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_RCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2633,6 +2642,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_FCOMPARE: {
 			if (next_ins) {
+				// insert two OP_RISCV_FBNAN in case unordered compare
+				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_FBNAN);
+				temp->sreg1 = ins->sreg1;
+				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+				temp->inst_true_bb = next_ins->inst_true_bb;
+				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_FBNAN);
+				temp->sreg1 = ins->sreg2;
+				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+				temp->inst_true_bb = next_ins->inst_true_bb;
 				if (next_ins->opcode == OP_FBLT || next_ins->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_FCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -4356,7 +4374,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fclass_d (code, RISCV_T0, ins->sreg1);
 			else
 				riscv_fclass_s (code, RISCV_T0, ins->sreg1);
-			riscv_andi (code, RISCV_T0, RISCV_T0, 0b0001111110);
+
+			riscv_andi (code, RISCV_T0, RISCV_T0, ~(RISCV_FCLASS_INF | RISCV_FCLASS_NAN));
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
 												"ArithmeticException");
 		}
@@ -5140,6 +5159,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info_rel (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0,
 			                         MONO_R_RISCV_IMM);
 			code = mono_riscv_emit_imm (code, ins->dreg, 0xffffffff);
+			break;
+		case OP_RISCV_FBNAN:
+			// fclass.d T0, rs1; andi T0, T0, RISCV_FCLASS_NAN; bne T0, zero, target
+			riscv_fclass_d (code, RISCV_T0, ins->sreg1);
+			riscv_andi (code, RISCV_T0, RISCV_T0, RISCV_FCLASS_NAN);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BNE);
+			riscv_bne (code, RISCV_T0, RISCV_ZERO, 0);
+			code = mono_riscv_emit_nop (code);
+			break;
+		case OP_RISCV_RBNAN:
+			// fclass.s T0, rs1; andi T0, T0, RISCV_FCLASS_NAN; bne T0, zero, target
+			riscv_fclass_s (code, RISCV_T0, ins->sreg1);
+			riscv_andi (code, RISCV_T0, RISCV_T0, RISCV_FCLASS_NAN);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BNE);
+			riscv_bne (code, RISCV_T0, RISCV_ZERO, 0);
+			code = mono_riscv_emit_nop (code);
 			break;
 		case OP_RISCV_EXC_BNE:
 		case OP_RISCV_EXC_BEQ:

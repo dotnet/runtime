@@ -226,6 +226,8 @@ long_shr_un_imm: dest:i src1:i len:4
 
 
 riscv_setfreg_r4: dest:f src1:f len:4
+riscv_float_bnan: src1:f len:16
+riscv_r4_bnan: src1:f len:16
 
 riscv_beq: src1:i src2:i len:8
 riscv_bne: src1:i src2:i len:8
