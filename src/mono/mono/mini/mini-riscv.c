@@ -2569,14 +2569,17 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCOMPARE: {
 			if (next_ins) {
 				// insert two OP_RISCV_FBNAN in case unordered compare
-				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_RBNAN);
-				temp->sreg1 = ins->sreg1;
-				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
-				temp->inst_true_bb = next_ins->inst_true_bb;
-				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_RBNAN);
-				temp->sreg1 = ins->sreg2;
-				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
-				temp->inst_true_bb = next_ins->inst_true_bb;
+				if (next_ins->opcode != OP_FBEQ && next_ins->opcode != OP_FBNE_UN){
+					NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_RBNAN);
+					temp->sreg1 = ins->sreg1;
+					temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+					temp->inst_true_bb = next_ins->inst_true_bb;
+					NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_RBNAN);
+					temp->sreg1 = ins->sreg2;
+					temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+					temp->inst_true_bb = next_ins->inst_true_bb;
+				}
+
 				if (next_ins->opcode == OP_FBLT || next_ins->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_RCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2642,15 +2645,18 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_FCOMPARE: {
 			if (next_ins) {
-				// insert two OP_RISCV_FBNAN in case unordered compare
-				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_FBNAN);
-				temp->sreg1 = ins->sreg1;
-				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
-				temp->inst_true_bb = next_ins->inst_true_bb;
-				NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_FBNAN);
-				temp->sreg1 = ins->sreg2;
-				temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
-				temp->inst_true_bb = next_ins->inst_true_bb;
+				if (next_ins->opcode != OP_FBEQ && next_ins->opcode != OP_FBNE_UN){
+					// insert two OP_RISCV_FBNAN in case unordered compare
+					NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_FBNAN);
+					temp->sreg1 = ins->sreg1;
+					temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+					temp->inst_true_bb = next_ins->inst_true_bb;
+					NEW_INS_BEFORE(cfg, ins, temp, OP_RISCV_FBNAN);
+					temp->sreg1 = ins->sreg2;
+					temp->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
+					temp->inst_true_bb = next_ins->inst_true_bb;
+				}
+
 				if (next_ins->opcode == OP_FBLT || next_ins->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_FCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
