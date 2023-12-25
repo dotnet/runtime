@@ -1,8 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
     <Compile Include="System\Diagnostics\InitializingSwitchEventArgs.cs" />
@@ -30,6 +33,7 @@
     <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
@@ -39,4 +43,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
+
 </Project>

@@ -210,7 +210,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal(n, n2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void GetHashCodeTest()
         {
             var n = new MailAddress("Mr. Bar <a@example.com>");
@@ -218,7 +218,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal(n.GetHashCode(), n2.GetHashCode());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void GetHashCodeTest2()
         {
             var n = new MailAddress("Mr. Bar <a@example.com>");

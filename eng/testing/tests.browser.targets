@@ -9,7 +9,7 @@
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>
 
     <!-- set this when provisioning emsdk on CI -->
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
 
     <!--
       - For regular library tests, it will use the symbols file from the runtime pack.
@@ -24,13 +24,21 @@
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
     <!--<InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>-->
     <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
+    <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
+    <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and
+                                        ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv')) and
+                                        ($([MSBuild]::IsOSPlatform('windows')) or $([MSBuild]::IsOSPlatform('linux')))"
+                                    >true</InstallV8ForTests>
 
     <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
+    <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
   </PropertyGroup>
 
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
@@ -43,27 +51,30 @@
 
   <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
     <!--
-      When building for BuildAOTTestsOnHelix=true, the WasmApp*targets are *not* imported, because
+      When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
       they get instead used by the AOT proxy project on helix.
 
       On the build machine only the regular part of the build is run, which includes trimming. But if
-      WasmApp*targets modify any trimming arguments, then those will not get picked up by this build.
+      BrowserWasmApp.targets modify any trimming arguments, then those will not get picked up by this build.
       For example - linker substitution files used with simd builds.
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.LegacyJsInterop.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions &quot;$(BrowserProjectRoot)build\ILLink.Substitutions.LegacyJsInterop.xml&quot;</_ExtraTrimmerArgs>
   </PropertyGroup>
 
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
-          Condition="'$(InstallChromeForTests)' == 'true' and ('$(ContinuousIntegrationBuild)' != 'true' or '$(IsBrowserWasmProject)' != 'true')" />
+          Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(IsBrowserWasmProject)' != 'true'" />
 
   <PropertyGroup>
     <_WasmBrowserPathForTests Condition="'$(BROWSER_PATH_FOR_TESTS)' != ''">$(BROWSER_PATH_FOR_TESTS)</_WasmBrowserPathForTests>
     <_WasmBrowserPathForTests Condition="'$(_WasmBrowserPathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmBrowserPathForTests>
+
+    <_WasmJSEnginePathForTests Condition="'$(V8_PATH_FOR_TESTS)' != ''">$(V8_PATH_FOR_TESTS)</_WasmJSEnginePathForTests>
+    <_WasmJSEnginePathForTests Condition="'$(_WasmJSEnginePathForTests)' == '' and '$(InstallV8ForTests)' == 'true'">$(V8BinaryPath)</_WasmJSEnginePathForTests>
   </PropertyGroup>
 
   <!--
@@ -75,6 +86,7 @@
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="export SCENARIO=$(Scenario)" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
+    <SetScriptCommands Condition="'$(_WasmJSEnginePathForTests)' != ''" Include="export V8_PATH_FOR_TESTS=${V8_PATH_FOR_TESTS:=$(_WasmJSEnginePathForTests)}" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
     <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
     <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
@@ -93,6 +105,8 @@
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll</_AppArgs>
 
+    <_XUnitBackgroundExec Condition="'$(_XUnitBackgroundExec)' == '' and '$(MonoWasmBuildVariant)' == 'multithread'">true</_XUnitBackgroundExec>
+    <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
@@ -136,9 +150,9 @@
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"
+  <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.props"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
@@ -158,17 +172,17 @@
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
-      <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName> 
+      <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
 
       <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <!--
-        Do this *after* importing WasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
+        Do this *after* importing BrowserWasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
         that we want to force this value to zero.
 
-        WasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
+        BrowserWasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
         we explicitly want to:
         1. build with DebuggerSupport=true so the debugger attributes are preserved by the linker;
         2. *debugging* is disabled at run time so the interpreter optimizations don't get disabled.
@@ -248,12 +262,14 @@
       <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJS&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
 
       <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="export RuntimeIdentifier=browser-wasm" />
     </ItemGroup>
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
       <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
 
       <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="set RuntimeIdentifier=browser-wasm" />
     </ItemGroup>
   </Target>
 
@@ -262,6 +278,11 @@
       <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
+      <WorkloadIdForTesting Include="wasm-tools-net8;wasm-experimental-net8"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
+                            Variant="net8"
                             Version="$(PackageVersionForWorkloadManifests)" />
 
       <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
@@ -277,7 +298,7 @@
                             IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
                             Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
-      <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
+      <WorkloadCombinationsToInstall Include="latest"        Variants="latest;net8" />
       <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
@@ -336,31 +357,5 @@
             To disable this behavior, pass `-p:WasmSkipMissingRuntimePackBuild=true` .
 
       *******************" />
-  </Target>
-
-  <Target Name="_GetNugetsForAOT" Returns="@(_NuGetsToBuild)">
-    <PropertyGroup>
-      <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
-      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg</_AOTCrossNuGetPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
-                      Descriptor="Ref pack"/>
-
-      <!-- AOT Cross compiler -->
-      <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
-      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
-      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
-
-      <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-                      Properties="@(_PropsForAOTCrossBuild,';')"
-                      Descriptor="AOT Cross compiler"/>
-    </ItemGroup>
   </Target>
 </Project>

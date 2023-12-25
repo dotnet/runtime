@@ -235,11 +235,23 @@ namespace System.Formats.Cbor
                 throw new OverflowException();
             }
 
-            if (_buffer.Length - _offset < pendingCount)
+            int currentCapacity = _buffer.Length;
+            int requiredCapacity = _offset + pendingCount;
+            if (currentCapacity < requiredCapacity)
             {
-                const int BlockSize = 1024;
-                int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                Array.Resize(ref _buffer, BlockSize * blocks);
+                int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
+                const uint MaxArrayLength = 0x7FFFFFC7; // Array.MaxLength
+#if NETCOREAPP
+                Debug.Assert(MaxArrayLength == Array.MaxLength);
+#endif
+                if ((uint)newCapacity > MaxArrayLength || newCapacity < requiredCapacity)
+                {
+                    newCapacity = requiredCapacity;
+                }
+
+                byte[] newBuffer = new byte[newCapacity];
+                new ReadOnlySpan<byte>(_buffer, 0, _offset).CopyTo(newBuffer);
+                _buffer = newBuffer;
             }
         }
 

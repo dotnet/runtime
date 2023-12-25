@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using Internal.Runtime.Augments;
 
@@ -87,7 +87,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (namedArgument.IsField)
                 {
                     // Field
-                    for (;;)
+                    for (; ; )
                     {
                         FieldInfo? fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (fieldInfo != null)
@@ -104,7 +104,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 else
                 {
                     // Property
-                    for (;;)
+                    for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (propertyInfo != null)
@@ -126,8 +126,6 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         // Convert the argument value reported by Reflection into an actual object.
         //
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The AOT compiler ensures array types required by custom attribute blobs are generated.")]
         private static object? Convert(this CustomAttributeTypedArgument typedArgument)
         {
             Type argumentType = typedArgument.ArgumentType;
@@ -144,8 +142,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 IList<CustomAttributeTypedArgument>? typedElements = (IList<CustomAttributeTypedArgument>?)(typedArgument.Value);
                 if (typedElements == null)
                     return null;
-                Type? elementType = argumentType.GetElementType();
-                Array array = Array.CreateInstance(elementType, typedElements.Count);
+                Array array = Array.CreateInstanceFromArrayType(argumentType, typedElements.Count);
                 for (int i = 0; i < typedElements.Count; i++)
                 {
                     object? elementValue = typedElements[i].Convert();

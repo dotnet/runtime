@@ -1509,8 +1509,16 @@ namespace System.Net.Quic.Tests
                 {
                     // Writes must be closed, but whether successfully or not depends on the timing.
                     // Peer might have aborted reading side before receiving all the data.
-                    // Manicka TODO await writes closed
-                    Assert.True(stream.WritesClosed.IsCompleted);
+                    try
+                    {
+                        await stream.WritesClosed.WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch (Exception ex)
+                    {
+                        QuicException qe = Assert.IsType<QuicException>(ex);
+                        Assert.Equal(QuicError.StreamAborted, qe.QuicError);
+                        Assert.Equal(errorCode, qe.ApplicationErrorCode);
+                    }
                 }
             }
         }

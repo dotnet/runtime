@@ -3556,7 +3556,7 @@ namespace System.Threading.Tasks
                 }
                 continuations[i] = null; // to enable free'ing up memory earlier
                 if (etwIsEnabled)
-                   log.RunningContinuationList(Id, i, currentContinuation);
+                    log.RunningContinuationList(Id, i, currentContinuation);
 
                 switch (currentContinuation)
                 {

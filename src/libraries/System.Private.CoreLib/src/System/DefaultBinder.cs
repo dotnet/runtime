@@ -1235,13 +1235,14 @@ namespace System
                 (source == typeof(UIntPtr) && target == typeof(UIntPtr)))
                 return true;
 
-            Primitives widerCodes = s_primitiveConversions[(int)(Type.GetTypeCode(source))];
+            Primitives widerCodes = PrimitiveConversions[(int)(Type.GetTypeCode(source))];
             Primitives targetCode = (Primitives)(1 << (int)(Type.GetTypeCode(target)));
 
             return (widerCodes & targetCode) != 0;
         }
 
-        private static readonly Primitives[] s_primitiveConversions = {
+        private static ReadOnlySpan<Primitives> PrimitiveConversions =>
+        [
             /* Empty    */  0, // not primitive
             /* Object   */  0, // not primitive
             /* DBNull   */  0, // not primitive
@@ -1261,7 +1262,7 @@ namespace System
             /* DateTime */  Primitives.DateTime,
             /* [Unused] */  0,
             /* String   */  Primitives.String,
-        };
+        ];
 
         [Flags]
         private enum Primitives

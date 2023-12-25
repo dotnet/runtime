@@ -36,7 +36,7 @@
   </Target>
 
   <Target Name="RunSample" DependsOnTargets="WebPack">
-    <Exec Command="dotnet serve --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <Exec Command="dotnet serve -S --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
   </Target>
 
 </Project>

@@ -415,6 +415,43 @@ interp_v128_i8_equals (gpointer res, gpointer v1, gpointer v2)
 	*(v128_i8*)res = *(v128_i8*)v1 == *(v128_i8*)v2;
 }
 
+// EqualsAny
+static void
+interp_v128_i1_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i1 resv = *(v128_i1*)v1 == *(v128_i1*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i2_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i2 resv = *(v128_i2*)v1 == *(v128_i2*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i4_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i4 resv = *(v128_i4*)v1 == *(v128_i4*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i8_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i8 resv = *(v128_i8*)v1 == *(v128_i8*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
 // CreateScalar
 static void
 interp_v128_i1_create_scalar (gpointer res, gpointer v1)

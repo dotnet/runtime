@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using global::System;
-using global::System.Text;
 using global::System.Reflection;
+using global::System.Text;
 
 namespace Internal.Reflection.Execution.PayForPlayExperience
 {

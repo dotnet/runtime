@@ -309,7 +309,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
+                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
             builder.AppendLine();
 
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
@@ -317,6 +318,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
             }
+
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
             using (builder.NewBracesScope())
             {
@@ -324,7 +326,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
             builder.AppendLine();
 
-            builder.AppendLine("filter = new (args, testExclusionList);");
+            builder.AppendLine("filter = new (args, testExclusionTable);");
             builder.AppendLine("summary = new();");
             builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
             builder.AppendLine("outputRecorder = new(System.Console.Out);");
@@ -441,12 +443,20 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine("try");
+
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
-            builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
+            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
+                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
+
+            builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests,"
+                               + $@" ""{assemblyName}"","
+                               + $@" args.Length != 0 ? args[0] : null,"
+                               + $@" testExclusionTable);");
         }
+
         builder.AppendLine("catch (System.Exception ex)");
+
         using (builder.NewBracesScope())
         {
             builder.AppendLine("System.Console.WriteLine(ex.ToString());");
@@ -455,6 +465,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine("void Initialize()");
+
         using (builder.NewBracesScope())
         {
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
@@ -462,6 +473,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
             }
+
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
             using (builder.NewBracesScope())
             {
@@ -477,6 +489,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine("XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+
         using (builder.NewBracesScope())
         {
             builder.AppendLine("Initialize();");
@@ -670,7 +683,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.ConditionalClassAttribute":
                 case "Xunit.SkipOnPlatformAttribute":
                 case "Xunit.ActiveIssueAttribute":
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                 case "Xunit.PlatformSpecificAttribute":
                 case "Xunit.SkipOnMonoAttribute":
                 case "Xunit.SkipOnTargetFrameworkAttribute":
@@ -736,10 +749,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             false /* do not negate the condition, as this attribute indicates that a test will be run */);
                         break;
                     }
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                     if (options.GlobalOptions.Priority() == 0)
                     {
-                        // If we aren't building the outerloop/Pri 1 test suite, then this attribute acts like an
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
+                        {
+                            // If this test is always outerloop, then we can just skip it.
+                            return ImmutableArray<ITestInfo>.Empty;
+                        }
+                        // The remaining constructors for the attribute can share handling with the
                         // [ActiveIssue] attribute (it has the same shape).
                         goto case "Xunit.ActiveIssueAttribute";
                     }

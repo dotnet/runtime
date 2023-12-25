@@ -707,9 +707,15 @@ namespace Internal.JitInterface
             _instantiationToJitVisibleInstantiation = null;
 
             _pgoResults.Clear();
+
+            // We need to clear out this cache because the next compilation could actually come up
+            // with a different MethodIL for the same MethodDesc. This happens when we need to replace
+            // a MethodIL with a throw helper.
+            _methodILScopeToHandle.Clear();
         }
 
         private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>(new JitObjectComparer());
+        private Dictionary<MethodDesc, IntPtr> _methodILScopeToHandle = new Dictionary<MethodDesc, IntPtr>(new JitObjectComparer());
         private List<object> _handleToObject = new List<object>();
 
         private const int handleMultiplier = 8;
@@ -720,6 +726,13 @@ namespace Internal.JitInterface
 #endif
 
         private IntPtr ObjectToHandle(object obj)
+        {
+            // MethodILScopes need to go through ObjectToHandle(MethodILScope methodIL).
+            Debug.Assert(obj is not MethodILScope);
+            return ObjectToHandleUnchecked(obj);
+        }
+
+        private IntPtr ObjectToHandleUnchecked(object obj)
         {
             // SuperPMI relies on the handle returned from this function being stable for the lifetime of the crossgen2 process
             // If handle deletion is implemented, please update SuperPMI
@@ -752,9 +765,18 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((void*)field);
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) => (CORINFO_FIELD_STRUCT_*)ObjectToHandle((object)field);
         private MethodILScope HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((void*)module);
-        private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodILScope methodIL) => (CORINFO_MODULE_STRUCT_*)ObjectToHandle((object)methodIL);
         private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((void*)method);
         private MethodSignatureInfo* ObjectToHandle(MethodSignature method) => (MethodSignatureInfo*)ObjectToHandle((object)method);
+
+        private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodILScope methodIL)
+        {
+            // RyuJIT requires CORINFO_MODULE_STRUCT to be unique. MethodILScope might not be unique
+            // due to ILProvider cache purging. See https://github.com/dotnet/runtime/issues/93843.
+            MethodDesc owningMethod = methodIL.OwningMethod;
+            if (!_methodILScopeToHandle.TryGetValue(owningMethod, out IntPtr handle))
+                _methodILScopeToHandle[owningMethod] = handle = ObjectToHandleUnchecked((object)methodIL);
+            return (CORINFO_MODULE_STRUCT_*)handle;
+        }
 
         private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
         {
@@ -3211,7 +3233,7 @@ namespace Internal.JitInterface
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
-                   target.IsOSXLike ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+                   target.IsApplePlatform ? CORINFO_OS.CORINFO_APPLE : CORINFO_OS.CORINFO_UNIX;
         }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)

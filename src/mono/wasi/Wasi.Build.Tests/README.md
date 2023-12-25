@@ -13,7 +13,7 @@ being generated.
 - Running:
 
 Linux/macOS: `$ make -C src/mono/wasi run-build-tests`
-Windows: `.\dotnet.cmd build .\src\mono\wasi\Wasi.Build.Tests\Wasi.Build.Tests.csproj -c Release -t:Test -p:TargetOS=Browser -p:TargetArchitecture=wasi`
+Windows: `.\dotnet.cmd build .\src\mono\wasi\Wasi.Build.Tests\Wasi.Build.Tests.csproj -c Release -t:Test -p:TargetOS=wasi -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`
   - eg. `XUnitClassName=Wasm.Build.Tests.BlazorWasmTests`

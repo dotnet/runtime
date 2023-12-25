@@ -11,7 +11,8 @@ namespace System.Net
     {
         // ASCII char ToLower table
         internal static readonly CaseInsensitiveAscii StaticInstance = new CaseInsensitiveAscii();
-        internal static ReadOnlySpan<byte> AsciiToLower => new byte[] {
+        internal static ReadOnlySpan<byte> AsciiToLower =>
+        [
               0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
              10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
              20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
@@ -38,7 +39,7 @@ namespace System.Net
             230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
             240, 241, 242, 243, 244, 245, 246, 247, 248, 249,
             250, 251, 252, 253, 254, 255
-        };
+        ];
 
         // ASCII string case insensitive hash function
         public int GetHashCode(object myObject)

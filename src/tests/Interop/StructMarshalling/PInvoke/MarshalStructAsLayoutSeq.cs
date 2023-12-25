@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using Xunit;
 
 public class Managed
 {
@@ -55,7 +56,9 @@ public class Managed
     }
 
     [SecuritySafeCritical]
-    public static int Main()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         RunMarshalSeqStructAsParamByVal();
         RunMarshalSeqStructAsParamByRef();

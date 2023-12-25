@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -23,17 +24,26 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSFunctionBinding() { }
 
         #region intentionally opaque internal structure
+
         internal unsafe JSBindingHeader* Header;
         internal unsafe JSBindingType* Sigs;// points to first arg, not exception, not result
-        internal IntPtr FnHandle;
+        internal static volatile uint nextImportHandle = 1;
+        internal int ImportHandle;
+        internal bool IsAsync;
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         internal struct JSBindingHeader
         {
-            internal const int JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
+            internal const int JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
             public int Version;
             public int ArgumentCount;
+            public int ImportHandle;
+            public int _Reserved;
+            public int FunctionNameOffset;
+            public int FunctionNameLength;
+            public int ModuleNameOffset;
+            public int ModuleNameLength;
             public JSBindingType Exception;
             public JSBindingType Result;
         }
@@ -42,13 +52,28 @@ namespace System.Runtime.InteropServices.JavaScript
         internal struct JSBindingType
         {
             internal MarshalerType Type;
+            internal MarshalerType __ReservedB1;
+            internal MarshalerType __ReservedB2;
+            internal MarshalerType __ReservedB3;
             internal IntPtr __Reserved;
             internal IntPtr JSCustomMarshallerCode;
             internal int JSCustomMarshallerCodeLength;
             internal MarshalerType ResultMarshalerType;
+            internal MarshalerType __ReservedB4;
+            internal MarshalerType __ReservedB5;
+            internal MarshalerType __ReservedB6;
             internal MarshalerType Arg1MarshalerType;
+            internal MarshalerType __ReservedB7;
+            internal MarshalerType __ReservedB8;
+            internal MarshalerType __ReservedB9;
             internal MarshalerType Arg2MarshalerType;
+            internal MarshalerType __ReservedB10;
+            internal MarshalerType __ReservedB11;
+            internal MarshalerType __ReservedB12;
             internal MarshalerType Arg3MarshalerType;
+            internal MarshalerType __ReservedB13;
+            internal MarshalerType __ReservedB14;
+            internal MarshalerType __ReservedB15;
         }
 
         internal unsafe int ArgumentCount
@@ -128,7 +153,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
-            InvokeImportImpl(signature.FnHandle, arguments);
+            InvokeJSImportImpl(signature, arguments);
         }
 
         /// <summary>
@@ -149,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();
 
-            return BindJSFunctionImpl(functionName, moduleName, signatures);
+            return BindJSImportImpl(functionName, moduleName, signatures);
         }
 
         /// <summary>
@@ -170,17 +195,17 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
+        internal static unsafe void InvokeJSFunction(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
             ObjectDisposedException.ThrowIf(jsFunction.IsDisposed, jsFunction);
 #if FEATURE_WASM_THREADS
             JSObject.AssertThreadAffinity(jsFunction);
 #endif
 
-            IntPtr functionJSHandle = jsFunction.JSHandle;
+            var functionHandle = (int)jsFunction.JSHandle;
             fixed (JSMarshalerArgument* ptr = arguments)
             {
-                Interop.Runtime.InvokeJSFunction(functionJSHandle, ptr);
+                Interop.Runtime.InvokeJSFunction(functionHandle, ptr);
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
@@ -190,32 +215,56 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void InvokeImportImpl(IntPtr fnHandle, Span<JSMarshalerArgument> arguments)
+        internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
+#if FEATURE_WASM_THREADS
+            var targetContext = JSProxyContext.SealJSImportCapturing();
+            JSProxyContext.AssertIsInteropThread();
+            arguments[0].slot.ContextHandle = targetContext.ContextHandle;
+            arguments[1].slot.ContextHandle = targetContext.ContextHandle;
+#else
+            var targetContext = JSProxyContext.MainThreadContext;
+#endif
+
+            if (signature.IsAsync)
+            {
+                // pre-allocate the result handle and Task
+                var holder = new JSHostImplementation.PromiseHolder(targetContext);
+                arguments[1].slot.Type = MarshalerType.TaskPreCreated;
+                arguments[1].slot.GCHandle = holder.GCHandle;
+            }
+
             fixed (JSMarshalerArgument* ptr = arguments)
             {
-                Interop.Runtime.InvokeImport(fnHandle, ptr);
+                Interop.Runtime.InvokeJSImport(signature.ImportHandle, ptr);
                 ref JSMarshalerArgument exceptionArg = ref arguments[0];
                 if (exceptionArg.slot.Type != MarshalerType.None)
                 {
                     JSHostImplementation.ThrowException(ref exceptionArg);
                 }
             }
+            if (signature.IsAsync)
+            {
+                // if js synchronously returned null
+                if (arguments[1].slot.Type == MarshalerType.None)
+                {
+                    var holderHandle = (GCHandle)arguments[1].slot.GCHandle;
+                    holderHandle.Free();
+                }
+            }
         }
 
-        internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
+        internal static unsafe JSFunctionBinding BindJSImportImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
 #if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
+            JSProxyContext.AssertIsInteropThread();
 #endif
 
-            var signature = JSHostImplementation.GetMethodSignature(signatures);
+            var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);
 
-            Interop.Runtime.BindJSFunction(functionName, moduleName, signature.Header, out IntPtr jsFunctionHandle, out int isException, out object exceptionMessage);
+            Interop.Runtime.BindJSImport(signature.Header, out int isException, out object exceptionMessage);
             if (isException != 0)
                 throw new JSException((string)exceptionMessage);
-
-            signature.FnHandle = jsFunctionHandle;
 
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
@@ -224,7 +273,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
-            var signature = JSHostImplementation.GetMethodSignature(signatures);
+            var signature = JSHostImplementation.GetMethodSignature(signatures, null, null);
 
             Interop.Runtime.BindCSFunction(fullyQualifiedName, signatureHash, signature.Header, out int isException, out object exceptionMessage);
             if (isException != 0)
@@ -235,6 +284,20 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
             return signature;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
+        {
+            fixed (JSMarshalerArgument* ptr = arguments)
+            {
+                Interop.Runtime.ResolveOrRejectPromise(ptr);
+                ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                if (exceptionArg.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exceptionArg);
+                }
+            }
         }
     }
 }

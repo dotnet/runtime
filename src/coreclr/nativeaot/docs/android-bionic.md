@@ -6,6 +6,8 @@ Not a full Android experience is available - it's only possible to publish for t
 
 The minimum API level is 21 at the time of writing the document, but search for AndroidApiLevelMin in this repo for more up-to-date information.
 
+NOTE: There's an existing issue that puts the minimum Android version where things work to Android 10: https://github.com/dotnet/runtime/issues/92196
+
 To build for Bionic:
 
 * Ensure you have [Android NDK](https://developer.android.com/ndk/downloads) for your system downloaded and extracted somewhere. We build and test with NDK r23c but anything newer should also work. Double check with the NDK version referenced [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-android.md), which might be more up-to-date than this document.

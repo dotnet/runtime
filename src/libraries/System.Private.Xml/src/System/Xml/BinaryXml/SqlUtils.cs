@@ -4,10 +4,10 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections;
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 
 namespace System.Xml
 {
@@ -120,9 +120,10 @@ namespace System.Xml
         //    10-19          2
         //    20-28          3
         //    29-38          4
-        private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] { // rely on C# compiler optimization to eliminate allocation
+        private static ReadOnlySpan<byte> RgCLenFromPrec =>
+        [
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
-        };
+        ];
 
         private static byte CLenFromPrec(byte bPrec)
         {
@@ -305,7 +306,8 @@ namespace System.Xml
     {
         private const int MaxFractionDigits = 7;
 
-        internal static ReadOnlySpan<int> KatmaiTimeScaleMultiplicator => new int[8] {
+        internal static ReadOnlySpan<int> KatmaiTimeScaleMultiplicator =>
+        [
             10000000,
             1000000,
             100000,
@@ -314,7 +316,7 @@ namespace System.Xml
             100,
             10,
             1,
-        };
+        ];
 
         private static void Write2Dig(StringBuilder sb, int val)
         {

@@ -69,6 +69,7 @@ target_link_libraries(
     "-lz"
     "-lc++"
     "-liconv"
+    "-licucore"
     %NativeLibrariesToLink%
     %APP_LINK_LIBRARIES%
 )

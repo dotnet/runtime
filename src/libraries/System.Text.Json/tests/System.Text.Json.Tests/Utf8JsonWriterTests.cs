@@ -6534,14 +6534,14 @@ namespace System.Text.Json.Tests
 
                 if (!noThrow)
                 {
-                    Assert.True(false, $"Expected ArgumentException for data too large wasn't thrown. KeyLength: {key.Length} | ValueLength: {value.Length}");
+                    Assert.Fail($"Expected ArgumentException for data too large wasn't thrown. KeyLength: {key.Length} | ValueLength: {value.Length}");
                 }
             }
             catch (ArgumentException)
             {
                 if (noThrow)
                 {
-                    Assert.True(false, $"Expected writing large key/value to succeed. KeyLength: {key.Length} | ValueLength: {value.Length}");
+                    Assert.Fail($"Expected writing large key/value to succeed. KeyLength: {key.Length} | ValueLength: {value.Length}");
                 }
             }
 

@@ -1,36 +1,13 @@
 <Project>
 
   <PropertyGroup>
-    <_ILLinkTasksSourceDir>$(ToolsProjectRoot)illink\src\ILLink.Tasks\</_ILLinkTasksSourceDir>
-    <ILLinkAnalyzersPropsPath>$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\build\Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>
+    <!-- Custom trimming logic should always use live ILLink, even when none of the
+         trimming-related SDK properties are set. -->
+    <_RequiresLiveILLink>true</_RequiresLiveILLink>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
-    <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
-                      ReferenceOutputAssembly="false"
-                      PrivateAssets="all"
-                      Private="false"
-                      SetConfiguration="Configuration=$(ToolsConfiguration)">
-        <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
-        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
-        <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
-    </ProjectReference>
-  </ItemGroup>
-
-  <Import Project="$(_ILLinkTasksSourceDir)build\Microsoft.NET.ILLink.Tasks.props" />
 
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
-    <!-- Don't use SDK's trimming functionality.
-         Once we have an SDK with
-         https://github.com/dotnet/sdk/commit/bdce224bba472ccad4bade07b757ac5275040c0e
-         and
-         https://github.com/dotnet/sdk/commit/f051b536cc12190488231f3a889df44214c1bc2e,
-         we might be able to use built-in functionality instead of a packagereference.
-         -->
-    <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 
@@ -119,7 +96,10 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="CombineLinkerXmlFiles"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkDescriptorsXmls"
           Condition="'@(ILLinkDescriptorsXmls)' != ''"
           Inputs="@(ILLinkDescriptorsXmls)"
@@ -212,7 +192,10 @@
 
   <!-- Examines the "input assembly" for IL that is unreachable from public API and trims that,
        rewriting the assembly to an "output assembly" -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="ILLink"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="PrepareForAssembliesTrim">

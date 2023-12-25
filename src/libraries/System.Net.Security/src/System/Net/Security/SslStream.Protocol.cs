@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -760,13 +761,9 @@ namespace System.Net.Security
         }
 
         //
-        internal void NextMessage(ReadOnlySpan<byte> incomingBuffer, out ProtocolToken token)
+        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer)
         {
-            byte[]? nextmsg = null;
-            token.Status = GenerateToken(incomingBuffer, ref nextmsg);
-            token.Size = nextmsg?.Length ?? 0;
-            token.Payload = nextmsg;
-
+            ProtocolToken token = GenerateToken(incomingBuffer);
             if (NetEventSource.Log.IsEnabled())
             {
                 if (token.Failed)
@@ -774,6 +771,8 @@ namespace System.Net.Security
                     NetEventSource.Error(this, $"Authentication failed. Status: {token.Status}, Exception message: {token.GetException()!.Message}");
                 }
             }
+
+            return token;
         }
 
         /*++
@@ -786,18 +785,17 @@ namespace System.Net.Security
 
             Input:
                 input  - bytes from the wire
-                output - ref to byte [], what we will send to the
-                    server in response
             Return:
-                status - error information
+                token - ProtocolToken with status and optionally buffer.
         --*/
-        private SecurityStatusPal GenerateToken(ReadOnlySpan<byte> inputBuffer, ref byte[]? output)
+        private ProtocolToken GenerateToken(ReadOnlySpan<byte> inputBuffer)
         {
-            byte[]? result = Array.Empty<byte>();
-            SecurityStatusPal status = default;
             bool cachedCreds = false;
             bool sendTrustList = false;
             byte[]? thumbPrint = null;
+
+            ProtocolToken token = default;
+            token.RentBuffer = true;
 
             // We need to try get credentials at the beginning.
             // _credentialsHandle may be always null on some platforms but
@@ -817,36 +815,32 @@ namespace System.Net.Security
                         cachedCreds = _sslAuthenticationOptions.IsServer
                                         ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
-
-                        if (cachedCreds && _sslAuthenticationOptions.IsServer)
-                        {
-                            sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
-                        }
                     }
 
                     if (_sslAuthenticationOptions.IsServer)
                     {
-                        status = SslStreamPal.AcceptSecurityContext(
+                        sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
+
+                        token = SslStreamPal.AcceptSecurityContext(
+
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
-                                      ref result,
                                       _sslAuthenticationOptions);
-                        if (status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
+                        if (token.Status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
                         {
-                            status = SslStreamPal.SelectApplicationProtocol(
+                            token.Status = SslStreamPal.SelectApplicationProtocol(
                                         _credentialsHandle!,
                                         _securityContext!,
                                         _sslAuthenticationOptions,
                                         _lastFrame.RawApplicationProtocols);
 
-                            if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                            if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                             {
-                                status = SslStreamPal.AcceptSecurityContext(
+                                token = SslStreamPal.AcceptSecurityContext(
                                         ref _credentialsHandle!,
                                         ref _securityContext,
                                         ReadOnlySpan<byte>.Empty,
-                                        ref result,
                                         _sslAuthenticationOptions);
                             }
                         }
@@ -854,15 +848,14 @@ namespace System.Net.Security
                     else
                     {
                         string hostName = TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost);
-                        status = SslStreamPal.InitializeSecurityContext(
+                        token = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        hostName,
                                        inputBuffer,
-                                       ref result,
                                        _sslAuthenticationOptions);
 
-                        if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
+                        if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                         {
                             refreshCredentialNeeded = true;
                             cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
@@ -870,12 +863,11 @@ namespace System.Net.Security
                             if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Info(this, "InitializeSecurityContext() returned 'CredentialsNeeded'.");
 
-                            status = SslStreamPal.InitializeSecurityContext(
+                            token = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        hostName,
                                        ReadOnlySpan<byte>.Empty,
-                                       ref result,
                                        _sslAuthenticationOptions);
                         }
                     }
@@ -910,20 +902,17 @@ namespace System.Net.Security
                 }
             }
 
-            output = result;
-
-            return status;
+            return token;
         }
 
-        internal SecurityStatusPal Renegotiate(out byte[]? output)
+        internal ProtocolToken Renegotiate()
         {
             Debug.Assert(_securityContext != null);
 
             return SslStreamPal.Renegotiate(
                                       ref _credentialsHandle!,
                                       ref _securityContext,
-                                      _sslAuthenticationOptions,
-                                      out output);
+                                      _sslAuthenticationOptions);
         }
 
         /*++
@@ -939,7 +928,7 @@ namespace System.Net.Security
 
             _headerSize = streamSizes.Header;
             _trailerSize = streamSizes.Trailer;
-            _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
+            _maxDataSize = streamSizes.MaximumMessage;
             Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
@@ -953,42 +942,22 @@ namespace System.Net.Security
 #endif
         }
 
-        /*++
-            Encrypt - Encrypts our bytes before we send them over the wire
-
-            PERF: make more efficient, this does an extra copy when the offset
-            is non-zero.
-
-            Input:
-                buffer - bytes for sending
-                offset -
-                size   -
-                output - Encrypted bytes
-        --*/
-        internal SecurityStatusPal Encrypt(ReadOnlyMemory<byte> buffer, ref byte[] output, out int resultSize)
+        internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
 
-            byte[] writeBuffer = output;
-
-            SecurityStatusPal secStatus = SslStreamPal.EncryptMessage(
+            ProtocolToken token = SslStreamPal.EncryptMessage(
                 _securityContext!,
                 buffer,
                 _headerSize,
-                _trailerSize,
-                ref writeBuffer,
-                out resultSize);
+                _trailerSize);
 
-            if (secStatus.ErrorCode != SecurityStatusPalErrorCode.OK)
+            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {secStatus}");
-            }
-            else
-            {
-                output = writeBuffer;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {token.Status}");
             }
 
-            return secStatus;
+            return token;
         }
 
         internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
@@ -1168,12 +1137,11 @@ namespace System.Net.Security
                 }
             }
 
-            GenerateAlertToken(ref alertToken);
+            alertToken = GenerateAlertToken();
         }
 
-        private byte[]? CreateShutdownToken()
+        private ProtocolToken CreateShutdownToken()
         {
-            byte[]? nextmsg = null;
             SecurityStatusPal status;
             status = SslStreamPal.ApplyShutdownToken(_securityContext!);
 
@@ -1187,24 +1155,15 @@ namespace System.Net.Security
                     ExceptionDispatchInfo.Throw(status.Exception);
                 }
 
-                return null;
+                return default;
             }
 
-            GenerateToken(default, ref nextmsg);
-
-            return nextmsg;
+            return GenerateToken(default);
         }
 
-        private void GenerateAlertToken(ref ProtocolToken alertToken)
+        private ProtocolToken GenerateAlertToken()
         {
-            byte[]? nextmsg = null;
-
-            SecurityStatusPal status;
-            status = GenerateToken(default, ref nextmsg);
-
-            alertToken.Payload = nextmsg;
-            alertToken.Size = nextmsg?.Length ?? 0;
-            alertToken.Status = status;
+            return GenerateToken(default);
         }
 
         private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
@@ -1312,6 +1271,7 @@ namespace System.Net.Security
         internal SecurityStatusPal Status;
         internal byte[]? Payload;
         internal int Size;
+        internal bool RentBuffer;
 
         internal bool Failed
         {
@@ -1344,12 +1304,54 @@ namespace System.Net.Security
                 return (Status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired);
             }
         }
-
-        internal ProtocolToken(byte[]? data, SecurityStatusPal status)
+        internal void SetPayload(ReadOnlySpan<byte> payload)
         {
-            Status = status;
-            Payload = data;
-            Size = data != null ? data.Length : 0;
+            Debug.Assert(Payload == null);
+            Size = payload.Length;
+
+            if (Size > 0)
+            {
+                Payload = RentBuffer ? ArrayPool<byte>.Shared.Rent(Size) : new byte[Size];
+                payload.CopyTo(new Span<byte>(Payload, 0, Size));
+            }
+        }
+
+        internal void EnsureAvailableSpace(int size)
+        {
+            if (Available >= size)
+            {
+                return;
+            }
+
+            var oldPayload = Payload;
+
+            Payload = RentBuffer ? ArrayPool<byte>.Shared.Rent(Size + size) : new byte[Size + size];
+            if (oldPayload != null)
+            {
+                oldPayload.AsSpan<byte>().CopyTo(Payload);
+                if (RentBuffer)
+                {
+                    ArrayPool<byte>.Shared.Return(oldPayload);
+                }
+            }
+        }
+
+        internal int Available => Payload == null ? 0 : Payload.Length - Size;
+        internal Span<byte> AvailableSpan => Payload == null ? Span<byte>.Empty : new Span<byte>(Payload, Size, Available);
+
+        internal ReadOnlyMemory<byte> AsMemory() => new ReadOnlyMemory<byte>(Payload, 0, Size);
+
+        internal void ReleasePayload()
+        {
+            Debug.Assert(Payload != null || Size == 0);
+
+            byte[]? toReturn = Payload;
+            Payload = null;
+            Size = 0;
+            if (RentBuffer && toReturn != null)
+            {
+                ArrayPool<byte>.Shared.Return(toReturn);
+            }
         }
 
         internal Exception? GetException()

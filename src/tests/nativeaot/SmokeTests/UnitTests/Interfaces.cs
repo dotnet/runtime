@@ -40,6 +40,7 @@ public class Interfaces
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
+        TestGenericAnalysis.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -649,6 +650,56 @@ public class Interfaces
             IFace<object> o = new Yadda() { InnerValue = "SomeString" };
             string r3 = o.GrabValue("Hello there");
             if (r3 != "'SomeString' over 'System.Object' with 'Hello there'")
+                throw new Exception();
+        }
+    }
+
+    class TestGenericAnalysis
+    {
+        interface IInterface
+        {
+            string Method(object p);
+        }
+
+        interface IInterface<T>
+        {
+            string Method(T p);
+        }
+
+        class C1<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        class C2<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        class C3<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        static IInterface s_c1 = new C1<object>();
+        static IInterface<object> s_c2 = new C2<object>();
+        static IInterface<object> s_c3a = new C3<object>();
+        static IInterface s_c3b = new C3<object>();
+
+        // Works around https://github.com/dotnet/runtime/issues/94399
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        public static void Run()
+        {
+            if (s_c1.Method(null) != "Method(object)")
+                throw new Exception();
+            if (s_c2.Method(null) != "Method(T)")
+                throw new Exception();
+            if (s_c3a.Method(null) != "Method(T)")
+                throw new Exception();
+            if (s_c3b.Method(null) != "Method(object)")
                 throw new Exception();
         }
     }

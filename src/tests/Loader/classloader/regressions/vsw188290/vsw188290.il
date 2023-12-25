@@ -65,7 +65,7 @@
 
 } // end of valuetype C
 
-.class private auto ansi beforefieldinit Test_vsw188290
+.class public auto ansi beforefieldinit Test_vsw188290
        extends [mscorlib]System.Object
 {
   .field public static class [mscorlib]System.Type t
@@ -86,7 +86,7 @@
     IL_0017:  ret
   } // end of method Test::fail
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

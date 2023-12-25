@@ -63,7 +63,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0006`__ | Thread.Abort is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0007`__ | The default implementation of this cryptography algorithm is not supported. |
 |  __`SYSLIB0008`__ | The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException. |
-|  __`SYSLIB0009`__ | The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException. |
+|  __`SYSLIB0009`__ | AuthenticationManager is not supported. Methods will no-op or throw PlatformNotSupportedException. |
 |  __`SYSLIB0010`__ | This Remoting API is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0011`__ | `BinaryFormatter` serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for recommended alternatives. |
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
@@ -218,7 +218,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1099`__ | COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime |
 |  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
 |  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
-|  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
+|  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 12.|
 |  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
 |  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
 |  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
@@ -251,7 +251,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
 |  __`SYSLIB1215`__ | Options validation generator: Validation attribute on the member is inaccessible from the validator type. |
 |  __`SYSLIB1216`__ | C# language version not supported by the options validation source generator. |
-|  __`SYSLIB1217`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1217`__ | The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types. |
 |  __`SYSLIB1218`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1219`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |

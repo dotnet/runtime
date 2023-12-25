@@ -25,16 +25,10 @@
 
 InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 {
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
 #if defined(DEBUG)
-    const bool useRandomPolicyForStress = compiler->compRandomInlineStress();
-#else
-    const bool useRandomPolicyForStress = false;
-#endif // defined(DEBUG)
 
-    const bool useRandomPolicy = (JitConfig.JitInlinePolicyRandom() != 0);
+    const bool useRandomPolicyForStress = compiler->compRandomInlineStress();
+    const bool useRandomPolicy          = (JitConfig.JitInlinePolicyRandom() != 0);
 
     // Optionally install the RandomPolicy.
     if (useRandomPolicyForStress || useRandomPolicy)
@@ -74,7 +68,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) DiscretionaryPolicy(compiler, isPrejitRoot);
     }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     // Optionally install the ModelPolicy.
     bool useModelPolicy = JitConfig.JitInlinePolicyModel() != 0;
@@ -123,7 +117,7 @@ void LegalPolicy::NoteFatal(InlineObservation obs)
     assert(InlDecisionIsFailure(m_Decision));
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // NotePriorFailure: record reason for earlier inline failure
@@ -142,7 +136,7 @@ void LegalPolicy::NotePriorFailure(InlineObservation obs)
     assert(InlDecisionIsFailure(m_Decision));
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 //------------------------------------------------------------------------
 // NoteInternal: helper for handling an observation
@@ -1012,7 +1006,7 @@ int DefaultPolicy::CodeSizeEstimate()
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 //------------------------------------------------------------------------
 // OnDumpXml: Dump DefaultPolicy data as XML
 //
@@ -1069,7 +1063,7 @@ bool DefaultPolicy::PropagateNeverToRuntime() const
     return propagate;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // RandomPolicy: construct a new RandomPolicy
@@ -1233,7 +1227,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #ifdef _MSC_VER
 // Disable warning about new array member initialization behavior
@@ -1837,7 +1831,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     return multiplier;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 //------------------------------------------------------------------------
 // DumpXml: Dump ExtendedDefaultPolicy data as XML
 //
@@ -2583,7 +2577,7 @@ int DiscretionaryPolicy::CodeSizeEstimate()
     return m_ModelCodeSizeEstimate;
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // DumpSchema: dump names for all the supporting data for the
@@ -2751,7 +2745,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_CallsiteDepth);
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 //------------------------------------------------------------------------/
 // ModelPolicy: construct a new ModelPolicy
@@ -3152,7 +3146,7 @@ void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------/
 // FullPolicy: construct a new FullPolicy
@@ -3789,4 +3783,4 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     return;
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)

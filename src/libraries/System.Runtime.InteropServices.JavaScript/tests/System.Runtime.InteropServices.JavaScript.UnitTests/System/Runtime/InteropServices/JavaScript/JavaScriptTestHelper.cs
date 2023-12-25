@@ -999,19 +999,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             if (_module == null)
             {
-                // Log("JavaScriptTestHelper.mjs importing");
-                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
-                await Setup();
-                // Log("JavaScriptTestHelper.mjs imported");
+                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
+                await Setup(); ;
             }
+
+            var p = echopromise_String("aaa");
+            await p;
+
+            // this gives browser chance to serve UI thread event loop before every test
+            await Task.Yield();
         }
 
         public static Task DisposeAsync()
         {
-            _module.Dispose();
+            _module?.Dispose();
             _module = null;
-            // you can set verbose: true to see which proxies are left to the GC to collect
-            ForceDisposeProxies(false, verbose: false);
             return Task.CompletedTask;
         }
     }

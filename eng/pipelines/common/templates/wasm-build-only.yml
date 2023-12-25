@@ -38,7 +38,8 @@ jobs:
       buildArgs: -s mono+libs+packs+libs.tests$(workloadSubsetArg) -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false $(extraBuildArgs)
       timeoutInMinutes: 120
       condition: ${{ parameters.condition }}
-      extraStepsTemplate: /eng/pipelines/common/wasm-post-build-steps.yml
-      extraStepsParameters:
-        publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
-        publishWBT: ${{ parameters.publishWBT }}
+      postBuildSteps:
+        - template: /eng/pipelines/common/wasm-post-build-steps.yml
+          parameters:
+            publishArtifactsForWorkload: ${{ parameters.publishArtifactsForWorkload }}
+            publishWBT: ${{ parameters.publishWBT }}

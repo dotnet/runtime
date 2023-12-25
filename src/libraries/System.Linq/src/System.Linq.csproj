@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <OptimizeForSize Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</OptimizeForSize>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(OptimizeForSize)' == true">
     <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
     <Compile Include="System\Linq\Skip.SizeOpt.cs" />
@@ -14,6 +18,7 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs"
              Link="System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(OptimizeForSize)' != true">
     <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
@@ -36,6 +41,7 @@
     <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
              Link="System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="System\Collections\Generic\ArrayBuilder.cs" />
@@ -68,6 +74,7 @@
     <Compile Include="System\Linq\First.cs" />
     <Compile Include="System\Linq\Grouping.cs" />
     <Compile Include="System\Linq\GroupJoin.cs" />
+    <Compile Include="System\Linq\Index.cs" />
     <Compile Include="System\Linq\Intersect.cs" />
     <Compile Include="System\Linq\Iterator.cs" />
     <Compile Include="System\Linq\IIListProvider.cs" />
@@ -98,9 +105,7 @@
     <Compile Include="System\Linq\Where.cs" />
     <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\" />
-  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
@@ -109,4 +114,5 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Intrinsics" />
   </ItemGroup>
+
 </Project>

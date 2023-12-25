@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 
@@ -22,7 +22,7 @@ namespace Internal.Runtime.TypeLoader
 
         public static TypeSystemContext Create()
         {
-            using (LockHolder.Hold(s_lock))
+            using (s_lock.EnterScope())
             {
                 TypeSystemContext context = (TypeSystemContext)s_cachedContext.Target;
                 if (context != null)

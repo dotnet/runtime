@@ -3,5 +3,6 @@
     <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest\Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest\Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest.pkgproj" />
+    <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.net8.Manifest\Microsoft.NET.Workload.Mono.Toolchain.net8.Manifest.pkgproj" />
   </ItemGroup>
 </Project>

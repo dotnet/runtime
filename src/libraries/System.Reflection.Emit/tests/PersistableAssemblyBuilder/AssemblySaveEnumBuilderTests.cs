@@ -64,8 +64,10 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod, out TypeBuilder _, underlyingType);
+                EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod, out TypeBuilder type, underlyingType);
                 FieldBuilder literal = enumBuilder.DefineLiteral("FieldOne", literalValue);
+                enumBuilder.CreateTypeInfo();
+                type.CreateTypeInfo();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -97,6 +99,9 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), arrayType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
+                enumBuilder.CreateType();
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestInterface");
@@ -135,6 +140,9 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), byrefType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
+                eb.CreateType();
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestInterface");
@@ -162,6 +170,9 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), pointerType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
+                eb.CreateType();
+                tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Type testType = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestInterface");

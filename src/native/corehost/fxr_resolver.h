@@ -18,7 +18,7 @@ namespace fxr_resolver
 }
 
 template<typename THostPathToConfigCallback, typename TBeforeRunCallback>
-int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallback host_path_to_config_path, TBeforeRunCallback on_before_run, void** delegate)
+int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallback host_path_to_config_path, TBeforeRunCallback on_before_run, void** delegate, bool try_ignore_missing_config)
 {
     pal::dll_t fxr;
 
@@ -67,34 +67,45 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     if (status != StatusCode::Success)
         return status;
 
-    hostfxr_initialize_parameters parameters {
-        sizeof(hostfxr_initialize_parameters),
-        host_path.c_str(),
-        dotnet_root.c_str()
-    };
-
     hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
-
     {
         propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
-
-        hostfxr_handle context;
-        int rc = hostfxr_initialize_for_runtime_config(config_path.c_str(), &parameters, &context);
-        if (!STATUS_CODE_SUCCEEDED(rc))
-            return rc;
-
-        on_before_run(fxr, context);
-
-        rc = hostfxr_get_runtime_delegate(context, type, delegate);
-
-        int rcClose = hostfxr_close(context);
-        if (rcClose != StatusCode::Success)
+        if (!try_ignore_missing_config || pal::file_exists(config_path))
         {
-            assert(false && "Failed to close host context");
-            trace::verbose(_X("Failed to close host context: 0x%x"), rcClose);
-        }
+            hostfxr_initialize_parameters parameters {
+                sizeof(hostfxr_initialize_parameters),
+                host_path.c_str(),
+                dotnet_root.c_str()
+            };
 
-        return rc;
+            hostfxr_handle context;
+            int rc = hostfxr_initialize_for_runtime_config(config_path.c_str(), &parameters, &context);
+            if (!STATUS_CODE_SUCCEEDED(rc))
+                return rc;
+
+            on_before_run(fxr, context);
+
+            rc = hostfxr_get_runtime_delegate(context, type, delegate);
+
+            int rcClose = hostfxr_close(context);
+            if (rcClose != StatusCode::Success)
+            {
+                assert(false && "Failed to close host context");
+                trace::verbose(_X("Failed to close host context: 0x%x"), rcClose);
+            }
+
+            return rc;
+        }
+        else
+        {
+            // null context means use the current one, if none exists it will fail
+            int rc = hostfxr_get_runtime_delegate(nullptr, type, delegate);
+            if (rc == StatusCode::HostInvalidState)
+            {
+                trace::error(_X("Expected active runtime context because runtimeconfig.json [%s] does not exist."), config_path.c_str());
+            }
+            return rc;
+        }
     }
 }
 

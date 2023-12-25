@@ -46,6 +46,4 @@ if(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_UNIX)
 
-add_library_clr(debug-pal_obj OBJECT ${TWO_WAY_PIPE_SOURCES})
-add_library(debug-pal INTERFACE)
-target_sources(debug-pal INTERFACE $<TARGET_OBJECTS:debug-pal_obj>)
+add_library_clr(debug-pal OBJECT ${TWO_WAY_PIPE_SOURCES})

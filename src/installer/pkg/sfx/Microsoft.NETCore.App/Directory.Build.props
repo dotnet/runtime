@@ -141,6 +141,8 @@
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libstandalonegc-disabled.a " IsNative="true" />
+    <PlatformManifestFileEntry Include="libstandalonegc-enabled.a " IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
     <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
@@ -215,11 +217,12 @@
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_hybrid.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
-    <PlatformManifestFileEntry Include="pal_random.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="runtime.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
@@ -227,7 +230,9 @@
     <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
-    <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-props.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasi-default.rsp" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasi-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.LegacyJsInterop.xml" IsNative="true" />

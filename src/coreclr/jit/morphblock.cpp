@@ -236,7 +236,7 @@ void MorphInitBlockHelper::PropagateBlockAssertions()
 {
     if (m_comp->optLocalAssertionProp)
     {
-        m_comp->optAssertionGen(m_store);
+        m_comp->fgAssertionGen(m_store);
     }
 }
 
@@ -254,7 +254,7 @@ void MorphInitBlockHelper::PropagateExpansionAssertions()
     //
     if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneStoreBlock))
     {
-        m_comp->optAssertionGen(m_store);
+        m_comp->fgAssertionGen(m_store);
     }
 }
 
@@ -425,7 +425,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
         if (m_comp->optLocalAssertionProp)
         {
-            m_comp->optAssertionGen(store);
+            m_comp->fgAssertionGen(store);
         }
 
         if (tree != nullptr)
@@ -750,9 +750,10 @@ void MorphCopyBlockHelper::MorphStructCases()
         }
     }
 
-    // Check to see if we are doing a copy to/from the same local block.
-    // If so, morph it to a nop.
-    if ((m_dstVarDsc != nullptr) && (m_srcVarDsc == m_dstVarDsc) && (m_dstLclOffset == m_srcLclOffset))
+    // Check to see if we are doing a copy to/from the same local block. If so, morph it to a nop.
+    // Don't do this for SSA definitions as we have no way to update downstream uses.
+    if ((m_dstVarDsc != nullptr) && (m_srcVarDsc == m_dstVarDsc) && (m_dstLclOffset == m_srcLclOffset) &&
+        !m_store->AsLclVarCommon()->HasSsaIdentity())
     {
         JITDUMP("Self-copy; replaced with a NOP.\n");
         m_transformationDecision = BlockTransformation::Nop;
@@ -791,13 +792,13 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 
 #if defined(TARGET_ARM)
-    if ((m_store->OperIsIndir()) && m_store->AsIndir()->IsUnaligned())
+    if (m_store->OperIsIndir() && m_store->AsIndir()->IsUnaligned())
     {
         JITDUMP(" store is unaligned");
         requiresCopyBlock = true;
     }
 
-    if ((m_src->OperIsIndir()) && m_src->AsIndir()->IsUnaligned())
+    if (m_src->OperIsIndir() && m_src->AsIndir()->IsUnaligned())
     {
         JITDUMP(" src is unaligned");
         requiresCopyBlock = true;
@@ -1384,7 +1385,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (m_comp->optLocalAssertionProp)
         {
-            m_comp->optAssertionGen(dstFldStore);
+            m_comp->fgAssertionGen(dstFldStore);
         }
 
         if (addrSpillStore != nullptr)

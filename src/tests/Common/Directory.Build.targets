@@ -113,6 +113,11 @@
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
+      <!-- Used to determine if a file is a managed assembly or a managed assembly built with DEBUG -->
+      <RunTimeArtifactsIncludeFolders Include="AssemblyChecker/" TargetDir="AssemblyChecker/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
       <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
       <RunTimeArtifactsIncludeFolders Include="xunit/" TargetDir="xunit/" />
     </ItemGroup>
@@ -191,6 +196,9 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
+          TargetDir="build/"/>
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\browser\build\*"
           TargetDir="build/"/>
     </ItemGroup>
 

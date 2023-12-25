@@ -86,12 +86,12 @@ namespace System.Reflection.Emit
                hashAlgorithm: (AssemblyHashAlgorithm)_assemblyName.HashAlgorithm
 #pragma warning restore SYSLIB0037
                );
-
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
-            // Add module's metadata
-            _module.AppendMetadata();
 
             var ilBuilder = new BlobBuilder();
+            MethodBodyStreamEncoder methodBodyEncoder = new MethodBodyStreamEncoder(ilBuilder);
+            _module.AppendMetadata(methodBodyEncoder);
+
             WritePEImage(stream, ilBuilder);
             _previouslySaved = true;
         }
@@ -114,7 +114,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder);
+            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder, this);
             return _module;
         }
 
@@ -133,5 +133,7 @@ namespace System.Reflection.Emit
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
+
+        public override string? FullName => _assemblyName.FullName;
     }
 }

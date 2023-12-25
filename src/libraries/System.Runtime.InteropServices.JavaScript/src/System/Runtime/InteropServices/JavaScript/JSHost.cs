@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
+                JSProxyContext.AssertIsInteropThread();
 #endif
                 return JavaScriptImports.GetGlobalThis();
             }
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
             get
             {
 #if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
+                JSProxyContext.AssertIsInteropThread();
 #endif
                 return JavaScriptImports.GetDotnetInstance();
             }
@@ -54,20 +54,20 @@ namespace System.Runtime.InteropServices.JavaScript
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
 #if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
+            JSProxyContext.AssertIsInteropThread();
 #endif
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
 
-        public static SynchronizationContext? CurrentOrMainJSSynchronizationContext
+        public static SynchronizationContext CurrentOrMainJSSynchronizationContext
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
 #if FEATURE_WASM_THREADS
-                return JSSynchronizationContext.CurrentJSSynchronizationContext ?? JSSynchronizationContext.MainJSSynchronizationContext ?? null;
+                return (JSProxyContext.ExecutionContext ?? JSProxyContext.MainThreadContext).SynchronizationContext;
 #else
-                return null;
+                return null!;
 #endif
             }
         }

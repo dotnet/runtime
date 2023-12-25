@@ -6,6 +6,7 @@
 
 
 using System;
+using Xunit;
 
 public class Base<T>{}
 
@@ -20,7 +21,8 @@ public class CMain
   		Bar b = new Bar();
 	}
 
-  	public static int Main()
+  	[Fact]
+  	public static int TestEntryPoint()
 	{
 		try
 		{

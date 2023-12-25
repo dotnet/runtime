@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -418,7 +418,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(
             string className, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)

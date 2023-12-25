@@ -15,7 +15,6 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
-#include <evntprov.h>
 
 #include "holder.h"
 
@@ -259,7 +258,7 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
 {
 #ifdef XBOX_ONE
     return TRUE;
@@ -625,31 +624,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ Backgro
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
-{
-    return !!EventEnabled(regHandle, eventDescriptor);
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4)
-{
-    return EventRegister(arg1, reinterpret_cast<PENABLECALLBACK>(arg2), arg3, arg4);
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1)
-{
-    return EventUnregister(arg1);
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
-{
-    return EventWrite(arg1, arg2, arg3, arg4);
-}
-
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
-{
-    TerminateProcess(GetCurrentProcess(), arg2);
-}
-
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
@@ -690,6 +664,33 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
     assert(len == written);
     return converted;
+}
+
+REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
+{
+    assert(moduleName);
+    size_t len = strlen(moduleName);
+    wchar_t* moduleNameWide = new (nothrow)wchar_t[len + 1];
+    if (moduleNameWide == nullptr)
+    {
+        return 0;
+    }
+    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)(len + 1)) == 0)
+    {
+        return 0;
+    }
+    moduleNameWide[len] = '\0';
+    
+    HANDLE result = LoadLibraryExW(moduleNameWide, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    delete[] moduleNameWide;
+    return result;
+}
+
+REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+{
+    assert(module);
+    assert(functionName);
+    return GetProcAddress((HMODULE)module, functionName);
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)

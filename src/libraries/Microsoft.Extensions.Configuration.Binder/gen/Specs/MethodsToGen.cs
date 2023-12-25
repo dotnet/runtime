@@ -16,137 +16,130 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         Initialize = 0x10,
         HasValueOrChildren = 0x20,
         AsConfigWithChildren = 0x40,
+        ParsePrimitive = 0x80,
     }
 
     /// <summary>
     /// Methods on Microsoft.Extensions.Configuration.ConfigurationBinder
     /// </summary>
     [Flags]
-    internal enum MethodsToGen_ConfigurationBinder
+    public enum MethodsToGen
     {
         None = 0x0,
+        Any = ConfigBinder_Any | OptionsBuilderExt_Any | ServiceCollectionExt_Any,
 
+        #region IConfiguration ext. method overloads: 0x1 - 0x400
         /// <summary>
         /// Bind(IConfiguration, object?).
         /// </summary>
-        Bind_instance = 0x1,
+        ConfigBinder_Bind_instance = 0x1,
 
         /// <summary>
         /// Bind(IConfiguration, object?, Action<BinderOptions>?).
         /// </summary>
-        Bind_instance_BinderOptions = 0x2,
+        ConfigBinder_Bind_instance_BinderOptions = 0x2,
 
         /// <summary>
         /// Bind(IConfiguration, string, object?).
         /// </summary>
-        Bind_key_instance = 0x4,
+        ConfigBinder_Bind_key_instance = 0x4,
 
         /// <summary>
         /// Get<T>(IConfiguration).
         /// </summary>
-        Get_T = 0x8,
+        ConfigBinder_Get_T = 0x8,
 
         /// <summary>
         /// Get<T>(IConfiguration, Action<BinderOptions>?).
         /// </summary>
-        Get_T_BinderOptions = 0x10,
+        ConfigBinder_Get_T_BinderOptions = 0x10,
 
         /// <summary>
         /// Get(IConfiguration, Type).
         /// </summary>
-        Get_TypeOf = 0x20,
+        ConfigBinder_Get_TypeOf = 0x20,
 
         /// <summary>
         /// Get(IConfiguration, Type, Action<BinderOptions>?).
         /// </summary>
-        Get_TypeOf_BinderOptions = 0x40,
+        ConfigBinder_Get_TypeOf_BinderOptions = 0x40,
 
         /// <summary>
         /// GetValue(IConfiguration, Type, string).
         /// </summary>
-        GetValue_TypeOf_key = 0x80,
+        ConfigBinder_GetValue_TypeOf_key = 0x80,
 
         /// <summary>
         /// GetValue(IConfiguration, Type, object?).
         /// </summary>
-        GetValue_TypeOf_key_defaultValue = 0x100,
+        ConfigBinder_GetValue_TypeOf_key_defaultValue = 0x100,
 
         /// <summary>
         /// GetValue<T>(IConfiguration, string).
         /// </summary>
-        GetValue_T_key = 0x200,
+        ConfigBinder_GetValue_T_key = 0x200,
 
         /// <summary>
         /// GetValue<T>(IConfiguration, string, T).
         /// </summary>
-        GetValue_T_key_defaultValue = 0x400,
+        ConfigBinder_GetValue_T_key_defaultValue = 0x400,
 
         // Method groups
-        Bind = Bind_instance | Bind_instance_BinderOptions | Bind_key_instance,
-        Get = Get_T | Get_T_BinderOptions | Get_TypeOf | Get_TypeOf_BinderOptions,
-        GetValue = GetValue_T_key | GetValue_T_key_defaultValue | GetValue_TypeOf_key | GetValue_TypeOf_key_defaultValue,
+        ConfigBinder_Bind = ConfigBinder_Bind_instance | ConfigBinder_Bind_instance_BinderOptions | ConfigBinder_Bind_key_instance,
+        ConfigBinder_Get = ConfigBinder_Get_T | ConfigBinder_Get_T_BinderOptions | ConfigBinder_Get_TypeOf | ConfigBinder_Get_TypeOf_BinderOptions,
+        ConfigBinder_GetValue = ConfigBinder_GetValue_T_key | ConfigBinder_GetValue_T_key_defaultValue | ConfigBinder_GetValue_TypeOf_key | ConfigBinder_GetValue_TypeOf_key_defaultValue,
 
-        Any = Bind | Get | GetValue,
-    }
+        ConfigBinder_Any = ConfigBinder_Bind | ConfigBinder_Get | ConfigBinder_GetValue,
+        #endregion ConfigurationBinder ext. method overloads.
 
-    [Flags]
-    internal enum MethodsToGen_Extensions_OptionsBuilder
-    {
-        None = 0x0,
-
+        #region OptionsBuilder ext. method overloads: 0x800 - 0x2000
         /// <summary>
         /// Bind<T>(OptionsBuilder<T>, IConfiguration).
         /// </summary>
-        Bind_T = 0x1,
+        OptionsBuilderExt_Bind_T = 0x800,
 
         /// <summary>
         /// Bind<T>(OptionsBuilder<T>, IConfiguration, Action<BinderOptions>?).
         /// </summary>
-        Bind_T_BinderOptions = 0x2,
+        OptionsBuilderExt_Bind_T_BinderOptions = 0x1000,
 
         /// <summary>
         /// BindConfiguration<T>(OptionsBuilder<T>, string, Action<BinderOptions>?).
         /// </summary>
-        BindConfiguration_T_path_BinderOptions = 0x4,
+        OptionsBuilderExt_BindConfiguration_T_path_BinderOptions = 0x2000,
 
         // Method group. BindConfiguration_T is its own method group.
-        Bind = Bind_T | Bind_T_BinderOptions,
+        OptionsBuilderExt_Bind = OptionsBuilderExt_Bind_T | OptionsBuilderExt_Bind_T_BinderOptions,
 
-        BindConfiguration = BindConfiguration_T_path_BinderOptions,
+        OptionsBuilderExt_BindConfiguration = OptionsBuilderExt_BindConfiguration_T_path_BinderOptions,
 
-        Any = Bind | BindConfiguration,
-    }
+        OptionsBuilderExt_Any = OptionsBuilderExt_Bind | OptionsBuilderExt_BindConfiguration,
+        #endregion OptionsBuilder ext. method overloads.
 
-    /// <summary>
-    /// Methods on Microsoft.Extensions.DependencyInjection.OptionsConfigurationServiceCollectionExtensions
-    /// </summary>
-    [Flags]
-    public enum MethodsToGen_Extensions_ServiceCollection
-    {
-        None = 0x0,
-
+        #region IServiceCollection ext. method overloads: 0x4000 - 0x20000
         /// <summary>
         /// Configure<T>(IServiceCollection, IConfiguration).
         /// </summary>
-        Configure_T = 0x1,
+        ServiceCollectionExt_Configure_T = 0x4000,
 
         /// <summary>
         /// Configure<T>(IServiceCollection, string, IConfiguration).
         /// </summary>
-        Configure_T_name = 0x2,
+        ServiceCollectionExt_Configure_T_name = 0x8000,
 
         /// <summary>
         /// Configure<T>(IServiceCollection, IConfiguration, Action<BinderOptions>?).
         /// </summary>
-        Configure_T_BinderOptions = 0x4,
+        ServiceCollectionExt_Configure_T_BinderOptions = 0x10000,
 
         /// <summary>
         /// Configure<T>(IServiceCollection, string, IConfiguration, Action<BinderOptions>?).
         /// </summary>
-        Configure_T_name_BinderOptions = 0x8,
+        ServiceCollectionExt_Configure_T_name_BinderOptions = 0x20000,
 
-        Configure = Configure_T | Configure_T_name | Configure_T_BinderOptions | Configure_T_name_BinderOptions,
+        ServiceCollectionExt_Configure = ServiceCollectionExt_Configure_T | ServiceCollectionExt_Configure_T_name | ServiceCollectionExt_Configure_T_BinderOptions | ServiceCollectionExt_Configure_T_name_BinderOptions,
 
-        Any = Configure,
+        ServiceCollectionExt_Any = ServiceCollectionExt_Configure,
+        #endregion IServiceCollection ext. method overloads: 0x4000 - 0x20000
     }
 }

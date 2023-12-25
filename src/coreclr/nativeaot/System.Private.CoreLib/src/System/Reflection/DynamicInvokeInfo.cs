@@ -72,20 +72,21 @@ namespace System.Reflection
                 {
                     Transform transform = default;
 
-                    Type argumentType = parameters[i].ParameterType;
+                    var argumentType = (RuntimeType)parameters[i].ParameterType;
                     if (argumentType.IsByRef)
                     {
                         _needsCopyBack = true;
                         transform |= Transform.ByRef;
-                        argumentType = argumentType.GetElementType()!;
+                        argumentType = (RuntimeType)argumentType.GetElementType()!;
                     }
                     Debug.Assert(!argumentType.IsByRef);
 
-                    EETypePtr eeArgumentType = argumentType.GetEEType();
-
-                    if (eeArgumentType.IsValueType)
+                    // This can return a null MethodTable for reference types.
+                    // The compiler makes sure it returns a non-null MT for everything else.
+                    EETypePtr eeArgumentType = argumentType.ToEETypePtrMayBeNull();
+                    if (argumentType.IsValueType)
                     {
-                        Debug.Assert(argumentType.IsValueType);
+                        Debug.Assert(eeArgumentType.IsValueType);
 
                         if (eeArgumentType.IsByRefLike)
                             _argumentCount = ArgumentCount_NotSupported_ByRefLike;
@@ -93,15 +94,15 @@ namespace System.Reflection
                         if (eeArgumentType.IsNullable)
                             transform |= Transform.Nullable;
                     }
-                    else if (eeArgumentType.IsPointer)
+                    else if (argumentType.IsPointer)
                     {
-                        Debug.Assert(argumentType.IsPointer);
+                        Debug.Assert(eeArgumentType.IsPointer);
 
                         transform |= Transform.Pointer;
                     }
-                    else if (eeArgumentType.IsFunctionPointer)
+                    else if (argumentType.IsFunctionPointer)
                     {
-                        Debug.Assert(argumentType.IsFunctionPointer);
+                        Debug.Assert(eeArgumentType.IsFunctionPointer);
 
                         transform |= Transform.FunctionPointer;
                     }
@@ -119,19 +120,18 @@ namespace System.Reflection
             {
                 Transform transform = default;
 
-                Type returnType = methodInfo.ReturnType;
+                var returnType = (RuntimeType)methodInfo.ReturnType;
                 if (returnType.IsByRef)
                 {
                     transform |= Transform.ByRef;
-                    returnType = returnType.GetElementType()!;
+                    returnType = (RuntimeType)returnType.GetElementType()!;
                 }
                 Debug.Assert(!returnType.IsByRef);
 
-                EETypePtr eeReturnType = returnType.GetEEType();
-
-                if (eeReturnType.IsValueType)
+                EETypePtr eeReturnType = returnType.ToEETypePtrMayBeNull();
+                if (returnType.IsValueType)
                 {
-                    Debug.Assert(returnType.IsValueType);
+                    Debug.Assert(eeReturnType.IsValueType);
 
                     if (returnType != typeof(void))
                     {
@@ -150,17 +150,17 @@ namespace System.Reflection
                             _argumentCount = ArgumentCount_NotSupported; // ByRef to void return
                     }
                 }
-                else if (eeReturnType.IsPointer)
+                else if (returnType.IsPointer)
                 {
-                    Debug.Assert(returnType.IsPointer);
+                    Debug.Assert(eeReturnType.IsPointer);
 
                     transform |= Transform.Pointer;
                     if ((transform & Transform.ByRef) == 0)
                         transform |= Transform.AllocateReturnBox;
                 }
-                else if (eeReturnType.IsFunctionPointer)
+                else if (returnType.IsFunctionPointer)
                 {
-                    Debug.Assert(returnType.IsFunctionPointer);
+                    Debug.Assert(eeReturnType.IsFunctionPointer);
 
                     transform |= Transform.FunctionPointer;
                     if ((transform & Transform.ByRef) == 0)
@@ -597,6 +597,12 @@ namespace System.Reflection
             return defaultValue;
         }
 
+        private void ThrowForNeverValidNonNullArgument(EETypePtr srcEEType, int index)
+        {
+            Debug.Assert(index != 0 || _isStatic);
+            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, Method.GetParametersAsSpan()[index - (_isStatic ? 0 : 1)].ParameterType, destinationIsByRef: false);
+        }
+
         private unsafe void CheckArguments(
             Span<object?> copyOfParameters,
             void* byrefParameters,
@@ -636,16 +642,25 @@ namespace System.Reflection
                     EETypePtr srcEEType = arg.GetEETypePtr();
                     EETypePtr dstEEType = argumentInfo.Type;
 
-                    if (!(srcEEType.RawValue == dstEEType.RawValue ||
-                        RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                        (dstEEType.IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
-                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                    if (srcEEType.RawValue != dstEEType.RawValue)
                     {
-                        // ByRefs have to be exact match
-                        if ((argumentInfo.Transform & Transform.ByRef) != 0)
-                            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+                        // Destination type can be null if we don't have a MethodTable for this type. This means one cannot
+                        // possibly pass a valid non-null object instance here.
+                        if (dstEEType.IsNull)
+                        {
+                            ThrowForNeverValidNonNullArgument(srcEEType, i);
+                        }
 
-                        arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+                        if (!(RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                            (dstEEType.IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
+                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                        {
+                            // ByRefs have to be exact match
+                            if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                                throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+
+                            arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+                        }
                     }
 
                     if ((argumentInfo.Transform & Transform.Reference) == 0)
@@ -704,16 +719,25 @@ namespace System.Reflection
                     EETypePtr srcEEType = arg.GetEETypePtr();
                     EETypePtr dstEEType = argumentInfo.Type;
 
-                    if (!(srcEEType.RawValue == dstEEType.RawValue ||
-                        RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                        (dstEEType.IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
-                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                    if (srcEEType.RawValue != dstEEType.RawValue)
                     {
-                        // ByRefs have to be exact match
-                        if ((argumentInfo.Transform & Transform.ByRef) != 0)
-                            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+                        // Destination type can be null if we don't have a MethodTable for this type. This means one cannot
+                        // possibly pass a valid non-null object instance here.
+                        if (dstEEType.IsNull)
+                        {
+                            ThrowForNeverValidNonNullArgument(srcEEType, i);
+                        }
 
-                        arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle: null);
+                        if (!(RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                            (dstEEType.IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
+                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                        {
+                            // ByRefs have to be exact match
+                            if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                                throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+
+                            arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle: null);
+                        }
                     }
 
                     if ((argumentInfo.Transform & Transform.Reference) == 0)
@@ -769,13 +793,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
@@ -806,13 +828,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 

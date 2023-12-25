@@ -11,11 +11,11 @@ namespace ILCompiler
 {
     public class RootingHelpers
     {
-        public static bool TryRootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
+        public static bool TryRootType(IRootingServiceProvider rootProvider, TypeDesc type, bool rootBaseTypes, string reason)
         {
             try
             {
-                RootType(rootProvider, type, reason);
+                RootType(rootProvider, type, rootBaseTypes, reason);
                 return true;
             }
             catch (TypeSystemException)
@@ -24,7 +24,7 @@ namespace ILCompiler
             }
         }
 
-        public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
+        public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, bool rootBaseTypes, string reason)
         {
             rootProvider.AddReflectionRoot(type, reason);
 
@@ -40,13 +40,13 @@ namespace ILCompiler
                 rootProvider.AddReflectionRoot(type, reason);
             }
 
-            // Also root base types. This is so that we make methods on the base types callable.
-            // This helps in cases like "class Foo : Bar<int> { }" where we discover new
-            // generic instantiations.
-            TypeDesc baseType = type.BaseType;
-            if (baseType != null)
+            if (rootBaseTypes)
             {
-                RootType(rootProvider, baseType.NormalizeInstantiation(), reason);
+                TypeDesc baseType = type.BaseType;
+                if (baseType != null)
+                {
+                    RootType(rootProvider, baseType.NormalizeInstantiation(), rootBaseTypes, reason);
+                }
             }
 
             if (type.IsDefType)

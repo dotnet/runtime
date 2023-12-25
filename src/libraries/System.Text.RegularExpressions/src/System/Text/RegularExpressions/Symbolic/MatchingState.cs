@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Net;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Symbolic
 {

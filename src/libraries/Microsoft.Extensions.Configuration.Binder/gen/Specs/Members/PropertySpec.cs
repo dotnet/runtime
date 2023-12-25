@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record PropertySpec : MemberSpec
+    public sealed record PropertySpec : MemberSpec
     {
-        public PropertySpec(IPropertySymbol property) : base(property)
+        public PropertySpec(IPropertySymbol property, TypeRef typeRef) : base(property, typeRef)
         {
             IMethodSymbol? setMethod = property.SetMethod;
             bool setterIsPublic = setMethod?.DeclaredAccessibility is Accessibility.Public;
@@ -28,7 +29,5 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public override bool CanGet { get; }
 
         public override bool CanSet { get; }
-
-        public bool ShouldBindTo => CanGet || CanSet;
     }
 }

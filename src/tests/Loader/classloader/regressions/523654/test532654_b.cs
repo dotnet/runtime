@@ -37,6 +37,7 @@ is only hit non-deterministically some of the time.
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class A
 {
@@ -112,7 +113,8 @@ public class Test_test532654_b
 	}
 
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		
 		Thread t1 = new Thread(RunTestThread1);

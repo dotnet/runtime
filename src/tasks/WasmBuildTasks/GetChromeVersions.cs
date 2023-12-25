@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 
@@ -16,7 +17,7 @@ using MBU = Microsoft.Build.Utilities;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
-public class GetChromeVersions : MBU.Task
+public partial class GetChromeVersions : MBU.Task
 {
     private const string s_fetchReleasesUrl = "https://chromiumdash.appspot.com/fetch_releases?channel={0}&num=1";
     private const string s_allJsonUrl = "http://omahaproxy.appspot.com/all.json";
@@ -26,6 +27,9 @@ public class GetChromeVersions : MBU.Task
     private const int s_versionCheckThresholdDays = 1;
 
     private static readonly HttpClient s_httpClient = new();
+
+    [GeneratedRegex("#define V8_BUILD_NUMBER (\\d+)")]
+    private static partial Regex V8BuildNumberRegex();
 
     public string Channel { get; set; } = "stable";
 
@@ -92,7 +96,7 @@ public class GetChromeVersions : MBU.Task
         int numMajorVersionsTried = 0;
 
         string curMajorVersion = string.Empty;
-        await foreach (string version in GetVersionsAsync())
+        await foreach (string version in GetVersionsAsync().ConfigureAwait(false))
         {
             string majorVersion = version[..version.IndexOf('.')];
             if (curMajorVersion != majorVersion)
@@ -187,14 +191,48 @@ public class GetChromeVersions : MBU.Task
                                             $"in fetch_releases.json: {availablePlatformIds}");
         }
 
-        ChromeVersionSpec versionSpec = new(foundRelease.platform,
-                                            Channel,
-                                            foundRelease.version,
-                                            foundRelease.chromium_main_branch_position.ToString(),
-                                            foundRelease.version);
+        string foundV8Version = await FindV8VersionFromChromeVersion(foundRelease.version).ConfigureAwait(false);
+        ChromeVersionSpec versionSpec = new(os: foundRelease.platform,
+                                            channel: Channel,
+                                            version: foundRelease.version,
+                                            branch_base_position: foundRelease.chromium_main_branch_position.ToString(),
+                                            v8_version: foundV8Version);
         string? baseSnapshotUrl = await FindSnapshotUrlFromBasePositionAsync(versionSpec, throwIfNotFound: true)
                                         .ConfigureAwait(false);
         return (versionSpec, baseSnapshotUrl!);
+
+        /*
+         * Taken from jsvu:
+         * url: `https://raw.githubusercontent.com/v8/v8/${major}.${minor}-lkgr/include/v8-version.h`,
+         * then regex: /#define V8_BUILD_NUMBER (\d+)/
+         */
+        async Task<string> FindV8VersionFromChromeVersion(string chromeVersion)
+        {
+            // 117.0.493.123
+            try
+            {
+                Version ver = new(chromeVersion);
+                int majorForV8 = (int)(ver.Major/10);
+                int minorForV8 = ver.Major % 10;
+
+                string lkgUrl = $"https://raw.githubusercontent.com/v8/v8/{majorForV8}.{minorForV8}-lkgr/include/v8-version.h";
+                Log.LogMessage(MessageImportance.Low, $"Checking {lkgUrl} ...");
+                string v8VersionHContents = await s_httpClient.GetStringAsync(lkgUrl).ConfigureAwait(false);
+
+                var m = V8BuildNumberRegex().Match(v8VersionHContents);
+                if (!m.Success)
+                    throw new LogAsErrorException($"Failed to find v8 build number at {lkgUrl}: {v8VersionHContents}");
+
+                if (!int.TryParse(m.Groups[1].ToString(), out int buildNumber))
+                    throw new LogAsErrorException($"Failed to parse v8 build number {m.Groups[1]}");
+
+                return $"{majorForV8}.{minorForV8}.{buildNumber}";
+            }
+            catch (Exception ex) when (ex is FormatException || ex is OverflowException || ex is ArgumentOutOfRangeException)
+            {
+                throw new LogAsErrorException($"Failed to parse chrome version '{chromeVersion}' to extract the milestone: {ex.Message}");
+            }
+        }
     }
 
     private async Task<(ChromeVersionSpec versionSpec, string baseSnapshotUrl)> FindVersionFromAllJsonAsync()
@@ -253,8 +291,8 @@ public class GetChromeVersions : MBU.Task
             try
             {
                 Log.LogMessage(MessageImportance.Low, $"Downloading {url} ...");
-                Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
-                using FileStream fs = File.OpenWrite(filePath);
+                using Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
+                using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
                 await stream.CopyToAsync(fs).ConfigureAwait(false);
             }
             catch (HttpRequestException hre)

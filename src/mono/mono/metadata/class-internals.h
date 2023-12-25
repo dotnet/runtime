@@ -1062,7 +1062,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, 
 }
 #endif // __cplusplus
 
-#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
+#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), NULL))
 
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass);
@@ -1450,7 +1450,7 @@ mono_class_get_object_finalize_slot (void);
 MonoMethod *
 mono_class_get_default_finalize_method (void);
 
-const char *
+MONO_COMPONENT_API const char *
 mono_field_get_rva (MonoClassField *field, int swizzle);
 
 MONO_COMPONENT_API void

@@ -6,8 +6,8 @@
 #pragma warning disable 649, SA1121, IDE0036, SA1129
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using Internal.LowLevelLinq;
 using Internal.NativeFormat;
