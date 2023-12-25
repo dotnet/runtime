@@ -8378,7 +8378,7 @@ interp_compute_native_offset_estimates (TransformData *td)
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
 			// Skip dummy opcodes for more precise offset computation
-			if (MINT_IS_NOP (opcode))
+			if (MINT_IS_EMIT_NOP (opcode))
 				continue;
 			noe += interp_get_ins_length (ins);
 			if (!td->optimized)
@@ -8466,7 +8466,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_array_append_val (td->line_numbers, lne);
 	}
 
-	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DEF_TIER_VAR || opcode == MINT_DEF_ARG || opcode == MINT_DUMMY_USE)
+	if (MINT_IS_EMIT_NOP (opcode))
 		return ip;
 
 	*ip++ = opcode;
@@ -8519,9 +8519,14 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			ip--;
 		} else {
 			// If the estimate offset is short, then surely the real offset is short
-			gboolean is_short = interp_is_short_offset (br_offset, ins->info.target_bb->native_offset_estimate);
+			// otherwise we conservatively have to use long branch opcodes
+			int cur_estimation_error = td->cbb->native_offset_estimate - td->cbb->native_offset;
+			int target_bb_estimated_offset = ins->info.target_bb->native_offset_estimate - cur_estimation_error;
+			gboolean is_short = interp_is_short_offset (br_offset, target_bb_estimated_offset);
 			if (is_short)
 				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
+			else
+				g_assert (!MINT_IS_SUPER_BRANCH (opcode)); // FIXME missing handling for long branch
 
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
@@ -8752,6 +8757,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins = bb->first_ins;
 		bb->native_offset = GPTRDIFF_TO_INT (ip - td->new_code);
+		g_assert (bb->native_offset <= bb->native_offset_estimate);
 		td->cbb = bb;
 
 #if HOST_BROWSER
