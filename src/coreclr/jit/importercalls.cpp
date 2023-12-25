@@ -1534,7 +1534,7 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
 
         // It only makes sense if we're going to actually unroll it.
         // TODO: Consider enabling it for popularSize == 0 too.
-        if ((popularSize > 0) && (popularSize <= getUnrollThreshold(Memmove)))
+        if ((popularSize > 0) && ((size_t)popularSize <= (size_t)getUnrollThreshold(Memmove)))
         {
             JITDUMP("Optimizing Memmove for popular size %u\n", popularSize)
             DISPTREE(call)
