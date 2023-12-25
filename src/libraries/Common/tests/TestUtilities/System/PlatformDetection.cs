@@ -108,7 +108,18 @@ namespace System
 
         // For use as needed on tests that time out when run on a Debug or Checked runtime.
         // Not relevant for timeouts on external activities, such as network timeouts.
-        public static int SlowRuntimeTimeoutModifier = GetSlowRuntimeTimeoutModifier();
+        public static int SlowRuntimeTimeoutModifier
+        {
+            get
+            {
+                if (IsReleaseRuntime)
+                    return 1;
+                if (IsRiscV64Process)
+                    return IsDebugRuntime? 10 : 2;
+                else
+                    return IsDebugRuntime? 5 : 1;
+            }
+        }
 
         private static int GetSlowRuntimeTimeoutModifier()
         {

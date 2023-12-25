@@ -2607,13 +2607,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
-    if (!prejit)
+    if (!prejit && JitConfig.JitProfileConstants())
     {
         fgGenericInstrumentor = new (this, CMK_Pgo) GenericProbeInstrumentor(this);
     }
     else
     {
-        JITDUMP("Not doing generic profiling, because of prejit")
+        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileConstants=0")
         fgGenericInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 

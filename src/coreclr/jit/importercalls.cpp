@@ -1494,8 +1494,14 @@ DONE_CALL:
 //
 GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET ilOffset)
 {
-    assert(call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove));
+    assert(call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove));
     assert(opts.IsOptimizedWithProfile());
+
+    if (call->IsInlineCandidate())
+    {
+        // We decided to inline the whole thing? We won't be able to clone it then.
+        return call;
+    }
 
     LikelyConstantRecord likelyConstants[8];
     UINT32 constantsCount = getLikelyConstants(likelyConstants, 8, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
