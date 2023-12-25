@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices
 
             string s = $"{GetType()} (0x{HResult:X8})";
 
-            if (!string.IsNullOrEmpty(message ?? SR.Arg_ExternalException))
+            if (!string.IsNullOrEmpty(message))
             {
                 s += ": " + message;
             }

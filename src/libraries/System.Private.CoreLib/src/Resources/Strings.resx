@@ -257,7 +257,7 @@
     <value>Must specify property Set or Get or method call for a COM Object.</value>
   </data>
   <data name="Arg_COMException" xml:space="preserve">
-    <value>Error HRESULT E_FAIL has been returned from a call to a COM component.</value>
+    <value>Unexpected HRESULT has been returned from a call to a COM component.</value>
   </data>
   <data name="Arg_COMPropSetPut" xml:space="preserve">
     <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
