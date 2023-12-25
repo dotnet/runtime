@@ -6494,6 +6494,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             return;
         }
 
+        CORINFO_METHOD_HANDLE callerProp = nullptr;
+
         /* Get the size of additional parameters */
 
         signed int sz = opcodeSizes[opcode];
@@ -8989,6 +8991,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
                                           (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
+
+                    if (!opts.compDbgCode && callInfo.kind == CORINFO_CALL &&
+                        !(callInfo.methodFlags & (CORINFO_FLG_DONT_INLINE | CORINFO_FLG_DONT_INLINE_CALLER)) &&
+                        !(prefixFlags & PREFIX_CONSTRAINED) &&
+                        ((callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1) || // possible setter
+                         (callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0)))   // possible getter
+                    {
+                        if (impTryFindField(callInfo.hMethod, &resolvedToken, &opcode))
+                        {
+                            callerProp = callInfo.hMethod;
+                            if (opcode == CEE_LDFLD || opcode == CEE_LDSFLD)
+                            {
+                                goto LOADFIELD;
+                            }
+                            else
+                            {
+                                goto STOREFIELD;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -9155,19 +9177,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDFLDA:
             case CEE_LDSFLDA:
             {
-                bool isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
-                bool isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
-
                 /* Get the CP_Fieldref index */
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Field);
 
+            LOADFIELD:
                 JITDUMP(" %08X", resolvedToken.token);
 
-                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                int          aflags     = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
-                GenTree*     obj        = nullptr;
+                bool         isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
+                bool         isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
+                GenTreeFlags indirFlags    = impPrefixFlagsToIndirFlags(prefixFlags);
+                int          aflags        = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
+                GenTree*     obj           = nullptr;
 
                 if ((opcode == CEE_LDFLD) || (opcode == CEE_LDFLDA))
                 {
@@ -9179,7 +9201,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
+                auto callerHandle = callerProp;
+                if (!callerHandle)
+                {
+                    callerHandle = info.compMethodHnd;
+                }
+                info.compCompHnd->getFieldInfo(&resolvedToken, callerHandle, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
                 // Note we avoid resolving the normalized (struct) type just yet; we may not need it (for ld[s]flda).
                 lclTyp = JITtype2varType(fieldInfo.fieldType);
@@ -9425,21 +9452,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STFLD:
             case CEE_STSFLD:
             {
-                bool isStoreStatic = (opcode == CEE_STSFLD);
-
                 /* Get the CP_Fieldref index */
 
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Field);
 
+            STOREFIELD:
                 JITDUMP(" %08X", resolvedToken.token);
 
-                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                int          aflags     = CORINFO_ACCESS_SET;
-                GenTree*     obj        = nullptr;
+                bool         isStoreStatic = (opcode == CEE_STSFLD);
+                GenTreeFlags indirFlags    = impPrefixFlagsToIndirFlags(prefixFlags);
+                int          aflags        = CORINFO_ACCESS_SET;
+                GenTree*     obj           = nullptr;
 
-                eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
+                auto callerHandle = callerProp;
+                if (!callerHandle)
+                {
+                    callerHandle = info.compMethodHnd;
+                }
+                info.compCompHnd->getFieldInfo(&resolvedToken, callerHandle, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
                 ClassLayout* layout;
                 lclTyp = TypeHandleToVarType(fieldInfo.fieldType, fieldInfo.structType, &layout);

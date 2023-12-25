@@ -8820,6 +8820,134 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
 }
 
 //------------------------------------------------------------------------
+// impTryFindField: try to find and resolve the backing field of an auto property
+//
+// Arguments:
+//   methHnd - inline candidate
+//   pResolvedToken - resolved field info will be stored here
+//   opcode - opcode that was used against the field will be stored here
+//
+// Notes:
+//   Will update inlineResult with observations and possible failure
+//   status (if method cannot be inlined)
+//
+bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_TOKEN* pResolvedToken, OPCODE* opcode)
+{
+    // Either EE or JIT might throw exceptions below.
+    // If that happens, just don't inline the method.
+    //
+    struct Param
+    {
+        Compiler*              pThis;
+        CORINFO_METHOD_HANDLE  fncHandle;
+        CORINFO_CONTEXT_HANDLE exactContextHnd;
+        CORINFO_RESOLVED_TOKEN resolvedToken;
+        OPCODE                 opcode;
+        bool                   success;
+    } param;
+    memset(&param, 0, sizeof(param));
+
+    param.pThis           = this;
+    param.fncHandle       = methHnd;
+    param.exactContextHnd = MAKE_METHODCONTEXT(methHnd);
+    param.opcode          = CEE_ILLEGAL;
+    param.success         = false;
+
+    info.compCompHnd->beginInlining(info.compMethodHnd, methHnd);
+
+    bool success = eeRunWithErrorTrap<Param>(
+        [](Param* pParam) {
+        // Cache some frequently accessed state.
+        //
+        Compiler* const       compiler    = pParam->pThis;
+        COMP_HANDLE           compCompHnd = compiler->info.compCompHnd;
+        CORINFO_METHOD_HANDLE ftn         = pParam->fncHandle;
+
+#ifdef DEBUG
+        if (JitConfig.JitNoInline())
+        {
+            compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "JitNoInline is set");
+            return;
+        }
+#endif
+
+        // Fetch method info. This may fail, if the method doesn't have IL.
+        //
+        CORINFO_METHOD_INFO methInfo;
+        if (!compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo, pParam->exactContextHnd))
+        {
+            compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "getMethodInfo failed");
+            return;
+        }
+
+        pParam->resolvedToken.tokenContext = pParam->exactContextHnd;
+        pParam->resolvedToken.tokenScope   = methInfo.scope;
+        pParam->resolvedToken.tokenType    = CORINFO_TOKENKIND_Field;
+
+        auto code = methInfo.ILCode;
+        auto size = methInfo.ILCodeSize;
+        // instance getter
+        if (size == 7 && code[0] == CEE_LDARG_0 && code[1] == CEE_LDFLD && code[6] == CEE_RET)
+        {
+            pParam->resolvedToken.token = getU4LittleEndian(&code[2]);
+            pParam->opcode              = CEE_LDFLD;
+        }
+        // instance setter
+        else if (size == 8 && code[0] == CEE_LDARG_0 && code[1] == CEE_LDARG_1 && code[2] == CEE_STFLD &&
+                 code[7] == CEE_RET)
+        {
+            pParam->resolvedToken.token = getU4LittleEndian(&code[3]);
+            pParam->opcode              = CEE_STFLD;
+        }
+        else
+        {
+            compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "Not a property");
+            return;
+        }
+
+        // Speculatively check if initClass() can be done.
+        // If it can be done, we will try to inline the method.
+        CorInfoInitClassResult const initClassResult =
+            compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
+
+        if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
+        {
+            compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
+                                                "InitClass reported don't inline");
+            return;
+        }
+
+        // Given the VM the final say in whether to inline or not.
+        // This should be last since for verifiable code, this can be expensive
+        // This will call reportInliningDecision for us if inlining is not allowed
+        CorInfoInline const vmResult = compCompHnd->canInline(compiler->info.compMethodHnd, ftn);
+        if (vmResult == INLINE_FAIL || vmResult == INLINE_NEVER)
+        {
+            return;
+        }
+
+        compCompHnd->resolveToken(&pParam->resolvedToken);
+        pParam->success = true;
+    },
+        &param);
+
+    if (success && param.success)
+    {
+        *opcode         = param.opcode;
+        *pResolvedToken = param.resolvedToken;
+        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_PASS,
+                                                 "Trivial property backing field has been inlined");
+        return true;
+    }
+    if (!success)
+    {
+        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_FAIL,
+                                                 "Failed to inline trivial property");
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // impCheckCanInline: do more detailed checks to determine if a method can
 //   be inlined, and collect information that will be needed later
 //
