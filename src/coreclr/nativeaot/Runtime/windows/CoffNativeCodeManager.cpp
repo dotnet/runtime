@@ -308,6 +308,7 @@ struct CoffNativeMethodInfo
 // Ensure that CoffNativeMethodInfo fits into the space reserved by MethodInfo
 static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMethodInfo too big");
 
+FORCEINLINE
 int CoffNativeCodeManager::LookupUnwindInfoIdx(uint32_t relativePc)
 {
     uint32_t** indices = m_initializedIndices;
