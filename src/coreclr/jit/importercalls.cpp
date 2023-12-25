@@ -1289,6 +1289,25 @@ DONE_CALL:
             assert(verCurrentState.esStackDepth > 0);
             impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
         }
+        else if (JitConfig.JitProfileConstants() && call->IsCall() &&
+                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+        {
+            if (opts.IsOptimizedWithProfile())
+            {
+                call = impOptimizeMemmoveWithProfile(call->AsCall(), rawILOffset);
+            }
+            else if (impInlineRoot()->opts.IsInstrumented())
+            {
+                // We might want to instrument it for optimized versions too, but we don't currently.
+                HandleHistogramProfileCandidateInfo* pInfo =
+                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                pInfo->ilOffset                                       = rawILOffset;
+                pInfo->probeIndex                                     = 0;
+                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                compCurBB->SetFlags(BBF_HAS_CONSTANT_PROFILE);
+            }
+            impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+        }
         else
         {
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
@@ -1454,6 +1473,98 @@ DONE_CALL:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// impOptimizeMemmoveWithProfile: given `Buffer.Memmove(dst, src, len)` call,
+//    optimize it to:
+//
+//    if (len == popularSize)
+//        Buffer.Memmove(dst, src, popularSize);
+//    else
+//        Buffer.Memmove(dst, src, len);
+//
+//    if we can obtain the popular size from PGO data.
+//
+// Arguments:
+//    call     -- Buffer.Memmove call
+//    ilOffset -- Raw IL offset of the call
+//
+// Return Value:
+//    Optimized tree (or the original call tree if we can't optimize it).
+//
+GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET ilOffset)
+{
+    assert(call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove));
+    assert(opts.IsOptimizedWithProfile());
+
+    LikelyConstantRecord likelyConstants[8];
+    UINT32 constantsCount = getLikelyConstants(likelyConstants, 8, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+
+    JITDUMP("%u likely sizes for Memmove:\n", constantsCount)
+    for (UINT32 i = 0; i < constantsCount; i++)
+    {
+        JITDUMP("  %u) %u - %u%%\n", i, likelyConstants[i].constant, likelyConstants[i].likelihood)
+    }
+
+    // For now, we only do a single guess, but it's pretty straightforward to
+    // extend it to support multiple guesses.
+    LikelyConstantRecord likelyConstant = likelyConstants[0];
+#if DEBUG
+    // Re-use JitRandomGuardedDevirtualization for stress-testing.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+        constantsCount            = 1;
+        likelyConstant.constant   = random->Next(256);
+        likelyConstant.likelihood = 100;
+    }
+#endif
+
+    // TODO: Tune the likelihood threshold, for now it's 50%
+    if ((constantsCount > 0) && (likelyConstant.likelihood >= 50))
+    {
+        const ssize_t popularSize = likelyConstant.constant;
+
+        // It only makes sense if we're going to actually unroll it.
+        // TODO: Consider enabling it for popularSize == 0 too.
+        if ((popularSize > 0) && (popularSize <= getUnrollThreshold(Memmove)))
+        {
+            JITDUMP("Optimizing Memmove for popular size %u\n", popularSize)
+            DISPTREE(call)
+
+            // Spill all the arguments to temp locals.
+            GenTree** dstNode = &call->gtArgs.GetUserArgByIndex(0)->EarlyNodeRef();
+            GenTree** srcNode = &call->gtArgs.GetUserArgByIndex(1)->EarlyNodeRef();
+            GenTree** lenNode = &call->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+
+            if ((*lenNode)->OperIsConst())
+            {
+                JITDUMP("Memmove's len is already a constant - it will be optimized as is.\n")
+                return call;
+            }
+
+            impCloneExpr(*dstNode, dstNode, CHECK_SPILL_ALL, nullptr DEBUGARG("memmove src"));
+            impCloneExpr(*srcNode, srcNode, CHECK_SPILL_ALL, nullptr DEBUGARG("memmove dst"));
+            GenTree* lenNodeClone = impCloneExpr(*lenNode, lenNode, CHECK_SPILL_ALL, nullptr DEBUGARG("memmove len"));
+
+            GenTree* fallbackCall = gtCloneExpr(call);
+            GenTree* popularLen   = gtNewIconNode(popularSize, lenNodeClone->TypeGet());
+            *lenNode              = popularLen;
+
+            // TODO: Specify weights for the branches in the Qmark node.
+            GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, fallbackCall, call);
+            GenTreeOp*    cond  = gtNewOperNode(GT_NE, TYP_INT, lenNodeClone, gtCloneExpr(popularLen));
+            GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, cond, colon);
+
+            JITDUMP("\n\nOptimized Memmove:\n")
+            DISPTREE(qmark)
+
+            return qmark;
+        }
+    }
+    return call;
+}
 
 #ifdef DEBUG
 //
@@ -2590,6 +2701,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Volatile_Read:
             case NI_System_Threading_Volatile_Write:
+            case NI_System_Buffer_Memmove:
 
                 betterToExpand = true;
                 break;

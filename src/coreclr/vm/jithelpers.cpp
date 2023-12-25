@@ -5810,6 +5810,26 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     return true;
 }
 
+HCIMPL2(void, JIT_ConstantProfile, intptr_t val, ICorJitInfo::ConstantHistogram* constProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&constProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(constProfile);
+    PgoManager::VerifyAddress(constProfile + 1);
+#endif
+
+    constProfile->ConstTable[sampleIndex] = val;
+}
+HCIMPLEND
+
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;

@@ -2483,6 +2483,21 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 }
 
 //-------------------------------------------------------------------------
+// IsSpecialIntrinsic: Determine if this GT_CALL node is a specific intrinsic.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call lookupNamedIntrinsic
+//     ni       - the intrinsic id
+//
+// Return Value:
+//     Returns true if this GT_CALL node is a special intrinsic call.
+//
+bool GenTreeCall::IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const
+{
+    return IsSpecialIntrinsic() && (compiler->lookupNamedIntrinsic(gtCallMethHnd) == ni);
+}
+
+//-------------------------------------------------------------------------
 // GetHelperNum: Get the helper identifier for this call.
 //
 // Return Value:

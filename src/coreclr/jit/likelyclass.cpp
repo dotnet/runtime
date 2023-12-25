@@ -347,3 +347,91 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
     return getLikelyClassesOrMethods(pLikelyMethods, maxLikelyMethods, schema, countSchemaItems, pInstrumentationData,
                                      ilOffset, false);
 }
+
+//------------------------------------------------------------------------
+// getLikelyConstants: find a generic const profile data for an IL offset
+//
+// Arguments:
+//    pLikelyConstants     - [OUT] array of likely constants sorted by likelihood (descending). It must be
+//                           at least of 'maxLikelyConstants' (next argument) length.
+//                           The array consists of pairs "constant - likelihood" ordered by likelihood
+//                           (descending) where likelihood can be any value in [0..100] range.
+//    maxLikelyConstants   - limit for likely classes to output
+//    schema               - profile schema
+//    countSchemaItems     - number of items in the schema
+//    pInstrumentationData - associated data
+//    ilOffset             - il offset of the node of interest
+//
+// Returns:
+//    Estimated number of different constants seen at runtime
+//
+extern "C" DLLEXPORT UINT32 WINAPI getLikelyConstants(LikelyConstantRecord*                  pLikelyConstants,
+                                                      UINT32                                 maxLikelyConstants,
+                                                      ICorJitInfo::PgoInstrumentationSchema* schema,
+                                                      UINT32                                 countSchemaItems,
+                                                      BYTE*                                  pInstrumentationData,
+                                                      int32_t                                ilOffset)
+{
+    if ((maxLikelyConstants == 0) || (schema == nullptr))
+    {
+        return 0;
+    }
+
+    memset(pLikelyConstants, 0, maxLikelyConstants * sizeof(*pLikelyConstants));
+
+    for (COUNT_T i = 0; i < countSchemaItems; i++)
+    {
+        if (schema[i].ILOffset != ilOffset)
+            continue;
+
+        // We currently re-use existing infrastructure for type handles for simplicity.
+
+        const bool isHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount) ||
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount);
+
+        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
+            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes))
+        {
+            LikelyClassMethodHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
+            LikelyClassMethodHistogramEntry sortedEntries[HISTOGRAM_MAX_SIZE_COUNT];
+
+            if (h.countHistogramElements == 0)
+            {
+                return 0;
+            }
+
+            for (unsigned hi = 0; hi < h.countHistogramElements; hi++)
+            {
+                LikelyClassMethodHistogramEntry const hist = h.HistogramEntryAt(hi);
+                sortedEntries[hi]                          = hist;
+            }
+
+            // sort by m_count (descending)
+            jitstd::sort(sortedEntries, sortedEntries + h.countHistogramElements,
+                         [](const LikelyClassMethodHistogramEntry& h1,
+                            const LikelyClassMethodHistogramEntry& h2) -> bool { return h1.m_count > h2.m_count; });
+
+            const UINT32 numberOfLikelyConst = min(h.countHistogramElements, maxLikelyConstants);
+
+            UINT32 totalLikelihood = 0;
+            for (size_t hIdx = 0; hIdx < numberOfLikelyConst; hIdx++)
+            {
+                LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
+                pLikelyConstants[hIdx].constant          = hc.m_handle;
+                pLikelyConstants[hIdx].likelihood        = hc.m_count * 100 / h.m_totalCount;
+                totalLikelihood += pLikelyConstants[hIdx].likelihood;
+            }
+
+            assert(totalLikelihood <= 100);
+
+            // Distribute the rounding error and just apply it to the first entry.
+            assert(numberOfLikelyConst > 0);
+            assert(totalLikelihood > 0);
+            pLikelyConstants[0].likelihood += 100 - totalLikelihood;
+            assert(pLikelyConstants[0].likelihood <= 100);
+            return numberOfLikelyConst;
+        }
+    }
+    return 0;
+}

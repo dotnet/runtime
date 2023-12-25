@@ -1928,6 +1928,39 @@ public:
 };
 
 //------------------------------------------------------------------------
+// ConstantHistogramProbeVisitor: invoke functor on each node requiring a generic probe
+//
+template <class TFunctor>
+class ConstantHistogramProbeVisitor final : public GenTreeVisitor<ConstantHistogramProbeVisitor<TFunctor>>
+{
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    TFunctor& m_functor;
+    Compiler* m_compiler;
+
+    ConstantHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<ConstantHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    {
+    }
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+        if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
+        {
+            if (m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd) == NI_System_Buffer_Memmove)
+            {
+                m_functor(m_compiler, node);
+            }
+        }
+        return Compiler::WALK_CONTINUE;
+    }
+};
+
+//------------------------------------------------------------------------
 // BuildHandleHistogramProbeSchemaGen: functor that creates class probe schema elements
 //
 class BuildHandleHistogramProbeSchemaGen
@@ -1989,6 +2022,33 @@ public:
         schemaElem.Count = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
 
+        m_schemaCount++;
+    }
+};
+
+class BuildConstantHistogramProbeSchemaGen
+{
+    Schema&   m_schema;
+    unsigned& m_schemaCount;
+
+public:
+    BuildConstantHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
+        : m_schema(schema), m_schemaCount(schemaCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTree* call)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
+        schemaElem.Count                                 = 1;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount;
+        schemaElem.ILOffset            = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        m_schema.push_back(schemaElem);
+        m_schemaCount++;
+
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes;
+        schemaElem.Count               = ICorJitInfo::HandleHistogram32::SIZE;
+        m_schema.push_back(schemaElem);
         m_schemaCount++;
     }
 };
@@ -2191,6 +2251,88 @@ private:
 };
 
 //------------------------------------------------------------------------
+// ConstantHistogramProbeInserter: functor that adds generic probes
+//
+class ConstantHistogramProbeInserter
+{
+    Schema&   m_schema;
+    uint8_t*  m_profileMemory;
+    int*      m_currentSchemaIndex;
+    unsigned& m_instrCount;
+
+public:
+    ConstantHistogramProbeInserter(Schema&   schema,
+                                   uint8_t*  profileMemory,
+                                   int*      pCurrentSchemaIndex,
+                                   unsigned& instrCount)
+        : m_schema(schema)
+        , m_profileMemory(profileMemory)
+        , m_currentSchemaIndex(pCurrentSchemaIndex)
+        , m_instrCount(instrCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTree* node)
+    {
+        if (*m_currentSchemaIndex >= (int)m_schema.size())
+        {
+            return;
+        }
+
+        // Only Buffer.Memmove call is currently expected
+        assert(node->IsCall() && (node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_Buffer_Memmove)));
+
+        const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
+        if (countEntry.ILOffset !=
+            static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset))
+        {
+            return;
+        }
+
+        if (countEntry.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount)
+        {
+            return;
+        }
+
+        assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
+        const ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
+        assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes));
+        uint8_t* hist = &m_profileMemory[countEntry.Offset];
+        assert(hist != nullptr);
+
+        *m_currentSchemaIndex += 2;
+
+        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+
+        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_CONSTANTPROFILE for the len:
+        //
+        //  \--*  COMMA     long
+        //     +--*  CALL help void   CORINFO_HELP_CONSTANTPROFILE
+        //     |  +--*  COMMA     long
+        //     |  |  +--*  STORE_LCL_VAR long  tmp
+        //     |  |  |  \--*  (node to poll)
+        //     |  |  \--*  LCL_VAR   long   tmp
+        //     |  \--*  CNS_INT   long   <hist>
+        //     \--*  LCL_VAR   long   tmp
+        //
+
+        const var_types lenType              = (*lenArgRef)->TypeGet();
+        const unsigned  lenTmpNum            = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
+        compiler->lvaTable[lenTmpNum].lvType = lenType;
+        GenTree* lengthLocal                 = compiler->gtNewLclvNode(lenTmpNum, lenType);
+        GenTree* storeLenToTemp              = compiler->gtNewStoreLclVarNode(lenTmpNum, *lenArgRef);
+
+        GenTreeOp*   lengthNode = compiler->gtNewOperNode(GT_COMMA, lenType, storeLenToTemp, lengthLocal);
+        GenTree*     histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        GenTreeCall* helperCallNode =
+            compiler->gtNewHelperCallNode(CORINFO_HELP_CONSTANTPROFILE, TYP_VOID, lengthNode, histNode);
+
+        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lenType, helperCallNode, compiler->gtCloneExpr(lengthLocal));
+        m_instrCount++;
+    }
+};
+
+//------------------------------------------------------------------------
 // HandleHistogramProbeInstrumentor: instrumentor that adds a class probe to each
 //   virtual call in the basic block
 //
@@ -2198,6 +2340,25 @@ class HandleHistogramProbeInstrumentor : public Instrumentor
 {
 public:
     HandleHistogramProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
+    }
+    void Prepare(bool isPreImport) override;
+    void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
+};
+
+//------------------------------------------------------------------------
+// GenericProbeInstrumentor: instrumentor that adds a generic probe to special
+//   places on demand (e.g. Memmove's size)
+//
+class GenericProbeInstrumentor : public Instrumentor
+{
+public:
+    GenericProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -2294,6 +2455,58 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     }
 }
 
+void GenericProbeInstrumentor::Prepare(bool isPreImport)
+{
+    if (isPreImport)
+    {
+        return;
+    }
+
+#ifdef DEBUG
+    // Set schema index to invalid value
+    //
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        block->bbCountSchemaIndex = -1;
+    }
+#endif
+}
+
+void GenericProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+{
+    if (!block->HasFlag(BBF_HAS_CONSTANT_PROFILE))
+    {
+        return;
+    }
+
+    block->bbHistogramSchemaIndex = (int)schema.size();
+
+    BuildConstantHistogramProbeSchemaGen                                schemaGen(schema, m_schemaCount);
+    ConstantHistogramProbeVisitor<BuildConstantHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
+    for (Statement* const stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+void GenericProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
+{
+    if (!block->HasFlag(BBF_HAS_CONSTANT_PROFILE))
+    {
+        return;
+    }
+
+    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
+
+    ConstantHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
+    ConstantHistogramProbeVisitor<ConstantHistogramProbeInserter> visitor(m_comp, insertProbes);
+    for (Statement* const stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
 //------------------------------------------------------------------------
 // fgPrepareToInstrumentMethod: prepare for instrumentation
 //
@@ -2356,6 +2569,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         {
             fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgGenericInstrumentor   = new (this, CMK_Pgo) NonInstrumentor(this);
             return PhaseStatus::MODIFIED_NOTHING;
         }
     }
@@ -2393,11 +2607,22 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
+    if (!prejit)
+    {
+        fgGenericInstrumentor = new (this, CMK_Pgo) GenericProbeInstrumentor(this);
+    }
+    else
+    {
+        JITDUMP("Not doing generic profiling, because of prejit")
+        fgGenericInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+    }
+
     // Make pre-import preparations.
     //
     const bool isPreImport = true;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
+    fgGenericInstrumentor->Prepare(isPreImport);
 
     return PhaseStatus::MODIFIED_NOTHING;
 }
@@ -2427,6 +2652,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     const bool isPreImport = false;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
+    fgGenericInstrumentor->Prepare(isPreImport);
 
     // Walk the flow graph to build up the instrumentation schema.
     //
@@ -2442,11 +2668,18 @@ PhaseStatus Compiler::fgInstrumentMethod()
         {
             fgHistogramInstrumentor->BuildSchemaElements(block, schema);
         }
+
+        if (fgGenericInstrumentor->ShouldProcess(block))
+        {
+            fgGenericInstrumentor->BuildSchemaElements(block, schema);
+        }
     }
 
     // Even though we haven't yet instrumented, we may have made changes in anticipation...
     //
-    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() ||
+                                         fgHistogramInstrumentor->ModifiedFlow() ||
+                                         fgGenericInstrumentor->ModifiedFlow();
     const PhaseStatus earlyExitPhaseStatus =
         madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 
@@ -2469,7 +2702,8 @@ PhaseStatus Compiler::fgInstrumentMethod()
         minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
     }
 
-    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgHistogramInstrumentor->SchemaCount() == 0))
+    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
+        (fgHistogramInstrumentor->SchemaCount() == 0) && (fgGenericInstrumentor->SchemaCount() == 0))
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
@@ -2483,8 +2717,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         return earlyExitPhaseStatus;
     }
 
-    JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
-            fgHistogramInstrumentor->SchemaCount());
+    JITDUMP("Instrumenting method: %d count probes, %d class probes and %d generic probes\n",
+            fgCountInstrumentor->SchemaCount(), fgHistogramInstrumentor->SchemaCount(),
+            fgGenericInstrumentor->SchemaCount())
 
     assert(schema.size() > 0);
 
@@ -2531,6 +2766,11 @@ PhaseStatus Compiler::fgInstrumentMethod()
         {
             fgHistogramInstrumentor->Instrument(block, schema, profileMemory);
         }
+
+        if (fgGenericInstrumentor->ShouldInstrument(block))
+        {
+            fgGenericInstrumentor->Instrument(block, schema, profileMemory);
+        }
     }
 
     // Verify we instrumented everything we created schemas for.
@@ -2546,6 +2786,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
     fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
+    fgGenericInstrumentor->InstrumentMethodEntry(schema, profileMemory);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

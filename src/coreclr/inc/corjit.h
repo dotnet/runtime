@@ -357,6 +357,13 @@ public:
         void* HandleTable[HandleHistogram32::SIZE];
     };
 
+    struct ConstantHistogram
+    {
+        uint64_t Count;
+        // Re-use HandleHistogram32's SIZE for now
+        intptr_t ConstTable[HandleHistogram32::SIZE];
+    };
+
     enum class PgoInstrumentationKind
     {
         // This must be kept in sync with PgoInstrumentationKind in PgoFormat.cs
