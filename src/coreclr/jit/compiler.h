@@ -4427,6 +4427,8 @@ protected:
     void impHandleAccessAllowed(CorInfoIsAccessAllowedResult result, CORINFO_HELPER_DESC* helperCall);
     void impHandleAccessAllowedInternal(CorInfoIsAccessAllowedResult result, CORINFO_HELPER_DESC* helperCall);
 
+    bool impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_TOKEN* pResolvedToken, OPCODE* opcode);
+
     var_types impImportCall(OPCODE                  opcode,
                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, // Is this a "constrained." call on a

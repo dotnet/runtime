@@ -32,6 +32,41 @@
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
 
+bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_TOKEN* pResolvedToken, OPCODE* opcode)
+{
+    CORINFO_METHOD_INFO methInfo;
+    if (info.compCompHnd->getMethodInfo(methHnd, &methInfo))
+    {
+        auto code = methInfo.ILCode;
+        auto size = methInfo.ILCodeSize; 
+        if (size == 7 && code[0] == CEE_LDARG_0 && code[1] == CEE_LDFLD && code[6] == CEE_RET) // instance getter
+        {
+            impResolveToken(&code[2], pResolvedToken, CORINFO_TOKENKIND_Field);
+            *opcode = CEE_LDFLD;
+            return true;
+        }
+        else if (size == 8 && code[0] == CEE_LDARG_0 && code[1] == CEE_LDARG_1 && code[2] == CEE_STFLD && code[7] == CEE_RET) // instance setter
+        {
+            impResolveToken(&code[3], pResolvedToken, CORINFO_TOKENKIND_Field);
+            *opcode = CEE_STFLD;
+            return true;
+        }
+        else if (size == 6 && code[0] == CEE_LDSFLD && code[5] == CEE_RET) // static getter
+        {
+            impResolveToken(&code[1], pResolvedToken, CORINFO_TOKENKIND_Field);
+            *opcode = CEE_LDSFLD;
+            return true;
+        }
+        else if (size == 7 && code[0] == CEE_LDARG_0 && code[1] == CEE_STSFLD && code[6] == CEE_RET) // static setter
+        {
+            impResolveToken(&code[2], pResolvedToken, CORINFO_TOKENKIND_Field);
+            *opcode = CEE_STSFLD;
+            return true;
+        }
+    }
+    return false;
+}
+
 var_types Compiler::impImportCall(OPCODE                  opcode,
                                   CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                   CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
