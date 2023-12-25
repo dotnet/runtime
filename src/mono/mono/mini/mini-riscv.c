@@ -3662,9 +3662,9 @@ mono_riscv_emit_load_regarray (guint8 *code, guint64 regs, int basereg, int offs
 	g_assert (basereg != RISCV_SP);
 
 	if (!RISCV_VALID_S_IMM (offset)) {
-		code = mono_riscv_emit_imm (code, RISCV_T6, offset);
-		riscv_add (code, RISCV_T6, basereg, RISCV_T6);
-		basereg = RISCV_T6;
+		code = mono_riscv_emit_imm (code, RISCV_T0, offset);
+		riscv_add (code, RISCV_T0, basereg, RISCV_T0);
+		basereg = RISCV_T0;
 		offset = 0;
 	}
 
@@ -3694,9 +3694,9 @@ mono_riscv_emit_store_regarray (guint8 *code, guint64 regs, int basereg, int off
 	g_assert (basereg != RISCV_SP);
 
 	if (!RISCV_VALID_S_IMM (offset)) {
-		code = mono_riscv_emit_imm (code, RISCV_T6, offset);
-		riscv_add (code, RISCV_T6, basereg, RISCV_T6);
-		basereg = RISCV_T6;
+		code = mono_riscv_emit_imm (code, RISCV_T0, offset);
+		riscv_add (code, RISCV_T0, basereg, RISCV_T0);
+		basereg = RISCV_T0;
 		offset = 0;
 	}
 
@@ -3725,9 +3725,9 @@ mono_riscv_emit_load_stack (guint8 *code, guint64 regs, int basereg, int offset,
 	g_assert (basereg != RISCV_SP);
 
 	if (!RISCV_VALID_S_IMM (offset)) {
-		code = mono_riscv_emit_imm (code, RISCV_T6, offset);
-		riscv_add (code, RISCV_T6, basereg, RISCV_T6);
-		basereg = RISCV_T6;
+		code = mono_riscv_emit_imm (code, RISCV_T0, offset);
+		riscv_add (code, RISCV_T0, basereg, RISCV_T0);
+		basereg = RISCV_T0;
 		offset = 0;
 	}
 
@@ -3994,6 +3994,7 @@ static guint8 *
 mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg1, int sreg2, const char *exc_name)
 {
 	riscv_auipc (code, MONO_ARCH_EXC_ADDR_REG, 0);
+	riscv_addi (code, MONO_ARCH_EXC_ADDR_REG, MONO_ARCH_EXC_ADDR_REG,8);
 	switch (opcode) {
 	case OP_RISCV_EXC_BEQ:
 		riscv_bne (code, sreg1, sreg2, 8);

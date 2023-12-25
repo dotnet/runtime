@@ -235,11 +235,11 @@ riscv_bge: src1:i src2:i len:8
 riscv_bgeu: src1:i src2:i len:8
 riscv_blt: src1:i src2:i len:8
 riscv_bltu: src1:i src2:i len:8
-riscv_exc_beq: src1:i src2:i len:12
-riscv_exc_bne: src1:i src2:i len:12
-riscv_exc_bgeu: src1:i src2:i len:12
-riscv_exc_blt: src1:i src2:i len:12
-riscv_exc_bltu: src1:i src2:i len:12
+riscv_exc_beq: src1:i src2:i len:16
+riscv_exc_bne: src1:i src2:i len:16
+riscv_exc_bgeu: src1:i src2:i len:16
+riscv_exc_blt: src1:i src2:i len:16
+riscv_exc_bltu: src1:i src2:i len:16
 riscv_slt: dest:i src1:i src2:i len:4
 riscv_sltu: dest:i src1:i src2:i len:4
 riscv_slti: dest:i src1:i len:4
