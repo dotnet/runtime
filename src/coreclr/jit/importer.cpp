@@ -8705,6 +8705,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
                                           (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
+
+                    if (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1 || // possible setter
+                        callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0)    // possible getter
+                    {
+                        if (impTryFindField(callInfo.hMethod, &resolvedToken, &opcode))
+                        {
+                            if (opcode == CEE_LDFLD || opcode == CEE_LDSFLD)
+                            {
+                                goto LOADFIELD;
+                            }
+                            else
+                            {
+                                goto STOREFIELD;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -8871,19 +8887,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDFLDA:
             case CEE_LDSFLDA:
             {
-                bool isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
-                bool isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
-
                 /* Get the CP_Fieldref index */
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Field);
 
+            LOADFIELD:
                 JITDUMP(" %08X", resolvedToken.token);
 
-                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                int          aflags     = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
-                GenTree*     obj        = nullptr;
+                bool         isLoadAddress = (opcode == CEE_LDFLDA || opcode == CEE_LDSFLDA);
+                bool         isLoadStatic  = (opcode == CEE_LDSFLD || opcode == CEE_LDSFLDA);
+                GenTreeFlags indirFlags    = impPrefixFlagsToIndirFlags(prefixFlags);
+                int          aflags        = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
+                GenTree*     obj           = nullptr;
 
                 if ((opcode == CEE_LDFLD) || (opcode == CEE_LDFLDA))
                 {
@@ -9141,19 +9157,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_STFLD:
             case CEE_STSFLD:
             {
-                bool isStoreStatic = (opcode == CEE_STSFLD);
-
                 /* Get the CP_Fieldref index */
 
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Field);
 
+            STOREFIELD:
                 JITDUMP(" %08X", resolvedToken.token);
 
-                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
-                int          aflags     = CORINFO_ACCESS_SET;
-                GenTree*     obj        = nullptr;
+                bool         isStoreStatic = (opcode == CEE_STSFLD);
+                GenTreeFlags indirFlags    = impPrefixFlagsToIndirFlags(prefixFlags);
+                int          aflags        = CORINFO_ACCESS_SET;
+                GenTree*     obj           = nullptr;
 
                 eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
