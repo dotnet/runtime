@@ -135,7 +135,7 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IndentedOrNotSkipValidation => Indented || !SkipValidation;
+        internal bool IndentedOrNotSkipValidation => (_optionsMask & (IndentBit + SkipValidationBit)) != SkipValidationBit;  // Equivalent to: Indented || !SkipValidation;
 
         private const int IndentBit = 1;
         private const int SkipValidationBit = 2;
