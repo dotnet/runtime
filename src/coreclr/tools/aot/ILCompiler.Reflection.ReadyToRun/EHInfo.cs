@@ -132,11 +132,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK)
             {
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_NONE:
-                    writer.Write(" CATCH: {0}", ClassName ?? "null");
+                    writer.Write($" CATCH: {ClassName ?? "null"}");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FILTER:
-                    writer.Write(" FILTER (RVA {0:X4})", ClassTokenOrFilterOffset + methodRva);
+                    writer.Write($" FILTER (RVA {(ClassTokenOrFilterOffset + methodRva):X4})");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FINALLY:
