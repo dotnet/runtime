@@ -277,7 +277,7 @@ namespace System.Text.Json
         private void WriteNumberIndented(ReadOnlySpan<char> escapedPropertyName, decimal value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= _options.IndentSize * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - JsonConstants.MaximumFormatDecimalLength - 5 - s_newLineLength);
 
@@ -323,7 +323,7 @@ namespace System.Text.Json
         private void WriteNumberIndented(ReadOnlySpan<byte> escapedPropertyName, decimal value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= _options.IndentSize * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - JsonConstants.MaximumFormatDecimalLength - 5 - s_newLineLength);
 

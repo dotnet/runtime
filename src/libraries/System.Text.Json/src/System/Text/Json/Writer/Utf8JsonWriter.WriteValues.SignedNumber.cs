@@ -76,7 +76,7 @@ namespace System.Text.Json
         private void WriteNumberValueIndented(long value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= _options.IndentSize * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             int maxRequired = indent + JsonConstants.MaximumFormatInt64Length + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 

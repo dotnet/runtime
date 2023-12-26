@@ -89,7 +89,7 @@ namespace System.Text.Json
         private void WritePropertyNameIndented(ReadOnlySpan<byte> escapedPropertyName, byte token)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= IndentLength * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - 6 - s_newLineLength);
 
@@ -161,7 +161,7 @@ namespace System.Text.Json
         private void WritePropertyNameIndented(ReadOnlySpan<char> escapedPropertyName, byte token)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= IndentLength * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - 6 - s_newLineLength);
 

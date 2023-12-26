@@ -427,7 +427,7 @@ namespace System.Text.Json
         private void WriteLiteralIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= _options.IndentSize * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(value.Length <= JsonConstants.MaxUnescapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - value.Length - 5 - s_newLineLength);
@@ -473,7 +473,7 @@ namespace System.Text.Json
         private void WriteLiteralIndented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= _options.IndentSize * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(value.Length <= JsonConstants.MaxUnescapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - value.Length - 5 - s_newLineLength);
