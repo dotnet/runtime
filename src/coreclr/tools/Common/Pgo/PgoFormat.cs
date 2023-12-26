@@ -48,6 +48,11 @@ namespace Internal.Pgo
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
+
+        // Value histogram, reusing HandleHistogram for now
+        ValueHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer,
+        ValueHistogramLongCount = (DescriptorMin * 2) | EightByte,
+        ValueHistogram = (DescriptorMin * 3) | TypeHandle,
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>

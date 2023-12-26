@@ -1928,10 +1928,10 @@ public:
 };
 
 //------------------------------------------------------------------------
-// ConstantHistogramProbeVisitor: invoke functor on each node requiring a generic probe
+// ValueHistogramProbeVisitor: invoke functor on each node requiring a generic probe
 //
 template <class TFunctor>
-class ConstantHistogramProbeVisitor final : public GenTreeVisitor<ConstantHistogramProbeVisitor<TFunctor>>
+class ValueHistogramProbeVisitor final : public GenTreeVisitor<ValueHistogramProbeVisitor<TFunctor>>
 {
 public:
     enum
@@ -1942,19 +1942,16 @@ public:
     TFunctor& m_functor;
     Compiler* m_compiler;
 
-    ConstantHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<ConstantHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    ValueHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
+        if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic(m_compiler, NI_System_Buffer_Memmove))
         {
-            if (m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd) == NI_System_Buffer_Memmove)
-            {
-                m_functor(m_compiler, node);
-            }
+            m_functor(m_compiler, node);
         }
         return Compiler::WALK_CONTINUE;
     }
@@ -2026,13 +2023,13 @@ public:
     }
 };
 
-class BuildConstantHistogramProbeSchemaGen
+class BuildValueHistogramProbeSchemaGen
 {
     Schema&   m_schema;
     unsigned& m_schemaCount;
 
 public:
-    BuildConstantHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
+    BuildValueHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
         : m_schema(schema), m_schemaCount(schemaCount)
     {
     }
@@ -2041,12 +2038,14 @@ public:
     {
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount;
-        schemaElem.ILOffset            = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
+                                             ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
         m_schema.push_back(schemaElem);
         m_schemaCount++;
 
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::ValueHistogram;
         schemaElem.Count               = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
         m_schemaCount++;
@@ -2251,9 +2250,9 @@ private:
 };
 
 //------------------------------------------------------------------------
-// ConstantHistogramProbeInserter: functor that adds generic probes
+// ValueHistogramProbeInserter: functor that adds generic probes
 //
-class ConstantHistogramProbeInserter
+class ValueHistogramProbeInserter
 {
     Schema&   m_schema;
     uint8_t*  m_profileMemory;
@@ -2261,10 +2260,7 @@ class ConstantHistogramProbeInserter
     unsigned& m_instrCount;
 
 public:
-    ConstantHistogramProbeInserter(Schema&   schema,
-                                   uint8_t*  profileMemory,
-                                   int*      pCurrentSchemaIndex,
-                                   unsigned& instrCount)
+    ValueHistogramProbeInserter(Schema& schema, uint8_t* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
         : m_schema(schema)
         , m_profileMemory(profileMemory)
         , m_currentSchemaIndex(pCurrentSchemaIndex)
@@ -2289,14 +2285,16 @@ public:
             return;
         }
 
-        if (countEntry.InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount)
+        bool is32 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        bool is64 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount;
+        if (!is32 && !is64)
         {
             return;
         }
 
         assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
         const ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
-        assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes));
+        assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram));
         uint8_t* hist = &m_profileMemory[countEntry.Offset];
         assert(hist != nullptr);
 
@@ -2352,13 +2350,12 @@ public:
 };
 
 //------------------------------------------------------------------------
-// GenericProbeInstrumentor: instrumentor that adds a generic probe to special
-//   places on demand (e.g. Memmove's size)
+// ValueInstrumentor: instrumentor that adds a generic probe for integer values
 //
-class GenericProbeInstrumentor : public Instrumentor
+class ValueInstrumentor : public Instrumentor
 {
 public:
-    GenericProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    ValueInstrumentor(Compiler* comp) : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -2455,7 +2452,7 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     }
 }
 
-void GenericProbeInstrumentor::Prepare(bool isPreImport)
+void ValueInstrumentor::Prepare(bool isPreImport)
 {
     if (isPreImport)
     {
@@ -2472,26 +2469,26 @@ void GenericProbeInstrumentor::Prepare(bool isPreImport)
 #endif
 }
 
-void GenericProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if (!block->HasFlag(BBF_HAS_CONSTANT_PROFILE))
+    if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
     {
         return;
     }
 
     block->bbHistogramSchemaIndex = (int)schema.size();
 
-    BuildConstantHistogramProbeSchemaGen                                schemaGen(schema, m_schemaCount);
-    ConstantHistogramProbeVisitor<BuildConstantHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
+    BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
+    ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
 }
 
-void GenericProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
+void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if (!block->HasFlag(BBF_HAS_CONSTANT_PROFILE))
+    if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
     {
         return;
     }
@@ -2499,8 +2496,8 @@ void GenericProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uin
     int histogramSchemaIndex = block->bbHistogramSchemaIndex;
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
-    ConstantHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
-    ConstantHistogramProbeVisitor<ConstantHistogramProbeInserter> visitor(m_comp, insertProbes);
+    ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
+    ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_comp, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -2607,13 +2604,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
-    if (!prejit && JitConfig.JitProfileConstants())
+    if (!prejit && JitConfig.JitProfileValues())
     {
-        fgGenericInstrumentor = new (this, CMK_Pgo) GenericProbeInstrumentor(this);
+        fgGenericInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
     }
     else
     {
-        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileConstants=0")
+        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileValues=0")
         fgGenericInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 

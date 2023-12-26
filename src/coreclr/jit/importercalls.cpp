@@ -1289,14 +1289,14 @@ DONE_CALL:
             assert(verCurrentState.esStackDepth > 0);
             impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
         }
-        else if (JitConfig.JitProfileConstants() && call->IsCall() &&
+        else if (JitConfig.JitProfileValues() && call->IsCall() &&
                  call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
         {
             if (opts.IsOptimizedWithProfile())
             {
                 call = impOptimizeMemmoveWithProfile(call->AsCall(), rawILOffset);
             }
-            else if (impInlineRoot()->opts.IsInstrumented())
+            else if (opts.IsInstrumented())
             {
                 // We might want to instrument it for optimized versions too, but we don't currently.
                 HandleHistogramProfileCandidateInfo* pInfo =
@@ -1304,7 +1304,7 @@ DONE_CALL:
                 pInfo->ilOffset                                       = rawILOffset;
                 pInfo->probeIndex                                     = 0;
                 call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                compCurBB->SetFlags(BBF_HAS_CONSTANT_PROFILE);
+                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
@@ -1503,34 +1503,34 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
         return call;
     }
 
-    LikelyConstantRecord likelyConstants[8];
-    UINT32 constantsCount = getLikelyConstants(likelyConstants, 8, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+    LikelyValueRecord likelyValues[8];
+    UINT32 valuesCount = getLikelyValues(likelyValues, 8, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
 
-    JITDUMP("%u likely sizes for Memmove:\n", constantsCount)
-    for (UINT32 i = 0; i < constantsCount; i++)
+    JITDUMP("%u likely sizes for Memmove:\n", valuesCount)
+    for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyConstants[i].constant, likelyConstants[i].likelihood)
+        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].constant, likelyValues[i].likelihood)
     }
 
     // For now, we only do a single guess, but it's pretty straightforward to
     // extend it to support multiple guesses.
-    LikelyConstantRecord likelyConstant = likelyConstants[0];
+    LikelyValueRecord likelyValue = likelyValues[0];
 #if DEBUG
     // Re-use JitRandomGuardedDevirtualization for stress-testing.
     if (JitConfig.JitRandomGuardedDevirtualization() != 0)
     {
         CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
 
-        constantsCount            = 1;
-        likelyConstant.constant   = random->Next(256);
-        likelyConstant.likelihood = 100;
+        valuesCount            = 1;
+        likelyValue.constant   = random->Next(256);
+        likelyValue.likelihood = 100;
     }
 #endif
 
     // TODO: Tune the likelihood threshold, for now it's 50%
-    if ((constantsCount > 0) && (likelyConstant.likelihood >= 50))
+    if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
     {
-        const ssize_t popularSize = likelyConstant.constant;
+        const ssize_t popularSize = likelyValue.constant;
 
         // It only makes sense if we're going to actually unroll it.
         // TODO: Consider enabling it for popularSize == 0 too.
