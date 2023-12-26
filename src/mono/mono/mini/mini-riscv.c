@@ -3069,7 +3069,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->sreg1 = ins->sreg1;
 					next_ins->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				} else if (next_ins->opcode == OP_LCEQ || next_ins->opcode == OP_ICEQ) {
+				} else if (next_ins->opcode == OP_LCEQ) {
 					// compare rs1, rs2; lceq rd => xor rd, rs1, rs2; sltiu rd, rd, 1
 					ins->opcode = OP_IXOR;
 					ins->dreg = next_ins->dreg;
@@ -3077,6 +3077,20 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_SLTIU;
 					next_ins->sreg1 = ins->dreg;
 					next_ins->inst_imm = 1;
+				} else if (next_ins->opcode == OP_ICEQ){
+					// compare rs1, rs2; lceq rd => xor rd, rs1, rs2; sltiu rd, rd, 1
+					ins->opcode = OP_IXOR;
+					ins->dreg = next_ins->dreg;
+
+					next_ins->opcode = OP_RISCV_SLTIU;
+					next_ins->sreg1 = ins->dreg;
+					next_ins->inst_imm = 1;
+
+					// insert a sext.i4 between XOR and SLTIU
+					// will change next_ins pointer
+					NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_SEXT_I4);
+					temp->dreg = ins->dreg;
+					temp->sreg1 = ins->dreg;
 				} else if (next_ins->opcode == OP_ICNEQ) {
 					// compare rs1, rs2; lcneq rd => xor rd, rs1, rs2; sltu rd, X0, rd
 					ins->opcode = OP_IXOR;
@@ -3085,6 +3099,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_SLTU;
 					next_ins->sreg1 = RISCV_ZERO;
 					next_ins->sreg2 = ins->dreg;
+
+					// insert a sext.i4 between XOR and SLTU
+					// will change next_ins pointer
+					NEW_INS_AFTER (cfg, ins, next_ins, temp, OP_SEXT_I4);
+					temp->dreg = ins->dreg;
+					temp->sreg1 = ins->dreg;
 				} else if (next_ins->opcode == OP_LCGT || next_ins->opcode == OP_ICGT) {
 					next_ins->opcode = OP_RISCV_SLT;
 					next_ins->sreg1 = ins->sreg2;
