@@ -2147,7 +2147,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
         [Fact]
 #if !BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatform.tvOS | TestPlatform.MacCatalyst)]
+        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
 #endif
         public void TestGraphWithUnsupportedMember()
         {
