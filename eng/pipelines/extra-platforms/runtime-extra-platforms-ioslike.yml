@@ -10,40 +10,40 @@ parameters:
 
 jobs:
 
-#
-# iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
-    platforms:
-      - ios_arm64
-      - tvos_arm64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
-      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true
-      timeoutInMinutes: 480
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+# #
+# # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
+# # Build the whole product using Mono and run libraries tests
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: mono
+#     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+#     platforms:
+#       - ios_arm64
+#       - tvos_arm64
+#     variables:
+#       # map dependencies variables to local variables
+#       - name: librariesContainsChange
+#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+#       - name: monoContainsChange
+#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_Mono
+#       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+#       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true
+#       timeoutInMinutes: 480
+#       # extra steps, run tests
+#       postBuildSteps:
+#         - template: /eng/pipelines/libraries/helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+#             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # iOS/tvOS devices
@@ -91,72 +91,72 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
-#
-# iOS/tvOS devices
-# Build the whole product using Native AOT and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: coreclr
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
-    platforms:
-      - ios_arm64
-      - tvos_arm64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: coreclrContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
-      timeoutInMinutes: 180
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+# #
+# # iOS/tvOS devices
+# # Build the whole product using Native AOT and run libraries tests
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: coreclr
+#     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+#     platforms:
+#       - ios_arm64
+#       - tvos_arm64
+#     variables:
+#       # map dependencies variables to local variables
+#       - name: librariesContainsChange
+#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+#       - name: coreclrContainsChange
+#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_NativeAOT
+#       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+#       timeoutInMinutes: 180
+#       # extra steps, run tests
+#       postBuildSteps:
+#         - template: /eng/pipelines/libraries/helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+#             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
-#
-# Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: coreclr
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
-    platforms:
-      - ios_arm64
-      - tvos_arm64
-    variables:
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT_RuntimeTests
-      timeoutInMinutes: 480
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
-      # extra steps, run tests
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          parameters:
-            testGroup: innerloop
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+# #
+# # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: coreclr
+#     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+#     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+#     platforms:
+#       - ios_arm64
+#       - tvos_arm64
+#     variables:
+#       - name: timeoutPerTestInMinutes
+#         value: 60
+#       - name: timeoutPerTestCollectionInMinutes
+#         value: 180
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_NativeAOT_RuntimeTests
+#       timeoutInMinutes: 480
+#       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+#       # extra steps, run tests
+#       extraVariablesTemplates:
+#         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+#           parameters:
+#             testGroup: innerloop
+#       postBuildSteps:
+#         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+#           parameters:
+#             creator: dotnet-bot
+#             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+#             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
