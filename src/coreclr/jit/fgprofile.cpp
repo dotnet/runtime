@@ -2302,10 +2302,10 @@ public:
 
         GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
 
-        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_CONSTANTPROFILE for the len:
+        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for the len:
         //
         //  \--*  COMMA     long
-        //     +--*  CALL help void   CORINFO_HELP_CONSTANTPROFILE
+        //     +--*  CALL help void   CORINFO_HELP_VALUEPROFILE
         //     |  +--*  COMMA     long
         //     |  |  +--*  STORE_LCL_VAR long  tmp
         //     |  |  |  \--*  (node to poll)
@@ -2317,13 +2317,13 @@ public:
         const var_types lenType              = (*lenArgRef)->TypeGet();
         const unsigned  lenTmpNum            = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
         compiler->lvaTable[lenTmpNum].lvType = lenType;
-        GenTree* lengthLocal                 = compiler->gtNewLclvNode(lenTmpNum, lenType);
-        GenTree* storeLenToTemp              = compiler->gtNewStoreLclVarNode(lenTmpNum, *lenArgRef);
 
-        GenTreeOp*   lengthNode = compiler->gtNewOperNode(GT_COMMA, lenType, storeLenToTemp, lengthLocal);
-        GenTree*     histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
-        GenTreeCall* helperCallNode =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_CONSTANTPROFILE, TYP_VOID, lengthNode, histNode);
+        GenTree*     lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, lenType);
+        GenTree*     storeLenToTemp = compiler->gtNewStoreLclVarNode(lenTmpNum, *lenArgRef);
+        GenTreeOp*   lengthNode     = compiler->gtNewOperNode(GT_COMMA, lenType, storeLenToTemp, lengthLocal);
+        GenTree*     histNode       = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        unsigned     helper         = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+        GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
         *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lenType, helperCallNode, compiler->gtCloneExpr(lengthLocal));
         m_instrCount++;

@@ -357,11 +357,16 @@ public:
         void* HandleTable[HandleHistogram32::SIZE];
     };
 
-    struct ConstantHistogram
+    struct ValueHistogram32
+    {
+        uint32_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
+    };
+
+    struct ValueHistogram64
     {
         uint64_t Count;
-        // Re-use HandleHistogram32's SIZE for now
-        intptr_t ConstTable[HandleHistogram32::SIZE];
+        intptr_t ValueTable[HandleHistogram32::SIZE];
     };
 
     enum class PgoInstrumentationKind
