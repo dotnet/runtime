@@ -6783,6 +6783,20 @@ namespace System.Text.Json.Tests
                 (writer, value) => writer.WriteString(jet, value));
         }
 
+        [Fact]
+        public static void WriteStringValue_IndentationOptions()
+        {
+            var options = new JsonWriterOptions();
+            var expectedOutput = GetCustomExpectedString(options);
+
+            options.IndentCharacter = '\t';
+            options.IndentSize = 127;
+
+            var output = GetCustomExpectedString(options);
+
+            Assert.Equal(expectedOutput, output);
+        }
+
         private delegate void WriteValueSpanAction<T>(
             Utf8JsonWriter writer,
             ReadOnlySpan<T> value);
