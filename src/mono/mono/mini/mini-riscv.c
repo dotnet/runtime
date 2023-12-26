@@ -3179,9 +3179,14 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_ISUB;
 			MonoInst *branch_ins = next_ins;
 			if (branch_ins) {
-				if (branch_ins->opcode == OP_COND_EXC_OV || next_ins->opcode == OP_COND_EXC_IOV ||
-					branch_ins->opcode == OP_COND_EXC_NC || branch_ins->opcode == OP_COND_EXC_C ||
-					branch_ins->opcode == OP_COND_EXC_IC) {
+				if (branch_ins->opcode == OP_COND_EXC_NC || branch_ins->opcode == OP_COND_EXC_C ||
+					branch_ins->opcode == OP_COND_EXC_IC){
+						// bltu rs1, rd, overflow
+						branch_ins->opcode = OP_RISCV_EXC_BLTU;
+						branch_ins->sreg1 = ins->sreg1;
+						branch_ins->sreg2 = ins->dreg;
+					}
+				else if (branch_ins->opcode == OP_COND_EXC_OV || next_ins->opcode == OP_COND_EXC_IOV) {
 					// bne t1, t2, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
 					branch_ins->sreg1 = mono_alloc_ireg (cfg);
