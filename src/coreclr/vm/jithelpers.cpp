@@ -5810,43 +5810,43 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     return true;
 }
 
-HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* constProfile)
+HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
-    if (!CheckSample(&constProfile->Count, &sampleIndex))
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
     {
         return;
     }
 
 #ifdef _DEBUG
-    PgoManager::VerifyAddress(constProfile);
-    PgoManager::VerifyAddress(constProfile + 1);
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
 #endif
 
-    constProfile->ValueTable[sampleIndex] = val;
+    valueProfile->ValueTable[sampleIndex] = val;
 }
 HCIMPLEND
 
-HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* constProfile)
+HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
-    if (!CheckSample(&constProfile->Count, &sampleIndex))
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
     {
         return;
     }
 
 #ifdef _DEBUG
-    PgoManager::VerifyAddress(constProfile);
-    PgoManager::VerifyAddress(constProfile + 1);
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
 #endif
 
-    constProfile->ValueTable[sampleIndex] = val;
+    valueProfile->ValueTable[sampleIndex] = val;
 }
 HCIMPLEND
 

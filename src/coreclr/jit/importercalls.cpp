@@ -1509,7 +1509,7 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
     JITDUMP("%u likely sizes for Memmove:\n", valuesCount)
     for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].constant, likelyValues[i].likelihood)
+        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
     }
 
     // For now, we only do a single guess, but it's pretty straightforward to
@@ -1522,7 +1522,7 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
         CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
 
         valuesCount            = 1;
-        likelyValue.constant   = random->Next(256);
+        likelyValue.value      = random->Next(256);
         likelyValue.likelihood = 100;
     }
 #endif
@@ -1530,7 +1530,7 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
     // TODO: Tune the likelihood threshold, for now it's 50%
     if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
     {
-        const ssize_t popularSize = likelyValue.constant;
+        const ssize_t popularSize = likelyValue.value;
 
         // It only makes sense if we're going to actually unroll it.
         // TODO: Consider enabling it for popularSize == 0 too.

@@ -354,7 +354,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
 // Arguments:
 //    pLikelyValues     - [OUT] array of likely values sorted by likelihood (descending). It must be
 //                           at least of 'maxLikelyValues' (next argument) length.
-//                           The array consists of pairs "constant - likelihood" ordered by likelihood
+//                           The array consists of pairs "value - likelihood" ordered by likelihood
 //                           (descending) where likelihood can be any value in [0..100] range.
 //    maxLikelyValues      - limit for likely classes to output
 //    schema               - profile schema
@@ -418,7 +418,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*           
             for (size_t hIdx = 0; hIdx < numberOfLikelyConst; hIdx++)
             {
                 LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
-                pLikelyValues[hIdx].constant             = hc.m_handle;
+                pLikelyValues[hIdx].value                = hc.m_handle;
                 pLikelyValues[hIdx].likelihood           = hc.m_count * 100 / h.m_totalCount;
                 totalLikelihood += pLikelyValues[hIdx].likelihood;
             }

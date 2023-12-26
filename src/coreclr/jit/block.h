@@ -431,7 +431,7 @@ enum BasicBlockFlags : unsigned __int64
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
     BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42), // Block was the header ('entry') of a loop recognized by old loop finding
-    BBF_HAS_VALUE_PROFILE           = MAKE_BBFLAG(43), // Block has a node that needs a generic const probing
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(43), // Block has a node that needs a value probing
 
     // The following are sets of flags.
 

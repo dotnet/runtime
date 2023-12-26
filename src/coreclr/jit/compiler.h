@@ -6271,7 +6271,7 @@ protected:
 
     Instrumentor* fgCountInstrumentor;
     Instrumentor* fgHistogramInstrumentor;
-    Instrumentor* fgGenericInstrumentor;
+    Instrumentor* fgValueInstrumentor;
 
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();

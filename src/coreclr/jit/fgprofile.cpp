@@ -2566,7 +2566,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         {
             fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-            fgGenericInstrumentor   = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgValueInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             return PhaseStatus::MODIFIED_NOTHING;
         }
     }
@@ -2606,12 +2606,12 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 
     if (!prejit && JitConfig.JitProfileValues())
     {
-        fgGenericInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
+        fgValueInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
     }
     else
     {
         JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileValues=0")
-        fgGenericInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+        fgValueInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
     // Make pre-import preparations.
@@ -2619,7 +2619,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool isPreImport = true;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
-    fgGenericInstrumentor->Prepare(isPreImport);
+    fgValueInstrumentor->Prepare(isPreImport);
 
     return PhaseStatus::MODIFIED_NOTHING;
 }
@@ -2649,7 +2649,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     const bool isPreImport = false;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
-    fgGenericInstrumentor->Prepare(isPreImport);
+    fgValueInstrumentor->Prepare(isPreImport);
 
     // Walk the flow graph to build up the instrumentation schema.
     //
@@ -2666,17 +2666,16 @@ PhaseStatus Compiler::fgInstrumentMethod()
             fgHistogramInstrumentor->BuildSchemaElements(block, schema);
         }
 
-        if (fgGenericInstrumentor->ShouldProcess(block))
+        if (fgValueInstrumentor->ShouldProcess(block))
         {
-            fgGenericInstrumentor->BuildSchemaElements(block, schema);
+            fgValueInstrumentor->BuildSchemaElements(block, schema);
         }
     }
 
     // Even though we haven't yet instrumented, we may have made changes in anticipation...
     //
     const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() ||
-                                         fgHistogramInstrumentor->ModifiedFlow() ||
-                                         fgGenericInstrumentor->ModifiedFlow();
+                                         fgHistogramInstrumentor->ModifiedFlow() || fgValueInstrumentor->ModifiedFlow();
     const PhaseStatus earlyExitPhaseStatus =
         madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 
@@ -2700,7 +2699,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     }
 
     if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
-        (fgHistogramInstrumentor->SchemaCount() == 0) && (fgGenericInstrumentor->SchemaCount() == 0))
+        (fgHistogramInstrumentor->SchemaCount() == 0) && (fgValueInstrumentor->SchemaCount() == 0))
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
@@ -2716,7 +2715,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     JITDUMP("Instrumenting method: %d count probes, %d class probes and %d generic probes\n",
             fgCountInstrumentor->SchemaCount(), fgHistogramInstrumentor->SchemaCount(),
-            fgGenericInstrumentor->SchemaCount())
+            fgValueInstrumentor->SchemaCount())
 
     assert(schema.size() > 0);
 
@@ -2764,9 +2763,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
             fgHistogramInstrumentor->Instrument(block, schema, profileMemory);
         }
 
-        if (fgGenericInstrumentor->ShouldInstrument(block))
+        if (fgValueInstrumentor->ShouldInstrument(block))
         {
-            fgGenericInstrumentor->Instrument(block, schema, profileMemory);
+            fgValueInstrumentor->Instrument(block, schema, profileMemory);
         }
     }
 
@@ -2783,7 +2782,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
     fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-    fgGenericInstrumentor->InstrumentMethodEntry(schema, profileMemory);
+    fgValueInstrumentor->InstrumentMethodEntry(schema, profileMemory);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

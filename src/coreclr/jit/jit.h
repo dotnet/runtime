@@ -898,7 +898,7 @@ struct LikelyClassMethodRecord
 
 struct LikelyValueRecord
 {
-    ssize_t constant;
+    ssize_t value;
     UINT32  likelihood;
 };
 
