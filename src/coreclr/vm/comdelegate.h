@@ -61,8 +61,6 @@ public:
     static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
     static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);
 
-    static FCDECL5(FC_BOOL_RET, BindToMethodName, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, StringObject* methodNameUNSAFE, int flags);
-
     static FCDECL5(FC_BOOL_RET, BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *method, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags);
 
     // This gets the MethodInfo for a delegate, creating it if necessary
@@ -132,7 +130,6 @@ public:
                                        bool        *pfIsOpenDelegate);
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
 
-private:
     static void BindToMethod(DELEGATEREF   *pRefThis,
                              OBJECTREF     *pRefFirstArg,
                              MethodDesc    *pTargetMethod,
@@ -152,6 +149,9 @@ enum DelegateBindingFlags
     DBF_CaselessMatching    =   0x00000020, // Use case insensitive lookup for methods matched by name
     DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
+
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags);
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);

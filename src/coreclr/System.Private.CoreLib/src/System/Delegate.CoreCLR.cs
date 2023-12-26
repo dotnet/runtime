@@ -399,8 +399,16 @@ namespace System
 
         // BindToMethodName is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
         // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags);
+        private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags)
+        {
+            Delegate d = this;
+            return BindToMethodName(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
+                new QCallTypeHandle(ref methodType), method, flags);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags);

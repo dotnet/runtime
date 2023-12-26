@@ -881,33 +881,29 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     return pTargetCall;
 }
 
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
-                        Object *refThisUNSAFE,
-                        Object *targetUNSAFE,
-                        ReflectClassBaseObject *pMethodTypeUNSAFE,
-                        StringObject* methodNameUNSAFE,
-                        int flags)
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags)
 {
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        DELEGATEREF refThis;
-        OBJECTREF target;
-        STRINGREF methodName;
-        REFLECTCLASSBASEREF refMethodType;
-    } gc;
-
-    gc.refThis    = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.target     = (OBJECTREF) targetUNSAFE;
-    gc.methodName = (STRINGREF) methodNameUNSAFE;
-    gc.refMethodType = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
-
-    TypeHandle methodType = gc.refMethodType->GetType();
+    QCALL_CONTRACT;
 
     MethodDesc *pMatchingMethod = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
+    {
+        DELEGATEREF refThis;
+        OBJECTREF target;
+    } gc;
+
+    gc.refThis    = (DELEGATEREF) d.Get();
+    gc.target     = target.Get();
+
+    GCPROTECT_BEGIN(gc);
+
+    TypeHandle methodType = pMethodType.AsTypeHandle();
 
     // Caching of MethodDescs (impl and decl) for MethodTable slots provided significant
     // performance gain in some reflection emit scenarios.
@@ -922,11 +918,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
     // now loop through the methods looking for a match
     //
-
-    // get the name in UTF8 format
-    StackSString szName;
-    szName.SetAndConvertToUTF8(gc.methodName->GetBuffer());
-    LPCUTF8 szNameStr = szName.GetUTF8();
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -946,7 +937,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
             if (pCurMethod->IsGenericMethodDefinition())
                 continue;
 
-            if ((pCurMethod != NULL) && (StrCompFunc(szNameStr, pCurMethod->GetName()) == 0))
+            if ((pCurMethod != NULL) && (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0))
             {
                 // found a matching string, get an associated method desc if needed
                 // Use unboxing stubs for instance and virtual methods on value types.
@@ -987,7 +978,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
 
                 // Found the target that matches the signature and satisfies security transparency rules
                 // Initialize the delegate to point to the target method.
-                BindToMethod(&gc.refThis,
+                COMDelegate::BindToMethod(&gc.refThis,
                              &gc.target,
                              pCurMethod,
                              methodType.GetMethodTable(),
@@ -1000,11 +991,13 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     }
     done:
         ;
-    HELPER_METHOD_FRAME_END();
 
-    FC_RETURN_BOOL(pMatchingMethod != NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return (pMatchingMethod != NULL);
 }
-FCIMPLEND
 
 
 FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags)
