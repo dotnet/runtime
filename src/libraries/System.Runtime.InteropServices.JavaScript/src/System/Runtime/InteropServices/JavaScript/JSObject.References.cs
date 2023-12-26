@@ -71,31 +71,6 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
-#if FEATURE_WASM_THREADS
-        internal static void AssertThreadAffinity(object value)
-        {
-            if (value == null)
-            {
-                return;
-            }
-
-            if (value is JSObject jsObject)
-            {
-                if (!jsObject.ProxyContext.IsCurrentThread())
-                {
-                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
-                }
-            }
-            else if (value is JSException jsException)
-            {
-                if (jsException.jsException != null && !jsException.jsException.ProxyContext.IsCurrentThread())
-                {
-                    throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
-                }
-            }
-        }
-#endif
-
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
@@ -110,6 +85,11 @@ namespace System.Runtime.InteropServices.JavaScript
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
+                if (ProxyContext.SynchronizationContext._isDisposed)
+                {
+                    return;
+                }
+
                 if (ProxyContext.IsCurrentThread())
                 {
                     JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);

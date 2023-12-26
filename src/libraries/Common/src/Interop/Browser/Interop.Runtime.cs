@@ -12,24 +12,19 @@ internal static partial class Interop
     internal static unsafe partial class Runtime
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
+        internal static extern void ReleaseCSOwnedObject(nint jsHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSFunction(int functionHandle, void* data);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImport(int importHandle, void* data);
-
+        public static extern void InvokeJSFunction(nint functionHandle, nint data);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void ResolveOrRejectPromise(void* data);
+        public static extern void ResolveOrRejectPromise(nint data);
 
 #if !ENABLE_JS_INTEROP_BY_VALUE
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern IntPtr RegisterGCRoot(IntPtr start, int bytesSize, IntPtr name);
+        public static extern nint RegisterGCRoot(nint start, int bytesSize, IntPtr name);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void DeregisterGCRoot(IntPtr handle);
+        public static extern void DeregisterGCRoot(nint handle);
 #endif
 
 #if FEATURE_WASM_THREADS
@@ -37,6 +32,17 @@ internal static partial class Interop
         public static extern void InstallWebWorkerInterop(IntPtr proxyContextGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImportSync(nint data, nint signature);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImportAsync(nint data, nint signature);
+#else
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImport(int importHandle, nint data);
 #endif
 
         #region Legacy

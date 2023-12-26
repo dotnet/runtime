@@ -66,10 +66,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 var jse = cpy as JSException;
                 if (jse != null && jse.jsException != null)
                 {
-                    ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
-#if FEATURE_WASM_THREADS
-                    JSObject.AssertThreadAffinity(value);
-                    var ctx = jse.jsException.ProxyContext;
+                    var jsException = jse.jsException;
+#if !FEATURE_WASM_THREADS
+                    ObjectDisposedException.ThrowIf(jsException.IsDisposed, value);
+#else
+                    var ctx = jsException.ProxyContext;
+                    lock (ctx)
+                    {
+                        ObjectDisposedException.ThrowIf(jsException.IsDisposed, value);
+                    }
+
                     if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
                     {
                         JSProxyContext.CaptureContextFromParameter(ctx);
@@ -82,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
                     // this is JSException roundtrip
                     slot.Type = MarshalerType.JSException;
-                    slot.JSHandle = jse.jsException.JSHandle;
+                    slot.JSHandle = jsException.JSHandle;
                 }
                 else
                 {
