@@ -337,7 +337,7 @@
         DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
     <Copy
         SourceFiles="%(ExtraDlls.Identity)"
-        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
+        DestinationFolder="$(BuildDir)" />
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
