@@ -194,10 +194,22 @@ enum class ExKind : uint8_t
     InstructionFaultFlag = 0x10
 };
 
+struct PAL_SEHException;
+
 struct ExInfo
 {
-    ExInfo(Thread *pThread, CONTEXT *pCtx, REGDISPLAY *pRD, ExKind exceptionKind);
+    struct DAC_EXCEPTION_POINTERS
+    {
+        PTR_EXCEPTION_RECORD    ExceptionRecord;
+        PTR_CONTEXT             ContextRecord;
+    };
 
+    ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind);
+
+    // Releases all the resources owned by the ExInfo
+    void ReleaseResources();
+
+    // Make debugger and profiler callbacks before and after an exception handler (catch, finally, filter) is called
     void MakeCallbacksRelatedToHandler(
         bool fBeforeCallingHandler,
         Thread*                pThread,
@@ -221,7 +233,6 @@ struct ExInfo
     // Stack frame iterator used to walk stack frames while handling the exception
     StackFrameIterator m_frameIter;
     volatile size_t m_notifyDebuggerSP;
-    REGDISPLAY *m_pRD;
     // Stack trace of the current exception
     StackTraceInfo m_stackTraceInfo;
     // Initial explicit frame
@@ -238,8 +249,13 @@ struct ExInfo
     StackFrame          m_sfCallerOfActualHandlerFrame;
     // The exception handling clause for the catch handler that was identified during pass 1
     EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
+    // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
+    DAC_EXCEPTION_POINTERS m_ptrs;
 
 #ifdef TARGET_UNIX
+    // Set to TRUE to take ownership of the EXCEPTION_RECORD and CONTEXT_RECORD in the m_ptrs. When set, the
+    // memory of those records is freed using PAL_FreeExceptionRecords when the ExInfo is destroyed.
+    BOOL m_fOwnsExceptionPointers;
     // Exception propagation callback and context for ObjectiveC exception propagation support
     void(*m_propagateExceptionCallback)(void* context);
     void *m_propagateExceptionContext;
@@ -250,11 +266,38 @@ struct ExInfo
 
     // The following fields are for profiler / debugger use only
     EE_ILEXCEPTION_CLAUSE m_CurrentClause;
+    // Stores information necessary to intercept an exception
     DebuggerExState m_DebuggerExState;
+    // Information for the funclet we are calling
     EHClauseInfo   m_EHClauseInfo;
+    // Flags representing exception handling state (exception is rethrown, unwind has started, various debugger notifications sent etc)
     ExceptionFlags m_ExceptionFlags;
+    // Code of the current exception
+    DWORD          m_ExceptionCode;
+    // Method to report to the debugger / profiler when stack frame iterator leaves a frame
+    MethodDesc    *m_pMDToReportFunctionLeave;
+    // Set to TRUE when the first chance notification was delivered for the current exception
+    BOOL           m_fDeliveredFirstChanceNotification;
+    // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
+    CONTEXT        m_exContext;
+    REGDISPLAY     m_regDisplay;
+
+    inline BOOL DeliveredFirstChanceNotification()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_fDeliveredFirstChanceNotification;
+    }
+
+    inline void SetFirstChanceNotificationStatus(BOOL fDelivered)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_fDeliveredFirstChanceNotification = fDelivered;
+    }
 
 #ifndef TARGET_UNIX
+    // Used to track Watson bucketing information for an exception.
     EHWatsonBucketTracker m_WatsonBucketTracker;
 
     inline PTR_EHWatsonBucketTracker GetWatsonBucketTracker()
@@ -263,6 +306,14 @@ struct ExInfo
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
     }
 #endif // !TARGET_UNIX
+
+#if defined(TARGET_UNIX)
+    void TakeExceptionPointersOwnership(PAL_SEHException* ex);
+#endif // TARGET_UNIX
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif // DACCESS_COMPILE
 
 };
 

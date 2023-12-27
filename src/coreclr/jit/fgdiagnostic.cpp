@@ -76,7 +76,7 @@ void Compiler::fgDebugCheckUpdate()
      * no unreachable blocks  -> no blocks have countOfInEdges() = 0
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
-     *                           kind of redundand with the above, but to make sure)
+     *                           kind of redundant with the above, but to make sure)
      * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
      */
 
@@ -132,21 +132,11 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        // Check for an unnecessary jumps to the next block
-        bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
-
-        if (block->KindIs(BBJ_COND))
+        // Check for an unnecessary jumps to the next block.
+        // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
+        if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
-            doAssertOnJumpToNextBlock = true;
-        }
-
-        if (doAssertOnJumpToNextBlock)
-        {
-            if (block->JumpsToNext())
-            {
-                noway_assert(!"Unnecessary jump to the next block!");
-            }
+            noway_assert(!"Unnecessary jump to the next block!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
@@ -2492,12 +2482,12 @@ void Compiler::fgDispBasicBlocks(bool dumpTrees)
 // fgDumpStmtTree: dump the statement and the basic block number.
 //
 // Arguments:
-//    stmt  - the statement to dump;
-//    bbNum - the basic block number to dump.
+//    block - the basic block that contains the statement to dump.
+//    stmt  - the statement to dump.
 //
-void Compiler::fgDumpStmtTree(Statement* stmt, unsigned bbNum)
+void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 {
-    printf("\n***** " FMT_BB "\n", bbNum);
+    printf("\n***** %s\n", block->dspToString());
     gtDispStmt(stmt);
 }
 
@@ -2521,7 +2511,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     {
         for (Statement* const stmt : block->Statements())
         {
-            fgDumpStmtTree(stmt, block->bbNum);
+            fgDumpStmtTree(block, stmt);
         }
     }
     else

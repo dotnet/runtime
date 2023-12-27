@@ -754,11 +754,11 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
 }
 
 //----------------------------------------------------------------------------------
-// optCheckIterInLoopTest: Check if iter var is used in loop test.
+// optCheckIterInLoopTest: Check if iteration variable is used in loop test.
 //
 // Arguments:
-//      loopInd - loopIndex
-//      test    - "jtrue" tree or an store of the loop iter termination condition
+//      loopInd - loop index
+//      test    - "jtrue" tree or a store of the loop iteration termination condition
 //      iterVar - loop iteration variable.
 //
 //  Operation:
@@ -2861,7 +2861,7 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 // This method will split the loop top into two or three blocks depending on
 // whether (1) or (3) is non-empty, and redirect the edges accordingly.
 //
-// Loops are canoncalized outer to inner, so inner loops should never see outer loop
+// Loops are canonicalized outer to inner, so inner loops should never see outer loop
 // non-backedges, as the parent loop canonicalization should have handled them.
 //
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
