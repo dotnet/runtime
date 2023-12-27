@@ -2717,7 +2717,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_BNE;
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
-				} else {
+				} else if (next_ins->opcode == OP_BR) {
+					NULLIFY_INS (ins);
+				}
+				else {
 					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
 					NOT_IMPLEMENTED;
 				}
