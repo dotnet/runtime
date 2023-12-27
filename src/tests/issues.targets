@@ -2533,7 +2533,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/PGO/ProfileCastClassAndIsInst/ProfileCastClassAndIsInst_random3/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test13/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
