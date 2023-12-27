@@ -67,7 +67,8 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
 #ifdef DEBUG
             if (JitConfig.JitNoInline())
             {
-                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "JitNoInline is set");
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
+                                                    "JitNoInline is set");
                 pParam->success = false;
                 return;
             }
@@ -78,7 +79,8 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
             CORINFO_METHOD_INFO methInfo;
             if (!compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo, pParam->exactContextHnd))
             {
-                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "getMethodInfo failed");
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
+                                                    "getMethodInfo failed");
                 return;
             }
 
@@ -113,7 +115,8 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
-                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "InitClass reported don't inline");
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
+                                                    "InitClass reported don't inline");
                 return;
             }
 
@@ -135,12 +138,14 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
     {
         *opcode         = param.opcode;
         *pResolvedToken = param.resolvedToken;
-        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_PASS, "Trivial property backing field has been inlined");
+        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_PASS,
+                                                 "Trivial property backing field has been inlined");
         return true;
     }
     if (!success)
     {
-        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_FAIL, "Failed to inline trivial property");
+        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_FAIL,
+                                                 "Failed to inline trivial property");
     }
     return false;
 }
