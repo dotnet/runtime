@@ -2774,7 +2774,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())
@@ -2880,7 +2880,7 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())

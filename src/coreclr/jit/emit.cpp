@@ -1542,7 +1542,7 @@ void emitter::appendToCurIG(instrDesc* id)
  *  Display (optionally) an instruction offset.
  */
 
-void emitter::emitDispInsAddr(BYTE* code)
+void emitter::emitDispInsAddr(const BYTE* code)
 {
 #ifdef DEBUG
     if (emitComp->opts.disAddr)
@@ -2953,7 +2953,7 @@ void* emitter::emitAddInlineLabel()
 // emitPrintLabel: Print the assembly label for an insGroup. We could use emitter::emitLabelString()
 // to be consistent, but that seems silly.
 //
-void emitter::emitPrintLabel(insGroup* ig)
+void emitter::emitPrintLabel(const insGroup* ig) const
 {
     printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
 }
@@ -2966,7 +2966,7 @@ void emitter::emitPrintLabel(insGroup* ig)
 // Returns:
 //    String with insGroup label
 //
-const char* emitter::emitLabelString(insGroup* ig)
+const char* emitter::emitLabelString(const insGroup* ig) const
 {
     const int       TEMP_BUFFER_LEN = 40;
     static unsigned curBuf          = 0;
@@ -4194,8 +4194,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         printf("\n");
 
-#if !defined(TARGET_RISCV64)
-        // TODO-RISCV64-Bug: When JitDump is on, it asserts in emitDispIns which is not implemented.
         if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
@@ -4228,7 +4226,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
                 printf("\n");
             }
         }
-#endif // !TARGET_RISCV64
     }
 }
 
@@ -4300,11 +4297,20 @@ void emitter::emitDispJumpList()
                 printf(" -> %s", getRegName(jmp->idReg1()));
             }
             else
+#endif // TARGET_ARM64
             {
                 printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
             }
-#else
-            printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+
+            if (jmp->idjShort)
+            {
+                printf(" (short)");
+            }
+
+            if (jmp->idjKeepLong)
+            {
+                printf(" (long)");
+            }
 
 #if defined(TARGET_XARCH)
             if (jmp->idjIsRemovableJmpCandidate)
@@ -4312,7 +4318,13 @@ void emitter::emitDispJumpList()
                 printf(" ; removal candidate");
             }
 #endif // TARGET_XARCH
-#endif // !TARGET_ARM64
+
+#if defined(TARGET_AMD64)
+            if (jmp->idjIsAfterCallBeforeEpilog)
+            {
+                printf(" ; after call before epilog");
+            }
+#endif // TARGET_AMD64
         }
         printf("\n");
         jmpCount += 1;
@@ -4331,7 +4343,7 @@ void emitter::emitDispJumpList()
 //   id - the pointer to the current instrDesc
 //   idSize - the size of the current instrDesc
 //
-void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
+void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const
 {
     assert(idSize == emitSizeOfInsDsc(*id));
     char* idData = reinterpret_cast<char*>(*id);
@@ -4349,7 +4361,7 @@ void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 // Returns:
 //   A pointer to the first instrDesc.
 //
-emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
+emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData) const
 {
     return reinterpret_cast<instrDesc*>(idData + m_debugInfoSize);
 }
@@ -4630,10 +4642,11 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        if (jmp->idjIsRemovableJmpCandidate)
         {
 #if DEBUG
-            assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
+            assert(jmp->idInsFmt() == IF_LABEL);
+            assert(emitIsUncondJump(jmp));
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
                    ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
             previousJumpIgNum  = jmpGroup->igNum;
@@ -4647,6 +4660,8 @@ void emitter::emitRemoveJumpToNextInst()
 
             if ((jmpGroup->igNext == targetGroup) && ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
             {
+                assert(!jmpGroup->endsWithAlignInstr());
+
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
                 CLANG_FORMAT_COMMENT_ANCHOR
@@ -4699,6 +4714,25 @@ void emitter::emitRemoveJumpToNextInst()
                 UNATIVE_OFFSET codeSize = jmp->idCodeSize();
                 jmp->idCodeSize(0);
 
+#ifdef TARGET_AMD64
+                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
+                if (jmp->idjIsAfterCallBeforeEpilog)
+                {
+                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
+                    {
+                        // This jump will become a nop, so set its size now to ensure below calculations are correct
+                        jmp->idCodeSize(1);
+                        codeSize--;
+                    }
+                    else
+                    {
+                        // We don't need a nop if the removed jump isn't before an OS epilog,
+                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
+                        jmp->idjIsAfterCallBeforeEpilog = 0;
+                    }
+                }
+#endif // TARGET_AMD64
+
                 jmpGroup->igSize -= (unsigned short)codeSize;
                 jmpGroup->igFlags |= IGF_UPD_ISZ;
 
@@ -4707,17 +4741,15 @@ void emitter::emitRemoveJumpToNextInst()
             }
             else
             {
+                // The jump was not removed; make sure idjIsRemovableJmpCandidate reflects this
+                jmp->idjIsRemovableJmpCandidate = 0;
+
                 // Update the previousJmp
                 previousJmp = jmp;
 #if DEBUG
                 if (targetGroup == nullptr)
                 {
                     JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n", jmpGroup->igNum,
-                            jmp->idDebugOnlyInfo()->idNum);
-                }
-                else if ((jmpGroup->igFlags & IGF_HAS_ALIGN) != 0)
-                {
-                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
                             jmp->idDebugOnlyInfo()->idNum);
                 }
                 else if (jmpGroup->igNext != targetGroup)
@@ -4730,6 +4762,11 @@ void emitter::emitRemoveJumpToNextInst()
                     JITDUMP("IG%02u IN%04x containing instruction group is not marked with IGF_HAS_REMOVABLE_JMP, "
                             "keeping.\n",
                             jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if (jmpGroup->endsWithAlignInstr())
+                {
+                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
                 }
 #endif // DEBUG
             }
@@ -5963,7 +6000,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->GetJumpDest()->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetTarget()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
@@ -7642,7 +7679,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
  *  instruction number for this instruction
  */
 
-unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
+unsigned emitter::emitFindInsNum(const insGroup* ig, const instrDesc* idMatch) const
 {
     instrDesc* id = emitFirstInstrDesc(ig->igData);
 
@@ -7678,7 +7715,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
  *  to find the true offset by looking for the instruction within the group.
  */
 
-UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
+UNATIVE_OFFSET emitter::emitFindOffset(const insGroup* ig, unsigned insNum) const
 {
     instrDesc*     id = emitFirstInstrDesc(ig->igData);
     UNATIVE_OFFSET of = 0;

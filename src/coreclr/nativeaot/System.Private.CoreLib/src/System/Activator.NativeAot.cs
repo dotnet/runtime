@@ -103,7 +103,7 @@ namespace System
         // and under no circumstances gets folded.
         private static Guid MissingConstructorMethod() => new Guid(0x68be9718, 0xf787, 0x45ab, 0x84, 0x3b, 0x1f, 0x31, 0xb6, 0x12, 0x65, 0xeb);
         // The constructor of this struct is used when there's no constructor
-        struct StructWithNoConstructor { public StructWithNoConstructor() { } }
+        private struct StructWithNoConstructor { public StructWithNoConstructor() { } }
 
         [DebuggerHidden]
         [DebuggerStepThrough]

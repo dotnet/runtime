@@ -24,6 +24,7 @@ enum PredicateType
     PREDICATE_NONE = 0,
     PREDICATE_MERGE,
     PREDICATE_ZERO,
+    PREDICATE_SIZED,
 };
 
 const char* emitSveRegName(regNumber reg);
@@ -53,8 +54,8 @@ void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, boo
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
 void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
-void emitDispPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
-void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, bool addComma);
+void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -334,11 +335,11 @@ static code_t insEncodeReg_V_9_to_5(regNumber reg);
 // Return an encoding for the specified 'P' register used in '12' thru '10' position.
 static code_t insEncodeReg_P_12_to_10(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '21' thru '17' position.
-static code_t insEncodeReg_V_21_to_17(regNumber reg);
+// Return an encoding for the specified 'V' register used in '20' thru '16' position.
+static code_t insEncodeReg_V_20_to_16(regNumber reg);
 
-// Return an encoding for the specified 'R' register used in '21' thru '17' position.
-static code_t insEncodeReg_R_21_to_17(regNumber reg);
+// Return an encoding for the specified 'R' register used in '20' thru '16' position.
+static code_t insEncodeReg_R_20_to_16(regNumber reg);
 
 // Return an encoding for the specified 'R' register used in '9' thru '5' position.
 static code_t insEncodeReg_R_9_to_5(regNumber reg);
@@ -346,8 +347,8 @@ static code_t insEncodeReg_R_9_to_5(regNumber reg);
 // Return an encoding for the specified 'R' register used in '4' thru '0' position.
 static code_t insEncodeReg_R_4_to_0(regNumber reg);
 
-// Return an encoding for the specified 'P' register used in '20' thru '17' position.
-static code_t insEncodeReg_P_20_to_17(regNumber reg);
+// Return an encoding for the specified 'P' register used in '19' thru '16' position.
+static code_t insEncodeReg_P_19_to_16(regNumber reg);
 
 // Return an encoding for the specified 'P' register used in '3' thru '0' position.
 static code_t insEncodeReg_P_3_to_0(regNumber reg);
@@ -358,8 +359,8 @@ static code_t insEncodeReg_P_8_to_5(regNumber reg);
 // Return an encoding for the specified 'P' register used in '13' thru '10' position.
 static code_t insEncodeReg_P_13_to_10(regNumber reg);
 
-// Return an encoding for the specified 'R' register used in '18' thru '17' position.
-static code_t insEncodeReg_R_18_to_17(regNumber reg);
+// Return an encoding for the specified 'R' register used in '17' thru '16' position.
+static code_t insEncodeReg_R_17_to_16(regNumber reg);
 
 // Return an encoding for the specified 'P' register used in '7' thru '5' position.
 static code_t insEncodeReg_P_7_to_5(regNumber reg);
@@ -370,11 +371,14 @@ static code_t insEncodeReg_P_3_to_1(regNumber reg);
 // Return an encoding for the specified 'P' register used in '2' thru '0' position.
 static code_t insEncodeReg_P_2_to_0(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '19' thru '17' position.
-static code_t insEncodeReg_V_19_to_17(regNumber reg);
+// Return an encoding for the specified predicate type used in '16' position.
+static code_t insEncodePredQualifier_16(bool merge);
 
-// Return an encoding for the specified 'V' register used in '20' thru '17' position.
-static code_t insEncodeReg_V_20_to_17(regNumber reg);
+// Return an encoding for the specified 'V' register used in '18' thru '16' position.
+static code_t insEncodeReg_V_18_to_16(regNumber reg);
+
+// Return an encoding for the specified 'V' register used in '19' thru '16' position.
+static code_t insEncodeReg_V_19_to_16(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position.
 static code_t insEncodeReg_V_9_to_6(regNumber reg);
@@ -423,8 +427,14 @@ static code_t insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2);
 // Returns the encoding to select 'index' for an Arm64 'mul' elem instruction
 static code_t insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index);
 
+// Returns the encoding for a shift instruction, ready for insertion into an instruction.
+static code_t insEncodeShiftImmediate(emitAttr size, bool isRightShift, ssize_t shiftAmount);
+
 // Returns the encoding for ASIMD Shift instruction.
-static code_t insEncodeVectorShift(emitAttr size, ssize_t shiftAmount);
+static code_t insEncodeVectorShift(emitAttr size, bool isRightShift, ssize_t shiftAmount)
+{
+    return insEncodeShiftImmediate(size, isRightShift, shiftAmount) << 16;
+}
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 vector instruction
 static code_t insEncodeElemsize(emitAttr size);
@@ -466,7 +476,19 @@ static code_t insEncodeExtendScale(ssize_t imm);
 static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
-static code_t insEncodeSveElemsize(insOpts opt);
+static code_t insEncodeSveElemsize(emitAttr size);
+
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
+// This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
+static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
+
+// Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
+// This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
+static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
+
+// Returns the encoding to select the 4/8-byte width specifier <R> at bit location 22
+// for an Arm64 Sve instruction.
+static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -567,8 +589,15 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+static emitAttr optGetSveElemsize(insOpts arrangement);
+
 //  For the given 'arrangement' returns the one with the element width that is double that of the 'arrangement' element.
 static insOpts optWidenElemsizeArrangement(insOpts arrangement);
+
+//  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement'
+//  element.
+static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
@@ -868,7 +897,8 @@ inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
     return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
-            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)));
+            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
+            insOptsScalableWithPredicateMerge(opt));
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -936,6 +966,13 @@ inline static bool insOptsScalableWithScalar(insOpts opt)
     // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
     return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
             (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
+}
+
+inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
+{
+    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
+    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
+            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -1021,7 +1058,13 @@ void emitIns_R_R_R_Ext(instruction ins,
 void emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
+void emitIns_R_R_R_R(instruction ins,
+                     emitAttr    attr,
+                     regNumber   reg1,
+                     regNumber   reg2,
+                     regNumber   reg3,
+                     regNumber   reg4,
+                     insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 

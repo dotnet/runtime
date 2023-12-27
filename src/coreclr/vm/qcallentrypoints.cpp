@@ -8,7 +8,6 @@
 // Headers for all ECall entrypoints
 //
 #include "arraynative.h"
-#include "stringnative.h"
 #include "objectnative.h"
 #include "comdelegate.h"
 #include "customattribute.h"
@@ -78,6 +77,11 @@
 
 static const Entry s_QCall[] =
 {
+    DllImportEntry(ArgIterator_Init)
+    DllImportEntry(ArgIterator_Init2)
+    DllImportEntry(ArgIterator_GetNextArgType)
+    DllImportEntry(ArgIterator_GetNextArg)
+    DllImportEntry(ArgIterator_GetNextArg2)
     DllImportEntry(Enum_GetValuesAndNames)
     DllImportEntry(DebugDebugger_Launch)
     DllImportEntry(DebugDebugger_Log)
@@ -198,6 +202,8 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
+    DllImportEntry(String_Intern)
+    DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_InformThreadNameChange)
@@ -235,6 +241,8 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_TryGetStructMarshalStub)
     DllImportEntry(MarshalNative_SizeOfHelper)
+    DllImportEntry(MarshalNative_GetDelegateForFunctionPointerInternal)
+    DllImportEntry(MarshalNative_GetFunctionPointerForDelegateInternal)
     DllImportEntry(MarshalNative_GetHINSTANCE)
 #ifdef _DEBUG
     DllImportEntry(MarshalNative_GetIsInCooperativeGCModeFunctionPointer)
@@ -348,6 +356,8 @@ static const Entry s_QCall[] =
     DllImportEntry(X86BaseCpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
+    DllImportEntry(StubHelpers_SetStringTrailByte)
+    DllImportEntry(StubHelpers_ThrowInteropParamException)
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
@@ -362,6 +372,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
     DllImportEntry(CallCatchFunclet)
+    DllImportEntry(ResumeAtInterceptionLocation)
     DllImportEntry(CallFilterFunclet)
     DllImportEntry(CallFinallyFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
