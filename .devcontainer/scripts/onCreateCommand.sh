@@ -21,7 +21,7 @@ case "$opt" in
 
     wasm)
         # prebuild for WASM, so it is ready for wasm development
-        make -C src/mono/wasm provision-wasm
+        make -C src/mono/browser provision-wasm
         export EMSDK_PATH=$PWD/src/mono/browser/emsdk
         ./build.sh mono+libs -os browser -c Release
 
