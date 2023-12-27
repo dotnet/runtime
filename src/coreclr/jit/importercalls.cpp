@@ -51,7 +51,10 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
     param.pThis           = this;
     param.fncHandle       = methHnd;
     param.exactContextHnd = MAKE_METHODCONTEXT(methHnd);
+    param.opcode          = CEE_ILLEGAL;
     param.success         = false;
+
+    info.compCompHnd->beginInlining(info.compMethodHnd, methHnd);
 
     bool success = eeRunWithErrorTrap<Param>(
         [](Param* pParam) {
@@ -64,6 +67,7 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
 #ifdef DEBUG
             if (JitConfig.JitNoInline())
             {
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "JitNoInline is set");
                 pParam->success = false;
                 return;
             }
@@ -74,25 +78,7 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
             CORINFO_METHOD_INFO methInfo;
             if (!compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo, pParam->exactContextHnd))
             {
-                return;
-            }
-
-            // Speculatively check if initClass() can be done.
-            // If it can be done, we will try to inline the method.
-            CorInfoInitClassResult const initClassResult =
-                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
-
-            if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
-            {
-                return;
-            }
-
-            // Given the VM the final say in whether to inline or not.
-            // This should be last since for verifiable code, this can be expensive
-            //
-            CorInfoInline const vmResult = compCompHnd->canInline(compiler->info.compMethodHnd, ftn);
-            if (vmResult == INLINE_FAIL || vmResult == INLINE_NEVER)
-            {
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "getMethodInfo failed");
                 return;
             }
 
@@ -106,21 +92,42 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
             if (size == 7 && code[0] == CEE_LDARG_0 && code[1] == CEE_LDFLD && code[6] == CEE_RET)
             {
                 pParam->resolvedToken.token = getU4LittleEndian(&code[2]);
-                compCompHnd->resolveToken(&pParam->resolvedToken);
-                pParam->opcode  = CEE_LDFLD;
-                pParam->success = true;
-                return;
+                pParam->opcode              = CEE_LDFLD;
             }
             // instance setter
             else if (size == 8 && code[0] == CEE_LDARG_0 && code[1] == CEE_LDARG_1 && code[2] == CEE_STFLD &&
                      code[7] == CEE_RET)
             {
                 pParam->resolvedToken.token = getU4LittleEndian(&code[3]);
-                compCompHnd->resolveToken(&pParam->resolvedToken);
-                pParam->opcode  = CEE_STFLD;
-                pParam->success = true;
+                pParam->opcode              = CEE_STFLD;
+            }
+            else
+            {
                 return;
             }
+
+            // Speculatively check if initClass() can be done.
+            // If it can be done, we will try to inline the method.
+            CorInfoInitClassResult const initClassResult =
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
+
+            if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
+            {
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "InitClass reported don't inline");
+                return;
+            }
+
+            // Given the VM the final say in whether to inline or not.
+            // This should be last since for verifiable code, this can be expensive
+            // This will call reportInliningDecision for us if inlining is not allowed
+            CorInfoInline const vmResult = compCompHnd->canInline(compiler->info.compMethodHnd, ftn);
+            if (vmResult == INLINE_FAIL || vmResult == INLINE_NEVER)
+            {
+                return;
+            }
+
+            compCompHnd->resolveToken(&pParam->resolvedToken);
+            pParam->success = true;
         },
         &param);
 
@@ -128,7 +135,12 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
     {
         *opcode         = param.opcode;
         *pResolvedToken = param.resolvedToken;
+        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_PASS, "Trivial property backing field has been inlined");
         return true;
+    }
+    if (!success)
+    {
+        info.compCompHnd->reportInliningDecision(info.compMethodHnd, methHnd, INLINE_FAIL, "Failed to inline trivial property");
     }
     return false;
 }
