@@ -6289,6 +6289,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             return;
         }
 
+        CORINFO_METHOD_HANDLE callerProp = nullptr;
+
         /* Get the size of additional parameters */
 
         signed int sz = opcodeSizes[opcode];
@@ -8706,11 +8708,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                           (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
 
-                    if (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1 || // possible setter
-                        callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0)    // possible getter
+                    if (callInfo.kind == CORINFO_CALL &&
+                        (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1 || // possible setter
+                         callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0))   // possible getter
                     {
                         if (impTryFindField(callInfo.hMethod, &resolvedToken, &opcode))
                         {
+                            callerProp = callInfo.hMethod;
                             if (opcode == CEE_LDFLD || opcode == CEE_LDSFLD)
                             {
                                 goto LOADFIELD;
@@ -8911,7 +8915,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
+                auto callerHandle = callerProp;
+                if (!callerHandle)
+                {
+                    callerHandle = info.compMethodHnd;
+                }
+                info.compCompHnd->getFieldInfo(&resolvedToken, callerHandle, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
                 // Note we avoid resolving the normalized (struct) type just yet; we may not need it (for ld[s]flda).
                 lclTyp = JITtype2varType(fieldInfo.fieldType);
@@ -9171,7 +9180,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 int          aflags        = CORINFO_ACCESS_SET;
                 GenTree*     obj           = nullptr;
 
-                eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
+                auto callerHandle = callerProp;
+                if (!callerHandle)
+                {
+                    callerHandle = info.compMethodHnd;
+                }
+                info.compCompHnd->getFieldInfo(&resolvedToken, callerHandle, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
                 ClassLayout* layout;
                 lclTyp = TypeHandleToVarType(fieldInfo.fieldType, fieldInfo.structType, &layout);
