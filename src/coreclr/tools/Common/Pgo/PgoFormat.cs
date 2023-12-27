@@ -49,10 +49,11 @@ namespace Internal.Pgo
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
 
-        // Value histogram, reusing HandleHistogram for now
-        ValueHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer,
-        ValueHistogramLongCount = (DescriptorMin * 2) | EightByte,
-        ValueHistogram = (DescriptorMin * 3) | TypeHandle,
+        // Same as type/method histograms, but for generic integer values
+        ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
+        ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | EightByte,
+        GetLikelyValue = (DescriptorMin * 10) | EightByte,
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>

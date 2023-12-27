@@ -1928,7 +1928,7 @@ public:
 };
 
 //------------------------------------------------------------------------
-// ValueHistogramProbeVisitor: invoke functor on each node requiring a generic probe
+// ValueHistogramProbeVisitor: invoke functor on each node requiring a generic value probe
 //
 template <class TFunctor>
 class ValueHistogramProbeVisitor final : public GenTreeVisitor<ValueHistogramProbeVisitor<TFunctor>>
@@ -1946,6 +1946,7 @@ public:
         : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
     {
     }
+
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;

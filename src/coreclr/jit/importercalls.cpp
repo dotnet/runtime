@@ -2704,12 +2704,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_ExchangeAdd:
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
-
             case NI_System_Threading_Volatile_Read:
             case NI_System_Threading_Volatile_Write:
-            case NI_System_Buffer_Memmove:
-
                 betterToExpand = true;
+                break;
+
+            case NI_System_Buffer_Memmove:
+                // We're going to instrument this one
+                betterToExpand = opts.IsInstrumented();
                 break;
 
             default:
