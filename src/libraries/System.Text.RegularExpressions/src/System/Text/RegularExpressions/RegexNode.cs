@@ -2927,7 +2927,7 @@ namespace System.Text.RegularExpressions
                     break;
                 case RegexNodeKind.Multi:
                     sb.Append(" \"");
-                    foreach(char c in Str!)
+                    foreach (char c in Str!)
                     {
                         sb.Append(RegexCharClass.DescribeChar(c));
                     }

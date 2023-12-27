@@ -2240,7 +2240,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float TanForIntervalPiBy4(float  x, bool isReciprocal)
+        private static float TanForIntervalPiBy4(float x, bool isReciprocal)
         {
             // This code is based on `tan_piby4` from amd/aocl-libm-ose
             // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.

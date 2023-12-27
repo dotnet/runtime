@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
     /// <remarks>
     /// The algorithms are expected to be directly used by <see cref="TypeSystemContext"/> derivatives
     /// only. The most obvious implementation of this algorithm that uses type's metadata to
-    /// compute the answers is in <see cref="MetadataVirtualMethodAlgorithm"/>.
+    /// compute the answers is in MetadataVirtualMethodAlgorithm.
     /// </remarks>
     public abstract class VirtualMethodAlgorithm
     {

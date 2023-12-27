@@ -955,9 +955,8 @@ BOOL Thread::ReadyForAsyncException()
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
+    if (g_isNewExceptionHandlingEnabled && IsAbortPrevented())
     {
-        // TODO: make thread abort work for the new exception handling
         return FALSE;
     }
 #endif // FEATURE_EH_FUNCLETS

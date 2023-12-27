@@ -1705,7 +1705,8 @@ protected:
 #define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C 14.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_16C 16.0f   // slower - 13 cycles
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
@@ -1730,6 +1731,7 @@ protected:
 #define PERFSCORE_LATENCY_11C 11.0f
 #define PERFSCORE_LATENCY_12C 12.0f
 #define PERFSCORE_LATENCY_13C 13.0f
+#define PERFSCORE_LATENCY_14C 14.0f
 #define PERFSCORE_LATENCY_15C 15.0f
 #define PERFSCORE_LATENCY_16C 16.0f
 #define PERFSCORE_LATENCY_18C 18.0f
@@ -1869,10 +1871,16 @@ protected:
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
         unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
-        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+#if defined(TARGET_AMD64)
+            28;
+        // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+        // Indicates the jump follows a call instruction and precedes an OS epilog.
+        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
+        unsigned idjIsAfterCallBeforeEpilog : 1;
+#elif defined(TARGET_X86)
+            29;
         unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;
@@ -2114,7 +2122,7 @@ protected:
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
-    void emitDispInsAddr(BYTE* code);
+    void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
@@ -2194,8 +2202,8 @@ public:
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(insGroup* ig, instrDesc* id);
-    UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum);
+    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
 /************************************************************************/
 /*        Members and methods used to issue (encode) instructions.      */
@@ -2214,7 +2222,7 @@ public:
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
 
-    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst)
+    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst) const
     {
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
@@ -2233,7 +2241,7 @@ public:
         return (UNATIVE_OFFSET)distance;
     }
 
-    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset)
+    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset) const
     {
         if (offset < emitTotalHotCodeSize)
         {
@@ -2289,8 +2297,8 @@ public:
     unsigned int emitCounts_INS_OPTS_J;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-    instrDesc* emitFirstInstrDesc(BYTE* idData);
-    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
+    instrDesc* emitFirstInstrDesc(BYTE* idData) const;
+    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
@@ -2704,8 +2712,8 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(insGroup* ig);
-    const char* emitLabelString(insGroup* ig);
+    void emitPrintLabel(const insGroup* ig) const;
+    const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 

@@ -944,9 +944,9 @@ void LinearScan::setBlockSequence()
         }
 #endif // TRACK_LSRA_STATS
 
-        // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
+        // We treat CALLFINALLYRET blocks as having EH flow, since we can't
         // insert resolution moves into those blocks.
-        if (block->isBBCallAlwaysPairTail())
+        if (block->isBBCallFinallyPairTail())
         {
             blockInfo[block->bbNum].hasEHBoundaryIn  = true;
             blockInfo[block->bbNum].hasEHBoundaryOut = true;
@@ -968,11 +968,9 @@ void LinearScan::setBlockSequence()
                 }
             }
 
-            if (!block->isBBCallAlwaysPairTail() &&
-                (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail()))
+            if (!block->isBBCallFinallyPairTail() &&
+                (predBlock->hasEHBoundaryOut() || predBlock->isBBCallFinallyPairTail()))
             {
-                assert(!block->isBBCallAlwaysPairTail());
-
                 if (hasUniquePred)
                 {
                     // A unique pred with an EH out edge won't allow us to keep any variables enregistered.
@@ -1482,13 +1480,13 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             count++;
 
             BasicBlock* prevReportedBlock = bb->Prev();
-            if (!bb->IsFirst() && bb->Prev()->isBBCallAlwaysPairTail())
+            if (!bb->IsFirst() && bb->Prev()->isBBCallFinallyPairTail())
             {
-                // For callf+always pair we generate the code for the always
-                // block in genCallFinally and skip it, so we don't report
+                // For call finally pair we generate the code for the call finally
+                // block in genCallFinally and skip the pair, so we don't report
                 // anything for it (it has only trivial instructions, so that
                 // does not matter much). So whether we need to rehome or not
-                // depends on what we reported at the end of the callf block.
+                // depends on what we reported at the end of the call finally block.
                 prevReportedBlock = bb->Prev()->Prev();
             }
 
@@ -2545,7 +2543,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                 if (predBlock->KindIs(BBJ_COND))
                 {
                     // Special handling to improve matching on backedges.
-                    BasicBlock* otherBlock = predBlock->NextIs(block) ? predBlock->GetJumpDest() : predBlock->Next();
+                    BasicBlock* otherBlock =
+                        predBlock->FalseTargetIs(block) ? predBlock->GetTrueTarget() : predBlock->GetFalseTarget();
                     noway_assert(otherBlock != nullptr);
                     if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {
@@ -3241,13 +3240,15 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 
     assert(allocatedReg != REG_NA);
 
+    // restore the related interval
+    currentInterval->relatedInterval = savedRelatedInterval;
+
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
 
     // Now restore the old info
-    currentInterval->relatedInterval = savedRelatedInterval;
-    currentInterval->physReg         = oldPhysReg;
-    currentInterval->assignedReg     = oldRegRecord;
-    currentInterval->isActive        = true;
+    currentInterval->physReg     = oldPhysReg;
+    currentInterval->assignedReg = oldRegRecord;
+    currentInterval->isActive    = true;
 
     return allocatedReg;
 }
@@ -8105,8 +8106,8 @@ void LinearScan::addResolution(BasicBlock* block,
     JITDUMP(": move V%02u from %s to %s (%s)\n", interval->varNum, getRegName(fromReg), getRegName(toReg), reason);
 #endif // DEBUG
 
-    // We should never add resolution move inside BBCallAlwaysPairTail.
-    noway_assert(!block->isBBCallAlwaysPairTail());
+    // We should never add resolution move inside BBCallFinallyPairTail.
+    noway_assert(!block->isBBCallFinallyPairTail());
 
     insertMove(block, insertionPoint, interval->varNum, fromReg, toReg);
     if (fromReg == REG_STK || toReg == REG_STK)
@@ -11949,17 +11950,33 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
                 continue;
             }
 
-            if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
-                                                   !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+            if (recentRefPosition != nullptr)
             {
-                // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-                // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-                // For such cases, consider the spill cost of next refposition.
-                // See notes in "spillInterval()".
                 RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+
                 if (reloadRefPosition != nullptr)
                 {
-                    currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                    if ((recentRefPosition->RegOptional() &&
+                         !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+                    {
+                        // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                        // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                        // For such cases, consider the spill cost of next refposition.
+                        // See notes in "spillInterval()".
+                        currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                    }
+#ifdef TARGET_ARM64
+                    else if (reloadRefPosition->needsConsecutive)
+                    {
+                        // If next refposition is part of consecutive registers and there is already a register
+                        // assigned to it then try not to reassign for currentRefPosition, because with that,
+                        // other registers for the next consecutive register assignment would have to be copied
+                        // to different consecutive registers since this register is busy from this point onwards.
+                        //
+                        // Have it as a candidate, but make its spill cost higher than others.
+                        currentSpillWeight = linearScan->getWeight(reloadRefPosition) * 10;
+                    }
+#endif
                 }
             }
         }

@@ -180,62 +180,54 @@ namespace Microsoft.NET.HostModel.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()
         {
-            var fixture = sharedTestState.StandaloneAppFixture_Localized
-                .Copy();
+            var app = sharedTestState.LocalizedApp.Copy();
 
-            var appExe = fixture.TestProject.AppExe;
-            var binDir = fixture.TestProject.OutputDirectory;
-            var satellitesDir = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutSatellitesSomewhereElse");
-            Directory.CreateDirectory(satellitesDir);
+            using (var satellitesDir = TestArtifact.Create("PutSatellitesSomewhereElse"))
+            {
+                var firstSatelliteDir = Directory.GetDirectories(app.Location).Single(dir => dir.Contains("kn-IN"));
+                var firstSatelliteNewDir = Path.Combine(satellitesDir.Location, "kn-IN");
+                Directory.Move(firstSatelliteDir, firstSatelliteNewDir);
+                using var symlink1 = new SymLink(firstSatelliteDir, firstSatelliteNewDir);
 
-            var firstSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("kn-IN"));
-            var firstSatelliteNewDir = Path.Combine(satellitesDir, "kn-IN");
-            Directory.Move(firstSatelliteDir, firstSatelliteNewDir);
-            using var symlink1 = new SymLink(firstSatelliteDir, firstSatelliteNewDir);
+                var secondSatelliteDir = Directory.GetDirectories(app.Location).Single(dir => dir.Contains("ta-IN"));
+                var secondSatelliteNewDir = Path.Combine(satellitesDir.Location, "ta-IN");
+                Directory.Move(secondSatelliteDir, secondSatelliteNewDir);
+                using var symlink2 = new SymLink(secondSatelliteDir, secondSatelliteNewDir);
 
-            var secondSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("ta-IN"));
-            var secondSatelliteNewDir = Path.Combine(satellitesDir, "ta-IN");
-            Directory.Move(secondSatelliteDir, secondSatelliteNewDir);
-            using var symlink2 = new SymLink(secondSatelliteDir, secondSatelliteNewDir);
-
-            Command.Create(appExe)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("[kn-IN]! [ta-IN]! [default]!");
+                Command.Create(app.AppExe)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("[kn-IN]! [ta-IN]! [default]!");
+            }
         }
 
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture StandaloneAppFixture_Localized { get; }
-
             public TestApp FrameworkDependentApp { get; }
             public TestApp SelfContainedApp { get; }
+            public TestApp LocalizedApp { get; }
 
             public SharedTestState()
             {
-                var localizedFixture = new TestProjectFixture("LocalizedApp", RepoDirectoriesProvider.Default);
-                localizedFixture
-                    .EnsureRestoredForRid(localizedFixture.CurrentRid)
-                    .PublishProject(runtime: localizedFixture.CurrentRid, selfContained: true);
-
-                StandaloneAppFixture_Localized = localizedFixture;
-
                 FrameworkDependentApp = TestApp.CreateFromBuiltAssets("HelloWorld");
                 FrameworkDependentApp.CreateAppHost();
 
                 SelfContainedApp = TestApp.CreateFromBuiltAssets("HelloWorld");
                 SelfContainedApp.PopulateSelfContained(TestApp.MockedComponent.None);
                 SelfContainedApp.CreateAppHost();
+
+                LocalizedApp = TestApp.CreateFromBuiltAssets("LocalizedApp");
+                LocalizedApp.PopulateSelfContained(TestApp.MockedComponent.None);
+                LocalizedApp.CreateAppHost();
             }
 
             public void Dispose()
             {
-                StandaloneAppFixture_Localized.Dispose();
-
                 FrameworkDependentApp?.Dispose();
                 SelfContainedApp?.Dispose();
+                LocalizedApp?.Dispose();
             }
         }
     }

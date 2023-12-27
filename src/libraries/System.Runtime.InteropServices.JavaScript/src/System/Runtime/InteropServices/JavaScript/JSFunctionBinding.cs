@@ -30,9 +30,6 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static volatile uint nextImportHandle = 1;
         internal int ImportHandle;
         internal bool IsAsync;
-#if FEATURE_WASM_THREADS
-        internal bool IsThreadCaptured;
-#endif
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         internal struct JSBindingHeader
@@ -177,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();
 
-            return BindJSFunctionImpl(functionName, moduleName, signatures);
+            return BindJSImportImpl(functionName, moduleName, signatures);
         }
 
         /// <summary>
@@ -220,15 +217,19 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
+#if FEATURE_WASM_THREADS
+            var targetContext = JSProxyContext.SealJSImportCapturing();
+            JSProxyContext.AssertIsInteropThread();
+            arguments[0].slot.ContextHandle = targetContext.ContextHandle;
+            arguments[1].slot.ContextHandle = targetContext.ContextHandle;
+#else
+            var targetContext = JSProxyContext.MainThreadContext;
+#endif
+
             if (signature.IsAsync)
             {
                 // pre-allocate the result handle and Task
-#if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
-                var holder = new JSHostImplementation.PromiseHolder(JSSynchronizationContext.CurrentJSSynchronizationContext!);
-#else
-                var holder = new JSHostImplementation.PromiseHolder();
-#endif
+                var holder = new JSHostImplementation.PromiseHolder(targetContext);
                 arguments[1].slot.Type = MarshalerType.TaskPreCreated;
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
@@ -253,10 +254,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
+        internal static unsafe JSFunctionBinding BindJSImportImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
 #if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
+            JSProxyContext.AssertIsInteropThread();
 #endif
 
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);
@@ -283,6 +284,20 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
             return signature;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
+        {
+            fixed (JSMarshalerArgument* ptr = arguments)
+            {
+                Interop.Runtime.ResolveOrRejectPromise(ptr);
+                ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                if (exceptionArg.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exceptionArg);
+                }
+            }
         }
     }
 }
