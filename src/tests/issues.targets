@@ -2506,8 +2506,17 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/InlineArray/InlineArrayInvalid/**">
             <Issue>https://github.com/dotnet/runtime/issues/86327</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/**">
             <Issue>Varargs supported on this platform</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/OverrideSameSigAsDecl/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/ImplicitOverrideSameSigAsDecl/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/**">
+            <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
 
