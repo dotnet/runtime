@@ -463,12 +463,11 @@ namespace System.Reflection.Emit
 
             EmitOpcode(opcode);
             // The only IL instruction that has VarPop behaviour, that takes a Signature
-            // token as a parameter is Calli. Pop the parameters and the native function
-            // pointer. Used reflection since ArgumentCount property is not public.
+            // token as a parameter is Calli. Pop the parameters and the native function pointer.
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
                 Debug.Assert(opcode.Equals(OpCodes.Calli), "Unexpected opcode encountered for StackBehaviour VarPop.");
-                // Pop the arguments.
+                // Pop the arguments. Used reflection since ArgumentCount property is not public.
                 PropertyInfo argCountProperty = typeof(SignatureHelper).GetProperty("ArgumentCount", BindingFlags.NonPublic | BindingFlags.Instance)!;
                 int stackChange = -(int)argCountProperty.GetValue(signature)!;
                 // Pop native function pointer off the stack.
@@ -570,7 +569,7 @@ namespace System.Reflection.Emit
         public override void EmitCalli(OpCode opcode, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes)
         {
-            if (optionalParameterTypes != null)
+            if (optionalParameterTypes != null && optionalParameterTypes.Length > 0)
             {
                 if ((callingConvention & CallingConventions.VarArgs) == 0)
                 {
@@ -581,7 +580,7 @@ namespace System.Reflection.Emit
 
             int stackChange = GetStackChange(returnType, parameterTypes);
 
-            // Pop off vararg arguments.
+            // Pop off VarArg arguments.
             if (optionalParameterTypes != null)
             {
                 stackChange -= optionalParameterTypes.Length;
@@ -657,7 +656,7 @@ namespace System.Reflection.Emit
 
         public override void EndScope()
         {
-            // TODO:
+            // TODO: No-op, will be implemented wit PDB support
         }
 
         public override void MarkLabel(Label loc)
@@ -674,7 +673,7 @@ namespace System.Reflection.Emit
 
         public override void UsingNamespace(string usingNamespace)
         {
-            // TODO: looks does nothing
+            // TODO: No-op, will be implemented wit PDB support
         }
     }
 
