@@ -182,12 +182,12 @@ enum RelopResult
 //   AlwaysFalse - the second check is implied by the first one and is always false
 //   AlwaysTrue  - the second check is implied by the first one and is always true
 //
-RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps oper2, ssize_t bound2)
+RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTreeOps oper2, target_ssize_t bound2)
 {
     struct IntegralRange
     {
-        ssize_t startIncl; // inclusive
-        ssize_t endIncl;   // inclusive
+        target_ssize_t startIncl; // inclusive
+        target_ssize_t endIncl;   // inclusive
 
         bool Intersects(const IntegralRange other) const
         {
@@ -200,17 +200,20 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
         }
     };
 
+    constexpr target_ssize_t minValue = TARGET_POINTER_SIZE == 4 ? INT32_MIN : INT64_MIN;
+    constexpr target_ssize_t maxValue = TARGET_POINTER_SIZE == 4 ? INT32_MAX : INT64_MAX;
+
     // Start with the widest possible ranges
-    IntegralRange range1 = {SSIZE_T_MIN, SSIZE_T_MAX};
-    IntegralRange range2 = {SSIZE_T_MIN, SSIZE_T_MAX};
+    IntegralRange range1 = {minValue, maxValue};
+    IntegralRange range2 = {minValue, maxValue};
 
     // Update ranges based on inputs
-    auto setRange = [](genTreeOps oper, ssize_t bound, IntegralRange* range) -> bool {
+    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
         switch (oper)
         {
             case GT_LT:
-                // x < cns -> [SSIZE_T_MIN, cns - 1]
-                if (bound == SSIZE_T_MIN)
+                // x < cns -> [minValue, cns - 1]
+                if (bound == minValue)
                 {
                     // overflows
                     return false;
@@ -219,13 +222,13 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
                 return true;
 
             case GT_LE:
-                // x <= cns -> [SSIZE_T_MIN, cns]
+                // x <= cns -> [minValue, cns]
                 range->endIncl = bound;
                 return true;
 
             case GT_GT:
-                // x > cns -> [cns + 1, SSIZE_T_MAX]
-                if (bound == SSIZE_T_MAX)
+                // x > cns -> [cns + 1, maxValue]
+                if (bound == maxValue)
                 {
                     // overflows
                     return false;
@@ -234,7 +237,7 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, ssize_t bound1, genTreeOps ope
                 return true;
 
             case GT_GE:
-                // x >= cns -> [cns, SSIZE_T_MAX]
+                // x >= cns -> [cns, maxValue]
                 range->startIncl = bound;
                 return true;
 
@@ -516,12 +519,12 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
             {
                 // Dominating "X relop CNS"
-                const genTreeOps domOper = static_cast<genTreeOps>(domApp.m_func);
-                const ssize_t    domCns  = vnStore->CoercedConstantValue<ssize_t>(domApp.m_args[1]);
+                const genTreeOps     domOper = static_cast<genTreeOps>(domApp.m_func);
+                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domApp.m_args[1]);
 
                 // Dominated "X relop CNS"
-                const genTreeOps treeOper = static_cast<genTreeOps>(treeApp.m_func);
-                const ssize_t    treeCns  = vnStore->CoercedConstantValue<ssize_t>(treeApp.m_args[1]);
+                const genTreeOps     treeOper = static_cast<genTreeOps>(treeApp.m_func);
+                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeApp.m_args[1]);
 
                 // Example:
                 //
