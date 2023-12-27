@@ -26,25 +26,6 @@
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
-
-//--------------------------------------------------------------------------------
-// It turns out, that ((size_t)x) << y == x, when y is not a literal
-//      and its value is BITS_PER_SIZE_T
-// I guess the processor only shifts of the right operand modulo BITS_PER_SIZE_T
-// In many cases, we want the above operation to yield 0,
-//      hence the following macros
-//--------------------------------------------------------------------------------
-__forceinline size_t SAFE_SHIFT_LEFT(size_t x, size_t count)
-{
-    _ASSERTE(count <= BITS_PER_SIZE_T);
-    return (x << 1) << (count - 1);
-}
-__forceinline size_t SAFE_SHIFT_RIGHT(size_t x, size_t count)
-{
-    _ASSERTE(count <= BITS_PER_SIZE_T);
-    return (x >> 1) >> (count - 1);
-}
-
 inline UINT32 CeilOfLog2(size_t x)
 {
     // it is ok to use bsr or clz unconditionally
