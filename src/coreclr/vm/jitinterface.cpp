@@ -1669,9 +1669,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     // TODO: This is touching metadata. Can we avoid it?
     DWORD fieldAttribs = pField->GetAttributes();
 
-    if (IsFdFamily(fieldAttribs))
-        fieldFlags |= CORINFO_FLG_FIELD_PROTECTED;
-
     if (IsFdInitOnly(fieldAttribs))
         fieldFlags |= CORINFO_FLG_FIELD_FINAL;
 

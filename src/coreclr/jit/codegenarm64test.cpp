@@ -4610,11 +4610,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
     // IF_SVE_AE_3A
     theEmitter->emitIns_R_R_R(INS_sve_mul, EA_SCALABLE, REG_V5, REG_P1, REG_V3,
-                              INS_OPTS_SCALABLE_D); /* MUL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // MUL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_smulh, EA_SCALABLE, REG_V17, REG_P5, REG_V5,
-                              INS_OPTS_SCALABLE_S); /* SMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // SMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_umulh, EA_SCALABLE, REG_V12, REG_P2, REG_V24,
-                              INS_OPTS_SCALABLE_B); /* UMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // UMULH   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_AH_3A
     theEmitter->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, REG_V13, REG_P0, REG_V31,
@@ -4708,397 +4708,409 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
     // IF_SVE_AN_3A
     theEmitter->emitIns_R_R_R(INS_sve_asr, EA_SCALABLE, REG_V5, REG_P0, REG_V21,
-                              INS_OPTS_SCALABLE_S); /* ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_asrr, EA_SCALABLE, REG_V1, REG_P7, REG_V20,
-                              INS_OPTS_SCALABLE_B); /* ASRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // ASRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lsl, EA_SCALABLE, REG_V0, REG_P2, REG_V0,
-                              INS_OPTS_SCALABLE_H); /* LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lslr, EA_SCALABLE, REG_V27, REG_P6, REG_V31,
-                              INS_OPTS_SCALABLE_D); /* LSLR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // LSLR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V5, REG_P5, REG_V6,
-                              INS_OPTS_SCALABLE_B); /* LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lsrr, EA_SCALABLE, REG_V15, REG_P4, REG_V17,
-                              INS_OPTS_SCALABLE_S); /* LSRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // LSRR    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_AO_3A
     theEmitter->emitIns_R_R_R(INS_sve_asr, EA_SCALABLE, REG_V4, REG_P3, REG_V24,
-                              INS_OPTS_SCALABLE_WIDE_B); /* ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
+                              INS_OPTS_SCALABLE_WIDE_B); // ASR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
     theEmitter->emitIns_R_R_R(INS_sve_lsl, EA_SCALABLE, REG_V19, REG_P7, REG_V3,
-                              INS_OPTS_SCALABLE_WIDE_H); /* LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
+                              INS_OPTS_SCALABLE_WIDE_H); // LSL     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
     theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_P0, REG_V0,
-                              INS_OPTS_SCALABLE_WIDE_S); /* LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D */
+                              INS_OPTS_SCALABLE_WIDE_S); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
 
     // IF_SVE_CM_3A
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_SCALABLE, REG_V31, REG_P7, REG_V31,
-                              INS_OPTS_SCALABLE_B); /* CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_SCALABLE, REG_V30, REG_P6, REG_V30,
-                              INS_OPTS_SCALABLE_D); /* CLASTB  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // CLASTB  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_CN_3A
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_2BYTE, REG_V12, REG_P1, REG_V15,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // CLASTA  <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_V13, REG_P2, REG_V16,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_V14, REG_P0, REG_V17,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // CLASTB  <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
 
     // IF_SVE_CO_3A
     // Note: EA_4BYTE used for B and H (destination register is W)
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_4BYTE, REG_R0, REG_P0, REG_V0,
-                              INS_OPTS_SCALABLE_B_WITH_SCALAR); /* CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B_WITH_SCALAR); // CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_4BYTE, REG_R1, REG_P2, REG_V3,
-                              INS_OPTS_SCALABLE_H_WITH_SCALAR); /* CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SCALAR); // CLASTA  <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_4BYTE, REG_R23, REG_P5, REG_V12,
-                              INS_OPTS_SCALABLE_S_WITH_SCALAR); /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SCALAR); // CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clastb, EA_8BYTE, REG_R3, REG_P6, REG_V9,
-                              INS_OPTS_SCALABLE_D_WITH_SCALAR); /* CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SCALAR); // CLASTB  <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
 
     // IF_SVE_CX_4A
     theEmitter->emitIns_R_R_R_R(INS_sve_cmpeq, EA_SCALABLE, REG_P15, REG_P0, REG_V0, REG_V10,
-                                INS_OPTS_SCALABLE_B); /* CMPEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+                                INS_OPTS_SCALABLE_B); // CMPEQ   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmpge, EA_SCALABLE, REG_P14, REG_P1, REG_V10, REG_V23,
-                                INS_OPTS_SCALABLE_H); /* CMPGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+                                INS_OPTS_SCALABLE_H); // CMPGE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmpgt, EA_SCALABLE, REG_P13, REG_P2, REG_V20, REG_V24,
-                                INS_OPTS_SCALABLE_S); /* CMPGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+                                INS_OPTS_SCALABLE_S); // CMPGT   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmphi, EA_SCALABLE, REG_P12, REG_P3, REG_V30, REG_V25,
-                                INS_OPTS_SCALABLE_D); /* CMPHI   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+                                INS_OPTS_SCALABLE_D); // CMPHI   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmphs, EA_SCALABLE, REG_P11, REG_P4, REG_V1, REG_V26,
-                                INS_OPTS_SCALABLE_B); /* CMPHS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+                                INS_OPTS_SCALABLE_B); // CMPHS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmple, EA_SCALABLE, REG_P10, REG_P5, REG_V11, REG_V27,
-                                INS_OPTS_SCALABLE_H); /* CMPLE   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+                                INS_OPTS_SCALABLE_H); // CMPLE   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmplo, EA_SCALABLE, REG_P11, REG_P6, REG_V12, REG_V28,
-                                INS_OPTS_SCALABLE_S); /* CMPLO   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+                                INS_OPTS_SCALABLE_S); // CMPLO   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmpls, EA_SCALABLE, REG_P0, REG_P7, REG_V13, REG_V29,
-                                INS_OPTS_SCALABLE_D); /* CMPLS   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+                                INS_OPTS_SCALABLE_D); // CMPLS   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmplt, EA_SCALABLE, REG_P2, REG_P0, REG_V14, REG_V30,
-                                INS_OPTS_SCALABLE_B); /* CMPLT   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T> */
+                                INS_OPTS_SCALABLE_B); // CMPLT   <Pd>.<T>, <Pg>/Z, <Zm>.<T>, <Zn>.<T>
     theEmitter->emitIns_R_R_R_R(INS_sve_cmpne, EA_SCALABLE, REG_P3, REG_P1, REG_V15, REG_V20,
-                                INS_OPTS_SCALABLE_H); /* CMPNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T> */
+                                INS_OPTS_SCALABLE_H); // CMPNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
 
     // IF_SVE_EP_3A
     theEmitter->emitIns_R_R_R(INS_sve_shadd, EA_SCALABLE, REG_V15, REG_P0, REG_V10,
-                              INS_OPTS_SCALABLE_B); /* SHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // SHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_shsub, EA_SCALABLE, REG_V16, REG_P1, REG_V11,
-                              INS_OPTS_SCALABLE_H); /* SHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // SHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_shsubr, EA_SCALABLE, REG_V17, REG_P2, REG_V12,
-                              INS_OPTS_SCALABLE_S); /* SHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // SHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_srhadd, EA_SCALABLE, REG_V18, REG_P3, REG_V13,
-                              INS_OPTS_SCALABLE_D); /* SRHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // SRHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uhadd, EA_SCALABLE, REG_V19, REG_P4, REG_V14,
-                              INS_OPTS_SCALABLE_B); /* UHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // UHADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uhsub, EA_SCALABLE, REG_V20, REG_P5, REG_V15,
-                              INS_OPTS_SCALABLE_H); /* UHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // UHSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uhsubr, EA_SCALABLE, REG_V21, REG_P6, REG_V16,
-                              INS_OPTS_SCALABLE_S); /* UHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // UHSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_urhadd, EA_SCALABLE, REG_V22, REG_P7, REG_V17,
-                              INS_OPTS_SCALABLE_D); /* URHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // URHADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_ER_3A
     theEmitter->emitIns_R_R_R(INS_sve_addp, EA_SCALABLE, REG_V23, REG_P6, REG_V18,
-                              INS_OPTS_SCALABLE_B); /* ADDP    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // ADDP    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_smaxp, EA_SCALABLE, REG_V24, REG_P5, REG_V19,
-                              INS_OPTS_SCALABLE_H); /* SMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // SMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sminp, EA_SCALABLE, REG_V25, REG_P4, REG_V20,
-                              INS_OPTS_SCALABLE_S); /* SMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // SMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_umaxp, EA_SCALABLE, REG_V26, REG_P3, REG_V21,
-                              INS_OPTS_SCALABLE_D); /* UMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // UMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uminp, EA_SCALABLE, REG_V27, REG_P2, REG_V22,
-                              INS_OPTS_SCALABLE_B); /* UMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // UMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_ET_3A
     theEmitter->emitIns_R_R_R(INS_sve_sqadd, EA_SCALABLE, REG_V28, REG_P1, REG_V23,
-                              INS_OPTS_SCALABLE_B); /* SQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // SQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqsub, EA_SCALABLE, REG_V29, REG_P0, REG_V24,
-                              INS_OPTS_SCALABLE_H); /* SQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // SQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqsubr, EA_SCALABLE, REG_V30, REG_P1, REG_V25,
-                              INS_OPTS_SCALABLE_H); /* SQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // SQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_suqadd, EA_SCALABLE, REG_V31, REG_P2, REG_V26,
-                              INS_OPTS_SCALABLE_B); /* SUQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // SUQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqadd, EA_SCALABLE, REG_V0, REG_P3, REG_V27,
-                              INS_OPTS_SCALABLE_S); /* UQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // UQADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqsub, EA_SCALABLE, REG_V1, REG_P4, REG_V28,
-                              INS_OPTS_SCALABLE_D); /* UQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // UQSUB   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqsubr, EA_SCALABLE, REG_V2, REG_P5, REG_V29,
-                              INS_OPTS_SCALABLE_B); /* UQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // UQSUBR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_usqadd, EA_SCALABLE, REG_V3, REG_P6, REG_V30,
-                              INS_OPTS_SCALABLE_B); /* USQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // USQADD  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_EU_3A
     theEmitter->emitIns_R_R_R(INS_sve_sqrshl, EA_SCALABLE, REG_V4, REG_P7, REG_V31,
-                              INS_OPTS_SCALABLE_B); /* SQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // SQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqrshlr, EA_SCALABLE, REG_V5, REG_P0, REG_V30,
-                              INS_OPTS_SCALABLE_H); /* SQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // SQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqshl, EA_SCALABLE, REG_V6, REG_P1, REG_V29,
-                              INS_OPTS_SCALABLE_S); /* SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // SQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqshlr, EA_SCALABLE, REG_V7, REG_P2, REG_V28,
-                              INS_OPTS_SCALABLE_D); /* SQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // SQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_srshl, EA_SCALABLE, REG_V8, REG_P3, REG_V27,
-                              INS_OPTS_SCALABLE_B); /* SRSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // SRSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_srshlr, EA_SCALABLE, REG_V9, REG_P4, REG_V26,
-                              INS_OPTS_SCALABLE_H); /* SRSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // SRSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqrshl, EA_SCALABLE, REG_V10, REG_P5, REG_V25,
-                              INS_OPTS_SCALABLE_S); /* UQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // UQRSHL  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqrshlr, EA_SCALABLE, REG_V11, REG_P6, REG_V24,
-                              INS_OPTS_SCALABLE_D); /* UQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // UQRSHLR <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqshl, EA_SCALABLE, REG_V12, REG_P7, REG_V23,
-                              INS_OPTS_SCALABLE_B); /* UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_B); // UQSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uqshlr, EA_SCALABLE, REG_V13, REG_P0, REG_V22,
-                              INS_OPTS_SCALABLE_H); /* UQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // UQSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_urshl, EA_SCALABLE, REG_V14, REG_P1, REG_V21,
-                              INS_OPTS_SCALABLE_S); /* URSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // URSHL   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_urshlr, EA_SCALABLE, REG_V15, REG_P2, REG_V20,
-                              INS_OPTS_SCALABLE_D); /* URSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // URSHLR  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_GR_3A
     theEmitter->emitIns_R_R_R(INS_sve_faddp, EA_SCALABLE, REG_V16, REG_P3, REG_V19,
-                              INS_OPTS_SCALABLE_H); /* FADDP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // FADDP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxnmp, EA_SCALABLE, REG_V17, REG_P4, REG_V18,
-                              INS_OPTS_SCALABLE_S); /* FMAXNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FMAXNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxp, EA_SCALABLE, REG_V18, REG_P5, REG_V17,
-                              INS_OPTS_SCALABLE_D); /* FMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // FMAXP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fminnmp, EA_SCALABLE, REG_V19, REG_P6, REG_V16,
-                              INS_OPTS_SCALABLE_S); /* FMINNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FMINNMP <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fminp, EA_SCALABLE, REG_V20, REG_P7, REG_V15,
-                              INS_OPTS_SCALABLE_H); /* FMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // FMINP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_HJ_3A
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_2BYTE, REG_V21, REG_P6, REG_V14,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_4BYTE, REG_V22, REG_P5, REG_V13,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fadda, EA_8BYTE, REG_V23, REG_P4, REG_V12,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // FADDA   <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
 
     // IF_SVE_HL_3A
     theEmitter->emitIns_R_R_R(INS_sve_fabd, EA_SCALABLE, REG_V24, REG_P3, REG_V11,
-                              INS_OPTS_SCALABLE_H); /* FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // FABD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fadd, EA_SCALABLE, REG_V25, REG_P2, REG_V10,
-                              INS_OPTS_SCALABLE_S); /* FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_famax, EA_SCALABLE, REG_V26, REG_P1, REG_V9, INS_OPTS_SCALABLE_D);
-    /* FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+    // FAMAX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_famin, EA_SCALABLE, REG_V27, REG_P0, REG_V8, INS_OPTS_SCALABLE_H);
-/* FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+// FAMIN   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_fdiv, EA_SCALABLE, REG_V28, REG_P0, REG_V7,
-                              INS_OPTS_SCALABLE_S); /* FDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FDIV    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fdivr, EA_SCALABLE, REG_V29, REG_P1, REG_V6,
-                              INS_OPTS_SCALABLE_D); /* FDIVR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // FDIVR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmax, EA_SCALABLE, REG_V30, REG_P2, REG_V5,
-                              INS_OPTS_SCALABLE_H); /* FMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // FMAX    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxnm, EA_SCALABLE, REG_V31, REG_P3, REG_V4,
-                              INS_OPTS_SCALABLE_S); /* FMAXNM  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FMAXNM  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmin, EA_SCALABLE, REG_V0, REG_P4, REG_V3,
-                              INS_OPTS_SCALABLE_D); /* FMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // FMIN    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fminnm, EA_SCALABLE, REG_V1, REG_P5, REG_V2,
-                              INS_OPTS_SCALABLE_H); /* FMINNM  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // FMINNM  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmul, EA_SCALABLE, REG_V2, REG_P6, REG_V1,
-                              INS_OPTS_SCALABLE_S); /* FMUL    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FMUL    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmulx, EA_SCALABLE, REG_V3, REG_P7, REG_V0,
-                              INS_OPTS_SCALABLE_D); /* FMULX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // FMULX   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fscale, EA_SCALABLE, REG_V4, REG_P6, REG_V31,
-                              INS_OPTS_SCALABLE_H); /* FSCALE  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_H); // FSCALE  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fsub, EA_SCALABLE, REG_V5, REG_P5, REG_V30,
-                              INS_OPTS_SCALABLE_S); /* FSUB    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_S); // FSUB    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fsubr, EA_SCALABLE, REG_V6, REG_P4, REG_V29,
-                              INS_OPTS_SCALABLE_D); /* FSUBR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T> */
+                              INS_OPTS_SCALABLE_D); // FSUBR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_AF_3A
     theEmitter->emitIns_R_R_R(INS_sve_andv, EA_1BYTE, REG_V0, REG_P0, REG_V0,
-                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); /* ANDV    <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); // ANDV    <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_eorv, EA_2BYTE, REG_V1, REG_P1, REG_V1,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* EORV    <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // EORV    <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_orv, EA_4BYTE, REG_V2, REG_P2, REG_V2,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // ORV     <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_orv, EA_8BYTE, REG_V3, REG_P3, REG_V3,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* ORV     <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // ORV     <V><d>, <Pg>, <Zn>.<T>
 
 // IF_SVE_AG_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_andqv, EA_8BYTE, REG_V4, REG_P4, REG_V4, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
-    /* ANDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    // ANDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_eorqv, EA_8BYTE, REG_V5, REG_P5, REG_V5, INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR);
-    /* EORQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    // EORQV   <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_V6, REG_P6, REG_V6, INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR);
-    /* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    // ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_orqv, EA_8BYTE, REG_V7, REG_P7, REG_V7, INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR);
-/* ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+// ORQV    <Vd>.<T>, <Pg>, <Zn>.<Tb>
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AI_3A
     theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_1BYTE, REG_V1, REG_P4, REG_V2,
-                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); /* SADDV   <Dd>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); // SADDV   <Dd>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_saddv, EA_2BYTE, REG_V2, REG_P5, REG_V3,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* SADDV   <Dd>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // SADDV   <Dd>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uaddv, EA_4BYTE, REG_V3, REG_P6, REG_V4,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* UADDV   <Dd>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // UADDV   <Dd>, <Pg>, <Zn>.<T>
 
 // IF_SVE_AJ_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_addqv, EA_8BYTE, REG_V21, REG_V7, REG_P22, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
-/* ADDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+// ADDQV   <Vd>.<T>, <Pg>, <Zn>.<Tb>
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AK_3A
     theEmitter->emitIns_R_R_R(INS_sve_smaxv, EA_8BYTE, REG_V15, REG_P7, REG_V4,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* SMAXV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // SMAXV   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sminv, EA_4BYTE, REG_V16, REG_P6, REG_V14,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* SMINV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // SMINV   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_umaxv, EA_2BYTE, REG_V17, REG_P5, REG_V24,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* UMAXV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // UMAXV   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uminv, EA_1BYTE, REG_V18, REG_P4, REG_V31,
-                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); /* UMINV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); // UMINV   <V><d>, <Pg>, <Zn>.<T>
 
 // IF_SVE_AL_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_smaxqv, EA_8BYTE, REG_V0, REG_P5, REG_V25, INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR);
-    /* SMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    // SMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_sminqv, EA_8BYTE, REG_V1, REG_P4, REG_V24, INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR);
-    /* SMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    // SMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_umaxqv, EA_8BYTE, REG_V2, REG_P3, REG_V23, INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR);
-    /* UMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+    // UMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_uminqv, EA_8BYTE, REG_V3, REG_P2, REG_V22, INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR);
-/* UMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+// UMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_AP_3A
     theEmitter->emitIns_R_R_R(INS_sve_cls, EA_SCALABLE, REG_V31, REG_P0, REG_V0,
-                              INS_OPTS_SCALABLE_B); /* CLS     <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B); // CLS     <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_clz, EA_SCALABLE, REG_V30, REG_P1, REG_V1,
-                              INS_OPTS_SCALABLE_H); /* CLZ     <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // CLZ     <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_cnot, EA_SCALABLE, REG_V29, REG_P2, REG_V2,
-                              INS_OPTS_SCALABLE_S); /* CNOT    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // CNOT    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_cnt, EA_SCALABLE, REG_V28, REG_P3, REG_V3,
-                              INS_OPTS_SCALABLE_D); /* CNT     <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // CNT     <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fabs, EA_SCALABLE, REG_V27, REG_P4, REG_V4,
-                              INS_OPTS_SCALABLE_H); /* FABS    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // FABS    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fneg, EA_SCALABLE, REG_V26, REG_P5, REG_V5,
-                              INS_OPTS_SCALABLE_S); /* FNEG    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // FNEG    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_not, EA_SCALABLE, REG_V25, REG_P6, REG_V6,
-                              INS_OPTS_SCALABLE_B); /* NOT     <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B); // NOT     <Zd>.<T>, <Pg>/M, <Zn>.<T>
 
     // IF_SVE_AQ_3A
     theEmitter->emitIns_R_R_R(INS_sve_abs, EA_SCALABLE, REG_V24, REG_P7, REG_V7,
-                              INS_OPTS_SCALABLE_B); /* ABS     <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B); // ABS     <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_neg, EA_SCALABLE, REG_V23, REG_P0, REG_V8,
-                              INS_OPTS_SCALABLE_S); /* NEG     <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // NEG     <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sxtb, EA_SCALABLE, REG_V22, REG_P1, REG_V9,
-                              INS_OPTS_SCALABLE_H); /* SXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // SXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sxtb, EA_SCALABLE, REG_V22, REG_P1, REG_V9,
-                              INS_OPTS_SCALABLE_S); /* SXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // SXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sxtb, EA_SCALABLE, REG_V22, REG_P1, REG_V9,
-                              INS_OPTS_SCALABLE_D); /* SXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // SXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sxth, EA_SCALABLE, REG_V21, REG_P2, REG_V10,
-                              INS_OPTS_SCALABLE_S); /* SXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // SXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sxth, EA_SCALABLE, REG_V21, REG_P2, REG_V10,
-                              INS_OPTS_SCALABLE_D); /* SXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // SXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sxtw, EA_SCALABLE, REG_V20, REG_P3, REG_V11,
-                              INS_OPTS_SCALABLE_D); /* SXTW    <Zd>.D, <Pg>/M, <Zn>.D */
+                              INS_OPTS_SCALABLE_D); // SXTW    <Zd>.D, <Pg>/M, <Zn>.D
     theEmitter->emitIns_R_R_R(INS_sve_uxtb, EA_SCALABLE, REG_V19, REG_P4, REG_V12,
-                              INS_OPTS_SCALABLE_H); /* UXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // UXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uxtb, EA_SCALABLE, REG_V19, REG_P4, REG_V12,
-                              INS_OPTS_SCALABLE_S); /* UXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // UXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uxtb, EA_SCALABLE, REG_V19, REG_P4, REG_V12,
-                              INS_OPTS_SCALABLE_D); /* UXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // UXTB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uxth, EA_SCALABLE, REG_V18, REG_P5, REG_V13,
-                              INS_OPTS_SCALABLE_S); /* UXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // UXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uxth, EA_SCALABLE, REG_V18, REG_P5, REG_V13,
-                              INS_OPTS_SCALABLE_D); /* UXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // UXTH    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_uxtw, EA_SCALABLE, REG_V17, REG_P6, REG_V14,
-                              INS_OPTS_SCALABLE_D); /* UXTW    <Zd>.D, <Pg>/M, <Zn>.D */
+                              INS_OPTS_SCALABLE_D); // UXTW    <Zd>.D, <Pg>/M, <Zn>.D
+
+    // IF_SVE_AR_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_mla, EA_SCALABLE, REG_V0, REG_P0, REG_P0, REG_V19,
+                                INS_OPTS_SCALABLE_B); // MLA     <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_mls, EA_SCALABLE, REG_V2, REG_P1, REG_V31, REG_V31,
+                                INS_OPTS_SCALABLE_H); // MLS     <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+
+    // IF_SVE_AS_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_mad, EA_SCALABLE, REG_V4, REG_P2, REG_V23, REG_V12,
+                                INS_OPTS_SCALABLE_S); // MAD     <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_msb, EA_SCALABLE, REG_V8, REG_P7, REG_V12, REG_V22,
+                                INS_OPTS_SCALABLE_D); // MSB     <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
 
     // IF_SVE_CL_3A
     theEmitter->emitIns_R_R_R(INS_sve_compact, EA_SCALABLE, REG_V16, REG_P7, REG_V13,
-                              INS_OPTS_SCALABLE_S); /* COMPACT <Zd>.<T>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // COMPACT <Zd>.<T>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_compact, EA_SCALABLE, REG_V15, REG_P0, REG_V12,
-                              INS_OPTS_SCALABLE_D); /* COMPACT <Zd>.<T>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // COMPACT <Zd>.<T>, <Pg>, <Zn>.<T>
 
     // IF_SVE_CP_3A
     theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_1BYTE, REG_V14, REG_P1, REG_V11,
-                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <V><n> */
+                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); // CPY     <Zd>.<T>, <Pg>/M, <V><n>
     theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_4BYTE, REG_V13, REG_P2, REG_V10,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <V><n> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // CPY     <Zd>.<T>, <Pg>/M, <V><n>
     theEmitter->emitIns_R_R_R(INS_sve_mov, EA_2BYTE, REG_V12, REG_P3, REG_V9,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <V><n> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // MOV     <Zd>.<T>, <Pg>/M, <V><n>
     theEmitter->emitIns_R_R_R(INS_sve_mov, EA_8BYTE, REG_V11, REG_P4, REG_V8,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <V><n> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // MOV     <Zd>.<T>, <Pg>/M, <V><n>
 
     // IF_SVE_CQ_3A
     // Note: EA_4BYTE used for B and H (source register is W)
     theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_8BYTE, REG_V10, REG_P5, REG_SP,
-                              INS_OPTS_SCALABLE_D_WITH_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <R><n|SP> */
+                              INS_OPTS_SCALABLE_D_WITH_SCALAR); // CPY     <Zd>.<T>, <Pg>/M, <R><n|SP>
     theEmitter->emitIns_R_R_R(INS_sve_cpy, EA_4BYTE, REG_V9, REG_P6, REG_R30,
-                              INS_OPTS_SCALABLE_H_WITH_SCALAR); /* CPY     <Zd>.<T>, <Pg>/M, <R><n|SP> */
+                              INS_OPTS_SCALABLE_H_WITH_SCALAR); // CPY     <Zd>.<T>, <Pg>/M, <R><n|SP>
     theEmitter->emitIns_R_R_R(INS_sve_mov, EA_4BYTE, REG_V8, REG_P7, REG_R29,
-                              INS_OPTS_SCALABLE_S_WITH_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <R><n|SP> */
+                              INS_OPTS_SCALABLE_S_WITH_SCALAR); // MOV     <Zd>.<T>, <Pg>/M, <R><n|SP>
     theEmitter->emitIns_R_R_R(INS_sve_mov, EA_4BYTE, REG_V7, REG_P0, REG_R28,
-                              INS_OPTS_SCALABLE_B_WITH_SCALAR); /* MOV     <Zd>.<T>, <Pg>/M, <R><n|SP> */
+                              INS_OPTS_SCALABLE_B_WITH_SCALAR); // MOV     <Zd>.<T>, <Pg>/M, <R><n|SP>
 
     // IF_SVE_CR_3A
     theEmitter->emitIns_R_R_R(INS_sve_lasta, EA_1BYTE, REG_V6, REG_P1, REG_V27,
-                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); /* LASTA   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR); // LASTA   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lasta, EA_2BYTE, REG_V5, REG_P2, REG_V26,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* LASTA   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // LASTA   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lastb, EA_4BYTE, REG_V4, REG_P3, REG_V25,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* LASTB   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // LASTB   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lastb, EA_8BYTE, REG_V3, REG_P4, REG_V24,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* LASTB   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // LASTB   <V><d>, <Pg>, <Zn>.<T>
 
     // IF_SVE_CS_3A
     // Note: EA_4BYTE used for B and H (source register is W)
     theEmitter->emitIns_R_R_R(INS_sve_lasta, EA_4BYTE, REG_R1, REG_P5, REG_V23,
-                              INS_OPTS_SCALABLE_B_WITH_SCALAR); /* LASTA   <R><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B_WITH_SCALAR); // LASTA   <R><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lasta, EA_4BYTE, REG_R0, REG_P6, REG_V22,
-                              INS_OPTS_SCALABLE_S_WITH_SCALAR); /* LASTA   <R><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SCALAR); // LASTA   <R><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lastb, EA_4BYTE, REG_R30, REG_P7, REG_V21,
-                              INS_OPTS_SCALABLE_H_WITH_SCALAR); /* LASTB   <R><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SCALAR); // LASTB   <R><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_lastb, EA_8BYTE, REG_R29, REG_P0, REG_V20,
-                              INS_OPTS_SCALABLE_D_WITH_SCALAR); /* LASTB   <R><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SCALAR); // LASTB   <R><d>, <Pg>, <Zn>.<T>
 
     // IF_SVE_CU_3A
     theEmitter->emitIns_R_R_R(INS_sve_rbit, EA_SCALABLE, REG_V28, REG_P1, REG_V19,
-                              INS_OPTS_SCALABLE_H); /* RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_rbit, EA_SCALABLE, REG_V28, REG_P1, REG_V19,
-                              INS_OPTS_SCALABLE_B); /* RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B); // RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_rbit, EA_SCALABLE, REG_V28, REG_P1, REG_V19,
-                              INS_OPTS_SCALABLE_S); /* RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_rbit, EA_SCALABLE, REG_V28, REG_P1, REG_V19,
-                              INS_OPTS_SCALABLE_D); /* RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // RBIT    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_revb, EA_SCALABLE, REG_V27, REG_P2, REG_V18,
-                              INS_OPTS_SCALABLE_H); /* REVB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // REVB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_revb, EA_SCALABLE, REG_V27, REG_P2, REG_V18,
-                              INS_OPTS_SCALABLE_S); /* REVB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // REVB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_revb, EA_SCALABLE, REG_V27, REG_P2, REG_V18,
-                              INS_OPTS_SCALABLE_D); /* REVB    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // REVB    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_revh, EA_SCALABLE, REG_V26, REG_P3, REG_V17,
-                              INS_OPTS_SCALABLE_S); /* REVH    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // REVH    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_revh, EA_SCALABLE, REG_V26, REG_P3, REG_V17,
-                              INS_OPTS_SCALABLE_D); /* REVH    <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // REVH    <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_revw, EA_SCALABLE, REG_V25, REG_P4, REG_V16,
-                              INS_OPTS_SCALABLE_D); /* REVW    <Zd>.D, <Pg>/M, <Zn>.D */
+                              INS_OPTS_SCALABLE_D); // REVW    <Zd>.D, <Pg>/M, <Zn>.D
 
     // IF_SVE_EQ_3A
     // Note: Scalable size is the size of the destination <T>, not the source <Tb>.
     theEmitter->emitIns_R_R_R(INS_sve_sadalp, EA_SCALABLE, REG_V26, REG_P3, REG_V8,
-                              INS_OPTS_SCALABLE_H); /* SADALP  <Zda>.<T>, <Pg>/M, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_H); // SADALP  <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_uadalp, EA_SCALABLE, REG_V27, REG_P2, REG_V9,
-                              INS_OPTS_SCALABLE_S); /* UADALP  <Zda>.<T>, <Pg>/M, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_S); // UADALP  <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_uadalp, EA_SCALABLE, REG_V28, REG_P0, REG_V31,
-                              INS_OPTS_SCALABLE_D); /* UADALP  <Zda>.<T>, <Pg>/M, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_D); // UADALP  <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
 
     // IF_SVE_ES_3A
     theEmitter->emitIns_R_R_R(INS_sve_sqabs, EA_SCALABLE, REG_V29, REG_P7, REG_V0,
-                              INS_OPTS_SCALABLE_B); /* SQABS   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_B); // SQABS   <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqneg, EA_SCALABLE, REG_V31, REG_P6, REG_V1,
-                              INS_OPTS_SCALABLE_H); /* SQNEG   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // SQNEG   <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqneg, EA_SCALABLE, REG_V0, REG_P5, REG_V2,
-                              INS_OPTS_SCALABLE_S); /* SQNEG   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // SQNEG   <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_sqneg, EA_SCALABLE, REG_V1, REG_P4, REG_V3,
-                              INS_OPTS_SCALABLE_D); /* SQNEG   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // SQNEG   <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_urecpe, EA_SCALABLE, REG_V2, REG_P3, REG_V4,
-                              INS_OPTS_SCALABLE_S); /* URECPE  <Zd>.S, <Pg>/M, <Zn>.S */
+                              INS_OPTS_SCALABLE_S); // URECPE  <Zd>.S, <Pg>/M, <Zn>.S
     theEmitter->emitIns_R_R_R(INS_sve_ursqrte, EA_SCALABLE, REG_V3, REG_P0, REG_V5,
-                              INS_OPTS_SCALABLE_S); /* URSQRTE <Zd>.S, <Pg>/M, <Zn>.S */
+                              INS_OPTS_SCALABLE_S); // URSQRTE <Zd>.S, <Pg>/M, <Zn>.S
 
     // IF_SVE_GA_2A
     theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
@@ -5316,50 +5328,50 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 // IF_SVE_GS_3A
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     theEmitter->emitIns_R_R_R(INS_sve_faddqv, EA_8BYTE, REG_V16, REG_P0, REG_V12,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR); /* FADDQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR); // FADDQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxnmqv, EA_8BYTE, REG_V17, REG_P1, REG_V11,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR); /* FMAXNMQV <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR); // FMAXNMQV <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxqv, EA_8BYTE, REG_V18, REG_P3, REG_V10,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR); /* FMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR); // FMAXQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_fminnmqv, EA_8BYTE, REG_V19, REG_P4, REG_V9,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR); /* FMINNMQV <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR); // FMINNMQV <Vd>.<T>, <Pg>, <Zn>.<Tb>
     theEmitter->emitIns_R_R_R(INS_sve_fminqv, EA_8BYTE, REG_V20, REG_P5, REG_V8,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR); /* FMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR); // FMINQV  <Vd>.<T>, <Pg>, <Zn>.<Tb>
 #endif                                                               // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_HE_3A
     theEmitter->emitIns_R_R_R(INS_sve_faddv, EA_2BYTE, REG_V21, REG_P7, REG_V7,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* FADDV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // FADDV   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxnmv, EA_2BYTE, REG_V22, REG_P6, REG_V6,
-                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); /* FMAXNMV <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR); // FMAXNMV <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fmaxv, EA_4BYTE, REG_V23, REG_P5, REG_V5,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* FMAXV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // FMAXV   <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fminnmv, EA_8BYTE, REG_V24, REG_P4, REG_V4,
-                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); /* FMINNMV <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR); // FMINNMV <V><d>, <Pg>, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fminv, EA_4BYTE, REG_V25, REG_P3, REG_V3,
-                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); /* FMINV   <V><d>, <Pg>, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR); // FMINV   <V><d>, <Pg>, <Zn>.<T>
 
     // IF_SVE_HQ_3A
     theEmitter->emitIns_R_R_R(INS_sve_frinta, EA_SCALABLE, REG_V26, REG_P7, REG_V2,
-                              INS_OPTS_SCALABLE_H); /* FRINTA  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // FRINTA  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_frinti, EA_SCALABLE, REG_V27, REG_P6, REG_V1,
-                              INS_OPTS_SCALABLE_S); /* FRINTI  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // FRINTI  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_frintm, EA_SCALABLE, REG_V28, REG_P5, REG_V0,
-                              INS_OPTS_SCALABLE_D); /* FRINTM  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // FRINTM  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_frintn, EA_SCALABLE, REG_V29, REG_P4, REG_V10,
-                              INS_OPTS_SCALABLE_H); /* FRINTN  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // FRINTN  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_frintp, EA_SCALABLE, REG_V30, REG_P3, REG_V11,
-                              INS_OPTS_SCALABLE_S); /* FRINTP  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // FRINTP  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_frintx, EA_SCALABLE, REG_V31, REG_P2, REG_V12,
-                              INS_OPTS_SCALABLE_D); /* FRINTX  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_D); // FRINTX  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_frintz, EA_SCALABLE, REG_V0, REG_P0, REG_V13,
-                              INS_OPTS_SCALABLE_H); /* FRINTZ  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // FRINTZ  <Zd>.<T>, <Pg>/M, <Zn>.<T>
 
     // IF_SVE_HR_3A
     theEmitter->emitIns_R_R_R(INS_sve_frecpx, EA_SCALABLE, REG_V5, REG_P5, REG_V5,
-                              INS_OPTS_SCALABLE_H); /* FRECPX  <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_H); // FRECPX  <Zd>.<T>, <Pg>/M, <Zn>.<T>
     theEmitter->emitIns_R_R_R(INS_sve_fsqrt, EA_SCALABLE, REG_V6, REG_P6, REG_V6,
-                              INS_OPTS_SCALABLE_S); /* FSQRT   <Zd>.<T>, <Pg>/M, <Zn>.<T> */
+                              INS_OPTS_SCALABLE_S); // FSQRT   <Zd>.<T>, <Pg>/M, <Zn>.<T>
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

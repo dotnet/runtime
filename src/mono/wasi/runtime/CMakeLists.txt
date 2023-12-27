@@ -5,7 +5,7 @@ project(mono-wasi-runtime C)
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
-add_executable(dotnet ../../wasm/runtime/runtime.c ../../wasm/runtime/pinvoke.c driver.c main.c stubs.c synthetic-pthread.c)
+add_executable(dotnet ../../browser/runtime/runtime.c ../../browser/runtime/pinvoke.c driver.c main.c stubs.c synthetic-pthread.c)
 
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ../../wasm/runtime ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
 target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/wasi-default.rsp @${NATIVE_BIN_DIR}/src/wasi-compile.rsp -DGEN_PINVOKE=1)

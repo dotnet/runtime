@@ -136,5 +136,7 @@ namespace System.Reflection.Emit
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
+
+        public override string? FullName => _assemblyName.FullName;
     }
 }

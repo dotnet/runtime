@@ -754,11 +754,11 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
 }
 
 //----------------------------------------------------------------------------------
-// optCheckIterInLoopTest: Check if iter var is used in loop test.
+// optCheckIterInLoopTest: Check if iteration variable is used in loop test.
 //
 // Arguments:
-//      loopInd - loopIndex
-//      test    - "jtrue" tree or an store of the loop iter termination condition
+//      loopInd - loop index
+//      test    - "jtrue" tree or a store of the loop iteration termination condition
 //      iterVar - loop iteration variable.
 //
 //  Operation:
@@ -2342,16 +2342,13 @@ private:
     //
     void CheckForExit(BasicBlock* block)
     {
-        BasicBlock* exitPoint;
+        assert(!block->HasTarget() || block->HasInitializedTarget());
 
         switch (block->GetKind())
         {
-            case BBJ_COND:
-            case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-                assert(block->HasInitializedTarget());
-                exitPoint = block->KindIs(BBJ_COND) ? block->GetTrueTarget() : block->GetTarget();
+            {
+                BasicBlock* exitPoint = block->GetTarget();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
@@ -2362,15 +2359,43 @@ private:
                     // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
                     // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
                     // show up as might be expected in the dominator tree.
-                    if (block->KindIs(BBJ_ALWAYS))
+                    if (!BasicBlock::sameHndRegion(block, exitPoint))
                     {
-                        if (!BasicBlock::sameHndRegion(block, exitPoint))
-                        {
-                            break;
-                        }
+                        break;
                     }
 #endif // !defined(FEATURE_EH_FUNCLETS)
 
+                    lastExit = block;
+                    exitCount++;
+                }
+                break;
+            }
+            case BBJ_COND:
+                if (!loopBlocks.IsMember(block->GetTrueTarget()->bbNum))
+                {
+                    lastExit = block;
+                    exitCount++;
+                }
+
+                if (!loopBlocks.IsMember(block->GetFalseTarget()->bbNum))
+                {
+                    lastExit = block;
+                    exitCount++;
+                }
+                break;
+            case BBJ_CALLFINALLY:
+                // Check fallthrough successor
+                if (!loopBlocks.IsMember(block->Next()->bbNum))
+                {
+                    lastExit = block;
+                    exitCount++;
+                }
+
+                FALLTHROUGH;
+            case BBJ_CALLFINALLYRET:
+            case BBJ_EHCATCHRET:
+                if (!loopBlocks.IsMember(block->GetTarget()->bbNum))
+                {
                     lastExit = block;
                     exitCount++;
                 }
@@ -2404,13 +2429,6 @@ private:
             default:
                 noway_assert(!"Unexpected bbKind");
                 break;
-        }
-
-        if (block->bbFallsThrough() && !loopBlocks.IsMember(block->Next()->bbNum))
-        {
-            // Found a fall-through exit.
-            lastExit = block;
-            exitCount++;
         }
     }
 };
@@ -2843,7 +2861,7 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 // This method will split the loop top into two or three blocks depending on
 // whether (1) or (3) is non-empty, and redirect the edges accordingly.
 //
-// Loops are canoncalized outer to inner, so inner loops should never see outer loop
+// Loops are canonicalized outer to inner, so inner loops should never see outer loop
 // non-backedges, as the parent loop canonicalization should have handled them.
 //
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
@@ -5495,12 +5513,18 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    m_newToOldLoop = m_loops->NumLoops() == 0 ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
+    m_newToOldLoop = (m_loops->NumLoops() == 0) ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
     m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
 
-    // Unnatural loops can quickly become natural if we manage to remove some
-    // edges, so be conservative here.
-    fgMightHaveNaturalLoops = (m_loops->NumLoops() > 0) || m_loops->HaveNonNaturalLoopCycles();
+    // Leave a bread crumb for future phases like loop alignment about whether
+    // looking for loops makes sense. We generally do not expect phases to
+    // introduce new cycles/loops in the flow graph; if they do, they should
+    // set this to true themselves.
+    // We use more general cycles over "m_loops->NumLoops() > 0" here because
+    // future optimizations can easily cause general cycles to become natural
+    // loops by removing edges.
+    fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
+    assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
 
     for (BasicBlock* block : Blocks())
     {
