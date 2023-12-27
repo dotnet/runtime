@@ -872,14 +872,12 @@ compute_global_var_cb (TransformData *td, int *pvar, gpointer data)
 	int var = *pvar;
 	InterpBasicBlock *bb = (InterpBasicBlock*)data;
 	InterpVar *var_data = &td->vars [var];
-	if (!var_is_ssa_form (td, var))
+	if (!var_is_ssa_form (td, var) || td->vars [var].ext_index == -1)
 		return;
 	// If var is used in another block than the one that it is declared then mark it as global
-	if (var_data->declare_bbs) {
-		if (var_data->declare_bbs->data != bb || var_data->declare_bbs->next) {
-			int ext_index = interp_create_renamable_var (td, var);
-			td->renamable_vars [ext_index].ssa_global = TRUE;
-		}
+	if (var_data->declare_bbs && var_data->declare_bbs->data != bb) {
+		int ext_index = td->vars [var].ext_index;
+		td->renamable_vars [ext_index].ssa_global = TRUE;
 	}
 }
 
@@ -893,19 +891,29 @@ interp_compute_global_vars (TransformData *td)
 			continue;
 		InterpInst *ins;
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			interp_foreach_ins_svar (td, ins, bb, compute_global_var_cb);
 			if (mono_interp_op_dregs [ins->opcode] && var_is_ssa_form (td, ins->dreg)) {
 				// Save the list of bblocks where a global var is defined in
 				InterpVar *var_data = &td->vars [ins->dreg];
 				if (!var_data->declare_bbs) {
 					var_data->declare_bbs = g_slist_prepend (NULL, bb);
 				} else {
-					interp_create_renamable_var (td, ins->dreg);
-					if (!g_slist_find (var_data->declare_bbs, bb))
+					int ext_index = interp_create_renamable_var (td, ins->dreg);
+					if (!g_slist_find (var_data->declare_bbs, bb)) {
+						// Var defined in multiple bblocks, it is ssa global
 						var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
+						td->renamable_vars [ext_index].ssa_global = TRUE;
+					}
 				}
 			}
 		}
+	}
+
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		if (!is_bblock_ssa_cfg (td, bb))
+			continue;
+		InterpInst *ins;
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
+			interp_foreach_ins_svar (td, ins, bb, compute_global_var_cb);
 	}
 
 	if (td->verbose_level) {
