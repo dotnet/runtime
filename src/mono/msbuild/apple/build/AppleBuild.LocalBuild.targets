@@ -116,6 +116,9 @@
       <TrimmerRootAssembly
           Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'mscorlib.dll'"
           Include="%(AppleAssembliesToBundle.Identity)" />
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == 'System.Data.dll'"
+          Include="%(AppleAssembliesToBundle.Identity)" />
       <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
           which doesn't exist at the path when BuildTestsOnHelix -->
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />

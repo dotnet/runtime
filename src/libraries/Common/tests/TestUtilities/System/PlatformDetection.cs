@@ -206,7 +206,7 @@ namespace System
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
         public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
         public static bool IsMethodBodySupported => !IsNativeAot;
-        public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
+        public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot && !IsAppleMobile;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
         public static bool IsSingleFile => !HasAssemblyFiles;
