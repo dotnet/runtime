@@ -3664,4 +3664,10 @@
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'riscv64'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
+            <Issue>function dlopen at mono-dl.c:250 can't open the native lib libGCPollNative.so</Issue>
+        </ExcludeList>
+    </ItemGroup>
 </Project>
