@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     // JSExport 2x
     // JSExport async
     // timer
-    // GC + finalizer
+    // GC + finalizer + dispose
     // lock
     // thread allocation, many threads
     // TLS
@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 var jsTid = WebWorkerTestHelper.GetTid();
                 var csTid = WebWorkerTestHelper.NativeThreadId;
-                if(executor.Type== ExecutorType.Main || executor.Type == ExecutorType.JSWebWorker)
+                if (executor.Type == ExecutorType.Main || executor.Type == ExecutorType.JSWebWorker)
                 {
                     Assert.Equal(jsTid, csTid);
                 }
@@ -115,55 +115,84 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             });
         }
 
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task ThreadingTimer(Executor executor)
+        {
+            await executor.Execute(async () =>
+            {
+                TaskCompletionSource tcs = new TaskCompletionSource();
+                executor.AssertTargetThread();
+
+                using var timer = new Threading.Timer(_ =>
+                {
+                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    tcs.SetResult();
+                }, null, 100, Timeout.Infinite);
+
+                await tcs.Task;
+            });
+        }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task JSDelay(Executor executor)
+        public async Task JSDelay_ContinueWith(Executor executor)
         {
             await executor.Execute(async () =>
             {
                 var currentTID = Environment.CurrentManagedThreadId;
-                executor.AssertTargetThread();
-                await WebWorkerTestHelper.CreateDelay();
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay());
 
                 await WebWorkerTestHelper.Delay(1).ContinueWith(_ =>
                 {
                     // continue on the context of the target JS interop
                     switch (executor.Type)
                     {
-                        case ExecutorType.JSWebWorker:
-                            Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                            Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                            Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                            break;
                         case ExecutorType.Main:
                             Assert.Equal(1, Environment.CurrentManagedThreadId);
                             Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
                             Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                             break;
+                        case ExecutorType.JSWebWorker:
+                            Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                            Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
+                            Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                            break;
                         case ExecutorType.NewThread:
+                            // it will synchronously continue on the UI thread
                             Assert.Equal(1, Environment.CurrentManagedThreadId);
                             Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
                             Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                             break;
                         case ExecutorType.ThreadPool:
+                            // it will synchronously continue on the UI thread
                             Assert.Equal(1, Environment.CurrentManagedThreadId);
                             Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
                             Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                             break;
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
+            });
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task JSDelay_ConfigureAwait_True(Executor executor)
+        {
+            await executor.Execute(async () =>
+            {
+                var currentTID = Environment.CurrentManagedThreadId;
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay());
 
                 await WebWorkerTestHelper.Delay(1).ConfigureAwait(true);
                 // continue on captured context
                 switch (executor.Type)
                 {
-                    case ExecutorType.JSWebWorker:
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    case ExecutorType.Main:
+                        Assert.Equal(1, Environment.CurrentManagedThreadId);
                         Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
                         Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                         break;
-                    case ExecutorType.Main:
-                        Assert.Equal(1, Environment.CurrentManagedThreadId);
+                    case ExecutorType.JSWebWorker:
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
                         Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
                         Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                         break;
@@ -174,39 +203,62 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                         Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                         break;
                     case ExecutorType.ThreadPool:
+                        // it could migrate to any TP thread
                         Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
                         Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                         break;
                 }
             });
         }
 
-
         [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task ManagedDelay(Executor executor)
+        public async Task ManagedDelay_ContinueWith(Executor executor)
         {
             await executor.Execute(async () =>
             {
                 executor.AssertTargetThread();
-                await WebWorkerTestHelper.CreateDelay();
-
                 await Task.Delay(1).ContinueWith(_ =>
                 {
-                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    // continue on the context of the Timer's thread pool thread
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                 }, TaskContinuationOptions.ExecuteSynchronously);
+            });
+        }
+
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
+        {
+            await executor.Execute(async () =>
+            {
+                var currentTID = Environment.CurrentManagedThreadId;
+                executor.AssertTargetThread();
 
                 await Task.Delay(1).ConfigureAwait(true);
-                if (executor.Type == ExecutorType.Main)
+                // continue on captured context
+                switch (executor.Type)
                 {
-                    Assert.Equal(1, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                }
-                else
-                {
-                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    case ExecutorType.Main:
+                        Assert.Equal(1, Environment.CurrentManagedThreadId);
+                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
+                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
+                    case ExecutorType.JSWebWorker:
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
+                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
+                    case ExecutorType.NewThread:
+                        // the actual new thread is now blocked in .Wait() and so this is running on TP
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                        Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
+                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
+                    case ExecutorType.ThreadPool:
+                        // it could migrate to any TP thread
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
                 }
             });
         }
@@ -220,20 +272,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 executor.AssertTargetThread();
 
                 await Task.Yield();
-                if (executor.Type == ExecutorType.Main)
+
+                switch (executor.Type)
                 {
-                    Assert.Equal(1, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                }
-                else if (executor.Type == ExecutorType.JSWebWorker)
-                {
-                    Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                }
-                else
-                {
-                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    case ExecutorType.Main:
+                        Assert.Equal(1, Environment.CurrentManagedThreadId);
+                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
+                    case ExecutorType.JSWebWorker:
+                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
+                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
+                    case ExecutorType.NewThread:
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
+                    case ExecutorType.ThreadPool:
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                        break;
                 }
             });
         }

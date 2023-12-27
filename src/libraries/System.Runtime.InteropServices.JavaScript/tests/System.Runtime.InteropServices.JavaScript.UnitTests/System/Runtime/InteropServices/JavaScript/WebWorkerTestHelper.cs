@@ -216,6 +216,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public override string ToString() => Type.ToString();
+
+        // make sure we stay on the executor
+        public async Task StickyAwait(Task task)
+        {
+            if (Type == ExecutorType.NewThread)
+            {
+                task.Wait();
+            }
+            else
+            {
+                await task.ConfigureAwait(true);
+            }
+            AssertTargetThread();
+        }
     }
 
     #endregion
