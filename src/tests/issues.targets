@@ -2506,6 +2506,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/InlineArray/InlineArrayInvalid/**">
             <Issue>https://github.com/dotnet/runtime/issues/86327</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
+            <Issue>Varargs supported on this platform</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios') and '$(TargetArchitecture)' == 'arm64'">
