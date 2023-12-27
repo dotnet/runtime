@@ -5,7 +5,7 @@
                                    $(TestBinDir)hosting\**\*.XUnitWrapper.dll;
                                    $(TestBinDir)ilasm\**\*.XUnitWrapper.dll;
                                    $(TestBinDir)Loader\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)managed\**\*.XUnitWrapper.dll" />
+                                   $(TestBinDir)managed\**\*.XUnitWrapper.dll">
       <PayloadGroup>PayloadGroup0</PayloadGroup>
     </XUnitWrapperGrouping>
 
