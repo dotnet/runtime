@@ -7,6 +7,6 @@
     <DebugType />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="sharedgenerics.il" />
+    <Compile Include="sharedgenerics_r.il" />
   </ItemGroup>
 </Project>

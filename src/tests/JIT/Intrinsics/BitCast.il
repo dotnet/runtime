@@ -6,7 +6,7 @@
 
 .assembly extern System.Runtime {}
 .assembly extern System.Console {}
-.assembly Bitcast {}
+.assembly BitCast {}
 
 .class public abstract auto ansi sealed beforefieldinit Program
        extends [System.Runtime]System.Object
