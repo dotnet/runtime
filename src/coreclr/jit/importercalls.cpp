@@ -54,8 +54,7 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
     param.success         = false;
 
     bool success = eeRunWithErrorTrap<Param>(
-        [](Param* pParam)
-        {
+        [](Param* pParam) {
             // Cache some frequently accessed state.
             //
             Compiler* const       compiler    = pParam->pThis;

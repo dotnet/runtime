@@ -8629,8 +8629,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   &callInfo);
 
                     if (callInfo.kind == CORINFO_CALL &&
-                        (callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1 || // possible setter
-                         callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0))   // possible getter
+                        ((callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1) || // possible setter
+                         (callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0)))   // possible getter
                     {
                         if (impTryFindField(callInfo.hMethod, &resolvedToken, &opcode))
                         {
