@@ -410,8 +410,18 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags);
+        private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
+        {
+            Delegate d = this;
+            bool ret = BindToMethodInfo(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
+                method.Value, new QCallTypeHandle(ref methodType), flags);
+            GC.KeepAlive(method);
+            return ret;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern MulticastDelegate InternalAlloc(RuntimeType type);

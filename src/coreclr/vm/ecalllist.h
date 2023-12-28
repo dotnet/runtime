@@ -276,7 +276,6 @@ FCFuncStart(gAssemblyLoadContextFuncs)
 FCFuncEnd()
 
 FCFuncStart(gDelegateFuncs)
-    FCFuncElement("BindToMethodInfo", COMDelegate::BindToMethodInfo)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
     FCFuncElement("InternalAlloc", COMDelegate::InternalAlloc)

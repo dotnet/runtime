@@ -61,8 +61,6 @@ public:
     static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
     static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);
 
-    static FCDECL5(FC_BOOL_RET, BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *method, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags);
-
     // This gets the MethodInfo for a delegate, creating it if necessary
     static FCDECL1(ReflectMethodObject*, FindMethodHandle, Object* refThis);
     static FCDECL2(FC_BOOL_RET, InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn);
@@ -152,6 +150,10 @@ enum DelegateBindingFlags
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
     QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags);
+
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
+
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);

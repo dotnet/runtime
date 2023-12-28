@@ -999,30 +999,29 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
     return (pMatchingMethod != NULL);
 }
 
-
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags)
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL result = TRUE;
 
-    struct _gc
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
     {
         DELEGATEREF refThis;
         OBJECTREF refFirstArg;
-        REFLECTCLASSBASEREF refMethodType;
-        REFLECTMETHODREF refMethod;
     } gc;
 
-    gc.refThis          = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.refFirstArg      = ObjectToOBJECTREF(targetUNSAFE);
-    gc.refMethodType    = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
-    gc.refMethod        = (REFLECTMETHODREF) ObjectToOBJECTREF(pMethodUNSAFE);
+    gc.refThis          = (DELEGATEREF) d.Get();
+    gc.refFirstArg      = target.Get();
 
-    MethodTable *pMethMT = gc.refMethodType->GetType().GetMethodTable();
-    MethodDesc *method = gc.refMethod->GetMethod();
+    GCPROTECT_BEGIN(gc);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    MethodTable *pMethMT = pMethodType.AsTypeHandle().GetMethodTable();
 
     // Assert to track down VS#458689.
     _ASSERTE(gc.refThis != gc.refFirstArg);
@@ -1055,7 +1054,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             &fIsOpenDelegate))
     {
         // Initialize the delegate to point to the target method.
-        BindToMethod(&gc.refThis,
+        COMDelegate::BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
                      method,
                      pMethMT,
@@ -1064,11 +1063,12 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
     else
         result = FALSE;
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
 
-    FC_RETURN_BOOL(result);
+    END_QCALL;
+
+    return result;
 }
-FCIMPLEND
 
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
 // (signature matching etc.) have been done at this point, this method will simply initialize the delegate, with any required
