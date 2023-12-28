@@ -1777,9 +1777,11 @@ private:
         makeRegsAvailable(regMask);
     }
 
+    void clearAllNextIntervalRef();
     void clearNextIntervalRef(regNumber reg, var_types regType);
     void updateNextIntervalRef(regNumber reg, Interval* interval);
 
+    void clearAllSpillCost();
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 

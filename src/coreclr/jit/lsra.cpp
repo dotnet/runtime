@@ -308,6 +308,11 @@ regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInte
     return result;
 }
 
+void LinearScan::clearAllNextIntervalRef()
+{
+    memset(nextIntervalRef, MaxLocation, AVAILABLE_REG_COUNT * sizeof(LsraLocation));
+}
+
 void LinearScan::clearNextIntervalRef(regNumber reg, var_types regType)
 {
     nextIntervalRef[reg] = MaxLocation;
@@ -319,6 +324,11 @@ void LinearScan::clearNextIntervalRef(regNumber reg, var_types regType)
         nextIntervalRef[otherReg] = MaxLocation;
     }
 #endif
+}
+
+void LinearScan::clearAllSpillCost()
+{
+    memset(spillCost, 0, AVAILABLE_REG_COUNT * sizeof(weight_t));
 }
 
 void LinearScan::clearSpillCost(regNumber reg, var_types regType)
@@ -4180,17 +4190,17 @@ void LinearScan::resetAllRegistersState()
     assert(!enregisterLocalVars);
     // Just clear any constant registers and return.
     resetAvailableRegs();
+    clearAllNextIntervalRef();
+    clearAllSpillCost();
+
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord    = getRegisterRecord(reg);
+#ifdef DEBUG
         Interval*  assignedInterval = physRegRecord->assignedInterval;
-        clearNextIntervalRef(reg, physRegRecord->registerType);
-        clearSpillCost(reg, physRegRecord->registerType);
-        if (assignedInterval != nullptr)
-        {
-            assert(assignedInterval->isConstant);
-            physRegRecord->assignedInterval = nullptr;
-        }
+        assert(assignedInterval == nullptr || assignedInterval->isConstant);
+#endif
+        physRegRecord->assignedInterval = nullptr;
     }
 }
 
