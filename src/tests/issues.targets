@@ -2518,6 +2518,27 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/BSTR/BSTRTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/LPTSTR/LPTSTRTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Interop/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/BoxPatternMatchAndSideEffects/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26491/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetOS)' == 'ios') and '$(TargetArchitecture)' == 'arm64'">
