@@ -83,6 +83,11 @@
       <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) != '.dll' or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ReferencePath Include="@(AppleReferenceSharedPathFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
+      <ReferencePath Include="@(AppleReferenceExtraPathFiles->'$(ExtraFilesPath)%(FileName)%(Extension)')" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(_RuntimePackFiles)"
           DestinationFolder="$(OriginalPublishDir)" />
   </Target>
