@@ -9908,6 +9908,10 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
             return src;
         }
 
+#if defined(TARGET_RISCV64)
+        // TODO On RISC-V widening casts are NOPs and can be discarded, except for uint to long or ulong,
+        // which require zero-extension because all 32 bit values are kept sign-extended.
+#else // everything except RISC-V where narrowing is never a NOP
         // Try to narrow the operand of the cast and discard the cast.
         if (opts.OptEnabled(CLFLG_TREETRANS) && (genTypeSize(src) > genTypeSize(castToType)) &&
             optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, false))
@@ -9922,6 +9926,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
             return src;
         }
+#endif
 
         // Check for two consecutive casts, we may be able to discard the intermediate one.
         if (opts.OptimizationEnabled() && src->OperIs(GT_CAST) && !src->gtOverflow())
