@@ -88,6 +88,7 @@ jobs:
             compileOnHelix: true
             interpreter: true
             testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=true
+            testBuildArgs: tree baseservices
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 

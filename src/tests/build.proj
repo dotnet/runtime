@@ -383,18 +383,22 @@
         string lastLine = lines[lines.Length - 1];
         StringBuilder resultBuilder = new StringBuilder();
 
+        // Install app
+        string appPath = lastLine.Split(new string[] {"-app "}, StringSplitOptions.None)[1].Split(' ')[0];
+        resultBuilder.AppendLine($"xharness apple install --app={appPath}");
         // Iterate over each entry point and modify the run script
         foreach (ITaskItem item in EntryPoints)
         {
             string value = item.ItemSpec;
             
             // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME and MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX environment parameters to the run script
-            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value} --set-env=MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX={value.Split('/')[0]}") + "&& echo \"Test passed\" || { echo \"Test failed\"; exit 1; }";
+            string output = lastLine.Replace("apple test", "apple just-run").Replace($" {appPath}", $"=net.dot.{AppName}").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value} --set-env=MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX={value.Split('/')[0]}") + "&& echo \"Test passed\" || { echo \"Test failed\"; xharness apple uninstall --app=net.dot."+AppName+"; exit 1; }";
             resultBuilder.AppendLine(output);
 
             // Rename the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
             resultBuilder.AppendLine("mv \"${output_directory}/net.dot."+AppName+".log\" \"${output_directory}/"+value.Split('/')[0]+".log\"");
         }
+        resultBuilder.AppendLine($"xharness apple uninstall --app=net.dot.{AppName}");
 
         StringBuilder outputScriptBuilder = new StringBuilder(string.Join("\n", lines.Take(lines.Length - 1)));
         outputScriptBuilder.AppendLine();
