@@ -565,7 +565,13 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             return 0;
         };
 
-    return PalStartBackgroundGCThread(threadStub, threadStubArgs);
+    if (!PalStartBackgroundGCThread(threadStub, threadStubArgs))
+    {
+        delete threadStubArgs;
+        return false;
+    }
+
+    return true;
 }
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
