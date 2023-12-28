@@ -1080,9 +1080,7 @@ assemblyRefHead:
 	'.assembly' 'extern' asmAttr dottedName
 	| '.assembly' 'extern' asmAttr dottedName 'as' dottedName;
 
-assemblyRefDecls:
-	/* EMPTY */
-	| assemblyRefDecls assemblyRefDecl;
+assemblyRefDecls: assemblyRefDecl*;
 
 assemblyRefDecl:
 	'.hash' '=' '(' bytes ')'

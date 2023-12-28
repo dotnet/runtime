@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -15,10 +16,11 @@ namespace ILAssembler
         private readonly Dictionary<TableIndex, List<EntityBase>> _seenEntities = new();
         private readonly Dictionary<(TypeDefinitionEntity? ContainingType, string Namespace, string Name), TypeDefinitionEntity> _seenTypeDefs = new();
         private readonly Dictionary<(EntityBase ResolutionScope, string Namespace, string Name), TypeReferenceEntity> _seenTypeRefs = new();
-        private readonly Dictionary<string, AssemblyReferenceEntity> _seenAssemblyRefs = new();
+        private readonly Dictionary<AssemblyName, AssemblyReferenceEntity> _seenAssemblyRefs = new();
         private readonly Dictionary<string, ModuleReferenceEntity> _seenModuleRefs = new();
         private readonly Dictionary<BlobBuilder, TypeSpecificationEntity> _seenTypeSpecs = new(new BlobBuilderContentEqualityComparer());
         private readonly Dictionary<BlobBuilder, StandaloneSignatureEntity> _seenStandaloneSignatures = new(new BlobBuilderContentEqualityComparer());
+        private readonly Dictionary<string, FileEntity> _seenFiles = new();
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -88,6 +90,10 @@ namespace ILAssembler
 
         public TypeDefinitionEntity ModuleType { get; }
 
+        public ModuleEntity Module { get; } = new ModuleEntity();
+
+        public AssemblyEntity? Assembly { get; set; }
+
         private TypeEntity ResolveFromCoreAssembly(string typeName)
         {
             throw new NotImplementedException();
@@ -139,7 +145,7 @@ namespace ILAssembler
 
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Action<AssemblyReferenceEntity> onCreateAssemblyReference)
         {
-            return GetOrCreateEntity(name, TableIndex.AssemblyRef, _seenAssemblyRefs, name => new(name), onCreateAssemblyReference);
+            return GetOrCreateEntity(new(name), TableIndex.AssemblyRef, _seenAssemblyRefs, _ => new(name), onCreateAssemblyReference);
         }
 
         public ModuleReferenceEntity GetOrCreateModuleReference(string name, Action<ModuleReferenceEntity> onCreateModuleReference)
@@ -315,6 +321,37 @@ namespace ILAssembler
             return new MethodImplementationEntity(methodBody, methodDeclaration);
         }
 
+        public FileEntity GetOrCreateFile(string name, bool hasMetadata, BlobBuilder? hash)
+        {
+            return GetOrCreateEntity(name, TableIndex.File, _seenFiles, (name) => new FileEntity(name), entity =>
+            {
+                entity.HasMetadata = hasMetadata;
+                entity.Hash = hash;
+            });
+        }
+
+        public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Version version, string? culture, BlobBuilder? publicKeyOrToken, AssemblyFlags flags, ProcessorArchitecture architecture)
+        {
+            AssemblyName key = new AssemblyName(name)
+            {
+                Version = version,
+                CultureName = culture,
+                Flags = (AssemblyNameFlags)flags,
+                ProcessorArchitecture = architecture,
+                KeyPair = publicKeyOrToken is null ? null : new StrongNameKeyPair(publicKeyOrToken.ToArray())
+            };
+            return GetOrCreateEntity(key, TableIndex.AssemblyRef, _seenAssemblyRefs, (value) => new AssemblyReferenceEntity(name), entity =>
+            {
+                entity.Version = version;
+                entity.Culture = culture;
+                entity.PublicKeyOrToken = publicKeyOrToken;
+                entity.Flags = flags;
+                entity.ProcessorArchitecture = architecture;
+            });
+        }
+
+        public IHasHandle? EntryPoint { get; set; }
+
         public abstract class EntityBase : IHasHandle
         {
             public EntityHandle Handle { get; private set; }
@@ -429,42 +466,25 @@ namespace ILAssembler
             public string ReflectionNotation { get; }
         }
 
-        public sealed class TypeReferenceEntity : TypeEntity, IHasReflectionNotation
+        public sealed class TypeReferenceEntity(EntityBase resolutionScope, string @namespace, string name) : TypeEntity, IHasReflectionNotation
         {
-            public TypeReferenceEntity(EntityBase resolutionScope, string @namespace, string name)
-            {
-                ResolutionScope = resolutionScope;
-                Namespace = @namespace;
-                Name = name;
-            }
-            public EntityBase ResolutionScope { get; }
+            public EntityBase ResolutionScope { get; } = resolutionScope;
 
-            public string Namespace { get; }
+            public string Namespace { get; } = @namespace;
 
-            public string Name { get; }
+            public string Name { get; } = name;
 
             public string ReflectionNotation { get; set; } = string.Empty;
         }
 
-        public sealed class TypeSpecificationEntity : TypeEntity
+        public sealed class TypeSpecificationEntity(BlobBuilder signature) : TypeEntity
         {
-            public TypeSpecificationEntity(BlobBuilder signature)
-            {
-                Signature = signature;
-            }
-
-            public BlobBuilder Signature { get; }
+            public BlobBuilder Signature { get; } = signature;
         }
 
-        public sealed class GenericParameterEntity : EntityBase, INamed
+        public sealed class GenericParameterEntity(GenericParameterAttributes attributes, string name) : EntityBase, INamed
         {
-            public GenericParameterEntity(GenericParameterAttributes attributes, string name)
-            {
-                Attributes = attributes;
-                Name = name;
-            }
-
-            public GenericParameterAttributes Attributes { get; }
+            public GenericParameterAttributes Attributes { get; } = attributes;
 
             public EntityBase? Owner { get; set; }
 
@@ -472,51 +492,25 @@ namespace ILAssembler
 
             public List<GenericParameterConstraintEntity> Constraints { get; } = new();
 
-            public string Name { get; }
+            public string Name { get; } = name;
         }
 
-        public sealed class GenericParameterConstraintEntity : EntityBase
+        public sealed class GenericParameterConstraintEntity(TypeEntity baseType) : EntityBase
         {
-            public GenericParameterConstraintEntity(TypeEntity baseType)
-            {
-                BaseType = baseType;
-            }
-
             public GenericParameterEntity? Owner { get; set; }
 
-            public TypeEntity BaseType { get; }
+            public TypeEntity BaseType { get; } = baseType;
         }
 
-        public sealed class AssemblyReferenceEntity : EntityBase
+        public sealed class ModuleReferenceEntity(string name) : EntityBase
         {
-            public AssemblyReferenceEntity(string name)
-            {
-                Name = name;
-            }
-
-            public string Name { get; }
+            public string Name { get; } = name;
         }
 
-        public sealed class ModuleReferenceEntity : EntityBase
+        public sealed class MethodDefinitionEntity(TypeDefinitionEntity containingType, string name) : EntityBase, IHasHandle
         {
-            public ModuleReferenceEntity(string name)
-            {
-                Name = name;
-            }
-
-            public string Name { get; }
-        }
-
-        public sealed class MethodDefinitionEntity : EntityBase, IHasHandle
-        {
-            public MethodDefinitionEntity(TypeDefinitionEntity containingType, string name)
-            {
-                ContainingType = containingType;
-                Name = name;
-            }
-
-            public TypeDefinitionEntity ContainingType { get; }
-            public string Name { get; }
+            public TypeDefinitionEntity ContainingType { get; } = containingType;
+            public string Name { get; } = name;
 
             public MethodAttributes MethodAttributes { get; set; }
 
@@ -543,33 +537,19 @@ namespace ILAssembler
             public MethodImplAttributes ImplementationAttributes { get; set; }
         }
 
-        public sealed class ParameterEntity : EntityBase
+        public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor) : EntityBase
         {
-            public ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor)
-            {
-                Attributes = attributes;
-                Name = name;
-                MarshallingDescriptor = marshallingDescriptor;
-            }
-
-            public ParameterAttributes Attributes { get; }
-            public string? Name { get; }
-            public BlobBuilder MarshallingDescriptor { get; set; }
+            public ParameterAttributes Attributes { get; } = attributes;
+            public string? Name { get; } = name;
+            public BlobBuilder MarshallingDescriptor { get; set; } = marshallingDescriptor;
             public bool HasCustomAttributes { get; set; }
         }
 
-        public sealed class MemberReferenceEntity : EntityBase
+        public sealed class MemberReferenceEntity(EntityBase parent, string name, BlobBuilder signature) : EntityBase
         {
-            public MemberReferenceEntity(EntityBase parent, string name, BlobBuilder signature)
-            {
-                Parent = parent;
-                Name = name;
-                Signature = signature;
-            }
-
-            public EntityBase Parent { get; }
-            public string Name { get; }
-            public BlobBuilder Signature { get; }
+            public EntityBase Parent { get; } = parent;
+            public string Name { get; } = name;
+            public BlobBuilder Signature { get; } = signature;
 
             private readonly List<Blob> _placesToWriteResolvedHandle = new();
 
@@ -592,115 +572,96 @@ namespace ILAssembler
             }
         }
 
-        public sealed class StandaloneSignatureEntity : EntityBase
+        public sealed class StandaloneSignatureEntity(BlobBuilder signature) : EntityBase
         {
-            public StandaloneSignatureEntity(BlobBuilder signature)
-            {
-                Signature = signature;
-            }
-
-            public BlobBuilder Signature { get; }
+            public BlobBuilder Signature { get; } = signature;
         }
 
-        public sealed class DeclarativeSecurityAttributeEntity : EntityBase
+        public sealed class DeclarativeSecurityAttributeEntity(DeclarativeSecurityAction action, BlobBuilder permissionSet) : EntityBase
         {
-            public DeclarativeSecurityAttributeEntity(DeclarativeSecurityAction action, BlobBuilder permissionSet)
-            {
-                Action = action;
-                PermissionSet = permissionSet;
-            }
-
             public EntityBase? Parent { get; set; }
-            public DeclarativeSecurityAction Action { get; }
-            public BlobBuilder PermissionSet { get; }
+            public DeclarativeSecurityAction Action { get; } = action;
+            public BlobBuilder PermissionSet { get; } = permissionSet;
         }
 
-        public sealed class CustomAttributeEntity : EntityBase
+        public sealed class CustomAttributeEntity(EntityBase constructor, BlobBuilder value) : EntityBase
         {
-            public CustomAttributeEntity(EntityBase constructor, BlobBuilder value)
-            {
-                Constructor = constructor;
-                Value = value;
-            }
-
             public EntityBase? Owner { get; set; }
-            public EntityBase Constructor { get; }
-            public BlobBuilder Value { get; }
+            public EntityBase Constructor { get; } = constructor;
+            public BlobBuilder Value { get; } = value;
         }
 
-        public sealed class MethodImplementationEntity : EntityBase
+        public sealed class MethodImplementationEntity(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
         {
-            public MethodImplementationEntity(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
-            {
-                MethodBody = methodBody;
-                MethodDeclaration = methodDeclaration;
-            }
-
-            public MethodDefinitionEntity MethodBody { get; }
-            public MemberReferenceEntity MethodDeclaration { get; }
+            public MethodDefinitionEntity MethodBody { get; } = methodBody;
+            public MemberReferenceEntity MethodDeclaration { get; } = methodDeclaration;
         }
 
-        public sealed class FieldDefinitionEntity : EntityBase
+        public sealed class FieldDefinitionEntity(FieldAttributes attributes, TypeDefinitionEntity type, string name, BlobBuilder signature) : EntityBase
         {
-            public FieldDefinitionEntity(FieldAttributes attributes, TypeDefinitionEntity type, string name, BlobBuilder signature)
-            {
-                Attributes = attributes;
-                ContainingType = type;
-                Name = name;
-                Signature = signature;
-            }
-
-            public FieldAttributes Attributes { get; }
-            public TypeDefinitionEntity ContainingType { get; }
-            public string Name { get; }
-            public BlobBuilder Signature { get; }
+            public FieldAttributes Attributes { get; } = attributes;
+            public TypeDefinitionEntity ContainingType { get; } = type;
+            public string Name { get; } = name;
+            public BlobBuilder Signature { get; } = signature;
 
             public BlobBuilder? MarshallingDescriptor { get; set; }
             public string? DataDeclarationName { get; set; }
         }
 
-        public sealed class InterfaceImplementationEntity : EntityBase
+        public sealed class InterfaceImplementationEntity(TypeDefinitionEntity type, TypeEntity interfaceType) : EntityBase
         {
-            public InterfaceImplementationEntity(TypeDefinitionEntity type, TypeEntity interfaceType)
-            {
-                Type = type;
-                InterfaceType = interfaceType;
-            }
-
-            public TypeDefinitionEntity Type { get; }
-            public TypeEntity InterfaceType { get; }
+            public TypeDefinitionEntity Type { get; } = type;
+            public TypeEntity InterfaceType { get; } = interfaceType;
         }
 
-        public sealed class EventEntity : EntityBase
+        public sealed class EventEntity(EventAttributes attributes, TypeEntity type, string name) : EntityBase
         {
-            public EventEntity(EventAttributes attributes, TypeEntity type, string name)
-            {
-                Attributes = attributes;
-                Type = type;
-                Name = name;
-            }
-
-            public EventAttributes Attributes { get; }
-            public TypeEntity Type { get; }
-            public string Name { get; }
+            public EventAttributes Attributes { get; } = attributes;
+            public TypeEntity Type { get; } = type;
+            public string Name { get; } = name;
 
             public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();
         }
 
-        public sealed class PropertyEntity : EntityBase
+        public sealed class PropertyEntity(PropertyAttributes attributes, BlobBuilder type, string name) : EntityBase
         {
-            public PropertyEntity(PropertyAttributes attributes, BlobBuilder type, string name)
-            {
-                Attributes = attributes;
-                Type = type;
-                Name = name;
-            }
-
-            public PropertyAttributes Attributes { get; }
-            public BlobBuilder Type { get; }
-            public string Name { get; }
+            public PropertyAttributes Attributes { get; } = attributes;
+            public BlobBuilder Type { get; } = type;
+            public string Name { get; } = name;
 
             public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();
+        }
+
+        public sealed class FileEntity(string name) : EntityBase
+        {
+            public string Name { get; } = name;
+            public bool HasMetadata { get; set; }
+            public BlobBuilder? Hash { get; set; }
+        }
+
+        public sealed class ModuleEntity : EntityBase
+        {
+            public string? Name { get; set; }
+        }
+
+        public abstract class AssemblyOrRefEntity(string name) : EntityBase
+        {
+            public string Name { get; } = name;
+            public Version? Version { get; set; }
+            public string? Culture { get; set; }
+            public BlobBuilder? PublicKeyOrToken { get; set; }
+            public AssemblyFlags Flags { get; set; }
+            public ProcessorArchitecture ProcessorArchitecture { get; set; }
+        }
+
+        public sealed class AssemblyEntity(string name) : AssemblyOrRefEntity(name)
+        {
+            public AssemblyHashAlgorithm HashAlgorithm { get; set; }
+        }
+
+        public sealed class AssemblyReferenceEntity(string name) : AssemblyOrRefEntity(name)
+        {
+            public BlobBuilder? Hash { get; set; }
         }
     }
 }

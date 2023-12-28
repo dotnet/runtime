@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
@@ -110,20 +111,141 @@ namespace ILAssembler
             {
                 "retargetable" => new(AssemblyFlags.Retargetable),
                 "windowsruntime" => new(AssemblyFlags.WindowsRuntime),
+                "noplatform" => new((AssemblyFlags)0x70),
                 "legacy library" => new(0),
-                // TODO: Handle platform
+                "cil" => new(GetFlagForArch(ProcessorArchitecture.MSIL), (AssemblyFlags)0xF0),
+                "x86" => new(GetFlagForArch(ProcessorArchitecture.X86), (AssemblyFlags)0xF0),
+                "amd64" => new(GetFlagForArch(ProcessorArchitecture.Amd64), (AssemblyFlags)0xF0),
+                "arm" => new(GetFlagForArch(ProcessorArchitecture.Arm), (AssemblyFlags)0xF0),
+                "arm64" => new(GetFlagForArch((ProcessorArchitecture)6), (AssemblyFlags)0xF0),
                 _ => throw new InvalidOperationException("unreachable")
             };
         }
 
+        private static AssemblyFlags GetFlagForArch(ProcessorArchitecture arch)
+        {
+            return (AssemblyFlags)((int)arch << 4);
+        }
+
+        private static (ProcessorArchitecture, AssemblyFlags) GetArchAndFlags(AssemblyFlags flags)
+        {
+            var arch = (ProcessorArchitecture)(((int)flags & 0xF0) >> 4);
+            var newFlags = flags & ~((AssemblyFlags)((int)arch << 4));
+            return (arch, newFlags);
+        }
+
+        private EntityRegistry.AssemblyOrRefEntity? _currentAssemblyOrRef;
         // TODO: Implement parsing assembly references and the "this assembly" block
-        public GrammarResult VisitAsmOrRefDecl(CILParser.AsmOrRefDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAssemblyDecl(CILParser.AssemblyDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAssemblyDecls(CILParser.AssemblyDeclsContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAssemblyRefDecl(CILParser.AssemblyRefDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAssemblyRefDecls(CILParser.AssemblyRefDeclsContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context) => throw new NotImplementedException();
+        public GrammarResult VisitAsmOrRefDecl(CILParser.AsmOrRefDeclContext context)
+        {
+            Debug.Assert(_currentAssemblyOrRef is not null);
+
+            if (context.customAttrDecl() is { } attr)
+            {
+                var customAttr = VisitCustomAttrDecl(attr).Value;
+                if (customAttr is not null)
+                {
+                    customAttr.Owner = _currentAssemblyOrRef;
+                }
+                return GrammarResult.SentinelValue.Result;
+            }
+
+            string decl = context.GetChild(0).GetText();
+            if (decl == ".publicKey")
+            {
+                BlobBuilder blob = new();
+                blob.WriteBytes(VisitBytes(context.bytes()).Value);
+                _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+            }
+            else if (decl == ".ver")
+            {
+                var versionComponents = context.intOrWildcard();
+                _currentAssemblyOrRef!.Version = new Version(
+                    VisitIntOrWildcard(versionComponents[0]).Value ?? 0,
+                    VisitIntOrWildcard(versionComponents[1]).Value ?? 0,
+                    VisitIntOrWildcard(versionComponents[2]).Value ?? 0,
+                    VisitIntOrWildcard(versionComponents[3]).Value ?? 0);
+            }
+            else if (decl == ".locale")
+            {
+                _currentAssemblyOrRef!.Culture = context.compQstring() is { } compQstring
+                    ? VisitCompQstring(compQstring).Value
+                    : Encoding.Unicode.GetString([.. VisitBytes(context.bytes()).Value]);
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyBlock(CILParser.AssemblyBlockContext context) => VisitAssemblyBlock(context);
+        public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context)
+        {
+            _entityRegistry.Assembly ??= new EntityRegistry.AssemblyEntity(VisitDottedName(context.dottedName()).Value);
+            var attr = VisitAsmAttr(context.asmAttr()).Value;
+            (_entityRegistry.Assembly.ProcessorArchitecture, _entityRegistry.Assembly.Flags) = GetArchAndFlags(attr);
+            foreach (var decl in context.assemblyDecls().assemblyDecl())
+            {
+                VisitAssemblyDecl(decl);
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyDecl(CILParser.AssemblyDeclContext context) => VisitAssemblyDecl(context);
+        public GrammarResult VisitAssemblyDecl(CILParser.AssemblyDeclContext context)
+        {
+            if (context.secDecl() is { } secDecl)
+            {
+                var declarativeSecurity = VisitSecDecl(secDecl);
+                if (declarativeSecurity.Value is { } sec)
+                {
+                    sec.Parent = _entityRegistry.Assembly;
+                }
+            }
+            else if (context.int32() is { } hashAlg)
+            {
+                _entityRegistry.Assembly!.HashAlgorithm = (AssemblyHashAlgorithm)VisitInt32(hashAlg).Value;
+            }
+            else if (context.asmOrRefDecl() is { } asmOrRef)
+            {
+                _currentAssemblyOrRef = _entityRegistry.Assembly;
+                VisitAsmOrRefDecl(asmOrRef);
+                _currentAssemblyOrRef = null;
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
+        public GrammarResult VisitAssemblyDecls(CILParser.AssemblyDeclsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitAssemblyRefDecl(CILParser.AssemblyRefDeclContext context)
+        {
+            if (context.asmOrRefDecl() is { } asmOrRef)
+            {
+                VisitAsmOrRefDecl(asmOrRef);
+            }
+            string decl = context.GetChild(0).GetText();
+            if (decl == ".hash")
+            {
+                var blob = new BlobBuilder();
+                blob.WriteBytes(VisitBytes(context.bytes()).Value);
+                ((EntityRegistry.AssemblyReferenceEntity)_currentAssemblyOrRef!).Hash = blob;
+            }
+            if (decl == ".publickeytoken")
+            {
+                var blob = new BlobBuilder();
+                blob.WriteBytes(VisitBytes(context.bytes()).Value);
+                _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
+        public GrammarResult VisitAssemblyRefDecls(CILParser.AssemblyRefDeclsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context) => VisitAssemblyRefHead(context);
+        public GrammarResult.Literal<EntityRegistry.AssemblyReferenceEntity> VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context)
+        {
+            // TODO: Alias names
+            var (arch, flags) = GetArchAndFlags(VisitAsmAttr(context.asmAttr()).Value);
+            string name = VisitDottedName(context.dottedName()[0]).Value;
+            return new(_entityRegistry.GetOrCreateAssemblyReference(name, asmref =>
+            {
+                asmref.Flags = flags;
+                asmref.ProcessorArchitecture = arch;
+            }));
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitAtOpt(CILParser.AtOptContext context) => VisitAtOpt(context);
         public static GrammarResult.Literal<string?> VisitAtOpt(CILParser.AtOptContext context) => context.id() is {} id ? new(VisitId(id).Value) : new(null);
@@ -966,12 +1088,118 @@ namespace ILAssembler
                 _currentMethod = null;
                 return GrammarResult.SentinelValue.Result;
             }
-            if (context.fieldDecl() is {} fieldDecl)
+            if (context.fieldDecl() is { } fieldDecl)
             {
                 _ = VisitFieldDecl(fieldDecl);
                 return GrammarResult.SentinelValue.Result;
             }
-            throw new NotImplementedException();
+            if (context.dataDecl() is { } dataDecl)
+            {
+                _ = VisitDataDecl(dataDecl);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.vtableDecl() is { } vtable)
+            {
+                _ = VisitVtableDecl(vtable);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.vtfixupDecl() is { } vtFixup)
+            {
+                _ = VisitVtfixupDecl(vtFixup);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.extSourceSpec() is { } extSourceSpec)
+            {
+                _ = VisitExtSourceSpec(extSourceSpec);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.fileDecl() is { } fileDecl)
+            {
+                _ = VisitFileDecl(fileDecl);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.assemblyBlock() is { } assemblyBlock)
+            {
+                _ = VisitAssemblyBlock(assemblyBlock);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.assemblyRefHead() is { } assemblyRef)
+            {
+                var asmRef = VisitAssemblyRefHead(assemblyRef).Value;
+                _currentAssemblyOrRef = asmRef;
+                foreach (var decl in context.assemblyRefDecls().assemblyRefDecl())
+                {
+                    _ = VisitAssemblyRefDecl(decl);
+                }
+                _currentAssemblyOrRef = null;
+            }
+            if (context.exptypeHead() is { } exptypeHead)
+            {
+                _ = VisitExptypeHead(exptypeHead);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.manifestResHead() is { } manifestResHead)
+            {
+                _ = VisitManifestResHead(manifestResHead);
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.moduleHead() is { } moduleHead)
+            {
+                if (moduleHead.dottedName() is null)
+                {
+                    _entityRegistry.Module.Name = null;
+                }
+                else if (moduleHead.ChildCount == 2)
+                {
+                    _entityRegistry.Module.Name = VisitDottedName(moduleHead.dottedName()).Value;
+                }
+                else
+                {
+                    var name = VisitDottedName(moduleHead.dottedName()).Value;
+                    _entityRegistry.GetOrCreateModuleReference(name, _ => { });
+                }
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.subsystem() is { } subsystem)
+            {
+                _subsystem = (Subsystem)VisitSubsystem(subsystem).Value;
+            }
+            if (context.corflags() is { } corflags)
+            {
+                _corflags = (CorFlags)VisitCorflags(corflags).Value;
+            }
+            if (context.alignment() is { } alignment)
+            {
+                _alignment = VisitAlignment(alignment).Value;
+            }
+            if (context.imagebase() is { } imagebase)
+            {
+                _imageBase = VisitImagebase(imagebase).Value;
+            }
+            if (context.stackreserve() is { } stackreserve)
+            {
+                _stackReserve = VisitStackreserve(stackreserve).Value;
+            }
+            if (context.languageDecl() is { } languageDecl)
+            {
+                VisitLanguageDecl(languageDecl);
+            }
+            if (context.typedefDecl() is { } typedefDecl)
+            {
+                VisitTypedefDecl(typedefDecl);
+            }
+            if (context.typelist() is { } typelist)
+            {
+                foreach (var name in typelist.className())
+                {
+                    _ = VisitClassName(name);
+                }
+            }
+            if (context.mscorlib() is { } mscorlib)
+            {
+                VisitMscorlib(mscorlib);
+            }
+            return GrammarResult.SentinelValue.Result;
         }
 
         public GrammarResult VisitDecls(CILParser.DeclsContext context)
@@ -1217,15 +1445,15 @@ namespace ILAssembler
         {
             return context.GetText() switch
             {
-                "private" => new(TypeAttributes.NotPublic),
-                "public" => new(TypeAttributes.Public),
+                "private" => new(TypeAttributes.NotPublic, TypeAttributes.VisibilityMask),
+                "public" => new(TypeAttributes.Public, TypeAttributes.VisibilityMask),
                 "forwarder" => new(TypeAttributesForwarder),
-                "nestedpublic" => new(TypeAttributes.NestedPublic),
-                "nestedprivate" => new(TypeAttributes.NestedPrivate),
-                "nestedfamily" => new(TypeAttributes.NestedFamily),
-                "nestedassembly" => new(TypeAttributes.NestedAssembly),
-                "nestedfamandassem" => new(TypeAttributes.NestedFamANDAssem),
-                "nestedfamorassem" => new(TypeAttributes.NestedFamORAssem),
+                "nestedpublic" => new(TypeAttributes.NestedPublic, TypeAttributes.VisibilityMask),
+                "nestedprivate" => new(TypeAttributes.NestedPrivate, TypeAttributes.VisibilityMask),
+                "nestedfamily" => new(TypeAttributes.NestedFamily, TypeAttributes.VisibilityMask),
+                "nestedassembly" => new(TypeAttributes.NestedAssembly, TypeAttributes.VisibilityMask),
+                "nestedfamandassem" => new(TypeAttributes.NestedFamANDAssem, TypeAttributes.VisibilityMask),
+                "nestedfamorassem" => new(TypeAttributes.NestedFamORAssem, TypeAttributes.VisibilityMask),
                 _ => throw new InvalidOperationException("unreachable"),
             };
         }
@@ -1441,9 +1669,29 @@ namespace ILAssembler
             return new(builder);
         }
 
-        public GrammarResult VisitFileAttr(CILParser.FileAttrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFileDecl(CILParser.FileDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFileEntry(CILParser.FileEntryContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitFileAttr(CILParser.FileAttrContext context) => VisitFileAttr(context);
+        public GrammarResult.Literal<bool> VisitFileAttr(CILParser.FileAttrContext context)
+            => context.ChildCount != 0 ? new(false) : new(true);
+        GrammarResult ICILVisitor<GrammarResult>.VisitFileDecl(CILParser.FileDeclContext context) => VisitFileDecl(context);
+        public GrammarResult.Literal<EntityRegistry.FileEntity> VisitFileDecl(CILParser.FileDeclContext context)
+        {
+            string dottedName = VisitDottedName(context.dottedName()).Value;
+            ImmutableArray<byte>? hash = context.HASH() is not null ? VisitBytes(context.bytes()).Value : null;
+            var hashBlob = hash is not null ? new BlobBuilder() : null;
+            hashBlob?.WriteBytes(hash!.Value);
+
+            bool hasMetadata = context.fileAttr().Aggregate(true, (acc, attr) => acc || VisitFileAttr(attr).Value);
+            bool isEntrypoint = context.fileEntry().Aggregate(true, (acc, attr) => acc || VisitFileEntry(attr).Value);
+            var entity = _entityRegistry.GetOrCreateFile(dottedName, hasMetadata, hashBlob);
+            if (isEntrypoint)
+            {
+                _entityRegistry.EntryPoint = entity;
+            }
+            return new(entity);
+        }
+        GrammarResult ICILVisitor<GrammarResult>.VisitFileEntry(CILParser.FileEntryContext context) => VisitFileEntry(context);
+        public GrammarResult.Literal<bool> VisitFileEntry(CILParser.FileEntryContext context)
+            => context.ChildCount != 0 ? new(true) : new(false);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFilterClause(CILParser.FilterClauseContext context) => VisitFilterClause(context);
         public GrammarResult.Literal<LabelHandle> VisitFilterClause(CILParser.FilterClauseContext context)
@@ -1932,7 +2180,7 @@ namespace ILAssembler
                     }
                     break;
             }
-            throw new NotImplementedException();
+            return GrammarResult.SentinelValue.Result;
         }
 
         public GrammarResult.Literal<ILOpCode> VisitInstr_brtarget(CILParser.Instr_brtargetContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
@@ -2511,6 +2759,12 @@ namespace ILAssembler
         }
 
         private bool _expectInstance;
+        private Subsystem _subsystem;
+        private CorFlags _corflags;
+        private int _alignment;
+        private long _imageBase;
+        private long _stackReserve;
+
         GrammarResult ICILVisitor<GrammarResult>.VisitMethodRef(CILParser.MethodRefContext context) => VisitMethodRef(context);
         public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMethodRef(CILParser.MethodRefContext context)
         {
