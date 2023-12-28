@@ -158,42 +158,38 @@ namespace System.Linq
 
         internal override IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
         {
-            if (_parent is null && maxIdx < 1024)
-            {
-                return SortSubset(minIdx, maxIdx);
-
-            }
-
-            return base.GetEnumerator(minIdx, maxIdx);
+            return _parent is null && maxIdx < 1024
+                ? SelectTopN(minIdx, maxIdx)
+                : base.GetEnumerator(minIdx, maxIdx);
         }
 
-        private IEnumerator<TElement> SortSubset(int minIdx, int maxIdx)
+        private IEnumerator<TElement> SelectTopN(int minIdx, int maxIdx)
         {
             int queueSize = maxIdx + 1;
 
             PriorityQueue<TElement, SortPriority<TKey>> priorityQueue = new(queueSize);
 
             int pos = 0;
-            IEnumerator<TElement> enumerator = _source.GetEnumerator();
-
-            while (priorityQueue.Count < queueSize && enumerator.MoveNext())
+            foreach (TElement element in _source)
             {
-                priorityQueue.Enqueue(enumerator.Current, new() { Key = _keySelector(enumerator.Current), SourcePos = pos });
-                pos++;
+                SortPriority<TKey> priority = new(_keySelector(element), pos++);
+
+                if (priorityQueue.Count == queueSize)
+                {
+                    priorityQueue.EnqueueDequeue(element, priority);
+                }
+                else
+                {
+                    priorityQueue.Enqueue(element, priority);
+                }
             }
 
-            while (enumerator.MoveNext())
-            {
-                priorityQueue.EnqueueDequeue(enumerator.Current, new() { Key = _keySelector(enumerator.Current), SourcePos = pos });
-                pos++;
-            }
-
+            // Stackallocing does not work inside an enumerator
             TElement[] result = new TElement[priorityQueue.Count];
 
-            int targetPos = result.Length - 1;
-            while (priorityQueue.TryDequeue(out TElement? element, out _))
+            for (int i = result.Length - 1; i >= 0; i--)
             {
-                result[targetPos--] = element;
+                result[i] = priorityQueue.Dequeue();
             }
 
             for (int i = minIdx; i < result.Length; i++)
@@ -205,16 +201,23 @@ namespace System.Linq
 
     internal readonly struct SortPriority<TKey> : IComparable<SortPriority<TKey>>
     {
-        public TKey Key { get; init; }
-        public int SourcePos { get; init; }
+        private readonly TKey _key;
+        private readonly int _sourcePos;
+
+        public SortPriority(TKey key, int sourcePos) : this()
+        {
+            _key = key;
+            _sourcePos = sourcePos;
+        }
+
 
         public int CompareTo(SortPriority<TKey> other)
         {
-            int result = -Comparer<TKey>.Default.Compare(Key, other.Key);
+            int result = -Comparer<TKey>.Default.Compare(_key, other._key);
 
             if (result == 0)
             {
-                result = SourcePos.CompareTo(other.SourcePos);
+                result = _sourcePos.CompareTo(other._sourcePos);
             }
             return result;
         }
