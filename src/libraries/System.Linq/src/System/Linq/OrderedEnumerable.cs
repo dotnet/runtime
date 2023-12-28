@@ -172,7 +172,7 @@ namespace System.Linq
             int pos = 0;
             foreach (TElement element in _source)
             {
-                SortPriority<TKey> priority = new(_keySelector(element), pos++);
+                SortPriority<TKey> priority = new(_keySelector(element), pos++, _descending);
 
                 if (priorityQueue.Count == queueSize)
                 {
@@ -203,21 +203,23 @@ namespace System.Linq
     {
         private readonly TKey _key;
         private readonly int _sourcePos;
+        private readonly int _descending;
 
-        public SortPriority(TKey key, int sourcePos) : this()
+        public SortPriority(TKey key, int sourcePos, bool descending) : this()
         {
             _key = key;
             _sourcePos = sourcePos;
+            _descending = descending ? 1 : -1;
         }
 
 
         public int CompareTo(SortPriority<TKey> other)
         {
-            int result = -Comparer<TKey>.Default.Compare(_key, other._key);
+            int result = _descending * Comparer<TKey>.Default.Compare(_key, other._key);
 
             if (result == 0)
             {
-                result = _sourcePos.CompareTo(other._sourcePos);
+                result = _descending * _sourcePos.CompareTo(other._sourcePos);
             }
             return result;
         }
