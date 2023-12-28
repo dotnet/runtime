@@ -536,7 +536,7 @@ struct ThreadStubArguments
     CLREventStatic m_ThreadStartedEvent;
 };
 
-static bool CreateUnsuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
+static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
 {
     UNREFERENCED_PARAMETER(name);
 
