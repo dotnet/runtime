@@ -573,7 +573,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     UNREFERENCED_PARAMETER(name);
 
     if (!is_suspendable)
-        return CreateUnsuspendableThread(threadStart, arg, name);
+        return CreateNonSuspendableThread(threadStart, arg, name);
 
     ThreadStubArguments threadStubArgs;
     threadStubArgs.m_pRealStartRoutine = threadStart;
