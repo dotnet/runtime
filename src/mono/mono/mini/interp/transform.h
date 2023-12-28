@@ -88,6 +88,7 @@ struct _InterpInst {
 		InterpBasicBlock **target_bb_table;
 		InterpCallInfo *call_info;
 		int *args; // for variable number of args, used only for phi
+		MonoBitSet *dead_phi_vars; // only for MINT_DEAD_PHI
 	} info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.

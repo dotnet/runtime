@@ -1043,12 +1043,17 @@ interp_compute_pruned_ssa_liveness (TransformData *td)
 }
 
 static gboolean
-bb_has_phi (InterpBasicBlock *bb, int var)
+bb_has_phi (TransformData *td, InterpBasicBlock *bb, int var)
 {
 	InterpInst *ins = bb->first_ins;
 	while (ins) {
-		if (ins->opcode == MINT_PHI || ins->opcode == MINT_DEAD_PHI) {
+		if (ins->opcode == MINT_PHI) {
 			if (ins->dreg == var)
+				return TRUE;
+		} else if (ins->opcode == MINT_DEAD_PHI) {
+			MonoBitSet *bitset = ins->info.dead_phi_vars;
+			int ext_index = td->vars [var].ext_index;
+			if (mono_bitset_test_fast (bitset, ext_index))
 				return TRUE;
 		} else {
 			// if we have a phi it is at the start of the bb
@@ -1062,7 +1067,11 @@ bb_has_phi (InterpBasicBlock *bb, int var)
 static void
 bb_insert_phi (TransformData *td, InterpBasicBlock *bb, int var)
 {
-	InterpInst *phi = interp_insert_ins_bb (td, bb, NULL, MINT_PHI);
+	InterpInst *first_ins = NULL;
+	// We keep dead phi as first instruction so we can find it quickly
+	if (bb->first_ins && bb->first_ins->opcode == MINT_DEAD_PHI)
+		first_ins = bb->first_ins;
+	InterpInst *phi = interp_insert_ins_bb (td, bb, first_ins, MINT_PHI);
 	if (td->verbose_level)
 		g_print ("BB%d NEW_PHI %d\n", bb->index, var);
 
@@ -1072,6 +1081,24 @@ bb_insert_phi (TransformData *td, InterpBasicBlock *bb, int var)
 	for (i = 0; i < bb->in_count; i++)
 		phi->info.args [i] = var;
 	phi->info.args [i] = -1;
+}
+
+static void
+bb_insert_dead_phi (TransformData *td, InterpBasicBlock *bb, int var)
+{
+	MonoBitSet *bitset;
+	if (bb->first_ins && bb->first_ins->opcode == MINT_DEAD_PHI) {
+		bitset = bb->first_ins->info.dead_phi_vars;
+	} else {
+		InterpInst *phi = interp_insert_ins_bb (td, bb, NULL, MINT_DEAD_PHI);
+		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (td->renamable_vars_size, 0));
+		phi->info.dead_phi_vars = bitset = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
+	}
+	int ext_index = td->vars [var].ext_index;
+	mono_bitset_set_fast (bitset, ext_index);
+	if (td->verbose_level)
+		g_print ("BB%d NEW_DEAD_PHI %d\n", bb->index, var);
+
 }
 
 static void
@@ -1097,7 +1124,7 @@ insert_phi_nodes (TransformData *td)
 			mono_bitset_foreach_bit (bb->dfrontier, j, td->bb_count) {
 				InterpBasicBlock *bd = td->bblocks [j];
 				g_assert (is_bblock_ssa_cfg (td, bb));
-				if (!bb_has_phi (bd, var)) {
+				if (!bb_has_phi (td, bd, var)) {
 					if (mono_bitset_test_fast (bd->live_in_set, i)) {
 						td->renamable_vars [i].ssa_fixed = TRUE;
 						bb_insert_phi (td, bd, var);
@@ -1105,10 +1132,7 @@ insert_phi_nodes (TransformData *td)
 						// We need this only for vars that are ssa fixed, but it is not clear
 						// if the current var is fixed or not. We will ignore these opcodes if
 						// the var is not actually ssa fixed.
-						InterpInst *phi = interp_insert_ins_bb (td, bd, NULL, MINT_DEAD_PHI);
-						if (td->verbose_level)
-							g_print ("BB%d NEW_DEAD_PHI %d, def from BB%d\n", bd->index, var, bb->index);
-						phi->dreg = var;
+						bb_insert_dead_phi (td, bd, var);
 					}
 					if (!g_slist_find (workset, bd))
 						workset = g_slist_prepend (workset, bd);
@@ -1241,14 +1265,12 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 		if (ins->opcode == MINT_PHI) {
 			ins->dreg = get_renamed_var (td, ins->dreg, FALSE);
 		} else if (ins->opcode == MINT_DEAD_PHI) {
-			int ext_index = td->vars [ins->dreg].ext_index;
-			if (td->renamable_vars [ext_index].ssa_fixed) {
-				// we push an invalid var that will be just a marker for marking var live limits
-				td->renamable_vars [ext_index].ssa_stack = g_slist_prepend (td->renamable_vars [ext_index].ssa_stack, (gpointer)(gsize)-1);
-			} else {
-				if (td->verbose_level)
-					g_print ("BB%d CLEAR_DEAD_PHI %d\n", bb->index, ins->dreg);
-				interp_clear_ins (ins);
+			unsigned int ext_index;
+			mono_bitset_foreach_bit (ins->info.dead_phi_vars, ext_index, td->renamable_vars_size) {
+				if (td->renamable_vars [ext_index].ssa_fixed) {
+					// we push an invalid var that will be just a marker for marking var live limits
+					td->renamable_vars [ext_index].ssa_stack = g_slist_prepend (td->renamable_vars [ext_index].ssa_stack, (gpointer)(gsize)-1);
+				}
 			}
 		} else {
 			break;
@@ -1320,22 +1342,25 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 
 	// Pop from the stack any new vars defined in this bblock
 	for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
-		int ext_index = -1;
 		if (mono_interp_op_dregs [ins->opcode]) {
-			ext_index = td->vars [ins->dreg].ext_index;
+			int ext_index = td->vars [ins->dreg].ext_index;
 			if (ext_index == -1)
 				continue;
 			if (td->vars [ins->dreg].renamed_ssa_fixed)
 				ext_index = td->renamed_fixed_vars [ext_index].renamable_var_ext_index;
-		} else if (ins->opcode == MINT_DEAD_PHI) {
-			ext_index = td->vars [ins->dreg].ext_index;
-			interp_clear_ins (ins);
-		}
-
-		if (ext_index != -1) {
 			GSList *prev_head = td->renamable_vars [ext_index].ssa_stack;
 			td->renamable_vars [ext_index].ssa_stack = prev_head->next;
 			g_free (prev_head);
+		} else if (ins->opcode == MINT_DEAD_PHI) {
+			unsigned int ext_index;
+			mono_bitset_foreach_bit (ins->info.dead_phi_vars, ext_index, td->renamable_vars_size) {
+				if (td->renamable_vars [ext_index].ssa_fixed) {
+					GSList *prev_head = td->renamable_vars [ext_index].ssa_stack;
+					td->renamable_vars [ext_index].ssa_stack = prev_head->next;
+					g_free (prev_head);
+				}
+			}
+			interp_clear_ins (ins);
 		}
 	}
 }
