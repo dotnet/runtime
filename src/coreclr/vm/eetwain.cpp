@@ -1496,7 +1496,13 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
             dwRelOffset
             );
 
-    return gcInfoDecoder.IsInterruptible();
+    if (gcInfoDecoder.IsInterruptible())
+        return true;
+
+    if (gcInfoDecoder.IsSafePoint())
+        return true;
+
+    return false;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -5242,7 +5248,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible());
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.IsSafePoint());
     }
 #endif
 
@@ -5332,6 +5338,22 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                         GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
                         );
+
+    if ((flags & ActiveStackFrame) != 0)
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        if (!gcInfoDecoder.HasInterruptibleRanges())
+        {
+            gcInfoDecoder = GcInfoDecoder(
+                gcInfoToken,
+                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                curOffs - 1
+            );
+        }
+    }
 
     if (!gcInfoDecoder.EnumerateLiveSlots(
                         pRD,
