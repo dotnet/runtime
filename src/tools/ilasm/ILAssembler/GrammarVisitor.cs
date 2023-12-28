@@ -71,6 +71,7 @@ namespace ILAssembler
         }
     }
 
+#pragma warning disable CA1822 // Mark members as static
     internal sealed class GrammarVisitor : ICILVisitor<GrammarResult>
     {
         private const string NodeShouldNeverBeDirectlyVisited = "This node should never be directly visited. It should be directly processed by its parent node.";
@@ -201,9 +202,7 @@ namespace ILAssembler
             return new(0);
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitCallKind(CILParser.CallKindContext context) => VisitCallKind(context);
-#pragma warning disable CA1822 // Mark members as static
         public GrammarResult.Literal<SignatureCallingConvention> VisitCallKind(CILParser.CallKindContext context)
-#pragma warning restore CA1822 // Mark members as static
         {
             int childType = context.GetChild<ITerminalNode>(context.ChildCount - 1).Symbol.Type;
             return new(childType switch
@@ -695,7 +694,7 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitCustomAttrDecl(CILParser.CustomAttrDeclContext context) => VisitCustomAttrDecl(context);
         public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomAttrDecl(CILParser.CustomAttrDeclContext context)
         {
-            if (context.dottedName() is {} dottedName)
+            if (context.dottedName() is {})
             {
                 // TODO: typedef
                 return new(null);
@@ -1949,7 +1948,6 @@ namespace ILAssembler
         public GrammarResult.Literal<ILOpCode> VisitInstr_tok(CILParser.Instr_tokContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
         public GrammarResult.Literal<ILOpCode> VisitInstr_type(CILParser.Instr_typeContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
         public GrammarResult.Literal<ILOpCode> VisitInstr_var(CILParser.Instr_varContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
-#pragma warning restore CA1822 // Mark members as static
         private static ILOpCode ParseOpCodeFromToken(IToken token)
         {
             return (ILOpCode)Enum.Parse(typeof(ILOpCode), token.Text.Replace('.', '_'), ignoreCase: true);
@@ -2971,7 +2969,7 @@ namespace ILAssembler
             };
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitPropDecl(CILParser.PropDeclContext context) => VisitEventDecl(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitPropDecl(CILParser.PropDeclContext context) => VisitPropDecl(context);
         public GrammarResult.Literal<(MethodSemanticsAttributes, EntityRegistry.EntityBase)?> VisitPropDecl(CILParser.PropDeclContext context)
         {
             if (context.ChildCount != 2)
@@ -2998,17 +2996,18 @@ namespace ILAssembler
                 .Where(decl => decl is not null)
                 .Select(decl => decl!.Value).ToImmutableArray());
 
+        GrammarResult ICILVisitor<GrammarResult>.VisitPropHead(ILAssembler.CILParser.PropHeadContext context) => VisitPropHead(context);
         public GrammarResult.Literal<EntityRegistry.PropertyEntity> VisitPropHead(CILParser.PropHeadContext context)
         {
             var propAttrs = context.propAttr().Select(VisitPropAttr).Aggregate((PropertyAttributes)0, (a, b) => a | b);
             var name = VisitDottedName(context.dottedName()).Value;
 
             var signature = new BlobBuilder();
-            byte callConv = VisitCallConv(context.callConv()).Value | (byte)SignatureKind.Property;
+            byte callConv = (byte)(VisitCallConv(context.callConv()).Value | (byte)SignatureKind.Property);
             signature.WriteByte(callConv);
             var args = VisitSigArgs(context.sigArgs()).Value;
-            signature.WriteCompressedInteger(args.Value.Count);
-            VisitType(context.type()).WriteContentTo(signature);
+            signature.WriteCompressedInteger(args.Length);
+            VisitType(context.type()).Value.WriteContentTo(signature);
             foreach (var arg in args)
             {
                 arg.SignatureBlob.WriteContentTo(signature);
@@ -3337,9 +3336,7 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitSigArgs(CILParser.SigArgsContext context) => VisitSigArgs(context);
         public GrammarResult.Sequence<SignatureArg> VisitSigArgs(CILParser.SigArgsContext context) => new(ImmutableArray.CreateRange(context.sigArg().Select(arg => VisitSigArg(arg).Value)));
         GrammarResult ICILVisitor<GrammarResult>.VisitSimpleType(CILParser.SimpleTypeContext context) => VisitSimpleType(context);
-#pragma warning disable CA1822 // Mark members as static
         public GrammarResult.Literal<SignatureTypeCode> VisitSimpleType(CILParser.SimpleTypeContext context)
-#pragma warning restore CA1822 // Mark members as static
         {
             return new(context.GetChild<ITerminalNode>(0).Symbol.Type switch
             {
@@ -3697,9 +3694,7 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitVariantTypeElement(CILParser.VariantTypeElementContext context) => VisitVariantTypeElement(context);
-#pragma warning disable CA1822 // Mark members as static
         public GrammarResult.Literal<VarEnum> VisitVariantTypeElement(CILParser.VariantTypeElementContext context)
-#pragma warning restore CA1822 // Mark members as static
         {
             return new(context.GetChild<ITerminalNode>(0).Symbol.Type switch
             {
