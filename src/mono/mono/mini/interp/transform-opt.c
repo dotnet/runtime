@@ -3756,6 +3756,18 @@ interp_optimize_code (TransformData *td)
 	if (!(mono_interp_opt & INTERP_OPT_SSA))
 		td->disable_ssa = TRUE;
 
+	gboolean ssa_enabled_retry = FALSE;
+
+	if (!td->disable_ssa && td->bb_count > 1000) {
+		// We have ssa enabled but we are compiling a huge method. Do the first iteration
+		// in ssa disabled mode. This should greatly simplify the CFG and the code, so the
+		// following iteration with SSA transformation enabled is much faster. In general,
+		// for huge methods we end up doing multiple optimization iterations anyway.
+		ssa_enabled_retry = TRUE;
+		td->disable_ssa = TRUE;
+		if (td->verbose_level)
+			g_print ("Huge method. SSA disabled for first iteration\n");
+	}
 optimization_retry:
 	td->need_optimization_retry = FALSE;
 
@@ -3783,9 +3795,15 @@ optimization_retry:
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
-	if (td->need_optimization_retry) {
+	if (ssa_enabled_retry) {
+		ssa_enabled_retry = FALSE;
+		td->disable_ssa = FALSE;
 		if (td->verbose_level)
-			g_print ("Retry method %s\n", mono_method_full_name (td->method, 1));
+			g_print ("Retry optimization with SSA enabled\n");
+		goto optimization_retry;
+	} else if (td->need_optimization_retry) {
+		if (td->verbose_level)
+			g_print ("Retry optimization\n");
 		goto optimization_retry;
 	}
 
