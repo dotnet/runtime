@@ -58,7 +58,7 @@ namespace System.Text.Json
 
         private JsonWriterOptions _options; // Since JsonWriterOptions is a struct, use a field to avoid a copy for internal code.
 
-        // Cache indentation options from JsonWriterOptions to optimize performance.
+        // Cache indentation settings from JsonWriterOptions to avoid recomputating them in the hot path.
         private byte _indentByte;
         private int _indentLength;
 
@@ -148,7 +148,7 @@ namespace System.Text.Json
         private void SetOptions(JsonWriterOptions options)
         {
             _options = options;
-            _indentByte = _options.IndentByte;
+            _indentByte = (byte)_options.IndentCharacter;
             _indentLength = options.IndentSize;
 
             if (_options.MaxDepth == 0)

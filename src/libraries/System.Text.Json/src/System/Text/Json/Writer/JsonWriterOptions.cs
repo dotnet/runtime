@@ -18,8 +18,6 @@ namespace System.Text.Json
         private int _maxDepth;
         private int _optionsMask;
 
-        internal readonly byte IndentByte => (_optionsMask & IndentCharacterBit) != 0 ? JsonConstants.Tab : JsonConstants.Space;
-
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
         /// </summary>
@@ -52,7 +50,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
         public char IndentCharacter
         {
-            readonly get => (char)IndentByte;
+            readonly get => (_optionsMask & IndentCharacterBit) != 0 ? JsonConstants.TabIndentCharacter : JsonConstants.DefaultIndentCharacter;
             set
             {
                 JsonWriterHelper.ValidateIndentCharacter(value);
@@ -70,15 +68,17 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
         public int IndentSize
         {
-            readonly get => HandleDefaultIndentSize((_optionsMask & IndentSizeMask) >> 3);
+            readonly get => EncodeIndentSize((_optionsMask & IndentSizeMask) >> 3);
             set
             {
                 JsonWriterHelper.ValidateIndentSize(value);
-                _optionsMask = (_optionsMask & ~IndentSizeMask) + (HandleDefaultIndentSize(value) << 3);
+                _optionsMask = (_optionsMask & ~IndentSizeMask) | (EncodeIndentSize(value) << 3);
             }
         }
 
-        private static int HandleDefaultIndentSize(int value) => value switch
+        // Encoding is applied by swapping 0 with the default value to ensure default(JsonWriterOptions) instances are well-defined.
+        // As this operation is symmetrical, it can also be used to decode.
+        private static int EncodeIndentSize(int value) => value switch
         {
             0 => JsonConstants.DefaultIndentSize,
             JsonConstants.DefaultIndentSize => 0,
@@ -135,7 +135,7 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IndentedOrNotSkipValidation => (_optionsMask & (IndentBit + SkipValidationBit)) != SkipValidationBit;  // Equivalent to: Indented || !SkipValidation;
+        internal bool IndentedOrNotSkipValidation => (_optionsMask & (IndentBit | SkipValidationBit)) != SkipValidationBit;  // Equivalent to: Indented || !SkipValidation;
 
         private const int IndentBit = 1;
         private const int SkipValidationBit = 2;

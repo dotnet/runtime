@@ -39,7 +39,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateIndentCharacter(char value)
         {
-            if ((byte)value is not JsonConstants.Space and not JsonConstants.Tab)
+            if (value is not JsonConstants.DefaultIndentCharacter and not JsonConstants.TabIndentCharacter)
                 ThrowHelper.ThrowArgumentOutOfRangeException_IndentCharacter(nameof(value));
         }
 
