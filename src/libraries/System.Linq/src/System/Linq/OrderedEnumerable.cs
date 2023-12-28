@@ -31,7 +31,7 @@ namespace System.Linq
             }
         }
 
-        internal IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
+        internal virtual IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
@@ -155,6 +155,74 @@ namespace System.Linq
                 : new CachingComparerWithChild<TElement, TKey>(_keySelector, _comparer, _descending, childComparer);
             return _parent != null ? _parent.GetComparer(cmp) : cmp;
         }
+
+        internal override IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
+        {
+            if (_parent is null && maxIdx < 1024)
+            {
+                return SortSubset(minIdx, maxIdx);
+
+            }
+
+            return base.GetEnumerator(minIdx, maxIdx);
+        }
+
+        private IEnumerator<TElement> SortSubset(int minIdx, int maxIdx)
+        {
+            int queueSize = maxIdx + 1;
+
+            PriorityQueue<TElement, SortPriority<TKey>> priorityQueue = new(queueSize);
+
+            int pos = 0;
+            IEnumerator<TElement> enumerator = _source.GetEnumerator();
+
+            while (priorityQueue.Count < queueSize && enumerator.MoveNext())
+            {
+                priorityQueue.Enqueue(enumerator.Current, new() { Key = _keySelector(enumerator.Current), SourcePos = pos });
+                pos++;
+            }
+
+            while (enumerator.MoveNext())
+            {
+                priorityQueue.EnqueueDequeue(enumerator.Current, new() { Key = _keySelector(enumerator.Current), SourcePos = pos });
+                pos++;
+            }
+
+            TElement[] result = new TElement[priorityQueue.Count];
+
+            int targetPos = result.Length - 1;
+            while (priorityQueue.TryDequeue(out TElement? element, out _))
+            {
+                result[targetPos--] = element;
+            }
+
+            for (int i = minIdx; i < result.Length; i++)
+            {
+                yield return result[i];
+            }
+        }
+    }
+
+    internal readonly struct SortPriority<TKey> : IComparable<SortPriority<TKey>>
+    {
+        public TKey Key { get; init; }
+        public int SourcePos { get; init; }
+
+        public int CompareTo(SortPriority<TKey> other)
+        {
+            int result = -Comparer<TKey>.Default.Compare(Key, other.Key);
+
+            if (result == 0)
+            {
+                result = SourcePos.CompareTo(other.SourcePos);
+            }
+            return result;
+        }
+    }
+
+    internal abstract class ElementComparer<TElement> : IComparer<TElement>
+    {
+        public abstract int Compare(TElement? x, TElement? y);
     }
 
     /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
