@@ -87,8 +87,7 @@ jobs:
             creator: dotnet-bot
             compileOnHelix: true
             interpreter: true
-            testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=true
-            testBuildArgs: tree baseservices
+            testBuildArgs: tree baseservices /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
