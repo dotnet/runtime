@@ -319,25 +319,24 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_notifyDebuggerSP(NULL),
     m_pFrame(pThread->GetFrame()),
     m_ClauseForCatch({}),
-    m_ptrs({pExceptionRecord, pExceptionContext}),
 #ifdef HOST_UNIX
     m_fOwnsExceptionPointers(FALSE),
     m_propagateExceptionCallback(NULL),
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
-    m_hThrowable(NULL),
     m_CurrentClause({}),
-    m_ExceptionCode(pExceptionRecord->ExceptionCode),
     m_pMDToReportFunctionLeave(NULL),
-    m_fDeliveredFirstChanceNotification(FALSE),
     m_exContext({})
 {
-    m_pPrevExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
-    m_stackTraceInfo.Init();
-    m_stackTraceInfo.AllocateStackTrace();
-    m_sfLowBound.SetMaxVal();
+    m_pPrevNestedInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    m_StackTraceInfo.Init();
+    m_StackTraceInfo.AllocateStackTrace();
+    m_ScannedStackRange.Reset();
     pThread->GetExceptionState()->SetCurrentExInfo(this);
     m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_ptrs.ExceptionRecord = pExceptionRecord;
+    m_ptrs.ContextRecord = pExceptionContext;
+    m_ExceptionCode = pExceptionRecord->ExceptionCode;
 }
 
 #if defined(TARGET_UNIX)
@@ -360,7 +359,7 @@ void ExInfo::ReleaseResources()
         }
         m_hThrowable = NULL;
     }
-    m_stackTraceInfo.FreeStackTrace();
+    m_StackTraceInfo.FreeStackTrace();
 
 #ifndef TARGET_UNIX
     // Clear any held Watson Bucketing details
@@ -401,12 +400,12 @@ void ExInfo::MakeCallbacksRelatedToHandler(
     {
         m_EHClauseInfo.SetManagedCodeEntered(TRUE);
         StackFrame sfToStore = sf;
-        if ((m_pPrevExInfo != NULL) &&
-            (m_pPrevExInfo->m_csfEnclosingClause == m_csfEnclosingClause))
+        if ((m_pPrevNestedInfo != NULL) &&
+            (((PTR_ExInfo)m_pPrevNestedInfo)->m_csfEnclosingClause == m_csfEnclosingClause))
         {
             // If this is a nested exception which has the same enclosing clause as the previous exception,
             // we should just propagate the clause info from the previous exception.
-            sfToStore = m_pPrevExInfo->m_EHClauseInfo.GetStackFrameForEHClause();
+            sfToStore = m_pPrevNestedInfo->m_EHClauseInfo.GetStackFrameForEHClause();
         }
         m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_NONE, (UINT_PTR)dwHandlerStartPC, sfToStore);
 
@@ -476,14 +475,6 @@ void ExInfo::MakeCallbacksRelatedToHandler(
 #endif // DEBUGGING_SUPPORTED
 }
 
-#else // DACCESS_COMPILE
-void ExInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    // ExInfo is embedded so don't enum 'this'.
-    OBJECTHANDLE_EnumMemoryRegions(m_hThrowable);
-    m_ptrs.ExceptionRecord.EnumMem();
-    m_ptrs.ContextRecord.EnumMem();
-}
 #endif // DACCESS_COMPILE
 
 #endif // !FEATURE_EH_FUNCLETS

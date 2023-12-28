@@ -147,11 +147,11 @@ private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker    m_pCurrentTracker;
+    PTR_ExceptionTrackerBase m_pCurrentTracker;
     ExceptionTracker        m_OOMTracker;
     PTR_ExInfo m_pExInfo;
 public:
-    PTR_ExceptionTracker    GetCurrentExceptionTracker()
+    PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;

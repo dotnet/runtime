@@ -1623,7 +1623,7 @@ StackWalkAction StackFrameIterator::Filter(void)
         fSkippingFunclet = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
-        ExceptionTracker* pTracker = m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        ExceptionTracker* pTracker = (PTR_ExceptionTracker)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
         ExInfo* pExInfo = m_crawl.pThread->GetExceptionState()->GetCurrentExInfo();
         fRecheckCurrentFrame = false;
         fSkipFuncletCallback = true;
@@ -1780,7 +1780,7 @@ ProcessFuncletsForGCReporting:
                                 // since the current tracker was created due to an exception in the funclet belonging to
                                 // the previous tracker.
                                 hasFuncletStarted = true;
-                                pCurrTracker = pCurrTracker->GetPreviousExceptionTracker();
+                                pCurrTracker = (PTR_ExceptionTracker)pCurrTracker->GetPreviousExceptionTracker();
                             }
 
                             if (pCurrTracker != NULL)
@@ -3357,7 +3357,7 @@ void StackFrameIterator::ResetNextExInfoForSP(TADDR SP)
 {
     while (m_pNextExInfo && (SP > (TADDR)(m_pNextExInfo)))
     {
-        m_pNextExInfo = m_pNextExInfo->m_pPrevExInfo;
+        m_pNextExInfo = (PTR_ExInfo)m_pNextExInfo->m_pPrevNestedInfo;
     }
 }
 #endif // FEATURE_EH_FUNCLETS

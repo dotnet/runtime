@@ -86,7 +86,7 @@ void ThreadExceptionState::FreeAllStackTraces()
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker* pNode = m_pCurrentTracker;
+    ExceptionTrackerBase* pNode = m_pCurrentTracker;
 #else // FEATURE_EH_FUNCLETS
     ExInfo*           pNode = &m_currentExInfo;
 #endif // FEATURE_EH_FUNCLETS
@@ -586,21 +586,7 @@ void
 ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker* head = m_pCurrentTracker;
-
-    if (head == NULL)
-    {
-        PTR_ExInfo exInfo = m_pExInfo;
-        while (exInfo != NULL)
-        {
-            exInfo->EnumMemoryRegions(flags);
-            exInfo.EnumMem();
-            exInfo = exInfo->m_pPrevExInfo;
-        }
-
-        return;
-    }
-
+    ExceptionTrackerBase* head = g_isNewExceptionHandlingEnabled ? (PTR_ExceptionTrackerBase)m_pExInfo : m_pCurrentTracker;
 #else // FEATURE_EH_FUNCLETS
     ExInfo*           head = &m_currentExInfo;
 #endif // FEATURE_EH_FUNCLETS
