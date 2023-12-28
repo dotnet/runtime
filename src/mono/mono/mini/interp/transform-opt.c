@@ -3690,6 +3690,38 @@ interp_prepare_no_ssa_opt (TransformData *td)
 	td->bblocks_count_eh = i;
 }
 
+static void
+interp_remove_ins (InterpBasicBlock *bb, InterpInst *ins)
+{
+	if (ins->next)
+		ins->next->prev = ins->prev;
+	else
+		bb->last_ins = ins->prev;
+
+	if (ins->prev)
+		ins->prev->next = ins->next;
+	else
+		bb->first_ins = ins->next;
+}
+
+static void
+interp_remove_nops (TransformData *td)
+{
+	InterpBasicBlock *bb;
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *ins;
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (ins->opcode == MINT_NOP && ins->prev &&
+					(ins->il_offset == -1 ||
+					ins->prev->il_offset == ins->il_offset)) {
+				// This is a NOP instruction that has no relevant il_offset, actually remove it
+				interp_remove_ins (bb, ins);
+			}
+
+		}
+	}
+}
+
 void
 interp_optimize_code (TransformData *td)
 {
@@ -3720,6 +3752,8 @@ optimization_retry:
 
 	if (!td->disable_ssa)
 		interp_exit_ssa (td);
+
+	interp_remove_nops (td);
 
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
