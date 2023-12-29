@@ -26,8 +26,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		private static string targetFramework = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.TargetFramework")!;
 
-		private static string frameworkVersion = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
-
 		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
 		new ReferenceAssemblies (
 				targetFramework,
