@@ -19,6 +19,8 @@ Hybrid has higher priority than sharding or custom modes, described in globaliza
 
 **SortKey**
 
+In HybridGlobalization mode Invariant way of SortKey calculation is used. From this reason, the following APIs will work in the same way as they do when `Invariant=true`:
+
 Affected public APIs:
 - System.Globalization.CompareInfo.GetSortKey
 - System.Globalization.CompareInfo.GetSortKeyLength
@@ -42,8 +44,6 @@ Indirectly affected APIs (the list might not be complete):
 - System.Collections.Generic.Dictionary
 - System.Net.Mail.MailAddress.GetHashCode
 - System.Xml.Xsl.XslCompiledTransform.Transform
-
-Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
 
 **Case change**
 

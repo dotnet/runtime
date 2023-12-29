@@ -1451,8 +1451,9 @@ namespace System.Globalization
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
 #if TARGET_BROWSER
+            // JS cannot create locale-sensitive sort key, use invaraint functions instead.
             GlobalizationMode.Hybrid ?
-                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+                InvariantCreateSortKey(source, options) :
 #endif
                 IcuCreateSortKey(source, options);
 
