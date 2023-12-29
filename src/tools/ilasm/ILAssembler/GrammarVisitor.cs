@@ -85,9 +85,9 @@ namespace ILAssembler
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
-        private readonly BlobBuilder _manifestResources = new();
         private readonly Dictionary<string, int> _mappedFieldDataNames = new();
         private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
+        private readonly BlobBuilder _manifestResources = new();
 
         public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, MetadataBuilder metadataBuilder, Func<string, byte[]> resourceLocator)
         {
