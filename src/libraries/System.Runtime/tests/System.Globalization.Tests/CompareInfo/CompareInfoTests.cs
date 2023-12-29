@@ -355,42 +355,6 @@ namespace System.Globalization.Tests
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        public void SortKeyTestNotSupported()
-        {
-            try
-            {
-                s_invariantCompare.GetSortKey("");
-                AssertNotReached();
-            }
-            catch(PlatformNotSupportedException pnse)
-            {
-                Assert.Equal(GetPNSEText("SortKey"), pnse.Message);
-            }
-            try
-            {
-                s_invariantCompare.GetSortKeyLength(ReadOnlySpan<char>.Empty);
-                AssertNotReached();
-            }
-            catch(PlatformNotSupportedException pnse)
-            {
-                Assert.Equal(GetPNSEText("SortKey"), pnse.Message);
-            }
-
-            try
-            {
-                s_invariantCompare.GetHashCode("", CompareOptions.None);
-                AssertNotReached();
-            }
-            catch(PlatformNotSupportedException pnse)
-            {
-                Assert.Equal(GetPNSEText("HashCode"), pnse.Message);
-            }
-
-            string GetPNSEText(string funcName) => $"{funcName} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
-            void AssertNotReached() => Assert.Fail();
-        }
-
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
         private static extern int CompareStringEx(string lpLocaleName, uint dwCmpFlags, string lpString1, int cchCount1, string lpString2, int cchCount2, IntPtr lpVersionInformation, IntPtr lpReserved, int lParam);
         private const int NORM_LINGUISTIC_CASING = 0x08000000;       // use linguistic rules for casing

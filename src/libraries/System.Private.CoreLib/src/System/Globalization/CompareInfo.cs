@@ -1496,7 +1496,7 @@ namespace System.Globalization
                 NlsGetSortKey(source, destination, options) :
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
-                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+                InvariantGetSortKey(source, destination, options)) :
 #endif
                 IcuGetSortKey(source, destination, options);
 
@@ -1533,7 +1533,7 @@ namespace System.Globalization
               NlsGetSortKeyLength(source, options) :
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
-              throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+              InvariantGetSortKeyLength(source, options) :
 #endif
               IcuGetSortKeyLength(source, options);
 
@@ -1572,7 +1572,12 @@ namespace System.Globalization
                 // Pass the flags down to NLS or ICU unless we're running in invariant
                 // mode, at which point we normalize the flags to Ordinal[IgnoreCase].
 
+#if TARGET_BROWSER
+                if (!GlobalizationMode.Invariant && !GlobalizationMode.Hybrid)
+                // JS cannot create locale-sensitive HashCode, use invaraint functions instead
+#else
                 if (!GlobalizationMode.Invariant)
+#endif
                 {
                     return GetHashCodeOfStringCore(source, options);
                 }
@@ -1608,10 +1613,6 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
-#endif
                 IcuGetHashCodeOfString(source, options);
 
         public override string ToString() => "CompareInfo - " + Name;
