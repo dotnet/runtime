@@ -27,27 +27,30 @@
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
     <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
 
-    <ILLinkSuppressionsXmlPrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlPrefix>
-    <ILLinkSuppressionsXml>$(ILLinkSuppressionsXmlPrefix).xml</ILLinkSuppressionsXml>
-    <ILLinkSuppressionsConfigurationSpecificXml>$(ILLinkSuppressionsXmlPrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXml>
-    <ILLinkSuppressionsLibraryBuildXml Condition="'$(ILLinkSuppressionsLibraryBuildXml)' == '' and Exists('$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml')">$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml</ILLinkSuppressionsLibraryBuildXml>
-    <!-- Only run the trim analyzer on libraries which have been annotated. -->
-    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXml)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXml)'))">false</EnableTrimAnalyzer>
-
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
 
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
     <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
+ 
+    <ILLinkSuppressionsXmlPrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlPrefix>
+    <ILLinkSuppressionsXml>$(ILLinkSuppressionsXmlPrefix).xml</ILLinkSuppressionsXml>
+    <ILLinkSuppressionsConfigurationSpecificXml>$(ILLinkSuppressionsXmlPrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXml>
   </PropertyGroup>
-
+  <ItemGroup>
+    <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml"
+                                       Condition="Exists('$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml')" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- Only run the trim analyzer on libraries which have been annotated. -->
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXml)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXml)'))">false</EnableTrimAnalyzer>
+  </PropertyGroup>
   <ItemGroup>
     <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsXml)"
                             Condition="Exists('$(ILLinkSuppressionsXml)')" />
     <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsConfigurationSpecificXml)"
                             Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXml)')" />
-    <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsLibraryBuildXml)"
-                            Condition="Exists('$(ILLinkSuppressionsLibraryBuildXml)')" />
+    <ILLinkSuppressionsXmls Include="@(ILLinkSuppressionsLibraryBuildXml)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)"
                             TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
@@ -210,7 +213,7 @@
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "$(ILLinkSuppressionsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes &quot;@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
