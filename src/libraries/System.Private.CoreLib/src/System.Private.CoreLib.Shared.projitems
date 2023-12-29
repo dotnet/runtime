@@ -70,6 +70,7 @@
   </ItemGroup>
   <PropertyGroup>
     <ILLinkDescriptorsLibraryBuildXml>$(ILLinkSharedDirectory)ILLink.Descriptors.LibraryBuild.xml</ILLinkDescriptorsLibraryBuildXml>
+    <ILLinkSuppressionsLibraryBuildXml>$(ILLinkSharedDirectory)ILLink.Suppressions.LibraryBuild.xml</ILLinkSuppressionsLibraryBuildXml>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\AssemblyAttributes.cs" />
