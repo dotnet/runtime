@@ -29,7 +29,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
 		new ReferenceAssemblies (
 				targetFramework,
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", frameworkVersion),
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", $"net{Environment.Version.Major}.{Environment.Version.Minor}"),
 				Path.Combine ("ref", targetFramework))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
