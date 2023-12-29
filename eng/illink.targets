@@ -218,8 +218,9 @@
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
            IL2025: Duplicate preserve of A in B
+           IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
       -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009</LinkerNoWarn>
+      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2035</LinkerNoWarn>
       <LinkerNoWarn>$(LinkerNoWarn);IL2025</LinkerNoWarn>
       <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
       <LinkerNoWarn>$(LinkerNoWarn);IL2121</LinkerNoWarn>
