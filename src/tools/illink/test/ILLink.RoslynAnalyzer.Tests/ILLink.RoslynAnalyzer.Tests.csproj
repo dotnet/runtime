@@ -36,6 +36,9 @@
     <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.TargetFramework">
+      <Value>$(TargetFramework)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>
     </RuntimeHostConfigurationOption>

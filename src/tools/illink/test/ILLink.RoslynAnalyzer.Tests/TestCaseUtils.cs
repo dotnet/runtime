@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,11 +25,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
 
+		private static string targetFramework = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.TargetFramework")!;
+
+		private static string frameworkVersion = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
+
 		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
 		new ReferenceAssemblies (
-				"net8.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0"),
-				Path.Combine ("ref", "net8.0"))
+				targetFramework,
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", frameworkVersion),
+				Path.Combine ("ref", targetFramework))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
 		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
@@ -58,7 +63,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static async Task RunTestFile (string suiteName, string testName, bool allowMissingWarnings, params (string, string)[] msbuildProperties)
 		{
-			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
+			GetDirectoryPaths (out string rootSourceDir);
 			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
 			var testSuiteDir = FindTestSuiteDir (rootSourceDir, suiteName);
 			Assert.True (Directory.Exists (testSuiteDir));
@@ -162,16 +167,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
-		public static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
+		public static void GetDirectoryPaths (out string rootSourceDirectory)
 		{
 			var artifactsBinDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.ArtifactsBinDir")!;
-			var LinkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
+			var linkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
 			var configuration = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.Configuration")!;
 
-			const string tfm = "net8.0";
-
-			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, MonoLinkerTestsCases));
-			testAssemblyPath = Path.GetFullPath(Path.Combine(artifactsBinDirectory, "ILLink.RoslynAnalyzer.Tests", configuration, tfm));
+			rootSourceDirectory = Path.GetFullPath(Path.Combine(linkerTestDirectory, MonoLinkerTestsCases));
 		}
 
 		// Accepts typeof expressions, with a format specifier
