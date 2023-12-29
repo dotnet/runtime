@@ -115,6 +115,7 @@ PP_IFNDEF: '#ifndef';
 PP_ELSE: '#else';
 PP_ENDIF: '#endif';
 PP_INCLUDE: '#include';
+MRESOURCE: '.mresource';
 
 // ID needs to be last to ensure it doesn't take priority over other token types
 fragment IDSTART: [A-Za-z_#$@];
@@ -1088,7 +1089,7 @@ assemblyRefDecl:
 	| '.publickeytoken' '=' '(' bytes ')'
 	| 'auto';
 
-exptypeHead: '.class' 'extern' exptAttr dottedName;
+exptypeHead: '.class' 'extern' exptAttr* dottedName;
 
 exportHead: '.export' exptAttr* dottedName;
 
@@ -1109,14 +1110,14 @@ exptypeDecl:
 	'.file' dottedName
 	| '.class' 'extern' slashedName
 	| '.assembly' 'extern' dottedName
-	| 'mdtoken' '(' int32 ')'
+	| mdtoken
 	| '.class' int32
 	| customAttrDecl
 	| compControl;
 
 manifestResHead:
-	'.mresource' manresAttr* dottedName
-	| '.mresource' manresAttr* dottedName 'as' dottedName;
+	MRESOURCE manresAttr* dottedName
+	| MRESOURCE manresAttr* dottedName 'as' dottedName;
 
 manresAttr: 'public' | 'private';
 

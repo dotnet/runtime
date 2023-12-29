@@ -81,16 +81,20 @@ namespace ILAssembler
         private readonly IReadOnlyDictionary<string, SourceText> _documents;
         private readonly Options _options;
         private readonly MetadataBuilder _metadataBuilder;
+        private readonly Func<string, byte[]> _resourceLocator;
+
         // Record the mapped field data directly into the blob to ensure we preserve ordering
         private readonly BlobBuilder _mappedFieldData = new();
+        private readonly BlobBuilder _manifestResources = new();
         private readonly Dictionary<string, int> _mappedFieldDataNames = new();
         private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
 
-        public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, MetadataBuilder metadataBuilder)
+        public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, MetadataBuilder metadataBuilder, Func<string, byte[]> resourceLocator)
         {
             _documents = documents;
             _options = options;
             _metadataBuilder = metadataBuilder;
+            _resourceLocator = resourceLocator;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -135,7 +139,6 @@ namespace ILAssembler
         }
 
         private EntityRegistry.AssemblyOrRefEntity? _currentAssemblyOrRef;
-        // TODO: Implement parsing assembly references and the "this assembly" block
         public GrammarResult VisitAsmOrRefDecl(CILParser.AsmOrRefDeclContext context)
         {
             Debug.Assert(_currentAssemblyOrRef is not null);
@@ -237,11 +240,17 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context) => VisitAssemblyRefHead(context);
         public GrammarResult.Literal<EntityRegistry.AssemblyReferenceEntity> VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context)
         {
-            // TODO: Alias names
             var (arch, flags) = GetArchAndFlags(VisitAsmAttr(context.asmAttr()).Value);
-            string name = VisitDottedName(context.dottedName()[0]).Value;
-            return new(_entityRegistry.GetOrCreateAssemblyReference(name, asmref =>
+            var dottedNames = context.dottedName();
+            string name = VisitDottedName(dottedNames[0]).Value;
+            string alias = name;
+            if (dottedNames.Length > 1)
             {
+                alias = VisitDottedName(dottedNames[1]).Value;
+            }
+            return new(_entityRegistry.GetOrCreateAssemblyReference(alias, asmref =>
+            {
+                asmref.Name = name;
                 asmref.Flags = flags;
                 asmref.ProcessorArchitecture = arch;
             }));
@@ -761,7 +770,7 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitClassSeq(CILParser.ClassSeqContext context) => VisitClassSeq(context);
-        public static GrammarResult.FormattedBlob VisitClassSeq(CILParser.ClassSeqContext context)
+        public GrammarResult.FormattedBlob VisitClassSeq(CILParser.ClassSeqContext context)
         {
             // We're going to add all of the elements in the sequence as prefix blobs to this blob.
             BlobBuilder objSeqBlob = new(0);
@@ -774,16 +783,22 @@ namespace ILAssembler
 
         GrammarResult ICILVisitor<GrammarResult>.VisitClassSeqElement(CILParser.ClassSeqElementContext context) => VisitClassSeqElement(context);
 
-        public static GrammarResult.FormattedBlob VisitClassSeqElement(CILParser.ClassSeqElementContext context)
+        public GrammarResult.FormattedBlob VisitClassSeqElement(CILParser.ClassSeqElementContext context)
         {
+            BlobBuilder blob = new();
             if (context.className() is CILParser.ClassNameContext className)
             {
-                // TODO: convert className to a reflection-notation string.
-                _ = className;
-                throw new NotImplementedException();
+                if (VisitClassName(className).Value is EntityRegistry.IHasReflectionNotation notation)
+                {
+                    blob.WriteSerializedString(notation.ReflectionNotation);
+                }
+                else
+                {
+                    blob.WriteSerializedString("");
+                }
+                return new(blob);
             }
 
-            BlobBuilder blob = new();
             blob.WriteSerializedString(context.SQSTRING()?.Symbol.Text);
             return new(blob);
         }
@@ -1140,7 +1155,20 @@ namespace ILAssembler
             }
             if (context.manifestResHead() is { } manifestResHead)
             {
-                _ = VisitManifestResHead(manifestResHead);
+                var (name, alias, flags) = VisitManifestResHead(manifestResHead).Value;
+                var (implementation, offset, attrs) = VisitManifestResDecls(context.manifestResDecls()).Value;
+                if (implementation is null)
+                {
+                    offset = (uint)_manifestResources.Count;
+                    _manifestResources.WriteBytes(_resourceLocator(alias));
+                }
+                var res = _entityRegistry.CreateManifestResource(name, offset);
+                res.Attributes = flags;
+                res.Implementation = implementation;
+                foreach (var attr in attrs)
+                {
+                    attr.Owner = res;
+                }
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.moduleHead() is { } moduleHead)
@@ -1436,7 +1464,7 @@ namespace ILAssembler
             return new(new EntityRegistry.EventEntity(eventAttributes, VisitTypeSpec(context.typeSpec()).Value, name));
         }
 
-        public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException();
+        public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException("Obsolete syntax");
 
         private const TypeAttributes TypeAttributesForwarder = (TypeAttributes)0x00200000;
 
@@ -1460,7 +1488,81 @@ namespace ILAssembler
 
         // TODO: Implement multimodule type exports and fowarders
         public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => throw new NotImplementedException();
+
+        private EntityRegistry.EntityBase? _currentExportedType;
+        GrammarResult ICILVisitor<GrammarResult>.VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => VisitExptypeDecls(context);
+        public GrammarResult.Literal<EntityRegistry.EntityBase?> VisitExptypeDecls(CILParser.ExptypeDeclsContext context)
+        {
+            Debug.Assert(_currentExportedType is not null);
+            // COMPAT: The following order specifies the precedence of the various export kinds.
+            // File, Assembly, Class (enclosing type), invalid token.
+            // We'll process through all of the options here and then return the one that is valid.
+            // We'll also record custom attributes here.
+            EntityRegistry.EntityBase? implementationEntity = null;
+            var declarations = context.exptypeDecl();
+            for (int i = 0; i < declarations.Length; i++)
+            {
+                if (declarations[i].customAttrDecl() is { } attr)
+                {
+                    if (VisitCustomAttrDecl(attr).Value is EntityRegistry.CustomAttributeEntity customAttribute)
+                    {
+                        customAttribute.Owner = _currentExportedType;
+                    }
+                    continue;
+                }
+                if (declarations[i].mdtoken() is { } mdToken)
+                {
+                    var entity = VisitMdtoken(mdToken).Value;
+                    if (entity is null)
+                    {
+                        // TODO: Report diagnostic
+                    }
+                    implementationEntity = ResolveBetterEntity(entity);
+                    continue;
+                }
+                string kind = declarations[i].GetText();
+                if (kind == ".file")
+                {
+                    implementationEntity = _entityRegistry.FindFile(VisitDottedName(declarations[i].dottedName()).Value);
+                    if (implementationEntity is null)
+                    {
+                        // TODO: Report diagnostic
+                    }
+                }
+                else if (kind == ".assembly")
+                {
+                    implementationEntity = _entityRegistry.FindAssemblyReference(VisitDottedName(declarations[i].dottedName()).Value);
+                    if (implementationEntity is null)
+                    {
+                        // TODO: Report diagnostic
+                    }
+                }
+                else if (kind == ".class")
+                {
+                    _ = VisitSlashedName(declarations[i].slashedName());
+                    // TODO: Find exported type
+                    throw new NotImplementedException();
+                }
+            }
+
+            return new(implementationEntity);
+
+            EntityRegistry.EntityBase? ResolveBetterEntity(EntityRegistry.EntityBase? newImplementation)
+            {
+                return (implementationEntity, newImplementation) switch
+                {
+                    (null, _) => newImplementation,
+                    (_, null) => implementationEntity,
+                    (_, EntityRegistry.FileEntity) => newImplementation,
+                    (EntityRegistry.FileEntity, _) => implementationEntity,
+                    (_, EntityRegistry.AssemblyEntity) => newImplementation,
+                    (EntityRegistry.AssemblyEntity, _) => implementationEntity,
+                    (_, EntityRegistry.TypeEntity) => newImplementation,
+                    (EntityRegistry.TypeEntity, _) => implementationEntity,
+                    _ => throw new InvalidOperationException("unreachable"),
+                };
+            }
+        }
         public GrammarResult VisitExptypeHead(CILParser.ExptypeHeadContext context) => throw new NotImplementedException();
         GrammarResult ICILVisitor<GrammarResult>.VisitExtendsClause(CILParser.ExtendsClauseContext context) => VisitExtendsClause(context);
 
@@ -2311,10 +2413,68 @@ namespace ILAssembler
         public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException("TODO: Symbols");
 
-        // TODO-SRM: Provide an API to build the managed resource blobs.
-        public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => throw new NotImplementedException();
-        public GrammarResult VisitManifestResHead(CILParser.ManifestResHeadContext context) => throw new NotImplementedException();
+        public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => VisitManifestResDecls(context);
+        public GrammarResult.Literal<(EntityRegistry.EntityBase? implementation, uint offset, ImmutableArray<EntityRegistry.CustomAttributeEntity> attributes)> VisitManifestResDecls(CILParser.ManifestResDeclsContext context)
+        {
+            EntityRegistry.EntityBase? implementation = null;
+            uint offset = 0;
+            var attributes = ImmutableArray.CreateBuilder<EntityRegistry.CustomAttributeEntity>();
+            // COMPAT: Priority order for implementation is the following
+            // AssemblyRef, File, nil
+            foreach (var decl in context.manifestResDecl())
+            {
+                if (decl.customAttrDecl() is CILParser.CustomAttrDeclContext customAttrDecl)
+                {
+                    if (VisitCustomAttrDecl(customAttrDecl).Value is { } attr)
+                    {
+                        attributes.Add(attr);
+                    }
+                }
+                string kind = decl.GetChild(0).GetText();
+                if (kind == ".file" && implementation is not EntityRegistry.AssemblyReferenceEntity)
+                {
+                    var file = _entityRegistry.FindFile(VisitDottedName(decl.dottedName()).Value);
+                    if (file is null)
+                    {
+                        // TODO: Report diagnostic
+                    }
+                    else
+                    {
+                        implementation = file;
+                        offset = (uint)VisitInt32(decl.int32()).Value;
+                    }
+                }
+                else if (kind == ".assembly")
+                {
+                    var asm = _entityRegistry.FindAssemblyReference(VisitDottedName(decl.dottedName()).Value);
+                    if (asm is null)
+                    {
+                        // TODO: Report diagnostic
+                    }
+                    else
+                    {
+                        implementation = asm;
+                    }
+                }
+            }
+
+            return new((implementation, offset, attributes.ToImmutable()));
+        }
+        GrammarResult ICILVisitor<GrammarResult>.VisitManifestResHead(CILParser.ManifestResHeadContext context) => VisitManifestResHead(context);
+        public GrammarResult.Literal<(string name, string alias, ManifestResourceAttributes attr)> VisitManifestResHead(CILParser.ManifestResHeadContext context)
+        {
+            var dottedNames = context.dottedName();
+            string name = VisitDottedName(dottedNames[0]).Value;
+            string alias = dottedNames.Length == 2 ? VisitDottedName(dottedNames[1]).Value : name;
+            ManifestResourceAttributes attr = 0;
+            foreach (var attrContext in context.manresAttr())
+            {
+                attr |= VisitManresAttr(attrContext).Value;
+            }
+
+            return new((name, alias, attr));
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitManresAttr(CILParser.ManresAttrContext context) => VisitManresAttr(context);
         public GrammarResult.Flag<ManifestResourceAttributes> VisitManresAttr(CILParser.ManresAttrContext context)

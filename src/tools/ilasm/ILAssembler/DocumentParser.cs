@@ -12,7 +12,7 @@ namespace ILAssembler;
 #pragma warning disable CA1822
 internal sealed class DocumentParser
 {
-    public void Parse(SourceText document, Func<string, SourceText> includedDocumentLoader, Options options)
+    public void Parse(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
         var inputSource = new AntlrInputStream(document.Text)
         {
@@ -39,7 +39,7 @@ internal sealed class DocumentParser
         var result = parser.decls();
         // TODO: Handle parse errors.
         var metadataBuilder = new MetadataBuilder();
-        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, metadataBuilder);
+        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, metadataBuilder, resourceLocator);
         _ = result.Accept(visitor);
         // TODO: Get result information out of visitor and create MetadataRootBuilder.
     }

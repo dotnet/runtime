@@ -21,6 +21,7 @@ namespace ILAssembler
         private readonly Dictionary<BlobBuilder, TypeSpecificationEntity> _seenTypeSpecs = new(new BlobBuilderContentEqualityComparer());
         private readonly Dictionary<BlobBuilder, StandaloneSignatureEntity> _seenStandaloneSignatures = new(new BlobBuilderContentEqualityComparer());
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
+        private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -126,6 +127,15 @@ namespace ILAssembler
             RecordEntityInTable(table, entity);
             cache.Add(key, entity);
             onCreate(entity);
+            return entity;
+        }
+
+        private TEntity CreateEntity<TEntity>(TableIndex table, List<TEntity> cache, Func<TEntity> constructor)
+            where TEntity : EntityBase
+        {
+            TEntity entity = constructor();
+            RecordEntityInTable(table, entity);
+            cache.Add(entity);
             return entity;
         }
 
@@ -330,6 +340,24 @@ namespace ILAssembler
             });
         }
 
+        public FileEntity? FindFile(string name)
+        {
+            if (_seenFiles.TryGetValue(name, out var file))
+            {
+                return file;
+            }
+            return null;
+        }
+
+        public AssemblyReferenceEntity? FindAssemblyReference(string name)
+        {
+            if (_seenAssemblyRefs.TryGetValue(new AssemblyName(name), out var file))
+            {
+                return file;
+            }
+            return null;
+        }
+
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Version version, string? culture, BlobBuilder? publicKeyOrToken, AssemblyFlags flags, ProcessorArchitecture architecture)
         {
             AssemblyName key = new AssemblyName(name)
@@ -348,6 +376,11 @@ namespace ILAssembler
                 entity.Flags = flags;
                 entity.ProcessorArchitecture = architecture;
             });
+        }
+
+        public ManifestResourceEntity CreateManifestResource(string name, uint offset)
+        {
+            return CreateEntity(TableIndex.ManifestResource, _manifestResourceEntities, () => new ManifestResourceEntity(name, offset));
         }
 
         public IHasHandle? EntryPoint { get; set; }
@@ -385,6 +418,7 @@ namespace ILAssembler
                 TypeColumnHandle = default(TypeDefinitionHandle);
                 ResolutionScopeColumnHandle = default(ModuleDefinitionHandle);
                 TypeSignatureHandle = MetadataTokens.TypeDefinitionHandle(MetadataTokens.GetRowNumber(realEntity));
+                ImplementationHandle = default(AssemblyReferenceHandle);
             }
 
             /// <summary>
@@ -404,6 +438,12 @@ namespace ILAssembler
             /// the token is emitted as a compressed integer of the row entry, shifted to account for encoding the table type.
             /// </summary>
             public EntityHandle TypeSignatureHandle { get; }
+
+            /// <summary>
+            /// In cases where an arbitrary (non-Implementation) token is referenced in a column in a metadata table,
+            /// the the token is emitted as the nil token.
+            /// </summary>
+            public EntityHandle ImplementationHandle { get; }
         }
 
         public sealed class TypeDefinitionEntity : TypeEntity, IHasReflectionNotation
@@ -646,7 +686,7 @@ namespace ILAssembler
 
         public abstract class AssemblyOrRefEntity(string name) : EntityBase
         {
-            public string Name { get; } = name;
+            public string Name { get; set; } = name;
             public Version? Version { get; set; }
             public string? Culture { get; set; }
             public BlobBuilder? PublicKeyOrToken { get; set; }
@@ -662,6 +702,14 @@ namespace ILAssembler
         public sealed class AssemblyReferenceEntity(string name) : AssemblyOrRefEntity(name)
         {
             public BlobBuilder? Hash { get; set; }
+        }
+
+        public sealed class ManifestResourceEntity(string name, uint offset) : EntityBase
+        {
+            public string Name { get; } = name;
+            public uint Offset { get; } = offset;
+            public ManifestResourceAttributes Attributes { get; set; }
+            public EntityBase? Implementation { get; set; }
         }
     }
 }
