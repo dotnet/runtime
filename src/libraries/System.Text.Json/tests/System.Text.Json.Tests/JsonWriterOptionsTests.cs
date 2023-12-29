@@ -15,6 +15,8 @@ namespace System.Text.Json.Tests
             var expectedOption = new JsonWriterOptions
             {
                 Indented = false,
+                IndentCharacter = ' ',
+                IndentSize = 2,
                 SkipValidation = false,
                 MaxDepth = 0,
             };
@@ -29,6 +31,8 @@ namespace System.Text.Json.Tests
             var expectedOption = new JsonWriterOptions
             {
                 Indented = false,
+                IndentCharacter = ' ',
+                IndentSize = 2,
                 SkipValidation = false,
                 MaxDepth = 0,
             };
@@ -79,6 +83,18 @@ namespace System.Text.Json.Tests
             Assert.Equal(indentSize, options.IndentSize);
             Assert.Equal(skipValidation, options.SkipValidation);
             Assert.Equal(maxDepth, options.MaxDepth);
+        }
+
+        [Fact]
+        public static void JsonWriterOptions_DefaultValues()
+        {
+            JsonWriterOptions options = default;
+
+            Assert.False(options.Indented);
+            Assert.Equal(' ', options.IndentCharacter);
+            Assert.Equal(2, options.IndentSize);
+            Assert.False(options.SkipValidation);
+            Assert.Equal(0, options.MaxDepth);
         }
 
         [Fact]
