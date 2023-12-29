@@ -46,10 +46,9 @@ namespace System.Reflection.Emit
 
         private void WritePEImage(Stream peStream, BlobBuilder ilBuilder)
         {
-            // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
-                // When only Characteristics.Dll is set .NET runtime throws when try to load generated assembly,
-                // had add Characteristics.ExecutableImage too.
+                // When only Characteristics.Dll is set and try to load the generated assembly from file,
+                // runtime throws BadImageFormatException, had to add Characteristics.ExecutableImage.
                 imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
 
             var peBuilder = new ManagedPEBuilder(

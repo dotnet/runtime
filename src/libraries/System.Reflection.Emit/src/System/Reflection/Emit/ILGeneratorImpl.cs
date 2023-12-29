@@ -18,10 +18,14 @@ namespace System.Reflection.Emit
         private readonly InstructionEncoder _il;
         private readonly ControlFlowBuilder _cfBuilder;
         private bool _hasDynamicStackAllocation;
-        private int _maxStackSize;
-        private int _currentStack;
+        private int _maxStackDepth;
+        private int _currentStackDepth; // Current stack labelStartDepth
+        private int _targetDepth;  // Stack labelStartDepth at a target of the previous instruction (when it is branching)
+        // Adjustment to add to _maxStackDepth for incorrect/invalid IL. For example, when branch
+        // instructions branches backward with non zero stack depths targeting the same label.
+        private int _depthAdjustment;
         private List<LocalBuilder> _locals = new();
-        private Dictionary<Label, LabelHandle> _labelTable = new(2);
+        private Dictionary<Label, LabelInfo> _labelTable = new(2);
         private List<KeyValuePair<object, BlobWriter>> _memberReferences = new();
         private List<ExceptionBlock> _exceptionStack = new();
 
@@ -35,7 +39,7 @@ namespace System.Reflection.Emit
             _il = new InstructionEncoder(_builder, _cfBuilder);
         }
 
-        internal int GetMaxStackSize() => _maxStackSize;
+        internal int GetMaxStack() => Math.Min(ushort.MaxValue, _maxStackDepth + _depthAdjustment);
         internal List<KeyValuePair<object, BlobWriter>> GetMemberReferences() => _memberReferences;
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
@@ -78,13 +82,17 @@ namespace System.Reflection.Emit
 
                 currentExBlock.HandleStart = DefineLabel();
                 currentExBlock.HandleEnd = DefineLabel();
-                _cfBuilder.AddCatchRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                    _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], _moduleBuilder.GetTypeHandle(exceptionType));
+                _cfBuilder.AddCatchRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                    GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd), _moduleBuilder.GetTypeHandle(exceptionType));
                 MarkLabel(currentExBlock.HandleStart);
             }
 
+            // Stack depth for "catch" starts at one.
+            _currentStackDepth = 1;
             currentExBlock.State = ExceptionState.Catch;
         }
+
+        private LabelHandle GetMetaLabel(Label label) => _labelTable[label]._metaLabel;
 
         public override void BeginExceptFilterBlock()
         {
@@ -107,10 +115,12 @@ namespace System.Reflection.Emit
             currentExBlock.FilterStart = DefineLabel();
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
-            _cfBuilder.AddFilterRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd], _labelTable[currentExBlock.FilterStart]);
+            _cfBuilder.AddFilterRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd), GetMetaLabel(currentExBlock.FilterStart));
             currentExBlock.State = ExceptionState.Filter;
             MarkLabel(currentExBlock.FilterStart);
+            // Stack depth for "filter" starts at one.
+            _currentStackDepth = 1;
         }
 
         public override Label BeginExceptionBlock()
@@ -122,6 +132,8 @@ namespace System.Reflection.Emit
             MarkLabel(currentExBlock.TryStart);
             currentExBlock.State = ExceptionState.Try;
             _exceptionStack.Add(currentExBlock);
+            // Stack depth for "try" starts at zero.
+            _currentStackDepth = 0;
             return currentExBlock.EndLabel;
         }
 
@@ -145,10 +157,12 @@ namespace System.Reflection.Emit
 
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
-            _cfBuilder.AddFaultRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                               _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd]);
+            _cfBuilder.AddFaultRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                               GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Fault;
             MarkLabel(currentExBlock.HandleStart);
+            // Stack depth for "fault" starts at zero.
+            _currentStackDepth = 0;
         }
 
         public override void BeginFinallyBlock()
@@ -174,13 +188,18 @@ namespace System.Reflection.Emit
             MarkLabel(currentExBlock.TryEnd);
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = finallyEndLabel;
-            _cfBuilder.AddFinallyRegion(_labelTable[currentExBlock.TryStart], _labelTable[currentExBlock.TryEnd],
-                               _labelTable[currentExBlock.HandleStart], _labelTable[currentExBlock.HandleEnd]);
+            _cfBuilder.AddFinallyRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
+                               GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Finally;
             MarkLabel(currentExBlock.HandleStart);
+            // Stack depth for "finally" starts at zero.
+            _currentStackDepth = 0;
         }
 
-        public override void BeginScope() => throw new NotImplementedException();
+        public override void BeginScope()
+        {
+            // TODO: No-op, will be implemented wit PDB support
+        }
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
@@ -196,19 +215,29 @@ namespace System.Reflection.Emit
         {
             LabelHandle metadataLabel = _il.DefineLabel();
             Label emitLabel = CreateLabel(metadataLabel.Id);
-            _labelTable.Add(emitLabel, metadataLabel);
+            _labelTable.Add(emitLabel, new LabelInfo(metadataLabel));
             return emitLabel;
         }
+
         private void UpdateStackSize(OpCode opCode)
         {
-            _currentStack += opCode.EvaluationStackDelta;
-            _maxStackSize = Math.Max(_maxStackSize, _currentStack);
+            UpdateStackSize(opCode.EvaluationStackDelta);
+
+            if (UnconditionalJump(opCode))
+            {
+                _currentStackDepth = 0;
+            }
         }
+
+        private static bool UnconditionalJump(OpCode opCode) =>
+            opCode.FlowControl == FlowControl.Throw || opCode.FlowControl == FlowControl.Return || opCode == OpCodes.Jmp;
 
         private void UpdateStackSize(int stackChange)
         {
-            _currentStack += stackChange;
-            _maxStackSize = Math.Max(_maxStackSize, _currentStack);
+            _currentStackDepth += stackChange;
+            _maxStackDepth = Math.Max(_maxStackDepth, _currentStackDepth);
+            // Record the "target" stack depth at this instruction.
+            _targetDepth = _currentStackDepth;
         }
 
         public void EmitOpcode(OpCode opcode)
@@ -360,22 +389,31 @@ namespace System.Reflection.Emit
             }
 
             int stackChange = 0;
-            // Push the return value
-            stackChange++;
-            // Pop the parameters.
-            if (con is ConstructorBuilderImpl builder)
+            if (opcode.StackBehaviourPush == StackBehaviour.Varpush)
             {
-                stackChange -= builder._methodBuilder.ParameterCount;
+                // Instruction must be one of call or callvirt.
+                Debug.Assert(opcode.Equals(OpCodes.Call) ||
+                                opcode.Equals(OpCodes.Callvirt),
+                                "Unexpected opcode encountered for StackBehaviour of VarPush.");
+                stackChange++;
             }
-            else
+
+            if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
-                stackChange -= con.GetParameters().Length;
-            }
-            // Pop the this parameter if the constructor is non-static and the
-            // instruction is not newobj.
-            if (!con.IsStatic && !opcode.Equals(OpCodes.Newobj))
-            {
-                stackChange--;
+                // Instruction must be one of call, callvirt or newobj.
+                Debug.Assert(opcode.Equals(OpCodes.Call) ||
+                                opcode.Equals(OpCodes.Callvirt) ||
+                                opcode.Equals(OpCodes.Newobj),
+                                "Unexpected opcode encountered for StackBehaviour of VarPop.");
+
+                if (con is ConstructorBuilderImpl builder)
+                {
+                    stackChange -= builder._methodBuilder.ParameterCount;
+                }
+                else
+                {
+                    stackChange -= con.GetParameters().Length;
+                }
             }
 
             EmitOpcode(opcode);
@@ -398,12 +436,43 @@ namespace System.Reflection.Emit
             }
         }
 
+        private void AdjustDepth(OpCode opcode, LabelInfo label)
+        {
+            int labelStartDepth = label._startDepth;
+            int targetDepth = _targetDepth;
+            Debug.Assert(labelStartDepth >= -1);
+            Debug.Assert(targetDepth >= -1);
+            if (labelStartDepth < targetDepth)
+            {
+                // Either unknown depth for this label or this branch location has a larger depth than previously recorded.
+                // In the latter case, the IL is (likely) invalid, but we just compensate for it using _depthAdjustment.
+                if (labelStartDepth >= 0)
+                {
+                    _depthAdjustment += targetDepth - labelStartDepth;
+                }
+
+                // Keep the target depth, it will used as starting stack size from the marked location.
+                label._startDepth = targetDepth;
+            }
+
+            // If it is unconditionally branching to a new location, for the next instruction invocation stack should be empty.
+            // if this location is marked with a label, the starting stack size will be adjusted with label._startDepth.
+            if (UnconditionalBranching(opcode))
+            {
+                _currentStackDepth = 0;
+            }
+        }
+
+        private static bool UnconditionalBranching(OpCode opcode) =>
+            opcode.FlowControl == FlowControl.Branch;
+
         public override void Emit(OpCode opcode, Label label)
         {
-            if (_labelTable.TryGetValue(label, out LabelHandle labelHandle))
+            if (_labelTable.TryGetValue(label, out LabelInfo? labelInfo))
             {
-                _il.Branch((ILOpCode)opcode.Value, labelHandle);
+                _il.Branch((ILOpCode)opcode.Value, labelInfo._metaLabel);
                 UpdateStackSize(opcode);
+                AdjustDepth(opcode, labelInfo);
             }
             else
             {
@@ -425,7 +494,9 @@ namespace System.Reflection.Emit
 
             foreach (Label label in labels)
             {
-                switchEncoder.Branch(_labelTable[label]);
+                LabelInfo labelInfo = _labelTable[label];
+                switchEncoder.Branch(labelInfo._metaLabel);
+                AdjustDepth(opcode, labelInfo);
             }
         }
 
@@ -661,9 +732,40 @@ namespace System.Reflection.Emit
 
         public override void MarkLabel(Label loc)
         {
-            if (_labelTable.TryGetValue(loc, out LabelHandle labelHandle))
+            if (_labelTable.TryGetValue(loc, out LabelInfo? labelInfo))
             {
-                _il.MarkLabel(labelHandle);
+                if (labelInfo._position != -1)
+                {
+                    throw new ArgumentException(SR.Argument_RedefinedLabel);
+                }
+
+                _il.MarkLabel(labelInfo._metaLabel);
+                labelInfo._position = _il.Offset;
+                int depth = labelInfo._startDepth;
+                if (depth < 0)
+                {
+                    // Unknown start depth for this label, indicating that it hasn't been used yet.
+                    // Or we're in the Backward branch constraint case mentioned in ECMA-335 III.1.7.5.
+                    // But the constraint is not enforced by any mainstream .NET runtime and they are not
+                    // respected by .NET compilers. The _depthAdjustment field will compensate for violations
+                    // of this constraint, as we discover them, check AdjustDepth method for detail. Here
+                    // we assume a depth of zero. If a (later) branch to this label has a positive stack
+                    // depth, we'll record that as the new depth and add the delta into _depthAdjustment.
+                    labelInfo._startDepth = _currentStackDepth;
+                }
+                else if (depth < _currentStackDepth)
+                {
+                    // A branch location with smaller stack targets this label. In this case, the IL is invalid
+                    // but we just compensate for it.
+                    _depthAdjustment += _currentStackDepth - depth;
+                    labelInfo._startDepth = _currentStackDepth;
+                }
+                else if (depth > _currentStackDepth)
+                {
+                    // A branch location with larger stack depth targets this label, can be invalid IL.
+                    // Either case adjust the current stack depth.
+                    _currentStackDepth = depth;
+                }
             }
             else
             {
@@ -697,5 +799,18 @@ namespace System.Reflection.Emit
         Finally,
         Fault,
         Done
+    }
+
+    internal sealed class LabelInfo
+    {
+        internal LabelInfo(LabelHandle metaLabel)
+        {
+            _position = -1;
+            _startDepth = -1;
+            _metaLabel = metaLabel;
+        }
+        internal int _position; // Position in the il stream, with -1 meaning unknown.
+        internal int _startDepth; // Stack labelStartDepth, with -1 meaning unknown.
+        internal LabelHandle _metaLabel;
     }
 }

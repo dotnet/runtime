@@ -409,7 +409,7 @@ namespace System.Reflection.Emit
         private static int AddMethodBody(MethodBuilderImpl method, ILGeneratorImpl il, StandaloneSignatureHandle signature, MethodBodyStreamEncoder bodyEncoder) =>
             bodyEncoder.AddMethodBody(
                 instructionEncoder: il.Instructions,
-                maxStack: il.GetMaxStackSize(),
+                maxStack: il.GetMaxStack(),
                 localVariablesSignature: signature,
                 attributes: method.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None,
                 hasDynamicStackAllocation: il.HasDynamicStackAllocation);

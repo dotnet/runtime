@@ -264,4 +264,7 @@
   <data name="InvalidOperation_BadEmptyMethodBody" xml:space="preserve">
     <value>Method '{0}' does not have a method body.</value>
   </data>
+  <data name="Argument_RedefinedLabel" xml:space="preserve">
+    <value>Label multiply defined.</value>
+  </data>
 </root>
