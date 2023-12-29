@@ -311,6 +311,7 @@ void ExInfo::SetExceptionCode(const EXCEPTION_RECORD *pCER)
 #ifndef DACCESS_COMPILE
 
 ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind) :
+    ExceptionTrackerBase(pExceptionRecord, pExceptionContext, pThread->GetExceptionState()->GetCurrentExceptionTracker()),
     m_pExContext(&m_exContext),
     m_exception((Object*)NULL),
     m_kind(exceptionKind),
@@ -328,15 +329,9 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_pMDToReportFunctionLeave(NULL),
     m_exContext({})
 {
-    m_pPrevNestedInfo = pThread->GetExceptionState()->GetCurrentExInfo();
-    m_StackTraceInfo.Init();
     m_StackTraceInfo.AllocateStackTrace();
-    m_ScannedStackRange.Reset();
-    pThread->GetExceptionState()->SetCurrentExInfo(this);
+    pThread->GetExceptionState()->m_pCurrentTracker = this;
     m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    m_ptrs.ExceptionRecord = pExceptionRecord;
-    m_ptrs.ContextRecord = pExceptionContext;
-    m_ExceptionCode = pExceptionRecord->ExceptionCode;
 }
 
 #if defined(TARGET_UNIX)
@@ -371,6 +366,18 @@ void ExInfo::ReleaseResources()
         m_fOwnsExceptionPointers = FALSE;
     }
 #endif // !TARGET_UNIX
+}
+
+// static
+void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
+{
+    ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    while (pExInfo && pExInfo < (void*)targetSp)
+    {
+        pExInfo->ReleaseResources();
+        pExInfo = (PTR_ExInfo)pExInfo->m_pPrevNestedInfo;
+    }
+    pThread->GetExceptionState()->m_pCurrentTracker = pExInfo;
 }
 
 static bool IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)

@@ -214,6 +214,20 @@ struct ExInfo : public ExceptionTrackerBase
         DWORD_PTR              dwHandlerStartPC,
         StackFrame             sf);
 
+    static void PopExInfos(Thread *pThread, void *targetSp);
+
+    // Padding to make the ExInfo offsets that the managed EH code needs to access
+    // the same for debug / release and Unix / Windows.
+#ifdef TARGET_UNIX
+    // sizeof(EHWatsonBucketTracker)
+    BYTE m_padding[2 * sizeof(void*) + sizeof(DWORD)];
+#else // TARGET_UNIX
+#ifndef _DEBUG
+    //  sizeof(EHWatsonBucketTracker::m_DebugFlags)
+    BYTE m_padding[sizeof(DWORD)];
+#endif // _DEBUG
+#endif // TARGET_UNIX
+
     // Context used by the stack frame iterator
     CONTEXT* m_pExContext;
     // actual exception object reference

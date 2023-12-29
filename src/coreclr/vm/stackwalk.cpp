@@ -1216,7 +1216,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
-        m_pNextExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+        m_pNextExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1623,8 +1623,17 @@ StackWalkAction StackFrameIterator::Filter(void)
         fSkippingFunclet = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
-        ExceptionTracker* pTracker = (PTR_ExceptionTracker)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        ExInfo* pExInfo = m_crawl.pThread->GetExceptionState()->GetCurrentExInfo();
+        ExceptionTracker* pTracker = NULL;
+        ExInfo* pExInfo = NULL;
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            pExInfo = (PTR_ExInfo)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        }
+        else
+        {
+            pTracker = (PTR_ExceptionTracker)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        }
+
         fRecheckCurrentFrame = false;
         fSkipFuncletCallback = true;
 

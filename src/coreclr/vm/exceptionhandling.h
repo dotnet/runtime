@@ -79,8 +79,6 @@ struct ExceptionTrackerBase
         void TrimLowerBound(StackFrame sf);
         StackFrame GetLowerBound();
         StackFrame GetUpperBound();
-        void SetLowerBound(StackFrame sf);
-        void SetUpperBound(StackFrame sf);
         INDEBUG(bool IsDisjointWithAndLowerThan(StackRange* pOtherRange));
     private:
         INDEBUG(bool IsConsistent());
@@ -126,12 +124,20 @@ public:
     }
 #endif // !TARGET_UNIX
 
-    ExceptionTrackerBase() :
-        m_pPrevNestedInfo((ExceptionTrackerBase*)NULL),
+    ExceptionTrackerBase(PTR_EXCEPTION_RECORD pExceptionRecord, PTR_CONTEXT pExceptionContext, PTR_ExceptionTrackerBase pPrevNestedInfo) :
+        m_pPrevNestedInfo(pPrevNestedInfo),
         m_hThrowable(NULL),
-        m_fDeliveredFirstChanceNotification(FALSE)
+        m_ptrs({pExceptionRecord, pExceptionContext}),
+        m_fDeliveredFirstChanceNotification(FALSE),
+        m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
     {
-        
+#ifndef DACCESS_COMPILE
+        m_StackTraceInfo.Init();
+#endif //  DACCESS_COMPILE
+#ifndef TARGET_UNIX
+        // Init the WatsonBucketTracker
+        m_WatsonBucketTracker.Init();
+#endif // !TARGET_UNIX
     }
 
     // Returns the exception tracker previous to the current
@@ -223,22 +229,10 @@ class ExceptionTracker : public ExceptionTrackerBase
 
 public:
 
-    ExceptionTracker() :
+   ExceptionTracker() :
+        ExceptionTrackerBase(PTR_NULL, PTR_NULL, PTR_NULL),
         m_pThread(NULL)
     {
-#ifndef DACCESS_COMPILE
-        m_StackTraceInfo.Init();
-#endif //  DACCESS_COMPILE
-
-#ifndef TARGET_UNIX
-        // Init the WatsonBucketTracker
-        m_WatsonBucketTracker.Init();
-#endif // !TARGET_UNIX
-
-        // By default, mark the tracker as not having delivered the first
-        // chance exception notification
-        m_fDeliveredFirstChanceNotification = FALSE;
-
         m_sfFirstPassTopmostFrame.Clear();
 
         m_dwIndexClauseForCatch = 0;
@@ -263,6 +257,7 @@ public:
     ExceptionTracker(DWORD_PTR             dwExceptionPc,
                      PTR_EXCEPTION_RECORD  pExceptionRecord,
                      PTR_CONTEXT           pContextRecord) :
+        ExceptionTrackerBase(pExceptionRecord, pContextRecord, PTR_NULL),
         m_pThread(GetThread()),
         m_uCatchToCallPC(NULL),
         m_pSkipToParentFunctionMD(NULL),
@@ -270,27 +265,12 @@ public:
         m_pClauseForCatchToken(NULL)
 // end resume frame members
     {
-        m_ptrs.ExceptionRecord  = pExceptionRecord;
-        m_ptrs.ContextRecord    = pContextRecord;
-        m_ExceptionCode = pExceptionRecord->ExceptionCode;
-
         m_pLimitFrame = NULL;
 
         if (IsInstanceTaggedSEHCode(pExceptionRecord->ExceptionCode) && ::WasThrownByUs(pExceptionRecord, pExceptionRecord->ExceptionCode))
         {
             m_ExceptionFlags.SetWasThrownByUs();
         }
-
-        m_StackTraceInfo.Init();
-
-#ifndef TARGET_UNIX
-        // Init the WatsonBucketTracker
-        m_WatsonBucketTracker.Init();
-#endif // !TARGET_UNIX
-
-        // By default, mark the tracker as not having delivered the first
-        // chance exception notification
-        m_fDeliveredFirstChanceNotification = FALSE;
 
         m_dwIndexClauseForCatch = 0;
         m_sfEstablisherOfActualHandlerFrame.Clear();

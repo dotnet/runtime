@@ -8659,11 +8659,7 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     // But if the tracker exists, simply copy the bucket details to the UE Watson Bucket
     // tracker for use by the "WatsonLastChance" path.
     BOOL fDoWeHaveWatsonBuckets = FALSE;
-    if ((pExState->GetCurrentExceptionTracker() != NULL)
-#ifdef FEATURE_EH_FUNCLETS
-        || (pExState->GetCurrentExInfo() != NULL)
-#endif // FEATURE_EH_FUNCLETS
-    )
+    if (pExState->GetCurrentExceptionTracker() != NULL)
     {
         // Check the exception state if we have Watson bucket details
         fDoWeHaveWatsonBuckets = pExState->GetFlags()->GotWatsonBucketDetails();
@@ -9360,17 +9356,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     // being thrown, then get them.
     ThreadExceptionState *pExState = pThread->GetExceptionState();
 
-#ifdef FEATURE_EH_FUNCLETS
-    // Ensure that the exception tracker exists
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        _ASSERTE(pExState->GetCurrentExInfo() != NULL);
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
-    }
+    _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
 
     // Switch to COOP mode
     GCX_COOP();
@@ -9395,17 +9381,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 
     // Get the WatsonBucketTracker for the current exception
     PTR_EHWatsonBucketTracker pWatsonBucketTracker;
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        pWatsonBucketTracker = pExState->GetCurrentExInfo()->GetWatsonBucketTracker();
-
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
-    }
+    pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
 
     // Get the innermost exception object (if any)
     gc.oInnerMostExceptionThrowable = ((EXCEPTIONREF)gc.oCurrentThrowable)->GetBaseException();
@@ -10864,18 +10840,8 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     // processing for subsequent frames on the stack since FirstChance notification
     // will be delivered only when the exception is first thrown/rethrown.
     ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        _ASSERTE(pCurTES->GetCurrentExInfo());
-        _ASSERTE(!(pCurTES->GetCurrentExInfo()->DeliveredFirstChanceNotification()));
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        _ASSERTE(pCurTES->GetCurrentExceptionTracker());
-        _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
-    }
+    _ASSERTE(pCurTES->GetCurrentExceptionTracker());
+    _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
     {
         GCX_COOP();
         if (ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(FirstChanceExceptionHandler))
@@ -10891,18 +10857,8 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
 
         }
 
-#ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            // Mark the exception info as having delivered the first chance notification
-            pCurTES->GetCurrentExInfo()->SetFirstChanceNotificationStatus(TRUE);
-        }
-        else
-#endif // FEATURE_EH_FUNCLETS
-        {
-            // Mark the exception tracker as having delivered the first chance notification
-            pCurTES->GetCurrentExceptionTracker()->SetFirstChanceNotificationStatus(TRUE);
-        }
+        // Mark the exception tracker as having delivered the first chance notification
+        pCurTES->GetCurrentExceptionTracker()->SetFirstChanceNotificationStatus(TRUE);
     }
 }
 

@@ -161,12 +161,12 @@ class AsmOffsets
     public const int SIZEOF__EHEnum = 0x10;
     public const int OFFSETOF__StackFrameIterator__m_pRegDisplay = 0x218;
     public const int OFFSETOF__ExInfo__m_pPrevExInfo = 0;
-    public const int OFFSETOF__ExInfo__m_pExContext = 0x10;
-    public const int OFFSETOF__ExInfo__m_exception = 0x14;
-    public const int OFFSETOF__ExInfo__m_kind = 0x18;
-    public const int OFFSETOF__ExInfo__m_passNumber = 0x19;
-    public const int OFFSETOF__ExInfo__m_idxCurClause = 0x1C;
-    public const int OFFSETOF__ExInfo__m_frameIter = 0x24;
+    public const int OFFSETOF__ExInfo__m_pExContext = 0x70;
+    public const int OFFSETOF__ExInfo__m_exception = 0x74;
+    public const int OFFSETOF__ExInfo__m_kind = 0x78;
+    public const int OFFSETOF__ExInfo__m_passNumber = 0x79;
+    public const int OFFSETOF__ExInfo__m_idxCurClause = 0x7C;
+    public const int OFFSETOF__ExInfo__m_frameIter = 0x80;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
 #endif // TARGET_64BIT
 
