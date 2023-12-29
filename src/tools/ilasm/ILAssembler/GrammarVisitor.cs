@@ -2570,6 +2570,10 @@ namespace ILAssembler
             {
                 currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value);
             }
+            else if (context.ENTRYPOINT() is not null)
+            {
+                _entityRegistry.EntryPoint = currentMethod.Definition;
+            }
             else if (context.ZEROINIT() is not null)
             {
                 currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
@@ -2982,7 +2986,7 @@ namespace ILAssembler
         }
         public GrammarResult VisitMethodSpec(CILParser.MethodSpecContext context) => throw new NotImplementedException();
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => throw new NotImplementedException();
+        public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => GrammarResult.SentinelValue.Result;
 
         GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitNameSpaceHead(context);
 
