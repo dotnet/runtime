@@ -2536,10 +2536,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/BoxPatternMatchAndSideEffects/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26491/GitHub_26491/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Regression_3/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/flowgraph/dev10_bug679008/castClassEH/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Methodical_others/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
