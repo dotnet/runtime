@@ -304,13 +304,16 @@ typedef ptrdiff_t ssize_t;
 #include "utils.h"
 #include "targetosarch.h"
 
-// Late disassembly is OFF by default. Can be turned ON by
-// adding /DLATE_DISASM=1 on the command line.
-// Always OFF in the non-debug version
+// The late disassembler is built in for certain platforms, for DEBUG builds. It is enabled by using
+// DOTNET_JitLateDisasm. It can be built in for non-DEBUG builds if desired.
+
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_AMD64)
 #ifdef DEBUG
 #define LATE_DISASM 1
 #define USE_COREDISTOOLS
 #endif // DEBUG
+#endif // platforms
+
 #if defined(LATE_DISASM) && (LATE_DISASM == 0)
 #undef LATE_DISASM
 #endif

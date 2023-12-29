@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//===--------- coredistools.h - Dissassembly tools for CoreClr ------------===//
+//===--------- coredistools.h - Disassembly tools for CoreClr ------------===//
 //
-//  Core Disassembly Tools API Version 1.2.0
+//  Core Disassembly Tools API Version 1.3.0
 //  Disassembly tools required by CoreCLR for utilities like
 //  GCStress, SuperPMI, and R2RDump.
 //===----------------------------------------------------------------------===//

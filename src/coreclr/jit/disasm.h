@@ -236,6 +236,7 @@ private:
 #ifdef USE_COREDISTOOLS
 
     bool InitCoredistoolsDisasm();
+    bool disCoreDisToolsLibraryInitialized = false;
 
     CorDisasm* corDisasm;
 

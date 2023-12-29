@@ -1471,6 +1471,10 @@ void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCo
         return;
     }
 
+#ifdef USE_COREDISTOOLS
+    InitCoredistoolsDisasm();
+#endif // USE_COREDISTOOLS
+
 #ifdef DEBUG
     // Should we make it diffable?
     disDiffable = disComp->opts.dspDiffable;
@@ -1592,6 +1596,15 @@ FinishDisasm_t*    g_PtrFinishDisasm    = nullptr;
 //
 bool DisAssembler::InitCoredistoolsDisasm()
 {
+    // TODO: call g_PtrFinishDisasm sometime?
+    if (disCoreDisToolsLibraryInitialized)
+    {
+        // We've already loaded the library and created a disassembler.
+        return true;
+    }
+
+    disCoreDisToolsLibraryInitialized = true; // we only initialize once, even if it fails.
+
     const WCHAR* coreDisToolsLibrary = MAKEDLLNAME_W("coredistools");
 
 #ifdef TARGET_UNIX
@@ -1669,6 +1682,9 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 {
     disAsmFileCorDisTools = pfile;
 
+    unsigned              errorCount    = 0;
+    static const unsigned maxErrorCount = 50;
+
     auto disasmRegion = [&](size_t executionAddress, size_t blockAddress, size_t blockSize) {
         uint8_t* address       = (uint8_t*)executionAddress;
         uint8_t* codeBytes     = (uint8_t*)blockAddress;
@@ -1679,6 +1695,27 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
             if (instrLen == 0)
             {
                 // error
+                ++errorCount;
+#ifdef TARGET_ARM64
+                // For arm64, with fixed-size instructions, try to recover by skipping one
+                // instruction and continuing.
+                if (codeSizeBytes >= 4)
+                {
+                    CorDisToolsLogERROR("%x: %02x %02x %02x %02x", address, codeBytes[0], codeBytes[1], codeBytes[2],
+                                        codeBytes[3]);
+                    address += 4;
+                    codeBytes += 4;
+                    codeSizeBytes -= 4;
+                }
+                if (errorCount < maxErrorCount)
+                {
+                    continue;
+                }
+                else
+                {
+                    CorDisToolsLogERROR("Too many failures");
+                }
+#endif // TARGET_ARM64
                 break;
             }
             assert(instrLen <= codeSizeBytes);
@@ -1709,9 +1746,7 @@ void DisAssembler::disInit(Compiler* pComp)
     disAsmFile                     = nullptr;
 
 #ifdef USE_COREDISTOOLS
-    InitCoredistoolsDisasm();
-
-// TODO: call g_PtrFinishDisasm sometime?
+    disCoreDisToolsLibraryInitialized = false;
 #endif // USE_COREDISTOOLS
 }
 

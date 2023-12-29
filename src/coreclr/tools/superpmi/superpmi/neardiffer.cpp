@@ -128,7 +128,7 @@ bool NearDiffer::InitAsmDiff()
         }
 
         TargetArch coreDisTargetArchitecture = Target_Host;
-        OffsetMunger Munger = nullptr; // Only arm32 uses this feature currently
+        OffsetMunger munger = nullptr; // Only arm32 uses this feature currently
 
         if (TargetArchitecture != nullptr)
         {
@@ -143,7 +143,7 @@ bool NearDiffer::InitAsmDiff()
             else if ((0 == _stricmp(TargetArchitecture, "arm")) || (0 == _stricmp(TargetArchitecture, "arm32")))
             {
                 coreDisTargetArchitecture = Target_Thumb;
-                Munger = NearDiffer::CoreDisMungeOffsetsCallback;
+                munger = NearDiffer::CoreDisMungeOffsetsCallback;
             }
             else if (0 == _stricmp(TargetArchitecture, "arm64"))
             {
@@ -163,7 +163,7 @@ bool NearDiffer::InitAsmDiff()
         else
         {
             corAsmDiff = (*g_PtrNewDiffer2)(coreDisTargetArchitecture, &CorPrinter,
-                NearDiffer::CoreDisCompareOffsetsCallback, Munger);
+                NearDiffer::CoreDisCompareOffsetsCallback, munger);
         }
     }
 #endif // USE_COREDISTOOLS
