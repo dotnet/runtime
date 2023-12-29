@@ -61,7 +61,7 @@ namespace System.Tests
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.OrdinalIgnoreCase); }
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(GetHashCodeOrdinalIgnoreCase_TestData))]
         public void GetHashCode_OrdinalIgnoreCase_ReturnsSameHashCodeAsUpperCaseOrdinal(string input)
         {

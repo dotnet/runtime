@@ -912,7 +912,7 @@ namespace System.Tests
             Assert.NotEqual("abc".GetHashCode(), string.GetHashCode("ABC".AsSpan())); // case differences
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public static void GetHashCode_CompareInfo()
         {
             // ordinal
@@ -932,7 +932,7 @@ namespace System.Tests
             Assert.Equal("aeiXXabc".GetHashCode(StringComparison.InvariantCultureIgnoreCase), CultureInfo.InvariantCulture.CompareInfo.GetHashCode("aeiXXabc", CompareOptions.IgnoreCase));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void GetHashCode_CompareInfo_OfSpan()
         {
             // ordinal
@@ -954,7 +954,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> GetHashCode_StringComparison_Data => StringComparisons.Select(value => new object[] { value });
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(GetHashCode_StringComparison_Data))]
         public static void GetHashCode_StringComparison(StringComparison comparisonType)
         {

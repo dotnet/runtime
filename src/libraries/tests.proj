@@ -80,10 +80,9 @@
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" /> -->
   </ItemGroup>
 
-  <!-- invariant project cannot be tested in hybrid mode; projects using functions that throw PNSE too often to block separate tests (HashCode, CompareOptions) -->
+  <!-- invariant project cannot be tested in hybrid mode -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(HybridGlobalization)' == 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->

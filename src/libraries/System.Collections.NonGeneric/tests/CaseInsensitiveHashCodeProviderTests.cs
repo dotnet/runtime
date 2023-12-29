@@ -13,7 +13,7 @@ namespace System.Collections.Tests
 {
     public class CaseInsensitiveHashCodeProviderTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("hello", "HELLO", true)]
         [InlineData("hello", "hello", true)]
         [InlineData("HELLO", "HELLO", true)]
@@ -29,7 +29,7 @@ namespace System.Collections.Tests
             Assert.Equal(expected, provider.GetHashCode(a) == provider.GetHashCode(b));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("hello", "HELLO", true)]
         [InlineData("hello", "hello", true)]
         [InlineData("HELLO", "HELLO", true)]
@@ -63,7 +63,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("hello", "HELLO", true)]
         [InlineData("hello", "hello", true)]
         [InlineData("HELLO", "HELLO", true)]
@@ -94,7 +94,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
         public void Ctor_CultureInfo_GetHashCodeCompare_TurkishI()
@@ -135,7 +135,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentNullException>("obj", () => new CaseInsensitiveHashCodeProvider().GetHashCode(null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("hello", "HELLO", true)]
         [InlineData("hello", "hello", true)]
         [InlineData("HELLO", "HELLO", true)]

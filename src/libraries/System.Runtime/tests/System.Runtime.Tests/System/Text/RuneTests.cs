@@ -57,7 +57,7 @@ namespace System.Text.Tests
             Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
         [InlineData('i', 'I', 'i')]

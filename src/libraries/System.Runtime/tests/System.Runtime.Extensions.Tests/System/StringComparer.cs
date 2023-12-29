@@ -94,7 +94,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
         public static void CreateWithCulturesTest(string lowerForm, string upperForm, string cultureName)
         {
@@ -112,7 +112,7 @@ namespace System.Tests
             Assert.Equal(sc.GetHashCode((object) lowerForm), sc.GetHashCode((object) upperForm));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void InvariantTest()
         {
             Assert.True(StringComparer.InvariantCulture.Equals("test", "test"), "Same casing strings with StringComparer.InvariantCulture should be equal");
@@ -199,7 +199,7 @@ namespace System.Tests
             { "abcd", "ABcd", "en-US", CompareOptions.StringSort, false },
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
@@ -211,7 +211,7 @@ namespace System.Tests
             Assert.Equal(result, sc.Equals((object)actualString, (object)expectedString));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         public static void CreateFromCultureAndOptionsStringSort(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {
