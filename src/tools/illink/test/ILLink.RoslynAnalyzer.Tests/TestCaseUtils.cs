@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -23,25 +24,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 	public abstract class TestCaseUtils
 	{
 		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
-
-		private static string targetFramework = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.TargetFramework")!;
-
-		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
-		new ReferenceAssemblies (
-				targetFramework,
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", $"net{Environment.Version.Major}.{Environment.Version.Minor}"),
-				Path.Combine ("ref", targetFramework))
-			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
-
-		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
-		public static async ValueTask<ImmutableArray<MetadataReference>> GetDotNetReferences ()
-		{
-			if (s_netcoreappRefs.IsDefault) {
-				var refs = await NetCoreAppReferencessemblies.ResolveAsync (null, default);
-				ImmutableInterlocked.InterlockedInitialize (ref s_netcoreappRefs, refs);
-			}
-			return s_netcoreappRefs;
-		}
 
 		public static string FindTestSuiteDir (string rootDir, string suiteName)
 		{
@@ -82,7 +64,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
 			var additionalFiles = GetAdditionalFiles (rootSourceDir, tree);
 
-			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
+			var (comp, model, exceptionDiagnostics) = TestCaseCompilation.CreateCompilation (
 					tree,
 					consoleApplication: false,
 					msbuildProperties,
@@ -166,10 +148,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static void GetDirectoryPaths (out string rootSourceDirectory)
 		{
-			var artifactsBinDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.ArtifactsBinDir")!;
-			var linkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
-			var configuration = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.Configuration")!;
-
+			string linkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
 			rootSourceDirectory = Path.GetFullPath(Path.Combine(linkerTestDirectory, MonoLinkerTestsCases));
 		}
 
@@ -233,11 +212,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static (string, string)[] UseMSBuildProperties (params string[] MSBuildProperties)
 		{
 			return MSBuildProperties.Select (msbp => ($"build_property.{msbp}", "true")).ToArray ();
-		}
-
-		public static string GetRepoRoot ()
-		{
-			return (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.RepoRoot")!;
 		}
 	}
 }
