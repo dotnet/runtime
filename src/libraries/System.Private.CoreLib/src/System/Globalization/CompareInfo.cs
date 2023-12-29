@@ -1496,7 +1496,7 @@ namespace System.Globalization
                 NlsGetSortKey(source, destination, options) :
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
-                InvariantGetSortKey(source, destination, options)) :
+                InvariantGetSortKey(source, destination, options) :
 #endif
                 IcuGetSortKey(source, destination, options);
 
