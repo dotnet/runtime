@@ -50,7 +50,110 @@ namespace ILAssembler
 
         public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream)
         {
-            throw new NotImplementedException();
+            // Now that we've seen all of the entities, we can write them out in the correct order.
+            // Record the entities in the correct order so they are assigned handles.
+            // After this, we'll write out the content of the entities in the correct order.
+            foreach (TypeDefinitionEntity type in _seenEntities[TableIndex.TypeDef])
+            {
+                foreach (var method in type.Methods)
+                {
+                    RecordEntityInTable(TableIndex.MethodDef, method);
+                    foreach (var param in method.Parameters)
+                    {
+                        RecordEntityInTable(TableIndex.Param, param);
+                    }
+                }
+                foreach (var field in type.Fields)
+                {
+                    RecordEntityInTable(TableIndex.Field, field);
+                }
+                foreach (var property in type.Properties)
+                {
+                    RecordEntityInTable(TableIndex.Property, property);
+                }
+                foreach (var @event in type.Events)
+                {
+                    RecordEntityInTable(TableIndex.Event, @event);
+                }
+            }
+
+            // Now that we've recorded all of the entities that wouldn't have had handles before,
+            // we can start writing out the content of the entities.
+            builder.AddModule(0, Module.Name is null ? default : builder.GetOrAddString(Module.Name), builder.GetOrAddGuid(Guid.NewGuid()), default, default);
+
+            foreach (TypeReferenceEntity type in _seenEntities[TableIndex.TypeRef])
+            {
+                EntityBase resolutionScope = type.ResolutionScope;
+                builder.AddTypeReference(
+                    resolutionScope is FakeTypeEntity fakeScope ? fakeScope.ResolutionScopeColumnHandle : resolutionScope.Handle,
+                    builder.GetOrAddString(type.Namespace),
+                    builder.GetOrAddString(type.Name));
+            }
+
+            for (int i = 0; i < _seenEntities[TableIndex.TypeDef].Count; i++)
+            {
+                TypeDefinitionEntity type = (TypeDefinitionEntity)_seenEntities[TableIndex.TypeDef][i];
+                builder.AddTypeDefinition(
+                    type.Attributes,
+                    builder.GetOrAddString(type.Name),
+                    builder.GetOrAddString(type.Namespace),
+                    type.BaseType is null ? default : type.BaseType.Handle,
+                    (FieldDefinitionHandle)GetHandleForList(type.Fields, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Fields, i, TableIndex.Field),
+                    (MethodDefinitionHandle)GetHandleForList(type.Methods, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Methods, i, TableIndex.MethodDef));
+            }
+
+            foreach (FieldDefinitionEntity fieldDef in _seenEntities[TableIndex.Field])
+            {
+                builder.AddFieldDefinition(
+                    fieldDef.Attributes,
+                    builder.GetOrAddString(fieldDef.Name),
+                    fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(fieldDef.Signature));
+            }
+
+            for (int i = 0; i < _seenEntities[TableIndex.MethodDef].Count; i++)
+            {
+                MethodDefinitionEntity methodDef = (MethodDefinitionEntity)_seenEntities[TableIndex.MethodDef][i];
+                builder.AddMethodDefinition(
+                    methodDef.MethodAttributes,
+                    methodDef.ImplementationAttributes,
+                    builder.GetOrAddString(methodDef.Name),
+                    builder.GetOrAddBlob(methodDef.MethodSignature!),
+                    ilStream.Count,
+                    (ParameterHandle)GetHandleForList(methodDef.Parameters, _seenEntities[TableIndex.MethodDef], method => ((MethodDefinitionEntity)method).Parameters, i, TableIndex.Param));
+                methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+            }
+
+            // TODO: Write out the rest of the tables.
+
+            static EntityHandle GetHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex, TableIndex tokenType)
+            {
+                // Return the first entry in the list.
+                // If the list is empty, return the start of the next list.
+                // If there is no next list, return one past the end of the previous list.
+                if (list.Count != 0)
+                {
+                    return list[0].Handle;
+                }
+
+                for (int i = 0; i < listOwner.Count; i++)
+                {
+                    var otherList = getList(listOwner[i]);
+                    if (otherList.Count != 0)
+                    {
+                        return otherList[0].Handle;
+                    }
+                }
+
+                for (int i = ownerIndex - 1; i >= 0; i--)
+                {
+                    var otherList = getList(listOwner[i]);
+                    if (otherList.Count != 0)
+                    {
+                        return MetadataTokens.EntityHandle(tokenType, MetadataTokens.GetRowNumber(otherList[otherList.Count - 1].Handle) + 1);
+                    }
+                }
+                return MetadataTokens.EntityHandle(tokenType, 0);
+            }
         }
 
         public TypeEntity? ResolveImplicitBaseType(WellKnownBaseType? type)
