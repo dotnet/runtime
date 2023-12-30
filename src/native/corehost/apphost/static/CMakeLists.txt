@@ -4,14 +4,22 @@
 project(singlefilehost)
 set(DOTNET_PROJECT_NAME "singlefilehost")
 
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
 # Add RPATH to the apphost binary that allows using local copies of shared libraries
 # dotnet core depends on for special scenarios when system wide installation of such
 # dependencies is not possible for some reason.
 # This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
 # doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
 if (NOT CLR_CMAKE_TARGET_APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
+endif()
+
+# Add executable directory in rpath
+if (CLR_CMAKE_TARGET_APPLE)
+    set(CMAKE_INSTALL_RPATH "@executable_path")
+else ()
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 endif()
 
 set(SKIP_VERSIONING 1)
