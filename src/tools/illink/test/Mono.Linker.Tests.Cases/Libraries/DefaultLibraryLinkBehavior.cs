@@ -6,12 +6,12 @@ namespace Mono.Linker.Tests.Cases.Libraries
 	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
 	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[SetupCompileAsLibrary]
-	[SetupLinkerArgument ("-a", "test.dll")]
+	[SetupLinkerLinkAll]
 	[Kept]
 	[KeptMember (".ctor()")]
 	public class DefaultLibraryLinkBehavior
 	{
-		// Kept because by default libraries their action set to copy
+		// Kept because by default libraries have all members rooted
 		[Kept]
 		public static void Main ()
 		{

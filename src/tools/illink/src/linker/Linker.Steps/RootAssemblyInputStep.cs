@@ -87,7 +87,7 @@ namespace Mono.Linker.Steps
 				Context.MetadataTrimming = MetadataTrimming.None;
 				break;
 			case AssemblyRootMode.AllMembers:
-				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);
+				MarkAndPreserveAll (assembly);
 				return;
 			}
 		}
@@ -169,6 +169,36 @@ namespace Mono.Linker.Steps
 			Context.Annotations.Mark (type, di, origin);
 			Context.Annotations.Mark (assembly.MainModule, di, origin);
 			Annotations.SetMembersPreserve (type, preserve);
+		}
+
+		void MarkAndPreserveAll (AssemblyDefinition assembly)
+		{
+			var module = assembly.MainModule;
+			if (module.HasExportedTypes)
+				foreach (var type in module.ExportedTypes)
+					MarkAndPreserveAll (assembly, type);
+
+			foreach (var type in module.Types)
+				MarkAndPreserveAll (type);
+		}
+
+		void MarkAndPreserveAll (TypeDefinition type)
+		{
+			Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly), new MessageOrigin (type.Module.Assembly));
+			Annotations.SetPreserve (type, TypePreserve.All);
+
+			if (!type.HasNestedTypes)
+				return;
+
+			foreach (TypeDefinition nested in type.NestedTypes)
+				MarkAndPreserveAll (nested);
+		}
+
+		void MarkAndPreserveAll (AssemblyDefinition assembly, ExportedType type)
+		{
+			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
+			var origin = new MessageOrigin (assembly);
+			Context.Annotations.Mark (type, di, origin);
 		}
 
 		static bool IsTypeVisible (TypeDefinition type)
