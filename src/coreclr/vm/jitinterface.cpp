@@ -6504,6 +6504,33 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
+bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool ret = true;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    _ASSERTE(ftn);
+
+#ifdef PROFILING_SUPPORTED
+    if (CORProfilerEnableRejit())
+    {
+        // If ReJIT is around we'd better be careful with observations during inlining.
+        ret = false;
+    }
+#endif // PROFILING_SUPPORTED
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return ret;
+}
+
 /*********************************************************************/
 uint32_t CEEInfo::getMethodAttribs (CORINFO_METHOD_HANDLE ftn)
 {

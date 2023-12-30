@@ -2050,6 +2050,8 @@ public:
     // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
     virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
 
+    virtual bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) = 0;
+
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getMethodAttribs (
             CORINFO_METHOD_HANDLE       ftn         /* IN */
