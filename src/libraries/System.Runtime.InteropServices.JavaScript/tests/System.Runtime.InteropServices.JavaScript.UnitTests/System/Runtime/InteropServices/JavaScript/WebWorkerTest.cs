@@ -98,7 +98,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             await executor.Execute(async () =>
             {
-                await WebWorkerTestHelper.InitializeAsync();
+                await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync());
 
                 var jsTid = WebWorkerTestHelper.GetTid();
                 var csTid = WebWorkerTestHelper.NativeThreadId;

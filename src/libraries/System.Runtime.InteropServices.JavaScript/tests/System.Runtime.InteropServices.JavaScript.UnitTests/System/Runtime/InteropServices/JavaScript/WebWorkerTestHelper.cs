@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
@@ -61,11 +63,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             t.Join();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
         public async static Task RunOnMainAsync(Func<Task> job)
         {
             if (MainSynchronizationContext == null)
             {
-                await InitializeMainAsync();
+                var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
+                var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
+                var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
+                var mainCtx = mainThreadContext.GetValue(null);
+                MainSynchronizationContext = (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
             }
             await RunOnTargetAsync(MainSynchronizationContext, job);
         }
@@ -118,18 +127,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     export function delay(ms) {
                         return new Promise(resolve => setTimeout(resolve, ms))
                     }
-                ");
+                ").ConfigureAwait(false);
             }
-        }
-
-        public static async Task InitializeMainAsync()
-        {
-            await CreateDelay().ContinueWith(_ =>
+            else
             {
-                // capture main thread
-                Assert.Equal(1, Environment.CurrentManagedThreadId);
-                MainSynchronizationContext = SynchronizationContext.Current;
-            }, TaskContinuationOptions.ExecuteSynchronously);
+                await Delay(1).ConfigureAwait(false);
+            }
         }
 
         public static async Task InitializeAsync()
