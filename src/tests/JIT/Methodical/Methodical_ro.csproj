@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*_ro.??proj" />
+    <MergedWrapperProjectReference Include="eh/finallyexec/loopinfinally_ro.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

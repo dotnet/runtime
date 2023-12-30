@@ -5290,7 +5290,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * we are called from EH code.
 			 */
 			if (cfg->param_area)
-				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
+				riscv_addi (code, RISCV_SP, RISCV_SP, -ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
 			break;
 		}
 		case OP_CALL_HANDLER:
