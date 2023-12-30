@@ -39,7 +39,7 @@ internal sealed class DocumentParser
         var result = parser.decls();
         // TODO: Handle parse errors.
         var metadataBuilder = new MetadataBuilder();
-        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, metadataBuilder, resourceLocator);
+        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, resourceLocator);
         _ = result.Accept(visitor);
         // TODO: Get result information out of visitor and create MetadataRootBuilder.
     }

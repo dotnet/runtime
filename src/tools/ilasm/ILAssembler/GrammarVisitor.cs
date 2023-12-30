@@ -80,7 +80,7 @@ namespace ILAssembler
         private readonly EntityRegistry _entityRegistry = new();
         private readonly IReadOnlyDictionary<string, SourceText> _documents;
         private readonly Options _options;
-        private readonly MetadataBuilder _metadataBuilder;
+        private readonly MetadataBuilder _metadataBuilder = new();
         private readonly Func<string, byte[]> _resourceLocator;
 
         // Record the mapped field data directly into the blob to ensure we preserve ordering
@@ -89,12 +89,38 @@ namespace ILAssembler
         private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
 
-        public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, MetadataBuilder metadataBuilder, Func<string, byte[]> resourceLocator)
+        public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
         {
             _documents = documents;
             _options = options;
-            _metadataBuilder = metadataBuilder;
             _resourceLocator = resourceLocator;
+        }
+
+        public PEBuilder BuildImage()
+        {
+            BlobBuilder ilStream = new();
+            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream);
+            MetadataRootBuilder rootBuilder = new(_metadataBuilder);
+            PEHeaderBuilder header = new(
+                fileAlignment: _alignment,
+                imageBase: (ulong)_imageBase,
+                subsystem: _subsystem);
+
+            MethodDefinitionHandle entryPoint = default;
+            if (_entityRegistry.EntryPoint is not null)
+            {
+                entryPoint = (MethodDefinitionHandle)_entityRegistry.EntryPoint.Handle;
+            }
+
+            ManagedPEBuilder peBuilder = new(
+                header,
+                rootBuilder,
+                ilStream,
+                _mappedFieldData,
+                _manifestResources,
+                flags: CorFlags.ILOnly, entryPoint: entryPoint);
+
+            return peBuilder;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -1150,7 +1176,18 @@ namespace ILAssembler
             }
             if (context.exptypeHead() is { } exptypeHead)
             {
-                _ = VisitExptypeHead(exptypeHead);
+                var (attrs, dottedName) = VisitExptypeHead(exptypeHead).Value;
+                (string typeNamespace, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(dottedName);
+                var (impl, typeDefId, customAttrs) = VisitExptypeDecls(context.exptypeDecls()).Value;
+                var exp = _entityRegistry.GetOrCreateExportedType(impl, typeNamespace, name, exp =>
+                {
+                    exp.Attributes = attrs;
+                    exp.TypeDefinitionId = typeDefId;
+                });
+                foreach (var attr in customAttrs)
+                {
+                    attr.Owner = exp;
+                }
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.manifestResHead() is { } manifestResHead)
@@ -1487,18 +1524,18 @@ namespace ILAssembler
         }
 
         // TODO: Implement multimodule type exports and fowarders
-        public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new NotImplementedException();
+        public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
 
-        private EntityRegistry.EntityBase? _currentExportedType;
         GrammarResult ICILVisitor<GrammarResult>.VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => VisitExptypeDecls(context);
-        public GrammarResult.Literal<EntityRegistry.EntityBase?> VisitExptypeDecls(CILParser.ExptypeDeclsContext context)
+        public GrammarResult.Literal<(EntityRegistry.EntityBase? implementation, int typedefId, ImmutableArray<EntityRegistry.CustomAttributeEntity> attrs)> VisitExptypeDecls(CILParser.ExptypeDeclsContext context)
         {
-            Debug.Assert(_currentExportedType is not null);
             // COMPAT: The following order specifies the precedence of the various export kinds.
             // File, Assembly, Class (enclosing type), invalid token.
             // We'll process through all of the options here and then return the one that is valid.
             // We'll also record custom attributes here.
             EntityRegistry.EntityBase? implementationEntity = null;
+            int typedefId = 0;
+            var attrs = ImmutableArray.CreateBuilder<EntityRegistry.CustomAttributeEntity>();
             var declarations = context.exptypeDecl();
             for (int i = 0; i < declarations.Length; i++)
             {
@@ -1506,7 +1543,7 @@ namespace ILAssembler
                 {
                     if (VisitCustomAttrDecl(attr).Value is EntityRegistry.CustomAttributeEntity customAttribute)
                     {
-                        customAttribute.Owner = _currentExportedType;
+                        attrs.Add(customAttribute);
                     }
                     continue;
                 }
@@ -1539,13 +1576,27 @@ namespace ILAssembler
                 }
                 else if (kind == ".class")
                 {
-                    _ = VisitSlashedName(declarations[i].slashedName());
-                    // TODO: Find exported type
-                    throw new NotImplementedException();
+                    if (declarations[i].int32() is CILParser.Int32Context int32)
+                    {
+                        typedefId = VisitInt32(int32).Value;
+                    }
+                    else
+                    {
+                        _ = VisitSlashedName(declarations[i].slashedName());
+                        var containing = ResolveExportedType(declarations[i].slashedName());
+                        if (containing is null)
+                        {
+                            // TODO: Report diagnostic
+                        }
+                        else
+                        {
+                            implementationEntity = ResolveBetterEntity(containing);
+                        }
+                    }
                 }
             }
 
-            return new(implementationEntity);
+            return new((implementationEntity, typedefId, attrs.ToImmutable()));
 
             EntityRegistry.EntityBase? ResolveBetterEntity(EntityRegistry.EntityBase? newImplementation)
             {
@@ -1562,8 +1613,48 @@ namespace ILAssembler
                     _ => throw new InvalidOperationException("unreachable"),
                 };
             }
+
+            // Resolve ExportedType reference
+            EntityRegistry.ExportedTypeEntity? ResolveExportedType(CILParser.SlashedNameContext slashedName)
+            {
+                TypeName typeName = VisitSlashedName(slashedName).Value;
+                if (typeName.ContainingTypeName is null)
+                {
+                    // TODO: Check for typedef.
+                }
+                Stack<TypeName> containingTypes = new();
+                for (TypeName? containingType = typeName; containingType is not null; containingType = containingType.ContainingTypeName)
+                {
+                    containingTypes.Push(containingType);
+                }
+                EntityRegistry.ExportedTypeEntity? exportedType = null;
+                while (containingTypes.Count != 0)
+                {
+                    TypeName containingType = containingTypes.Pop();
+
+                    (string ns, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(containingType.DottedName);
+
+                    exportedType = _entityRegistry.FindExportedType(
+                        exportedType,
+                        ns,
+                        name);
+
+                    if (exportedType is null)
+                    {
+                        // TODO: Report diagnostic for missing type name
+                        return null;
+                    }
+                }
+
+                return exportedType!;
+            }
         }
-        public GrammarResult VisitExptypeHead(CILParser.ExptypeHeadContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitExptypeHead(CILParser.ExptypeHeadContext context) => VisitExptypeHead(context);
+        public GrammarResult.Literal<(TypeAttributes attrs, string dottedName)> VisitExptypeHead(CILParser.ExptypeHeadContext context)
+        {
+            var attrs = context.exptAttr().Select(VisitExptAttr).Aggregate((TypeAttributes)0, (a, b) => a | b);
+            return new((attrs, VisitDottedName(context.dottedName()).Value));
+        }
         GrammarResult ICILVisitor<GrammarResult>.VisitExtendsClause(CILParser.ExtendsClauseContext context) => VisitExtendsClause(context);
 
         public GrammarResult.Literal<EntityRegistry.TypeEntity?> VisitExtendsClause(CILParser.ExtendsClauseContext context)
@@ -2923,10 +3014,10 @@ namespace ILAssembler
         }
 
         private bool _expectInstance;
-        private Subsystem _subsystem;
-        private CorFlags _corflags;
-        private int _alignment;
-        private long _imageBase;
+        private Subsystem _subsystem = Subsystem.WindowsCui;
+        private CorFlags _corflags = CorFlags.ILOnly;
+        private int _alignment = 0x200;
+        private long _imageBase = 0x00400000;
         private long _stackReserve;
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMethodRef(CILParser.MethodRefContext context) => VisitMethodRef(context);
@@ -2984,8 +3075,17 @@ namespace ILAssembler
 
             return new(EntityRegistry.CreateUnrecordedMemberReference(owner, name, methodRefSignature));
         }
-        public GrammarResult VisitMethodSpec(CILParser.MethodSpecContext context) => throw new NotImplementedException();
-        public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context) => throw new NotImplementedException();
+        public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context)
+        {
+            if (context.ChildCount > 2)
+            {
+                _ = _entityRegistry.GetOrCreateModuleReference(VisitDottedName(context.dottedName()).Value, _ => { });
+                return GrammarResult.SentinelValue.Result;
+            }
+
+            _entityRegistry.Module.Name = VisitDottedName(context.dottedName()).Value;
+            return GrammarResult.SentinelValue.Result;
+        }
         public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => GrammarResult.SentinelValue.Result;
 
         GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitNameSpaceHead(context);

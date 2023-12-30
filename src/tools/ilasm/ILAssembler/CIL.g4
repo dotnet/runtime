@@ -355,8 +355,6 @@ asmAttrAny:
 asmAttr: asmAttrAny*;
 
 /*  IL instructions and associated definitions  */
-methodSpec: 'method';
-
 instr_none: INSTR_NONE;
 
 instr_var: INSTR_VAR;

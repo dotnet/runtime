@@ -22,6 +22,7 @@ namespace ILAssembler
         private readonly Dictionary<BlobBuilder, StandaloneSignatureEntity> _seenStandaloneSignatures = new(new BlobBuilderContentEqualityComparer());
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
         private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
+        private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -45,6 +46,11 @@ namespace ILAssembler
             {
                 moduleType.BaseType = null;
             });
+        }
+
+        public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream)
+        {
+            throw new NotImplementedException();
         }
 
         public TypeEntity? ResolveImplicitBaseType(WellKnownBaseType? type)
@@ -383,6 +389,21 @@ namespace ILAssembler
             return CreateEntity(TableIndex.ManifestResource, _manifestResourceEntities, () => new ManifestResourceEntity(name, offset));
         }
 
+        public ExportedTypeEntity GetOrCreateExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
+        {
+            // We only key on the implementation if the type is nested.
+            return GetOrCreateEntity((implementation as ExportedTypeEntity, @namespace, name), TableIndex.ExportedType, _seenExportedTypes, (key) => new(key.Item3, key.Item2, key.Item1), onCreateType);
+        }
+
+        public ExportedTypeEntity? FindExportedType(ExportedTypeEntity? containingType, string @namespace, string @name)
+        {
+            if (_seenExportedTypes.TryGetValue((containingType, @namespace, name), out var typeDef))
+            {
+                return typeDef;
+            }
+            return null;
+        }
+
         public IHasHandle? EntryPoint { get; set; }
 
         public abstract class EntityBase : IHasHandle
@@ -710,6 +731,23 @@ namespace ILAssembler
             public uint Offset { get; } = offset;
             public ManifestResourceAttributes Attributes { get; set; }
             public EntityBase? Implementation { get; set; }
+        }
+
+        public sealed class ExportedTypeEntity : EntityBase
+        {
+            public ExportedTypeEntity(string name, string @namespace, EntityBase? implementation)
+            {
+                Name = name;
+                Namespace = @namespace;
+                Implementation = implementation;
+            }
+
+            public string Name { get; }
+            public string Namespace { get; }
+            public TypeAttributes Attributes { get; set; }
+            public EntityBase? Implementation { get; }
+
+            public int TypeDefinitionId { get; set; }
         }
     }
 }
