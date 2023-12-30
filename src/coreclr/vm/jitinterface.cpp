@@ -6527,8 +6527,6 @@ bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     EE_TO_JIT_TRANSITION();
     
     return true;
-
-    return ret;
 }
 
 /*********************************************************************/
