@@ -15,7 +15,7 @@ if (NOT CLR_CMAKE_TARGET_OSX)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()
 
-# Add executable directory in rpath
+# Add executable directory in RPATH
 if (CLR_CMAKE_TARGET_APPLE)
     set(CMAKE_INSTALL_RPATH "@executable_path")
 else ()
