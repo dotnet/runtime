@@ -6514,19 +6514,19 @@ bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 
     bool ret = true;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
     _ASSERTE(ftn);
 
-#ifdef PROFILING_SUPPORTED
-    if (CORProfilerEnableRejit())
-    {
-        // If ReJIT is around we'd better be careful with observations during inlining.
-        ret = false;
-    }
+#ifdef FEATURE_REJIT
+    MethodDesc *pCallee = GetMethod(ftn);
+    MethodDesc *pCaller = m_pMethodBeingCompiled;
+    pCallee->GetModule()->AddInlining(pCaller, pCallee);
 #endif // PROFILING_SUPPORTED
 
-    EE_TO_JIT_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
+    
+    return true;
 
     return ret;
 }
