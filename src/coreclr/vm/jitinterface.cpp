@@ -6512,8 +6512,6 @@ bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool ret = true;
-
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(ftn);
