@@ -2981,11 +2981,12 @@ namespace ILAssembler
             SignatureArg returnValue = new(VisitParamAttr(context.paramAttr()).Value, VisitType(context.type()).Value, VisitMarshalClause(context.marshalClause()).Value, null);
 
             returnValue.SignatureBlob.WriteContentTo(methodSignature);
-            methodDefinition.Parameters.Add(EntityRegistry.CreateParameter(returnValue.Attributes, returnValue.Name, returnValue.MarshallingDescriptor));
-            foreach (var arg in args)
+            methodDefinition.Parameters.Add(EntityRegistry.CreateParameter(returnValue.Attributes, returnValue.Name, returnValue.MarshallingDescriptor, 0));
+            for (int i = 0; i < args.Length; i++)
             {
+                SignatureArg? arg = args[i];
                 arg.SignatureBlob.WriteContentTo(methodSignature);
-                methodDefinition.Parameters.Add(EntityRegistry.CreateParameter(arg.Attributes, arg.Name, arg.MarshallingDescriptor));
+                methodDefinition.Parameters.Add(EntityRegistry.CreateParameter(arg.Attributes, arg.Name, arg.MarshallingDescriptor, i + 1));
             }
             // We've parsed all signature information. We can reset the current method now (the caller will handle setting/unsetting it for the method body).
             _currentMethod = null;

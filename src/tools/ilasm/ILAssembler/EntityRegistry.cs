@@ -60,7 +60,14 @@ namespace ILAssembler
                     RecordEntityInTable(TableIndex.MethodDef, method);
                     foreach (var param in method.Parameters)
                     {
-                        RecordEntityInTable(TableIndex.Param, param);
+                        // COMPAT: Only record param entries for parameters that have names
+                        // or other rows that would refer to it.
+                        if (param.Name is not null
+                            && param.MarshallingDescriptor.Count != 0
+                            && param.HasCustomAttributes)
+                        {
+                            RecordEntityInTable(TableIndex.Param, param);
+                        }
                     }
                 }
                 foreach (var field in type.Fields)
@@ -74,6 +81,10 @@ namespace ILAssembler
                 foreach (var @event in type.Events)
                 {
                     RecordEntityInTable(TableIndex.Event, @event);
+                }
+                foreach (var impl in type.InterfaceImplementations)
+                {
+                    RecordEntityInTable(TableIndex.InterfaceImpl, impl);
                 }
             }
 
@@ -122,6 +133,23 @@ namespace ILAssembler
                     (ParameterHandle)GetHandleForList(methodDef.Parameters, _seenEntities[TableIndex.MethodDef], method => ((MethodDefinitionEntity)method).Parameters, i, TableIndex.Param));
                 methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
             }
+
+            foreach (ParameterEntity param  in _seenEntities[TableIndex.Param])
+            {
+                builder.AddParameter(
+                    param.Attributes,
+                    param.Name is null ? default : builder.GetOrAddString(param.Name),
+                    param.Sequence);
+            }
+
+            foreach (InterfaceImplementationEntity impl in _seenEntities[TableIndex.InterfaceImpl])
+            {
+                builder.AddInterfaceImplementation(
+                    (TypeDefinitionHandle)impl.Type.Handle,
+                    impl.InterfaceType is FakeTypeEntity fakeType ? fakeType.TypeColumnHandle : impl.InterfaceType.Handle);
+            }
+
+            // TODO: MemberRef
 
             // TODO: Write out the rest of the tables.
 
@@ -399,9 +427,9 @@ namespace ILAssembler
             return new InterfaceImplementationEntity(implementingType, interfaceType);
         }
 
-        public static ParameterEntity CreateParameter(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor)
+        public static ParameterEntity CreateParameter(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence)
         {
-            return new ParameterEntity(attributes, name, marshallingDescriptor);
+            return new ParameterEntity(attributes, name, marshallingDescriptor, sequence);
         }
 
         public static MemberReferenceEntity CreateUnrecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
@@ -701,12 +729,13 @@ namespace ILAssembler
             public MethodImplAttributes ImplementationAttributes { get; set; }
         }
 
-        public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor) : EntityBase
+        public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence) : EntityBase
         {
             public ParameterAttributes Attributes { get; } = attributes;
             public string? Name { get; } = name;
             public BlobBuilder MarshallingDescriptor { get; set; } = marshallingDescriptor;
             public bool HasCustomAttributes { get; set; }
+            public int Sequence { get; } = sequence;
         }
 
         public sealed class MemberReferenceEntity(EntityBase parent, string name, BlobBuilder signature) : EntityBase
