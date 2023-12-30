@@ -32,10 +32,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return location.GetPropertyAsString("origin");
         }
 
-        public static async Task<JSObject> ImportModuleFromString(string jsModule)
+        public static Task<JSObject> ImportModuleFromString(string jsModule)
         {
             var es6DataUrl = $"data:text/javascript,{jsModule.Replace('\r', ' ').Replace('\n', ' ')}";
-            return await JSHost.ImportAsync("InlineTestHelper", es6DataUrl);
+            return JSHost.ImportAsync("InlineTestHelper", es6DataUrl);
         }
 
         #region Execute
@@ -124,8 +124,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static async Task InitializeMainAsync()
         {
-            await CreateDelay();
-            await Delay(0).ContinueWith(_ =>
+            await CreateDelay().ContinueWith(_ =>
             {
                 // capture main thread
                 Assert.Equal(1, Environment.CurrentManagedThreadId);

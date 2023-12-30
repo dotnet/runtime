@@ -439,9 +439,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     return;
                 }
-                proxy._isDisposed = true;
-                GC.SuppressFinalize(proxy);
                 var jsHandle = proxy.JSHandle;
+                proxy._isDisposed = true;
+                proxy.JSHandle = IntPtr.Zero;
+                GC.SuppressFinalize(proxy);
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");

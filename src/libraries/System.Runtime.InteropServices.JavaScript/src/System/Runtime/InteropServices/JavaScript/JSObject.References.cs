@@ -96,6 +96,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
 
+                // async
                 ProxyContext.SynchronizationContext.Post(static (object? s) =>
                 {
                     var x = ((JSObject self, bool skipJS))s!;
@@ -103,8 +104,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 }, (this, skipJsCleanup));
 #else
                 JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
-                _isDisposed = true;
-                JSHandle = IntPtr.Zero;
 #endif
             }
         }
