@@ -1899,7 +1899,8 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualResult = (value <= 0) ? ulong.MinValue : (ulong)value;
+                ulong actualResult = (value <= 0) ? ulong.MinValue :
+                                     (value >= ulong.MaxValue) ? ulong.MaxValue : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
