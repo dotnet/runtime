@@ -19,7 +19,7 @@ endif()
 if (CLR_CMAKE_TARGET_APPLE)
     set(CMAKE_INSTALL_RPATH "@executable_path")
 else ()
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};\$ORIGIN")
 endif()
 
 set(SKIP_VERSIONING 1)
