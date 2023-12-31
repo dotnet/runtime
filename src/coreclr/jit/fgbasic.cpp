@@ -3690,7 +3690,8 @@ void Compiler::fgFindBasicBlocks()
         // If fgFindJumpTargets marked the call as "no return" there
         // really should be no BBJ_RETURN blocks in the method.
         bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
-        assert((markedNoReturn && (fgReturnCount == 0)) || (!markedNoReturn && (fgReturnCount >= 1)));
+        assert((markedNoReturn && (fgReturnCount == 0)) || (!markedNoReturn && (fgReturnCount >= 1)) ||
+               !info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd));
 #endif // DEBUG
 
         if (compInlineResult->IsFailure())
