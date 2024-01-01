@@ -12724,6 +12724,184 @@ Selection_Done:
     }
 
     calculateCoversSets();
+// ----------------------------------------------------------
+//  selectMinOpts: For given `currentInterval` and `refPosition`, selects a register to be assigned.
+//
+// Arguments:
+//   currentInterval - Current interval for which register needs to be selected.
+//   refPosition     - Refposition within the interval for which register needs to be selected.
+//
+//  Return Values:
+//      Register bit selected (a single register) and REG_NA if no register was selected.
+//
+regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*                currentInterval,
+                                                RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+{
+#ifdef DEBUG
+    *registerScore = NONE;
+#endif
+
+#ifdef TARGET_ARM64
+    assert(!refPosition->needsConsecutive);
+#endif
+
+    resetMinOpts(currentInterval, refPosition);
+
+    // process data-structures
+    if (RefTypeIsDef(refPosition->refType))
+    {
+        RefPosition* nextRefPos = refPosition->nextRefPosition;
+        if (currentInterval->hasConflictingDefUse)
+        {
+            linearScan->resolveConflictingDefAndUse(currentInterval, refPosition);
+            candidates = refPosition->registerAssignment;
+        }
+        // Otherwise, check for the case of a fixed-reg def of a reg that will be killed before the
+        // use, or interferes at the point of use (which shouldn't happen, but Lower doesn't mark
+        // the contained nodes as interfering).
+        // Note that we may have a ParamDef RefPosition that is marked isFixedRegRef, but which
+        // has had its registerAssignment changed to no longer be a single register.
+        else if (refPosition->isFixedRegRef && nextRefPos != nullptr && RefTypeIsUse(nextRefPos->refType) &&
+                 !nextRefPos->isFixedRegRef && genMaxOneBit(refPosition->registerAssignment))
+        {
+            regNumber  defReg       = refPosition->assignedReg();
+            RegRecord* defRegRecord = linearScan->getRegisterRecord(defReg);
+
+            RefPosition* currFixedRegRefPosition = defRegRecord->recentRefPosition;
+            assert(currFixedRegRefPosition != nullptr &&
+                   currFixedRegRefPosition->nodeLocation == refPosition->nodeLocation);
+
+            // If there is another fixed reference to this register before the use, change the candidates
+            // on this RefPosition to include that of nextRefPos.
+            RefPosition* nextFixedRegRefPosition = defRegRecord->getNextRefPosition();
+            if (nextFixedRegRefPosition != nullptr &&
+                nextFixedRegRefPosition->nodeLocation <= nextRefPos->getRefEndLocation())
+            {
+                candidates |= nextRefPos->registerAssignment;
+            }
+        }
+    }
+
+#ifdef DEBUG
+    candidates = linearScan->stressLimitRegs(refPosition, candidates);
+#endif
+    assert(candidates != RBM_NONE);
+
+    bool avoidByteRegs = false;
+#ifdef TARGET_X86
+    if ((relatedPreferences & ~RBM_BYTE_REGS) != RBM_NONE)
+    {
+        avoidByteRegs = true;
+    }
+#endif
+
+    // Is this a fixedReg?
+    regMaskTP fixedRegMask = RBM_NONE;
+    if (refPosition->isFixedRegRef)
+    {
+        assert(genMaxOneBit(refPosition->registerAssignment));
+        if (candidates == refPosition->registerAssignment)
+        {
+            found = true;
+            foundRegBit = candidates;
+            return candidates;
+        }
+        fixedRegMask = refPosition->registerAssignment;
+    }
+
+    // Eliminate candidates that are in-use or busy.
+    // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
+    // When we allocate for USE, we see that the register is busy at current location
+    // and we end up with that candidate is no longer available.
+    regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
+    candidates &= ~busyRegs;
+
+#ifdef TARGET_ARM
+    // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
+    // is also available. Thus, for every busyReg that is an odd floating-point register, we need to
+    // remove from candidates the corresponding even floating-point register. For example, if busyRegs
+    // contains `f3`, we need to remove `f2` from the candidates for a double register interval. The
+    // clause below creates a mask to do this.
+    if (currentInterval->registerType == TYP_DOUBLE)
+    {
+        candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+    }
+#endif // TARGET_ARM
+
+    // Also eliminate as busy any register with a conflicting fixed reference at this or
+    // the next location.
+    // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
+    regMaskTP checkConflictMask = candidates & linearScan->fixedRegs;
+    while (checkConflictMask != RBM_NONE)
+    {
+        regNumber checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+        regMaskTP checkConflictBit = genRegMask(checkConflictReg);
+        checkConflictMask ^= checkConflictBit;
+
+        LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
+
+        if ((checkConflictLocation == refPosition->nodeLocation) ||
+            (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
+        {
+            candidates &= ~checkConflictBit;
+        }
+    }
+    candidates |= fixedRegMask;
+    found = isSingleRegister(candidates);
+
+    // TODO-Cleanup: Previously, the "reverseSelect" stress mode reversed the order of the heuristics.
+    // It needs to be re-engineered with this refactoring.
+    // In non-debug builds, this will simply get optimized away
+    bool reverseSelect = false;
+#ifdef DEBUG
+    reverseSelect = linearScan->doReverseSelect();
+#endif // DEBUG
+
+    if (!found)
+    {
+        if (candidates == RBM_NONE)
+        {
+            assert(refPosition->RegOptional());
+            currentInterval->assignedReg = nullptr;
+            return RBM_NONE;
+        }
+
+        freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+
+        try_REG_ORDER();
+
+#ifdef DEBUG
+#if TRACK_LSRA_STATS
+        INTRACK_STATS_IF(found, linearScan->updateLsraStat(linearScan->getLsraStatFromScore(RegisterScore::REG_ORDER),
+                                                           refPosition->bbNum));
+#endif // TRACK_LSRA_STATS
+        if (found)
+        {
+            *registerScore = RegisterScore::REG_ORDER;
+        }
+#endif // DEBUG
+    }
+    if (!found)
+    {
+        if (refPosition->RegOptional() || !refPosition->IsActualRef())
+        {
+            // We won't spill if this refPosition is not an actual ref or is RegOptional
+            currentInterval->assignedReg = nullptr;
+            foundRegBit                  = RBM_NONE;
+            return RBM_NONE;
+        }
+        else
+        {
+            try_REG_NUM();
+#ifdef DEBUG
+#if TRACK_LSRA_STATS
+            INTRACK_STATS_IF(found, linearScan->updateLsraStat(linearScan->getLsraStatFromScore(RegisterScore::REG_NUM),
+                                                        refPosition->bbNum));
+#endif // TRACK_LSRA_STATS
+            *registerScore = RegisterScore::REG_NUM;
+#endif // DEBUG
+        }
+    }
 
     assert(found && isSingleRegister(candidates));
     foundRegBit = candidates;
