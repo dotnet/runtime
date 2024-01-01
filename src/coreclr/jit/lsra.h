@@ -1346,6 +1346,7 @@ private:
         bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
+        FORCEINLINE void resetMinOpts(Interval* interval, RefPosition* refPosition);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)

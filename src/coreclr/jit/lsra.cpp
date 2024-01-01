@@ -11553,6 +11553,20 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 // ----------------------------------------------------------
 //  reset: Resets the values of all the fields used for register selection.
 //
+void LinearScan::RegisterSelection::resetMinOpts(Interval* interval, RefPosition* refPos)
+{
+    currentInterval = interval;
+    refPosition     = refPos;
+
+    regType     = linearScan->getRegisterType(currentInterval, refPosition);
+    candidates  = refPosition->registerAssignment;
+    freeCandidates        = RBM_NONE;
+    found = false;
+}
+
+// ----------------------------------------------------------
+//  reset: Resets the values of all the fields used for register selection.
+//
 void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPos)
 {
     currentInterval = interval;
