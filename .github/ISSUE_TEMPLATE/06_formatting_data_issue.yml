@@ -1,0 +1,8 @@
+name: Formatting Data Error
+description: Error in formatting localization data.
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We're sorry you're experiencing issues with localization data for format strings.  There's some things you should be aware of before submitting the report that may help resolve your issue immediately.
