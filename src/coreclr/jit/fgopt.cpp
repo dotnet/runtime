@@ -3703,16 +3703,16 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         fgInsertStmtAtEnd(block, cloneStmt);
     }
 
+    // add an unconditional block after this block to jump to the target block's fallthrough block
+    //
+    assert(!target->IsLast());
+    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
+
     // Fix up block's flow
     //
     block->SetCond(target->GetTrueTarget());
     fgAddRefPred(block->GetTrueTarget(), block);
     fgRemoveRefPred(target, block);
-
-    // add an unconditional block after this block to jump to the target block's fallthrough block
-    //
-    assert(!target->IsLast());
-    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
 
     // The new block 'next' will inherit its weight from 'block'
     //
@@ -4118,7 +4118,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
     bJump->SetCond(bDestNormalTarget);
-    bJump->SetFalseTarget(bJump->Next());
 
     /* Update bbRefs and bbPreds */
 
@@ -6199,6 +6198,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             if (bDest->KindIs(BBJ_COND))
                             {
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
+                                bDest->SetFalseTarget(bFixup);
                                 bFixup->inheritWeight(bDestNext);
 
                                 fgRemoveRefPred(bDestNext, bDest);
@@ -6234,6 +6234,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         // Optimize the Conditional JUMP to go to the new target
                         block->SetTrueTarget(bNext->GetTarget());
+                        block->SetFalseTarget(bNext->Next());
 
                         fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
 
