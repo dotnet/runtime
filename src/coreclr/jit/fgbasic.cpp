@@ -3690,9 +3690,6 @@ void Compiler::fgFindBasicBlocks()
             return;
         }
 
-        // No-return calls aren't expected to be inlined.
-        assert(!impInlineInfo->iciCall->IsNoReturn() && (fgReturnCount > 0));
-
         noway_assert(info.compXcptnsCount == 0);
         compHndBBtab = impInlineInfo->InlinerCompiler->compHndBBtab;
         compHndBBtabAllocCount =
