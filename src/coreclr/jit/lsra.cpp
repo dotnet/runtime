@@ -4801,8 +4801,8 @@ void LinearScan::allocateRegisters()
         }
     }
 
-    if (enregisterLocalVars)
-    {
+    resetRegState();
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         VarSetOps::Iter largeVectorVarsIter(compiler, largeVectorVars);
         unsigned        largeVectorVarIndex = 0;
@@ -4812,9 +4812,7 @@ void LinearScan::allocateRegisters()
             lclVarInterval->isPartiallySpilled = false;
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    }
 
-    resetRegState();
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
@@ -5152,7 +5150,7 @@ void LinearScan::allocateRegisters()
             }
             else
             {
-                processBlockEndAllocation(currentBlock);
+                processBlockEndAllocation<true>(currentBlock);
                 currentBlock = moveToNextBlock();
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_START_BB, nullptr, REG_NA, currentBlock));
             }
@@ -5200,10 +5198,10 @@ void LinearScan::allocateRegisters()
                 }
                 regsInUseThisLocation |= currentRefPosition.registerAssignment;
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
-                continue;
             }
-            if (refType == RefTypeKill)
+            else
             {
+                assert(refType == RefTypeKill);
                 if (assignedInterval != nullptr)
                 {
                     unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
@@ -5212,8 +5210,8 @@ void LinearScan::allocateRegisters()
                 }
                 clearRegBusyUntilKill(regRecord->regNum);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum));
-                continue;
             }
+            continue;
         }
 
         // If this is an exposed use, do nothing - this is merely a placeholder to attempt to
