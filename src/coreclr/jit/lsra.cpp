@@ -2961,8 +2961,8 @@ template <bool needsConsecutiveRegisters>
 regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
-    regNumber foundReg;
-    regMaskTP foundRegBit;
+    regNumber  foundReg;
+    regMaskTP  foundRegBit;
     RegRecord* availablePhysRegRecord;
     if (enregisterLocalVars || needsConsecutiveRegisters)
     {
@@ -2973,9 +2973,9 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             return REG_NA;
         }
 
-        foundReg                          = genRegNumFromMask(foundRegBit);
+        foundReg                   = genRegNumFromMask(foundRegBit);
         availablePhysRegRecord     = getRegisterRecord(foundReg);
-        Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
+        Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
         if ((assignedInterval != currentInterval) &&
             isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
         {
@@ -3033,8 +3033,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
     else
     {
         // For minopts, just unassign `foundReg` from existing interval
-        foundRegBit =
-            regSelector->selectMinOpts(currentInterval, refPosition DEBUG_ARG(registerScore));
+        foundRegBit = regSelector->selectMinOpts(currentInterval, refPosition DEBUG_ARG(registerScore));
         foundReg    = genRegNumFromMask(foundRegBit);
 
         if (foundRegBit == RBM_NONE)
@@ -3043,7 +3042,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
         }
 
         availablePhysRegRecord     = getRegisterRecord(foundReg);
-        Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
+        Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
         if ((assignedInterval != currentInterval) &&
             isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
         {
@@ -4244,9 +4243,9 @@ void LinearScan::resetAllRegistersState()
 
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
-        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        RegRecord* physRegRecord = getRegisterRecord(reg);
 #ifdef DEBUG
-        Interval*  assignedInterval = physRegRecord->assignedInterval;
+        Interval* assignedInterval = physRegRecord->assignedInterval;
         assert(assignedInterval == nullptr || assignedInterval->isConstant);
 #endif
         physRegRecord->assignedInterval = nullptr;
@@ -4898,7 +4897,8 @@ void LinearScan::allocateRegistersForMinOpt()
         Interval*      currentInterval = nullptr;
         Referenceable* currentReferent = nullptr;
         RefType        refType         = currentRefPosition.refType;
-        assert(!((refType == RefTypeDummyDef) || (refType == RefTypeParamDef) || (refType == RefTypeZeroInit) || (refType == RefTypeExpUse)));
+        assert(!((refType == RefTypeDummyDef) || (refType == RefTypeParamDef) || (refType == RefTypeZeroInit) ||
+                 (refType == RefTypeExpUse)));
 
         currentReferent = currentRefPosition.referent;
 
@@ -12551,10 +12551,10 @@ void LinearScan::RegisterSelection::resetMinOpts(Interval* interval, RefPosition
     currentInterval = interval;
     refPosition     = refPos;
 
-    regType     = linearScan->getRegisterType(currentInterval, refPosition);
-    candidates  = refPosition->registerAssignment;
-    freeCandidates        = RBM_NONE;
-    found = false;
+    regType        = linearScan->getRegisterType(currentInterval, refPosition);
+    candidates     = refPosition->registerAssignment;
+    freeCandidates = RBM_NONE;
+    found          = false;
 }
 
 // ----------------------------------------------------------
@@ -13729,7 +13729,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
     try_##stat();                                                                                                      \
-    IF_FOUND_GOTO_DONE    
+    IF_FOUND_GOTO_DONE
 #include "lsra_score.h"
 
 #endif // DEBUG
@@ -13759,8 +13759,8 @@ Selection_Done:
 //  Return Values:
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
-regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*                currentInterval,
-                                                RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*    currentInterval,
+                                                       RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
     *registerScore = NONE;
@@ -13827,7 +13827,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*                
         assert(genMaxOneBit(refPosition->registerAssignment));
         if (candidates == refPosition->registerAssignment)
         {
-            found = true;
+            found       = true;
             foundRegBit = candidates;
             return candidates;
         }
@@ -13921,7 +13921,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*                
 #ifdef DEBUG
 #if TRACK_LSRA_STATS
             INTRACK_STATS_IF(found, linearScan->updateLsraStat(linearScan->getLsraStatFromScore(RegisterScore::REG_NUM),
-                                                        refPosition->bbNum));
+                                                               refPosition->bbNum));
 #endif // TRACK_LSRA_STATS
             *registerScore = RegisterScore::REG_NUM;
 #endif // DEBUG

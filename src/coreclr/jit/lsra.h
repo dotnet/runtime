@@ -643,7 +643,7 @@ public:
 #endif
     void allocateRegistersForMinOpt();
 
-    // This is where the actual assignment is done
+// This is where the actual assignment is done
 #ifdef TARGET_ARM64
     template <bool hasConsecutiveRegister = false>
 #endif
@@ -1267,8 +1267,8 @@ private:
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-        FORCEINLINE regMaskTP selectMinOpts(Interval*                currentInterval,
-                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+        FORCEINLINE regMaskTP selectMinOpts(Interval*    currentInterval,
+                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
