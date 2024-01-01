@@ -3362,7 +3362,7 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
             Debug.Assert(method != null);
-            return true; // CI Test _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
+            return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
     }
 }
