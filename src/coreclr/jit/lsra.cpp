@@ -3438,6 +3438,12 @@ void LinearScan::setIntervalAsSplit(Interval* interval)
 //
 void LinearScan::setIntervalAsSpilled(Interval* interval)
 {
+    if (!enregisterLocalVars)
+    {
+        interval->isSpilled = true;
+        return;
+    }
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     if (interval->isUpperVector)
     {
