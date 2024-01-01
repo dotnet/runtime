@@ -23,6 +23,8 @@ System.ITimer</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="System\DefaultTimeProvider.cs" />
+    <Compile Include="System\IDefaultTimeProvider.cs" />
     <Compile Include="System\Threading\Tasks\TimeProviderTaskExtensions.cs" />
   </ItemGroup>
 
