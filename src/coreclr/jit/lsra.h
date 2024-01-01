@@ -641,8 +641,13 @@ public:
 #ifdef TARGET_ARM64
     template <bool hasConsecutiveRegister = false>
 #endif
-    void allocateRegisters();
+    void allocateRegistersForMinOpt();
 
+    // This is where the actual assignment is done
+#ifdef TARGET_ARM64
+    template <bool hasConsecutiveRegister = false>
+#endif
+    void allocateRegisters();
     // This is the resolution phase, where cross-block mismatches are fixed up
     template <bool localVarsEnregistered>
     void           resolveRegisters();
