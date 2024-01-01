@@ -6520,7 +6520,7 @@ bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     MethodDesc *pCallee = GetMethod(ftn);
     MethodDesc *pCaller = m_pMethodBeingCompiled;
     pCallee->GetModule()->AddInlining(pCaller, pCallee);
-#endif // PROFILING_SUPPORTED
+#endif // FEATURE_REJIT
 
     EE_TO_JIT_TRANSITION();
     
