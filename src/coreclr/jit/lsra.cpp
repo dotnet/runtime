@@ -7389,6 +7389,11 @@ void           LinearScan::resolveRegisters()
             // In those cases, treeNode will be nullptr.
             if (treeNode == nullptr)
             {
+                if (localVarsEnregistered)
+                {
+                    continue;
+                }
+
                 // This is either a use, a dead def, or a field of a struct
                 Interval* interval = currentRefPosition->getInterval();
                 assert(currentRefPosition->refType == RefTypeUse ||
@@ -7422,7 +7427,8 @@ void           LinearScan::resolveRegisters()
             {
                 writeRegisters(currentRefPosition, treeNode);
 
-                if (treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) && currentRefPosition->getInterval()->isLocalVar)
+                if (localVarsEnregistered && treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) &&
+                    currentRefPosition->getInterval()->isLocalVar)
                 {
                     resolveLocalRef(block, treeNode->AsLclVar(), currentRefPosition);
                 }
