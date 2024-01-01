@@ -1348,6 +1348,7 @@ private:
         bool applySelection(int selectionScore, regMaskTP selectionCandidates);
         bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
         FORCEINLINE void calculateCoversSets();
+        FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
         FORCEINLINE void resetMinOpts(Interval* interval, RefPosition* refPosition);
 

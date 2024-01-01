@@ -12193,6 +12193,32 @@ void LinearScan::RegisterSelection::try_REG_NUM()
 }
 
 // ----------------------------------------------------------
+//  calculateUnassignedSets: Calculate the necessary unassigned sets.
+//
+void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate the calculation of unassigned set
+{
+    if (freeCandidates == RBM_NONE || coversSetsCalculated)
+    {
+        return;
+    }
+
+    regMaskTP coversCandidates = candidates;
+    for (; coversCandidates != RBM_NONE;)
+    {
+        regNumber coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        regMaskTP coversCandidateBit    = genRegMask(coversCandidateRegNum);
+        coversCandidates ^= coversCandidateBit;
+
+        // The register is considered unassigned if it has no assignedInterval, OR
+        // if its next reference is beyond the range of this interval.
+        if (linearScan->nextIntervalRef[coversCandidateRegNum] > lastLocation)
+        {
+            unassignedSet |= coversCandidateBit;
+        }
+    }
+}
+
+// ----------------------------------------------------------
 //  calculateCoversSets: Calculate the necessary covers set registers to be used
 //      for heuristics lke COVERS, COVERS_RELATED, COVERS_FULL.
 //
@@ -12723,7 +12749,13 @@ Selection_Done:
         return RBM_NONE;
     }
 
-    calculateCoversSets();
+    calculateUnassignedSets();
+
+    assert(found && isSingleRegister(candidates));
+    foundRegBit = candidates;
+    return candidates;
+}
+
 // ----------------------------------------------------------
 //  selectMinOpts: For given `currentInterval` and `refPosition`, selects a register to be assigned.
 //
