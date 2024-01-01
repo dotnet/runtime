@@ -733,7 +733,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
 #endif // TARGET_XARCH
 
-    regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
 
 #ifdef DEBUG
@@ -772,6 +771,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // set won't be recomputed until after Lowering (and this constructor is called prior to Lowering),
     // so we don't want to check that yet.
     enregisterLocalVars = compiler->compEnregLocals();
+
+    regSelector = new (theCompiler, CMK_LSRA) RegisterSelection(this);
+
 #ifdef TARGET_ARM64
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
