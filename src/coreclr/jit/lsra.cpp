@@ -3914,12 +3914,13 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 //    Calls processBlockEndLocations() to set the outVarToRegMap, then gets the next block,
 //    and sets the inVarToRegMap appropriately.
 //
+template <bool localVarsEnregistered>
 void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 {
     assert(currentBlock != nullptr);
     markBlockVisited(currentBlock);
 
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         processBlockEndLocations(currentBlock);
 

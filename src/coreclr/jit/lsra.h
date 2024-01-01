@@ -1001,6 +1001,7 @@ private:
 
     // Update allocations at start/end of block
     void unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap);
+    template <bool localVarsEnregistered>
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
