@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable format // too many changes, not worth right now
+
 namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives

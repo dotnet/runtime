@@ -8,6 +8,8 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
+#pragma warning disable format // too many changes, not worth right now
+
 namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives

@@ -355,6 +355,7 @@ namespace System.Xml.Xsl.XPath
             XPathOperator op;
             Node opnd;
 
+#pragma warning disable format
             ReadOnlySpan<byte> xpathOperatorPrecedence =
             [
                 /*Unknown    */ 0,
@@ -374,6 +375,7 @@ namespace System.Xml.Xsl.XPath
                 /*UnaryMinus */ 7,
                 /*Union      */ 8,  // Not used
             ];
+#pragma warning restore format
 
             // Check for unary operators
             if (_scanner!.Kind == LexKind.Minus)

@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         [Flags]
         internal enum CertStoreFlags : int
         {
@@ -29,5 +30,6 @@ internal static partial class Interop
             CERT_SYSTEM_STORE_LOCAL_MACHINE                 = 0x00020000,
             None                                            = 0x00000000,
         }
+#pragma warning restore format
     }
 }

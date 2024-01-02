@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+#pragma warning disable format
         internal enum SysLogPriority : int
         {
             // Priorities
@@ -19,6 +20,7 @@ internal static partial class Interop
             LOG_INFO        = 6,        /* informational */
             LOG_DEBUG       = 7,        /* debug-level messages */
         }
+#pragma warning restore format
 
         /// <summary>
         /// Write a message to the system logger, which in turn writes the message to the system console, log files, etc.

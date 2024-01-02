@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         [Flags]
         internal enum PFXExportFlags : int
         {
@@ -15,5 +16,6 @@ internal static partial class Interop
             EXPORT_PRIVATE_KEYS                   = 0x00000004,
             None                                  = 0x00000000,
         }
+#pragma warning restore format
     }
 }

@@ -23,6 +23,7 @@ namespace System.Xml
         internal const string StrXmlNS = "xmlns";
         private bool _bNeedFoliate;
 
+#pragma warning disable format
         internal static ReadOnlySpan<int> XmlNodeTypeToXpathNodeTypeMap =>
         [
             /*XmlNodeType.None*/ -1,
@@ -44,6 +45,7 @@ namespace System.Xml
             /*XmlNodeType.EndEntity*/ -1,
             /*XmlNodeType.XmlDeclaration*/ -1,
         ];
+#pragma warning restore format
 
         private XPathNodeType DecideXPNodeTypeForTextNodes(XmlNode node)
         {

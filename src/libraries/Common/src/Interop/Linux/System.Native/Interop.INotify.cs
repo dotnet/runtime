@@ -41,6 +41,7 @@ internal static partial class Interop
             return result;
         }
 
+#pragma warning disable format
         [Flags]
         internal enum NotifyEvents
         {
@@ -58,5 +59,6 @@ internal static partial class Interop
             IN_EXCL_UNLINK = 0x04000000,
             IN_ISDIR       = 0x40000000,
         }
+#pragma warning restore format
     }
 }

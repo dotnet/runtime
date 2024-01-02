@@ -13,6 +13,7 @@ namespace System.Xml
         private const int guidLength = 16;
         private const int uuidLength = 45;
 
+#pragma warning disable format
         private static ReadOnlySpan<short> Char2val =>
         [
             /*    0-15 */
@@ -49,6 +50,7 @@ namespace System.Xml
             /* 112-127 */
                               0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100,
         ];
+#pragma warning restore format
 
         public UniqueId() : this(Guid.NewGuid())
         {

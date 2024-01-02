@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         internal enum CertStoreAddDisposition : int
         {
             CERT_STORE_ADD_NEW                                  = 1,
@@ -15,5 +16,6 @@ internal static partial class Interop
             CERT_STORE_ADD_NEWER                                = 6,
             CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES             = 7,
         }
+#pragma warning restore format
     }
 }

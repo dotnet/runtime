@@ -185,6 +185,7 @@ namespace System.Xml
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint GetCharProperties(char ch) => Unsafe.Add(ref MemoryMarshal.GetReference(CharProperties), ch);
 
+#pragma warning disable format
         private static ReadOnlySpan<byte> CharProperties =>
         [
             //            0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    A,    B,    C,    D,    E,    F
@@ -4285,5 +4286,6 @@ namespace System.Xml
             /* FFE0 */ 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0,
             /* FFF0 */ 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0xD0, 0x00, 0x00,
         ];
+#pragma warning restore format
     }
 }

@@ -7,6 +7,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private sealed class AppleCertificateExporter : UnixExportProvider
         {
+#pragma warning disable format
             private static ReadOnlySpan<byte> EmptyPkcs7 =>
             [
                 0x30, 0x23, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07,
@@ -14,6 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
                 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x01, 0x31,
                 0x00,
             ];
+#pragma warning restore format
 
             public AppleCertificateExporter(ICertificatePalCore cert)
                 : base(cert)

@@ -20,6 +20,7 @@ namespace System.Reflection.TypeLoading
         // h1(key) + i*h2(key), 0 <= i < size.  h2 and the size must be relatively prime.
         // We prefer the low computation costs of higher prime numbers over the increased
         // memory allocation of a fixed prime number i.e. when right sizing a HashSet.
+#pragma warning disable format
         public static ReadOnlySpan<int> Primes =>
         [
             3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919,
@@ -28,6 +29,7 @@ namespace System.Reflection.TypeLoading
             187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263,
             1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369
         ];
+#pragma warning restore format
 
         public static bool IsPrime(int candidate)
         {

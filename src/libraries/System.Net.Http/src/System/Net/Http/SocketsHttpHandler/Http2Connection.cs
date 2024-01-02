@@ -1951,6 +1951,7 @@ namespace System.Net.Http
             public override string ToString() => $"StreamId={StreamId}; Type={Type}; Flags={Flags}; PayloadLength={PayloadLength}"; // Description for diagnostic purposes
         }
 
+#pragma warning disable format
         [Flags]
         private enum FrameFlags : byte
         {
@@ -1966,6 +1967,7 @@ namespace System.Net.Http
 
             ValidBits =     0b00101101
         }
+#pragma warning restore format
 
         private enum SettingId : ushort
         {

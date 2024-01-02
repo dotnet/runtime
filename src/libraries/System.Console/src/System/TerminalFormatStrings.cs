@@ -238,11 +238,13 @@ internal sealed class TerminalFormatStrings
     {
         if (db.HasExtendedStrings) // avoid string concatenation in case when there are no Extended Strings (typical scenario)
         {
+#pragma warning disable format
             AddKey(db, extendedNamePrefix + "3", key, shift: false, alt: true,  control: false);
             AddKey(db, extendedNamePrefix + "4", key, shift: true,  alt: true,  control: false);
             AddKey(db, extendedNamePrefix + "5", key, shift: false, alt: false, control: true);
             AddKey(db, extendedNamePrefix + "6", key, shift: true,  alt: false, control: true);
             AddKey(db, extendedNamePrefix + "7", key, shift: false, alt: false, control: true);
+#pragma warning restore format
         }
     }
 

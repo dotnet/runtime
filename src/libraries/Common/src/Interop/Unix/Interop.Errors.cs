@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 internal static partial class Interop
 {
     /// <summary>Common Unix errno error codes.</summary>
+#pragma warning disable format
     internal enum Error
     {
         // These values were defined in src/Native/System.Native/fxerrno.h
@@ -110,6 +111,7 @@ internal static partial class Interop
         EOPNOTSUPP      = ENOTSUP,            // Operation not supported on socket.
         EWOULDBLOCK     = EAGAIN,             // Operation would block.
     }
+#pragma warning restore format
 
 
     // Represents a platform-agnostic Error and underlying platform-specific errno

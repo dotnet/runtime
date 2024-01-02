@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+#pragma warning disable format
         internal enum PathConfName : int
         {
             PC_LINK_MAX         = 1,
@@ -19,6 +20,7 @@ internal static partial class Interop
             PC_NO_TRUNC         = 8,
             PC_VDISABLE         = 9,
         }
+#pragma warning restore format
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PathConf", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int PathConf(string path, PathConfName name);

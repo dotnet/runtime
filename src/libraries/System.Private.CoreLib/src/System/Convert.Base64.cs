@@ -189,6 +189,7 @@ namespace System
             Unsafe.Add(ref destination, 2) = (byte)value;
         }
 
+#pragma warning disable format
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
         private static ReadOnlySpan<sbyte> DecodingMap =>
         [
@@ -209,6 +210,7 @@ namespace System
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         ];
+#pragma warning restore format
 
         private const byte EncodingPad = (byte)'='; // '=', for padding
     }

@@ -339,6 +339,7 @@ namespace System.Management
             return res;
         }
 
+#pragma warning disable format
         private enum STATFLAG
         {
             STATFLAG_DEFAULT = 0,
@@ -360,6 +361,7 @@ namespace System.Management
             MSHLFLAGS_TABLEWEAK   = 2,
             MSHLFLAGS_NOPING      = 3
         }
+#pragma warning restore format
     }
 
     internal sealed class IWbemQualifierSetFreeThreaded : IDisposable

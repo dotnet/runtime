@@ -71,6 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal CertificateData(byte[] rawData)
         {
+#pragma warning disable format // the ifdef confuses formatting
 #if DEBUG
         try
         {
@@ -117,6 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException($"Error in reading certificate:{Environment.NewLine}{pem}", e);
         }
 #endif
+#pragma warning restore format
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)

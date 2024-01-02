@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         [Flags]
         internal enum CryptProtectDataFlags : int
         {
@@ -17,5 +18,6 @@ internal static partial class Interop
             CRYPTPROTECT_NO_RECOVERY        = 0x20,
             CRYPTPROTECT_VERIFY_PROTECTION  = 0x40,
         }
+#pragma warning restore format
     }
 }

@@ -139,6 +139,7 @@ namespace System
                 10000000000000000000,
             ];
 
+#pragma warning disable format
             private static ReadOnlySpan<double> DoublePowers10 =>
             [
                 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
@@ -151,6 +152,7 @@ namespace System
                 1e70, 1e71, 1e72, 1e73, 1e74, 1e75, 1e76, 1e77, 1e78, 1e79,
                 1e80
             ];
+#pragma warning restore format
 
 #region Decimal Math Helpers
 

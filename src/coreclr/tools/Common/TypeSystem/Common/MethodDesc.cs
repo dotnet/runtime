@@ -9,6 +9,7 @@ using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
+#pragma warning disable format
     [Flags]
     public enum MethodSignatureFlags
     {
@@ -23,6 +24,7 @@ namespace Internal.TypeSystem
 
         Static = 0x0010,
     }
+#pragma warning restore format
 
     public enum EmbeddedSignatureDataKind
     {

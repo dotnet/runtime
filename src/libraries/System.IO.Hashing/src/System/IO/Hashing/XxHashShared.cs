@@ -32,6 +32,7 @@ namespace System.IO.Hashing
         public const int InternalBufferStripes = InternalBufferLengthBytes / StripeLengthBytes;
         public const int InternalBufferLengthBytes = 256;
 
+#pragma warning disable format
         /// <summary>The default secret for when no seed is provided.</summary>
         /// <remarks>This is the same as a custom secret derived from a seed of 0.</remarks>
         public static ReadOnlySpan<byte> DefaultSecret =>
@@ -61,6 +62,7 @@ namespace System.IO.Hashing
             0x45, 0xcb, 0x3a, 0x8f, 0x95, 0x16, 0x04, 0x28, // DefaultSecretUInt64_22
             0xaf, 0xd7, 0xfb, 0xca, 0xbb, 0x4b, 0x40, 0x7e, // DefaultSecretUInt64_23
         ];
+#pragma warning restore format
 
         // Cast of DefaultSecret byte[] => ulong[] (See above for the correspondence)
         public const ulong DefaultSecretUInt64_0 = 0xBE4BA423396CFEB8;

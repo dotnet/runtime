@@ -142,6 +142,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentOutOfRange(nameof(rowCount));
             }
 
+#pragma warning disable format
             switch (table)
             {
                 case TableIndex.Module:                 break; // no-op, max row count is 1
@@ -204,6 +205,7 @@ namespace System.Reflection.Metadata.Ecma335
                 default:
                     throw new ArgumentOutOfRangeException(nameof(table));
             }
+#pragma warning restore format
         }
 
         private static void SetTableCapacity<T>(List<T> table, int rowCount)
@@ -222,6 +224,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="table"/> is not a valid table index.</exception>
         public int GetRowCount(TableIndex table)
         {
+#pragma warning disable format
             switch (table)
             {
                 case TableIndex.Assembly                : return _assemblyRow.HasValue ? 1 : 0;
@@ -283,6 +286,7 @@ namespace System.Reflection.Metadata.Ecma335
                 default:
                     throw new ArgumentOutOfRangeException(nameof(table));
             }
+#pragma warning restore format
         }
 
         /// <summary>

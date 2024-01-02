@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         internal enum CertFindType : int
         {
             CERT_FIND_SUBJECT_CERT = 0x000b0000,
@@ -14,5 +15,6 @@ internal static partial class Interop
             CERT_FIND_EXISTING     = 0x000d0000,
             CERT_FIND_ANY          = 0x00000000,
         }
+#pragma warning restore format
     }
 }

@@ -17,6 +17,7 @@ internal static partial class Interop
         private const bool SetLastErrorForDebug = false;
 #endif
 
+#pragma warning disable format
         internal const uint LOCALE_ALLOW_NEUTRAL_NAMES  = 0x08000000; // Flag to allow returning neutral names/lcids for name conversion
         internal const uint LOCALE_ILANGUAGE            = 0x00000001;
         internal const uint LOCALE_SUPPLEMENTAL         = 0x00000002;
@@ -43,6 +44,7 @@ internal static partial class Interop
         internal const int GEOCLASS_NATION       = 16;
         internal const int GEO_ISO2              =  4;
         internal const int GEOID_NOT_AVAILABLE   = -1;
+#pragma warning restore format
 
         internal const string LOCALE_NAME_USER_DEFAULT = null;
         internal const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";

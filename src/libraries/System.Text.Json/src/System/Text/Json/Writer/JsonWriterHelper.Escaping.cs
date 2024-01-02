@@ -20,6 +20,7 @@ namespace System.Text.Json
         //
         // non-zero = allowed, 0 = disallowed
         public const int LastAsciiCharacter = 0x7F;
+#pragma warning disable format
         private static ReadOnlySpan<byte> AllowList => // byte.MaxValue + 1
         [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+0000..U+000F
@@ -41,6 +42,7 @@ namespace System.Text.Json
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+00F0..U+00FF
         ];
+#pragma warning restore format
 
 #if NETCOREAPP
         private const string HexFormatString = "X4";

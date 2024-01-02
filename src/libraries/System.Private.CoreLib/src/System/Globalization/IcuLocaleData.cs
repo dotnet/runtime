@@ -4,6 +4,7 @@
 using System.Diagnostics;
 
 #pragma warning disable SA1001
+#pragma warning disable format // workaround for https://github.com/dotnet/roslyn/issues/66640
 
 // This file contains the handling of Windows OS specific culture features.
 

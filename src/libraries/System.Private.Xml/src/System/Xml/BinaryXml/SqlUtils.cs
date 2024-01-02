@@ -120,10 +120,12 @@ namespace System.Xml
         //    10-19          2
         //    20-28          3
         //    29-38          4
+#pragma warning disable format
         private static ReadOnlySpan<byte> RgCLenFromPrec =>
         [
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
         ];
+#pragma warning restore format
 
         private static byte CLenFromPrec(byte bPrec)
         {

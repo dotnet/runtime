@@ -28,6 +28,7 @@ internal static partial class Interop
         // Constants from sys/errno.h
         private const int EPERM = 1;
 
+#pragma warning disable format
         // Defines from proc_info.h
         internal enum ThreadRunState
         {
@@ -103,6 +104,7 @@ internal static partial class Interop
             internal int proc_fd;
             internal uint proc_fdtype;
         }
+#pragma warning restore format
 
         /// <summary>
         /// Queries the OS for the PIDs for all running processes

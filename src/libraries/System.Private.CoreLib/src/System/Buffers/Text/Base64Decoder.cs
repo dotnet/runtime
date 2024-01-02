@@ -923,6 +923,7 @@ namespace System.Buffers.Text
             // 1110 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
+#pragma warning disable format
             // The JIT won't hoist these "constants", so help it
             Vector128<byte>  lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
             Vector128<byte>  lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
@@ -933,6 +934,7 @@ namespace System.Buffers.Text
             Vector128<byte>  one = Vector128.Create((byte)1);
             Vector128<byte>  mask2F = Vector128.Create((byte)'/');
             Vector128<byte>  mask8F = Vector128.Create((byte)0x8F);
+#pragma warning restore format
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -1088,6 +1090,7 @@ namespace System.Buffers.Text
             return value == 32;
         }
 
+#pragma warning disable format
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
         private static ReadOnlySpan<sbyte> DecodingMap =>
         [
@@ -1108,5 +1111,6 @@ namespace System.Buffers.Text
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         ];
+#pragma warning restore format
     }
 }

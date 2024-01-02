@@ -33,6 +33,7 @@ namespace System.Globalization
 
         private static DateMapping[] InitDateMapping()
         {
+#pragma warning disable format
             ReadOnlySpan<short> rawData =
             [
                 // These data are taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
@@ -222,6 +223,7 @@ namespace System.Globalization
                 1500*/0x0E93,    2076,     11,   27, /* 1    1    0    0    1    0    0    1    0    1    1    1    11/27/2076
                 1501*/     0,    2077,     11,   17, /* 0    0    0    0    0    0    0    0    0    0    0    0    11/17/2077
     */      ];
+#pragma warning restore format
             // Direct inline initialization of DateMapping array would produce a lot of code bloat.
 
             // We take advantage of C# compiler blitting primitive span data into assembly data.

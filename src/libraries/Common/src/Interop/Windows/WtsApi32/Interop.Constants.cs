@@ -5,6 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Wtsapi32
     {
+#pragma warning disable format
         public const int NOTIFY_FOR_THIS_SESSION          =  0x0;
 
         public const int WTS_CONSOLE_CONNECT              =  0x1;
@@ -16,5 +17,6 @@ internal static partial class Interop
         public const int WTS_SESSION_LOCK                 =  0x7;
         public const int WTS_SESSION_UNLOCK               =  0x8;
         public const int WTS_SESSION_REMOTE_CONTROL       =  0x9;
+#pragma warning restore format
     }
 }

@@ -9,6 +9,7 @@ namespace System.Text.RegularExpressions
         // PLEASE DON'T MODIFY BY HAND
         // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 
+#pragma warning disable format
         private static ReadOnlySpan<char> EquivalenceCasingValues => // 2336
         [
             '\u0041', '\u0061', '\u0042', '\u0062', '\u0043', '\u0063', '\u0044', '\u0064', '\u0045', '\u0065', '\u0046', '\u0066', '\u0047', '\u0067', '\u0048', '\u0068',
@@ -810,5 +811,6 @@ namespace System.Text.RegularExpressions
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
         ];
+#pragma warning restore format
     }
 }

@@ -11,6 +11,7 @@ namespace System.Management
     /// <summary>
     ///    <para>Represents the enumeration of all WMI error codes that are currently defined.</para>
     /// </summary>
+#pragma warning disable format
     public enum ManagementStatus
     {
         /// <summary>
@@ -529,6 +530,7 @@ namespace System.Management
         /// </summary>
         RegistrationTooPrecise          = unchecked((int)0x80042002)
     }
+#pragma warning restore format
 
     /// <summary>
     ///    <para> Represents management exceptions.</para>

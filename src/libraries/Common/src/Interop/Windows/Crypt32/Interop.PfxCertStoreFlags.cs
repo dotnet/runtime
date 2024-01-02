@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+#pragma warning disable format
         [Flags]
         internal enum PfxCertStoreFlags : int
         {
@@ -21,5 +22,6 @@ internal static partial class Interop
             PKCS12_INCLUDE_EXTENDED_PROPERTIES = 0x00000010,
             None                               = 0x00000000,
         }
+#pragma warning restore format
     }
 }

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+#pragma warning disable format
     [Flags]
     internal enum PollEvents : short
     {
@@ -17,6 +18,7 @@ internal static partial class Interop
         POLLHUP  = 0x0010,  // the file descriptor hung up
         POLLNVAL = 0x0020,  // the requested events were invalid
     }
+#pragma warning restore format
 
     internal struct PollEvent
     {

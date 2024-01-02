@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0060
+#pragma warning disable format // too many changes, not worth right now
 
 namespace System.Runtime.Intrinsics.Wasm
 {

@@ -18,6 +18,7 @@ namespace System.Security.Cryptography
     /// </summary>
     internal static partial class CapiHelper
     {
+#pragma warning disable format
         private static ReadOnlySpan<byte> RgbPubKey =>
         [
                 0x06, 0x02, 0x00, 0x00, 0x00, 0xa4, 0x00, 0x00,
@@ -32,6 +33,7 @@ namespace System.Security.Cryptography
                 0x20, 0x13, 0x71, 0x35, 0x65, 0xdf, 0x12, 0x20,
                 0xf5, 0xf5, 0xf5, 0xc1
         ];
+#pragma warning restore format
 
         /// <summary>
         /// Check to see if a better CSP than the one requested is available

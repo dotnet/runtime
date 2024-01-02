@@ -31,6 +31,7 @@ namespace System.Xml
         private OnXmlDictionaryReaderClose? _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
+#pragma warning disable format
         private static ReadOnlySpan<byte> CharTypeMap => // 256
             [
                 /*  0 (.) */
@@ -546,6 +547,7 @@ namespace System.Xml
                 /* FF (?) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
             ];
+#pragma warning restore format
 
         public XmlUTF8TextReader()
         {
