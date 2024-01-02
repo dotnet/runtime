@@ -27,25 +27,23 @@
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
     <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
 
+    <ILLinkSuppressionsXmlPrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlPrefix>
+    <ILLinkSuppressionsXml>$(ILLinkSuppressionsXmlPrefix).xml</ILLinkSuppressionsXml>
+    <ILLinkSuppressionsConfigurationSpecificXml>$(ILLinkSuppressionsXmlPrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXml>
+    <!-- Only run the trim analyzer on libraries which have been annotated. -->
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXml)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXml)'))">false</EnableTrimAnalyzer>
+
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
 
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
     <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
- 
-    <ILLinkSuppressionsXmlPrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlPrefix>
-    <ILLinkSuppressionsXml>$(ILLinkSuppressionsXmlPrefix).xml</ILLinkSuppressionsXml>
-    <ILLinkSuppressionsConfigurationSpecificXml>$(ILLinkSuppressionsXmlPrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXml>
-  </PropertyGroup>
-  <ItemGroup>
+   </PropertyGroup>
+
+   <ItemGroup>
     <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml"
                                        Condition="Exists('$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml')" />
-  </ItemGroup>
-  <PropertyGroup>
-    <!-- Only run the trim analyzer on libraries which have been annotated. -->
-    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXml)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXml)'))">false</EnableTrimAnalyzer>
-  </PropertyGroup>
-  <ItemGroup>
+
     <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsXml)"
                             Condition="Exists('$(ILLinkSuppressionsXml)')" />
     <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsConfigurationSpecificXml)"
@@ -217,13 +215,11 @@
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
+           IL2121: Unnecessary UnconditionalSuppressMessage attribute
            IL2025: Duplicate preserve of A in B
            IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
       -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2035</LinkerNoWarn>
-      <LinkerNoWarn>$(LinkerNoWarn);IL2025</LinkerNoWarn>
-      <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2121</LinkerNoWarn>
+      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2121;IL2025;IL2035</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
     </PropertyGroup>
