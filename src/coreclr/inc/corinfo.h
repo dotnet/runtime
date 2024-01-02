@@ -2050,6 +2050,17 @@ public:
     // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
     virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
 
+    // Notify EE about intent to rely on given MethodInfo in the current method
+    // EE returns false if we're not allowed to do so and the methodinfo may change.
+    // Example:
+    //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
+    //     and realizes that the call is a throw helper.
+    //  2) JIT marks the call as no-return so it doesn't need an epilogue and is padded with ret3/brk
+    //     in the current method (MyApp.dll)
+    //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
+    //     and the new version of the call is no longer a throw helper and does some work.
+    //  4) ret3/brk is now reachable in the MyApp.dll.
+    //
     virtual bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
