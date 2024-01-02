@@ -8628,7 +8628,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                           (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
 
-                    if (callInfo.kind == CORINFO_CALL &&
+                    if (!opts.compDbgCode && callInfo.kind == CORINFO_CALL &&
                         ((callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1) || // possible setter
                          (callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0)))   // possible getter
                     {
