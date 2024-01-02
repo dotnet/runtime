@@ -139,37 +139,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             await executor.Execute(async () =>
             {
-                var currentTID = Environment.CurrentManagedThreadId;
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay());
 
                 await WebWorkerTestHelper.Delay(1).ContinueWith(_ =>
                 {
                     // continue on the context of the target JS interop
-                    switch (executor.Type)
-                    {
-                        case ExecutorType.Main:
-                            Assert.Equal(1, Environment.CurrentManagedThreadId);
-                            Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                            Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                            break;
-                        case ExecutorType.JSWebWorker:
-                            Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                            Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                            Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                            break;
-                        case ExecutorType.NewThread:
-                            // it will synchronously continue on the UI thread
-                            Assert.Equal(1, Environment.CurrentManagedThreadId);
-                            Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
-                            Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                            break;
-                        case ExecutorType.ThreadPool:
-                            // it will synchronously continue on the UI thread
-                            Assert.Equal(1, Environment.CurrentManagedThreadId);
-                            Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
-                            Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                            break;
-                    }
+                    executor.AssertInteropThread();
                 }, TaskContinuationOptions.ExecuteSynchronously);
             });
         }
@@ -179,35 +154,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             await executor.Execute(async () =>
             {
-                var currentTID = Environment.CurrentManagedThreadId;
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay());
 
                 await WebWorkerTestHelper.Delay(1).ConfigureAwait(true);
-                // continue on captured context
-                switch (executor.Type)
-                {
-                    case ExecutorType.Main:
-                        Assert.Equal(1, Environment.CurrentManagedThreadId);
-                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.JSWebWorker:
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.NewThread:
-                        // the actual new thread is now blocked in .Wait() and so this is running on TP
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.ThreadPool:
-                        // it could migrate to any TP thread
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                }
+
+                executor.AssertAwaitCapturedContext();
             });
         }
 
@@ -231,35 +182,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             await executor.Execute(async () =>
             {
-                var currentTID = Environment.CurrentManagedThreadId;
                 executor.AssertTargetThread();
 
                 await Task.Delay(1).ConfigureAwait(true);
-                // continue on captured context
-                switch (executor.Type)
-                {
-                    case ExecutorType.Main:
-                        Assert.Equal(1, Environment.CurrentManagedThreadId);
-                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.JSWebWorker:
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.NewThread:
-                        // the actual new thread is now blocked in .Wait() and so this is running on TP
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.NotEqual(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.ThreadPool:
-                        // it could migrate to any TP thread
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                }
+
+                executor.AssertAwaitCapturedContext();
             });
         }
 
@@ -268,30 +195,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             await executor.Execute(async () =>
             {
-                var currentTID = Environment.CurrentManagedThreadId;
                 executor.AssertTargetThread();
 
                 await Task.Yield();
 
-                switch (executor.Type)
-                {
-                    case ExecutorType.Main:
-                        Assert.Equal(1, Environment.CurrentManagedThreadId);
-                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.JSWebWorker:
-                        Assert.Equal(currentTID, Environment.CurrentManagedThreadId);
-                        Assert.False(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.NewThread:
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                    case ExecutorType.ThreadPool:
-                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                        break;
-                }
+                executor.AssertAwaitCapturedContext();
             });
         }
 

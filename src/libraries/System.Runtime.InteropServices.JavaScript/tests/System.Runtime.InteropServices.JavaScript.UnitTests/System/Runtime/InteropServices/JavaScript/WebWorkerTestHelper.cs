@@ -173,6 +173,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     }
     public class Executor
     {
+        public int ExecutorTID;
+
         public ExecutorType Type;
 
         public Executor(ExecutorType type)
@@ -182,16 +184,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public Task Execute(Func<Task> job)
         {
+            Task wrapExecute()
+            {
+                ExecutorTID = Environment.CurrentManagedThreadId;
+                return job();
+            }
+
             switch (Type)
             {
                 case ExecutorType.Main:
-                    return WebWorkerTestHelper.RunOnMainAsync(job);
+                    return WebWorkerTestHelper.RunOnMainAsync(wrapExecute);
                 case ExecutorType.ThreadPool:
-                    return Task.Run(job);
+                    return Task.Run(wrapExecute);
                 case ExecutorType.NewThread:
-                    return WebWorkerTestHelper.RunOnNewThread(job);
+                    return WebWorkerTestHelper.RunOnNewThread(wrapExecute);
                 case ExecutorType.JSWebWorker:
-                    return JSWebWorker.RunAsync(job);
+                    return JSWebWorker.RunAsync(wrapExecute);
                 default:
                     throw new InvalidOperationException();
             }
@@ -214,6 +222,63 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             else
             {
                 Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+            }
+        }
+
+        public void AssertAwaitCapturedContext()
+        {
+            switch (Type)
+            {
+                case ExecutorType.Main:
+                    Assert.Equal(1, Environment.CurrentManagedThreadId);
+                    Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+                case ExecutorType.JSWebWorker:
+                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+                case ExecutorType.NewThread:
+                    // the actual new thread is now blocked in .Wait() and so this is running on TP
+                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+                case ExecutorType.ThreadPool:
+                    // it could migrate to any TP thread
+                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+            }
+        }
+
+        public void AssertInteropThread()
+        {
+            switch (Type)
+            {
+                case ExecutorType.Main:
+                    Assert.Equal(1, Environment.CurrentManagedThreadId);
+                    Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+                case ExecutorType.JSWebWorker:
+                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+                case ExecutorType.NewThread:
+                    // it will synchronously continue on the UI thread
+                    Assert.Equal(1, Environment.CurrentManagedThreadId);
+                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+                case ExecutorType.ThreadPool:
+                    // it will synchronously continue on the UI thread
+                    Assert.Equal(1, Environment.CurrentManagedThreadId);
+                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
+                    Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
             }
         }
 
