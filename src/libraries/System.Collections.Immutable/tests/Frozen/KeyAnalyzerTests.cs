@@ -233,9 +233,9 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void ContainsAnyLetters()
         {
-            Assert.True(KeyAnalyzer.ContainsAnyLetters("abc".AsSpan()));
-            Assert.True(KeyAnalyzer.ContainsAnyLetters("ABC".AsSpan()));
-            Assert.False(KeyAnalyzer.ContainsAnyLetters("123".AsSpan()));
+            Assert.True(KeyAnalyzer.ContainsAnyAsciiLetters("abc".AsSpan()));
+            Assert.True(KeyAnalyzer.ContainsAnyAsciiLetters("ABC".AsSpan()));
+            Assert.False(KeyAnalyzer.ContainsAnyAsciiLetters("123".AsSpan()));
             // note, must only pass ASCII to ContainsAnyLetters, anything else is a
             // Debug.Assert and would not have been called in the actual implementation
         }
