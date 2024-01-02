@@ -1275,14 +1275,14 @@ void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
 //
 // Remarks:
 //   This function will determine how the argument size needs to be rounded. On
-//   most ABIs all arguments are rounded to stack pointer size, but macOS arm64
+//   most ABIs all arguments are rounded to stack pointer size, but Apple arm64
 //   ABI is an exception as it allows packing some small arguments into the
 //   same stack slot.
 //
 void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa)
 {
     unsigned roundedByteSize;
-    if (compMacOsArm64Abi())
+    if (compAppleArm64Abi())
     {
         // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
         if (isStruct && !isFloatHfa)
@@ -7487,13 +7487,12 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 //    isInvariant - The indNode should also be marked as invariant
 //
 // Return Value:
-//    Returns a GT_IND node representing value at the address provided by 'value'
+//    Returns a GT_IND node representing value at the address provided by 'addr'
 //
 // Notes:
 //    The GT_IND node is marked as non-faulting
 //    If the indType is GT_REF we also mark the indNode as GTF_GLOB_REF
 //
-
 GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant)
 {
     GenTree*     addrNode   = gtNewIconHandleNode(addr, iconFlags);
@@ -10708,6 +10707,57 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
                      : ((flags & GTF_SPILLED) ? 'z' : ((flags & GTF_SPILL) ? 'Z' : '-')));
 
     return charsDisplayed;
+}
+
+/* static */
+const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
+{
+    GenTreeFlags handleKind = flags & GTF_ICON_HDL_MASK;
+    switch (handleKind)
+    {
+        case 0:
+            return "";
+        case GTF_ICON_SCOPE_HDL:
+            return "GTF_ICON_SCOPE_HDL";
+        case GTF_ICON_CLASS_HDL:
+            return "GTF_ICON_CLASS_HDL";
+        case GTF_ICON_METHOD_HDL:
+            return "GTF_ICON_METHOD_HDL";
+        case GTF_ICON_FIELD_HDL:
+            return "GTF_ICON_FIELD_HDL";
+        case GTF_ICON_STATIC_HDL:
+            return "GTF_ICON_STATIC_HDL";
+        case GTF_ICON_STR_HDL:
+            return "GTF_ICON_STR_HDL";
+        case GTF_ICON_OBJ_HDL:
+            return "GTF_ICON_OBJ_HDL";
+        case GTF_ICON_CONST_PTR:
+            return "GTF_ICON_CONST_PTR";
+        case GTF_ICON_GLOBAL_PTR:
+            return "GTF_ICON_GLOBAL_PTR";
+        case GTF_ICON_VARG_HDL:
+            return "GTF_ICON_VARG_HDL";
+        case GTF_ICON_PINVKI_HDL:
+            return "GTF_ICON_PINVKI_HDL";
+        case GTF_ICON_TOKEN_HDL:
+            return "GTF_ICON_TOKEN_HDL";
+        case GTF_ICON_TLS_HDL:
+            return "GTF_ICON_TLS_HDL";
+        case GTF_ICON_FTN_ADDR:
+            return "GTF_ICON_FTN_ADDR";
+        case GTF_ICON_CIDMID_HDL:
+            return "GTF_ICON_CIDMID_HDL";
+        case GTF_ICON_BBC_PTR:
+            return "GTF_ICON_BBC_PTR";
+        case GTF_ICON_STATIC_BOX_PTR:
+            return "GTF_ICON_STATIC_BOX_PTR";
+        case GTF_ICON_FIELD_SEQ:
+            return "GTF_ICON_FIELD_SEQ";
+        case GTF_ICON_STATIC_ADDR_PTR:
+            return "GTF_ICON_STATIC_ADDR_PTR";
+        default:
+            return "ILLEGAL!";
+    }
 }
 
 #ifdef TARGET_X86
@@ -18560,6 +18610,32 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             break;
         }
 
+        case CORINFO_HELP_BOX:
+        case CORINFO_HELP_BOX_NULLABLE:
+        {
+            GenTree* typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            if (typeArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                const bool isNullableHelper = (helper == CORINFO_HELP_BOX_NULLABLE);
+
+                objClass = gtGetHelperArgClassHandle(typeArg);
+                if ((objClass != NO_CLASS_HANDLE) && isNullableHelper)
+                {
+                    // Nullable<T> is boxed as just T (via CORINFO_HELP_BOX_NULLABLE)
+                    objClass = info.compCompHnd->getTypeForBox(objClass);
+                }
+
+                if (objClass != NO_CLASS_HANDLE)
+                {
+                    // CORINFO_HELP_BOX_NULLABLE may return null
+                    // CORINFO_HELP_BOX always returns non-null
+                    *pIsNonNull = !isNullableHelper;
+                    *pIsExact   = true;
+                }
+            }
+        }
+        break;
+
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTARRAY:
@@ -18823,7 +18899,7 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 // Arguments:
 //    comp    - The Compiler instance
 //    pArr    - [out] parameter for the tree representing the array instance
-//              (either an array object pointer, or perhaps a byref to the some element)
+//              (either an array object pointer, or perhaps a byref to some element)
 //    pInxVN  - [out] parameter for the value number representing the index
 //
 // Return Value:

@@ -18,12 +18,6 @@ namespace System.Runtime.InteropServices.JavaScript
             jsObj?.ReleaseInFlight();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RegisterCSOwnedObject(JSObject proxy)
-        {
-            JSHostImplementation.ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-        }
-
         public static MarshalType GetMarshalTypeFromType(Type type)
         {
             if (type is null)

@@ -75,7 +75,7 @@ PhaseStatus StackLevelSetter::DoPhase()
 
             BasicBlock* const block = add->acdDstBlk;
             JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
-            block->bbFlags &= ~BBF_DONT_REMOVE;
+            block->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(block, /* unreachable */ true);
             madeChanges = true;
         }
@@ -193,6 +193,10 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_DIV:
         case GT_UDIV:
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        case GT_MOD:
+        case GT_UMOD:
+#endif
         {
             ExceptionSetFlags exSetFlags = node->OperExceptions(comp);
 

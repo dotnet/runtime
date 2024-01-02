@@ -239,49 +239,38 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL2(Object*, MarshalNative::GetDelegateForFunctionPointerInternal, LPVOID FPtr, ReflectClassBaseObject* refTypeUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(refTypeUNSAFE != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    OBJECTREF refDelegate = NULL;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF) refTypeUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refDelegate);
+    GCX_COOP();
 
     // Retrieve the method table from the RuntimeType. We already verified in managed
-    // code that the type was a RuntimeType that represented a delegate. Because type handles
-    // for delegates must have a method table, we are safe in telling prefix to assume it below.
-    MethodTable* pMT = refType->GetType().GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-    refDelegate = COMDelegate::ConvertToDelegate(FPtr, pMT);
+    // code that the type was a RuntimeType that represented a delegate.
+    MethodTable* pMT = t.AsTypeHandle().AsMethodTable();
+    OBJECTREF refDelegate = COMDelegate::ConvertToDelegate(FPtr, pMT);
+    retDelegate.Set(refDelegate);
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refDelegate);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(LPVOID, MarshalNative::GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE)
+extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    LPVOID pFPtr = NULL;
+    PVOID pFPtr = NULL;
 
-    OBJECTREF refDelegate = (OBJECTREF) refDelegateUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refDelegate);
+    BEGIN_QCALL;
 
-    pFPtr = COMDelegate::ConvertToCallback(refDelegate);
+    GCX_COOP();
+    pFPtr = COMDelegate::ConvertToCallback(d.Get());
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return pFPtr;
 }
-FCIMPLEND
 
 #ifdef _DEBUG
 namespace

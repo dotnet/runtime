@@ -68,7 +68,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                              ssize_t*          cns          = nullptr)
 {
     // NOTE: caller is expected to check that a block has multiple statements or not
-    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && ((block->bbFlags & BBF_DONT_REMOVE) == 0))
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() != nullptr) && !block->HasFlag(BBF_DONT_REMOVE))
     {
         const GenTree* rootNode = block->lastStmt()->GetRootNode();
         assert(rootNode->OperIs(GT_JTRUE));
@@ -95,10 +95,10 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 }
 
                 *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->Next() : block->GetJumpDest();
-                *blockIfFalse = *isReversed ? block->GetJumpDest() : block->Next();
+                *blockIfTrue  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
+                *blockIfFalse = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
 
-                if (block->JumpsToNext() || block->HasJumpTo(block))
+                if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
                     // Ignoring weird cases like a condition jumping to itself
                     return false;
@@ -320,7 +320,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert(isTest);
 
     // Convert firstBlock to a switch block
-    firstBlock->SetSwitchKindAndTarget(new (this, CMK_BasicBlock) BBswtDesc);
+    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -342,19 +342,17 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     fgRemoveRefPred(blockToRemove, firstBlock);
     while (!lastBlock->NextIs(blockToRemove))
     {
-        BasicBlock* nextBlock = blockToRemove->Next();
-        fgRemoveBlock(blockToRemove, true);
-        blockToRemove = nextBlock;
+        blockToRemove = fgRemoveBlock(blockToRemove, true);
     }
 
     const auto jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
-    fgHasSwitch                             = true;
-    firstBlock->GetJumpSwt()->bbsCount      = jumpCount + 1;
-    firstBlock->GetJumpSwt()->bbsHasDefault = true;
-    firstBlock->GetJumpSwt()->bbsDstTab     = jmpTab;
+    fgHasSwitch                                   = true;
+    firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
+    firstBlock->GetSwitchTargets()->bbsHasDefault = true;
+    firstBlock->GetSwitchTargets()->bbsDstTab     = jmpTab;
     firstBlock->SetNext(isReversed ? blockIfTrue : blockIfFalse);
 
     // Splitting doesn't work well with jump-tables currently

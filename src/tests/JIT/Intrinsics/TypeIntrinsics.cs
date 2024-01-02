@@ -7,12 +7,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public partial class Program
 {
     private static int _errors = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         IsTrue (typeof(byte).IsValueType);
         IsTrue (typeof(int).IsValueType);

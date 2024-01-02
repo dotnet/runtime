@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
+using System.Diagnostics.CodeAnalysis;
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -16,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void StructSize()
         {
-            Assert.Equal(16, sizeof(JSMarshalerArgument));
+            Assert.Equal(32, sizeof(JSMarshalerArgument));
         }
 
         [Fact]
@@ -378,7 +379,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(MarshalObjectArrayCasesThrow))]
-        public unsafe void JsImportObjectArrayThrows(object[]? expected)
+        public void JsImportObjectArrayThrows(object[]? expected)
         {
             Assert.Throws<NotSupportedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
         }
@@ -1959,15 +1960,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #endregion
 
-        private void JsExportTest<T>(T value
+        private void JsExportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
         , Func<T, string, T> invoke, string echoName, string jsType, string? jsClass = null)
         {
             T res;
             res = invoke(value, echoName);
-            Assert.Equal(value, res);
+            Assert.Equal<T>(value, res);
         }
 
-        private void JsImportTest<T>(T value
+        private void JsImportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
             , Action<T> store1
             , Func<T> retrieve1
             , Func<T, T> echo1

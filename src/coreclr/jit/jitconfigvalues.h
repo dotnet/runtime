@@ -160,10 +160,6 @@ CONFIG_INTEGER(JitStackChecks, W("JitStackChecks"), 0)
 CONFIG_INTEGER(JitStress, W("JitStress"), 0) // Internal Jit stress mode: 0 = no stress, 2 = all stress, other = vary
                                              // stress based on a hash of the method and this value
 CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0)               // Internal Jit stress mode
-CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Internal Jit stress mode: decimal bias value
-                                                                       // between (0,100) to perform CSE on a candidate.
-                                                                       // 100% = All CSEs. 0% = 0 CSE. (> 100) means no
-                                                                       // stress.
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
@@ -222,9 +218,11 @@ CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgr
                                                    // phases
 CONFIG_STRING(JitDumpFgPrePhase,
               W("JitDumpFgPrePhase")) // Same as JitDumpFgPhase, but specifies to dump pre-phase, not post-phase.
-CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)     // 0 == dump XML format; non-zero == dump DOT format
-CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)       // 0 == no EH regions; non-zero == include EH regions
-CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0) // 0 == no loop regions; non-zero == include loop regions
+CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)           // 0 == dump XML format; non-zero == dump DOT format
+CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)             // 0 == no EH regions; non-zero == include EH regions
+CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0)       // 0 == no loop regions; non-zero == include loop regions
+CONFIG_INTEGER(JitDumpFgOldLoops, W("JitDumpFgOldLoops"), 0) // 0 == no old loop regions; non-zero == include old loop
+                                                             // regions
 
 CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't constrain to mostly linear layout;
                                                                    // non-zero == force mostly lexical block
@@ -245,6 +243,8 @@ CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot")) // Internal Jit
                                                                  // given set of stress mode names, e.g. STRESS_REGS,
                                                                  // STRESS_TAILCALL
 CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit stress mode
+CONFIG_STRING(JitDumpEmitUnitTests, W("JitDumpEmitUnitTests"))   // Dump unit tests from Emit
+
 ///
 /// JIT Hardware Intrinsics
 ///
@@ -402,6 +402,11 @@ CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
 
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
+
+// When nonzero, choose CSE candidates randomly, with probability
+// specified by the (decimal) value of the config
+CONFIG_INTEGER(JitRandomCSE, W("JitRandomCSE"), 0)
+
 #endif
 
 ///

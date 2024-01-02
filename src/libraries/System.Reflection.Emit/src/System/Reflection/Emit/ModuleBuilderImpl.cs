@@ -21,6 +21,7 @@ namespace System.Reflection.Emit
         private readonly Dictionary<MemberInfo, EntityHandle> _memberReferences = new();
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
         private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _ctorReferences = new();
+        private readonly Guid _moduleVersionId;
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
         private List<CustomAttributeWrapper>? _customAttributes;
         private int _nextTypeDefRowId = 1;
@@ -28,6 +29,7 @@ namespace System.Reflection.Emit
         private int _nextFieldDefRowId = 1;
         private int _nextParameterRowId = 1;
         private int _nextPropertyRowId = 1;
+        private int _nextEventRowId = 1;
         private bool _coreTypesFullyPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
@@ -39,6 +41,7 @@ namespace System.Reflection.Emit
             _name = name;
             _metadataBuilder = builder;
             _assemblyBuilder = assemblyBuilder;
+            _moduleVersionId = Guid.NewGuid();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -108,7 +111,7 @@ namespace System.Reflection.Emit
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
                 generation: 0,
                 moduleName: _metadataBuilder.GetOrAddString(_name),
-                mvid: _metadataBuilder.GetOrAddGuid(Guid.NewGuid()),
+                mvid: _metadataBuilder.GetOrAddGuid(_moduleVersionId),
                 encId: default,
                 encBaseId: default);
 
@@ -155,24 +158,17 @@ namespace System.Reflection.Emit
                     _metadataBuilder.AddTypeLayout(typeHandle, (ushort)typeBuilder.PackingSize, (uint)typeBuilder.Size);
                 }
 
-                if (typeBuilder._interfaces != null)
-                {
-                    foreach (Type iface in typeBuilder._interfaces)
-                    {
-                        _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
-                        // TODO: need to add interface mapping between interface method and implemented method
-                    }
-                }
-
                 if (typeBuilder.DeclaringType != null)
                 {
                     _metadataBuilder.AddNestedType(typeHandle, (TypeDefinitionHandle)GetTypeHandle(typeBuilder.DeclaringType));
                 }
 
+                WriteInterfaceImplementations(typeBuilder, typeHandle);
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
                 WriteProperties(typeBuilder);
                 WriteFields(typeBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
+                WriteEvents(typeBuilder);
             }
 
             // Now write all generic parameters in order
@@ -187,6 +183,68 @@ namespace System.Reflection.Emit
             foreach (GenericTypeParameterBuilderImpl param in genericParams)
             {
                 AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
+            }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Members are retrieved from internal cache")]
+        private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
+        {
+            if (typeBuilder._interfaces != null)
+            {
+                foreach (Type iface in typeBuilder._interfaces)
+                {
+                    _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
+                }
+            }
+
+            // Even there were no interfaces implemented it could have an override for base type abstract method
+            if (typeBuilder._methodOverrides != null)
+            {
+                foreach (List<(MethodInfo ifaceMethod, MethodInfo targetMethod)> mapList in typeBuilder._methodOverrides.Values)
+                {
+                    foreach ((MethodInfo ifaceMethod, MethodInfo targetMethod) pair in mapList)
+                    {
+                        _metadataBuilder.AddMethodImplementation(typeHandle, GetMemberHandle(pair.targetMethod), GetMemberHandle(pair.ifaceMethod));
+                    }
+                }
+            }
+        }
+
+        private void WriteEvents(TypeBuilderImpl typeBuilder)
+        {
+            if (typeBuilder._eventDefinitions.Count == 0)
+            {
+                return;
+            }
+
+            AddEventMap(typeBuilder._handle, typeBuilder._firstEventToken);
+            foreach (EventBuilderImpl eventBuilder in typeBuilder._eventDefinitions)
+            {
+                EventDefinitionHandle eventHandle = AddEventDefinition(eventBuilder, GetTypeHandle(eventBuilder.EventType));
+                WriteCustomAttributes(eventBuilder._customAttributes, eventHandle);
+
+                if (eventBuilder._addOnMethod is MethodBuilderImpl aMb)
+                {
+                    AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Adder, aMb._handle);
+                }
+
+                if (eventBuilder._raiseMethod is MethodBuilderImpl rMb)
+                {
+                    AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Raiser, rMb._handle);
+                }
+
+                if (eventBuilder._removeMethod is MethodBuilderImpl remMb)
+                {
+                    AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Remover, remMb._handle);
+                }
+
+                if (eventBuilder._otherMethods != null)
+                {
+                    foreach (MethodBuilderImpl method in eventBuilder._otherMethods)
+                    {
+                        AddMethodSemantics(eventHandle, MethodSemanticsAttributes.Other, method._handle);
+                    }
+                }
             }
         }
 
@@ -252,15 +310,25 @@ namespace System.Reflection.Emit
             }
         }
 
+        private void PopulateEventDefinitionHandles(List<EventBuilderImpl> eventDefinitions)
+        {
+            foreach (EventBuilderImpl eventBuilder in eventDefinitions)
+            {
+                eventBuilder._handle = MetadataTokens.EventDefinitionHandle(_nextEventRowId++);
+            }
+        }
+
         internal void PopulateTypeAndItsMembersTokens(TypeBuilderImpl typeBuilder)
         {
             typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
             typeBuilder._firstMethodToken = _nextMethodDefRowId;
             typeBuilder._firstFieldToken = _nextFieldDefRowId;
             typeBuilder._firstPropertyToken = _nextPropertyRowId;
+            typeBuilder._firstEventToken = _nextEventRowId;
             PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
             PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
             PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
+            PopulateEventDefinitionHandles(typeBuilder._eventDefinitions);
         }
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
@@ -411,13 +479,23 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    typeHandle = AddTypeReference(type, GetAssemblyReference(type.Assembly));
+                    typeHandle = AddTypeReference(type, GetResolutionScopeHandle(type));
                 }
 
                 _typeReferences.Add(type, typeHandle);
             }
 
             return typeHandle;
+        }
+
+        private EntityHandle GetResolutionScopeHandle(Type type)
+        {
+            if (type.IsNested)
+            {
+                return GetTypeReferenceOrSpecificationHandle(type.DeclaringType!);
+            }
+
+            return GetAssemblyReference(type.Assembly);
         }
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
@@ -491,7 +569,7 @@ namespace System.Reflection.Emit
             if (!_assemblyReferences.TryGetValue(assembly, out var handle))
             {
                 AssemblyName aName = assembly.GetName();
-                handle = AddAssemblyReference(aName.Name!, aName.Version, aName.CultureName, aName.GetPublicKeyToken(), aName.Flags, aName.ContentType);
+                handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, aName.GetPublicKeyToken(), aName.Flags, aName.ContentType);
                 _assemblyReferences.Add(assembly, handle);
             }
 
@@ -528,6 +606,17 @@ namespace System.Reflection.Emit
                 name: _metadataBuilder.GetOrAddString(property.Name),
                 signature: _metadataBuilder.GetOrAddBlob(signature));
 
+        private EventDefinitionHandle AddEventDefinition(EventBuilderImpl eventBuilder, EntityHandle eventType) =>
+            _metadataBuilder.AddEvent(
+                attributes: eventBuilder.Attributes,
+                name: _metadataBuilder.GetOrAddString(eventBuilder.Name),
+                type: eventType);
+
+        private void AddEventMap(TypeDefinitionHandle typeHandle, int firstEventToken) =>
+            _metadataBuilder.AddEventMap(
+                declaringType: typeHandle,
+                eventList: MetadataTokens.EventDefinitionHandle(firstEventToken));
+
         private void AddPropertyMap(TypeDefinitionHandle typeHandle, int firstPropertyToken) =>
             _metadataBuilder.AddPropertyMap(
                 declaringType: typeHandle,
@@ -557,9 +646,9 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(Type type, AssemblyReferenceHandle parent) =>
+        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope) =>
             _metadataBuilder.AddTypeReference(
-                resolutionScope: parent,
+                resolutionScope: resolutionScope,
                 @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
                 name: _metadataBuilder.GetOrAddString(type.Name));
 
@@ -601,10 +690,10 @@ namespace System.Reflection.Emit
                 name: parameter.Name != null ? _metadataBuilder.GetOrAddString(parameter.Name) : default,
                 sequenceNumber: parameter.Position);
 
-        private AssemblyReferenceHandle AddAssemblyReference(string name, Version? version, string? culture,
+        private AssemblyReferenceHandle AddAssemblyReference(string? name, Version? version, string? culture,
             byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>
             _metadataBuilder.AddAssemblyReference(
-                name: _metadataBuilder.GetOrAddString(name),
+                name: name == null ? default : _metadataBuilder.GetOrAddString(name),
                 version: version ?? new Version(0, 0, 0, 0),
                 culture: (culture == null) ? default : _metadataBuilder.GetOrAddString(value: culture),
                 publicKeyOrToken: (publicKeyToken == null) ? default : _metadataBuilder.GetOrAddBlob(publicKeyToken), // reference has token, not full public key
@@ -658,6 +747,7 @@ namespace System.Reflection.Emit
         public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
         public override Assembly Assembly => _assemblyBuilder;
+        public override Guid ModuleVersionId => _moduleVersionId;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
 
         public override int GetFieldMetadataToken(FieldInfo field)

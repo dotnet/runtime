@@ -15,7 +15,7 @@ The WebAssembly version of .NET exposes a number of MSBuild properties that can 
 
 For a support matrix of WebAssembly features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/). †
 
-For the full set of MSBuild properties that configure a client application's use of these features, see the top of [WasmApp.targets](./build/WasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
+For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.targets](./build/BrowserWasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
 
 Some of these properties require a unique build of the runtime, which means that changing them will produce a different set of `.wasm` and `.js` files for your application. Some of these properties also require you to install the [wasm-tools workload](#wasm-tools-workload).
 

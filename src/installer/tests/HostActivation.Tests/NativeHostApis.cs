@@ -19,39 +19,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sharedTestState = fixture;
         }
 
-        [Fact]
-        public void Breadcrumb_thread_finishes_when_app_closes_normally()
-        {
-            var fixture = sharedTestState.PortableAppFixture;
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec(appDll)
-                .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
-        }
-
-        [Fact]
-        public void Breadcrumb_thread_does_not_finish_when_app_has_unhandled_exception()
-        {
-            var fixture = sharedTestState.PortableAppFixture;
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec(appDll, "throw_exception")
-                .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
-                .EnableTracingAndCaptureOutputs()
-                .Execute(expectedToFail: true)
-                .Should().Fail()
-                .And.HaveStdErrContaining("Unhandled exception.")
-                .And.HaveStdErrContaining("System.Exception: Goodbye World")
-                .And.NotHaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
-        }
-
         private class SdkResolutionFixture
         {
             private readonly TestApp _app;
@@ -516,28 +483,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public class SharedTestState : IDisposable
         {
             public TestApp HostApiInvokerApp { get; }
-            public TestProjectFixture PortableAppFixture { get; }
-
-            public string BreadcrumbLocation { get; }
 
             public SharedTestState()
             {
                 HostApiInvokerApp = TestApp.CreateFromBuiltAssets("HostApiInvokerApp");
 
-                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectoriesProvider.Default)
-                    .EnsureRestored()
-                    .PublishProject();
-
                 if (!OperatingSystem.IsWindows())
                 {
-                    // On non-Windows breadcrumbs are only written if the breadcrumb directory already exists,
-                    // so we explicitly create a directory for breadcrumbs
-                    BreadcrumbLocation = Path.Combine(
-                        PortableAppFixture.TestProject.OutputDirectory,
-                        "opt",
-                        "corebreadcrumbs");
-                    Directory.CreateDirectory(BreadcrumbLocation);
-
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
                     File.Copy(Binaries.HostFxr.FilePath, Path.Combine(HostApiInvokerApp.Location, Binaries.HostFxr.FileName));
                 }
@@ -546,7 +498,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public void Dispose()
             {
                 HostApiInvokerApp?.Dispose();
-                PortableAppFixture.Dispose();
             }
         }
     }

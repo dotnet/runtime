@@ -73,9 +73,9 @@
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.props"
+  <Import Project="$(WasiProjectRoot)build\WasiApp.props"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
-  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.InTree.targets"
+  <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
@@ -97,10 +97,10 @@
 
       <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <!--
-        Do this *after* importing WasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
+        Do this *after* importing BrowserWasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
         that we want to force this value to zero.
 
-        WasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
+        BrowserWasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
         we explicitly want to:
         1. build with DebuggerSupport=true so the debugger attributes are preserved by the linker;
         2. *debugging* is disabled at run time so the interpreter optimizations don't get disabled.

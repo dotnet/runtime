@@ -89,6 +89,8 @@
                              message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
                     <keyword name="ProfilerKeyword" mask="0x20000000000"
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
+                    <keyword name="WaitHandleKeyword" mask="0x40000000000"
+                             message="$(string.RuntimePublisher.WaitHandleKeywordMessage)" symbol="CLR_WAITHANDLE_KEYWORD"/>
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -453,7 +455,13 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                <!--Next available ID is 39-->
+                    <task name="WaitHandleWait" symbol="CLR_WAITHANDLEWAIT_TASK"
+                          value="39" eventGUID="{E90049D8-8AB8-4799-B072-EEF41265BCA4}"
+                          message="$(string.RuntimePublisher.WaitHandleWaitTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 40-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -503,6 +511,10 @@
                     <valueMap name="ContentionFlagsMap">
                         <map value="0x0" message="$(string.RuntimePublisher.Contention.ManagedMapMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.Contention.NativeMapMessage)"/>
+                    </valueMap>
+                    <valueMap name="WaitHandleWaitSourceMap">
+                        <map value="0x0" message="$(string.RuntimePublisher.WaitHandleWaitSource.UnknownMapMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.WaitHandleWaitSource.MonitorWaitMapMessage)"/>
                     </valueMap>
                     <valueMap name="TailCallTypeMap">
                         <map value="0x0" message="$(string.RuntimePublisher.TailCallType.OptimizedMapMessage)"/>
@@ -1772,6 +1784,30 @@
                                 <ClrInstanceID> %2 </ClrInstanceID>
                                 <DurationNs> %3 </DurationNs>
                             </Contention>
+                        </UserData>
+                    </template>
+
+                    <template tid="WaitHandleWaitStart">
+                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
+                        <data name="AssociatedObjectID" inType="win:Pointer" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <WaitHandleWaitStart xmlns="myNs">
+                                <WaitSource> %1 </WaitSource>
+                                <AssociatedObjectID> %2 </AssociatedObjectID>
+                                <ClrInstanceID> %3 </ClrInstanceID>
+                            </WaitHandleWaitStart>
+                        </UserData>
+                    </template>
+
+                    <template tid="WaitHandleWaitStop">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <WaitHandleWaitStop xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                            </WaitHandleWaitStop>
                         </UserData>
                     </template>
 
@@ -3696,7 +3732,6 @@
                            task="Contention"
                            symbol="ContentionLockCreated" message="$(string.RuntimePublisher.ContentionLockCreatedEventMessage)"/>
 
-
                     <!-- CLR Stack events -->
                     <event value="82" version="0" level="win:LogAlways"  template="ClrStackWalk"
                            keywords ="StackKeyword"  opcode="CLRStackWalk"
@@ -4210,6 +4245,17 @@
                     <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpoint"
                            keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
                            message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
+
+                    <!-- Wait Handle events -->
+                    <event value="301" version="0" level="win:Verbose" template="WaitHandleWaitStart"
+                           keywords="WaitHandleKeyword" opcode="win:Start"
+                           task="WaitHandleWait"
+                           symbol="WaitHandleWaitStart" message="$(string.RuntimePublisher.WaitHandleWaitStartEventMessage)"/>
+
+                    <event value="302" version="0" level="win:Verbose" template="WaitHandleWaitStop"
+                           keywords="WaitHandleKeyword" opcode="win:Stop"
+                           task="WaitHandleWait"
+                           symbol="WaitHandleWaitStop" message="$(string.RuntimePublisher.WaitHandleWaitStopEventMessage)"/>
 
                 </events>
             </provider>
@@ -8568,6 +8614,8 @@
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
+                <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
+                <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="ClrInstanceID=%1"/>
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -8742,6 +8790,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
+                <string id="RuntimePublisher.WaitHandleWaitTaskMessage" value="WaitHandleWait" />
 
                 <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
@@ -8934,6 +8983,8 @@
                 <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
                 <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
                 <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
+                <string id="RuntimePublisher.WaitHandleWaitSource.UnknownMapMessage" value="Unknown" />
+                <string id="RuntimePublisher.WaitHandleWaitSource.MonitorWaitMapMessage" value="MonitorWait" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
@@ -9103,6 +9154,7 @@
                 <string id="RundownPublisher.PerfTrackRundownKeywordMessage" value="PerfTrack" />
                 <string id="RundownPublisher.StackKeywordMessage" value="Stack" />
                 <string id="RundownPublisher.CompilationKeywordMessage" value="Compilation" />
+                <string id="RuntimePublisher.WaitHandleKeywordMessage" value="WaitHandle" />
 
                 <string id="PrivatePublisher.GCPrivateKeywordMessage" value="GC" />
                 <string id="PrivatePublisher.StartupKeywordMessage" value="Startup" />
