@@ -462,13 +462,40 @@ Major identified concerns are
 
 ## Microbenchmarks
 
-1. Async computation of fibonacci via recursive algorithm, with and without various amounts of yielding
-2. Suspension with stacks of various depths
-3. Suspension with stacks where the operation of the task operates in a sawtooth pattern.
-For instance, suspend first at depth 20, then reach depth 30, return to depth 10 and suspend, reach depth 30, return to depth 10 and suspend, etc.
-Measure the impact of suspending with greater and lesser depths.
-4. Measure the performance of thunks to async2 functions which do effectively nothing.
-5. Benchmark the effect of long lived suspended state vs short lived suspended state
+# Benchmark of minimum call cost between Async and Async2 functions
+
+The performance of interaction between the Async and Async2 implementation strategies has come up as a concern in developing a replacement strategy for the existing async model.
+Given that this proposal suggests building a model which allows both to co-exist within the same application, understanding the cost of such calls is important.
+This benchmark counts the iterations per second of non-suspending calls between various methods implemented as either async or async2.
+Data for this benchmark is available for both the JIT generated state machine model, as well as the unwinder based model.
+The data was gathered using the `src/tests/Loader/async/async-mincallcost-microbench.csproj` project.
+
+This benchmark works by an async method calling into another mostly empty async method in a loop.
+The benchmark operates for a fixed period of time, measuring the number of iterations.
+The caller method is always a `Task<long>` returning method, and the mostly empty method, reads a global variable, and then awaits the result of a call to `Task.Yield()` if that global variable is `0`. (The variable never has the value '0'.) 
+
+![MinCallCostGraph](async-mincallcost.svg)
+
+In this graph, you can see that the performance of interaction between the async1 and async2 models are not problematically slow.
+Indeed, the performance of async2 code calling async1 functions is actually greater than the performance of async1 calling async1.
+In addition, the cost to call an async2 function from another async2 function is substantially less (even if the async2 function being called needs to save the context in order to maintain full similarity of behavior with async1.)
+Here we can see the cost of inlining vs not inlining, as there is a meaningful reduction in iteration count.
+In addition, the async2 method with Context Save is also unable to inline at the current time, and also performs work simulating the additional work that the async2 logic would need to implement to fully replicate async1 behavior around async locals, and synchronization context handling.
+
+NOTES: 
+- Cost of calls from async1 method to async2 method are shown for the JIT state machine model only.
+The performance of the calls from async1 to async2 for the unwinder model were substantially slower, although if we choose that as the implementation style it is expected they could be made at least as fast as the state machine model.
+- Measurement of calls from async1 to async 2 non-inlineable and with context save were not measured.
+It is expected that in any final implementation there would be optimizations in place in order to ensure that the cost from async1 to either of these two target methods would be the same as calls to any Async2 method.
+
+# Raw data from mincallcost benchmark
+| Caller | Async1 Task returning method | Async1 ValueTask returning method | Async2 Method | Non-inlineable Async2 method | Async2 Method with context save |
+| ------ | ----- | ------ | ---- | ---- | --- |
+| Async1 Task returning method | 117,232,360 | 129,758,886 | 116,365,186 (StateMachine), 76,280,435 (Unwinder) | N/A | N/A |
+| Async2 JIT State machine | 139,952,617 | 145,961,918 | 500,753,190 | 369,495,926 | 220,148,034 |
+| Async2 Unwinder Model | 142,012,835 | 141,336,005 | 500,148,939 | 380,632,094 | 238,234,481 |
+
+
 # Benchmark the performance of EH at various depths.
 
 The performance of EH within the existing async programming model is highly problematic, and has caused customers issues.
