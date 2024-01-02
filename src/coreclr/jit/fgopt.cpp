@@ -5990,7 +5990,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             {
                 if (bPrev)
                 {
-                    assert(block->IsLast() == false);
+                    assert(!block->IsLast());
                     bPrev->SetNext(block->Next());
                 }
                 else
