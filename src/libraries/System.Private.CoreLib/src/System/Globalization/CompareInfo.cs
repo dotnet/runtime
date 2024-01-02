@@ -1450,11 +1450,6 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
-#if TARGET_BROWSER
-            // JS cannot create locale-sensitive sort key, use invaraint functions instead.
-            GlobalizationMode.Hybrid ?
-                InvariantCreateSortKey(source, options) :
-#endif
                 IcuCreateSortKey(source, options);
 
         /// <summary>
@@ -1494,10 +1489,6 @@ namespace System.Globalization
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetSortKey(source, destination, options) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                InvariantGetSortKey(source, destination, options) :
-#endif
                 IcuGetSortKey(source, destination, options);
 
         /// <summary>
@@ -1531,10 +1522,6 @@ namespace System.Globalization
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-              InvariantGetSortKeyLength(source, options) :
-#endif
               IcuGetSortKeyLength(source, options);
 
         public override bool Equals([NotNullWhen(true)] object? value)
@@ -1572,22 +1559,12 @@ namespace System.Globalization
                 // Pass the flags down to NLS or ICU unless we're running in invariant
                 // mode, at which point we normalize the flags to Ordinal[IgnoreCase].
 
-#if TARGET_BROWSER
-                if (!GlobalizationMode.Invariant && !GlobalizationMode.Hybrid)
-                // JS cannot create locale-sensitive HashCode, use invaraint functions instead
-#else
                 if (!GlobalizationMode.Invariant)
-#endif
                 {
                     return GetHashCodeOfStringCore(source, options);
                 }
 
-                if ((options & CompareOptions.IgnoreCase) == 0)
-                {
-                    return string.GetHashCode(source);
-                }
-
-                return string.GetHashCodeOrdinalIgnoreCase(source);
+                return InvariantGetHashCode(source, options);
             }
             else
             {

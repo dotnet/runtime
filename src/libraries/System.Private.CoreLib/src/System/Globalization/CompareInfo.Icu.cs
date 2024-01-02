@@ -692,6 +692,12 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
+#if TARGET_BROWSER
+            // JS cannot create locale-sensitive sort key, use invaraint functions instead.
+            if (GlobalizationMode.Hybrid)
+                return InvariantCreateSortKey(source, options);
+#endif
+
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
@@ -743,6 +749,11 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+                return InvariantGetSortKey(source, destination, options);
+#endif
+
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
             int actualSortKeyLength;
@@ -784,6 +795,11 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+              return InvariantGetSortKeyLength(source, options);
+#endif
 
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
@@ -832,6 +848,12 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+#if TARGET_BROWSER
+            // JS cannot create locale-sensitive HashCode, use invaraint functions instead
+            if (GlobalizationMode.Hybrid)
+                return InvariantGetHashCode(source, options);
+#endif
 
             // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
             // the solution is to try to fill the sort key in a temporary buffer of size equal 4 x string length
