@@ -332,12 +332,22 @@ namespace System.Reflection
 #endif // CORECLR
             try
             {
+                // Avoid a first-chance exception by checking for file presence first.
+                // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
+#if !TARGET_BROWSER && !TARGET_WASI
+                if (!File.Exists(requestedAssemblyPath))
+                {
+                    return null;
+                }
+#endif // !TARGET_BROWSER && !TARGET_WASI
+
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
                 return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {
                 // Catch FileNotFoundException when attempting to resolve assemblies via this handler to account for missing assemblies.
+                // This is necessary even with the above exists check since a file might be removed between the check and the load.
                 return null;
             }
         }
