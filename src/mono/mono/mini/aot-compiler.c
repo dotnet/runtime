@@ -3918,10 +3918,20 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
-			if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
+			switch (info->subtype) {
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT:
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL:
 				encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
-			else if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL)
+				break;
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL:
 				encode_signature (acfg, info->d.runtime_invoke.sig, p, &p);
+				break;
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC:
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 			break;
 		}
 		case MONO_WRAPPER_DELEGATE_INVOKE:
@@ -9154,45 +9164,46 @@ can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
 static gboolean
 can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-		if (method->wrapper_type) {
-			switch (method->wrapper_type) {
-			case MONO_WRAPPER_NONE:
-			case MONO_WRAPPER_STELEMREF:
-			case MONO_WRAPPER_ALLOC:
-			case MONO_WRAPPER_OTHER:
-			case MONO_WRAPPER_WRITE_BARRIER:
-			case MONO_WRAPPER_DELEGATE_INVOKE:
-			case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-			case MONO_WRAPPER_DELEGATE_END_INVOKE:
-			case MONO_WRAPPER_SYNCHRONIZED:
-			case MONO_WRAPPER_MANAGED_TO_NATIVE:
-				break;
-			case MONO_WRAPPER_MANAGED_TO_MANAGED:
-			case MONO_WRAPPER_NATIVE_TO_MANAGED:
-			case MONO_WRAPPER_CASTCLASS: {
-				WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+	if (method->wrapper_type) {
+		switch (method->wrapper_type) {
+		case MONO_WRAPPER_NONE:
+		case MONO_WRAPPER_STELEMREF:
+		case MONO_WRAPPER_ALLOC:
+		case MONO_WRAPPER_OTHER:
+		case MONO_WRAPPER_WRITE_BARRIER:
+		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+		case MONO_WRAPPER_DELEGATE_END_INVOKE:
+		case MONO_WRAPPER_SYNCHRONIZED:
+		case MONO_WRAPPER_MANAGED_TO_NATIVE:
+			break;
+		case MONO_WRAPPER_MANAGED_TO_MANAGED:
+		case MONO_WRAPPER_NATIVE_TO_MANAGED:
+		case MONO_WRAPPER_CASTCLASS:
+		case MONO_WRAPPER_RUNTIME_INVOKE: {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-				if (info)
+			if (info)
+				return TRUE;
+			else
+				return FALSE;
+			break;
+		}
+		default:
+			printf ("Skip: %s\n", mono_method_full_name (method, TRUE));
+			return FALSE;
+		}
+	} else {
+		if (!method->token) {
+			/* The method is part of a constructed type like Int[,].Set (). */
+			if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
+				if (m_class_get_rank (method->klass))
 					return TRUE;
-				else
-					return FALSE;
-				break;
-			}
-			default:
-				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
 				return FALSE;
 			}
-		} else {
-			if (!method->token) {
-				/* The method is part of a constructed type like Int[,].Set (). */
-				if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
-					if (m_class_get_rank (method->klass))
-						return TRUE;
-					return FALSE;
-				}
-			}
 		}
-		return TRUE;
+	}
+	return TRUE;
 }
 
 static gboolean

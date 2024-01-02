@@ -37,28 +37,28 @@ namespace Mono.Linker.Tests.TestCases
 			Run(t);
 		}
 
-        [Theory]
-        [MemberData(nameof(TestDatabase.Inheritance_Interaces), MemberType = typeof(TestDatabase))]
-        public void Inheritance_Interfaces(string t)
-        {
-            switch (t) {
-            case ".InterfaceWithoutNewSlot":
-                Run (t);
-                break;
-            default:
-                // Skip the rest for now
-                break;
-            }
-        }
+		[Theory]
+		[MemberData(nameof(TestDatabase.Inheritance_Interaces), MemberType = typeof(TestDatabase))]
+		public void Inheritance_Interfaces(string t)
+		{
+			switch (t) {
+			case ".InterfaceWithoutNewSlot":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
 
-        [Theory]
-        [MemberData(nameof(TestDatabase.Libraries), MemberType = typeof(TestDatabase))]
-        public void Libraries(string t)
-        {
-            Run(t);
-        }
+		[Theory]
+		[MemberData(nameof(TestDatabase.Libraries), MemberType = typeof(TestDatabase))]
+		public void Libraries(string t)
+		{
+			Run(t);
+		}
 
-        [Theory]
+		[Theory]
 		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
 		public void LinkXml (string t)
 		{
@@ -73,6 +73,7 @@ namespace Mono.Linker.Tests.TestCases
 			case "TypeHierarchyReflectionWarnings":
 			case "ParametersUsedViaReflection":
 			case "UnsafeAccessor":
+			case "TypeUsedViaReflection":
 				Run (t);
 				break;
 			default:

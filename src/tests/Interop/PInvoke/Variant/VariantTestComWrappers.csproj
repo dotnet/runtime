@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible, CMakeProjectReference -->
+    <!-- Needed for UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Test creates non-collectible AssemblyLoadContext -->
@@ -13,7 +13,8 @@
     <Compile Include="VariantTest.cs" />
     <Compile Include="VariantTest.ComWrappers.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <!-- These tests are only on Windows, so the native assets are only build for Windows platforms -->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>

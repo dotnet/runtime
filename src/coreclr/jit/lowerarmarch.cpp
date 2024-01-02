@@ -2037,13 +2037,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64
-    else if (addr->OperIs(GT_CLS_VAR_ADDR))
-    {
-        // These nodes go into an addr mode:
-        // - GT_CLS_VAR_ADDR turns into a constant.
-        // make this contained, it turns into a constant that goes into an addr mode
-        MakeSrcContained(indirNode, addr);
-    }
     else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         MakeSrcContained(indirNode, addr);
@@ -2781,7 +2774,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())
@@ -2887,7 +2880,7 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())

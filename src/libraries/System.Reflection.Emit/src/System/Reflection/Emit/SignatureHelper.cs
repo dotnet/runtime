@@ -8,15 +8,14 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
-    // TODO: Only support simple signatures. More complex signatures (generics, array, byref, pointers etc) will be added.
     internal static class MetadataSignatureHelper
     {
-        internal static BlobBuilder LocalSignatureEncoder(List<LocalBuilder> locals, ModuleBuilderImpl module)
+        internal static BlobBuilder GetLocalSignature(List<LocalBuilder> locals, ModuleBuilderImpl module)
         {
             BlobBuilder localSignature = new();
             LocalVariablesEncoder encoder = new BlobEncoder(localSignature).LocalVariableSignature(locals.Count);
 
-            foreach(LocalBuilder local in locals)
+            foreach (LocalBuilder local in locals)
             {
                 WriteSignatureForType(encoder.AddVariable().Type(local.LocalType.IsByRef, local.IsPinned),
                     local.LocalType.IsByRef ? local.LocalType.GetElementType()! : local.LocalType, module);
@@ -25,7 +24,7 @@ namespace System.Reflection.Emit
             return localSignature;
         }
 
-        internal static BlobBuilder FieldSignatureEncoder(Type fieldType, ModuleBuilderImpl module)
+        internal static BlobBuilder GetFieldSignature(Type fieldType, ModuleBuilderImpl module)
         {
             BlobBuilder fieldSignature = new();
             WriteSignatureForType(new BlobEncoder(fieldSignature).Field().Type(), fieldType, module);
@@ -33,25 +32,19 @@ namespace System.Reflection.Emit
             return fieldSignature;
         }
 
-        internal static BlobBuilder ConstructorSignatureEncoder(ParameterInfo[]? parameters, ModuleBuilderImpl module)
+        internal static BlobBuilder GetConstructorSignature(ParameterInfo[]? parameters, ModuleBuilderImpl module)
         {
             BlobBuilder constructorSignature = new();
 
+            parameters ??= Array.Empty<ParameterInfo>();
+
             new BlobEncoder(constructorSignature).
                 MethodSignature(isInstanceMethod: true).
-                Parameters((parameters == null) ? 0 : parameters.Length, out ReturnTypeEncoder retType, out ParametersEncoder parameterEncoder);
+                Parameters(parameters.Length, out ReturnTypeEncoder retType, out ParametersEncoder parameterEncoder);
 
             retType.Void();
 
-            if (parameters != null)
-            {
-                Type[]? typeParameters = Array.ConvertAll(parameters, parameter => parameter.ParameterType);
-
-                foreach (Type parameter in typeParameters)
-                {
-                    WriteSignatureForType(parameterEncoder.AddParameter().Type(), parameter, module);
-                }
-            }
+            WriteParametersSignature(module, Array.ConvertAll(parameters, p => p.ParameterType), parameterEncoder);
 
             return constructorSignature;
         }
@@ -77,34 +70,58 @@ namespace System.Reflection.Emit
             return methodSpecSignature;
         }
 
-        internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl module, Type[]? parameters,
-            Type? returnType, SignatureCallingConvention convention, int genParamCount, bool isInstance)
+        internal static BlobBuilder GetMethodSignature(ModuleBuilderImpl module, Type[]? parameters, Type? returnType,
+            SignatureCallingConvention convention, int genParamCount = 0, bool isInstance = false, Type[]? optionalParameterTypes = null)
         {
-            // Encoding return type and parameters.
             BlobBuilder methodSignature = new();
 
-            new BlobEncoder(methodSignature).
-                MethodSignature(convention: convention, genericParameterCount: genParamCount, isInstanceMethod: isInstance).
-                Parameters((parameters == null) ? 0 : parameters.Length, out ReturnTypeEncoder retEncoder, out ParametersEncoder parEncoder);
+            int paramsLength = ((parameters == null) ? 0 : parameters.Length) + ((optionalParameterTypes == null) ? 0 : optionalParameterTypes.Length);
+
+            new BlobEncoder(methodSignature).MethodSignature(convention, genParamCount, isInstance).
+                    Parameters(paramsLength, out ReturnTypeEncoder retEncoder, out ParametersEncoder parEncoder);
 
             if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {
                 WriteSignatureForType(retEncoder.Type(), returnType, module);
             }
-            else // If null mark ReturnTypeEncoder as void
+            else
             {
                 retEncoder.Void();
             }
 
+            WriteParametersSignature(module, parameters, parEncoder);
+
+            if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
+            {
+                WriteParametersSignature(module, optionalParameterTypes, parEncoder.StartVarArgs());
+            }
+
+            return methodSignature;
+        }
+
+        private static void WriteParametersSignature(ModuleBuilderImpl module, Type[]? parameters, ParametersEncoder parameterEncoder)
+        {
             if (parameters != null) // If parameters null, just keep the ParametersEncoder empty
             {
                 foreach (Type parameter in parameters)
                 {
-                    WriteSignatureForType(parEncoder.AddParameter().Type(), parameter, module);
+                    WriteSignatureForType(parameterEncoder.AddParameter().Type(), parameter, module);
                 }
             }
+        }
 
-            return methodSignature;
+        internal static BlobBuilder GetPropertySignature(PropertyBuilderImpl property, ModuleBuilderImpl module)
+        {
+            BlobBuilder propertySignature = new();
+
+            new BlobEncoder(propertySignature).
+                PropertySignature(isInstanceProperty: property.CallingConventions.HasFlag(CallingConventions.HasThis)).
+                Parameters(property.ParameterTypes == null ? 0 : property.ParameterTypes.Length, out ReturnTypeEncoder retType, out ParametersEncoder paramEncoder);
+
+            WriteSignatureForType(retType.Type(), property.PropertyType, module);
+            WriteParametersSignature(module, property.ParameterTypes, paramEncoder);
+
+            return propertySignature;
         }
 
         private static void WriteSignatureForType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)

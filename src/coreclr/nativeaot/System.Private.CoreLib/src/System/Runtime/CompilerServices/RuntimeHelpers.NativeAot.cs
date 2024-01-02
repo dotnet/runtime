@@ -58,7 +58,8 @@ namespace System.Runtime.CompilerServices
             // Nothing to do for the native AOT. All module cctors execute eagerly.
         }
 
-        public static object GetObjectValue(object? obj)
+        [return: NotNullIfNotNull(nameof(obj))]
+        public static object? GetObjectValue(object? obj)
         {
             if (obj == null)
                 return null;

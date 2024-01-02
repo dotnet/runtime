@@ -309,8 +309,12 @@ extends:
           - iossimulator_x64
           - iossimulator_arm64
           - ios_arm64
-          - linux_bionic_arm64
+          - linux_x64
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm64
           - linux_bionic_x64
+          - linux_bionic_arm64
           jobParameters:
             buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: NativeAOT

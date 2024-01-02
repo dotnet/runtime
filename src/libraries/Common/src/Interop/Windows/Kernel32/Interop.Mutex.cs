@@ -18,7 +18,7 @@ internal static partial class Interop
         internal static partial SafeWaitHandle CreateMutexEx(IntPtr lpMutexAttributes, string? name, uint flags, uint desiredAccess);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        [return:MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool ReleaseMutex(SafeWaitHandle handle);
     }
 }

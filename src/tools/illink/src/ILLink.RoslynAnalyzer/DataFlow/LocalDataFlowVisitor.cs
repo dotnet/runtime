@@ -390,9 +390,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
 			Debug.Assert (flowCaptureReference.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write));
 			var capturedReferences = state.Current.LocalState.CapturedReferences.Get (flowCaptureReference.Id);
+			Debug.Assert (!capturedReferences.IsUnknown ());
 			if (!capturedReferences.HasMultipleValues) {
 				// Single captured reference. Treat this as an overwriting assignment.
-				var enumerator = capturedReferences.GetEnumerator ();
+				var enumerator = capturedReferences.GetKnownValues ().GetEnumerator ();
 				enumerator.MoveNext ();
 				targetOperation = enumerator.Current.Reference;
 				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
@@ -409,7 +410,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// if the RHS has dataflow warnings.
 
 			TValue value = TopValue;
-			foreach (var capturedReference in capturedReferences) {
+			foreach (var capturedReference in capturedReferences.GetKnownValues ()) {
 				targetOperation = capturedReference.Reference;
 				var singleValue = ProcessSingleTargetAssignment (targetOperation, operation, state, merge: true);
 				value = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (value, singleValue);
@@ -517,7 +518,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// If an r-value captures an l-value, we must dereference the l-value
 						// and copy out the value to capture.
 						capturedValue = TopValue;
-						foreach (var capturedReference in state.Current.LocalState.CapturedReferences.Get (captureRef.Id)) {
+						var capturedReferences = state.Current.LocalState.CapturedReferences.Get (captureRef.Id);
+						Debug.Assert (!capturedReferences.IsUnknown ());
+						foreach (var capturedReference in capturedReferences.GetKnownValues ()) {
 							var value = Visit (capturedReference.Reference, state);
 							capturedValue = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (capturedValue, value);
 						}
@@ -557,15 +560,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					targetMethodSymbol = lambda.Symbol;
 					break;
 				case IMethodReferenceOperation methodReference:
-					IMethodSymbol method = methodReference.Method.OriginalDefinition;
-					if (method.ContainingSymbol is IMethodSymbol) {
+					IMethodSymbol methodDefinition = methodReference.Method.OriginalDefinition;
+					if (methodDefinition.ContainingSymbol is IMethodSymbol) {
 						// Track references to local functions
-						var localFunction = method;
+						var localFunction = methodDefinition;
 						Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);
 						var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
 						InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
 					}
-					targetMethodSymbol = method;
+					targetMethodSymbol = methodReference.Method;
 					break;
 				case IMemberReferenceOperation:
 				case IInvocationOperation:
@@ -582,7 +585,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleDelegateCreation (targetMethodSymbol, operation, state.Current.Context);
 		}
 
-		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, TContext context);
+		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, in TContext context);
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{

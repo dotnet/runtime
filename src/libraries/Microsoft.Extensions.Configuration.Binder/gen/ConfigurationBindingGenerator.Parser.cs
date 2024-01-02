@@ -895,7 +895,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RecordTypeDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
             {
-                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, [typeParseInfo.FullName]);
+                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation?.Location, [typeParseInfo.FullName]);
                 ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
             }
 
@@ -911,7 +911,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new[] { memberName, containingTypeName }
                         : new[] { containingTypeName };
 
-                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, typeParseInfo.BinderInvocation.Location, messageArgs);
+                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, typeParseInfo.BinderInvocation?.Location, messageArgs);
 
                     containingTypeDiagInfo = containingTypeDiagInfo.ContainingTypeInfo;
                 }

@@ -11,7 +11,7 @@ namespace System
 {
     internal sealed unsafe class LogcatStream : CachedConsoleStream
     {
-        public LogcatStream(Encoding encoding) : base(encoding) {}
+        public LogcatStream(Encoding encoding) : base(encoding) { }
 
         protected override void Print(ReadOnlySpan<char> line)
         {

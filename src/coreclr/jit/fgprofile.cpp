@@ -381,7 +381,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -467,7 +467,7 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -488,7 +488,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -497,12 +497,6 @@ void BlockCountInstrumentor::RelocateProbes()
             }
             else
             {
-                // Ensure this pred is not a fall through.
-                //
-                if (pred->KindIs(BBJ_NONE))
-                {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
-                }
                 assert(pred->KindIs(BBJ_ALWAYS));
             }
         }
@@ -513,8 +507,9 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED;
+            BasicBlock* const intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             SetModifiedFlow();
@@ -638,14 +633,14 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
-    if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+    if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
         // This block probe needs to be relocated; instrument each predecessor.
         //
         bool first = true;
         for (BasicBlock* pred : block->PredBlocks())
         {
-            const bool isLivePred = ShouldProcess(pred) || ((pred->bbFlags & BBF_MARKED) == BBF_MARKED);
+            const bool isLivePred = ShouldProcess(pred) || pred->HasFlag(BBF_MARKED);
             if (!isLivePred)
             {
                 continue;
@@ -657,7 +652,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
                 incCount = m_comp->gtCloneExpr(incCount);
             }
             m_comp->fgNewStmtAtBeg(pred, incCount);
-            pred->bbFlags &= ~BBF_MARKED;
+            pred->RemoveFlags(BBF_MARKED);
             first = false;
         }
     }
@@ -940,7 +935,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -954,7 +949,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // some new keying scheme. For now we just
                 // ignore this (rare) case.
                 //
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
                     // This block should be the only pred of the continuation.
                     //
@@ -1013,7 +1008,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
-                    BasicBlock* const target = block->GetJumpDest();
+                    BasicBlock* const target = block->GetTarget();
 
                     // In some bad IL cases we may not have a target.
                     // In others we may see something other than LEAVE be most-nested in a try.
@@ -1081,11 +1076,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     BasicBlock* const target = block->GetSucc(0, this);
                     if (BlockSetOps::IsMember(this, marked, target->bbNum))
                     {
-                        // We can't instrument in the call always pair tail block
+                        // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
                         //
                         visitor->VisitNonTreeEdge(block, target,
-                                                  block->isBBCallAlwaysPairTail()
+                                                  block->isBBCallFinallyPairTail()
                                                       ? SpanningTreeVisitor::EdgeKind::CriticalEdge
                                                       : SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                     }
@@ -1231,13 +1226,13 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 {
     static const int IS_INTERNAL_BLOCK = (int32_t)0x80000000;
     int32_t          key               = (int32_t)block->bbCodeOffs;
-    // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
+    // We may see empty BBJ_ALWAYS BBF_INTERNAL blocks that were added
     // by fgNormalizeEH.
     //
     // We'll use their bbNum in place of IL offset, and set
     // a high bit as a "flag"
     //
-    if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+    if (block->HasFlag(BBF_INTERNAL))
     {
         key = block->bbNum | IS_INTERNAL_BLOCK;
     }
@@ -1371,7 +1366,7 @@ public:
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & BBF_IMPORTED) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED);
     }
     bool ShouldInstrument(BasicBlock* block) override
     {
@@ -1544,16 +1539,8 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 
                     if (found)
                     {
-                        // Importer folding may have changed the block jump kind
-                        // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
-                        //
-                        if (block->KindIs(BBJ_NONE))
-                        {
-                            block->SetJumpKindAndTarget(BBJ_ALWAYS, target);
-                        }
-
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
-                        instrumentedBlock->bbFlags |= BBF_IMPORTED;
+                        instrumentedBlock->SetFlags(BBF_IMPORTED);
                         edgesSplit++;
 
                         // Add in the relocated probe
@@ -1645,7 +1632,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
         // Nothing to do unless the block is a tail call successor.
         //
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
@@ -1674,7 +1661,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             //
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -1687,13 +1674,10 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 NewRelocatedProbe(pred, probe->source, probe->target, &leader);
 
-                // Ensure this pred is not a fall through.
+                // Ensure this pred always jumps to block
                 //
-                if (pred->KindIs(BBJ_NONE))
-                {
-                    pred->SetJumpKindAndTarget(BBJ_ALWAYS, block);
-                }
                 assert(pred->KindIs(BBJ_ALWAYS));
+                assert(pred->TargetIs(block));
             }
         }
 
@@ -1702,8 +1686,9 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED;
+            BasicBlock* intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
@@ -2217,7 +2202,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -2257,7 +2242,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 //
 void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2286,7 +2271,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 //
 void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -3796,8 +3781,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->HasInitializedJumpDest());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
+        assert(block->HasInitializedTarget());
+        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -3807,7 +3792,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbJumpDest of
+    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit
@@ -3915,7 +3900,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -4009,8 +3994,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetJumpSwt()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetJumpSwt()->bbsDstTab;
+    const unsigned     caseCount    = block->GetSwitchTargets()->bbsCount;
+    BasicBlock** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
     unsigned           dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4036,7 +4021,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->GetJumpSwt()->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTargets()->bbsHasDefault && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4050,9 +4035,9 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetJumpSwt()->bbsHasDominantCase  = true;
-    block->GetJumpSwt()->bbsDominantCase     = dominantCase;
-    block->GetJumpSwt()->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->bbsHasDominantCase  = true;
+    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
+    block->GetSwitchTargets()->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -4422,13 +4407,9 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bSrc = bDst->bbPreds->getSourceBlock();
 
                     // Does this block flow into only one other block
-                    if (bSrc->KindIs(BBJ_NONE))
+                    if (bSrc->KindIs(BBJ_ALWAYS))
                     {
-                        bOnlyNext = bSrc->Next();
-                    }
-                    else if (bSrc->KindIs(BBJ_ALWAYS))
-                    {
-                        bOnlyNext = bSrc->GetJumpDest();
+                        bOnlyNext = bSrc->GetTarget();
                     }
                     else
                     {
@@ -4443,13 +4424,13 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 }
 
                 // Does this block flow into only one other block
-                if (bDst->KindIs(BBJ_NONE))
+                if (bDst->KindIs(BBJ_ALWAYS))
                 {
-                    bOnlyNext = bDst->Next();
+                    bOnlyNext = bDst->GetTarget();
                 }
-                else if (bDst->KindIs(BBJ_ALWAYS))
+                else if (bDst->KindIs(BBJ_CALLFINALLYRET)) // TODO-Quirk: remove (was added to reduce asmdiffs)
                 {
-                    bOnlyNext = bDst->GetJumpDest();
+                    bOnlyNext = bDst->GetFinallyContinuation();
                 }
                 else
                 {
@@ -4496,11 +4477,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbWeight = newWeight;
                     if (newWeight == BB_ZERO_WEIGHT)
                     {
-                        bDst->bbFlags |= BBF_RUN_RARELY;
+                        bDst->SetFlags(BBF_RUN_RARELY);
                     }
                     else
                     {
-                        bDst->bbFlags &= ~BBF_RUN_RARELY;
+                        bDst->RemoveFlags(BBF_RUN_RARELY);
                     }
                 }
             }
@@ -4573,7 +4554,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
+        while (firstILBlock->HasFlag(BBF_INTERNAL))
         {
             firstILBlock = firstILBlock->Next();
         }
@@ -4680,12 +4661,12 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetJumpKind())
+            switch (bSrc->GetKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                case BBJ_NONE:
                 case BBJ_CALLFINALLY:
+                case BBJ_CALLFINALLYRET:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
                     assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
@@ -4705,7 +4686,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
                 default:
                     // We should never have an edge that starts from one of these jump kinds
-                    noway_assert(!"Unexpected bbJumpKind");
+                    noway_assert(!"Unexpected bbKind");
                     break;
             }
 
@@ -4754,13 +4735,13 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->NextIs(bDst))
+                    if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetJumpDest();
+                        otherDst = bSrc->GetTrueTarget();
                     }
                     else
                     {
-                        otherDst = bSrc->Next();
+                        otherDst = bSrc->GetFalseTarget();
                     }
                     otherEdge = fgGetPredForBlock(otherDst, bSrc);
 

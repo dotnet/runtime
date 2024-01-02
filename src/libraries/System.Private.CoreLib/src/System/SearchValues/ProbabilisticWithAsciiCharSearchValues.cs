@@ -164,7 +164,7 @@ namespace System.Buffers
                 }
                 else
                 {
-                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) ||!_inverseAsciiState.Lookup.Contains(0),
+                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
                     offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(

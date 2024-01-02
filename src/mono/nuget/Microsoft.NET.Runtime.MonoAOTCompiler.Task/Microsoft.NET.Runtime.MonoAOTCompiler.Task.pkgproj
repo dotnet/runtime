@@ -23,7 +23,7 @@
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/Sdk.props.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(SdkPropsPath)" />
 
     <ItemGroup>

@@ -144,7 +144,7 @@ namespace System.Reflection
             {
                 ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
 
-           }
+            }
 
             CopyBack(parameters, copyOfArgs, shouldCopyBack);
             return ret;
@@ -167,7 +167,7 @@ namespace System.Reflection
             for (int i = 0; i < _argCount; i++)
             {
 #pragma warning disable CS8500
-                *(ByReference*)(pByRefFixedStorage + i) =  (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+                *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
 #pragma warning restore CS8500
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
                     ByReference.Create(ref copyOfArgs[i]);

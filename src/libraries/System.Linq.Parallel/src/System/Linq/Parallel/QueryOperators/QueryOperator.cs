@@ -315,7 +315,7 @@ namespace System.Linq.Parallel
 
             if (sourceAsOperator == null)
             {
-                if (source is OrderedParallelQuery<TOutput>  orderedQuery)
+                if (source is OrderedParallelQuery<TOutput> orderedQuery)
                 {
                     // We have to handle OrderedParallelQuery<T> specially. In all other cases,
                     // ParallelQuery *is* the QueryOperator<T>. But, OrderedParallelQuery<T>

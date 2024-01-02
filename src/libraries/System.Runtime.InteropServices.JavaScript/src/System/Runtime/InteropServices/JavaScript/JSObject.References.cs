@@ -10,52 +10,37 @@ namespace System.Runtime.InteropServices.JavaScript
     public partial class JSObject
     {
         internal nint JSHandle;
-
-#if FEATURE_WASM_THREADS
-        private readonly object _thisLock = new object();
-        private SynchronizationContext? m_SynchronizationContext;
-#endif
+        internal JSProxyContext ProxyContext;
 
         public SynchronizationContext SynchronizationContext
         {
             get
             {
 #if FEATURE_WASM_THREADS
-                return m_SynchronizationContext!;
+                return ProxyContext.SynchronizationContext;
 #else
                 throw new PlatformNotSupportedException();
 #endif
             }
         }
 
-#if FEATURE_WASM_THREADS
-        // the JavaScript object could only exist on the single web worker and can't migrate to other workers
-        internal int OwnerThreadId;
-#endif
 #if !DISABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
 #endif
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
-        internal JSObject(IntPtr jsHandle)
+        internal JSObject(IntPtr jsHandle, JSProxyContext ctx)
         {
+            ProxyContext = ctx;
             JSHandle = jsHandle;
-#if FEATURE_WASM_THREADS
-            OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
-            m_SynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext;
-            if (m_SynchronizationContext == null)
-            {
-                throw new InvalidOperationException(); // should not happen
-            }
-#endif
         }
 
 #if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-            lock (this)
+            lock (ProxyContext)
             {
                 InFlightCounter++;
                 if (InFlightCounter == 1)
@@ -71,7 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
         internal void ReleaseInFlight()
         {
-            lock (this)
+            lock (ProxyContext)
             {
                 Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
 
@@ -93,16 +78,17 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
-            else if (value is JSObject jsObject)
+
+            if (value is JSObject jsObject)
             {
-                if (jsObject.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (!jsObject.ProxyContext.IsCurrentThread())
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
             }
             else if (value is JSException jsException)
             {
-                if (jsException.jsException != null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (jsException.jsException != null && !jsException.jsException.ProxyContext.IsCurrentThread())
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
@@ -119,30 +105,24 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
-        internal void DisposeLocal()
-        {
-            JSHostImplementation.ThreadCsOwnedObjects.Remove(JSHandle);
-            _isDisposed = true;
-            JSHandle = IntPtr.Zero;
-        }
-
-        private void DisposeThis()
+        internal void DisposeImpl(bool skipJsCleanup = false)
         {
             if (!_isDisposed)
             {
 #if FEATURE_WASM_THREADS
-                SynchronizationContext.Send(static (JSObject self) =>
+                if (ProxyContext.IsCurrentThread())
                 {
-                    lock (self._thisLock)
-                    {
-                        JSHostImplementation.ReleaseCSOwnedObject(self.JSHandle);
-                        self._isDisposed = true;
-                        self.JSHandle = IntPtr.Zero;
-                        self.m_SynchronizationContext = null;
-                    } //lock
-                }, this);
+                    JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
+                    return;
+                }
+
+                ProxyContext.SynchronizationContext.Post(static (object? s) =>
+                {
+                    var x = ((JSObject self, bool skipJS))s!;
+                    JSProxyContext.ReleaseCSOwnedObject(x.self, x.skipJS);
+                }, (this, skipJsCleanup));
 #else
-                JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
+                JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
                 _isDisposed = true;
                 JSHandle = IntPtr.Zero;
 #endif
@@ -151,7 +131,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         ~JSObject()
         {
-            DisposeThis();
+            DisposeImpl();
         }
 
         /// <summary>
@@ -159,8 +139,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         public void Dispose()
         {
-            DisposeThis();
-            GC.SuppressFinalize(this);
+            DisposeImpl();
         }
     }
 }

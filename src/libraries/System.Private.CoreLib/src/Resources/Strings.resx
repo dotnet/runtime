@@ -1523,7 +1523,7 @@
     <value>Recursive fallback not allowed for bytes {0}.</value>
   </data>
   <data name="Argument_RedefinedLabel" xml:space="preserve">
-    <value>Label multiply defined.</value>
+    <value>Label defined multiple times.</value>
   </data>
   <data name="Argument_ResolveField" xml:space="preserve">
     <value>Token {0:x} is not a valid FieldInfo token in the scope of module {1}.</value>

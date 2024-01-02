@@ -5,11 +5,13 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace SizeParamIndex.PInvoke;
+
 /// <summary>
 ///  Pass LPArray Size by ref keyword using SizeParamIndex Attributes
 /// </summary>
 
-public class ClientMarshalArrayAsSizeParamIndexByRefTest
+public class PassingByRefTest
 {
 
     #region ByRef
@@ -238,6 +240,8 @@ public class ClientMarshalArrayAsSizeParamIndexByRefTest
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try{

@@ -8,6 +8,8 @@
 
 #ifdef TARGET_LOONGARCH64
 #define BAD_CODE 0XFFFFFFFF
+#elif TARGET_RISCV64
+#define BAD_CODE 0X00000000
 #else
 #define BAD_CODE 0x0BADC0DE // better not match a real encoding!
 #endif
@@ -65,7 +67,7 @@ enum instruction : uint32_t
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)
-    #define INST(id, nm, ldst, e1) INS_##id,
+    #define INST(id, nm, ldst, e1, msk, fmt) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
@@ -277,15 +279,25 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_WIDE_H,
     INS_OPTS_SCALABLE_WIDE_S,
 
-    INS_OPTS_SCALABLE_B_TO_SIMD,
-    INS_OPTS_SCALABLE_H_TO_SIMD,
-    INS_OPTS_SCALABLE_S_TO_SIMD,
-    INS_OPTS_SCALABLE_D_TO_SIMD,
+    INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR,
+    INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR,
+    INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR,
+    INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR,
 
-    INS_OPTS_SCALABLE_B_TO_SCALAR,
-    INS_OPTS_SCALABLE_H_TO_SCALAR,
-    INS_OPTS_SCALABLE_S_TO_SCALAR,
-    INS_OPTS_SCALABLE_D_TO_SCALAR,
+    INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR,
+    INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR,
+    INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR,
+    INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR,
+
+    INS_OPTS_SCALABLE_B_WITH_SCALAR,
+    INS_OPTS_SCALABLE_H_WITH_SCALAR,
+    INS_OPTS_SCALABLE_S_WITH_SCALAR,
+    INS_OPTS_SCALABLE_D_WITH_SCALAR,
+
+    INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE,
+    INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE,
+    INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE,
+    INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE,
 
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 

@@ -4,10 +4,10 @@
     <!-- Define the name of the runtime specific compiler package to import -->
     <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
 
-    <_targetOS>$(RuntimeIdentifier.SubString(0, $(RuntimeIdentifier.LastIndexOf('-'))))</_targetOS>
-    <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
-    <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
-    <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
+    <_originalTargetOS>$(RuntimeIdentifier.SubString(0, $(RuntimeIdentifier.LastIndexOf('-'))))</_originalTargetOS>
+    <_indexOfPeriod>$(_originalTargetOS.IndexOf('.'))</_indexOfPeriod>
+    <_originalTargetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_originalTargetOS.SubString(0, $(_indexOfPeriod)))</_originalTargetOS>
+    <_originalTargetOS Condition="$(_originalTargetOS.StartsWith('win'))">win</_originalTargetOS>
 
     <!-- On non-Windows, determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
     <_hostArchitecture Condition="'$(OS)' != 'Windows_NT'">$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
@@ -18,11 +18,13 @@
     <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
 
     <_hostPackageName>runtime.$(_hostOS)-$(_hostArchitecture).Microsoft.DotNet.ILCompiler</_hostPackageName>
-    <_targetPackageName>runtime.$(_targetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
+    <_targetPackageName>runtime.$(_originalTargetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
 
-    <!-- From this point onwards, we will treat linux-musl as linux -->
-    <_linuxLibcFlavor Condition="$(_targetOS.StartsWith('linux-'))">$(_targetOS.SubString(6))</_linuxLibcFlavor>
-    <_targetOS Condition="$(_targetOS.StartsWith('linux'))">linux</_targetOS>
+    <!-- Treat linux-musl and linux-bionic etc. as linux -->
+    <_targetOS>$(_originalTargetOS)</_targetOS>
+    <_linuxToken>linux-</_linuxToken>
+    <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
+    <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
   </PropertyGroup>
 
   <PropertyGroup>
