@@ -1359,6 +1359,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_get_IsEnum:
                             case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
+                            case NI_System_Type_get_IsPrimitive:
                             case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
