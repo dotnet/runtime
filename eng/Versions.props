@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>6.0.26</ProductVersion>
+    <ProductVersion>6.0.27</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>6</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>26</PatchVersion>
+    <PatchVersion>27</PatchVersion>
     <SdkBandVersion>6.0.400</SdkBandVersion>
     <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>
