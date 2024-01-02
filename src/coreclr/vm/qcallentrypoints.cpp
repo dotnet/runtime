@@ -87,6 +87,8 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_Log)
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
+    DllImportEntry(Delegate_InitializeVirtualCallStub)
+    DllImportEntry(Delegate_AdjustTarget)
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)

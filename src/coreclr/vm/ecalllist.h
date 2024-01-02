@@ -282,8 +282,6 @@ FCFuncStart(gDelegateFuncs)
     FCFuncElement("InternalAllocLike", COMDelegate::InternalAllocLike)
     FCFuncElement("InternalEqualMethodHandles", COMDelegate::InternalEqualMethodHandles)
     FCFuncElement("FindMethodHandle", COMDelegate::FindMethodHandle)
-    FCFuncElement("AdjustTarget", COMDelegate::AdjustTarget)
-    FCFuncElement("GetCallStub", COMDelegate::GetCallStub)
 
     // The FCall mechanism knows how to wire multiple different constructor calls into a
     // single entrypoint, without the following entry.  But we need this entry to satisfy

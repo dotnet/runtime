@@ -58,9 +58,6 @@ public:
     static FCDECL1(Object*, InternalAlloc, ReflectClassBaseObject* target);
     static FCDECL1(Object*, InternalAllocLike, Object* pThis);
 
-    static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
-    static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);
-
     // This gets the MethodInfo for a delegate, creating it if necessary
     static FCDECL1(ReflectMethodObject*, FindMethodHandle, Object* refThis);
     static FCDECL2(FC_BOOL_RET, InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn);
@@ -134,6 +131,10 @@ public:
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate);
 };
+
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
+
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method);
 
 // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
 // values must be kept in sync with the definition in bcl\system\delegate.cs.

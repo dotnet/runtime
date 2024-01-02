@@ -1490,47 +1490,43 @@ void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
     COMDelegate::s_pDelegateToFPtrHash->DeleteValue(key, NULL);
 }
 
-FCIMPL2(PCODE, COMDelegate::GetCallStub, Object* refThisUNSAFE, PCODE method)
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    PCODE target = NULL;
+    BEGIN_QCALL;
 
-    DELEGATEREF refThis = (DELEGATEREF)ObjectToOBJECTREF(refThisUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
+    GCX_COOP();
+
     MethodDesc *pMeth = MethodTable::GetMethodDescForSlotAddress((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
-    target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+    PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+
+    DELEGATEREF refThis = (DELEGATEREF)d.Get();
+    refThis->SetMethodPtrAux(target);
     refThis->SetInvocationCount((INT_PTR)(void*)pMeth);
-    HELPER_METHOD_FRAME_END();
-    return target;
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetUNSAFE, PCODE method)
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (targetUNSAFE == NULL)
-        FCThrow(kArgumentNullException);
+    BEGIN_QCALL;
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisUNSAFE);
-    OBJECTREF target  = ObjectToOBJECTREF(targetUNSAFE);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, target);
-
-    _ASSERTE(refThis);
     _ASSERTE(method);
 
-    MethodTable *pMT = target->GetMethodTable();
+    MethodTable* pMTTarg = target.Get()->GetMethodTable();
 
-    MethodDesc *pMeth = Entry2MethodDesc(method, pMT);
+    MethodDesc *pMeth = Entry2MethodDesc(method, pMTTarg);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic());
 
     // close delegates
-    MethodTable* pMTTarg = target->GetMethodTable();
     MethodTable* pMTMeth = pMeth->GetMethodTable();
 
     MethodDesc *pCorrectedMethod = pMeth;
@@ -1550,11 +1546,11 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
     {
         method = pCorrectedMethod->GetMultiCallableAddrOfCode();
     }
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
 
     return method;
 }
-FCIMPLEND
 
 #if defined(_MSC_VER) && !defined(TARGET_UNIX)
 // VC++ Compiler intrinsic.

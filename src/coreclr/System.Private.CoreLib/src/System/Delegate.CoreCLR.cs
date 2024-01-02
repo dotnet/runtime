@@ -469,11 +469,22 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool InternalEqualMethodHandles(Delegate left, Delegate right);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr AdjustTarget(object target, IntPtr methodPtr);
+        internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
+        {
+            return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr GetCallStub(IntPtr methodPtr);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
+        private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
+
+        internal void InitializeVirtualCallStub(IntPtr methodPtr)
+        {
+            Delegate d = this;
+            InitializeVirtualCallStub(ObjectHandleOnStack.Create(ref d), methodPtr);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
+        private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 
         internal virtual object? GetTarget()
         {

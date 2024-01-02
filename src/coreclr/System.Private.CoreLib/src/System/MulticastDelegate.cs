@@ -593,6 +593,8 @@ namespace System
         [DebuggerStepThrough]
         private void CtorRTClosed(object target, IntPtr methodPtr)
         {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
             this._target = target;
             this._methodPtr = AdjustTarget(target, methodPtr);
         }
@@ -612,7 +614,7 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodPtrAux = GetCallStub(methodPtr);
+            this.InitializeVirtualCallStub(methodPtr);
         }
 
         [DebuggerNonUserCode]
@@ -640,8 +642,8 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodPtrAux = GetCallStub(methodPtr);
             this._methodBase = GCHandle.InternalGet(gchandle);
+            this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
     }
