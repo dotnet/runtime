@@ -15,6 +15,7 @@ namespace System.Net.Quic.Tests
 
     [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [SkipOnCoreClr("MsQuic is timing sensitive and flaky under stress", ~RuntimeTestModes.RegularRun)]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
