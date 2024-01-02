@@ -59,7 +59,7 @@ namespace Mono.Linker
 		protected readonly Dictionary<TypeDefinition, TypePreserveMembers> preserved_type_members = new ();
 		protected readonly Dictionary<ExportedType, TypePreserveMembers> preserved_exportedtype_members = new ();
 		protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>> ();
-		protected readonly HashSet<AssemblyDefinition> assemblies_with_root_all_members = new ();
+		readonly HashSet<AssemblyDefinition> assemblies_with_root_all_members = new ();
 		protected readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 		readonly Dictionary<IMemberDefinition, LinkerAttributesInformation> linker_attributes = new Dictionary<IMemberDefinition, LinkerAttributesInformation> ();
