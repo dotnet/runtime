@@ -606,7 +606,7 @@ struct HWIntrinsicInfo
         {
             case NI_AVX512F_Add:
                 return 3;
-            
+
             default:
                 unreached();
         }

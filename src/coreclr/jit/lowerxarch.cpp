@@ -1055,12 +1055,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
-    if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+    if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
     {
-        
+
         size_t numArgs        = node->GetOperandCount();
         size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
-        if(numArgs == expectedArgNum)
+        if (numArgs == expectedArgNum)
         {
             CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
             uint32_t    simdSize        = node->GetSimdSize();
@@ -1068,15 +1068,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* LastOp = node->Op(numArgs);
             assert(LastOp->IsCnsIntOrI());
-            uint8_t  mode = static_cast<uint8_t>(LastOp->AsIntCon()->IconValue());
+            uint8_t mode = static_cast<uint8_t>(LastOp->AsIntCon()->IconValue());
 
             GenTreeHWIntrinsic* embRoundingNode;
             switch (numArgs)
             {
                 case 3:
-                    embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2), intrinsicId, simdBaseJitType, simdSize);
+                    embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2), intrinsicId,
+                                                                     simdBaseJitType, simdSize);
                     break;
-                
+
                 default:
                     unreached();
             }

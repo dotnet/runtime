@@ -6916,7 +6916,6 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idAddr()->iiaFieldHnd = fldHnd;
     SetEvexBroadcastIfNeeded(id, instOptions);
 
-
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
 
