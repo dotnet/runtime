@@ -565,11 +565,14 @@ public:
 
     void SetPrev(BasicBlock* prev)
     {
-        bbPrev = prev;
-        if (prev)
-        {
-            prev->bbNext = this;
-        }
+        assert(prev != nullptr);
+        bbPrev       = prev;
+        prev->bbNext = this;
+    }
+
+    void SetPrevToNull()
+    {
+        bbPrev = nullptr;
     }
 
     BasicBlock* Next() const
@@ -579,11 +582,14 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
-        if (next)
-        {
-            next->bbPrev = this;
-        }
+        assert(next != nullptr);
+        bbNext       = next;
+        next->bbPrev = this;
+    }
+
+    void SetNextToNull()
+    {
+        bbNext = nullptr;
     }
 
     bool IsFirst() const
