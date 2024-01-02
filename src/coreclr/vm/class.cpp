@@ -1536,7 +1536,9 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 
     if (pMT->GetClass()->HasVTableMethodImpl())
     {
-        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+        // This might be better implemented if it only gets the method data for data which is already cached.
+        // Also the use of the Update mechanisim is somewhat suspicious from a thread safety point of view.
+        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::NoCache));
 
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
