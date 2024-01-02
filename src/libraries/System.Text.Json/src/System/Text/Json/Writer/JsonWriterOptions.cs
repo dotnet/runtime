@@ -64,7 +64,7 @@ namespace System.Text.Json
         /// <summary>
         /// Defines the indentation size used by <see cref="Utf8JsonWriter"/> when <see cref="Indented"/> is enabled. Defaults to two.
         /// </summary>
-        /// <remarks>Allowed values are integers between 0 and 127.</remarks>
+        /// <remarks>Allowed values are integers between 0 and 127, included.</remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
         public int IndentSize
         {

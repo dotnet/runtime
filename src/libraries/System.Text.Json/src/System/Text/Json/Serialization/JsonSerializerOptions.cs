@@ -674,7 +674,7 @@ namespace System.Text.Json
         /// <summary>
         /// Defines the indentation size being used when <see cref="WriteIndented" /> is enabled. Defaults to two.
         /// </summary>
-        /// <remarks>Allowed values are all integers between 0 and 127.</remarks>
+        /// <remarks>Allowed values are all integers between 0 and 127, included.</remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
