@@ -283,7 +283,7 @@ namespace Mono.Linker.Dataflow
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
-					foreach (var valueNode in instanceValue) {
+					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }
@@ -359,7 +359,7 @@ namespace Mono.Linker.Dataflow
 
 			// Validate that the return value has the correct annotations as per the method return value annotations
 			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0) {
-				foreach (var uniqueValue in methodReturnValue) {
+				foreach (var uniqueValue in methodReturnValue.AsEnumerable ()) {
 					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
 							throw new InvalidOperationException ($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");

@@ -38,8 +38,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics ()
 		{
 			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
-			foreach (var sourceValue in Source) {
-				foreach (var targetValue in Target) {
+			foreach (var sourceValue in Source.AsEnumerable ()) {
+				foreach (var targetValue in Target.AsEnumerable ()) {
 					// The target should always be an annotated value, but the visitor design currently prevents
 					// declaring this in the type system.
 					if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
