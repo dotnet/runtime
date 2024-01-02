@@ -278,7 +278,7 @@ private:
 
             // checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetCond(elseBlock);
+            checkBlock->SetCond(elseBlock, thenBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
@@ -591,7 +591,7 @@ private:
                 checkFallsThrough          = false;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetCond(checkBlock);
+                prevCheckBlock->SetCond(checkBlock, prevCheckBlock->Next());
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Calculate the total likelihood for this check as a sum of likelihoods
@@ -1031,7 +1031,7 @@ private:
             // where we know the last check is always true (in case of "exact" GDV)
             if (!checkFallsThrough)
             {
-                checkBlock->SetCond(elseBlock);
+                checkBlock->SetCond(elseBlock, checkBlock->Next());
                 compiler->fgAddRefPred(elseBlock, checkBlock);
             }
             else
