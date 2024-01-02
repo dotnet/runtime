@@ -76,7 +76,7 @@ namespace System.IO.Compression
             const UnixFileMode OwnershipPermissions =
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                 UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
             // Restore Unix permissions.
             // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).

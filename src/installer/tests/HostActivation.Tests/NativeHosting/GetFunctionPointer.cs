@@ -230,9 +230,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
-                DotNetRoot = dotNet.BinPath;
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = TestContext.BuiltDotNet.BinPath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
                 ApplicationFixture = new TestProjectFixture("AppWithCustomEntryPoints", RepoDirectories)
                     .EnsureRestored()

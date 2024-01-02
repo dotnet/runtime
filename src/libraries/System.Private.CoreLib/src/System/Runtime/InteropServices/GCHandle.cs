@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
             if (type == GCHandleType.Pinned)
             {
                 // Record if the handle is pinned.
-                handle = (IntPtr)((nint)handle | 1);
+                handle |= 1;
             }
 
             _handle = handle;
@@ -58,12 +58,14 @@ namespace System.Runtime.InteropServices
         /// <summary>Creates a new GC handle for an object.</summary>
         /// <param name="value">The object that the GC handle is created for.</param>
         /// <returns>A new GC handle that protects the object.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static GCHandle Alloc(object? value) => new GCHandle(value, GCHandleType.Normal);
 
         /// <summary>Creates a new GC handle for an object.</summary>
         /// <param name="value">The object that the GC handle is created for.</param>
         /// <param name="type">The type of GC handle to create.</param>
         /// <returns>A new GC handle that protects the object.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static GCHandle Alloc(object? value, GCHandleType type) => new GCHandle(value, type);
 
         /// <summary>Frees a GC handle.</summary>
@@ -141,7 +143,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>Determine whether this handle has been allocated or not.</summary>
-        public readonly bool IsAllocated => (nint)_handle != 0;
+        public readonly bool IsAllocated => _handle != 0;
 
         /// <summary>
         /// Used to create a GCHandle from an int.  This is intended to
@@ -169,21 +171,21 @@ namespace System.Runtime.InteropServices
         /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
         public readonly bool Equals(GCHandle other) => _handle == other._handle;
 
-        public static bool operator ==(GCHandle a, GCHandle b) => (nint)a._handle == (nint)b._handle;
+        public static bool operator ==(GCHandle a, GCHandle b) => a._handle == b._handle;
 
-        public static bool operator !=(GCHandle a, GCHandle b) => (nint)a._handle != (nint)b._handle;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static IntPtr GetHandleValue(IntPtr handle) => new IntPtr((nint)handle & ~(nint)1); // Remove Pin flag
+        public static bool operator !=(GCHandle a, GCHandle b) => a._handle != b._handle;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsPinned(IntPtr handle) => ((nint)handle & 1) != 0; // Check Pin flag
+        private static IntPtr GetHandleValue(IntPtr handle) => new IntPtr(handle & ~1); // Remove Pin flag
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsPinned(IntPtr handle) => (handle & 1) != 0; // Check Pin flag
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ThrowIfInvalid(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.
-            if ((nint)handle == 0)
+            if (handle == 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
             }

@@ -1035,7 +1035,7 @@ DONE:
 #ifdef DEBUG
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-    call->AsCall()->callSig  = new (this, CMK_Generic) CORINFO_SIG_INFO;
+    call->AsCall()->callSig  = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
     *call->AsCall()->callSig = *sig;
 #endif
 
@@ -1248,7 +1248,7 @@ DONE:
             fgMarkBackwardJump(loopHead, compCurBB);
 
             setMethodHasRecursiveTailcall();
-            compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+            compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
         }
 
         // We only do these OSR checks in the root method because:
@@ -1267,7 +1267,7 @@ DONE:
             {
                 BasicBlock* const successor = compCurBB->GetUniqueSucc();
                 assert(successor->KindIs(BBJ_RETURN));
-                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                successor->SetFlags(BBF_TAILCALL_SUCCESSOR);
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
         }
@@ -5291,6 +5291,14 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
+    // The VM assumes that the PInvoke frame in IL Stub is only going to be used
+    // for the PInvoke target call. The PInvoke frame cannot be reused by marshalling helper
+    // calls (see InlinedCallFrame::GetActualInteropMethodDesc and related stackwalking code).
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+    {
+        return false;
+    }
+
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     // For platforms that use per-P/Invoke InlinedCallFrame initialization,
     // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
@@ -5301,18 +5309,6 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
     if (block->hasTryIndex())
     {
-        // This does not apply to the raw pinvoke call that is inside the pinvoke
-        // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
-        // otherwise we would end up with a stub that recursively calls itself, and end
-        // up with a stack overflow.
-        // This works correctly because the runtime never emits a catch block in a managed-to-native
-        // IL stub. If the runtime ever emits a catch block into a managed-to-native stub when using
-        // P/Invoke helpers, this condition will need to be revisited.
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
-        {
-            return true;
-        }
-
         // Check if this block's try block or any containing try blocks have catch handlers.
         // If any of the containing try blocks have catch handlers,
         // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
@@ -5329,7 +5325,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 
         return true;
     }
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
 
     return true;
 }
@@ -5407,12 +5403,20 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) || IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
+    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
+                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
     {
-        // PInvoke in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
+        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
         // converted to regular method calls earlier using convertPInvokeCalliToCall.
 
         // PInvoke CALLI in IL stubs must be inlined
+    }
+    else if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+             opts.IsReadyToRun())
+    {
+        // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
+        // be inlined into the stub, otherwise we would end up with a stub that recursively calls
+        // itself, and end up with a stack overflow.
     }
     else
     {
@@ -5426,25 +5430,17 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in NativeAOT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+            if (!impCanPInvokeInline())
             {
-                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
-                // recursive calls to the stub.
+                return;
             }
-            else
-            {
-                if (!impCanPInvokeInline())
-                {
-                    return;
-                }
 
-                // Size-speed tradeoff: don't use inline pinvoke at rarely
-                // executed call sites.  The non-inline version is more
-                // compact.
-                if (block->isRunRarely())
-                {
-                    return;
-                }
+            // Size-speed tradeoff: don't use inline pinvoke at rarely
+            // executed call sites.  The non-inline version is more
+            // compact.
+            if (block->isRunRarely())
+            {
+                return;
             }
         }
 
@@ -6875,7 +6871,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See what we know about the type of 'this' in the call.
     assert(call->gtArgs.HasThisPointer());
     CallArg*             thisArg      = call->gtArgs.GetThisArg();
-    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal(false);
+    GenTree*             thisObj      = thisArg->GetEarlyNode()->gtEffectiveVal();
     bool                 isExact      = false;
     bool                 objIsNonNull = false;
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
@@ -7413,7 +7409,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (call->CanTailCall() && gtIsRecursiveCall(derivedMethod))
     {
         setMethodHasRecursiveTailcall();
-        compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
+        compCurBB->SetFlags(BBF_RECURSIVE_TAILCALL);
     }
 
 #ifdef FEATURE_READYTORUN
@@ -7484,7 +7480,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
 
     // Flag block as needing scrutiny
     //
-    compCurBB->bbFlags |= BBF_HAS_HISTOGRAM_PROFILE;
+    compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
     return true;
 }
 
@@ -9795,7 +9791,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
     optMethodFlags |= OMF_HAS_MDARRAYREF;
-    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
+    compCurBB->SetFlags(BBF_HAS_MDARRAYREF);
 
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 

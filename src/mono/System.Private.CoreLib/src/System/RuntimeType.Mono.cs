@@ -49,6 +49,94 @@ namespace System
             HandleToInfo
         }
 
+        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
+        private struct ListBuilder<T> where T : class?
+        {
+            private T[]? _items;
+            private T _item;
+            private int _count;
+            private int _capacity;
+
+            public ListBuilder(int capacity)
+            {
+                _items = null;
+                _item = null!;
+                _count = 0;
+                _capacity = capacity;
+            }
+
+            public T this[int index]
+            {
+                get
+                {
+                    Debug.Assert(index < Count);
+                    return (_items != null) ? _items[index] : _item;
+                }
+            }
+
+            public T[] ToArray()
+            {
+                if (_count == 0)
+                    return Array.Empty<T>();
+                if (_count == 1)
+                    return new T[1] { _item };
+
+                Array.Resize(ref _items, _count);
+                _capacity = _count;
+                return _items;
+            }
+
+            public void CopyTo(object?[] array, int index)
+            {
+                if (_count == 0)
+                    return;
+
+                if (_count == 1)
+                {
+                    array[index] = _item;
+                    return;
+                }
+
+                Array.Copy(_items!, 0, array, index, _count);
+            }
+
+            public int Count
+            {
+                get
+                {
+                    return _count;
+                }
+            }
+
+            public void Add(T item)
+            {
+                if (_count == 0)
+                {
+                    _item = item;
+                }
+                else
+                {
+                    if (_count == 1)
+                    {
+                        if (_capacity < 2)
+                            _capacity = 4;
+                        _items = new T[_capacity];
+                        _items[0] = _item;
+                    }
+                    else
+                    if (_capacity == _count)
+                    {
+                        int newCapacity = 2 * _capacity;
+                        Array.Resize(ref _items, newCapacity);
+                        _capacity = newCapacity;
+                    }
+
+                    _items![_count] = item;
+                }
+                _count++;
+            }
+        }
+
         #endregion
 
         #region Static Members
@@ -710,7 +798,7 @@ namespace System
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.AsSpan());
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
                 }
             }
 
@@ -739,7 +827,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= DefaultBinder;
 
@@ -1174,8 +1262,8 @@ namespace System
                 return cache.CorElementType;
 
             var type = this;
-            cache.CorElementType = RuntimeTypeHandle.GetCorElementType (new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            cache.CorElementType = RuntimeTypeHandle.GetCorElementType(new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.CorElementType);
             return cache.CorElementType;
         }
@@ -1188,7 +1276,7 @@ namespace System
 
             var type = this;
             cache.TypeAttributes = RuntimeTypeHandle.GetAttributes(new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.TypeAttributes);
             return cache.TypeAttributes;
         }
@@ -1606,7 +1694,7 @@ namespace System
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
 
             // Note down even if we found no constructors
             UpdateCached(TypeCacheEntries.DefaultCtor);
@@ -2379,7 +2467,7 @@ namespace System
                     for (int i = 1; i < typeNum + 1; i++)
                     {
                         var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[i]);
-                        fPtrReturnAndParameterTypes[i-1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                        fPtrReturnAndParameterTypes[i - 1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
                     }
                 }
                 return fPtrReturnAndParameterTypes;

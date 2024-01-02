@@ -167,6 +167,12 @@ DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx",
 DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")
 #endif
 
+#if defined(TARGET_WASI)
+DEFINE_BOOL_READONLY(llvm_emulate_unwind, "emulate-unwind", TRUE, "")
+#else
+DEFINE_BOOL_READONLY(llvm_emulate_unwind, "emulate-unwind", FALSE, "")
+#endif
+
 /* Cleanup */
 #undef DEFINE_OPTION_FULL
 #undef DEFINE_OPTION_READONLY

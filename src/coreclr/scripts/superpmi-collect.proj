@@ -236,6 +236,7 @@
     <BDN_Partition Include="Partition3" BenchmarkPath="src\benchmarks\real-world\ImageSharp\ImageSharp.Benchmarks.csproj" BenchmarkBinary="ImageSharp.Benchmarks.dll" />
     <BDN_Partition Include="Partition4" BenchmarkPath="src\benchmarks\real-world\Microsoft.ML.Benchmarks\Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
     <BDN_Partition Include="Partition5" BenchmarkPath="src\benchmarks\real-world\Roslyn\CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
+    <BDN_Partition Include="Partition6" BenchmarkPath="src\benchmarks\real-world\PowerShell.Benchmarks\PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
   </ItemGroup>  
   <ItemGroup Condition="'$(CollectionName)' == 'realworld' and '$(AGENT_OS)' != 'Windows_NT'">
     <BDN_Partition Include="Partition0" BenchmarkPath="src/benchmarks/real-world/bepuphysics2/DemoBenchmarks.csproj" BenchmarkBinary="DemoBenchmarks.dll" />
@@ -244,6 +245,7 @@
     <BDN_Partition Include="Partition3" BenchmarkPath="src/benchmarks/real-world/ImageSharp/ImageSharp.Benchmarks.csproj" BenchmarkBinary="ImageSharp.Benchmarks.dll" />
     <BDN_Partition Include="Partition4" BenchmarkPath="src/benchmarks/real-world/Microsoft.ML.Benchmarks/Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
     <BDN_Partition Include="Partition5" BenchmarkPath="src/benchmarks/real-world/Roslyn/CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
+    <BDN_Partition Include="Partition6" BenchmarkPath="src/benchmarks/real-world/PowerShell.Benchmarks/PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
   </ItemGroup>  
 
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">

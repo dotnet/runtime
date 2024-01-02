@@ -43,7 +43,8 @@ namespace System.Xml.XPath
 
         internal const string space = "space";
 
-        internal static XmlNodeType[] convertFromXPathNodeType = {
+        private static ReadOnlySpan<XmlNodeType> ConvertFromXPathNodeType =>
+        [
             XmlNodeType.Document,               // XPathNodeType.Root
             XmlNodeType.Element,                // XPathNodeType.Element
             XmlNodeType.Attribute,              // XPathNodeType.Attribute
@@ -54,7 +55,7 @@ namespace System.Xml.XPath
             XmlNodeType.ProcessingInstruction,  // XPathNodeType.ProcessingInstruction
             XmlNodeType.Comment,                // XPathNodeType.Comment
             XmlNodeType.None                    // XPathNodeType.All
-        };
+        ];
 
         /// <summary>
         /// Translates an XPathNodeType value into the corresponding XmlNodeType value.
@@ -62,7 +63,7 @@ namespace System.Xml.XPath
         /// </summary>
         internal static XmlNodeType ToXmlNodeType(XPathNodeType typ)
         {
-            return XPathNavigatorReader.convertFromXPathNodeType[(int)typ];
+            return ConvertFromXPathNodeType[(int)typ];
         }
 
         internal object? UnderlyingObject

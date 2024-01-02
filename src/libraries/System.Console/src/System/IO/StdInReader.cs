@@ -22,6 +22,7 @@ namespace System.IO
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
+        private readonly Decoder _decoder;
         private readonly Encoding _encoding;
         private readonly Encoder _echoEncoder;
         private Encoder? _bufferReadEncoder;
@@ -41,6 +42,7 @@ namespace System.IO
             _endIndex = 0;
             _readLineSB = new StringBuilder();
             _echoEncoder = _encoding.GetEncoder();
+            _decoder = _encoding.GetDecoder();
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
@@ -60,7 +62,7 @@ namespace System.IO
             Span<char> chars = (uint)maxCharsCount <= MaxStackAllocation ?
                 stackalloc char[MaxStackAllocation] :
                 new char[maxCharsCount];
-            int charLen = _encoding.GetChars(buffer, chars);
+            int charLen = _decoder.GetChars(buffer, chars, flush: false);
             chars = chars.Slice(0, charLen);
 
             // Ensure our buffer is large enough to hold all of the data
@@ -153,7 +155,7 @@ namespace System.IO
             // or we need to read a new line from stdin.
             bool freshKeys = _availableKeys.Count == 0;
 
-           // Don't carry over chars from previous ReadLine call.
+            // Don't carry over chars from previous ReadLine call.
             _readLineSB.Clear();
 
             Interop.Sys.InitializeConsoleBeforeRead();

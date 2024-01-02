@@ -165,7 +165,7 @@ namespace System.Reflection.Runtime.General
                     return true;
 
                 Type walk = fromTypeInfo;
-                for (;;)
+                for (; ; )
                 {
                     Type? baseType = walk.BaseType;
                     if (baseType == null)

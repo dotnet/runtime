@@ -489,7 +489,7 @@ namespace System.IO
                 }
                 else if (!CanSeek)
                 {
-                    if(_strategy.IsClosed)
+                    if (_strategy.IsClosed)
                     {
                         ThrowHelper.ThrowObjectDisposedException_FileClosed();
                     }

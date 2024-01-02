@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -19,6 +21,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), new[] { typeof(Version) });
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ret);
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -48,6 +51,7 @@ namespace System.Reflection.Emit.Tests
                 int expectedReturn = 5;
                 ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
                 ilGenerator.Emit(OpCodes.Ret);
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -86,7 +90,7 @@ namespace System.Reflection.Emit.Tests
                 addMethodIL.Emit(OpCodes.Ldarg_1);
                 addMethodIL.Emit(OpCodes.Add);
                 addMethodIL.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -125,7 +129,7 @@ namespace System.Reflection.Emit.Tests
                 addMethodIL.Emit(OpCodes.Ldc_R8, (double)123456.123);
                 addMethodIL.Emit(OpCodes.Add);
                 addMethodIL.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType", TypeAttributes.NotPublic);
                 MethodBuilder stringMethod = anotherType.DefineMethod("StringMethod", MethodAttributes.FamORAssem, typeof(string), Type.EmptyTypes);
                 MethodBuilder floatMethod = anotherType.DefineMethod("FloatMethod", MethodAttributes.Family, typeof(float), Type.EmptyTypes);
@@ -140,7 +144,7 @@ namespace System.Reflection.Emit.Tests
                 ILGenerator longMethodIL = longMethod.GetILGenerator();
                 longMethodIL.Emit(OpCodes.Ldc_I8, (long)1234567);
                 longMethodIL.Emit(OpCodes.Ret);
-
+                anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -223,12 +227,12 @@ namespace System.Reflection.Emit.Tests
                 il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 2
                 il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 1
                 il2.Emit(OpCodes.Ret);         // pop 1 stack size 0
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
-                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
-                Assert.Equal(9, getMaxStackSizeMethod.Invoke(il1, new object[0]));
-                Assert.Equal(3, getMaxStackSizeMethod.Invoke(il2, new object[0]));
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(9, getMaxStackMethod.Invoke(il1, null));
+                Assert.Equal(3, getMaxStackMethod.Invoke(il2, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -239,10 +243,17 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        private MethodInfo LoadILGenerator_GetMaxStackSizeMethod()
+        private static MethodInfo GetMaxStackMethod()
         {
             Type ilgType = Type.GetType("System.Reflection.Emit.ILGeneratorImpl, System.Reflection.Emit", throwOnError: true)!;
-            return ilgType.GetMethod("GetMaxStackSize", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+            return ilgType.GetMethod("GetMaxStack", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+        }
+
+        private static FieldInfo GetMaxStackDepthAndCurrentStackDepthField(out FieldInfo currentStack)
+        {
+            Type ilgType = Type.GetType("System.Reflection.Emit.ILGeneratorImpl, System.Reflection.Emit", throwOnError: true)!;
+            currentStack = ilgType.GetField("_currentStackDepth", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            return ilgType.GetField("_maxStackDepth", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
         [Fact]
@@ -274,11 +285,11 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldc_I4_M1);
                 il.MarkLabel(endOfMethod);
                 il.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
-                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
-                Assert.Equal(2, getMaxStackSizeMethod.Invoke(il, new object[0]));
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -345,11 +356,11 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldstr, "many bananas");
                 il.MarkLabel(endOfMethod);
                 il.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
-                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
-                Assert.Equal(6, getMaxStackSizeMethod.Invoke(il, new object[0]));
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(1, getMaxStackMethod.Invoke(il, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -392,9 +403,9 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Stloc, int2Local);
                 il.Emit(OpCodes.Ldloc_3);
                 il.Emit(OpCodes.Ret);
-
-                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
-                Assert.Equal(2, getMaxStackSizeMethod.Invoke(il, new object[0]));
+                type.CreateType();
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -481,7 +492,7 @@ namespace System.Reflection.Emit.Tests
                 multiplyMethodIL.Emit(OpCodes.Stloc, iLocal);
                 multiplyMethodIL.Emit(OpCodes.Ldloc, iLocal);
                 multiplyMethodIL.Emit(OpCodes.Ret);
-
+                type.CreateType();
                 TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType", TypeAttributes.NotPublic, type);
                 MethodBuilder stringMethod = anotherType.DefineMethod("StringMethod", MethodAttributes.FamORAssem, typeof(string), Type.EmptyTypes);
                 ILGenerator stringMethodIL = stringMethod.GetILGenerator();
@@ -514,7 +525,7 @@ namespace System.Reflection.Emit.Tests
                 longMethodIL.Emit(OpCodes.Stloc, longLocal);
                 longMethodIL.Emit(OpCodes.Ldloc, longLocal);
                 longMethodIL.Emit(OpCodes.Ret);
-
+                anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -538,9 +549,9 @@ namespace System.Reflection.Emit.Tests
             LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
             LocalBuilder nullBuilder = null;
 
-            Assert.Throws<ArgumentNullException>(() => il.DeclareLocal(null!));
-            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Ldloc, nullBuilder));
-            Assert.Throws<ArgumentException>(() => anotherIL.Emit(OpCodes.Ldloc, stringLocal));
+            Assert.Throws<ArgumentNullException>("localType", () => il.DeclareLocal(null!));
+            Assert.Throws<ArgumentNullException>("local", () => il.Emit(OpCodes.Ldloc, nullBuilder));
+            Assert.Throws<ArgumentException>("local", () => anotherIL.Emit(OpCodes.Ldloc, stringLocal));
         }
 
         [Fact]
@@ -559,6 +570,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Mul);
                 il.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -620,7 +632,7 @@ namespace System.Reflection.Emit.Tests
                 ilMain.Emit(OpCodes.Box, typeof(int));
                 ilMain.Emit(OpCodes.Call, writeLineObj);
                 ilMain.Emit(OpCodes.Ret);
-
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -651,6 +663,133 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void ReferenceConstructedGenericMethod()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(null, null, null, new[] { methodParams[0] }, null, null);
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                ilg.Emit(OpCodes.Ldarg_0);
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ret);
+                MethodBuilder mainMethod = type.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+                ilg = mainMethod.GetILGenerator();
+                MethodInfo GMOfString = genericMethod.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateType();
+                saveMethod.Invoke(ab, new[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo genericMethodFromDisk = typeFromDisk.GetMethod("GM");
+                Assert.True(genericMethodFromDisk.IsGenericMethod);
+                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                byte[] ilBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+            }
+        }
+
+        [Fact]
+        public void ReferenceConstructedGenericMethodFieldOfConstructedType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(new[] { "T" });
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public |
+                    MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+                FieldBuilder myField = type.DefineField("Field", typeParams[0], FieldAttributes.Public);
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(null, null, null, new [] { methodParams[0] }, null, null);
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                Type SampleOfU = type.MakeGenericType(methodParams[0]);
+                ilg.DeclareLocal(SampleOfU);
+                ConstructorInfo ctorOfU = TypeBuilder.GetConstructor(SampleOfU, ctor);
+                ilg.Emit(OpCodes.Newobj, ctorOfU);
+                ilg.Emit(OpCodes.Stloc_0);
+                ilg.Emit(OpCodes.Ldloc_0);
+                ilg.Emit(OpCodes.Ldarg_0);
+                FieldInfo FieldOfU = TypeBuilder.GetField(SampleOfU, myField);
+                ilg.Emit(OpCodes.Stfld, FieldOfU);
+                ilg.Emit(OpCodes.Ldloc_0);
+                ilg.Emit(OpCodes.Ldfld, FieldOfU);
+                ilg.Emit(OpCodes.Box, methodParams[0]);
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateType();
+                TypeBuilder dummy = ab.GetDynamicModule("MyModule").DefineType("Dummy", TypeAttributes.Class | TypeAttributes.NotPublic);
+                MethodBuilder mainMethod = dummy.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+                ilg = mainMethod.GetILGenerator();
+                Type SampleOfInt = type.MakeGenericType(typeof(string));
+                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt, genericMethod);
+                MethodInfo GMOfString = SampleOfIntGM.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
+                dummy.CreateType();
+/* Generated IL would like this in C#:
+public class MyType<T>
+{
+	public T Field;
+
+	public static void GM<U>(U P_0)
+	{
+		MyType<U> myType = new MyType<U>();
+		myType.Field = P_0;
+		Console.WriteLine(myType.Field);
+	}
+}
+
+internal class Dummy
+{
+	public static void Main()
+	{
+		MyType<string>.GM("HelloWorld");
+	}
+}               */
+                saveMethod.Invoke(ab, new[] { file.Path });
+
+                Module module = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
+                Type myTypeFromDisk = module.GetType("MyType");
+                Assert.True(myTypeFromDisk.IsGenericType);
+                Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
+                Assert.Equal("T", myTypeFromDisk.GetGenericArguments()[0].Name);
+                Assert.Equal("T", myTypeFromDisk.GetField("Field").FieldType.Name);
+                MethodInfo genericMethodFromDisk = myTypeFromDisk.GetMethod("GM");
+                Assert.True(genericMethodFromDisk.IsGenericMethod);
+                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                Assert.Equal(1, genericMethodFromDisk.GetMethodBody().LocalVariables.Count);
+                Assert.Equal("MyType[U]", genericMethodFromDisk.GetMethodBody().LocalVariables[0].LocalType.ToString());
+                byte[] gmIlBytes = genericMethodFromDisk.GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Newobj.Value, gmIlBytes[0]);
+                Assert.Equal(OpCodes.Stloc_0.Value, gmIlBytes[5]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[6]);
+                Assert.Equal(OpCodes.Ldarg_0.Value, gmIlBytes[7]);
+                Assert.Equal(OpCodes.Stfld.Value, gmIlBytes[8]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[13]);
+                Assert.Equal(OpCodes.Ldfld.Value, gmIlBytes[14]);
+                Assert.Equal(OpCodes.Box.Value, gmIlBytes[19]);
+                Assert.Equal(OpCodes.Call.Value, gmIlBytes[24]);
+                Assert.Equal(OpCodes.Ret.Value, gmIlBytes[29]);
+                byte[] ilBytes = module.GetType("Dummy").GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+            }
+        }
+
+        [Fact]
         public void EmitWriteLineMacroTest()
         {
             using (TempFile file = TempFile.Create())
@@ -669,7 +808,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EmitWriteLine(local);
                 ilGenerator.Emit(OpCodes.Ldsfld, field);
                 ilGenerator.Emit(OpCodes.Ret);
-
+                type1.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -727,7 +866,8 @@ namespace System.Reflection.Emit.Tests
                 ilMain.Emit(OpCodes.Ret);
                 ILGenerator il = staticMethod.GetILGenerator();
                 il.Emit(OpCodes.Ret);
-
+                tb.CreateType();
+                anotherType.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -758,7 +898,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Ldarg_2);
                 il.Emit(OpCodes.Newobj, ctor);
                 il.Emit(OpCodes.Ret);
-
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -784,7 +924,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Initobj, typeof(ValueTuple));
                 ilGenerator.Emit(OpCodes.Ldc_I4, 1);
                 ilGenerator.Emit(OpCodes.Ret);
-
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -810,21 +950,24 @@ namespace System.Reflection.Emit.Tests
             FieldInfo nullField = null;
             Label[] nullArray = null;
             Type nullType = null;
+            SignatureHelper signature = null;
 
-            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Call, nullMethod));
-            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Callvirt, nullConstructor));
-            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Ldfld, nullField));
-            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Switch, nullArray));
-            Assert.Throws<ArgumentNullException>(() => il.Emit(OpCodes.Switch, nullType));
-            Assert.Throws<ArgumentNullException>(() => il.EmitCall(OpCodes.Call, nullMethod, null));
+            Assert.Throws<ArgumentNullException>("meth", () => il.Emit(OpCodes.Call, nullMethod));
+            Assert.Throws<ArgumentNullException>("con", () => il.Emit(OpCodes.Callvirt, nullConstructor));
+            Assert.Throws<ArgumentNullException>("field", () => il.Emit(OpCodes.Ldfld, nullField));
+            Assert.Throws<ArgumentNullException>("labels", () => il.Emit(OpCodes.Switch, nullArray));
+            Assert.Throws<ArgumentNullException>("cls", () => il.Emit(OpCodes.Switch, nullType));
+            Assert.Throws<ArgumentNullException>("methodInfo", () => il.EmitCall(OpCodes.Call, nullMethod, null));
             // only OpCodes.Switch expected
-            Assert.Throws<ArgumentException>(() => il.Emit(OpCodes.Call, new Label[0])); 
+            Assert.Throws<ArgumentException>("opcode", () => il.Emit(OpCodes.Call, new Label[0])); 
             // only OpCodes.Call or .OpCodes.Callvirt or OpCodes.Newob expected
-            Assert.Throws<ArgumentException>(() => il.Emit(OpCodes.Switch, typeof(object).GetConstructor(Type.EmptyTypes)));
+            Assert.Throws<ArgumentException>("opcode", () => il.Emit(OpCodes.Switch, typeof(object).GetConstructor(Type.EmptyTypes)));
             // Undefined label
             Assert.Throws<ArgumentException>(() => il.MarkLabel(new Label()));
             // only OpCodes.Call or OpCodes.Callvirt or OpCodes.Newob expected
-            Assert.Throws<ArgumentException>(() => il.EmitCall(OpCodes.Ldfld, method, null));
+            Assert.Throws<ArgumentException>("opcode", () => il.EmitCall(OpCodes.Ldfld, method, null));
+            Assert.Throws<ArgumentNullException>("signature", () => il.Emit(OpCodes.Calli, signature));
+            Assert.Throws<InvalidOperationException>(() => il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, null, null, [typeof(string)]));
         }
 
         [Fact]
@@ -837,6 +980,7 @@ namespace System.Reflection.Emit.Tests
                 Type dBZException = typeof(DivideByZeroException);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Label exBlock = ilGenerator.BeginExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
                 ilGenerator.Emit(OpCodes.Ldarg_1);
@@ -849,6 +993,9 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
+
+                Assert.Equal(3, getMaxStackMethod.Invoke(ilGenerator, null));
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -884,24 +1031,37 @@ namespace System.Reflection.Emit.Tests
                 Type dBZException = typeof(DivideByZeroException);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
+                FieldInfo maxStackField = GetMaxStackDepthAndCurrentStackDepthField(out FieldInfo currentStack);
                 LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
                 Label exBlock = ilGenerator.BeginExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
                 ilGenerator.Emit(OpCodes.Ldarg_1);
                 ilGenerator.Emit(OpCodes.Div);
                 ilGenerator.Emit(OpCodes.Stloc_0);
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator));
                 ilGenerator.BeginCatchBlock(dBZException);
+                Assert.Equal(1, currentStack.GetValue(ilGenerator));
                 ilGenerator.EmitWriteLine("Error: division by zero");
                 ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
                 ilGenerator.Emit(OpCodes.Stloc_0);
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator));
+                ilGenerator.Emit(OpCodes.Pop); // pop the exception in the stack, else its gonna added to the _depthAdjustment
                 ilGenerator.BeginCatchBlock(exception);
+                Assert.Equal(1, currentStack.GetValue(ilGenerator));
                 ilGenerator.EmitWriteLine("Error: generic Exception");
                 ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
                 ilGenerator.Emit(OpCodes.Stloc_0);
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator));
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator));
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -921,14 +1081,16 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
                 Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
                 Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[25]);
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[30]); // "Error: division by zero"
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[35]); // Calls Console.WriteLine
-                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[40]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[45]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[46]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[51]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[52]);
+                Assert.Equal(OpCodes.Pop.Value, bodyBytes[25]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[26]);
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[31]); // "Error: division by zero"
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[36]); // Calls Console.WriteLine
+                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[41]);
+                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[46]);
+                Assert.Equal(OpCodes.Pop.Value, bodyBytes[47]);
+                Assert.Equal(OpCodes.Leave.Value, bodyBytes[48]);
+                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[53]);
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[54]);
             }
         }
 
@@ -976,7 +1138,11 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -999,6 +1165,7 @@ namespace System.Reflection.Emit.Tests
                 Type overflowException = typeof(OverflowException);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
+                FieldInfo maxStackField = GetMaxStackDepthAndCurrentStackDepthField(out FieldInfo _);
                 LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
                 Label filterEnd = ilGenerator.DefineLabel();
                 Label filterCheck = ilGenerator.DefineLabel();
@@ -1009,9 +1176,11 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Ldarg_1);
                 ilGenerator.Emit(OpCodes.Div);
                 ilGenerator.Emit(OpCodes.Stloc_0);
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator)); 
                 ilGenerator.BeginCatchBlock(overflowException);
                 ilGenerator.EmitWriteLine("Overflow Exception!");
                 ilGenerator.ThrowException(overflowException);
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator));
                 ilGenerator.BeginExceptFilterBlock();
                 ilGenerator.Emit(OpCodes.Isinst, dBZException);
                 ilGenerator.Emit(OpCodes.Dup);
@@ -1025,6 +1194,7 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Ldc_I4_0);
                 ilGenerator.Emit(OpCodes.Cgt_Un);
                 ilGenerator.MarkLabel(filterEnd);
+                Assert.Equal(2, maxStackField.GetValue(ilGenerator));
                 ilGenerator.BeginCatchBlock(null);
                 ilGenerator.EmitWriteLine("Filtered division by zero");
                 ilGenerator.Emit(OpCodes.Ldc_R4, 0.0f);
@@ -1038,7 +1208,11 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1071,7 +1245,11 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1111,7 +1289,11 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EmitWriteLine("Finally handler");
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1134,47 +1316,53 @@ namespace System.Reflection.Emit.Tests
                 ConstructorInfo myConstructorInfo = overflowEType.GetConstructor(new [] { typeof(string) });
                 MethodInfo myExToStrMI = overflowEType.GetMethod("ToString");
                 MethodInfo myWriteLineMI = typeof(Console).GetMethod("WriteLine", new [] {typeof(string),typeof(object) });
-                ILGenerator myAdderIL = method.GetILGenerator();
-                LocalBuilder myLocalBuilder1 = myAdderIL.DeclareLocal(typeof(int));
-                LocalBuilder myLocalBuilder2 = myAdderIL.DeclareLocal(overflowEType);
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder myLocalBuilder1 = ilGenerator.DeclareLocal(typeof(int));
+                LocalBuilder myLocalBuilder2 = ilGenerator.DeclareLocal(overflowEType);
 
-                Label myFailedLabel = myAdderIL.DefineLabel();
-                Label myEndOfMethodLabel = myAdderIL.DefineLabel();
-                Label myLabel = myAdderIL.BeginExceptionBlock();
-                myAdderIL.Emit(OpCodes.Ldarg_0);
-                myAdderIL.Emit(OpCodes.Ldc_I4_S, 10);
-                myAdderIL.Emit(OpCodes.Bgt_S, myFailedLabel);
-                myAdderIL.Emit(OpCodes.Ldarg_1);
-                myAdderIL.Emit(OpCodes.Ldc_I4_S, 10);
-                myAdderIL.Emit(OpCodes.Bgt_S, myFailedLabel);
-                myAdderIL.Emit(OpCodes.Ldarg_0);
-                myAdderIL.Emit(OpCodes.Ldarg_1);
-                myAdderIL.Emit(OpCodes.Add_Ovf_Un);
-                myAdderIL.Emit(OpCodes.Stloc_S, myLocalBuilder1);
-                myAdderIL.Emit(OpCodes.Br_S, myEndOfMethodLabel);
-                myAdderIL.MarkLabel(myFailedLabel);
-                myAdderIL.Emit(OpCodes.Ldstr, "Cannot accept values over 10 for add.");
-                myAdderIL.Emit(OpCodes.Newobj, myConstructorInfo);
-                myAdderIL.Emit(OpCodes.Stloc_S, myLocalBuilder2);
-                myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder2);
-                myAdderIL.Emit(OpCodes.Throw);
-                myAdderIL.BeginExceptFilterBlock();
-                myAdderIL.BeginCatchBlock(null);
-                myAdderIL.EmitWriteLine("Except filter block handled.");
-                myAdderIL.BeginCatchBlock(overflowEType);
-                myAdderIL.Emit(OpCodes.Ldstr, "{0}");
-                myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder2);
-                myAdderIL.EmitCall(OpCodes.Callvirt, myExToStrMI, null);
-                myAdderIL.EmitCall(OpCodes.Call, myWriteLineMI, null);
-                myAdderIL.Emit(OpCodes.Ldc_I4_M1);
-                myAdderIL.Emit(OpCodes.Stloc_S, myLocalBuilder1);
-                myAdderIL.BeginFinallyBlock();
-                myAdderIL.EmitWriteLine("Finally block handled.");
-                myAdderIL.EndExceptionBlock();
-                myAdderIL.MarkLabel(myEndOfMethodLabel);
-                myAdderIL.Emit(OpCodes.Ldloc_S, myLocalBuilder1);
-                myAdderIL.Emit(OpCodes.Ret);
+                Label myFailedLabel = ilGenerator.DefineLabel();
+                Label myEndOfMethodLabel = ilGenerator.DefineLabel();
+                Label myLabel = ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldc_I4_S, 10);
+                ilGenerator.Emit(OpCodes.Bgt_S, myFailedLabel);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Ldc_I4_S, 10);
+                ilGenerator.Emit(OpCodes.Bgt_S, myFailedLabel);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Add_Ovf_Un);
+                ilGenerator.Emit(OpCodes.Stloc_S, myLocalBuilder1);
+                ilGenerator.Emit(OpCodes.Br_S, myEndOfMethodLabel);
+                ilGenerator.MarkLabel(myFailedLabel);
+                ilGenerator.Emit(OpCodes.Ldstr, "Cannot accept values over 10 for add.");
+                ilGenerator.Emit(OpCodes.Newobj, myConstructorInfo);
+                ilGenerator.Emit(OpCodes.Stloc_S, myLocalBuilder2);
+                ilGenerator.Emit(OpCodes.Ldloc_S, myLocalBuilder2);
+                ilGenerator.Emit(OpCodes.Throw);
+                ilGenerator.BeginExceptFilterBlock();
+                ilGenerator.BeginCatchBlock(null);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.EmitWriteLine("Except filter block handled.");
+                ilGenerator.BeginCatchBlock(overflowEType);
+                ilGenerator.Emit(OpCodes.Stloc_S, myLocalBuilder2);
+                ilGenerator.Emit(OpCodes.Ldstr, "{0}");
+                ilGenerator.Emit(OpCodes.Ldloc_S, myLocalBuilder2);
+                ilGenerator.EmitCall(OpCodes.Callvirt, myExToStrMI, null);
+                ilGenerator.EmitCall(OpCodes.Call, myWriteLineMI, null);
+                ilGenerator.Emit(OpCodes.Ldc_I4_M1);
+                ilGenerator.Emit(OpCodes.Stloc_S, myLocalBuilder1);
+                ilGenerator.BeginFinallyBlock();
+                ilGenerator.EmitWriteLine("Finally block handled.");
+                ilGenerator.EndExceptionBlock();
+                ilGenerator.MarkLabel(myEndOfMethodLabel);
+                ilGenerator.Emit(OpCodes.Ldloc_S, myLocalBuilder1);
+                ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1207,7 +1395,11 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1239,27 +1431,50 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(int), typeof(int) });
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 ilGenerator.BeginExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
                 ilGenerator.Emit(OpCodes.Ldarg_1);
                 ilGenerator.Emit(OpCodes.Div);
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
                 ilGenerator.BeginExceptionBlock();
                 ilGenerator.EmitWriteLine("Try block nested in try");
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Ldc_I4_4);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
+                Assert.Equal(3, getMaxStackMethod.Invoke(ilGenerator, null));
                 ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EmitWriteLine("Catch block nested in try");
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.EmitWriteLine("Outer try block ends");
                 ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EmitWriteLine("Outer catch block starts");
                 ilGenerator.BeginExceptionBlock();
                 ilGenerator.EmitWriteLine("Try block nested in catch");
                 ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.Emit(OpCodes.Ldc_I4_4);
+                ilGenerator.Emit(OpCodes.Ldc_I4_4);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Pop);
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EmitWriteLine("Catch block nested in catch");
+                Assert.Equal(5, getMaxStackMethod.Invoke(ilGenerator, null)); // 5 including the exception object
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.EmitWriteLine("Outer catch block ends");
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assert.Equal(5, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1283,27 +1498,34 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int), typeof(int) });
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 LocalBuilder local = ilGenerator.DeclareLocal(typeof(int));
                 ilGenerator.Emit(OpCodes.Ldc_I4_0);
-                ilGenerator.Emit(OpCodes.Stloc_0);
 
                 ilGenerator.BeginExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
                 ilGenerator.Emit(OpCodes.Ldarg_1);
                 ilGenerator.Emit(OpCodes.Div);
                 ilGenerator.Emit(OpCodes.Stloc_0);
-
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
                 ilGenerator.BeginExceptionBlock();
                 ilGenerator.EmitWriteLine("1st nested try block nested in try");
                 Label myLabel = ilGenerator.BeginExceptionBlock();
                 ilGenerator.EmitWriteLine("2nd nested try block starts");
                 ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
+                ilGenerator.BeginExceptionBlock();
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
                 ilGenerator.Emit(OpCodes.Ldarg_0);
                 ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
                 ilGenerator.Emit(OpCodes.Stloc_0);
-
-                ilGenerator.BeginExceptionBlock();
                 ilGenerator.EmitWriteLine("3rd nested try block");
+                Assert.Equal(4, getMaxStackMethod.Invoke(ilGenerator, null));
                 ilGenerator.BeginFinallyBlock();
                 ilGenerator.EmitWriteLine("3rd nested finally block");
                 ilGenerator.EndExceptionBlock();
@@ -1311,27 +1533,45 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.EmitWriteLine("2nd nested try block ends");
                 ilGenerator.BeginExceptFilterBlock();
                 ilGenerator.EmitWriteLine("2nd nested filter block starts.");
+                Assert.Equal(4, getMaxStackMethod.Invoke(ilGenerator, null));
                 ilGenerator.BeginCatchBlock(null);
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EmitWriteLine("2nd nested filter block handled.");
                 ilGenerator.BeginCatchBlock(exception);
                 ilGenerator.EmitWriteLine("2nd nested catch block handled.");
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Add);
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                Assert.Equal(5, getMaxStackMethod.Invoke(ilGenerator, null)); // including the exception object
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.BeginFinallyBlock();
                 ilGenerator.EmitWriteLine("2nd nested finally block handled.");
                 ilGenerator.EndExceptionBlock();
 
                 ilGenerator.BeginCatchBlock(exception);
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EmitWriteLine("Catch block nested in try");
                 ilGenerator.EndExceptionBlock();
 
                 ilGenerator.EmitWriteLine("Outer try block ends");
                 ilGenerator.BeginCatchBlock(exception);
                 ilGenerator.EmitWriteLine("Outer catch block starts");
+                ilGenerator.Emit(OpCodes.Pop);
                 ilGenerator.EmitWriteLine("Outer catch block ends");
                 ilGenerator.EndExceptionBlock();
 
+                ilGenerator.Emit(OpCodes.Stloc_0);
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assert.Equal(5, getMaxStackMethod.Invoke(ilGenerator, null));
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
                 Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
@@ -1343,6 +1583,595 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[3].Flags);
                 Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[4].Flags);
                 Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[5].Flags);
+            }
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate int Int32SumStdCall(int a, int b);
+
+        private static int Int32Sum(int a, int b) => a + b;
+
+        [Fact]
+        public void EmitCalliBlittable()
+        {
+            int a = 1, b = 1, result = 2;
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliBlittable"), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                Type returnType = typeof(int);
+                MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
+                methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                ILGenerator il = methodBuilder.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Ldarg_0);
+                il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, returnType, [typeof(int), typeof(int)]);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                var del = new Int32SumStdCall(Int32Sum);
+                IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+                object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, a, b]);
+                GC.KeepAlive(del);
+
+                Assert.IsType(returnType, resultValue);
+                Assert.Equal(result, resultValue);
+            }
+        }
+
+        [Fact]
+        public void EmitCalliManagedBlittable()
+        {
+            int a = 1, b = 1, result = 2;
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliManagedBlittable"), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                Type returnType = typeof(int);
+                MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
+                methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                MethodInfo method = typeof(AssemblySaveILGeneratorTests).GetMethod(nameof(Int32Sum), BindingFlags.NonPublic | BindingFlags.Static)!;
+                IntPtr funcPtr = method.MethodHandle.GetFunctionPointer();
+                ILGenerator il = methodBuilder.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Ldarg_0);
+                il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, returnType, [typeof(int), typeof(int)], null);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, a, b]);
+
+                Assert.IsType(returnType, resultValue);
+                Assert.Equal(result, resultValue);
+            }
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate string StringReverseCdecl(string a);
+
+        private static string StringReverse(string a) => string.Join("", a.Reverse());
+
+        [Fact]
+        public void EmitCalliNonBlittable()
+        {
+            string input = "Test string!", result = "!gnirts tseT";
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliNonBlittable"), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                Type returnType = typeof(string);
+                MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(string)]);
+                methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                ILGenerator il = methodBuilder.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldarg_0);
+                il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, returnType, [typeof(string)]);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                var del = new StringReverseCdecl(StringReverse);
+                IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+                object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, input]);
+                GC.KeepAlive(del);
+
+                Assert.IsType(returnType, resultValue);
+                Assert.Equal(result, resultValue);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96389", TestRuntimes.Mono)]
+        public void EmitCall_VarArgsMethodInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder mb1 = tb.DefineMethod("VarArgMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.VarArgs, null, [typeof(string)]);
+                ILGenerator il1 = mb1.GetILGenerator();
+                LocalBuilder locAi = il1.DeclareLocal(typeof(ArgIterator));
+                LocalBuilder locNext = il1.DeclareLocal(typeof(bool));
+                Label labelCheckCondition = il1.DefineLabel();
+                Label labelNext = il1.DefineLabel();
+                // Load the fixed argument and print it.
+                il1.Emit(OpCodes.Ldarg_0);
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(string)]));
+                // Load the address of the local variable represented by
+                // locAi, which will hold the ArgIterator.
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                // Load the address of the argument list, and call the ArgIterator
+                // constructor that takes an array of runtime argument handles.
+                il1.Emit(OpCodes.Arglist);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetConstructor([typeof(RuntimeArgumentHandle)]));
+                // Enter the loop at the point where the remaining argument
+                // count is tested.
+                il1.Emit(OpCodes.Br_S, labelCheckCondition);
+                // At the top of the loop, call GetNextArg to get the next
+                // argument from the ArgIterator. Convert the typed reference
+                // to an object reference and write the object to the console.
+                il1.MarkLabel(labelNext);
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetNextArg", Type.EmptyTypes));
+                il1.Emit(OpCodes.Call, typeof(TypedReference).GetMethod("ToObject"));
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(object)]));
+                il1.MarkLabel(labelCheckCondition);
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetRemainingCount"));
+                // If the remaining count is greater than zero, go to
+                // the top of the loop.
+                il1.Emit(OpCodes.Ldc_I4_0);
+                il1.Emit(OpCodes.Cgt);
+                il1.Emit(OpCodes.Stloc_1);
+                il1.Emit(OpCodes.Ldloc_1);
+                il1.Emit(OpCodes.Brtrue_S, labelNext);
+                il1.Emit(OpCodes.Ret);
+
+                // Create a method that contains a call to the vararg method.
+                MethodBuilder mb2 = tb.DefineMethod("CallVarArgMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard);
+                ILGenerator il2 = mb2.GetILGenerator();
+                // Push arguments on the stack: one for the fixed string
+                // parameter, and two for the list.
+                il2.Emit(OpCodes.Ldstr, "Hello ");
+                il2.Emit(OpCodes.Ldstr, "world ");
+                il2.Emit(OpCodes.Ldc_I4, 2006);
+                // Call the vararg method, specifying the types of the
+                // arguments in the list.
+                il2.EmitCall(OpCodes.Call, mb1, [typeof(string), typeof(int)]);
+                il2.Emit(OpCodes.Ret);
+                Type type = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                MethodInfo varArgMethodFromDisk = typeFromDisk.GetMethod("VarArgMethod");
+                Assert.Equal(CallingConventions.VarArgs, varArgMethodFromDisk.CallingConvention);
+                ParameterInfo[] parameters = varArgMethodFromDisk.GetParameters();
+                Assert.Equal(1, parameters.Length); // TODO: how to get the vararg parameter?
+                IList<LocalVariableInfo> locals = varArgMethodFromDisk.GetMethodBody().LocalVariables;
+                Assert.Equal(2, locals.Count);
+                Assert.Equal(typeof(ArgIterator).FullName, locals[0].LocalType.FullName);
+                Assert.Equal(typeof(bool).FullName, locals[1].LocalType.FullName);
+
+                byte[] callingMethodBody = typeFromDisk.GetMethod("CallVarArgMethod").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[0]);
+                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[5]);
+                Assert.Equal(OpCodes.Ldc_I4.Value, callingMethodBody[10]);
+                Assert.Equal(OpCodes.Call.Value, callingMethodBody[15]);
+            }
+        }
+
+        private static FieldInfo GetDepthAdjustmentField()
+        {
+            Type ilgType = Type.GetType("System.Reflection.Emit.ILGeneratorImpl, System.Reflection.Emit", throwOnError: true)!;
+            return ilgType.GetField("_depthAdjustment", BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96389", TestRuntimes.Mono)]
+        public void Emit_CallBySignature()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder mb1 = tb.DefineMethod("VarArgMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.VarArgs, null, [typeof(string)]);
+                ILGenerator il1 = mb1.GetILGenerator();
+                FieldInfo maxStack = GetMaxStackDepthAndCurrentStackDepthField(out FieldInfo currentStack);
+                FieldInfo depthAdjustment = GetDepthAdjustmentField();
+                LocalBuilder locAi = il1.DeclareLocal(typeof(ArgIterator));
+                LocalBuilder locNext = il1.DeclareLocal(typeof(bool));
+                Label labelCheckCondition = il1.DefineLabel();
+                Label labelNext = il1.DefineLabel();
+                il1.Emit(OpCodes.Ldarg_0);
+                Assert.Equal(1, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(string)]));
+                Assert.Equal(0, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Arglist);
+                Assert.Equal(2, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetConstructor([typeof(RuntimeArgumentHandle)]));
+                Assert.Equal(2, currentStack.GetValue(il1));
+                Assert.Equal(2, maxStack.GetValue(il1));
+                il1.Emit(OpCodes.Br_S, labelCheckCondition); // uncleared currentStack value 2 will be kept in the LabelInfo._startDepth
+                il1.MarkLabel(labelNext);
+                Assert.Equal(0, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetNextArg", Type.EmptyTypes));
+                il1.Emit(OpCodes.Call, typeof(TypedReference).GetMethod("ToObject"));
+                il1.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", [typeof(object)]));
+                Assert.Equal(0, currentStack.GetValue(il1));
+                il1.MarkLabel(labelCheckCondition);
+                Assert.Equal(2, currentStack.GetValue(il1)); // LabelInfo._startDepth sets the currentStack
+                Assert.Equal(2, maxStack.GetValue(il1));
+                il1.Emit(OpCodes.Ldloca_S, locAi);
+                Assert.Equal(3, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Call, typeof(ArgIterator).GetMethod("GetRemainingCount"));
+                Assert.Equal(3, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Ldc_I4_0);
+                Assert.Equal(4, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Cgt);
+                Assert.Equal(3, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Stloc_1);
+                Assert.Equal(2, currentStack.GetValue(il1));
+                il1.Emit(OpCodes.Ldloc_1);
+                Assert.Equal(3, currentStack.GetValue(il1));
+                Assert.Equal(4, maxStack.GetValue(il1));
+                Assert.Equal(0, depthAdjustment.GetValue(il1));
+                il1.Emit(OpCodes.Brtrue_S, labelNext); // Backward branching, sets the adjustment to 2
+                Assert.Equal(2, depthAdjustment.GetValue(il1));
+                il1.Emit(OpCodes.Ret);
+
+                Assert.Equal(0, currentStack.GetValue(il1));
+                Assert.Equal(4, maxStack.GetValue(il1));
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(4 + 2, getMaxStackMethod.Invoke(il1, null));
+
+                MethodBuilder mb2 = tb.DefineMethod("CallingMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard);
+                ILGenerator il2 = mb2.GetILGenerator();
+                il2.Emit(OpCodes.Ldstr, "Hello ");
+                il2.Emit(OpCodes.Ldstr, "world ");
+                il2.Emit(OpCodes.Ldc_I4, 2024);
+                il2.Emit(OpCodes.Ldftn, mb1);
+                Assert.Equal(4, currentStack.GetValue(il2));
+                Assert.Equal(4, maxStack.GetValue(il2));
+                Assert.Equal(0, depthAdjustment.GetValue(il2));
+                SignatureHelper signature = SignatureHelper.GetMethodSigHelper(CallingConventions.VarArgs, typeof(void));
+                signature.AddArgument(typeof(string));
+                signature.AddSentinel();
+                signature.AddArgument(typeof(string));
+                signature.AddArgument(typeof(int));
+                il2.Emit(OpCodes.Calli, signature);
+                Assert.Equal(0, currentStack.GetValue(il2));
+                Assert.Equal(4, maxStack.GetValue(il2));
+                il2.Emit(OpCodes.Ret);
+                Assert.Equal(0, depthAdjustment.GetValue(il2));
+                Assert.Equal(4, getMaxStackMethod.Invoke(il2, null));
+                Type type = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                Assert.Equal(CallingConventions.VarArgs, typeFromDisk.GetMethod("VarArgMethod").CallingConvention);
+
+                byte[] callingMethodBody = typeFromDisk.GetMethod("CallingMethod").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[0]);
+                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[5]);
+                Assert.Equal(OpCodes.Ldc_I4.Value, callingMethodBody[10]);
+                Assert.Equal(0xFE, callingMethodBody[15]); // Ldftn = 0xfe06
+                Assert.Equal(0x06, callingMethodBody[16]);
+                Assert.Equal(OpCodes.Calli.Value, callingMethodBody[21]);
+            }
+        }
+
+        [Fact]
+        public void MaxStackOverflowTest()
+        {
+            GetCode(1 << 5);
+
+            // Previously this threw because the computed stack depth was 2^16 + 1, which is 1 mod 2^16
+            // and 1 is too small.
+            GetCode(1 << 14);
+
+            /// <summary>
+            /// The <paramref name="num"/> parameter is the number of basic blocks. Each has a max stack
+            /// depth of four. There is one final basic block with max stack of one. The ILGenerator
+            /// erroneously adds these, so the final value can overflow 2^16. When that result mod 2^16
+            /// is less than required, the CLR throws an <see cref="InvalidProgramException"/>.
+            /// </summary>
+            static void GetCode(int num)
+            {
+                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                var ilg = method.GetILGenerator();
+
+                var loc = ilg.DeclareLocal(typeof(int));
+                ilg.Emit(OpCodes.Ldc_I4_0);
+                ilg.Emit(OpCodes.Stloc, loc);
+
+                for (int i = 0; i < num; i++)
+                {
+                    ilg.Emit(OpCodes.Ldloc, loc);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_2);
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Stloc, loc);
+
+                    // Unconditional jump to next block.
+                    var labNext = ilg.DefineLabel();
+                    ilg.Emit(OpCodes.Br, labNext);
+                    ilg.MarkLabel(labNext);
+                }
+
+                ilg.Emit(OpCodes.Ldloc, loc);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateTypeInfo();
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(4, getMaxStackMethod.Invoke(ilg, null));
+            }
+        }
+
+        [Fact]
+        public void MaxStackNonEmptyForward()
+        {
+            // This test uses forward branches to "new" basic blocks where the stack depth
+            // at the branch location is non-empty.
+
+            GetCode(1 << 0);
+            GetCode(1 << 1);
+            GetCode(1 << 5);
+
+            static void GetCode(int num)
+            {
+                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
+                var ilg = method.GetILGenerator();
+
+                ilg.Emit(OpCodes.Ldc_I4_0);
+                for (int i = 0; i < num; i++)
+                {
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Add);
+
+                    // Unconditional jump to next block.
+                    var labNext = ilg.DefineLabel();
+                    ilg.Emit(OpCodes.Br, labNext);
+                    ilg.MarkLabel(labNext);
+                }
+
+                // Each block leaves two values on the stack. Add them into the previous value.
+                for (int i = 0; i < num; i++)
+                {
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Add);
+                }
+
+                ilg.Emit(OpCodes.Ret);
+                type.CreateTypeInfo();
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2 * num + 3, getMaxStackMethod.Invoke(ilg, null));
+            }
+        }
+
+        [Fact]
+        public void MaxStackNonEmptyBackward()
+        {
+            // This test uses backward branches to "new" basic blocks where the stack depth
+            // at the branch location is non-empty.
+
+            GetCode(1 << 1);
+            GetCode(1 << 2); // n = 4 expected 16 was 12
+            GetCode(1 << 3); // n = 8 exp 32 was 20
+            GetCode(1 << 4); // n = 16 exp 64 was 36
+            GetCode(1 << 5); // n = 32 exp 128 was 68
+
+            static void GetCode(int num)
+            {
+                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                var ilg = method.GetILGenerator();
+
+                var labels = new Label[num + 1];
+                for (int i = 0; i <= num; i++)
+                    labels[i] = ilg.DefineLabel();
+
+                ilg.Emit(OpCodes.Ldc_I4_0);
+                ilg.Emit(OpCodes.Br, labels[0]);
+
+                for (int i = num; --i >= 0;)
+                {
+                    ilg.MarkLabel(labels[i]);
+
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Ldc_I4_1);
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Add);
+
+                    // Unconditional jump to "next" block (which is really before this code).
+                    ilg.Emit(OpCodes.Br, labels[i + 1]);
+                }
+
+                ilg.MarkLabel(labels[num]);
+
+                // Each block leaves two values on the stack. Add them into the previous value.
+                for (int i = 0; i < num; i++)
+                {
+                    ilg.Emit(OpCodes.Add);
+                    ilg.Emit(OpCodes.Add);
+                }
+
+                ilg.Emit(OpCodes.Ret);
+
+                type.CreateTypeInfo();
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                // The expected formula comes from (num - 1) * 2 + 1 + 5,
+                // ILs within the loop produces 2 adjustments for each, except 1st one
+                // last loop produce 2 + 1 adjustment because of the 1st instruction that loads 0
+                // the max stack for 1st loop is 5, 4 for the all other loops
+                Assert.Equal(num * 2 + 4, getMaxStackMethod.Invoke(ilg, null));
+            }
+        }
+
+        [Fact]
+        public void AmbiguousDepth()
+        {
+            GetCode();
+
+            static void GetCode()
+            {
+                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(bool) });
+                var ilg = method.GetILGenerator();
+
+                // The label is targeted with stack depth zero.
+                var lab = ilg.DefineLabel();
+                ilg.Emit(OpCodes.Ldarg_0);
+                ilg.Emit(OpCodes.Brfalse, lab);
+
+                // The label is marked with a larger stack depth, one. This IL is invalid.
+                ilg.Emit(OpCodes.Ldc_I4_1);
+                ilg.MarkLabel(lab);
+
+                ilg.Emit(OpCodes.Ldc_I4_1);
+                ilg.Emit(OpCodes.Add);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateTypeInfo();
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                // Observed depth of 2, with "adjustment" of 1.
+                Assert.Equal(2 +1, getMaxStackMethod.Invoke(ilg, null));
+            }
+        }
+
+        [Fact]
+        public void UnreachableDepth()
+        {
+            GetCode();
+
+            static void GetCode()
+            {
+                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                var ilg = method.GetILGenerator();
+
+                var lab = ilg.DefineLabel();
+
+                ilg.Emit(OpCodes.Ldc_I4_1);
+                ilg.Emit(OpCodes.Ldc_I4_1);
+                ilg.Emit(OpCodes.Br, lab);
+
+                // Unreachable.
+                ilg.Emit(OpCodes.Ldarg_0);
+
+                // Depth 
+                ilg.MarkLabel(lab);
+                ilg.Emit(OpCodes.Add);
+                ilg.Emit(OpCodes.Ret);
+
+                type.CreateTypeInfo();
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(ilg, null));
+            }
+        }
+
+        [Fact]
+        public void SimpleForLoopTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder mb2 = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
+                ILGenerator il = mb2.GetILGenerator();
+                LocalBuilder sum = il.DeclareLocal(typeof(int));
+                LocalBuilder i = il.DeclareLocal(typeof(int));
+                Label loopEnd = il.DefineLabel();
+                Label loopStart = il.DefineLabel();
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Stloc_0);
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Stloc_1);
+                il.MarkLabel(loopStart);
+                il.Emit(OpCodes.Ldloc_1);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Bgt, loopEnd);
+                il.Emit(OpCodes.Ldloc_0);
+                il.Emit(OpCodes.Ldloc_1);
+                il.Emit(OpCodes.Add);
+                il.Emit(OpCodes.Stloc_0);
+                il.Emit(OpCodes.Ldloc_1);
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Add);
+                il.Emit(OpCodes.Stloc_1);
+                il.Emit(OpCodes.Br, loopStart);
+                il.MarkLabel(loopEnd);
+                il.Emit(OpCodes.Ldloc_0);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
+
+                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                MethodInfo sumMethodFromDisk = typeFromDisk.GetMethod("SumMethod");
+                Assert.Equal(55, sumMethodFromDisk.Invoke(null, [10]));
+            }
+        }
+
+        [Fact]
+        public void RecursiveSumTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("RecursiveSumTest"), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder mb2 = tb.DefineMethod("RecursiveMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
+                ILGenerator il = mb2.GetILGenerator();
+                Label loopEnd = il.DefineLabel();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Ble, loopEnd); // if (value1 <= value2)
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Sub);
+                il.Emit(OpCodes.Call, mb2);
+                il.Emit(OpCodes.Add);
+                il.Emit(OpCodes.Ret);
+                il.MarkLabel(loopEnd);
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                Assert.Equal(3, getMaxStackMethod.Invoke(il, null));
+
+                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                MethodInfo recursiveMethodFromDisk = typeFromDisk.GetMethod("RecursiveMethod");
+                Assert.NotNull(recursiveMethodFromDisk);
+                Assert.Equal(55, recursiveMethodFromDisk.Invoke(null, [10]));
             }
         }
     }

@@ -79,6 +79,7 @@
 #include "mini-llvm.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
+#include "llvm-runtime.h"
 #include "interp/interp.h"
 
 #ifdef ENABLE_LLVM
@@ -116,6 +117,14 @@ static gpointer throw_exception_func, rethrow_exception_func, rethrow_preserve_e
 static gpointer throw_corlib_exception_func;
 
 static MonoFtnPtrEHCallback ftnptr_eh_callback;
+
+/*
+ * Global flag signaling whenever native unwinding is in progress.
+ * Accessed directly from AOTed code.
+ * When set, native code should return to their caller until the unwinding
+ * is finished.
+ */
+int mono_llvmonly_do_unwind_flag;
 
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data, gboolean crash_context);
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
@@ -3431,7 +3440,7 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 	llvmonly_setup_exception (ex, FALSE);
 
 	/* Unwind back to either an AOTed frame or to the interpreter */
-	mono_llvm_cpp_throw_exception ();
+	mono_llvm_start_native_unwind ();
 }
 
 void
@@ -3445,7 +3454,8 @@ mini_llvmonly_rethrow_exception (MonoObject *ex)
 
 	mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
 
-	mono_llvm_cpp_throw_exception ();
+	/* Unwind back to either an AOTed frame or to the interpreter */
+	mono_llvm_start_native_unwind ();
 }
 
 void
@@ -3520,11 +3530,16 @@ mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 	MonoMethodILState *il_state = (MonoMethodILState *)info;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
+#ifdef HOST_WASM
+	//mono_wasm_print_stack_trace ();
+#endif
+
 	//print_lmf_chain (lmf);
 
 	if (jit_tls->resume_state.il_state != il_state) {
 		/* Call from an AOT method which doesn't catch this exception, continue unwinding */
-		mono_llvm_cpp_throw_exception ();
+		mono_llvm_start_native_unwind ();
+		return;
 	}
 	jit_tls->resume_state.il_state = NULL;
 
@@ -3537,9 +3552,11 @@ mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 
 	int clause_index = jit_tls->resume_state.clause_index;
 	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ex_obj, NULL);
-	if (r)
+	if (r) {
 		/* Another exception thrown, continue unwinding */
-		mono_llvm_cpp_throw_exception ();
+		mono_llvm_start_native_unwind ();
+		return;
+	}
 }
 
 /*
@@ -3630,3 +3647,65 @@ mono_debug_personality (void)
 	g_assert_not_reached ();
 }
 #endif
+
+/*
+ * mono_llvm_catch_exception:
+ *
+ *   Call CB(ARG), catching native exceptions.
+ * Set OUT_THROW to true if a native exceptions was thrown.
+ */
+void
+mono_llvm_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean *out_thrown)
+{
+	*out_thrown = FALSE;
+
+	if (mono_opt_llvm_emulate_unwind) {
+#ifndef DISABLE_THREADS
+		// FIXME: The flag needs to be thread local
+		g_assert_not_reached ();
+#endif
+		// FIXME:
+		//g_assert (!mono_llvmonly_do_unwind_flag);
+		mono_llvmonly_do_unwind_flag = FALSE;
+		cb (arg);
+		if (mono_llvmonly_do_unwind_flag) {
+			mono_llvmonly_do_unwind_flag = FALSE;
+			*out_thrown = TRUE;
+		}
+	} else {
+		mono_llvm_cpp_catch_exception (cb, arg, out_thrown);
+	}
+}
+
+/*
+ * mono_llvm_start_native_unwind:
+ *
+ *   Start native unwinding.
+ * This will either throw a c++ exception or set a flag.
+ * If this returns, the caller should manually unwind by
+ * returning to its caller.
+ */
+void
+mono_llvm_start_native_unwind (void)
+{
+	if (mono_opt_llvm_emulate_unwind) {
+		g_assert (!mono_llvmonly_do_unwind_flag);
+		mono_llvmonly_do_unwind_flag = TRUE;
+	} else {
+		mono_llvm_cpp_throw_exception ();
+	}
+}
+
+/*
+ * mono_llvm_stop_native_unwind:
+ *
+ *   Stop native unwinding.
+ */
+void
+mono_llvm_stop_native_unwind (void)
+{
+	if (mono_opt_llvm_emulate_unwind) {
+		g_assert (mono_llvmonly_do_unwind_flag);
+		mono_llvmonly_do_unwind_flag = FALSE;
+	}
+}

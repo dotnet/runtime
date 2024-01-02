@@ -40,6 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
         JSException,
         TaskResolved,
         TaskRejected,
+        TaskPreCreated,
 #endif
     }
 }

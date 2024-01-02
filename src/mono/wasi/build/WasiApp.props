@@ -3,24 +3,11 @@
     <!-- FIXME: update the condition for this in Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets -->
     <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
     <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>Browser</TargetOS>
+    <TargetOS>wasi</TargetOS>
     <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
-    <UseMonoRuntime>true</UseMonoRuntime>
     <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
-
-    <_WasmBuildCoreDependsOn>
-        _InitializeCommonProperties;
-        _PrepareForAfterBuild;
-        _BeforeWasmBuildApp;
-        _WasiGenerateAppBundle;
-    </_WasmBuildCoreDependsOn>
-    <WasmBuildAppDependsOn>
-      $(_WasmBuildCoreDependsOn)
-    </WasmBuildAppDependsOn>
-
-    <WasmNestedPublishAppDependsOn>
-      _PrepareForNestedPublish;
-      $(_WasmBuildCoreDependsOn)
-    </WasmNestedPublishAppDependsOn>
+    <WasmIsWorkloadAvailable Condition="'$(WasiNativeWorkload)' == 'true'">true</WasmIsWorkloadAvailable>
   </PropertyGroup>
+
+  <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.props" />
 </Project>

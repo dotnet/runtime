@@ -266,10 +266,9 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
             {
                 // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                 MethodDesc *pMD = pIter->m_crawl.GetFunction();
-                PTR_MethodDesc ptrMD = dac_cast<PTR_MethodDesc>(pMD);
 
-                // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx
-                if (ptrMD->GetMethodTable() == g_pEHClass)
+                // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
+                if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
                 {
                     continue;
                 }
@@ -375,8 +374,21 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
                 break;
 
             case StackFrameIterator::SFITER_FRAMELESS_METHOD:
-                ftResult = kManagedStackFrame;
-                fInitFrameData = TRUE;
+                {
+#ifdef FEATURE_EH_FUNCLETS
+                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
+                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
+                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                    {
+                        ftResult = kManagedExceptionHandlingCodeFrame;
+                    }
+                    else
+#endif // FEATURE_EH_FUNCLETS
+                    {
+                        ftResult = kManagedStackFrame;
+                        fInitFrameData = TRUE;
+                    }
+                }
                 break;
 
             case StackFrameIterator::SFITER_FRAME_FUNCTION:

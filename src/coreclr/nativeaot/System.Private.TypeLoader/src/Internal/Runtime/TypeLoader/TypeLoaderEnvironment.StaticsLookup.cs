@@ -229,7 +229,7 @@ namespace Internal.Runtime.TypeLoader
             NativeHashtable staticsInfoHashtable;
             ExternalReferencesTable externalReferencesLookup;
             if (!GetStaticsInfoHashtable(module, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
-                return new NativeParser();
+                return default(NativeParser);
 
             int lookupHashcode = instantiatedType.GetHashCode();
             var enumerator = staticsInfoHashtable.Lookup(lookupHashcode);
@@ -245,7 +245,7 @@ namespace Internal.Runtime.TypeLoader
                 return entryParser;
             }
 
-            return new NativeParser();
+            return default(NativeParser);
         }
         #endregion
     }

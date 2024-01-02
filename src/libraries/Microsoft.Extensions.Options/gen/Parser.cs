@@ -103,7 +103,8 @@ namespace Microsoft.Extensions.Options.Generators
                                 : syntax.GetLocation();
 
                             var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType);
-                            if (membersToValidate.Count == 0)
+                            bool selfValidate = ModelSelfValidates(modelType);
+                            if (membersToValidate.Count == 0 && !selfValidate)
                             {
                                 // this type lacks any eligible members
                                 Diag(DiagDescriptors.NoEligibleMembersFromValidator, syntax.GetLocation(), modelType.ToString(), validatorType.ToString());
@@ -113,7 +114,7 @@ namespace Microsoft.Extensions.Options.Generators
                             modelsValidatorTypeValidates.Add(new ValidatedModel(
                                 GetFQN(modelType),
                                 modelType.Name,
-                                ModelSelfValidates(modelType),
+                                selfValidate,
                                 membersToValidate));
                         }
 
@@ -275,7 +276,12 @@ namespace Microsoft.Extensions.Options.Generators
             var members = modelType.GetMembers().ToList();
             var addedMembers = new HashSet<string>(members.Select(m => m.Name));
             var baseType = modelType.BaseType;
-            while (baseType is not null && baseType.SpecialType != SpecialType.System_Object)
+            while (baseType is not null && baseType.SpecialType != SpecialType.System_Object
+                // We ascend the hierarchy only if the base type is a user-defined type, as validating properties of system types is unnecessary.
+                // This approach prevents generating warnings for properties defined in system types.
+                // For example, in the case of `MyModel : Dictionary<string, string>`, this avoids warnings for properties like Keys and Values,
+                // where a missing ValidateEnumeratedItemsAttribute might be incorrectly inferred.
+                && !baseType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).StartsWith("global::System.", StringComparison.Ordinal))
             {
                 var baseMembers = baseType.GetMembers().Where(m => !addedMembers.Contains(m.Name));
                 members.AddRange(baseMembers);
@@ -689,8 +695,9 @@ namespace Microsoft.Extensions.Options.Generators
                 return "global::" + validator.Namespace + "." + validator.Name;
             }
 
+            bool selfValidate = ModelSelfValidates(mt);
             var membersToValidate = GetMembersToValidate(mt, true, location, validatorType);
-            if (membersToValidate.Count == 0)
+            if (membersToValidate.Count == 0 && !selfValidate)
             {
                 // this type lacks any eligible members
                 Diag(DiagDescriptors.NoEligibleMember, location, mt.ToString(), member.ToString());
@@ -700,7 +707,7 @@ namespace Microsoft.Extensions.Options.Generators
             var model = new ValidatedModel(
                 GetFQN(mt),
                 mt.Name,
-                ModelSelfValidates(mt),
+                selfValidate,
                 membersToValidate);
 
             var validatorTypeName = "__" + mt.Name + "Validator__";

@@ -57,6 +57,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public bool IsGenericType => IsGenericTypeDefinition || IsConstructedGenericType;
 
+        public bool IsVoid => InternalTypeHandleIfAvailable.Equals(typeof(void).TypeHandle);
+
         public abstract string Name { get; }
 
         public abstract Assembly Assembly { get; }

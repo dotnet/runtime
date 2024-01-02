@@ -789,28 +789,32 @@ fixup_newbb_stack_locals (TransformData *td, InterpBasicBlock *newbb)
 	}
 }
 
+static void
+merge_stack_type_information (StackInfo *state1, StackInfo *state2, int len)
+{
+	// Discard type information if we have type conflicts for stack contents
+	for (int i = 0; i < len; i++) {
+		if (state1 [i].klass != state2 [i].klass) {
+			state1 [i].klass = NULL;
+			state2 [i].klass = NULL;
+		}
+	}
+}
+
 // Initializes stack state at entry to bb, based on the current stack state
 static void
 init_bb_stack_state (TransformData *td, InterpBasicBlock *bb)
 {
-	// FIXME If already initialized, then we need to generate mov to the registers in the state.
 	// Check if already initialized
 	if (bb->stack_height >= 0) {
-		// Discard type information if we have type conflicts for stack contents
-		for (int i = 0; i < bb->stack_height; i++) {
-			if (bb->stack_state [i].klass != td->stack [i].klass) {
-				bb->stack_state [i].klass = NULL;
-				td->stack [i].klass = NULL;
-			}
+		merge_stack_type_information (td->stack, bb->stack_state, bb->stack_height);
+	} else {
+		bb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
+		if (bb->stack_height > 0) {
+			int size = bb->stack_height * sizeof (td->stack [0]);
+			bb->stack_state = (StackInfo*)mono_mempool_alloc (td->mempool, size);
+			memcpy (bb->stack_state, td->stack, size);
 		}
-		return;
-	}
-
-	bb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
-	if (bb->stack_height > 0) {
-		int size = bb->stack_height * sizeof (td->stack [0]);
-		bb->stack_state = (StackInfo*)mono_mempool_alloc (td->mempool, size);
-		memcpy (bb->stack_state, td->stack, size);
 	}
 }
 
@@ -5048,8 +5052,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->cbb = new_bb;
 
 			if (new_bb->stack_height >= 0) {
-				if (new_bb->stack_height > 0)
+				if (new_bb->stack_height > 0) {
+					if (link_bblocks)
+						merge_stack_type_information (td->stack, new_bb->stack_state, new_bb->stack_height);
+					// This is relevant only for copying the vars associated with the values on the stack
 					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
+				}
 				td->sp = td->stack + new_bb->stack_height;
 			} else if (link_bblocks) {
 				/* This bblock is not branched to. Initialize its stack state */
@@ -7591,6 +7599,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					td->sp = td->stack;
 					++td->ip;
+					link_bblocks = FALSE;
 					break;
 
 				case CEE_MONO_LD_DELEGATE_METHOD_PTR:
@@ -8502,6 +8511,16 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			*ip++ = 0xbeef;
 		}
 	} else if (MINT_IS_UNCONDITIONAL_BRANCH (opcode) || MINT_IS_CONDITIONAL_BRANCH (opcode) || MINT_IS_SUPER_BRANCH (opcode)) {
+		if (opcode == MINT_BR) {
+			InterpInst *target_first_ins = interp_first_ins (ins->info.target_bb);
+			if (target_first_ins && MINT_IS_RETURN (target_first_ins->opcode)) {
+				// Emit the return directly instead of branching
+				ins = target_first_ins;
+				opcode = ins->opcode;
+				ip [-1] = opcode;
+				goto opcode_emit;
+			}
+		}
 		const int br_offset = GPTRDIFF_TO_INT (start_ip - td->new_code);
 		gboolean has_imm = opcode >= MINT_BEQ_I4_IMM_SP && opcode <= MINT_BLT_UN_I8_IMM_SP;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
@@ -8641,6 +8660,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		*ip++ = GINT_TO_UINT16 (ins->data [1]);
 		*ip++ = GINT_TO_UINT16 (ins->data [2]);
 	} else {
+opcode_emit:
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
 

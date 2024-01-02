@@ -10,7 +10,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleProbe : BundleTestBase, IClassFixture<BundleProbe.SharedTestState>
+    public class BundleProbe : IClassFixture<BundleProbe.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -20,29 +20,15 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        private void NonSingleFileApp_NoProbe()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string appExe = BundleHelper.GetHostPath(fixture);
-
-            Command.Create(appExe, "host_runtime_contract.bundle_probe")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("host_runtime_contract.bundle_probe is not set");
-        }
-
-        [Fact]
         private void SingleFileApp_ProbeFiles()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleSelfContainedApp(fixture);
+            SingleFileTestApp app = sharedTestState.App;
+            string singleFile = app.Bundle();
 
             (string Path, bool ShouldBeFound)[] itemsToProbe = new[]
             {
-                ($"{fixture.TestProject.AssemblyName}.dll", true),
-                ($"{fixture.TestProject.AssemblyName}.runtimeconfig.json", true),
+                ($"{app.AppName}.dll", true),
+                ($"{app.AppName}.runtimeconfig.json", true),
                 ("System.Private.CoreLib.dll", true),
                 ("hostpolicy.dll", false),
                 ("--", false),
@@ -61,18 +47,18 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
+            public SingleFileTestApp App { get; set; }
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("HostApiInvokerApp");
+                App = SingleFileTestApp.CreateSelfContained("HostApiInvokerApp");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                App?.Dispose();
             }
         }
     }

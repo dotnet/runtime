@@ -149,12 +149,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(RepoDirectories.BuiltDotnet);
-                DotNetRoot = dotNet.BinPath;
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = TestContext.BuiltDotNet.BinPath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
                 Application = TestApp.CreateEmpty("App");
-                Application.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion);
+                Application.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
 
                 SelfContainedApplication = TestApp.CreateEmpty("SelfContainedApp");
                 SelfContainedApplication.PopulateSelfContained(TestApp.MockedComponent.None);
