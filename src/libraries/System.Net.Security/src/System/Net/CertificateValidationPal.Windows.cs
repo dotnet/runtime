@@ -91,7 +91,7 @@ namespace System.Net
         }
 
         // Check that local certificate was used by schannel.
-        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _credentialsHandle, SafeDeleteContext securityContext)
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? credentialsHandle, SafeDeleteContext securityContext)
         {
             SecPkgContext_SessionInfo info = default;
 
@@ -105,7 +105,7 @@ namespace System.Net
             {
                 // This is TLS Resumed session. Windows can fail to query the local cert bellow.
                 // Instead, we will determine the usage form used credentials.
-                SafeFreeCredential_SECURITY creds = (SafeFreeCredential_SECURITY)_credentialsHandle!;
+                SafeFreeCredential_SECURITY creds = (SafeFreeCredential_SECURITY)credentialsHandle!;
                 return creds.LocalCertificate != null;
             }
 
