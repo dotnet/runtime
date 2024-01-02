@@ -2176,7 +2176,7 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = true;
                     request.ContinueTimeout = 30000;
-                    request.ContentLength = 256;
+                    request.ContentLength = 8;
                     using (Stream requestStream = await request.GetRequestStreamAsync())
                     {
                         requestStream.Write("aaaa\r\n\r\n"u8);
@@ -2210,7 +2210,7 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
                     request.ContinueTimeout = continueTimeout;
-                    request.ContentLength = 256; // It requires 256 for no reason because NetworkStream sends minimal 256 bytes. ??? TODO: Investigate
+                    request.ContentLength = 8;
                     using (Stream requestStream = await request.GetRequestStreamAsync())
                     {
                         requestStream.Write("aaaa\r\n\r\n"u8);
