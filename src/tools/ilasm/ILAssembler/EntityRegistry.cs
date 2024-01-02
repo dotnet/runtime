@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -23,7 +24,8 @@ namespace ILAssembler
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
         private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
         private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
-        private static readonly List<MemberReferenceEntity> _memberReferences = new();
+        private readonly List<MemberReferenceEntity> _memberReferences = new();
+        private readonly Dictionary<(EntityBase, BlobBuilder), MethodSpecificationEntity> _seenMethodSpecs = new(new MethodSpecEqualityComparer());
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -32,6 +34,19 @@ namespace ILAssembler
             // For simplicity, we'll just use the signature size as the hash code.
             // TODO: Make this better.
             public int GetHashCode(BlobBuilder obj) => obj.Count;
+        }
+
+        private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
+        {
+            public bool Equals((EntityBase, BlobBuilder) x, (EntityBase, BlobBuilder) y)
+            {
+                return x.Item1 == y.Item1 && x.Item2.ContentEquals(y.Item2);
+            }
+
+            public int GetHashCode((EntityBase, BlobBuilder) obj)
+            {
+                return (obj.Item1.GetHashCode(), obj.Item2.Count).GetHashCode();
+            }
         }
 
         public enum WellKnownBaseType
@@ -194,7 +209,7 @@ namespace ILAssembler
                 }
             }
 
-            foreach (ParameterEntity param  in _seenEntities[TableIndex.Param])
+            foreach (ParameterEntity param in _seenEntities[TableIndex.Param])
             {
                 builder.AddParameter(
                     param.Attributes,
@@ -310,7 +325,10 @@ namespace ILAssembler
                     resource.Offset);
             }
 
-            // TODO: MethodSpec
+            foreach (MethodSpecificationEntity methodSpec in _seenEntities[TableIndex.MethodSpec])
+            {
+                builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
+            }
 
             static EntityHandle GetHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex, TableIndex tokenType)
             {
@@ -515,7 +533,7 @@ namespace ILAssembler
                 allTypeNames.Push((typeRef.Namespace, typeRef.Name));
                 scope = typeRef.ResolutionScope;
             }
-            while(allTypeNames.Count > 0)
+            while (allTypeNames.Count > 0)
             {
                 var typeName = allTypeNames.Pop();
                 scope = GetOrCreateEntity((scope, typeName.Namespace, typeName.Name), TableIndex.TypeRef, _seenTypeRefs, value => new TypeReferenceEntity(scope, value.Namespace, value.Name), typeRef =>
@@ -591,18 +609,246 @@ namespace ILAssembler
             return new ParameterEntity(attributes, name, marshallingDescriptor, sequence);
         }
 
-        public static MemberReferenceEntity CreateLazilyRecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
+        public MemberReferenceEntity CreateLazilyRecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
         {
             var entity = new MemberReferenceEntity(containingType, name, signature);
             _memberReferences.Add(entity);
             return entity;
         }
 
+        private class SignatureRewriter : ISignatureTypeProvider<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>
+        {
+            public readonly struct BlobOrHandle
+            {
+                public BlobOrHandle(BlobBuilder? blob)
+                {
+                    Blob = blob;
+                    Handle = default;
+                    HandleIsValueType = false;
+                }
+
+                public BlobOrHandle(EntityHandle handle, bool handleIsValueType)
+                {
+                    Blob = default;
+                    Handle = handle;
+                    HandleIsValueType = handleIsValueType;
+                }
+
+                private BlobBuilder? Blob { get; }
+                public EntityHandle Handle { get; }
+                public bool HandleIsValueType { get; }
+
+                public static implicit operator BlobOrHandle(BlobBuilder blob) => new(blob);
+                public static implicit operator BlobBuilder(BlobOrHandle blobOrHandle)
+                {
+                    if (blobOrHandle.Blob is not null)
+                    {
+                        return blobOrHandle.Blob;
+                    }
+                    var signatureTypeEncoder = new SignatureTypeEncoder(new BlobBuilder());
+                    signatureTypeEncoder.Type(blobOrHandle.Handle, blobOrHandle.HandleIsValueType);
+                    return signatureTypeEncoder.Builder;
+                }
+
+                public void WriteBlobTo(BlobBuilder builder)
+                {
+                    ((BlobBuilder)this).WriteContentTo(builder);
+                }
+            }
+
+            public BlobOrHandle GetArrayType(BlobOrHandle elementType, ArrayShape shape)
+            {
+                var encoder = new ArrayShapeEncoder(elementType);
+                encoder.Shape(shape.Rank, shape.Sizes, shape.LowerBounds);
+                return encoder.Builder;
+            }
+
+            public BlobOrHandle GetByReferenceType(BlobOrHandle elementType)
+            {
+                var paramEncoder = new ParameterTypeEncoder(new BlobBuilder());
+                paramEncoder.Type(isByRef: true);
+                elementType.WriteBlobTo(paramEncoder.Builder);
+                return paramEncoder.Builder;
+            }
+
+            public BlobOrHandle GetFunctionPointerType(MethodSignature<BlobOrHandle> signature)
+            {
+                var sig = new SignatureTypeEncoder(new BlobBuilder());
+                sig.FunctionPointer(signature.Header.CallingConvention, (FunctionPointerAttributes)signature.Header.Attributes, signature.GenericParameterCount)
+                    .Parameters(signature.ParameterTypes.Length, out var retTypeBuilder, out var parametersEncoder);
+                signature.ReturnType.WriteBlobTo(retTypeBuilder.Builder);
+                for (int i = 0; i < signature.ParameterTypes.Length; i++)
+                {
+                    if (i == signature.RequiredParameterCount)
+                    {
+                        parametersEncoder.StartVarArgs();
+                    }
+                    BlobBuilder paramType = signature.ParameterTypes[i];
+                    paramType.WriteContentTo(parametersEncoder.AddParameter().Builder);
+                }
+                return sig.Builder;
+            }
+
+            public BlobOrHandle GetGenericInstantiation(BlobOrHandle genericType, ImmutableArray<BlobOrHandle> typeArguments)
+            {
+                var encoder = new SignatureTypeEncoder(new BlobBuilder());
+                var parameterEncoder = encoder.GenericInstantiation(genericType.Handle, typeArguments.Length, genericType.HandleIsValueType);
+                foreach (var typeArg in typeArguments)
+                {
+                    typeArg.WriteBlobTo(parameterEncoder.AddArgument().Builder);
+                }
+                return encoder.Builder;
+            }
+
+            public BlobOrHandle GetGenericMethodParameter(EmptyGenericContext genericContext, int index)
+            {
+                var encoder = new SignatureTypeEncoder(new BlobBuilder());
+                encoder.GenericMethodTypeParameter(index);
+                return encoder.Builder;
+            }
+            public BlobOrHandle GetGenericTypeParameter(EmptyGenericContext genericContext, int index)
+            {
+                var encoder = new SignatureTypeEncoder(new BlobBuilder());
+                encoder.GenericTypeParameter(index);
+                return encoder.Builder;
+            }
+            public BlobOrHandle GetModifiedType(BlobOrHandle modifier, BlobOrHandle unmodifiedType, bool isRequired)
+            {
+                var builder = new BlobBuilder();
+                if (isRequired)
+                {
+                    builder.WriteByte((byte)SignatureTypeCode.RequiredModifier);
+                }
+                else
+                {
+                    builder.WriteByte((byte)SignatureTypeCode.OptionalModifier);
+                }
+                unmodifiedType.WriteBlobTo(builder);
+                return builder;
+            }
+            public BlobOrHandle GetPinnedType(BlobOrHandle elementType) => throw new NotImplementedException();
+            public BlobOrHandle GetPointerType(BlobOrHandle elementType)
+            {
+                var paramEncoder = new ParameterTypeEncoder(new BlobBuilder());
+                paramEncoder.Type().Pointer();
+                elementType.WriteBlobTo(paramEncoder.Builder);
+                return paramEncoder.Builder;
+            }
+            public BlobOrHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
+            {
+                var paramEncoder = new ParameterTypeEncoder(new BlobBuilder());
+                paramEncoder.Type().PrimitiveType(typeCode);
+                return paramEncoder.Builder;
+            }
+            public BlobOrHandle GetSZArrayType(BlobOrHandle elementType)
+            {
+                var paramEncoder = new ParameterTypeEncoder(new BlobBuilder());
+                paramEncoder.Type().SZArray();
+                elementType.WriteBlobTo(paramEncoder.Builder);
+                return paramEncoder.Builder;
+            }
+            public BlobOrHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+            {
+                return new BlobOrHandle(handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+            }
+            public BlobOrHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            {
+                return new BlobOrHandle(handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+            }
+
+            public BlobOrHandle GetTypeFromSpecification(MetadataReader reader, EmptyGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+            {
+                return new BlobOrHandle(handle, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+            }
+
+            public struct EmptyGenericContext { }
+
+        }
+
         private void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
         {
-            // TODO: Resolve the member reference to a local method or field reference or record
-            // it into the member reference table.
+            // We need to resolve a MemberReference in a few scenarios:
+            // 1. The MemberReference references a local MethodDefinition
+            //   - This case may occur when a method is referenced by a property or event, which can only reference MethodDefinition entities
+            // TODO-COMPAT: The following scenarios are required for compat with the existing ILASM, but are not required to produce valid metadata:
+            // 2. The MemberReference refers to a local FieldDefinition
+
+            var signature = memberRef.Signature.ToArray();
+            SignatureHeader header = new(signature[0]);
+            if (header.Kind == SignatureKind.Method)
+            {
+                if (header.CallingConvention == SignatureCallingConvention.VarArgs)
+                {
+                    UpdateMemberRefForVarargSignatures(memberRef, signature);
+                }
+                switch (memberRef.Parent)
+                {
+                    // Use this weird construction to look up TypeDefs as we may change TypeRef resolution to use a similar model to MemberReference
+                    // where we always return a TypeReference type, but it might just point to a TypeDef handle.
+                    case TypeEntity { Handle.Kind: HandleKind.TypeDefinition } type:
+                        {
+                            var typeDef = (TypeDefinitionEntity)_seenEntities[TableIndex.TypeDef][MetadataTokens.GetRowNumber(type.Handle) - 1];
+                            // Look on this type for methods with the same name and signature
+                            foreach (var method in typeDef.Methods)
+                            {
+                                if (method.Name == memberRef.Name
+                                    && method.MethodSignature!.ContentEquals(memberRef.Signature))
+                                {
+                                    ((IHasHandle)memberRef).SetHandle(method.Handle);
+                                    return;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
             RecordEntityInTable(TableIndex.MemberRef, memberRef);
+        }
+
+        private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature)
+        {
+            var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(new SignatureRewriter(), null!, default);
+            BlobEncoder methodDefSig = new(new BlobBuilder());
+            bool hasVarargParameters = false;
+            unsafe
+            {
+                fixed (byte* ptr = &signature[0])
+                {
+                    var reader = new BlobReader(ptr, signature.Length);
+                    var methodSignature = decoder.DecodeMethodSignature(ref reader);
+
+                    if (methodSignature.RequiredParameterCount != methodSignature.ParameterTypes.Length)
+                    {
+                        hasVarargParameters = true;
+
+                        methodDefSig.MethodSignature(methodSignature.Header.CallingConvention, methodSignature.GenericParameterCount, methodSignature.Header.Attributes.HasFlag(SignatureAttributes.Instance))
+                            .Parameters(methodSignature.RequiredParameterCount, out var retTypeBuilder, out var parametersEncoder);
+                        methodSignature.ReturnType.WriteBlobTo(retTypeBuilder.Builder);
+                        for (int i = 0; i < methodSignature.RequiredParameterCount; i++)
+                        {
+                            methodSignature.ParameterTypes[i].WriteBlobTo(parametersEncoder.AddParameter().Builder);
+                        }
+                    }
+                }
+            }
+
+            // If the method has vararg parameters, then this needs to be a MemberRef whose parent is a reference to the method with the signature without any vararg parameters.
+            if (hasVarargParameters)
+            {
+                var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig.Builder);
+                ResolveAndRecordMemberReference(methodRef);
+                memberRef.SetMemberRefParent(methodRef);
+            }
+        }
+
+        public MethodSpecificationEntity GetOrCreateMethodSpecification(EntityBase method, BlobBuilder signature)
+        {
+            return GetOrCreateEntity(
+                (method, signature),
+                TableIndex.MethodSpec,
+                _seenMethodSpecs,
+                ((EntityBase method, BlobBuilder signature) value) => new(method, signature),
+                _ => { });
         }
 
         public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
@@ -899,7 +1145,8 @@ namespace ILAssembler
 
         public sealed class MemberReferenceEntity(EntityBase parent, string name, BlobBuilder signature) : EntityBase
         {
-            public EntityBase Parent { get; } = parent;
+            // In the case of a MemberRef to a specific instantiation of a vararg method, we need to update the owner at emit time.
+            public EntityBase Parent { get; private set; } = parent;
             public string Name { get; } = name;
             public BlobBuilder Signature { get; } = signature;
 
@@ -922,6 +1169,17 @@ namespace ILAssembler
                     writer.WriteInt32(MetadataTokens.GetToken(token));
                 }
             }
+
+            internal void SetMemberRefParent(MemberReferenceEntity parent)
+            {
+                Parent = parent;
+            }
+        }
+
+        public sealed class MethodSpecificationEntity(EntityBase parent, BlobBuilder signature) : EntityBase
+        {
+            public EntityBase Parent { get; } = parent;
+            public BlobBuilder Signature { get; } = signature;
         }
 
         public sealed class StandaloneSignatureEntity(BlobBuilder signature) : EntityBase

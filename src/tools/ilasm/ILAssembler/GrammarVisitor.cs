@@ -1783,7 +1783,7 @@ namespace ILAssembler
             var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
             fieldSig.WriteByte((byte)SignatureKind.Field);
             fieldTypeSig.WriteContentTo(fieldSig);
-            return new(EntityRegistry.CreateLazilyRecordedMemberReference(definingType, name, fieldSig));
+            return new(_entityRegistry.CreateLazilyRecordedMemberReference(definingType, name, fieldSig));
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldSerInit(CILParser.FieldSerInitContext context) => VisitFieldSerInit(context);
@@ -2773,7 +2773,7 @@ namespace ILAssembler
 
                 var ownerType = VisitTypeSpec(context.typeSpec()).Value;
                 var methodName = VisitMethodName(context.methodName()).Value;
-                var methodRef = EntityRegistry.CreateLazilyRecordedMemberReference(ownerType, methodName, signature);
+                var methodRef = _entityRegistry.CreateLazilyRecordedMemberReference(ownerType, methodName, signature);
                 _currentTypeDefinition.PeekOrDefault()!.MethodImplementations.Add(EntityRegistry.CreateUnrecordedMethodImplementation(currentMethod.Definition, methodRef));
             }
             else if (context.PARAM() is not null)
@@ -3069,10 +3069,18 @@ namespace ILAssembler
                 owner = VisitTypeSpec(typeSpec).Value;
             }
             string name = VisitMethodName(context.methodName()).Value;
+            BlobBuilder? methodSpecSignature = null;
             int numGenericParameters = 0;
             if (context.typeArgs() is CILParser.TypeArgsContext typeArgs)
             {
-                numGenericParameters = typeArgs.type().Length;
+                var types = typeArgs.type();
+                numGenericParameters = types.Length;
+                if (types.Length != 0)
+                {
+                    methodSpecSignature = new();
+                    methodSpecSignature.WriteByte((byte)SignatureKind.MethodSpecification);
+                    VisitTypeArgs(typeArgs).Value.WriteContentTo(methodSpecSignature);
+                }
             }
             else if (context.genArityNotEmpty() is CILParser.GenArityNotEmptyContext genArityNotEmpty)
             {
@@ -3102,7 +3110,14 @@ namespace ILAssembler
                 arg.SignatureBlob.WriteContentTo(methodRefSignature);
             }
 
-            return new(EntityRegistry.CreateLazilyRecordedMemberReference(owner, name, methodRefSignature));
+            var memberRef = _entityRegistry.CreateLazilyRecordedMemberReference(owner, name, methodRefSignature);
+
+            if (methodSpecSignature is not null)
+            {
+                return new(_entityRegistry.GetOrCreateMethodSpecification(memberRef, methodSpecSignature));
+            }
+
+            return new(memberRef);
         }
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context)
         {
