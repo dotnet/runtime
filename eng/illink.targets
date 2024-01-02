@@ -213,7 +213,7 @@
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
-      <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes &quot;@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</ILLinkArgs>
+      <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '" --link-attributes "')"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
