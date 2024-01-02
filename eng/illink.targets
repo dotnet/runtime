@@ -38,7 +38,7 @@
 
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
     <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
-   </PropertyGroup>
+  </PropertyGroup>
 
    <ItemGroup>
     <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml"
