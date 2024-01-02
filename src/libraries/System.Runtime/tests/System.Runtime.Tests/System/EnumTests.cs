@@ -1599,7 +1599,6 @@ namespace System.Tests
         private class ClassWithEnumConstraint<T> where T : Enum { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94189", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void EnumConstraint_ThrowsArgumentException()
         {
             Type genericArgumentWithEnumConstraint = typeof(ClassWithEnumConstraint<>).GetGenericArguments()[0];
