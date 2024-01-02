@@ -2052,7 +2052,7 @@ public:
 
     // Notify EE about intent to rely on given MethodInfo in the current method
     // EE returns false if we're not allowed to do so and the methodinfo may change.
-    // Example of a scenario addresses by notifyMethodInfoUsage:
+    // Example of a scenario addressed by notifyMethodInfoUsage:
     //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
     //     and realizes that the call always throws.
     //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
