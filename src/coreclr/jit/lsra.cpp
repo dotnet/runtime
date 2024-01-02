@@ -4271,9 +4271,9 @@ void LinearScan::resetAllRegistersState()
 //
 void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
-    // If we have no register candidates we should only call this method during allocation.
+    // We should only call this method if we have register candidates.
 
-    assert(enregisterLocalVars || !allocationPassComplete);
+    assert(enregisterLocalVars);
 
     unsigned    predBBNum       = blockInfo[currentBlock->bbNum].predBBNum;
     VarToRegMap predVarToRegMap = getOutVarToRegMap(predBBNum);
