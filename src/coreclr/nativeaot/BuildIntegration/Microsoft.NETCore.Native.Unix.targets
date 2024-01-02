@@ -124,10 +124,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
-      <ExtraLinkerArg Include="-segprot,__THUNKS,rx,rx" Condition="'$(_IsApplePlatform)' == 'true'" />
-    </ItemGroup>
-
-    <ItemGroup>
       <LinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
       <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
       <LinkerArg Include="@(NativeLibrary)" />
