@@ -158,7 +158,7 @@ namespace System.Reflection.Emit
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = DefineLabel();
             _cfBuilder.AddFaultRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
-                               GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
+                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Fault;
             MarkLabel(currentExBlock.HandleStart);
             // Stack depth for "fault" starts at zero.
@@ -189,7 +189,7 @@ namespace System.Reflection.Emit
             currentExBlock.HandleStart = DefineLabel();
             currentExBlock.HandleEnd = finallyEndLabel;
             _cfBuilder.AddFinallyRegion(GetMetaLabel(currentExBlock.TryStart), GetMetaLabel(currentExBlock.TryEnd),
-                               GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
+                GetMetaLabel(currentExBlock.HandleStart), GetMetaLabel(currentExBlock.HandleEnd));
             currentExBlock.State = ExceptionState.Finally;
             MarkLabel(currentExBlock.HandleStart);
             // Stack depth for "finally" starts at zero.
@@ -393,8 +393,8 @@ namespace System.Reflection.Emit
             {
                 // Instruction must be one of call or callvirt.
                 Debug.Assert(opcode.Equals(OpCodes.Call) ||
-                                opcode.Equals(OpCodes.Callvirt),
-                                "Unexpected opcode encountered for StackBehaviour of VarPush.");
+                             opcode.Equals(OpCodes.Callvirt),
+                             "Unexpected opcode encountered for StackBehaviour of VarPush.");
                 stackChange++;
             }
 
@@ -402,9 +402,9 @@ namespace System.Reflection.Emit
             {
                 // Instruction must be one of call, callvirt or newobj.
                 Debug.Assert(opcode.Equals(OpCodes.Call) ||
-                                opcode.Equals(OpCodes.Callvirt) ||
-                                opcode.Equals(OpCodes.Newobj),
-                                "Unexpected opcode encountered for StackBehaviour of VarPop.");
+                             opcode.Equals(OpCodes.Callvirt) ||
+                             opcode.Equals(OpCodes.Newobj),
+                             "Unexpected opcode encountered for StackBehaviour of VarPop.");
 
                 if (con is ConstructorBuilderImpl builder)
                 {
@@ -425,7 +425,7 @@ namespace System.Reflection.Emit
         {
             if (token == -1)
             {
-                // The member is a `*BuilderImpl` and its token is not yet defined.
+                // The member is a `***BuilderImpl` and its token is not yet defined.
                 // Reserve the token bytes and write them later when its ready
                 _memberReferences.Add(new KeyValuePair<object, BlobWriter>
                     (member, new BlobWriter(_il.CodeBuilder.ReserveBytes(sizeof(int)))));

@@ -47,8 +47,8 @@ namespace System.Reflection.Emit
         private void WritePEImage(Stream peStream, BlobBuilder ilBuilder)
         {
             var peHeaderBuilder = new PEHeaderBuilder(
-                // When only Characteristics.Dll is set and try to load the generated assembly from file,
-                // runtime throws BadImageFormatException, had to add Characteristics.ExecutableImage.
+                // For now only support DLL, DLL files are considered executable files
+                // for almost all purposes, although they cannot be directly run.
                 imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
 
             var peBuilder = new ManagedPEBuilder(

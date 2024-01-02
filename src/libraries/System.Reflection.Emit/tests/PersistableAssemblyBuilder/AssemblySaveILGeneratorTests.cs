@@ -1691,6 +1691,7 @@ internal class Dummy
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96389", TestRuntimes.Mono)]
         public void EmitCall_VarArgsMethodInIL()
         {
             using (TempFile file = TempFile.Create())
@@ -1776,6 +1777,7 @@ internal class Dummy
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96389", TestRuntimes.Mono)]
         public void Emit_CallBySignature()
         {
             using (TempFile file = TempFile.Create())
@@ -2141,7 +2143,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("RecursiveSumTest"), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 MethodBuilder mb2 = tb.DefineMethod("RecursiveMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
                 ILGenerator il = mb2.GetILGenerator();
                 Label loopEnd = il.DefineLabel();
