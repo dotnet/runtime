@@ -65,7 +65,7 @@ namespace System.Net
 
             if (_isBuffered)
             {
-                _streamBuffer.Write(_buffer.GetBuffer());
+                _streamBuffer.Write(_buffer.GetBuffer().AsSpan(0, (int) _buffer.Length));
             }
         }
 
