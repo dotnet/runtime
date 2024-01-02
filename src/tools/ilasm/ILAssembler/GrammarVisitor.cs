@@ -1747,7 +1747,7 @@ namespace ILAssembler
             _ = signature.Field();
             fieldType.WriteContentTo(signature.Builder);
 
-            var field = EntityRegistry.CreateFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault()!, name, signature.Builder);
+            var field = EntityRegistry.CreateUnrecordedFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault()!, name, signature.Builder);
 
             if (field is not null)
             {
@@ -1783,7 +1783,7 @@ namespace ILAssembler
             var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
             fieldSig.WriteByte((byte)SignatureKind.Field);
             fieldTypeSig.WriteContentTo(fieldSig);
-            return new(EntityRegistry.CreateUnrecordedMemberReference(definingType, name, fieldSig));
+            return new(EntityRegistry.CreateLazilyRecordedMemberReference(definingType, name, fieldSig));
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldSerInit(CILParser.FieldSerInitContext context) => VisitFieldSerInit(context);
@@ -2101,7 +2101,6 @@ namespace ILAssembler
             }
             return GrammarResult.SentinelValue.Result;
         }
-#pragma warning disable CA1822 // Mark members as static
         public GrammarResult VisitInstr(CILParser.InstrContext context)
         {
             var instrContext = context.GetRuleContext<ParserRuleContext>(0);
@@ -2130,6 +2129,25 @@ namespace ILAssembler
                     }
                     break;
                 case CILParser.RULE_instr_field:
+                    {
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                        if (context.mdtoken() is CILParser.MdtokenContext mdtoken)
+                        {
+                            _currentMethod.Definition.MethodBody.Token(VisitMdtoken(mdtoken).Value.Handle);
+                        }
+                        else
+                        {
+                            var fieldRef = VisitFieldRef(context.fieldRef()).Value;
+                            if (fieldRef is EntityRegistry.MemberReferenceEntity memberRef)
+                            {
+                                memberRef.RecordBlobToWriteResolvedHandle(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                            }
+                            else
+                            {
+                                _currentMethod.Definition.MethodBody.Token(fieldRef.Handle);
+                            }
+                        }
+                    }
                     break;
                 case CILParser.RULE_instr_i:
                     {
@@ -2150,16 +2168,26 @@ namespace ILAssembler
                     _currentMethod!.Definition.MethodBody.LoadConstantI8(VisitInt64(context.int64()).Value);
                     break;
                 case CILParser.RULE_instr_method:
-                    if (opcode == ILOpCode.Callvirt || opcode == ILOpCode.Newobj)
                     {
-                        _expectInstance = true;
-                    }
-                    _currentMethod!.Definition.MethodBody.OpCode(opcode);
-                    _currentMethod.Definition.MethodBody.Token(VisitMethodRef(context.methodRef()).Value.Handle);
-                    // Reset the instance flag for the next instruction.
-                    if (opcode == ILOpCode.Callvirt || opcode == ILOpCode.Newobj)
-                    {
-                        _expectInstance = false;
+                        if (opcode == ILOpCode.Callvirt || opcode == ILOpCode.Newobj)
+                        {
+                            _expectInstance = true;
+                        }
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                        var methodRef = VisitMethodRef(context.methodRef()).Value;
+                        if (methodRef is EntityRegistry.MemberReferenceEntity memberRef)
+                        {
+                            memberRef.RecordBlobToWriteResolvedHandle(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                        }
+                        else
+                        {
+                            _currentMethod.Definition.MethodBody.Token(methodRef.Handle);
+                        }
+                        // Reset the instance flag for the next instruction.
+                        if (opcode == ILOpCode.Callvirt || opcode == ILOpCode.Newobj)
+                        {
+                            _expectInstance = false;
+                        }
                     }
                     break;
                 case CILParser.RULE_instr_none:
@@ -2745,7 +2773,7 @@ namespace ILAssembler
 
                 var ownerType = VisitTypeSpec(context.typeSpec()).Value;
                 var methodName = VisitMethodName(context.methodName()).Value;
-                var methodRef = EntityRegistry.CreateUnrecordedMemberReference(ownerType, methodName, signature);
+                var methodRef = EntityRegistry.CreateLazilyRecordedMemberReference(ownerType, methodName, signature);
                 _currentTypeDefinition.PeekOrDefault()!.MethodImplementations.Add(EntityRegistry.CreateUnrecordedMethodImplementation(currentMethod.Definition, methodRef));
             }
             else if (context.PARAM() is not null)
@@ -3074,7 +3102,7 @@ namespace ILAssembler
                 arg.SignatureBlob.WriteContentTo(methodRefSignature);
             }
 
-            return new(EntityRegistry.CreateUnrecordedMemberReference(owner, name, methodRefSignature));
+            return new(EntityRegistry.CreateLazilyRecordedMemberReference(owner, name, methodRefSignature));
         }
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context)
         {

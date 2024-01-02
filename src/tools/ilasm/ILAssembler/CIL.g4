@@ -393,10 +393,8 @@ instr:
 	| instr_brtarget int32
 	| instr_brtarget id
 	| instr_method methodRef
-	| instr_field type typeSpec '::' dottedName
-	| instr_field type dottedName
+	| instr_field fieldRef
 	| instr_field mdtoken
-	| instr_field dottedName // typedef
 	| instr_type typeSpec
 	| instr_string compQstring
 	| instr_string ANSI '(' compQstring ')'

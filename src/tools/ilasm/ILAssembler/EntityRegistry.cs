@@ -23,6 +23,7 @@ namespace ILAssembler
         private readonly Dictionary<string, FileEntity> _seenFiles = new();
         private readonly List<ManifestResourceEntity> _manifestResourceEntities = new();
         private readonly Dictionary<(ExportedTypeEntity? ContainingType, string Namespace, string Name), ExportedTypeEntity> _seenExportedTypes = new();
+        private static readonly List<MemberReferenceEntity> _memberReferences = new();
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -55,6 +56,7 @@ namespace ILAssembler
             // After this, we'll write out the content of the entities in the correct order.
             foreach (TypeDefinitionEntity type in _seenEntities[TableIndex.TypeDef])
             {
+                // Record entries for members defined in list columns
                 foreach (var method in type.Methods)
                 {
                     RecordEntityInTable(TableIndex.MethodDef, method);
@@ -82,10 +84,33 @@ namespace ILAssembler
                 {
                     RecordEntityInTable(TableIndex.Event, @event);
                 }
+
+                // Record entries in tables that are sorted based on their containing/associated class
                 foreach (var impl in type.InterfaceImplementations)
                 {
                     RecordEntityInTable(TableIndex.InterfaceImpl, impl);
                 }
+
+                foreach (var impl in type.MethodImplementations)
+                {
+                    RecordEntityInTable(TableIndex.MethodImpl, impl);
+                }
+
+                foreach (var genericParam in type.GenericParameters)
+                {
+                    RecordEntityInTable(TableIndex.GenericParam, genericParam);
+                }
+
+                // COMPAT: Record the generic parameter constraints based on the order saved in the TypeDef
+                foreach (var constraint in type.GenericParameterConstraints)
+                {
+                    RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
+                }
+            }
+
+            foreach (MemberReferenceEntity memberReferenceEntity in _memberReferences)
+            {
+                ResolveAndRecordMemberReference(memberReferenceEntity);
             }
 
             // Now that we've recorded all of the entities that wouldn't have had handles before,
@@ -111,6 +136,19 @@ namespace ILAssembler
                     type.BaseType is null ? default : type.BaseType.Handle,
                     (FieldDefinitionHandle)GetHandleForList(type.Fields, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Fields, i, TableIndex.Field),
                     (MethodDefinitionHandle)GetHandleForList(type.Methods, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Methods, i, TableIndex.MethodDef));
+
+                builder.AddEventMap(
+                    (TypeDefinitionHandle)type.Handle,
+                    (EventDefinitionHandle)GetHandleForList(type.Events, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Events, i, TableIndex.Event));
+                builder.AddPropertyMap(
+                    (TypeDefinitionHandle)type.Handle,
+                    (PropertyDefinitionHandle)GetHandleForList(type.Properties, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Properties, i, TableIndex.Property));
+
+                // TODO: ClassLayout
+                if (type.ContainingType is not null)
+                {
+                    builder.AddNestedType((TypeDefinitionHandle)type.Handle, (TypeDefinitionHandle)type.ContainingType.Handle);
+                }
             }
 
             foreach (FieldDefinitionEntity fieldDef in _seenEntities[TableIndex.Field])
@@ -119,19 +157,41 @@ namespace ILAssembler
                     fieldDef.Attributes,
                     builder.GetOrAddString(fieldDef.Name),
                     fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(fieldDef.Signature));
+
+                // TODO: FieldLayout, FieldRVA
+                if (fieldDef.MarshallingDescriptor is not null)
+                {
+                    builder.AddMarshallingDescriptor(fieldDef.Handle, builder.GetOrAddBlob(fieldDef.MarshallingDescriptor));
+                }
             }
 
             for (int i = 0; i < _seenEntities[TableIndex.MethodDef].Count; i++)
             {
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)_seenEntities[TableIndex.MethodDef][i];
+
+                int rva = 0;
+                if (methodDef.MethodBody.CodeBuilder.Count != 0)
+                {
+                    rva = ilStream.Count;
+                    methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+                }
+
                 builder.AddMethodDefinition(
                     methodDef.MethodAttributes,
                     methodDef.ImplementationAttributes,
                     builder.GetOrAddString(methodDef.Name),
                     builder.GetOrAddBlob(methodDef.MethodSignature!),
-                    ilStream.Count,
+                    rva,
                     (ParameterHandle)GetHandleForList(methodDef.Parameters, _seenEntities[TableIndex.MethodDef], method => ((MethodDefinitionEntity)method).Parameters, i, TableIndex.Param));
-                methodDef.MethodBody.CodeBuilder.WriteContentTo(ilStream);
+
+                if (methodDef.MethodImportInformation is not null)
+                {
+                    builder.AddMethodImport(
+                        (MethodDefinitionHandle)methodDef.Handle,
+                        methodDef.MethodImportInformation.Value.Attributes,
+                        methodDef.MethodImportInformation.Value.EntryPointName is null ? default : builder.GetOrAddString(methodDef.MethodImportInformation.Value.EntryPointName),
+                        (ModuleReferenceHandle)methodDef.MethodImportInformation.Value.ModuleName.Handle);
+                }
             }
 
             foreach (ParameterEntity param  in _seenEntities[TableIndex.Param])
@@ -140,6 +200,11 @@ namespace ILAssembler
                     param.Attributes,
                     param.Name is null ? default : builder.GetOrAddString(param.Name),
                     param.Sequence);
+
+                if (param.MarshallingDescriptor is not null)
+                {
+                    builder.AddMarshallingDescriptor(param.Handle, builder.GetOrAddBlob(param.MarshallingDescriptor));
+                }
             }
 
             foreach (InterfaceImplementationEntity impl in _seenEntities[TableIndex.InterfaceImpl])
@@ -149,9 +214,103 @@ namespace ILAssembler
                     impl.InterfaceType is FakeTypeEntity fakeType ? fakeType.TypeColumnHandle : impl.InterfaceType.Handle);
             }
 
-            // TODO: MemberRef
+            foreach (MemberReferenceEntity memberRef in _memberReferences)
+            {
+                builder.AddMemberReference(
+                    memberRef.Parent.Handle,
+                    builder.GetOrAddString(memberRef.Name),
+                    builder.GetOrAddBlob(memberRef.Signature));
+            }
 
-            // TODO: Write out the rest of the tables.
+            foreach (DeclarativeSecurityAttributeEntity declSecurity in _seenEntities[TableIndex.DeclSecurity])
+            {
+                builder.AddDeclarativeSecurityAttribute(
+                    declSecurity.Parent?.Handle ?? default,
+                    declSecurity.Action,
+                    builder.GetOrAddBlob(declSecurity.PermissionSet));
+            }
+
+            foreach (StandaloneSignatureEntity standaloneSig in _seenEntities[TableIndex.StandAloneSig])
+            {
+                builder.AddStandaloneSignature(
+                    builder.GetOrAddBlob(standaloneSig.Signature));
+            }
+
+            foreach (EventEntity evt in _seenEntities[TableIndex.Event])
+            {
+                builder.AddEvent(
+                    evt.Attributes,
+                    builder.GetOrAddString(evt.Name),
+                    evt.Type.Handle);
+
+                foreach (var accessor in evt.Accessors)
+                {
+                    builder.AddMethodSemantics(evt.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
+                }
+            }
+
+            foreach (PropertyEntity prop in _seenEntities[TableIndex.Property])
+            {
+                builder.AddProperty(
+                    prop.Attributes,
+                    builder.GetOrAddString(prop.Name),
+                    builder.GetOrAddBlob(prop.Type));
+
+                foreach (var accessor in prop.Accessors)
+                {
+                    builder.AddMethodSemantics(prop.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
+                }
+            }
+
+            foreach (ModuleReferenceEntity moduleRef in _seenEntities[TableIndex.ModuleRef])
+            {
+                builder.AddModuleReference(builder.GetOrAddString(moduleRef.Name));
+            }
+
+            foreach (TypeSpecificationEntity typeSpec in _seenEntities[TableIndex.TypeSpec])
+            {
+                builder.AddTypeSpecification(builder.GetOrAddBlob(typeSpec.Signature));
+            }
+
+            if (Assembly is not null)
+            {
+                builder.AddAssembly(
+                    builder.GetOrAddString(Assembly.Name),
+                    Assembly.Version ?? new Version(),
+                    Assembly.Culture is null ? default : builder.GetOrAddString(Assembly.Culture),
+                    Assembly.PublicKeyOrToken is null ? default : builder.GetOrAddBlob(Assembly.PublicKeyOrToken),
+                    Assembly.Flags,
+                    Assembly.HashAlgorithm);
+            }
+
+            foreach (FileEntity file in _seenEntities[TableIndex.File])
+            {
+                builder.AddAssemblyFile(
+                    builder.GetOrAddString(file.Name),
+                    file.Hash is not null ? builder.GetOrAddBlob(file.Hash) : default,
+                    file.HasMetadata);
+            }
+
+            foreach (ExportedTypeEntity exportedType in _seenEntities[TableIndex.ExportedType])
+            {
+                builder.AddExportedType(
+                    exportedType.Attributes,
+                    builder.GetOrAddString(exportedType.Name),
+                    builder.GetOrAddString(exportedType.Namespace),
+                    exportedType.Implementation?.Handle ?? default,
+                    exportedType.TypeDefinitionId);
+            }
+
+            foreach (ManifestResourceEntity resource in _seenEntities[TableIndex.ManifestResource])
+            {
+                builder.AddManifestResource(
+                    resource.Attributes,
+                    builder.GetOrAddString(resource.Name),
+                    resource.Implementation?.Handle ?? default,
+                    resource.Offset);
+            }
+
+            // TODO: MethodSpec
 
             static EntityHandle GetHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex, TableIndex tokenType)
             {
@@ -402,7 +561,7 @@ namespace ILAssembler
             return true;
         }
 
-        public static FieldDefinitionEntity? CreateFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
+        public static FieldDefinitionEntity? CreateUnrecordedFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
         {
             var field = new FieldDefinitionEntity(attributes, containingType, name, signature);
             bool allowDuplicate = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
@@ -432,16 +591,18 @@ namespace ILAssembler
             return new ParameterEntity(attributes, name, marshallingDescriptor, sequence);
         }
 
-        public static MemberReferenceEntity CreateUnrecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
+        public static MemberReferenceEntity CreateLazilyRecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
         {
-            return new MemberReferenceEntity(containingType, name, signature);
+            var entity = new MemberReferenceEntity(containingType, name, signature);
+            _memberReferences.Add(entity);
+            return entity;
         }
 
-        public void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
+        private void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
         {
-            // Resolve the member reference to a local method or field reference or record
+            // TODO: Resolve the member reference to a local method or field reference or record
             // it into the member reference table.
-            throw new NotImplementedException();
+            RecordEntityInTable(TableIndex.MemberRef, memberRef);
         }
 
         public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
@@ -635,8 +796,6 @@ namespace ILAssembler
             public string Name { get; }
             public TypeAttributes Attributes { get; set; }
             public TypeEntity? BaseType { get; set; }
-
-            // TODO: Add fields, methods, properties, etc.
 
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
