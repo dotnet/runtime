@@ -72,7 +72,7 @@ namespace System.Net
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _isBuffered ? _streamBuffer.WriteAsync(_buffer.GetBuffer(), cancellationToken).AsTask() : Task.CompletedTask;
+            return _isBuffered ? _streamBuffer.WriteAsync(_buffer.GetBuffer().AsMemory(0, (int) _buffer.Length), cancellationToken).AsTask() : Task.CompletedTask;
         }
 
         public override long Length
