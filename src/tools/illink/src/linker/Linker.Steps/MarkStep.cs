@@ -1422,6 +1422,8 @@ namespace Mono.Linker.Steps
 					MarkEntireAssembly (assembly);
 				}
 				return;
+			} else if (Annotations.IsRootAssembly (assembly)) {
+				MarkEntireAssembly (assembly);
 			}
 
 			ProcessModuleType (assembly);
