@@ -769,6 +769,28 @@ bool MethodContext::repIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return value != 0;
 }
 
+void MethodContext::recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result)
+{
+    if (NotifyMethodInfoUsage == nullptr)
+        NotifyMethodInfoUsage = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(ftn);
+    DWORD value = result ? 1 : 0;
+    NotifyMethodInfoUsage->Add(key, value);
+    DEBUG_REC(dmpNotifyMethodInfoUsage(key, value));
+}
+void MethodContext::dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value)
+{
+    printf("NotifyMethodInfoUsage key ftn-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    DWORDLONG key = CastHandle(ftn);
+    DWORD value = LookupByKeyOrMiss(NotifyMethodInfoUsage, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpNotifyMethodInfoUsage(key, value));
+    return value != 0;
+}
+
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
 {
     if (GetMethodAttribs == nullptr)
