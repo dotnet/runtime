@@ -94,6 +94,7 @@ namespace System.Net
         internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _credentialsHandle, SafeDeleteContext securityContext)
         {
             SecPkgContext_SessionInfo info = default;
+
             // fails on Server 2008 and older. We will fall-back to probing LOCAL_CERT_CONTEXT in that case.
             if (SSPIWrapper.QueryBlittableContextAttributes(
                                     GlobalSSPI.SSPISecureChannel,
