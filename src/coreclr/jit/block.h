@@ -700,12 +700,14 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCond(BasicBlock* trueTarget)
+    void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
         assert(trueTarget != nullptr);
+        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
+        assert(falseTarget == bbNext);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
-        bbFalseTarget = bbNext;
+        bbFalseTarget = falseTarget;
     }
 
     // Set both the block kind and target. This can clear `bbTarget` when setting
