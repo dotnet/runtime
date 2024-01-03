@@ -87,6 +87,7 @@ namespace System.Tests
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
 
+            // https://github.com/dotnet/runtime/issues/95503
             if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnBrowser && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
