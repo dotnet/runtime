@@ -20,6 +20,7 @@ using Microsoft.CodeAnalysis.CSharp;
 // are concerned.
 
 #pragma warning disable CA1861 // Avoid constant arrays as arguments.
+
 namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
@@ -447,12 +448,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             else
             {
-                using (SHA256 sha = SHA256.Create())
-                {
-#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
-                    fieldName = $"s_nonAscii_{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(chars))).Replace("-", "")}";
-#pragma warning restore CA1850
-                }
+                fieldName = GetSHA256FieldName("s_nonAscii_", new string(chars));
             }
 
             if (!requiredHelpers.ContainsKey(fieldName))
@@ -528,15 +524,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // As a final fallback, manufacture a name unique to the full set description.
-            if (helperName is null)
-            {
-                using (SHA256 sha = SHA256.Create())
-                {
-#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
-                    helperName = $"IndexOfNonAsciiOrAny_{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(set))).Replace("-", "")}";
-#pragma warning restore CA1850
-                }
-            }
+            helperName ??= GetSHA256FieldName("IndexOfNonAsciiOrAny_", set);
 
             if (!requiredHelpers.ContainsKey(helperName))
             {
@@ -735,11 +723,11 @@ namespace System.Text.RegularExpressions.Generator
                         case FindNextStartingPositionMode.LeadingString_LeftToRight:
                         case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                         case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
-                            EmitIndexOf_LeftToRight();
+                            EmitIndexOfString_LeftToRight();
                             break;
 
                         case FindNextStartingPositionMode.LeadingString_RightToLeft:
-                            EmitIndexOf_RightToLeft();
+                            EmitIndexOfString_RightToLeft();
                             break;
 
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight:
@@ -964,11 +952,11 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits a case-sensitive left-to-right search for a substring.
-            void EmitIndexOf_LeftToRight()
+            void EmitIndexOfString_LeftToRight()
             {
                 RegexFindOptimizations opts = regexTree.FindOptimizations;
 
-                string substring = "", stringComparison = "", offset = "", offsetDescription = "";
+                string substring = "", stringComparison = "Ordinal", offset = "", offsetDescription = "";
 
                 switch (opts.FindMode)
                 {
@@ -980,7 +968,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                         substring = regexTree.FindOptimizations.LeadingPrefix;
-                        stringComparison = ", StringComparison.OrdinalIgnoreCase";
+                        stringComparison = "OrdinalIgnoreCase";
                         offsetDescription = "ordinal case-insensitive at the beginning of the pattern";
                         Debug.Assert(!string.IsNullOrEmpty(substring));
                         break;
@@ -1000,18 +988,59 @@ namespace System.Text.RegularExpressions.Generator
                         break;
                 }
 
+                string substringAndComparison = $"{substring}_{stringComparison}";
+                string fieldName = "s_indexOfString_";
+                fieldName = IsValidInFieldName(substring) ?
+                    fieldName + substringAndComparison :
+                    GetSHA256FieldName(fieldName, substringAndComparison);
+
+                if (!requiredHelpers.ContainsKey(fieldName))
+                {
+                    requiredHelpers.Add(fieldName,
+                    [
+                        $"/// <summary>Supports searching for the string {EscapeXmlComment(Literal(substring))}.</summary>",
+                        $"internal static readonly SearchValues<string> {fieldName} = SearchValues.Create([{Literal(substring)}], StringComparison.{stringComparison});",
+                    ]);
+                }
+
                 writer.WriteLine($"// The pattern has the literal {Literal(substring)} {offsetDescription}. Find the next occurrence.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
-                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)}{stringComparison});");
+                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOfAny({HelpersTypeName}.{fieldName});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
                     writer.WriteLine("base.runtextpos = pos + i;");
                     writer.WriteLine("return true;");
                 }
+
+                // Determines whether its ok to embed the string in the field name.
+                // This is the same algorithm used by Roslyn.
+                static bool IsValidInFieldName(string s)
+                {
+                    foreach (char c in s)
+                    {
+                        if (char.GetUnicodeCategory(c) is not
+                            (UnicodeCategory.UppercaseLetter or
+                             UnicodeCategory.LowercaseLetter or
+                             UnicodeCategory.TitlecaseLetter or
+                             UnicodeCategory.ModifierLetter or
+                             UnicodeCategory.LetterNumber or
+                             UnicodeCategory.OtherLetter or
+                             UnicodeCategory.DecimalDigitNumber or
+                             UnicodeCategory.ConnectorPunctuation or
+                             UnicodeCategory.SpacingCombiningMark or
+                             UnicodeCategory.NonSpacingMark or
+                             UnicodeCategory.Format))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
             }
 
             // Emits a case-sensitive right-to-left search for a substring.
-            void EmitIndexOf_RightToLeft()
+            void EmitIndexOfString_RightToLeft()
             {
                 string prefix = regexTree.FindOptimizations.LeadingPrefix;
 
@@ -5157,6 +5186,15 @@ namespace System.Text.RegularExpressions.Generator
                 parts[i] = "RegexOptions." + parts[i].Trim();
             }
             return string.Join(" | ", parts);
+        }
+
+        /// <summary>Gets a string containing the concatenation of <paramref name="prefix"/> with the hex for a hashed UTF8-encoded string.</summary>
+        private static string GetSHA256FieldName(string prefix, string toEncode)
+        {
+#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
+            using SHA256 sha = SHA256.Create();
+            return $"{prefix}{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(toEncode))).Replace("-", "")}";
+#pragma warning restore CA1850
         }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>

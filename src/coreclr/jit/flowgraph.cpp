@@ -394,7 +394,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetCond(bottom);
+        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
