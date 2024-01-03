@@ -53,7 +53,6 @@ namespace Internal.Pgo
         ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
         ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
         ValueHistogram = (DescriptorMin * 9) | EightByte,
-        GetLikelyValue = (DescriptorMin * 10) | EightByte,
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>
