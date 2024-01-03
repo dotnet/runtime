@@ -2304,7 +2304,7 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
 
 #ifdef DEBUG
     static constexpr unsigned kInstructionMask =
-        kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask;
+        ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
 
     assert((insCode & kInstructionMask) == 0);
 #endif // DEBUG
@@ -2327,7 +2327,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
     unsigned insCode = emitInsCode(ins);
 
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
 
     assert((insCode & kInstructionMask) == 0);
 #endif // DEBUG
@@ -2349,7 +2349,7 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs
     unsigned insCode = emitInsCode(ins);
 
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
 
     assert((insCode & kInstructionMask) == 0);
 #endif // DEBUG
@@ -2384,7 +2384,7 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
     unsigned insCode = emitInsCode(ins);
 
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
 
     assert((insCode & kInstructionMask) == 0);
 #endif // DEBUG
@@ -2409,15 +2409,16 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
 unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
     BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
 {
-#ifdef DEBUG
-    static constexpr unsigned kInstructionMask = kInstructionOpcodeMask | kInstructionFunct3Mask;
+    unsigned insCode = emitInsCode(ins) ^ 0x1000;
 
-    assert((ins & kInstructionMask) == 0);
+#ifdef DEBUG
+    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
+
+    assert((insCode & kInstructionMask) == 0);
 #endif // DEBUG
 
-    unsigned insCode = emitInsCode(ins) ^ 0x1000;
-    unsigned opcode  = insCode & kInstructionOpcodeMask;
-    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned opcode = insCode & kInstructionOpcodeMask;
+    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13));
 }
 
