@@ -2938,8 +2938,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dstRW2 = dst + writeableOffset; // TODO remove
             break;
         default: // case INS_OPTS_NONE:
-            *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
-            dstRW += 4;
+            dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
+            emitInsCode()
             ins = id->idIns();
             sz  = emitSizeOfInsDsc(id);
             break;
