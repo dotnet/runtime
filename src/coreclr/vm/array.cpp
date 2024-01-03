@@ -289,11 +289,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     DWORD dwMultipurposeSlotsMask = 0;
-    dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
 
     // Allocate space for optional members
     // We always have a non-virtual slot array, see assert at end
-    cbMT += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask);
+    cbMT += MethodTable::GetOptionalMembersAllocationSize(true /* hasInterfaceMap */);
 
     // This is the offset of the beginning of the interface map
     size_t imapOffset = cbMT;

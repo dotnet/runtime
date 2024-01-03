@@ -10252,8 +10252,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     cbTotalSize += MethodTable::GetNumVtableIndirections(dwVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
     DWORD dwMultipurposeSlotsMask = 0;
-    if (dwNumInterfaces != 0)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
     if (dwNumDicts != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
 
@@ -10277,7 +10275,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
-    cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask);
+    cbTotalSize += MethodTable::GetOptionalMembersAllocationSize((dwNumInterfaces != 0) /* hasInterfaceMap */);
 
     // Interface map starts here
     S_SIZE_T offsetOfInterfaceMap = cbTotalSize;

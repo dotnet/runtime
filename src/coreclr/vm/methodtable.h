@@ -3430,9 +3430,8 @@ private:
 
         // The following bits describe usage of optional slots. They have to stay
         // together because of we index using them into offset arrays.
-        enum_flag_MultipurposeSlotsMask     = 0x0003,
+        enum_flag_MultipurposeSlotsMask     = 0x0001,
         enum_flag_HasPerInstInfo            = 0x0001,
-        enum_flag_HasInterfaceMap           = 0x0002,
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_HasBoxedRegularStatics    = 0x0008, // GetNumBoxedRegularStatics() != 0
@@ -3593,12 +3592,8 @@ private:
     // the fields are (a) known when MT is created and (b) there is a default
     // value for the field in the common case.  That is, they are normally used
     // for data that is only relevant to a small number of method tables.
-
-    // Optional members and multipurpose slots have similar purpose, but they differ in details:
-    // - Multipurpose slots can only accommodate pointer sized structures right now. It is non-trivial
-    //   to add new ones, the access is faster.
     // - Optional members can accommodate structures of any size. It is trivial to add new ones,
-    //   the access is slower.
+    //   the access is somewhat slow.
 
     // The following macro will automatically create GetXXX accessors for the optional members.
 #define METHODTABLE_OPTIONAL_MEMBERS() \
@@ -3648,8 +3643,7 @@ private:
         return GetOffsetOfOptionalMember(OptionalMember_Count);
     }
 
-    inline static DWORD GetOptionalMembersAllocationSize(
-                                                  DWORD dwMultipurposeSlotsMask);
+    inline static DWORD GetOptionalMembersAllocationSize(bool hasInterfaceMap);
     inline DWORD GetOptionalMembersSize();
 
     // The PerInstInfo is a (possibly empty) array of pointers to

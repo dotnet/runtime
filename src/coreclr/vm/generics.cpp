@@ -237,14 +237,12 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     DWORD dwMultipurposeSlotsMask = 0;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
-    if (wNumInterfaces != 0)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
 
     // NonVirtualSlots, and DispatchMap multipurpose slots are used
     // from the canonical methodtable, so we do not need to store them here.
 
     // We need space for the optional members.
-    DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask);
+    DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(wNumInterfaces != 0);
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
     DWORD cbPerInst = sizeof(GenericsDictInfo) + pOldMT->GetPerInstInfoSize();

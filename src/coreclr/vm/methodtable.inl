@@ -1059,13 +1059,13 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 }
 
 //==========================================================================================
-inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask)
+inline DWORD MethodTable::GetOptionalMembersAllocationSize(bool hasInterfaceMap)
 {
     LIMITED_METHOD_CONTRACT;
 
     DWORD size = 0;
 
-    if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
+    if (hasInterfaceMap)
         size += sizeof(UINT_PTR);
 
     return size;
