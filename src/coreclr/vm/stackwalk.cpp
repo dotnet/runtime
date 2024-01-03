@@ -282,7 +282,7 @@ PTR_VOID CrawlFrame::GetExactGenericArgsToken()
         OBJECTREF obj = GetThisPointer();
         if (obj == NULL)
             return NULL;
-        return obj->GetGCSafeMethodTable();
+        return obj->GetMethodTable();
     }
     else
     {

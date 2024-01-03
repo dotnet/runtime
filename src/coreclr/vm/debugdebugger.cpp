@@ -1060,7 +1060,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
             pFunc,
             ip,
             flags,
-            pCf->GetExactGenericArgsToken());
+            GetExactGenericArgsToken(NULL, NULL, pCf));
 
     // We'll init the IL offsets outside the TSL lock.
 
@@ -1080,6 +1080,41 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     return SWA_CONTINUE;
 }
 #endif // !DACCESS_COMPILE
+
+PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PREGDISPLAY pRD, EECodeInfo* pCodeInfo, CrawlFrame* pCf)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    ASSERT (pCf != NULL || (pRD != NULL && pCodeInfo != NULL));
+
+    if (pCf)
+    {
+        return pCf->GetExactGenericArgsToken();
+    }
+
+    MethodDesc* pFunc = pCodeInfo->GetMethodDesc();
+    if (!pFunc || !pFunc->IsSharedByGenericInstantiations())
+        return NULL;
+
+    if (pFunc->AcquiresInstMethodTableFromThis())
+    {
+        OBJECTREF obj = pCodeInfo->GetCodeManager()->GetInstance(pRD, pCodeInfo);
+        if (obj == NULL)
+            return NULL;
+        return obj->GetMethodTable();
+    }
+    else
+    {
+        _ASSERTE(pFunc->RequiresInstArg());
+        return pCodeInfo->GetCodeManager()->GetParamTypeArg(pRD, pCodeInfo);
+    }
+}
 
 void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                                                   GetStackFramesData *pData,
@@ -1154,11 +1189,18 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // Currently such methods always return an IP of 0, so they're easy
                 // to spot.
                 DWORD dwNativeOffset;
+                PTR_VOID pExactGenericArgsToken = NULL;
 
                 if (cur.ip)
                 {
                     EECodeInfo codeInfo(cur.ip);
                     dwNativeOffset = codeInfo.GetRelOffset();
+                    REGDISPLAY pRD;
+                    CONTEXT ctx = {};
+                    SetIP(&ctx, cur.ip);
+                    SetSP(&ctx, cur.sp);
+                    FillRegDisplay(&pRD, &ctx);
+                    pExactGenericArgsToken = GetExactGenericArgsToken(&pRD, &codeInfo);
                 }
                 else
                 {
@@ -1170,9 +1212,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     pMD,
                     (PCODE)cur.ip,
                     cur.flags,
-                    // The managed stacktrace classes always returns typical method definition,
-                    // so we don't need to provide the pExactGenericArgsToken 
-                    NULL);
+                    pExactGenericArgsToken);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
 #endif
