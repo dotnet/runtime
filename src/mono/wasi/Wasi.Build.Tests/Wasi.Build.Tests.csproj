@@ -104,7 +104,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">/workspaces/runtime/.dotnet/dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24HELIX_XUNIT_ARGS</RunScriptCommand>
