@@ -34,7 +34,7 @@ internal static partial class Interop
 
 #if FEATURE_WASM_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InstallWebWorkerInterop();
+        public static extern void InstallWebWorkerInterop(IntPtr proxyContextGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
 #endif

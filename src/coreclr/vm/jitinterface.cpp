@@ -1669,9 +1669,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     // TODO: This is touching metadata. Can we avoid it?
     DWORD fieldAttribs = pField->GetAttributes();
 
-    if (IsFdFamily(fieldAttribs))
-        fieldFlags |= CORINFO_FLG_FIELD_PROTECTED;
-
     if (IsFdInitOnly(fieldAttribs))
         fieldFlags |= CORINFO_FLG_FIELD_FINAL;
 
@@ -6505,6 +6502,29 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     EE_TO_JIT_TRANSITION_LEAF();
 
     return ret;
+}
+
+bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(ftn);
+
+#ifdef FEATURE_REJIT
+    MethodDesc *pCallee = GetMethod(ftn);
+    MethodDesc *pCaller = m_pMethodBeingCompiled;
+    pCallee->GetModule()->AddInlining(pCaller, pCallee);
+#endif // FEATURE_REJIT
+
+    EE_TO_JIT_TRANSITION();
+    
+    return true;
 }
 
 /*********************************************************************/

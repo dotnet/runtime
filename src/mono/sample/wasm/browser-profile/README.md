@@ -52,8 +52,8 @@ function saveProfile() {
 ### Build and Run a project with profiling
 1. To enable profiling during a build, we need to make use of WasmApp.InTree.targets/props by importing into the project file:
 
-`<Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />` <br/>
-`<Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />`
+`<Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />` <br/>
+`<Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props" />`
 
 For more information on how to utilize WasmApp.InTree.targets/props consult the wasm build directory [README.md](../../../wasm/README.md)
 
