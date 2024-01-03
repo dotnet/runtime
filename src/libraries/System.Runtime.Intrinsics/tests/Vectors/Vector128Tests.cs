@@ -11,6 +11,44 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector128Tests
     {
+        [Theory]
+        [InlineData(0ul)]
+        [InlineData(1ul)]
+        [InlineData(127ul)]
+        [InlineData(128ul)]
+        [InlineData(129ul)]
+        [InlineData((ulong)int.MaxValue)]
+        [InlineData(ulong.MaxValue)]
+        public void Repro1(ulong ulValue)
+        {
+            Vector128<UIntPtr> vector = Vector128.Create((UIntPtr)ulValue);
+
+            Vector128<UIntPtr> abs = Vector128.Abs(vector);
+
+            Assert.True(
+                Vector128.EqualsAll(Vector128.Create((UIntPtr)ulValue), abs),
+                $"Unexpected absolute value {abs} != {vector}");
+        }
+
+        [Theory]
+        [InlineData(0ul)]
+        [InlineData(1ul)]
+        [InlineData(127ul)]
+        [InlineData(128ul)]
+        [InlineData(129ul)]
+        [InlineData((ulong)int.MaxValue)]
+        [InlineData(ulong.MaxValue)]
+        public void Repro2(ulong ulValue)
+        {
+            Vector128<UIntPtr> vector = Vector128.Create((UIntPtr)ulValue);
+            Assert.True(Vector128.EqualsAll(Vector128.LessThan(vector, Vector128<UIntPtr>.Zero), Vector128<UIntPtr>.Zero));
+        }
+
+        // Vector128<T> result =
+        //     Vector128.ConditionalSelect(Vector128.Equals(xMag, yMag),
+        //         Vector128.ConditionalSelect(IsNegative(x), y, x),
+        //         Vector128.ConditionalSelect(Vector128.GreaterThan(xMag, yMag), x, y));
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Vector128))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
