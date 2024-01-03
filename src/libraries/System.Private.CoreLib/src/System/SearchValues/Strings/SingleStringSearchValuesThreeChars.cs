@@ -15,7 +15,8 @@ namespace System.Buffers
     // This implementation uses 3 precomputed anchor points when searching.
     // This implementation may also be used for length=2 values, in which case two anchors point at the same position.
     // Has an O(i * m) worst-case, with the expected time closer to O(n) for most inputs.
-    internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : StringSearchValuesBase
+    internal sealed class SingleStringSearchValuesThreeChars<TValueLength, TCaseSensitivity> : StringSearchValuesBase
+        where TValueLength : struct, IValueLength
         where TCaseSensitivity : struct, ICaseSensitivity
     {
         private const ushort CaseConversionMask = unchecked((ushort)~0x20);
@@ -228,7 +229,7 @@ namespace System.Buffers
 
                 // CaseInsensitiveUnicode doesn't support single-character transformations, so we skip checking the first character first.
                 if ((typeof(TCaseSensitivity) == typeof(CaseInsensitiveUnicode) || TCaseSensitivity.TransformInput(cur) == valueHead) &&
-                    TCaseSensitivity.Equals(ref cur, value))
+                    TCaseSensitivity.Equals<TValueLength>(ref cur, value))
                 {
                     return (int)i;
                 }
@@ -325,7 +326,8 @@ namespace System.Buffers
 
                 ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
-                if (TCaseSensitivity.Equals(ref matchRef, _value))
+                if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
+                    TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
                 {
                     offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
                     return true;
@@ -353,7 +355,8 @@ namespace System.Buffers
 
                 ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
-                if (TCaseSensitivity.Equals(ref matchRef, _value))
+                if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
+                    TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
                 {
                     offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
                     return true;
