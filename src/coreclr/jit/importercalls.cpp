@@ -104,8 +104,7 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
             }
             else
             {
-                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
-                                                    "Not a property");
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL, "Not a property");
                 return;
             }
 
