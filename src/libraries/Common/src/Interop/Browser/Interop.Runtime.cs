@@ -22,14 +22,14 @@ internal static partial class Interop
 
 #if !ENABLE_JS_INTEROP_BY_VALUE
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern nint RegisterGCRoot(nint start, int bytesSize, IntPtr name);
+        public static extern nint RegisterGCRoot(void* start, int bytesSize, IntPtr name);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void DeregisterGCRoot(nint handle);
 #endif
 
 #if FEATURE_WASM_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InstallWebWorkerInterop(IntPtr proxyContextGCHandle);
+        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
 

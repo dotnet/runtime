@@ -200,10 +200,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSFunction(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
-            lock (jsFunction.ProxyContext)
-            {
-                ObjectDisposedException.ThrowIf(jsFunction.IsDisposed, jsFunction);
-            }
+            jsFunction.AssertNotDisposed();
+
 #if FEATURE_WASM_THREADS
             // if we are on correct thread already, just call it
             if (jsFunction.ProxyContext.IsCurrentThread())
@@ -428,6 +426,8 @@ namespace System.Runtime.InteropServices.JavaScript
             void* cpy = (void*)Marshal.AllocHGlobal(bytes);
             void* src = Unsafe.AsPointer(ref arguments[0]);
             Unsafe.CopyBlock(cpy, src, (uint)bytes);
+
+            // TODO: we could optimize away the work item allocation in JSSynchronizationContext if we synchronously dispatch this when we are already in the right thread.
 
             // async
             targetContext.SynchronizationContext.Post(static o =>

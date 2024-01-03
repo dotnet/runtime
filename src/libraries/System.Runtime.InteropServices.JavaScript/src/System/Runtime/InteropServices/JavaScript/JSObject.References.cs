@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -39,7 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DISABLE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            AssertNotDisposed();
             lock (ProxyContext)
             {
                 InFlightCounter++;
@@ -79,6 +80,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AssertNotDisposed()
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+        }
 
         internal void DisposeImpl(bool skipJsCleanup = false)
         {

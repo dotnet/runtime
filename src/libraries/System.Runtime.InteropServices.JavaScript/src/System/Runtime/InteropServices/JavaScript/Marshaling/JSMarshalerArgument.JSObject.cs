@@ -41,13 +41,11 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
 #if !FEATURE_WASM_THREADS
-                ObjectDisposedException.ThrowIf(value.IsDisposed, value);
+                value.AssertNotDisposed();
 #else
+                value.AssertNotDisposed();
                 var ctx = value.ProxyContext;
-                lock (ctx)
-                {
-                    ObjectDisposedException.ThrowIf(value.IsDisposed, value);
-                }
+
                 if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
                 {
                     JSProxyContext.CaptureContextFromParameter(ctx);
