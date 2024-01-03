@@ -460,8 +460,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         int iNumValidFrames = 0;
         for (int i = 0; i < data.cElements; i++)
         {
-            // The managed stacktrace classes always returns typical method definition, so we don't need to bother providing exact instantiation.
-            // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(data.pElements[i].pFunc, data.pElements[i].pExactGenericArgsToken, &thExactType, &pExactMethod);
             MethodDesc* pFunc = data.pElements[i].pFunc;
 
             // Method handle

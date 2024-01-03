@@ -116,8 +116,8 @@ namespace System.Diagnostics.Tests
             yield return new object[] { new StackFrame(), "MoveNext at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new StackFrame("FileName", 1, 2), "MoveNext at offset {offset} in file:line:column FileName:1:2" + Environment.NewLine };
             yield return new object[] { new StackFrame(int.MaxValue), "<null>" + Environment.NewLine };
-            yield return new object[] { GenericMethod<string>(), "GenericMethod<__Canon> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
-            yield return new object[] { GenericMethod<string, int>(), "GenericMethod<__Canon,Int32> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+            yield return new object[] { GenericMethod<string>(), "GenericMethod<String> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
+            yield return new object[] { GenericMethod<string, int>(), "GenericMethod<String,Int32> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new ClassWithConstructor().StackFrame, ".ctor at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
         }
 

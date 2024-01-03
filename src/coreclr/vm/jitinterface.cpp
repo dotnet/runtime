@@ -7684,29 +7684,12 @@ static void getMethodInfoHelper(
                              (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
                              (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0)));
 
-    // EEJitManager::ResolveEHClause and CrawlFrame::GetExactGenericInstantiations
-    // need to be able to get to CORINFO_GENERICS_CTXT_MASK if there are any
-    // catch clauses like "try {} catch(MyException<T> e) {}".
-    // Such constructs are rare, and having to extend the lifetime of variable
-    // for such cases is reasonable
+    // Always keep generics content in case the exact generic instantiation needs to
+    // be fetched by EEJitManager::ResolveEHClauseand or CrawlFrame::GetExactGenericInstantiations
 
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
-#if defined(PROFILING_SUPPORTED)
-        BOOL fProfilerRequiresGenericsContextForEnterLeave = FALSE;
-        {
-            BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
-            if ((&g_profControlBlock)->RequiresGenericsContextForEnterLeave())
-            {
-                fProfilerRequiresGenericsContextForEnterLeave = TRUE;
-            }
-            END_PROFILER_CALLBACK();
-        }
-        if (fProfilerRequiresGenericsContextForEnterLeave)
-        {
-            methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
-        }
-#endif // defined(PROFILING_SUPPORTED)
+        methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
     }
 
     PCCOR_SIGNATURE pSig = NULL;
