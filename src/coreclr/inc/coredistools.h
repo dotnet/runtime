@@ -3,7 +3,7 @@
 
 //===--------- coredistools.h - Disassembly tools for CoreClr ------------===//
 //
-//  Core Disassembly Tools API Version 1.3.0
+//  Core Disassembly Tools API Version 1.4.0
 //  Disassembly tools required by CoreCLR for utilities like
 //  GCStress, SuperPMI, and R2RDump.
 //===----------------------------------------------------------------------===//
@@ -26,10 +26,6 @@
 #define DllIface EXTERN_C __declspec(dllimport)
 #endif // defined(DllInterfaceExporter)
 #else
-
-// Disable "warning: default label in switch which covers all enumeration values [-Wcovered-switch-default]"
-#pragma clang diagnostic ignored "-Wcovered-switch-default"
-
 #if !defined(__cdecl)
 #if defined(__i386__)
 #define __cdecl __attribute__((cdecl))
