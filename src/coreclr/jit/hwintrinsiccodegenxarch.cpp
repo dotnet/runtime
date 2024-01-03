@@ -333,6 +333,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
                     }
                 }
+                else if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && !op3->IsCnsIntOrI())
+                {
+                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM(node, ins, simdSize, i); };
+                    regNumber baseReg = node->ExtractTempReg();
+                    regNumber offsReg = node->GetSingleTempReg();
+                    genHWIntrinsicJumpTableFallback(intrinsicId, op3Reg, baseReg, offsReg, emitSwCase);
+                }
                 else
                 {
                     switch (intrinsicId)
@@ -704,6 +711,31 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
 
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
+
+    genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, op1Reg, op2);
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_R_RM: Generates the code for a hardware intrinsic node that takes a register operand, a
+//                        register/memory operand, and that returns a value in register
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//    ins  - The instruction being generated
+//    attr - The emit attribute for the instruction being generated
+//    ival - a "fake" immediate to indicate the rounding mode
+//
+void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival)
+{
+    regNumber targetReg = node->GetRegNum();
+    GenTree*  op1       = node->Op(1);
+    GenTree*  op2       = node->Op(2);
+    regNumber op1Reg    = op1->GetRegNum();
+
+    assert(targetReg != REG_NA);
+    assert(op1Reg != REG_NA);
+
+    node->SetEmbRoundingMode((uint8_t)ival);
 
     genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, op1Reg, op2);
 }

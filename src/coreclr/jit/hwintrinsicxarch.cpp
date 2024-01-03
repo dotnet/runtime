@@ -285,6 +285,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 //
 int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
 {
+    if(HWIntrinsicInfo::IsEmbRoundingCompatible(id))
+    {
+        return 12;
+    }
+
     assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
 
     switch (id)

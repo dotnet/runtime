@@ -2231,9 +2231,16 @@ public:
     }
 
 #ifdef FEATURE_HW_INTRINSICS
+
+    void ClearEmbRoundingMode()
+    {
+        assert(gtOper == GT_HWINTRINSIC);
+        gtFlags &= ~GTF_HW_ER_MASK;
+    }
     void SetEmbRoundingMode(uint8_t mode)
     {
         assert(gtOper == GT_HWINTRINSIC);
+        ClearEmbRoundingMode();
         switch (mode)
         {
             case 0x09:
