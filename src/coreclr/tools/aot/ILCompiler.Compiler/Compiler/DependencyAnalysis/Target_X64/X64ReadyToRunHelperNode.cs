@@ -307,7 +307,7 @@ namespace ILCompiler.DependencyAnalysis
                 encoder.EmitJE(getInlinedThreadStaticBaseSlow);
                 encoder.EmitRET();
             }
-            else if (factory.Target.IsOSXLike)
+            else if (factory.Target.IsApplePlatform)
             {
                 // movq _\Var @TLVP(% rip), % rdi
                 // callq * (% rdi)
