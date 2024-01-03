@@ -6154,8 +6154,14 @@ void CodeGen::genFnProlog()
         };
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-        assignIncomingRegisterArgs(&intRegState);
+        // Handle float parameters first; in the presence of struct promotion
+        // we can have parameters that are homed into float registers but
+        // passed in integer registers. So make sure we get those out of the
+        // integer registers before we potentially override those as part of
+        // handling integer parameters.
+
         assignIncomingRegisterArgs(&floatRegState);
+        assignIncomingRegisterArgs(&intRegState);
 #else
         assignIncomingRegisterArgs(&intRegState);
 #endif
