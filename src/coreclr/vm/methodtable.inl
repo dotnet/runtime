@@ -1314,7 +1314,7 @@ FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
     PTR_MethodTableWriteableData writeableData = GetWriteableDataForWrite();
     PTR_GenericsStaticsInfo staticsInfo = MethodTableWriteableData::GetGenericStaticsInfo(writeableData);
     _ASSERTE(FitsIn<DWORD>(staticsInfo->m_DynamicTypeID) || staticsInfo->m_DynamicTypeID == (SIZE_T)-1);
-    *pID = staticsInfo->m_DynamicTypeID;
+    *pID = (DWORD)staticsInfo->m_DynamicTypeID;
     return writeableData->GetLoaderModule();
 }
 

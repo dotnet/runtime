@@ -720,7 +720,7 @@ void MethodTable::AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLo
     pMTWriteableData = (MethodTableWriteableData *)(pWriteableDataRegion + prependedAllocationSpace);
 
     pMTWriteableData->SetLoaderModule(pLoaderModule);
-    pMTWriteableData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -sizeof(GenericsStaticsInfo) : 0);
+    pMTWriteableData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -(int16_t)sizeof(GenericsStaticsInfo) : 0);
     m_pWriteableData = pMTWriteableData;
 }
 
@@ -8380,14 +8380,14 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMTParent->EnumMemoryRegions(flags);
     }
 
-    if (HasNonVirtualSlotsArray())
+    if (HasNonVirtualSlots())
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableWriteableData::GetNonVirtualSlotsArray(GetMethodTableWriteableData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableWriteableData::GetNonVirtualSlotsArray(GetWriteableData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
     }
 
     if (HasGenericsStaticsInfo())
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericStaticsInfo()), sizeof(GenericStaticsInfo));
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericsStaticsInfo()), sizeof(GenericsStaticsInfo));
     }
 
     if (HasInterfaceMap())

@@ -63,6 +63,10 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+struct MethodTableWriteableData;
+
+typedef DPTR(MethodTableWriteableData) PTR_MethodTableWriteableData;
+typedef DPTR(MethodTableWriteableData const) PTR_Const_MethodTableWriteableData;
 
 enum class ResolveVirtualStaticMethodFlags
 {
@@ -416,15 +420,13 @@ public:
 
     // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
     // To access, use a construct like... GetNonVirtualSlotsArray(pWriteableData)[-(1 + index)]
-    static inline PTR_PCODE GetNonVirtualSlotsArray(PTR_MethodTableWriteableData pWriteableData)
+    static inline PTR_PCODE GetNonVirtualSlotsArray(PTR_Const_MethodTableWriteableData pWriteableData)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(HasNonVirtualSlotsArray());
-        _ASSERTE(HasNonVirtualSlots());
         return dac_cast<PTR_PCODE>(dac_cast<TADDR>(pWriteableData) + pWriteableData->GetOffsetToNonVirtualSlots());
     }
 
-    inline int16_t GetOffsetToNonVirtualSlots()
+    inline int16_t GetOffsetToNonVirtualSlots() const
     {
         return m_offsetToNonVirtualSlots;
     }
@@ -434,14 +436,11 @@ public:
         m_offsetToNonVirtualSlots = offset;
     }
 
-    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_MethodTableWriteableData pWriteableData)
+    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableWriteableData pWriteableData)
     {
         return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pWriteableData) + sizeof(GenericsStaticsInfo));
     }
 };  // struct MethodTableWriteableData
-
-typedef DPTR(MethodTableWriteableData) PTR_MethodTableWriteableData;
-typedef DPTR(MethodTableWriteableData const) PTR_Const_MethodTableWriteableData;
 
 #ifdef UNIX_AMD64_ABI_ITF
 inline
@@ -1278,7 +1277,7 @@ public:
         else
         {
             // Non-virtual slots < GetNumVtableSlots live before the MethodTableWriteableData. The array grows backwards
-            _ASSERTE(HasNonVirtualSlotsArray());
+            _ASSERTE(HasNonVirtualSlots());
             return MethodTableWriteableData::GetNonVirtualSlotsArray(GetWriteableDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
         }
     }
@@ -1392,12 +1391,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetNumNonVirtualSlots() != 0;
-    }
-
-    inline BOOL HasNonVirtualSlotsArray()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return HasNonVirtualSlots();
     }
 
     inline unsigned GetNonVirtualSlotsArraySize()
@@ -3605,7 +3598,7 @@ private:
         METHODTABLE_OPTIONAL_MEMBERS()
         OptionalMember_Count,
 
-        OptionalMember_First = OptionalMember_GenericsStaticsInfo,
+        OptionalMember_First = OptionalMember_ExtraInterfaceInfo,
     };
 
     FORCEINLINE DWORD GetOffsetOfOptionalMember(OptionalMemberId id);
