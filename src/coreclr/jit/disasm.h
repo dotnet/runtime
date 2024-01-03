@@ -86,6 +86,9 @@ public:
     // Constructor
     void disInit(Compiler* pComp);
 
+    // Destructor
+    void disDone();
+
     // Initialize the class for the current method being generated.
     void disOpenForLateDisAsm(const char* curMethodName, const char* curClassName, PCCOR_SIGNATURE sig);
 
@@ -235,9 +238,16 @@ private:
 
 #ifdef USE_COREDISTOOLS
 
-    bool InitCoredistoolsDisasm();
-    bool disCoreDisToolsLibraryInitialized = false;
+    bool                      InitCoredistoolsLibrary();            // Load the coredistools library
+    static LONG               s_disCoreDisToolsLibraryInitializing; // 0 = not initializing; 1 = initializing
+    static bool               s_disCoreDisToolsLibraryInitialized;
+    static bool               s_disCoreDisToolsLibraryLoadSuccessful;
+    static NewDisasm_t*       s_PtrNewDisasm;
+    static DumpInstruction_t* s_PtrDumpInstruction;
+    static FinishDisasm_t*    s_PtrFinishDisasm;
 
+    bool       InitCoredistoolsDisasm(); // Prepare for disassembly
+    void       DoneCoredistoolsDisasm(); // Done with disassembly
     CorDisasm* corDisasm;
 
 #endif // USE_COREDISTOOLS

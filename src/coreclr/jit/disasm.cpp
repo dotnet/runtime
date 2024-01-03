@@ -18,8 +18,8 @@
 /*****************************************************************************/
 
 #ifdef USE_COREDISTOOLS
-// TODO: make this local to DisAssembler class and pass it on to coredistools?
-FILE* disAsmFileCorDisTools;
+// The loggers have no way to pass a context variable, so this is a global.
+FILE* g_disAsmFileCorDisTools;
 #endif // USE_COREDISTOOLS
 
 // Define DISASM_DEBUG to get verbose output of late disassembler inner workings.
@@ -1574,9 +1574,9 @@ void DisAssembler::disOpenForLateDisAsm(const char* curMethodName, const char* c
     {                                                                                                                  \
         va_list argList;                                                                                               \
         va_start(argList, msg);                                                                                        \
-        vflogf(disAsmFileCorDisTools, msg, argList);                                                                   \
+        vflogf(g_disAsmFileCorDisTools, msg, argList);                                                                 \
         va_end(argList);                                                                                               \
-        fprintf(disAsmFileCorDisTools, "\n");                                                                          \
+        fprintf(g_disAsmFileCorDisTools, "\n");                                                                        \
     }
 
 LOGGER(VERBOSE)
@@ -1586,9 +1586,101 @@ LOGGER(WARNING)
 const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, CorDisToolsLogVERBOSE,
                                  CorDisToolsLogVERBOSE};
 
-NewDisasm_t*       g_PtrNewDisasm       = nullptr;
-DumpInstruction_t* g_PtrDumpInstruction = nullptr;
-FinishDisasm_t*    g_PtrFinishDisasm    = nullptr;
+LONG               DisAssembler::s_disCoreDisToolsLibraryInitializing   = 0; // 0 = not initializing; 1 = initializing
+bool               DisAssembler::s_disCoreDisToolsLibraryInitialized    = false;
+bool               DisAssembler::s_disCoreDisToolsLibraryLoadSuccessful = false;
+NewDisasm_t*       DisAssembler::s_PtrNewDisasm                         = nullptr;
+DumpInstruction_t* DisAssembler::s_PtrDumpInstruction                   = nullptr;
+FinishDisasm_t*    DisAssembler::s_PtrFinishDisasm                      = nullptr;
+
+// Load coredistools library and find the entrypoints.
+//
+// Returns true on success, false on failure.
+//
+bool DisAssembler::InitCoredistoolsLibrary()
+{
+    while (InterlockedCompareExchange(&s_disCoreDisToolsLibraryInitializing, 1, 0) != 0)
+    {
+        // Wait for initialization to be complete
+    }
+
+    if (s_disCoreDisToolsLibraryInitialized)
+    {
+        // We've already loaded the library. Was it successful?
+        InterlockedExchange(&s_disCoreDisToolsLibraryInitializing, 0); // unlock initialization
+        return s_disCoreDisToolsLibraryLoadSuccessful;
+    }
+
+    s_disCoreDisToolsLibraryInitialized    = true;  // we only initialize once, even if it fails.
+    s_disCoreDisToolsLibraryLoadSuccessful = false; // assume the worst
+
+    const WCHAR* coreDisToolsLibraryNameW = MAKEDLLNAME_W("coredistools");
+    const CHAR*  coreDisToolsLibraryNameA = MAKEDLLNAME_A("coredistools");
+
+    HMODULE hCoreDisToolsLib = NULL;
+
+#ifdef TARGET_UNIX
+    // Unix will require the full path to coredistools. Assume that the
+    // location is next to the full path to the JIT.
+
+    WCHAR coreCLRLoadedPath[MAX_LONGPATH];
+    int   returnVal = ::GetModuleFileNameW(NULL, coreCLRLoadedPath, MAX_LONGPATH);
+
+    WCHAR* ptr;
+    WCHAR* coreDisToolsLibrary;
+
+    if (returnVal == 0)
+    {
+        printf("GetModuleFileNameW failed (0x%08x)", ::GetLastError());
+        goto FinishedInitializing;
+    }
+
+    ptr = (WCHAR*)u16_strrchr(coreCLRLoadedPath, '/');
+
+    // Move past the / character.
+    ptr = ptr + 1;
+
+    ::wcscpy_s(ptr, &coreCLRLoadedPath[MAX_LONGPATH] - ptr, coreDisToolsLibraryNameW);
+    coreDisToolsLibrary = coreCLRLoadedPath;
+#else  // TARGET_UNIX
+    const WCHAR* coreDisToolsLibrary = coreDisToolsLibraryNameW;
+#endif // !TARGET_UNIX
+
+    // We never call FreeLibrary because we don't unload it until the JIT itself is unloaded.
+    hCoreDisToolsLib = ::LoadLibraryExW(coreDisToolsLibrary, NULL, 0);
+    if (hCoreDisToolsLib == 0)
+    {
+        printf("LoadLibrary(%s) failed (0x%08x)", coreDisToolsLibraryNameA, ::GetLastError());
+        goto FinishedInitializing;
+    }
+
+    s_PtrNewDisasm = (NewDisasm_t*)::GetProcAddress(hCoreDisToolsLib, "NewDisasm");
+    if (s_PtrNewDisasm == nullptr)
+    {
+        printf("GetProcAddress 'NewDisasm' failed (0x%08x)", ::GetLastError());
+        goto FinishedInitializing;
+    }
+    s_PtrDumpInstruction = (DumpInstruction_t*)::GetProcAddress(hCoreDisToolsLib, "DumpInstruction");
+    if (s_PtrDumpInstruction == nullptr)
+    {
+        printf("GetProcAddress 'DumpInstruction' failed (0x%08x)", ::GetLastError());
+        goto FinishedInitializing;
+    }
+    s_PtrFinishDisasm = (FinishDisasm_t*)::GetProcAddress(hCoreDisToolsLib, "FinishDisasm");
+    if (s_PtrFinishDisasm == nullptr)
+    {
+        printf("GetProcAddress 'FinishDisasm' failed (0x%08x)", ::GetLastError());
+        goto FinishedInitializing;
+    }
+
+    s_disCoreDisToolsLibraryLoadSuccessful = true; // We made it!
+
+// done initializing
+
+FinishedInitializing:
+    InterlockedExchange(&s_disCoreDisToolsLibraryInitializing, 0); // unlock initialization
+    return s_disCoreDisToolsLibraryLoadSuccessful;
+}
 
 // Coredistools disassembler initialization.
 //
@@ -1596,64 +1688,8 @@ FinishDisasm_t*    g_PtrFinishDisasm    = nullptr;
 //
 bool DisAssembler::InitCoredistoolsDisasm()
 {
-    // TODO: call g_PtrFinishDisasm sometime?
-    if (disCoreDisToolsLibraryInitialized)
+    if (!InitCoredistoolsLibrary())
     {
-        // We've already loaded the library and created a disassembler.
-        return true;
-    }
-
-    disCoreDisToolsLibraryInitialized = true; // we only initialize once, even if it fails.
-
-    const WCHAR* coreDisToolsLibrary = MAKEDLLNAME_W("coredistools");
-
-#ifdef TARGET_UNIX
-    // Unix will require the full path to coredistools. Assume that the
-    // location is next to the full path to the superpmi.so.
-
-    WCHAR   coreCLRLoadedPath[MAX_LONGPATH];
-    HMODULE result    = 0;
-    int     returnVal = ::GetModuleFileNameW(result, coreCLRLoadedPath, MAX_LONGPATH);
-
-    if (returnVal == 0)
-    {
-        printf("GetModuleFileNameW failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-
-    WCHAR* ptr = (WCHAR*)u16_strrchr(coreCLRLoadedPath, '/');
-
-    // Move past the / character.
-    ptr = ptr + 1;
-
-    const WCHAR* coreDisToolsLibraryName = MAKEDLLNAME_W("coredistools");
-    ::wcscpy_s(ptr, &coreCLRLoadedPath[MAX_LONGPATH] - ptr, coreDisToolsLibraryName);
-    coreDisToolsLibrary = coreCLRLoadedPath;
-#endif // TARGET_UNIX
-
-    HMODULE hCoreDisToolsLib = ::LoadLibraryExW(coreDisToolsLibrary, NULL, 0);
-    if (hCoreDisToolsLib == 0)
-    {
-        printf("LoadLibrary(%s) failed (0x%08x)", MAKEDLLNAME_A("coredistools"), ::GetLastError());
-        return false;
-    }
-
-    g_PtrNewDisasm = (NewDisasm_t*)::GetProcAddress(hCoreDisToolsLib, "NewDisasm");
-    if (g_PtrNewDisasm == nullptr)
-    {
-        printf("GetProcAddress 'NewDisasm' failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-    g_PtrDumpInstruction = (DumpInstruction_t*)::GetProcAddress(hCoreDisToolsLib, "DumpInstruction");
-    if (g_PtrDumpInstruction == nullptr)
-    {
-        printf("GetProcAddress 'DumpInstruction' failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-    g_PtrFinishDisasm = (FinishDisasm_t*)::GetProcAddress(hCoreDisToolsLib, "FinishDisasm");
-    if (g_PtrFinishDisasm == nullptr)
-    {
-        printf("GetProcAddress 'FinishDisasm' failed (0x%08x)", ::GetLastError());
         return false;
     }
 
@@ -1662,7 +1698,7 @@ bool DisAssembler::InitCoredistoolsDisasm()
 #if defined(TARGET_ARM64)
     coreDisTargetArchitecture = Target_Arm64;
 #elif defined(TARGET_ARM)
-    coreDisTargetArchitecture = Target_Thumb;
+    coreDisTargetArchitecture        = Target_Thumb;
 #elif defined(TARGET_X86)
     coreDisTargetArchitecture = Target_X86;
 #elif defined(TARGET_AMD64)
@@ -1671,16 +1707,27 @@ bool DisAssembler::InitCoredistoolsDisasm()
 #error Unsupported target for LATE_DISASM with USE_COREDISTOOLS
 #endif
 
-    corDisasm = (*g_PtrNewDisasm)(coreDisTargetArchitecture, &CorPrinter);
-
-    disAsmFileCorDisTools = nullptr;
+    corDisasm = (*s_PtrNewDisasm)(coreDisTargetArchitecture, &CorPrinter);
 
     return true;
 }
 
+// Coredistools disassembler shutdown
+//
+void DisAssembler::DoneCoredistoolsDisasm()
+{
+    if (corDisasm == nullptr)
+    {
+        return;
+    }
+
+    (*s_PtrFinishDisasm)(corDisasm);
+    corDisasm = nullptr;
+}
+
 void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 {
-    disAsmFileCorDisTools = pfile;
+    g_disAsmFileCorDisTools = pfile;
 
     unsigned              errorCount    = 0;
     static const unsigned maxErrorCount = 50;
@@ -1691,7 +1738,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
         size_t   codeSizeBytes = blockSize;
         while (codeSizeBytes > 0)
         {
-            size_t instrLen = (*g_PtrDumpInstruction)(corDisasm, address, codeBytes, codeSizeBytes);
+            size_t instrLen = (*s_PtrDumpInstruction)(corDisasm, address, codeBytes, codeSizeBytes);
             if (instrLen == 0)
             {
                 // error
@@ -1746,7 +1793,15 @@ void DisAssembler::disInit(Compiler* pComp)
     disAsmFile                     = nullptr;
 
 #ifdef USE_COREDISTOOLS
-    disCoreDisToolsLibraryInitialized = false;
+    g_disAsmFileCorDisTools = nullptr;
+    corDisasm               = nullptr;
+#endif // USE_COREDISTOOLS
+}
+
+void DisAssembler::disDone()
+{
+#ifdef USE_COREDISTOOLS
+    DoneCoredistoolsDisasm();
 #endif // USE_COREDISTOOLS
 }
 
