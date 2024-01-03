@@ -285,8 +285,13 @@ namespace System.Diagnostics.Tests
             yield return new object[] { NoParameters(), "System.Diagnostics.Tests.StackTraceTests.NoParameters()" };
             yield return new object[] { OneParameter(1), "System.Diagnostics.Tests.StackTraceTests.OneParameter(Int32 x)" };
             yield return new object[] { TwoParameters(1, null), "System.Diagnostics.Tests.StackTraceTests.TwoParameters(Int32 x, String y)" };
+#if DEBUG
             yield return new object[] { Generic<int>(), "System.Diagnostics.Tests.StackTraceTests.Generic[Int32]()" };
             yield return new object[] { Generic<int, string>(), "System.Diagnostics.Tests.StackTraceTests.Generic[Int32,String]()" };
+#else
+            yield return new object[] { Generic<int>(), "System.Diagnostics.Tests.StackTraceTests.Generic[Int32]()" };
+            yield return new object[] { Generic<int, string>(), "System.Diagnostics.Tests.StackTraceTests.Generic[Int32,__Canon]()" };
+#endif
             yield return new object[] { new ClassWithConstructor().StackTrace, "System.Diagnostics.Tests.StackTraceTests.ClassWithConstructor..ctor()" };
 
             // Methods belonging to the System.Diagnostics namespace are ignored.
