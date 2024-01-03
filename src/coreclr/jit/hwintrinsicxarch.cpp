@@ -1572,7 +1572,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            switch (simdSize)
+            //Enable this code when we have a way of saturating SSE conversions
+            /*switch (simdSize)
             {
                 case 16:
                     intrinsic = NI_SSE2_ConvertToVector128Int32WithTruncation;
@@ -1588,7 +1589,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op1     = impSIMDPopStack();
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);*/
             break;
         }
 
