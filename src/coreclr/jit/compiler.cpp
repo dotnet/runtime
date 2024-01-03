@@ -5472,9 +5472,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
 
         // Otherwise check if this is a candidate block for placing alignment for a future loop.
-        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallFinallyPairTail() &&
-            !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump that won't be removed
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->CanRemoveJumpToNext(this))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
