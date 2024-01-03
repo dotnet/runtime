@@ -488,7 +488,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -935,7 +935,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -949,7 +949,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // some new keying scheme. For now we just
                 // ignore this (rare) case.
                 //
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
                     // This block should be the only pred of the continuation.
                     //
@@ -1008,7 +1008,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
-                    BasicBlock* const target = block->GetJumpDest();
+                    BasicBlock* const target = block->GetTarget();
 
                     // In some bad IL cases we may not have a target.
                     // In others we may see something other than LEAVE be most-nested in a try.
@@ -1076,11 +1076,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     BasicBlock* const target = block->GetSucc(0, this);
                     if (BlockSetOps::IsMember(this, marked, target->bbNum))
                     {
-                        // We can't instrument in the call always pair tail block
+                        // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
                         //
                         visitor->VisitNonTreeEdge(block, target,
-                                                  block->isBBCallAlwaysPairTail()
+                                                  block->isBBCallFinallyPairTail()
                                                       ? SpanningTreeVisitor::EdgeKind::CriticalEdge
                                                       : SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                     }
@@ -1661,7 +1661,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             //
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -1677,7 +1677,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 // Ensure this pred always jumps to block
                 //
                 assert(pred->KindIs(BBJ_ALWAYS));
-                assert(pred->HasJumpTo(block));
+                assert(pred->TargetIs(block));
             }
         }
 
@@ -3781,8 +3781,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->HasInitializedJumpDest());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
+        assert(block->HasInitializedTarget());
+        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -3792,7 +3792,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbJumpDest of
+    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit
@@ -3900,7 +3900,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -3994,8 +3994,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetJumpSwt()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetJumpSwt()->bbsDstTab;
+    const unsigned     caseCount    = block->GetSwitchTargets()->bbsCount;
+    BasicBlock** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
     unsigned           dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4021,7 +4021,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->GetJumpSwt()->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTargets()->bbsHasDefault && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4035,9 +4035,9 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetJumpSwt()->bbsHasDominantCase  = true;
-    block->GetJumpSwt()->bbsDominantCase     = dominantCase;
-    block->GetJumpSwt()->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->bbsHasDominantCase  = true;
+    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
+    block->GetSwitchTargets()->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -4409,7 +4409,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // Does this block flow into only one other block
                     if (bSrc->KindIs(BBJ_ALWAYS))
                     {
-                        bOnlyNext = bSrc->GetJumpDest();
+                        bOnlyNext = bSrc->GetTarget();
                     }
                     else
                     {
@@ -4426,7 +4426,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 // Does this block flow into only one other block
                 if (bDst->KindIs(BBJ_ALWAYS))
                 {
-                    bOnlyNext = bDst->GetJumpDest();
+                    bOnlyNext = bDst->GetTarget();
+                }
+                else if (bDst->KindIs(BBJ_CALLFINALLYRET)) // TODO-Quirk: remove (was added to reduce asmdiffs)
+                {
+                    bOnlyNext = bDst->GetFinallyContinuation();
                 }
                 else
                 {
@@ -4657,11 +4661,12 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetJumpKind())
+            switch (bSrc->GetKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
                 case BBJ_CALLFINALLY:
+                case BBJ_CALLFINALLYRET:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
                     assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
@@ -4681,7 +4686,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
                 default:
                     // We should never have an edge that starts from one of these jump kinds
-                    noway_assert(!"Unexpected bbJumpKind");
+                    noway_assert(!"Unexpected bbKind");
                     break;
             }
 
@@ -4730,13 +4735,13 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->NextIs(bDst))
+                    if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetJumpDest();
+                        otherDst = bSrc->GetTrueTarget();
                     }
                     else
                     {
-                        otherDst = bSrc->Next();
+                        otherDst = bSrc->GetFalseTarget();
                     }
                     otherEdge = fgGetPredForBlock(otherDst, bSrc);
 

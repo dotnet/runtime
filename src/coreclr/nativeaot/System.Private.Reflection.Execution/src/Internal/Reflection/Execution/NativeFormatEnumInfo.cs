@@ -60,7 +60,7 @@ namespace Internal.Reflection.Execution
             isFlags = false;
             foreach (CustomAttributeHandle cah in typeDef.CustomAttributes)
             {
-                if (cah.IsCustomAttributeOfType(reader, "System", "FlagsAttribute"))
+                if (cah.IsCustomAttributeOfType(reader, ["System"], "FlagsAttribute"))
                 {
                     isFlags = true;
                     break;

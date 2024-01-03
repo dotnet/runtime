@@ -462,7 +462,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(s_InvariantCultureInfo != null);
+                Debug.Assert(s_InvariantCultureInfo != null, "[CultureInfo.InvariantCulture] s_InvariantCultureInfo is null");
                 return s_InvariantCultureInfo;
             }
         }

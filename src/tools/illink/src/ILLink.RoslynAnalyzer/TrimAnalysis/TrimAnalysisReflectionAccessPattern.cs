@@ -12,10 +12,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisReflectionAccessPattern
 	{
-		public IMethodSymbol ReferencedMethod { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
-		public FeatureContext FeatureContext { init; get; }
+		public IMethodSymbol ReferencedMethod { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisReflectionAccessPattern (
 			IMethodSymbol referencedMethod,

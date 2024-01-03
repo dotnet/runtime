@@ -271,7 +271,7 @@ internal sealed class Xcode
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
-            !(hybridGlobalization ? Path.GetFileName(f) == "icudt_hybrid.dat" : Path.GetFileName(f) == "icudt.dat"))))
+            !(!hybridGlobalization && Path.GetFileName(f) == "icudt.dat"))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))

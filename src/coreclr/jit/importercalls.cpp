@@ -1035,7 +1035,7 @@ DONE:
 #ifdef DEBUG
     // In debug we want to be able to register callsites with the EE.
     assert(call->AsCall()->callSig == nullptr);
-    call->AsCall()->callSig  = new (this, CMK_Generic) CORINFO_SIG_INFO;
+    call->AsCall()->callSig  = new (this, CMK_DebugOnly) CORINFO_SIG_INFO;
     *call->AsCall()->callSig = *sig;
 #endif
 
@@ -2553,6 +2553,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
@@ -3143,6 +3144,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
             {
                 // Optimize
@@ -3156,6 +3158,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
                 if (gtIsTypeof(impStackTop().val, &hClass))
                 {
+                    assert(hClass != NO_CLASS_HANDLE);
                     switch (ni)
                     {
                         case NI_System_Type_get_IsEnum:
@@ -3176,6 +3179,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             retNode = gtNewIconNode(
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
+                        case NI_System_Type_get_IsPrimitive:
+                            // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
+                            // because enums are not primitive types.
+                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
+                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            {
+                                retNode = gtNewTrue();
+                            }
+                            else
+                            {
+                                retNode = gtNewFalse();
+                            }
+                            break;
+
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
@@ -5291,6 +5308,14 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
+    // The VM assumes that the PInvoke frame in IL Stub is only going to be used
+    // for the PInvoke target call. The PInvoke frame cannot be reused by marshalling helper
+    // calls (see InlinedCallFrame::GetActualInteropMethodDesc and related stackwalking code).
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+    {
+        return false;
+    }
+
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     // For platforms that use per-P/Invoke InlinedCallFrame initialization,
     // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
@@ -5301,18 +5326,6 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
     if (block->hasTryIndex())
     {
-        // This does not apply to the raw pinvoke call that is inside the pinvoke
-        // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
-        // otherwise we would end up with a stub that recursively calls itself, and end
-        // up with a stack overflow.
-        // This works correctly because the runtime never emits a catch block in a managed-to-native
-        // IL stub. If the runtime ever emits a catch block into a managed-to-native stub when using
-        // P/Invoke helpers, this condition will need to be revisited.
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
-        {
-            return true;
-        }
-
         // Check if this block's try block or any containing try blocks have catch handlers.
         // If any of the containing try blocks have catch handlers,
         // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
@@ -5415,6 +5428,13 @@ void Compiler::impCheckForPInvokeCall(
 
         // PInvoke CALLI in IL stubs must be inlined
     }
+    else if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
+             opts.IsReadyToRun())
+    {
+        // The raw PInvoke call that is inside the no marshalling R2R compiled pinvoke ILStub must
+        // be inlined into the stub, otherwise we would end up with a stub that recursively calls
+        // itself, and end up with a stack overflow.
+    }
     else
     {
         // Check legality
@@ -5427,25 +5447,17 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in NativeAOT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+            if (!impCanPInvokeInline())
             {
-                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
-                // recursive calls to the stub.
+                return;
             }
-            else
-            {
-                if (!impCanPInvokeInline())
-                {
-                    return;
-                }
 
-                // Size-speed tradeoff: don't use inline pinvoke at rarely
-                // executed call sites.  The non-inline version is more
-                // compact.
-                if (block->isRunRarely())
-                {
-                    return;
-                }
+            // Size-speed tradeoff: don't use inline pinvoke at rarely
+            // executed call sites.  The non-inline version is more
+            // compact.
+            if (block->isRunRarely())
+            {
+                return;
             }
         }
 
@@ -8811,6 +8823,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_IsValueType") == 0)
                         {
                             result = NI_System_Type_get_IsValueType;
+                        }
+                        else if (strcmp(methodName, "get_IsPrimitive") == 0)
+                        {
+                            result = NI_System_Type_get_IsPrimitive;
                         }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {

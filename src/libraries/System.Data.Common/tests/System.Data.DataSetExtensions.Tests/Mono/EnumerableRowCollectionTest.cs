@@ -41,7 +41,7 @@ namespace MonoTests.System.Data
     {
         private string _testDataSet = "Mono/testdataset1.xml";
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void QueryWhere()
         {
             var ds = new DataSet();
@@ -68,7 +68,7 @@ namespace MonoTests.System.Data
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void QueryWhereSelect ()
         {
             var ds = new DataSet ();
@@ -89,7 +89,7 @@ namespace MonoTests.System.Data
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void QueryWhereSelectOrderBy ()
         {
             var ds = new DataSet ();
@@ -119,7 +119,7 @@ namespace MonoTests.System.Data
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void QueryWhereSelectOrderByDescending ()
         {
             var ds = new DataSet ();
@@ -149,7 +149,7 @@ namespace MonoTests.System.Data
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void ThenBy ()
         {
             var ds = new DataSet ();
@@ -179,7 +179,7 @@ namespace MonoTests.System.Data
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void ThenByDescending ()
         {
             var ds = new DataSet ();

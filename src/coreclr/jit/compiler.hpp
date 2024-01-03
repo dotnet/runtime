@@ -537,7 +537,7 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
             {
                 // For BBJ_CALLFINALLY the user may already have processed one of
                 // the EH successors as a regular successor; skip it if requested.
-                if (!skipJumpDest || !block->HasJumpTo(eh->ebdHndBeg))
+                if (!skipJumpDest || !block->TargetIs(eh->ebdHndBeg))
                 {
                     RETURN_ON_ABORT(func(eh->ebdHndBeg));
                 }
@@ -588,51 +588,42 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
             // This can run before import, in which case we haven't converted
             // LEAVE into callfinally yet, and haven't added return successors.
-            if (bbJumpEhf != nullptr)
+            if (bbEhfTargets != nullptr)
             {
-                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]));
                 }
             }
 
             return VisitEHSuccs(comp, func);
 
         case BBJ_CALLFINALLY:
-            RETURN_ON_ABORT(func(bbJumpDest));
+            RETURN_ON_ABORT(func(bbTarget));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
+
+        case BBJ_CALLFINALLYRET:
+            // No exceptions can occur in this paired block; skip its normal EH successors.
+            return func(bbTarget);
 
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            RETURN_ON_ABORT(func(bbJumpDest));
+        case BBJ_ALWAYS:
+            RETURN_ON_ABORT(func(bbTarget));
             return VisitEHSuccs(comp, func);
 
-        case BBJ_ALWAYS:
-            RETURN_ON_ABORT(func(bbJumpDest));
-
-            // If this is a "leave helper" block (the empty BBJ_ALWAYS block
-            // that pairs with a preceding BBJ_CALLFINALLY block to implement a
-            // "leave" IL instruction), then no exceptions can occur within it
-            // and we skip its normal EH successors.
-            if (!isBBCallAlwaysPairTail())
-            {
-                RETURN_ON_ABORT(VisitEHSuccs(comp, func));
-            }
-
-            return BasicBlockVisit::Continue;
-
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbNext));
+            RETURN_ON_ABORT(func(bbFalseTarget));
 
-            if (bbJumpDest != bbNext)
+            if (bbTrueTarget != bbFalseTarget)
             {
-                RETURN_ON_ABORT(func(bbJumpDest));
+                RETURN_ON_ABORT(func(bbTrueTarget));
             }
 
             return VisitEHSuccs(comp, func);
@@ -671,34 +662,35 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 {
-    switch (bbJumpKind)
+    switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
             // This can run before import, in which case we haven't converted
             // LEAVE into callfinally yet, and haven't added return successors.
-            if (bbJumpEhf != nullptr)
+            if (bbEhfTargets != nullptr)
             {
-                for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
+                for (unsigned i = 0; i < bbEhfTargets->bbeCount; i++)
                 {
-                    RETURN_ON_ABORT(func(bbJumpEhf->bbeSuccs[i]));
+                    RETURN_ON_ABORT(func(bbEhfTargets->bbeSuccs[i]));
                 }
             }
 
             return BasicBlockVisit::Continue;
 
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
-            return func(bbJumpDest);
+            return func(bbTarget);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(bbNext));
+            RETURN_ON_ABORT(func(bbFalseTarget));
 
-            if (bbJumpDest != bbNext)
+            if (bbTrueTarget != bbFalseTarget)
             {
-                RETURN_ON_ABORT(func(bbJumpDest));
+                RETURN_ON_ABORT(func(bbTrueTarget));
             }
 
             return BasicBlockVisit::Continue;
@@ -4921,16 +4913,19 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Type parameters:
 //   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
 //   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge      - Functor type that takes two BasicBlock*.
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
 //   visitPostorder - Functor to visit block in its postorder
+//   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
+//                    this is the first time the successor is seen).
 //
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder>
-unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder)
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
@@ -4958,6 +4953,8 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
                     blocks.Emplace(this, succ);
                     visitPreorder(succ, preOrderIndex++);
                 }
+
+                visitEdge(block, succ);
             }
             else
             {
@@ -4976,7 +4973,6 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         // patchpoint, but during morph we may transform to something that
         // requires the original entry (fgEntryBB).
         assert(opts.IsOSR());
-        assert((fgEntryBB->bbRefs == 1) && (fgEntryBB->bbPreds == nullptr));
         dfsFrom(fgEntryBB);
     }
 
@@ -5017,7 +5013,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
         //                     = headPreOrderIndex - index
         unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
@@ -5045,7 +5041,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
         unsigned poIndex = m_header->bbNewPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder()[poIndex]) == BasicBlockVisit::Continue;
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;

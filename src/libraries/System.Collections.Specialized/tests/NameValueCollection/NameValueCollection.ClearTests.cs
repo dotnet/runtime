@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionClearTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(10)]
         public void Clear(int count)
