@@ -11774,6 +11774,17 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Log2(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Log2(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(double))
                 {
                     return Log2OperatorDouble.Invoke(x.AsDouble()).As<double, T>();
@@ -11783,10 +11794,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Log2OperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
+#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Log2(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Log2(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(double))
                 {
                     return Log2OperatorDouble.Invoke(x.AsDouble()).As<double, T>();
@@ -11796,10 +11819,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Log2OperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
+#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Log2(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Log2(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(double))
                 {
                     return Log2OperatorDouble.Invoke(x.AsDouble()).As<double, T>();
@@ -11809,9 +11844,11 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Log2OperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
+#endif
             }
         }
 
+#if !NET9_0_OR_GREATER
         /// <summary>double.Log2(x)</summary>
         internal readonly struct Log2OperatorDouble : IUnaryOperator<double>
         {
@@ -12396,6 +12433,7 @@ namespace System.Numerics.Tensors
                 );
             }
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> ElementWiseSelect<T>(Vector128<T> mask, Vector128<T> left, Vector128<T> right)
