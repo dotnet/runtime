@@ -2315,18 +2315,15 @@ public:
         //     \--*  LCL_VAR   long   tmp
         //
 
-        const var_types lenType              = (*lenArgRef)->TypeGet();
         const unsigned  lenTmpNum            = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
-        compiler->lvaTable[lenTmpNum].lvType = lenType;
-
-        GenTree*     lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, lenType);
-        GenTree*     storeLenToTemp = compiler->gtNewStoreLclVarNode(lenTmpNum, *lenArgRef);
-        GenTreeOp*   lengthNode     = compiler->gtNewOperNode(GT_COMMA, lenType, storeLenToTemp, lengthLocal);
+        GenTree*     storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
+        GenTree*     lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
+        GenTreeOp*   lengthNode     = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
         GenTree*     histNode       = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
         unsigned     helper         = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
-        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lenType, helperCallNode, compiler->gtCloneExpr(lengthLocal));
+        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode, compiler->gtCloneExpr(lengthLocal));
         m_instrCount++;
     }
 };
