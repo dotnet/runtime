@@ -127,6 +127,7 @@ BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRw);
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRW);
+BYTE* emitOutputInstr_OptsC(BYTE* dst, const instrDesc* id, const insGroup* ig, size_t* size);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -319,7 +320,7 @@ void emitIns_Call(EmitCallType          callType,
                   ssize_t          disp   = 0,
                   bool             isJump = false);
 
-unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
+unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 

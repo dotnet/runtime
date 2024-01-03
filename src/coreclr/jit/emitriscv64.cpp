@@ -1463,7 +1463,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
  *  Output a call instruction.
  */
 
-unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
+unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
 {
     unsigned char callInstrSize = sizeof(code_t); // 4 bytes
     regMaskTP     gcrefRegs;
@@ -2860,6 +2860,22 @@ BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* i
     return dst;
 }
 
+BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, const instrDesc* id, const insGroup* ig, size_t* size)
+{
+    if (id->idIsLargeCall())
+    {
+        *size = sizeof(instrDescCGCA);
+    }
+    else
+    {
+        assert(!id->idIsLargeDsp());
+        assert(!id->idIsLargeCns());
+        *size = sizeof(instrDesc);
+    }
+    dst += emitOutputCall(ig, dst, id, 0);
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -2917,25 +2933,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
-            if (id->idIsLargeCall())
-            {
-                /* Must be a "fat" call descriptor */
-                sz = sizeof(instrDescCGCA);
-            }
-            else
-            {
-                assert(!id->idIsLargeDsp());
-                assert(!id->idIsLargeCns());
-                sz = sizeof(instrDesc);
-            }
-            dstRW += emitOutputCall(ig, *dp, id, 0);
-
-            dstRW2 = dstRW;
+            dst    = emitOutputInstr_OptsC(dst, id, ig, &sz);
             ins    = INS_nop;
+            dstRW2 = dst + writeableOffset; // TODO remove
             break;
-
-        // case INS_OPTS_NONE:
-        default:
+        default: // case INS_OPTS_NONE:
             *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
             dstRW += 4;
             ins = id->idIns();
