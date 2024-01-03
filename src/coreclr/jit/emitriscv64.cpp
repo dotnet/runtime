@@ -659,7 +659,9 @@ void emitter::emitIns_R_R(
 void emitter::emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
-    code_t code = emitInsCode(ins);
+    code_t     code = emitInsCode(ins);
+    instrDesc* id   = emitNewInstr(attr);
+
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
         INS_flw == ins)
@@ -688,6 +690,8 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 1) & 0xf) << 8;
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
+        // TODO-RISCV64: Move jump logic to emitIns_J
+        id->idAddr()->iiaSetInstrCount(imm / sizeof(code_t));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
     {
@@ -702,7 +706,6 @@ void emitter::emitIns_R_R_I(
     {
         NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
-    instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
     id->idReg1(reg1);
@@ -2440,8 +2443,8 @@ void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                                 UNATIVE_OFFSET& dstOffs,
                                                 const BYTE*&    dstAddr) const
 {
-    // TODO-RISCV64-BUG: iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jumps to label and
-    // an instruction-count based jumps impossible
+    // TODO-RISCV64-BUG: Currently the iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jump
+    // to label and an instruction-count based jumps impossible
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         assert(ig != nullptr);
@@ -2452,7 +2455,7 @@ void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
             // Backward branches using instruction count must be within the same instruction group.
             assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
         }
-        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
+        dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
         dstAddr = emitOffsetToPtr(dstOffs);
         return;
     }
@@ -3085,19 +3088,25 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2) const
 
 void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const
 {
-    static const auto signFn = [](int offset) { return offset >= 0 ? "+" : ""; };
-
     int instrCount = id->idAddr()->iiaGetInstrCount();
     if (ig == nullptr)
     {
-        printf("pc%s%d instructions", signFn(instrCount), instrCount);
+        printf("pc%+d instructions", instrCount);
         return;
     }
-    unsigned       insNum  = emitFindInsNum(ig, id);
+    unsigned insNum = emitFindInsNum(ig, id);
+
+    if (ig->igInsCnt < insNum + 1 + instrCount)
+    {
+        // TODO-RISCV64-BUG: This should be a labeled offset but does not contain an iiaIGlabel
+        printf("pc%+d instructions", instrCount);
+        return;
+    }
+
     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
-    ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(dstOffs));
-    printf("pc%s%d (%d instructions)", signFn(relOffs), static_cast<int>(relOffs), instrCount);
+    ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
+    printf("pc%+d (%d instructions)", static_cast<int>(relOffs), instrCount);
 }
 
 void emitter::emitDispBranchLabel(const instrDesc* id) const
