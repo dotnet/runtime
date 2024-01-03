@@ -281,7 +281,7 @@ namespace System.Collections.ObjectModel
             }
         }
 
-        internal sealed class KeyedCollectionDebugView
+        private sealed class KeyedCollectionDebugView
         {
             private readonly KeyedCollection<TKey, TItem> _collection;
 
@@ -308,18 +308,12 @@ namespace System.Collections.ObjectModel
         }
 
         [DebuggerDisplay("{Value}", Name = "[{Key}]")]
-        internal readonly struct KeyedCollectionDebugViewItem
+        private readonly struct KeyedCollectionDebugViewItem
         {
             public KeyedCollectionDebugViewItem(TKey key, TItem value)
             {
                 Key = key;
                 Value = value;
-            }
-
-            public KeyedCollectionDebugViewItem(KeyValuePair<TKey, TItem> keyValue)
-            {
-                Key = keyValue.Key;
-                Value = keyValue.Value;
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
