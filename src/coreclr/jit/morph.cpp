@@ -9139,6 +9139,12 @@ DONE_MORPHING_CHILDREN:
         case GT_LE:
         case GT_GE:
         case GT_GT:
+            if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
+            {
+                // Some branch optimizations don't work well with unsigned relops
+                tree->ClearUnsigned();
+            }
 
             // Change "CNS relop op2" to "op2 relop* CNS"
             if (!optValnumCSE_phase && op1->IsIntegralConst() && tree->OperIsCompare() && gtCanSwapOrder(op1, op2))
@@ -14677,9 +14683,12 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     block->SetTarget(asgBlock);
     fgAddRefPred(asgBlock, block);
     fgAddRefPred(cond1Block, asgBlock);
+    fgAddRefPred(remainderBlock, helperBlock);
+
+    cond1Block->SetFalseTarget(cond2Block);
+    cond2Block->SetFalseTarget(helperBlock);
     fgAddRefPred(cond2Block, cond1Block);
     fgAddRefPred(helperBlock, cond2Block);
-    fgAddRefPred(remainderBlock, helperBlock);
     fgAddRefPred(remainderBlock, cond1Block);
     fgAddRefPred(remainderBlock, cond2Block);
 
@@ -14898,10 +14907,10 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->SetFlags(propagateFlagsToAll);
+        condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
@@ -14923,7 +14932,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(remainderBlock);
+        condBlock->SetCond(remainderBlock, elseBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
@@ -14939,7 +14948,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetCond(remainderBlock);
+        condBlock->SetCond(remainderBlock, elseBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
         elseBlock->inheritWeightPercentage(condBlock, 50);

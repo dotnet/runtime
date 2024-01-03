@@ -4008,6 +4008,234 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
+enum RangeStatus
+{
+    Unknown,
+    NeverIntersects,
+    AlwaysIncluded
+};
+
+//------------------------------------------------------------------------
+// IsRange2ImpliedByRange1: Given two range checks, determine if the 2nd one is redundant or not.
+//   It is assumed, that the both range checks are for the same X on LHS of the comparison operators.
+//   e.g. "x > 100 && x > 10" -> AlwaysIncluded
+//
+// Arguments:
+//   oper1  - the first range check operator        [X *oper1*  bound1 ]
+//   bound1 - the first range check constant bound  [X  oper1  *bound1*]
+//   oper2  - the second range check operator       [X *oper2*  bound2 ]
+//   bound2 - the second range check constant bound [X  oper2  *bound2*]
+//
+// Returns:
+//   "AlwaysIncluded" means that the 2nd range check is always "true"
+//   "NeverIntersects" means that the 2nd range check is never "true"
+//   "Unknown" means that we can't determine if the 2nd range check is redundant or not.
+//
+RangeStatus IsRange2ImpliedByRange1(genTreeOps oper1, int bound1, genTreeOps oper2, int bound2)
+{
+    struct Int32Range
+    {
+        int startIncl;
+        int endIncl;
+    };
+
+    Int32Range range1 = {INT_MIN, INT_MAX};
+    Int32Range range2 = {INT_MIN, INT_MAX};
+
+    // Update ranges based on inputs
+    auto setRange = [](genTreeOps oper, int bound, Int32Range* range) -> bool {
+        switch (oper)
+        {
+            case GT_LT:
+                // x < cns -> [INT_MIN, cns - 1]
+                if (bound == INT_MIN)
+                {
+                    // overflows
+                    return true;
+                }
+                range->endIncl = bound - 1;
+                break;
+            case GT_LE:
+                // x <= cns -> [INT_MIN, cns]
+                range->endIncl = bound;
+                break;
+            case GT_GT:
+                // x > cns -> [cns + 1, INT_MAX]
+                if (bound == INT_MAX)
+                {
+                    // overflows
+                    return true;
+                }
+                range->startIncl = bound + 1;
+                break;
+            case GT_GE:
+                // x >= cns -> [cns, INT_MAX]
+                range->startIncl = bound;
+                break;
+            case GT_EQ:
+                // x == cns -> [cns, cns]
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                break;
+            case GT_NE:
+                // special cased below (we can't represent it as a range)
+                break;
+            default:
+                unreached();
+        }
+        return false; // doesn't overflow
+    };
+
+    const bool overflows1 = setRange(oper1, bound1, &range1);
+    const bool overflows2 = setRange(oper2, bound2, &range2);
+    if (overflows1 || overflows2)
+    {
+        // Conservatively give up if we faced an overflow during normalization of ranges.
+        // to be always inclusive.
+        return Unknown;
+    }
+
+    assert(oper1 != GT_NE); // oper1 is coming from an assertion, so it can't be GT_NE/GT_EQ
+    // only oper2 can be so, since it has no meaningful Int32Range data we check it separately.
+    if (oper2 == GT_NE)
+    {
+        if ((bound2 < range1.startIncl) || (bound2 > range1.endIncl))
+        {
+            // "x > 100 && x != 10", the 2nd range check is always true
+            return AlwaysIncluded;
+        }
+        if ((range1.startIncl == bound2) && (range1.endIncl == bound2))
+        {
+            // "x == 100 && x != 100", the 2nd range check is never true
+            return NeverIntersects;
+        }
+        return Unknown;
+    }
+
+    // If ranges never intersect, then the 2nd range is never "true"
+    if ((range1.startIncl > range2.endIncl) || (range2.startIncl > range1.endIncl))
+    {
+        // E.g.:
+        //
+        // range1: [100     .. INT_MAX]
+        // range2: [INT_MIN .. 10]
+        return NeverIntersects;
+    }
+
+    // Check if range1 is fully included into range2
+    if ((range2.startIncl <= range1.startIncl) && (range1.endIncl <= range2.endIncl))
+    {
+        // E.g.:
+        //
+        // range1: [100 .. INT_MAX]
+        // range2: [10  .. INT_MAX]
+        return AlwaysIncluded;
+    }
+
+    // Ranges intersect, but we can't determine if the 2nd range is redundant or not.
+    return Unknown;
+}
+
+//------------------------------------------------------------------------
+// optAssertionPropGlobal_ConstRangeCheck: try and optimize a constant range check via
+//   assertion propagation e.g.:
+//   "x > 100" where "x" has an assertion "x < 10" can be optimized to "false"
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   stmt        - statement containing the tree
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+GenTree* Compiler::optAssertionPropGlobal_ConstRangeCheck(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+{
+    assert(tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT) && tree->gtGetOp2()->IsCnsIntOrI());
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return nullptr;
+    }
+
+    // Bail out if tree is not side effect free.
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        return nullptr;
+    }
+
+    const GenTree*       op1 = tree->gtGetOp1();
+    const GenTreeIntCon* op2 = tree->gtGetOp2()->AsIntCon();
+
+    const ValueNum  op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+        // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
+        // representing "(X relop CNS) ==/!= 0" assertion.
+        if (!curAssertion->IsConstantBound())
+        {
+            continue;
+        }
+
+        ValueNumStore::ConstantBoundInfo info;
+        vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+
+        // Make sure VN is the same as op1's VN.
+        if (info.cmpOpVN != op1VN)
+        {
+            continue;
+        }
+
+        // TODO: don't give up on unsigned comparisons.
+        if (info.isUnsigned || tree->IsUnsigned())
+        {
+            continue;
+        }
+
+        // Root assertion has to be either:
+        // (X relop CNS) == 0
+        // (X relop CNS) != 0
+        if ((curAssertion->op2.kind != O2K_CONST_INT) || (curAssertion->op2.u1.iconVal != 0))
+        {
+            continue;
+        }
+
+        genTreeOps cmpOper = static_cast<genTreeOps>(info.cmpOper);
+
+        // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
+        if (curAssertion->assertionKind == OAK_EQUAL)
+        {
+            cmpOper = GenTree::ReverseRelop(cmpOper);
+        }
+
+        // We only handle int32 ranges for now (limited by O1K_CONSTANT_LOOP_BND)
+        const ssize_t cns2 = op2->IconValue();
+        if (!FitsIn<int>(cns2))
+        {
+            continue;
+        }
+
+        const RangeStatus result = IsRange2ImpliedByRange1(cmpOper, info.constVal, tree->OperGet(), (int)cns2);
+        if (result == Unknown)
+        {
+            // We can't determine if the range check is redundant or not.
+            continue;
+        }
+
+        JITDUMP("Fold a comparison against a constant:\n")
+        DISPTREE(tree)
+        JITDUMP("\ninto\n")
+        tree->BashToConst(result == NeverIntersects ? 0 : 1);
+        GenTree* newTree = fgMorphTree(tree);
+        DISPTREE(newTree)
+        JITDUMP("\nbased on assertions.\n")
+        return optAssertionProp_Update(newTree, tree, stmt);
+    }
+    return nullptr;
+}
+
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -4062,6 +4290,15 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         newTree = fgMorphTree(tree);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
+    }
+
+    if (op2->IsCnsIntOrI() && tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+    {
+        newTree = optAssertionPropGlobal_ConstRangeCheck(assertions, tree, stmt);
+        if (newTree != nullptr)
+        {
+            return newTree;
+        }
     }
 
     // Else check if we have an equality check involving a local or an indir
