@@ -867,22 +867,20 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
 
     size_t length = minipal_get_length_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
 
-    if (length <= COUNT_T_MAX)
-    {
-        s.Resize((COUNT_T)length, REPRESENTATION_UTF8);
-
-        //we optimize the empty string by replacing it with null for SString above in Resize
-        if (length > 0)
-        {
-            if (!minipal_convert_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
-            {
-                ThrowHR(COR_E_INSUFFICIENTMEMORY);
-            }
-        }
-    }
-    else
+    if (length >= COUNT_T_MAX)
     {
         ThrowHR(COR_E_OVERFLOW);
+    }
+
+    s.Resize((COUNT_T)length, REPRESENTATION_UTF8);
+
+    //we optimize the empty string by replacing it with null for SString above in Resize
+    if (length > 0)
+    {
+        if (!minipal_convert_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
+        {
+            ThrowHR(COR_E_INSUFFICIENTMEMORY);
+        }
     }
 
     RETURN (COUNT_T)length + 1;
