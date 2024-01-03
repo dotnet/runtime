@@ -166,8 +166,7 @@ namespace System.Diagnostics
             if (mh == IntPtr.Zero)
                 return null;
 
-            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(mh, this));
-
+            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.FromIntPtr(mh).GetMethodInfo();
             return RuntimeType.GetMethodBase(mhReal);
         }
 
