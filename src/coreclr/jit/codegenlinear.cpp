@@ -314,8 +314,8 @@ void CodeGen::genCodeForBBlist()
                 printf("\nThis is the start of the cold region of the method\n");
             }
 #endif
-            // We should never have a block that falls through into the Cold section
-            noway_assert(!block->Prev()->bbFallsThrough());
+            // We should never split call/finally pairs between hot/cold sections
+            noway_assert(!block->isBBCallFinallyPairTail());
 
             needLabel = true;
         }
@@ -2619,6 +2619,12 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(jcc->OperIs(GT_JCC));
 
     inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    {
+        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+    }
 }
 
 //------------------------------------------------------------------------
