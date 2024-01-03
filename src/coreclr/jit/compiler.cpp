@@ -4914,6 +4914,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         while (iterations > 0)
         {
+            fgModified = false;
+
             if (doSsa)
             {
                 // Build up SSA form for the IR
@@ -5005,8 +5007,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
-                //
-                // Note: this invalidates loops, dominators and reachability
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 

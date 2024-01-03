@@ -2029,7 +2029,7 @@ struct NaturalLoopIterInfo
     int ConstInitValue = 0;
 
     // Block outside the loop that initializes the induction variable. Only
-    // value if HasConstInit is true.
+    // valid if HasConstInit is true.
     BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
