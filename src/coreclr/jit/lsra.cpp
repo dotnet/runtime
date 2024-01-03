@@ -12551,10 +12551,9 @@ void LinearScan::RegisterSelection::resetMinOpts(Interval* interval, RefPosition
     currentInterval = interval;
     refPosition     = refPos;
 
-    regType        = linearScan->getRegisterType(currentInterval, refPosition);
-    candidates     = refPosition->registerAssignment;
-    freeCandidates = RBM_NONE;
-    found          = false;
+    regType    = linearScan->getRegisterType(currentInterval, refPosition);
+    candidates = refPosition->registerAssignment;
+    found      = false;
 }
 
 // ----------------------------------------------------------
@@ -13891,7 +13890,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*    currentInter
             return RBM_NONE;
         }
 
-        freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+        candidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
 
         try_REG_ORDER();
 
