@@ -6410,7 +6410,7 @@ private:
     bool fgIsThrow(GenTree* tree);
 
 public:
-    bool fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2);
+    bool fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const;
 
 private:
     bool fgIsBlockCold(BasicBlock* block);

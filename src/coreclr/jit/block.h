@@ -617,7 +617,9 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
-    bool CanRemoveJumpToNext(Compiler* compiler);
+    bool CanRemoveJumpToNext(Compiler* compiler) const;
+
+    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {

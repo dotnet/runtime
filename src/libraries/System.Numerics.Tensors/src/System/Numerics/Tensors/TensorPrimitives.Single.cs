@@ -27,7 +27,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Abs(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<AbsoluteOperator>(x, destination);
+            InvokeSpanIntoSpan<AbsoluteOperator_Single>(x, destination);
 
         /// <summary>Computes the element-wise addition of single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -46,7 +46,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<AddOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<AddOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise addition of single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -63,7 +63,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Add(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<AddOperator>(x, y, destination);
+            InvokeSpanScalarIntoSpan<AddOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c> for the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -84,7 +84,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void AddMultiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> multiplier, Span<float> destination) =>
-            InvokeSpanSpanSpanIntoSpan<AddMultiplyOperator>(x, y, multiplier, destination);
+            InvokeSpanSpanSpanIntoSpan<AddMultiplyOperator_Single>(x, y, multiplier, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c> for the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -104,7 +104,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void AddMultiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, float multiplier, Span<float> destination) =>
-            InvokeSpanSpanScalarIntoSpan<AddMultiplyOperator>(x, y, multiplier, destination);
+            InvokeSpanSpanScalarIntoSpan<AddMultiplyOperator_Single>(x, y, multiplier, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c> for the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void AddMultiply(ReadOnlySpan<float> x, float y, ReadOnlySpan<float> multiplier, Span<float> destination) =>
-            InvokeSpanScalarSpanIntoSpan<AddMultiplyOperator>(x, y, multiplier, destination);
+            InvokeSpanScalarSpanIntoSpan<AddMultiplyOperator_Single>(x, y, multiplier, destination);
 
         /// <summary>Computes the element-wise hyperbolic cosine of each single-precision floating-point radian angle in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -148,7 +148,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Cosh(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<CoshOperator>(x, destination);
+            InvokeSpanIntoSpan<CoshOperator_Single>(x, destination);
 
         /// <summary>Computes the cosine similarity between the two specified non-empty, equal-length tensors of single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -203,7 +203,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(x, y));
+            return MathF.Sqrt(Aggregate<SubtractSquaredOperator_Single, AddOperator_Single>(x, y));
         }
 
         /// <summary>Computes the element-wise division of single-precision floating-point numbers in the specified tensors.</summary>
@@ -223,7 +223,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<DivideOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<DivideOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise division of single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -240,7 +240,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<DivideOperator>(x, y, destination);
+            InvokeSpanScalarIntoSpan<DivideOperator_Single>(x, y, destination);
 
         /// <summary>Computes the dot product of two tensors containing single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -266,7 +266,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) =>
-            Aggregate<MultiplyOperator, AddOperator>(x, y);
+            Aggregate<MultiplyOperator_Single, AddOperator_Single>(x, y);
 
         /// <summary>Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -287,7 +287,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Exp(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<ExpOperator>(x, destination);
+            InvokeSpanIntoSpan<ExpOperator_Single>(x, destination);
 
         /// <summary>Searches for the index of the largest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -303,7 +303,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMax(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMaxOperator>(x);
+            IndexOfMinMaxCore<IndexOfMaxOperator_Single>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -320,7 +320,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator>(x);
+            IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator_Single>(x);
 
         /// <summary>Searches for the index of the smallest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -336,7 +336,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMin(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMinOperator>(x);
+            IndexOfMinMaxCore<IndexOfMinOperator_Single>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -353,7 +353,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMinMagnitude(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMinMagnitudeOperator>(x);
+            IndexOfMinMaxCore<IndexOfMinMagnitudeOperator_Single>(x);
 
         /// <summary>Computes the element-wise natural (base <c>e</c>) logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -376,7 +376,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Log(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<LogOperator>(x, destination);
+            InvokeSpanIntoSpan<LogOperator_Single>(x, destination);
 
         /// <summary>Computes the element-wise base 2 logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -399,7 +399,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Log2(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<Log2Operator>(x, destination);
+            InvokeSpanIntoSpan<Log2Operator_Single>(x, destination);
 
         /// <summary>Searches for the largest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -416,7 +416,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float Max(ReadOnlySpan<float> x) =>
-            MinMaxCore<MaxOperator>(x);
+            MinMaxCore<MaxOperator_Single>(x);
 
         /// <summary>Computes the element-wise maximum of the single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -440,7 +440,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Max(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MaxPropagateNaNOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MaxPropagateNaNOperator_Single>(x, y, destination);
 
         /// <summary>Searches for the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -458,7 +458,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float MaxMagnitude(ReadOnlySpan<float> x) =>
-            MinMaxCore<MaxMagnitudeOperator>(x);
+            MinMaxCore<MaxMagnitudeOperator_Single>(x);
 
         /// <summary>Computes the element-wise single-precision floating-point number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -476,7 +476,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MaxMagnitudePropagateNaNOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MaxMagnitudePropagateNaNOperator_Single>(x, y, destination);
 
         /// <summary>Searches for the smallest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -493,7 +493,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float Min(ReadOnlySpan<float> x) =>
-            MinMaxCore<MinOperator>(x);
+            MinMaxCore<MinOperator_Single>(x);
 
         /// <summary>Computes the element-wise minimum of the single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -517,7 +517,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Min(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MinPropagateNaNOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MinPropagateNaNOperator_Single>(x, y, destination);
 
         /// <summary>Searches for the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -535,7 +535,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float MinMagnitude(ReadOnlySpan<float> x) =>
-            MinMaxCore<MinMagnitudeOperator>(x);
+            MinMaxCore<MinMagnitudeOperator_Single>(x);
 
         /// <summary>Computes the element-wise single-precision floating-point number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -558,7 +558,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MinMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MinMagnitudePropagateNaNOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MinMagnitudePropagateNaNOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise product of single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -577,7 +577,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Multiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MultiplyOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MultiplyOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise product of single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -595,7 +595,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Multiply(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<MultiplyOperator>(x, y, destination);
+            InvokeSpanScalarIntoSpan<MultiplyOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -616,7 +616,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> addend, Span<float> destination) =>
-            InvokeSpanSpanSpanIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
+            InvokeSpanSpanSpanIntoSpan<MultiplyAddOperator_Single>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -637,7 +637,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, float addend, Span<float> destination) =>
-            InvokeSpanSpanScalarIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
+            InvokeSpanSpanScalarIntoSpan<MultiplyAddOperator_Single>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -657,7 +657,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAdd(ReadOnlySpan<float> x, float y, ReadOnlySpan<float> addend, Span<float> destination) =>
-            InvokeSpanScalarSpanIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
+            InvokeSpanScalarSpanIntoSpan<MultiplyAddOperator_Single>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise negation of each single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -673,7 +673,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Negate(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<NegateOperator>(x, destination);
+            InvokeSpanIntoSpan<NegateOperator_Single>(x, destination);
 
         /// <summary>Computes the Euclidean norm of the specified tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -715,7 +715,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            return Aggregate<IdentityOperator, MultiplyOperator>(x);
+            return Aggregate<IdentityOperator_Single, MultiplyOperator_Single>(x);
         }
 
         /// <summary>Computes the product of the element-wise differences of the single-precision floating-point numbers in the specified non-empty tensors.</summary>
@@ -746,7 +746,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            return Aggregate<SubtractOperator, MultiplyOperator>(x, y);
+            return Aggregate<SubtractOperator_Single, MultiplyOperator_Single>(x, y);
         }
 
         /// <summary>Computes the product of the element-wise sums of the single-precision floating-point numbers in the specified non-empty tensors.</summary>
@@ -777,7 +777,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            return Aggregate<AddOperator, MultiplyOperator>(x, y);
+            return Aggregate<AddOperator_Single, MultiplyOperator_Single>(x, y);
         }
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of single-precision floating-point numbers.</summary>
@@ -802,7 +802,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            InvokeSpanIntoSpan<SigmoidOperator>(x, destination);
+            InvokeSpanIntoSpan<SigmoidOperator_Single>(x, destination);
         }
 
         /// <summary>Computes the element-wise hyperbolic sine of each single-precision floating-point radian angle in the specified tensor.</summary>
@@ -827,7 +827,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Sinh(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<SinhOperator>(x, destination);
+            InvokeSpanIntoSpan<SinhOperator_Single>(x, destination);
 
         /// <summary>Computes the softmax function over the specified non-empty tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -859,9 +859,9 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            float expSum = Aggregate<ExpOperator, AddOperator>(x);
+            float expSum = Aggregate<ExpOperator_Single, AddOperator_Single>(x);
 
-            InvokeSpanScalarIntoSpan<ExpOperator, DivideOperator>(x, expSum, destination);
+            InvokeSpanScalarIntoSpan<ExpOperator_Single, DivideOperator_Single>(x, expSum, destination);
         }
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>
@@ -881,7 +881,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Subtract(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<SubtractOperator>(x, y, destination);
+            InvokeSpanSpanIntoSpan<SubtractOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -898,7 +898,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Subtract(ReadOnlySpan<float> x, float y, Span<float> destination) =>
-            InvokeSpanScalarIntoSpan<SubtractOperator>(x, y, destination);
+            InvokeSpanScalarIntoSpan<SubtractOperator_Single>(x, y, destination);
 
         /// <summary>Computes the sum of all elements in the specified tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -913,7 +913,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float Sum(ReadOnlySpan<float> x) =>
-            Aggregate<IdentityOperator, AddOperator>(x);
+            Aggregate<IdentityOperator_Single, AddOperator_Single>(x);
 
         /// <summary>Computes the sum of the absolute values of every element in the specified tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -934,7 +934,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float SumOfMagnitudes(ReadOnlySpan<float> x) =>
-            Aggregate<AbsoluteOperator, AddOperator>(x);
+            Aggregate<AbsoluteOperator_Single, AddOperator_Single>(x);
 
         /// <summary>Computes the sum of the square of every element in the specified tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -955,7 +955,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float SumOfSquares(ReadOnlySpan<float> x) =>
-            Aggregate<SquaredOperator, AddOperator>(x);
+            Aggregate<SquaredOperator_Single, AddOperator_Single>(x);
 
         /// <summary>Computes the element-wise hyperbolic tangent of each single-precision floating-point radian angle in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -980,78 +980,6 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Tanh(ReadOnlySpan<float> x, Span<float> destination) =>
-            InvokeSpanIntoSpan<TanhOperator>(x, destination);
-
-        /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="output"/> spans overlap and don't begin at the same memory location.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ValidateInputOutputSpanNonOverlapping(ReadOnlySpan<float> input, Span<float> output)
-        {
-            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output)) &&
-                input.Overlaps(output))
-            {
-                ThrowHelper.ThrowArgument_InputAndDestinationSpanMustNotOverlap();
-            }
-        }
-
-        /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
-        /// <remarks>
-        /// Logically 16 rows of 16 uints. The Nth row should be used to handle N alignment elements at the
-        /// beginning of the input, where elements in the vector after that will be zero'd.
-        ///
-        /// There actually exists 17 rows in the table with the last row being a repeat of the first. This is
-        /// done because it allows the main algorithms to use a simplified algorithm when computing the amount
-        /// of misalignment where we always skip the first 16 elements, even if already aligned, so we don't
-        /// double process them. This allows us to avoid an additional branch.
-        /// </remarks>
-        private static ReadOnlySpan<uint> AlignmentUInt32Mask_16x16 =>
-        [
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
-            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-        ];
-
-        /// <summary>Mask used to handle remaining elements after vectorized handling of the input.</summary>
-        /// <remarks>
-        /// Logically 16 rows of 16 uints. The Nth row should be used to handle N remaining elements at the
-        /// end of the input, where elements in the vector prior to that will be zero'd.
-        ///
-        /// Much as with the AlignmentMask table, we actually have 17 rows where the last row is a repeat of
-        /// the first. Doing this allows us to avoid an additional branch and instead to always process the
-        /// last 16 elements via a conditional select instead.
-        /// </remarks>
-        private static ReadOnlySpan<uint> RemainderUInt32Mask_16x16 =>
-        [
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        ];
+            InvokeSpanIntoSpan<TanhOperator_Single>(x, destination);
     }
 }
