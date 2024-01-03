@@ -2634,7 +2634,8 @@ public:
     BOOL HasPerInstInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_HasPerInstInfo) && !IsArray();
+        _ASSERTE(!IsArray());
+        return GetFlag(enum_flag_HasPerInstInfo);
     }
 #ifndef DACCESS_COMPILE
     static inline DWORD GetOffsetOfPerInstInfo()

@@ -289,7 +289,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     DWORD dwMultipurposeSlotsMask = 0;
-    dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
 
     // Allocate space for optional members
