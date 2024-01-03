@@ -125,9 +125,8 @@ BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig,
 BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
-BYTE* emitOutputInstr_OptsJCond(BYTE* dst, const instrDesc* id, instruction* ins, BYTE* dstRw);
-
-static constexpr unsigned kZeroRegister = 0;
+BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRw);
+BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRW);
 
 /************************************************************************/
 /*           Public inline informational methods                        */

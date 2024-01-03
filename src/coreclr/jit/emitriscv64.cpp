@@ -2807,14 +2807,56 @@ BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, in
     return emitOutputIntr_OptsJalr24(dst, immediate);
 }
 
-BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, const instrDesc* id, instruction* ins, BYTE* dstRw)
+BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRw)
 {
     ssize_t immediate = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
     assert((immediate & 0x01) == 0);
 
     *ins = id->idIns();
 
-    dst += emitOutput_BTypeInstr(dst, ins, id->idReg1(), id->idReg2(), immediate);
+    dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), immediate);
+    return dst;
+}
+
+BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRW)
+{
+    ssize_t immediate = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
+    assert((immediate & 0x03) == 0);
+
+    *ins = id->idIns();
+
+    switch (*ins)
+    {
+        case INS_jal:
+            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_RA, immediate);
+            break;
+        case INS_j:
+            dst += emitOutput_JTypeInstr(dst, INS_j, REG_ZERO, immediate);
+            break;
+        case INS_jalr:
+            dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg1(), id->idReg2(), immediate);
+            break;
+        case INS_bnez:
+            FALLTHROUGH;
+        case INS_beqz:
+            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), REG_ZERO, immediate);
+            break;
+        case INS_beq:
+            FALLTHROUGH;
+        case INS_bne:
+            FALLTHROUGH;
+        case INS_blt:
+            FALLTHROUGH;
+        case INS_bge:
+            FALLTHROUGH;
+        case INS_bltu:
+            FALLTHROUGH;
+        case INS_bgeu:
+            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), immediate);
+            break;
+        default:
+            unreached();
+    }
     return dst;
 }
 
@@ -2866,7 +2908,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_J_cond:
-            dst = emitOutputInstr_OptsJCond(dst, id, &ins, dstRW);
+            dst = emitOutputInstr_OptsJCond(dst, id, ig, &ins, dstRW);
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_J:
