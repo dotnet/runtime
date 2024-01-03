@@ -13659,6 +13659,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isValidSimm4_MultipleOf32(imm));
     return insEncodeSimm4_19_to_16(imm / 32);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the <R> 4/8-byte width specifier <R>
  *  at bit location 22 for an Arm64 Sve instruction.
  */
@@ -18565,11 +18569,11 @@ void emitter::emitDispInsHelp(
                 case INS_sve_stnt1d:
                 case INS_sve_st1d:
                 case INS_sve_st1w:
-                    emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, true); // ggg
+                    emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true); // ggg
                     break;
 
                 default:
-                    emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, true); // ggg
+                    emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true); // ggg
                     break;
             }
             printf("[");
