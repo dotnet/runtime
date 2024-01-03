@@ -247,7 +247,6 @@ namespace System.Net.Security
                         _ocspResponse = ret;
                         _ocspExpiration = expiration;
                         _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
-                        _pendingDownload = null;
                         break;
                     }
                 }
@@ -256,6 +255,8 @@ namespace System.Net.Security
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
                 GC.KeepAlive(TargetCertificate);
                 GC.KeepAlive(caCert);
+
+                _pendingDownload = null;
                 return ret;
             }
         }
