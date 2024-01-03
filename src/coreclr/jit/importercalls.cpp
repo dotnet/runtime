@@ -69,7 +69,6 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
             {
                 compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
                                                     "JitNoInline is set");
-                pParam->success = false;
                 return;
             }
 #endif
@@ -105,6 +104,8 @@ bool Compiler::impTryFindField(CORINFO_METHOD_HANDLE methHnd, CORINFO_RESOLVED_T
             }
             else
             {
+                compCompHnd->reportInliningDecision(compiler->info.compMethodHnd, ftn, INLINE_FAIL,
+                                                    "Not a property");
                 return;
             }
 
