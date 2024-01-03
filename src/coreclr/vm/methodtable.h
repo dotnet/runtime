@@ -296,31 +296,37 @@ struct MethodTableWriteableData
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
 
-        enum_flag_Unrestored                = 0x00000004,
-        enum_flag_HasApproxParent           = 0x00000010,
-        enum_flag_UnrestoredTypeKey         = 0x00000020,
-        enum_flag_IsNotFullyLoaded          = 0x00000040,
-        enum_flag_DependenciesLoaded        = 0x00000080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
+        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0001,     // Is any field type or sub field type overrode Equals or GetHashCode
+        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
 
-        // enum_unused                      = 0x00000100,
+        enum_flag_Unrestored                = 0x0004,
+        enum_flag_HasApproxParent           = 0x0010,
+        enum_flag_UnrestoredTypeKey         = 0x0020,
+        enum_flag_IsNotFullyLoaded          = 0x0040,
+        enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
-        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
-
-        // enum_unused                      = 0x00010000,
-        // enum_unused                      = 0x00020000,
-        // enum_unused                      = 0x00040000,
-        // enum_unused                      = 0x00080000,        // enum_unused                      = 0x0010000,
-        // enum_unused                      = 0x0020000,
-        // enum_unused                      = 0x0040000,
-        // enum_unused                      = 0x0080000,
+        // enum_unused                      = 0x0100,
+        // enum_unused                      = 0x0200,
+        // enum_unused                      = 0x0400,
+        // enum_unused                      = 0x0800,
+        // enum_unused                      = 0x1000,
+        // enum_unused                      = 0x2000,
 
 #ifdef _DEBUG
-        enum_flag_ParentMethodTablePointerValid =  0x40000000,
-        enum_flag_HasInjectedInterfaceDuplicates = 0x80000000,
+        enum_flag_ParentMethodTablePointerValid =  0x4000,
+        enum_flag_HasInjectedInterfaceDuplicates = 0x8000,
 #endif
     };
-    DWORD      m_dwFlags;                  // Lot of empty bits here.
+    union
+    {
+        DWORD      m_dwFlags;                  // Lot of empty bits here.
+        struct
+        {
+            uint16_t m_loFlags;
+            int16_t m_offsetToNonVirtualSlots;
+        };
+    };
+    
 
     PTR_Module m_pLoaderModule;
 
@@ -406,6 +412,31 @@ public:
         // Array's parent is always precise
         m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
 
+    }
+
+    // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
+    // To access, use a construct like... GetNonVirtualSlotsArray(pWriteableData)[-(1 + index)]
+    static inline PTR_PCODE GetNonVirtualSlotsArray(PTR_MethodTableWriteableData pWriteableData)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(HasNonVirtualSlotsArray());
+        _ASSERTE(HasNonVirtualSlots());
+        return dac_cast<PTR_PCODE>(dac_cast<TADDR>(pWriteableData) + pWriteableData->GetOffsetToNonVirtualSlots());
+    }
+
+    inline int16_t GetOffsetToNonVirtualSlots()
+    {
+        return m_offsetToNonVirtualSlots;
+    }
+
+    inline void SetOffsetToNonVirtualSlots(int16_t offset)
+    {
+        m_offsetToNonVirtualSlots = offset;
+    }
+
+    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_MethodTableWriteableData pWriteableData)
+    {
+        return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pWriteableData) + sizeof(GenericsStaticsInfo));
     }
 };  // struct MethodTableWriteableData
 
@@ -1248,7 +1279,7 @@ public:
         {
             // Non-virtual slots < GetNumVtableSlots live before the MethodTableWriteableData. The array grows backwards
             _ASSERTE(HasNonVirtualSlotsArray());
-            return GetNonVirtualSlotsArray() - (1 + (slotNum - GetNumVirtuals()));
+            return MethodTableWriteableData::GetNonVirtualSlotsArray(GetWriteableDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
         }
     }
 
@@ -1367,16 +1398,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return HasNonVirtualSlots();
-    }
-
-    // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
-    // To access, use a construct like... GetNonVirtualSlotsArray()[-(1 + index)]
-    inline PTR_PCODE GetNonVirtualSlotsArray()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(HasNonVirtualSlotsArray());
-        _ASSERTE(HasNonVirtualSlots());
-        return dac_cast<PTR_PCODE>(dac_cast<TADDR>(GetWriteableDataForWrite()) + sizeof(MethodTableWriteableData));
     }
 
     inline unsigned GetNonVirtualSlotsArraySize()
@@ -2689,7 +2710,7 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
+    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics = false, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
 #endif
 
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
@@ -3561,6 +3582,12 @@ private:
     void operator delete(void *pData);
     MethodTable();
 
+    PTR_GenericsStaticsInfo GetGenericsStaticsInfo()
+    {
+        PTR_MethodTableWriteableData writeableData = GetWriteableDataForWrite();
+        return MethodTableWriteableData::GetGenericStaticsInfo(writeableData);
+    }
+
     // Optional members.  These are used for fields in the data structure where
     // the fields are (a) known when MT is created and (b) there is a default
     // value for the field in the common case.  That is, they are normally used
@@ -3575,9 +3602,6 @@ private:
     // The following macro will automatically create GetXXX accessors for the optional members.
 #define METHODTABLE_OPTIONAL_MEMBERS() \
     /*                          NAME                    TYPE                            GETTER                     */ \
-    /* Accessing this member efficiently is currently performance critical for static field accesses               */ \
-    /* in generic classes, so place it early in the list. */                                                          \
-    METHODTABLE_OPTIONAL_MEMBER(GenericsStaticsInfo,    GenericsStaticsInfo,            GetGenericsStaticsInfo      ) \
     /* Accessed during certain generic type load operations only, so low priority */                                  \
     METHODTABLE_OPTIONAL_MEMBER(ExtraInterfaceInfo,     TADDR,                          GetExtraInterfaceInfoPtr    ) \
 
@@ -3624,8 +3648,7 @@ private:
     }
 
     inline static DWORD GetOptionalMembersAllocationSize(
-                                                  DWORD dwMultipurposeSlotsMask,
-                                                  BOOL needsGenericsStaticsInfo);
+                                                  DWORD dwMultipurposeSlotsMask);
     inline DWORD GetOptionalMembersSize();
 
     // The PerInstInfo is a (possibly empty) array of pointers to

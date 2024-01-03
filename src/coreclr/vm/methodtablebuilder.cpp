@@ -10277,8 +10277,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
-    cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                      fHasGenericsStaticsInfo);
+    cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask);
 
     // Interface map starts here
     S_SIZE_T offsetOfInterfaceMap = cbTotalSize;
@@ -10332,7 +10331,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
         pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
-    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, static_cast<WORD>(dwNonVirtualSlots), dispatchMapAllocationSize);
+    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), dispatchMapAllocationSize);
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early

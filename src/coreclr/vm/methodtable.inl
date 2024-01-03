@@ -1059,15 +1059,12 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 }
 
 //==========================================================================================
-inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask,
-                                                           BOOL needsGenericsStaticsInfo)
+inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask)
 {
     LIMITED_METHOD_CONTRACT;
 
     DWORD size = 0;
 
-    if (needsGenericsStaticsInfo)
-        size += sizeof(GenericsStaticsInfo);
     if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
         size += sizeof(UINT_PTR);
 
@@ -1314,9 +1311,11 @@ FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
 
     _ASSERTE(HasGenericsStaticsInfo());
 
-    _ASSERTE(FitsIn<DWORD>(GetGenericsStaticsInfo()->m_DynamicTypeID) || GetGenericsStaticsInfo()->m_DynamicTypeID == (SIZE_T)-1);
-    *pID = static_cast<DWORD>(GetGenericsStaticsInfo()->m_DynamicTypeID);
-    return GetLoaderModule();
+    PTR_MethodTableWriteableData writeableData = GetWriteableDataForWrite();
+    PTR_GenericsStaticsInfo staticsInfo = MethodTableWriteableData::GetGenericStaticsInfo(writeableData);
+    _ASSERTE(FitsIn<DWORD>(staticsInfo->m_DynamicTypeID) || staticsInfo->m_DynamicTypeID == (SIZE_T)-1);
+    *pID = staticsInfo->m_DynamicTypeID;
+    return writeableData->GetLoaderModule();
 }
 
 //==========================================================================================

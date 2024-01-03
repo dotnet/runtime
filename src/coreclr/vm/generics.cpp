@@ -244,8 +244,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // from the canonical methodtable, so we do not need to store them here.
 
     // We need space for the optional members.
-    DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                      fHasGenericsStaticsInfo);
+    DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask);
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
     DWORD cbPerInst = sizeof(GenericsDictInfo) + pOldMT->GetPerInstInfoSize();
@@ -284,7 +283,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     memcpy((BYTE*)pMT - cbGC, (BYTE*) pOldMT - cbGC, cbGC);
 
     // Allocate the private data block
-    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker);
+    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
     pMT->SetModule(pOldMT->GetModule());
 
     // This also disables IBC logging until the type is sufficiently initialized so

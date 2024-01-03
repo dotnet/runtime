@@ -698,12 +698,18 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
-void MethodTable::AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
+void MethodTable::AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
 {
     S_SIZE_T cbWriteableData = S_SIZE_T(sizeof(MethodTableWriteableData));
 
-    cbWriteableData = cbWriteableData + S_SIZE_T(nonVirtualSlots) * S_SIZE_T(sizeof(TADDR));
+    size_t prependedAllocationSpace = 0;
+
+    prependedAllocationSpace = nonVirtualSlots * sizeof(TADDR);
+
+    if (hasGenericStatics)
+        prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
     
+    cbWriteableData = cbWriteableData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
     if (cbWriteableData.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
@@ -711,9 +717,10 @@ void MethodTable::AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLo
         pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbWriteableData));
     
     MethodTableWriteableData * pMTWriteableData;
-    pMTWriteableData = (MethodTableWriteableData *)(pWriteableDataRegion + (sizeof(TADDR) * nonVirtualSlots));
+    pMTWriteableData = (MethodTableWriteableData *)(pWriteableDataRegion + prependedAllocationSpace);
 
     pMTWriteableData->SetLoaderModule(pLoaderModule);
+    pMTWriteableData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -sizeof(GenericsStaticsInfo) : 0);
     m_pWriteableData = pMTWriteableData;
 }
 
@@ -8375,7 +8382,12 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (HasNonVirtualSlotsArray())
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetNonVirtualSlotsArray()) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableWriteableData::GetNonVirtualSlotsArray(GetMethodTableWriteableData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+    }
+
+    if (HasGenericsStaticsInfo())
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericStaticsInfo()), sizeof(GenericStaticsInfo));
     }
 
     if (HasInterfaceMap())

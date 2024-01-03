@@ -294,8 +294,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // Allocate space for optional members
     // We always have a non-virtual slot array, see assert at end
-    cbMT += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                          FALSE);                           // GenericsStaticsInfo
+    cbMT += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask);
 
     // This is the offset of the beginning of the interface map
     size_t imapOffset = cbMT;
@@ -341,7 +340,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateWriteableData(pAllocator, this, pamTracker, static_cast<WORD>(numNonVirtualSlots));
+    pMT->AllocateWriteableData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 
