@@ -8629,6 +8629,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   &callInfo);
 
                     if (!opts.compDbgCode && callInfo.kind == CORINFO_CALL &&
+                        !(callInfo.methodFlags & (CORINFO_FLG_DONT_INLINE | CORINFO_FLG_DONT_INLINE_CALLER)) &&
                         ((callInfo.sig.retType == CORINFO_TYPE_VOID && callInfo.sig.numArgs == 1) || // possible setter
                          (callInfo.sig.retType > CORINFO_TYPE_VOID && callInfo.sig.numArgs == 0)))   // possible getter
                     {
