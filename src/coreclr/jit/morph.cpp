@@ -395,7 +395,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
                     // Generate the control table for VFIXUPIMMSD
                     // The behavior we want is to saturate negative values to 0.
-                    // GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
+                    GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
 
                     // QNAN: 0b1000:
                     // SNAN: 0b1000
@@ -508,13 +508,20 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 switch (dstType)
                 {
                     case TYP_INT:
+<<<<<<< HEAD
 #ifdef TARGET_XARCH
                         if (!tree->IsSaturatedConversion())
                         {
                             return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
                         }
 #endif //TARGET_XARCH
+=======
+#ifdef TARGET_AMD64
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
+#else //TARGET_AMD64
+>>>>>>> 3b121bdc382 (adding handling for scalar conversion cases for SSE2. Remaining float/double -> long/int for AVX512.)
                         return nullptr;
+#endif //TARGET_AMD64
 
                     case TYP_UINT:
 #if defined(TARGET_ARM)
@@ -528,6 +535,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
 
                     case TYP_LONG:
+<<<<<<< HEAD
 #ifdef TARGET_XARCH
                         if (!tree->IsSaturatedConversion())
                         {
@@ -535,6 +543,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         }
 #endif //TARGET_XARCH
                         return nullptr;
+=======
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
+>>>>>>> 3b121bdc382 (adding handling for scalar conversion cases for SSE2. Remaining float/double -> long/int for AVX512.)
 
                     case TYP_ULONG:
 #ifdef TARGET_AMD64
