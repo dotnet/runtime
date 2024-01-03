@@ -2743,7 +2743,7 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
 
 BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
 {
-    ssize_t immediate = emitOutputInstrJumpDistance(dst + writeableOffset, dst, ig, jmp) - 4;
+    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp) - 4;
     assert((immediate & 0x03) == 0);
 
     *ins = jmp->idIns();
@@ -2801,10 +2801,10 @@ BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, in
     assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) || (INS_bnez == ins) ||
            (INS_beqz == ins));
 
-    regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? id->idReg2() : REG_R0;
+    regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
     dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x1c);
 
-    return emitOutputIntr_OptsJalr24(dst, immediate);
+    return emitOutputInstr_OptsJalr24(dst, immediate);
 }
 
 BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
@@ -2860,7 +2860,7 @@ BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* i
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, const instrDesc* id, const insGroup* ig, size_t* size)
+BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size)
 {
     if (id->idIsLargeCall())
     {
@@ -2889,7 +2889,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*             dst  = *dp;
     const BYTE* const odst = *dp;
-    instruction       ins = 0;
+    instruction       ins;
     size_t            sz = 0;
 
     assert(REG_NA == static_cast<int>(REG_NA));

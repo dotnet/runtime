@@ -127,7 +127,7 @@ BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsC(BYTE* dst, const instrDesc* id, const insGroup* ig, size_t* size);
+BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
