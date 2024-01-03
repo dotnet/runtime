@@ -9712,7 +9712,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
         case INS_sve_ldnf1d:
             assert(opt == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(reg1));
-            assert(isPredicateRegister(reg2));           
+            assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
             assert(isValidSimm4(imm));
             fmt = IF_SVE_IL_3A;
@@ -18452,8 +18452,8 @@ void emitter::emitDispInsHelp(
         // { <Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
         // { <Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
         // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-        case IF_SVE_IO_3A:   // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
-                             // immediate)
+        case IF_SVE_IO_3A: // ............iiii ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus
+                           // immediate)
         // { <Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
         // { <Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
         // { <Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -18485,7 +18485,7 @@ void emitter::emitDispInsHelp(
                            // immediate)
         // { <Zt>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         // { <Zt>.Q }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-        case IF_SVE_JN_3C: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JN_3C:   // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
         case IF_SVE_JN_3C_D: // ............iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
         // { <Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         // { <Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
