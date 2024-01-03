@@ -578,7 +578,9 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Buffers.Tests\System.Buffers.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
+
+    <!-- Issue: oom on windows https://github.com/dotnet/runtime/issues/95365 -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" Condition="'$(OS)' != 'Windows_NT'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">

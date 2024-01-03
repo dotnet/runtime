@@ -267,28 +267,24 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top            = block;
-        BasicBlock*   topFallThrough = nullptr;
-        BasicBlock*   topJumpTarget;
+        BasicBlock*   top                = block;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        if (top->KindIs(BBJ_COND))
-        {
-            topFallThrough     = top->GetFalseTarget();
-            topJumpTarget      = top->GetTrueTarget();
-            lpIndexFallThrough = topFallThrough->bbNatLoopNum;
-        }
-        else
-        {
-            topJumpTarget = top->GetTarget();
-        }
-
-        BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetKind(), poll, true, topJumpTarget);
         BBKinds       oldJumpKind = top->GetKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
+
+        if (oldJumpKind == BBJ_COND)
+        {
+            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
+        }
+
+        BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
+        bottom           = fgNewBBafter(top->GetKind(), poll, true);
+
         poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
+
+        bottom->TransferTarget(top);
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
@@ -398,7 +394,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetCond(bottom);
+        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -639,7 +635,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
  * It returns false when the blocks are both in the same regions
  */
 
-bool Compiler::fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2)
+bool Compiler::fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const
 {
     noway_assert(blk1 != nullptr);
     noway_assert(blk2 != nullptr);
@@ -3189,55 +3185,11 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
             }
         }
 
-        // When the last Hot block fall through into the Cold section
-        // we may need to add a jump
-        //
-        if (prevToFirstColdBlock->bbFallsThrough())
+        // Don't split up call/finally pairs
+        if (prevToFirstColdBlock->isBBCallFinallyPair())
         {
-            switch (prevToFirstColdBlock->GetKind())
-            {
-                default:
-                    noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
-                    break;
-
-                case BBJ_CALLFINALLY:
-                    // A BBJ_CALLFINALLY that falls through is always followed
-                    // by an empty BBJ_CALLFINALLYRET.
-                    //
-                    assert(prevToFirstColdBlock->isBBCallFinallyPair());
-                    firstColdBlock =
-                        firstColdBlock->Next(); // Note that this assignment could make firstColdBlock == nullptr
-                    break;
-
-                case BBJ_COND:
-                    //
-                    // This is a slightly more complicated case, because we will
-                    // probably need to insert a block to jump to the cold section.
-                    //
-
-                    // TODO-NoFallThrough: Below logic will need additional check once bbFalseTarget can diverge from
-                    // bbNext
-                    assert(prevToFirstColdBlock->FalseTargetIs(firstColdBlock));
-                    if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
-                    {
-                        // We can just use this block as the transitionBlock
-                        firstColdBlock = firstColdBlock->Next();
-                        // Note that this assignment could make firstColdBlock == NULL
-                    }
-                    else
-                    {
-                        BasicBlock* transitionBlock =
-                            fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true, firstColdBlock);
-                        transitionBlock->inheritWeight(firstColdBlock);
-
-                        // Update the predecessor list for firstColdBlock
-                        fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);
-
-                        // Add prevToFirstColdBlock as a predecessor for transitionBlock
-                        fgAddRefPred(transitionBlock, prevToFirstColdBlock);
-                    }
-                    break;
-            }
+            // Note that this assignment could make firstColdBlock == nullptr
+            firstColdBlock = firstColdBlock->Next();
         }
     }
 

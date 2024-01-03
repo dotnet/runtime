@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsCurrentThread()
         {
-            return ManagedTID == Thread.CurrentThread.ManagedThreadId;
+            return ManagedTID == Environment.CurrentManagedThreadId;
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             SynchronizationContext = synchronizationContext;
             NativeTID = GetNativeThreadId();
-            ManagedTID = Thread.CurrentThread.ManagedThreadId;
+            ManagedTID = Environment.CurrentManagedThreadId;
             IsMainThread = isMainThread;
             ContextHandle = (nint)GCHandle.Alloc(this, GCHandleType.Normal);
         }
@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = CurrentThreadContext;
             if (ctx == null)
             {
-                throw new InvalidOperationException($"Please use dedicated worker for working with JavaScript interop, ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}. See https://aka.ms/dotnet-JS-interop-threads");
+                throw new InvalidOperationException($"Please use dedicated worker for working with JavaScript interop, ManagedThreadId:{Environment.CurrentManagedThreadId}. See https://aka.ms/dotnet-JS-interop-threads");
             }
             if (ctx._isDisposed)
             {
@@ -439,9 +439,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     return;
                 }
-                proxy._isDisposed = true;
-                GC.SuppressFinalize(proxy);
                 var jsHandle = proxy.JSHandle;
+                proxy._isDisposed = true;
+                proxy.JSHandle = IntPtr.Zero;
+                GC.SuppressFinalize(proxy);
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
