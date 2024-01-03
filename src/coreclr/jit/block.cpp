@@ -294,10 +294,25 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 // Returns:
 //    true if block is a BBJ_ALWAYS to the next block that we can fall into
 //
-bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
+bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
     return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+}
+
+//------------------------------------------------------------------------
+// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if block is a BBJ_COND that can fall into its false target
+//
+bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+{
+    assert(KindIs(BBJ_COND));
+    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
 }
 
 //------------------------------------------------------------------------
