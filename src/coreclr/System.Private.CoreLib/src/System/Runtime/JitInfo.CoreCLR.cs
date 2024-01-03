@@ -26,6 +26,15 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetCompiledMethodCount(bool currentThread = false);
 
+        /// <summary>
+        /// Get the number of types that have been loaded. If <paramref name="currentThread"/> is true,
+        /// then this value is scoped to the current thread, otherwise, this is a global value.
+        /// </summary>
+        /// <param name="currentThread">Whether the returned value should be specific to the current thread. Default: false</param>
+        /// <returns>The number of types the runtime typeloader has loaded.</returns>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern long GetLoadedTypeCount(bool currentThread = false);
+
         // Normalized to 100ns ticks on vm side
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long GetCompilationTimeInTicks(bool currentThread = false);

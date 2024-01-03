@@ -34,7 +34,23 @@ namespace System.Runtime.Tests
                 squareIt.CreateDelegate(typeof(Func<int, long>));
 
             return invokeSquareIt(input);
+        }
 
+        private struct PrivateType<T>
+        {
+            public T TypeField;
+            
+            public PrivateType(T typeField)
+            {
+                TypeField = typeField;
+            }
+        }
+
+        private object ConstructDynamicType()
+        {
+            Type type = typeof(PrivateType<>).MakeGenericType(new Type[] { typeof(int) });
+            ConstructorInfo constructor = type.GetConstructor(new Type[] { typeof(int) })!;
+            return constructor.Invoke(new object[] { 0 });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // JitInfo metrics will be 0 in AOT scenarios
@@ -43,13 +59,17 @@ namespace System.Runtime.Tests
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
             long beforeCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long beforeCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
+            long beforeLoadedTypeCount = System.Runtime.JitInfo.GetLoadedTypeCount();
 
             long square = MakeAndInvokeDynamicSquareMethod(100);
             Assert.True(square == 10000);
+            object constructedType = ConstructDynamicType();
+            Assert.True(constructedType != null);
 
             TimeSpan afterCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
+            long afterLoadedTypeCount = System.Runtime.JitInfo.GetLoadedTypeCount();
 
             if (PlatformDetection.IsMonoInterpreter)
             {
@@ -57,20 +77,24 @@ namespace System.Runtime.Tests
                 Assert.True(beforeCompilationTime >= TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
                 Assert.True(beforeCompiledILBytes >= 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
                 Assert.True(beforeCompiledMethodCount >= 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
+                Assert.True(beforeLoadedTypeCount >= 0, $"Loaded type count not greater than 0! ({beforeLoadedTypeCount})");
 
                 Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
                 Assert.True(afterCompiledILBytes >= beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
                 Assert.True(afterCompiledMethodCount >= beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+                Assert.True(afterLoadedTypeCount >= beforeLoadedTypeCount, $"Compiled method count: after not greater than before! (after: {afterLoadedTypeCount}, before: {beforeLoadedTypeCount})");
             }
             else
             {
                 Assert.True(beforeCompilationTime > TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
                 Assert.True(beforeCompiledILBytes > 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
                 Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
+                Assert.True(beforeLoadedTypeCount > 0, $"Loaded type count not greater than 0! ({beforeLoadedTypeCount})");
 
                 Assert.True(afterCompilationTime > beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
                 Assert.True(afterCompiledILBytes > beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
                 Assert.True(afterCompiledMethodCount > beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+                Assert.True(afterLoadedTypeCount > beforeLoadedTypeCount, $"Loaded type count: after not greater than before! (after: {afterLoadedTypeCount}, before: {beforeLoadedTypeCount})");
             }
         }
 

@@ -49,6 +49,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
+        private IncrementingPollingCounter? _typesLoadedCounter;
         private IncrementingPollingCounter? _jitTimeCounter;
 
 #if NATIVEAOT
@@ -128,6 +129,7 @@ namespace System.Diagnostics.Tracing
 
                 _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
                 _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
+                _typesLoadedCounter ??= new IncrementingPollingCounter("types-loaded-count", this, () => Runtime.JitInfo.GetLoadedTypeCount()) { DisplayName = "Number of Types Loaded" };
                 _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
 
                 AppContext.LogSwitchValues(this);

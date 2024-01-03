@@ -3547,6 +3547,13 @@ retry:
     {
         PendingTypeLoadHolder ptlh(pLoadingEntry);
 
+        int64_t typeLoadIndex = 0;
+        if (typeHnd.IsNull())
+        {
+            t_loadedTypeCount++;
+            typeLoadIndex = InterlockedIncrement64(&g_loadedTypeCount);
+        }
+
         TRIGGERS_TYPELOAD();
 
         while (currentLevel < targetLevel)
@@ -3561,6 +3568,14 @@ retry:
         }
 
         _ASSERTE(!typeHnd.IsNull());
+
+        if (typeLoadIndex != 0 && g_pConfig->TypeLoadSummary())
+        {
+            SString typeName;
+            typeHnd.GetName(typeName);
+            printf("%lld: %s\n", typeLoadIndex, typeName.GetUTF8());
+        }
+
         pLoadingEntry->SetResult(typeHnd);
     }
     EX_HOOK

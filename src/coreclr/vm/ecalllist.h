@@ -492,6 +492,7 @@ FCFuncStart(gJitInfoFuncs)
     FCFuncElement("GetCompiledILBytes", GetCompiledILBytes)
     FCFuncElement("GetCompiledMethodCount", GetCompiledMethodCount)
     FCFuncElement("GetCompilationTimeInTicks", GetCompilationTimeInTicks)
+    FCFuncElement("GetLoadedTypeCount", GetLoadedTypeCount)
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)
