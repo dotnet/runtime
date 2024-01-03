@@ -4084,6 +4084,9 @@ namespace Internal.JitInterface
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 
+            if (targetArchitecture == TargetArchitecture.RiscV64)
+                flags.Set(CorJitFlag.CORJIT_FLAG_FRAMED);
+
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
                 // Validate UnmanagedCallersOnlyAttribute usage
