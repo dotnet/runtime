@@ -4385,7 +4385,7 @@ protected:
 
     GenTree* impFixupStructReturnType(GenTree* op);
 
-    GenTree* impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET ilOffset);
+    GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);

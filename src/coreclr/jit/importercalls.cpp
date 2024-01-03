@@ -1294,7 +1294,7 @@ DONE_CALL:
         {
             if (opts.IsOptimizedWithProfile())
             {
-                call = impOptimizeMemmoveWithProfile(call->AsCall(), rawILOffset);
+                call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
             }
             else if (opts.IsInstrumented())
             {
@@ -1475,26 +1475,27 @@ DONE_CALL:
 #endif
 
 //------------------------------------------------------------------------
-// impOptimizeMemmoveWithProfile: given `Buffer.Memmove(dst, src, len)` call,
+// impDuplicateWithProfiledArg: duplicates a call with a profiled argument, e.g.:
+//    Given `Buffer.Memmove(dst, src, len)` call,
 //    optimize it to:
 //
 //    if (len == popularSize)
-//        Buffer.Memmove(dst, src, popularSize);
+//        Buffer.Memmove(dst, src, popularSize); // can be unrolled now
 //    else
-//        Buffer.Memmove(dst, src, len);
+//        Buffer.Memmove(dst, src, len); // fallback
 //
 //    if we can obtain the popular size from PGO data.
 //
 // Arguments:
-//    call     -- Buffer.Memmove call
+//    call     -- call to optimize with profiled argument
 //    ilOffset -- Raw IL offset of the call
 //
 // Return Value:
 //    Optimized tree (or the original call tree if we can't optimize it).
 //
-GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET ilOffset)
+GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset)
 {
-    assert(call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove));
+    assert(call->IsSpecialIntrinsic());
     assert(opts.IsOptimizedWithProfile());
 
     if (call->IsInlineCandidate())
@@ -1503,10 +1504,12 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
         return call;
     }
 
-    LikelyValueRecord likelyValues[8];
-    UINT32 valuesCount = getLikelyValues(likelyValues, 8, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+    const unsigned    MaxLikelyValues = 8;
+    LikelyValueRecord likelyValues[MaxLikelyValues];
+    UINT32            valuesCount =
+        getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
 
-    JITDUMP("%u likely sizes for Memmove:\n", valuesCount)
+    JITDUMP("%u likely values:\n", valuesCount)
     for (UINT32 i = 0; i < valuesCount; i++)
     {
         JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
@@ -1530,40 +1533,63 @@ GenTree* Compiler::impOptimizeMemmoveWithProfile(GenTreeCall* call, IL_OFFSET il
     // TODO: Tune the likelihood threshold, for now it's 50%
     if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
     {
-        const ssize_t popularSize = likelyValue.value;
+        const ssize_t profiledValue = likelyValue.value;
 
-        // It only makes sense if we're going to actually unroll it.
-        // TODO: Consider enabling it for popularSize == 0 too.
-        if ((popularSize > 0) && ((size_t)popularSize <= (size_t)getUnrollThreshold(Memmove)))
+        unsigned argNum   = 0;
+        ssize_t  minValue = 0;
+        ssize_t  maxValue = 0;
+        if (call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
         {
-            JITDUMP("Optimizing Memmove for popular size %u\n", popularSize)
+            // dst(0), src(1), len(2)
+            argNum = 2;
+
+            minValue = 1; // TODO: enable for 0 as well.
+            maxValue = (ssize_t)getUnrollThreshold(Memmove);
+        }
+        else
+        {
+            // only Memmove is expected at the moment.
+            // Possible future extensions: Memset, Memcpy
+            unreached();
+        }
+
+        if ((profiledValue >= minValue) && (profiledValue <= maxValue))
+        {
+            JITDUMP("Duplicating for popular value = %u\n", profiledValue)
             DISPTREE(call)
 
-            // Spill all the arguments to temp locals.
-            GenTree** dstNode = &call->gtArgs.GetUserArgByIndex(0)->EarlyNodeRef();
-            GenTree** srcNode = &call->gtArgs.GetUserArgByIndex(1)->EarlyNodeRef();
-            GenTree** lenNode = &call->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
-
-            if ((*lenNode)->OperIsConst())
+            if (call->gtArgs.GetUserArgByIndex(argNum)->GetNode()->OperIsConst())
             {
-                JITDUMP("Memmove's len is already a constant - it will be optimized as is.\n")
+                JITDUMP("Profiled arg is already a constant - bail out.\n")
                 return call;
             }
 
-            impCloneExpr(*dstNode, dstNode, CHECK_SPILL_ALL, nullptr DEBUGARG("memmove src"));
-            impCloneExpr(*srcNode, srcNode, CHECK_SPILL_ALL, nullptr DEBUGARG("memmove dst"));
-            GenTree* lenNodeClone = impCloneExpr(*lenNode, lenNode, CHECK_SPILL_ALL, nullptr DEBUGARG("memmove len"));
+            // Spill all the arguments to temp locals to preserve the execution order
+            GenTree** argRef   = nullptr;
+            GenTree*  argClone = nullptr;
+            for (unsigned i = 0; i < call->gtArgs.CountUserArgs(); i++)
+            {
+                GenTree** node   = &call->gtArgs.GetUserArgByIndex(i)->EarlyNodeRef();
+                GenTree*  cloned = impCloneExpr(*node, node, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling arg"));
 
-            GenTree* fallbackCall = gtCloneExpr(call);
-            GenTree* popularLen   = gtNewIconNode(popularSize, lenNodeClone->TypeGet());
-            *lenNode              = popularLen;
+                // Record the reference to the argument we're going to replace.
+                if (i == argNum)
+                {
+                    argRef   = node;
+                    argClone = cloned;
+                }
+            }
+
+            GenTree* fallbackCall      = gtCloneExpr(call);
+            GenTree* profiledValueNode = gtNewIconNode(profiledValue, argClone->TypeGet());
+            *argRef                    = profiledValueNode;
 
             // TODO: Specify weights for the branches in the Qmark node.
-            GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, fallbackCall, call);
-            GenTreeOp*    cond  = gtNewOperNode(GT_NE, TYP_INT, lenNodeClone, gtCloneExpr(popularLen));
-            GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, cond, colon);
+            GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(call->TypeGet(), call, fallbackCall);
+            GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
+            GenTreeQmark* qmark = gtNewQmarkNode(call->TypeGet(), cond, colon);
 
-            JITDUMP("\n\nOptimized Memmove:\n")
+            JITDUMP("\n\nResulting tree:\n")
             DISPTREE(qmark)
 
             return qmark;
