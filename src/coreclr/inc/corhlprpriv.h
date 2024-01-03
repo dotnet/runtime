@@ -232,7 +232,7 @@ public:
         size_t destLen = minipal_get_length_utf8_to_utf16(utf8str, sourceLen, 0);
 
         CHAR16_T* buffer = (CHAR16_T*) AllocThrows((destLen + 1) * sizeof(CHAR16_T));
-        buffer[destLen] = 0;
+        buffer[destLen] = W('\0');
 
         if (!minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, 0))
         {
@@ -247,7 +247,7 @@ public:
         size_t destLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, 0);
 
         LPSTR buffer = (LPSTR) AllocThrows((destLen + 1) * sizeof(char));
-        buffer[destLen] = 0;
+        buffer[destLen] = '\0';
 
         if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, 0))
         {

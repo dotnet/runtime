@@ -1050,7 +1050,7 @@ ClrDataValue::GetString(
                 *strLen = static_cast<ULONG32>(u16_strlen(msgStr) + 1);
             }
             
-            status = u16_strcpy_s(str, bufLen, msgStr) ? S_OK : S_FALSE;
+            status = u16_strcpy_s(str, bufLen, msgStr) != NULL ? S_OK : S_FALSE;
         }
         else
         {
