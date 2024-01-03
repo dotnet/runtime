@@ -2913,65 +2913,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
-            {
-                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
-                assert((imm & 3) == 0);
-
-                ins  = id->idIns();
-                code = emitInsCode(ins);
-                if (ins == INS_jal)
-                {
-                    assert(isValidSimm21(imm));
-                    code |= ((imm >> 12) & 0xff) << 12;
-                    code |= ((imm >> 11) & 0x1) << 20;
-                    code |= ((imm >> 1) & 0x3ff) << 21;
-                    code |= ((imm >> 20) & 0x1) << 31;
-                    code |= REG_RA << 7;
-                }
-                else if (ins == INS_j)
-                {
-                    assert(isValidSimm21(imm));
-                    code |= ((imm >> 12) & 0xff) << 12;
-                    code |= ((imm >> 11) & 0x1) << 20;
-                    code |= ((imm >> 1) & 0x3ff) << 21;
-                    code |= ((imm >> 20) & 0x1) << 31;
-                }
-                else if (ins == INS_jalr)
-                {
-                    assert(isValidSimm12(imm));
-                    code |= ((code_t)(imm & 0xfff) << 20);
-                    code |= ((code_t)id->idReg1()) << 7;
-                    code |= ((code_t)id->idReg2()) << 15;
-                }
-                else if (ins == INS_bnez || ins == INS_beqz)
-                {
-                    assert(isValidSimm13(imm));
-                    code |= (code_t)id->idReg1() << 15;
-                    code |= ((imm >> 11) & 0x1) << 7;
-                    code |= ((imm >> 1) & 0xf) << 8;
-                    code |= ((imm >> 5) & 0x3f) << 25;
-                    code |= ((imm >> 12) & 0x1) << 31;
-                }
-                else if ((INS_beq <= ins) && (ins <= INS_bgeu))
-                {
-                    assert(isValidSimm13(imm));
-                    code |= ((code_t)id->idReg1()) << 15;
-                    code |= ((code_t)id->idReg2()) << 20;
-                    code |= ((imm >> 11) & 0x1) << 7;
-                    code |= ((imm >> 1) & 0xf) << 8;
-                    code |= ((imm >> 5) & 0x3f) << 25;
-                    code |= ((imm >> 12) & 0x1) << 31;
-                }
-                else
-                {
-                    unreached();
-                }
-
-                *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                sz = sizeof(instrDescJmp);
-            }
+            dst = emitOutputInstr_OptsJ(dst, id, ig, &ins, dstRW);
+            sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
             if (id->idIsLargeCall())
