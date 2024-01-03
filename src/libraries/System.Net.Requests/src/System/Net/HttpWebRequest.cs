@@ -1208,6 +1208,19 @@ namespace System.Net
         {
             _sendRequestTask ??= SendRequest(async);
 
+            if (_requestStream is not null) // If we didn't flush and end the request stream, do it now, don't wait for dispose.
+            {
+                if (async)
+                {
+                    await _requestStream!.FlushAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _requestStream!.Flush();
+                }
+                _requestStream!.EndWriteOnStreamBuffer();
+            }
+
             HttpResponseMessage responseMessage = await _sendRequestTask!.ConfigureAwait(false);
 
             HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);

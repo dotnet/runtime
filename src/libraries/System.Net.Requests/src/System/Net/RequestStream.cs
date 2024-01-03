@@ -63,16 +63,25 @@ namespace System.Net
         {
             ThrowIfDisposed();
 
-            if (_isBuffered)
+            if (_isBuffered && _buffer.Length > 0)
             {
                 _streamBuffer.Write(_buffer.GetBuffer().AsSpan(0, (int) _buffer.Length));
+                _buffer.SetLength(0);
             }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _isBuffered ? _streamBuffer.WriteAsync(_buffer.GetBuffer().AsMemory(0, (int) _buffer.Length), cancellationToken).AsTask() : Task.CompletedTask;
+
+            if (_isBuffered && _buffer.Length > 0)
+            {
+                Task task = _streamBuffer.WriteAsync(_buffer.GetBuffer().AsMemory(0, (int) _buffer.Length), cancellationToken).AsTask();
+                _buffer.SetLength(0);
+                return task;
+            }
+
+            return Task.CompletedTask;
         }
 
         public override long Length
@@ -145,6 +154,11 @@ namespace System.Net
             ValidateBufferArguments(buffer, offset, count);
             return _isBuffered ? _buffer!.BeginWrite(buffer, offset, count, asyncCallback, asyncState) :
                 TaskToAsyncResult.Begin(_streamBuffer!.WriteAsync(new(buffer, offset, count)).AsTask(), asyncCallback, asyncState);
+        }
+
+        public void EndWriteOnStreamBuffer()
+        {
+            _streamBuffer.EndWrite();
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
