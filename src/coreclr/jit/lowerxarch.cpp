@@ -8605,8 +8605,9 @@ void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
             memcpy(&compressedVecCon->gtSimdVal, &simd32Val, sizeof(simd32_t));
             BlockRange().InsertBefore(node->Data(), compressedVecCon);
             BlockRange().Remove(vecCon);
-            broadcast = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon,
-                                                       NI_AVX512F_BroadcastVector256ToVector512, CORINFO_TYPE_UINT, 64);
+            broadcast =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector256ToVector512,
+                                               CORINFO_TYPE_ULONG, 64);
         }
     }
 
