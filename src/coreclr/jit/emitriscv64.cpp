@@ -2889,8 +2889,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*             dst  = *dp;
     const BYTE* const odst = *dp;
-    instruction       ins;
-    size_t            sz; // = emitSizeOfInsDsc(id);
+    instruction       ins = 0;
+    size_t            sz = 0;
 
     assert(REG_NA == static_cast<int>(REG_NA));
 
@@ -2934,8 +2934,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
-            emitInsCode() ins = id->idIns();
-            sz                = emitSizeOfInsDsc(id);
+            ins = id->idIns();
+            sz  = sizeof(instrDesc);
             break;
     }
 
