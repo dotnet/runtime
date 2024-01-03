@@ -23,7 +23,7 @@ namespace System.Tests
             {
                 "System.Tests.EnvironmentStackTrace.StaticFrame(Object obj)",
                 "System.Tests.EnvironmentStackTrace.TestClass..ctor()",
-                "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)",
+                "System.Tests.EnvironmentStackTrace.GenericFrame[DateTime,__Canon](DateTime t1, __Canon t2)",
                 "System.Tests.EnvironmentStackTrace.TestFrame()"
             };
 
