@@ -479,7 +479,7 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
-        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero 
+        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
