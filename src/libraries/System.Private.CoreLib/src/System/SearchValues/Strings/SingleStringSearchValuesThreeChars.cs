@@ -327,6 +327,9 @@ namespace System.Buffers
 
                 ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
+                // If the value is short (!TValueLength.AtLeast4Chars => 2 or 3 characters), the anchors already represent the whole value.
+                // With case-sensitive comparisons, we've therefore already confirmed the match, so we can skip doing so here.
+                // With case-insensitive comparisons, we applied a mask to the input, so while the anchors likely matched, we can't be sure.
                 if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
                     TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
                 {
@@ -356,6 +359,9 @@ namespace System.Buffers
 
                 ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
+                // If the value is short (!TValueLength.AtLeast4Chars => 2 or 3 characters), the anchors already represent the whole value.
+                // With case-sensitive comparisons, we've therefore already confirmed the match, so we can skip doing so here.
+                // With case-insensitive comparisons, we applied a mask to the input, so while the anchors likely matched, we can't be sure.
                 if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
                     TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
                 {
