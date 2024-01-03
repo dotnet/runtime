@@ -296,6 +296,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     pMT->ClearFlag(MethodTable::enum_flag_MultipurposeSlotsMask);
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
+    pMT->ClearFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
     // Set generics flags
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);

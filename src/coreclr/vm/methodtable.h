@@ -2139,17 +2139,6 @@ public:
         return GetFlag(enum_flag_HasDispatchMapSlot);
     }
 
-#ifndef DACCESS_COMPILE
-    void SetDispatchMap(DispatchMap *pDispatchMap)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasDispatchMapSlot());
-
-        TADDR pSlot = GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-        *(DispatchMap **)pSlot = pDispatchMap;
-    }
-#endif // !DACCESS_COMPILE
-
 protected:
     BOOL FindEncodedMapDispatchEntry(UINT32 typeID,
                                      UINT32 slotNumber,
@@ -2700,7 +2689,7 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, WORD nonVirtualSlots = 0);
+    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
 #endif
 
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
@@ -3419,7 +3408,7 @@ private:
 
         // The following bits describe usage of optional slots. They have to stay
         // together because of we index using them into offset arrays.
-        enum_flag_MultipurposeSlotsMask     = 0x0007,
+        enum_flag_MultipurposeSlotsMask     = 0x0003,
         enum_flag_HasPerInstInfo            = 0x0001,
         enum_flag_HasInterfaceMap           = 0x0002,
         enum_flag_HasDispatchMapSlot        = 0x0004,
@@ -3541,23 +3530,16 @@ private:
     }
 
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
-    // JITed code and JIT helpers. However, they are frequently not present. The space is used by other
-    // multipurpose slots on first come first served basis if the fixed ones are not present. The other
-    // multipurpose are DispatchMapSlot, and NonVirtualSlots (see enum_flag_MultipurposeSlotsMask).
-    // The multipurpose slots that do not fit are stored after vtable slots.
+    // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
+    // element type handle for array MethodTables.
 
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
-        TADDR         m_pMultipurposeSlot1;
     };
     public:
-    union
-    {
-        PTR_InterfaceInfo   m_pInterfaceMap;
-        TADDR               m_pMultipurposeSlot2;
-    };
+    PTR_InterfaceInfo   m_pInterfaceMap;
 
     // VTable and Non-Virtual slots go here
 
@@ -3663,16 +3645,6 @@ private:
     inline DWORD GetInstAndDictSize(DWORD *pSlotSize);
 
 private:
-    // Helper template to compute the offsets at compile time
-    template<int mask>
-    struct MultipurposeSlotOffset;
-
-    static const BYTE c_DispatchMapSlotOffsets[];
-
-    static const BYTE c_OptionalMembersStartOffsets[]; // total sizes of optional slots
-
-    TADDR GetMultipurposeSlotPtr(WFLAGS2_ENUM flag, const BYTE * offsets);
-
     void SetMultipurposeSlotsMask(DWORD dwMask)
     {
         LIMITED_METHOD_CONTRACT;

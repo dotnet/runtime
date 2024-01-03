@@ -304,7 +304,6 @@ DispatchMap::DispatchMap(
 // }
 void
 DispatchMap::CreateEncodedMapping(
-    MethodTable *        pMT,
     DispatchMapBuilder * pMapBuilder,
     StackingAllocator *  pAllocator,
     BYTE **              ppbMap,
@@ -314,7 +313,6 @@ DispatchMap::CreateEncodedMapping(
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));
@@ -552,9 +550,9 @@ DispatchMap::EncodedMapIterator::EncodedMapIterator(MethodTable * pMT)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    if (pMT->HasDispatchMap())
+    DispatchMap * pMap = pMT->GetDispatchMap();
+    if (pMap != NULL)
     {
-        DispatchMap * pMap = pMT->GetDispatchMap();
         Init(PTR_BYTE(PTR_HOST_MEMBER_TADDR(DispatchMap, pMap, m_rgMap)));
     }
     else

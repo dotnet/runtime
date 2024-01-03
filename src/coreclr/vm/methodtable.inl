@@ -1032,29 +1032,13 @@ inline PTR_InterfaceInfo MethodTable::GetInterfaceMap()
 }
 
 //==========================================================================================
-FORCEINLINE TADDR MethodTable::GetMultipurposeSlotPtr(WFLAGS2_ENUM flag, const BYTE * offsets)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(GetFlag(flag));
-
-    DWORD offset = offsets[GetFlag((WFLAGS2_ENUM)(flag - 1))];
-
-    if (offset >= sizeof(MethodTable)) {
-        offset += GetNumVtableIndirections() * sizeof(VTableIndir_t);
-    }
-
-    return dac_cast<TADDR>(this) + offset;
-}
-
-//==========================================================================================
 // This method is dependent on the declared order of optional members
 // If you add or remove an optional member or reorder them please change this method
 FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DWORD offset = c_OptionalMembersStartOffsets[GetFlag(enum_flag_MultipurposeSlotsMask)];
+    DWORD offset = sizeof(MethodTable);
 
     offset += GetNumVtableIndirections() * sizeof(VTableIndir_t);
 
@@ -1080,7 +1064,7 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
 {
     LIMITED_METHOD_CONTRACT;
 
-    DWORD size = c_OptionalMembersStartOffsets[dwMultipurposeSlotsMask] - sizeof(MethodTable);
+    DWORD size = 0;
 
     if (needsGenericsStaticsInfo)
         size += sizeof(GenericsStaticsInfo);

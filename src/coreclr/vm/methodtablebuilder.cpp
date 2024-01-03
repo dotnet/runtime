@@ -10256,8 +10256,25 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
     if (dwNumDicts != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
+
+    BYTE *pbDispatchMapTemp = NULL;
+    UINT32 cbDispatchMapTemp = 0;
+    S_SIZE_T dispatchMapAllocationSize = S_SIZE_T(0);
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasDispatchMapSlot;
+    {
+        DispatchMapBuilder          *pDispatchMapBuilder = bmtVT->pDispatchMapBuilder;
+        CONSISTENCY_CHECK(CheckPointer(pDispatchMapBuilder));
+
+        // Create a map in stacking memory.
+        DispatchMap::CreateEncodedMapping(
+            pDispatchMapBuilder,
+            pDispatchMapBuilder->GetAllocator(),
+            &pbDispatchMapTemp,
+            &cbDispatchMapTemp);
+
+        // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableWriteableData
+        dispatchMapAllocationSize = S_SIZE_T((size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp));
+    }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
@@ -10312,11 +10329,34 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     MethodTable* pMT = (MethodTable*)(pData + dwGCSize);
 
     pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
-    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, static_cast<WORD>(dwNonVirtualSlots));
+    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+        pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
+
+    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, static_cast<WORD>(dwNonVirtualSlots), dispatchMapAllocationSize);
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
+
+    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+    {
+        DispatchMap                 *pDispatchMap        = NULL;
+        BYTE* pAllocatedSpaceAfterMethodTableWriteableData = (BYTE *)(pMT->GetWriteableDataForWrite() + 1);
+        // Use placement new
+        pDispatchMap = new (pAllocatedSpaceAfterMethodTableWriteableData) DispatchMap(pbDispatchMapTemp, cbDispatchMapTemp);
+
+#ifdef LOGGING
+        if (dispatchMapAllocationSize.IsOverflow())
+            ThrowHR(E_FAIL);
+        g_sdStats.m_cDispatchMap++;
+        g_sdStats.m_cbDispatchMap += (UINT32) dispatchMapAllocationSize.Value();
+        LOG((LF_LOADER, LL_INFO1000, "SD: Dispatch map for %s: %d bytes for map, %d bytes total for object.\n",
+            pMT->GetDebugClassName(), cbDispatchMapTemp, dispatchMapAllocationSize.Value()));
+#endif // LOGGING
+
+        bmtVT->pDispatchMapBuilder = NULL; // Now that the builder has been used to set flags and create the dispatch map it is done
+                                           // so set the variable to NULL so that nothing will attempt to modify it further.
+    }
 
 #ifdef _DEBUG
     pClassLoader->m_dwGCSize += dwGCSize;
@@ -10835,41 +10875,6 @@ MethodTableBuilder::SetupMethodTable2(
                 }
             }
         }
-    }
-
-    // If we have any entries, then finalize them and allocate the object in class loader heap
-    DispatchMap                 *pDispatchMap        = NULL;
-    DispatchMapBuilder          *pDispatchMapBuilder = bmtVT->pDispatchMapBuilder;
-    CONSISTENCY_CHECK(CheckPointer(pDispatchMapBuilder));
-
-    if (pDispatchMapBuilder->Count() > 0)
-    {
-        // Create a map in stacking memory.
-        BYTE * pbMap;
-        UINT32 cbMap;
-        DispatchMap::CreateEncodedMapping(
-            pMT,
-            pDispatchMapBuilder,
-            pDispatchMapBuilder->GetAllocator(),
-            &pbMap,
-            &cbMap);
-
-        // Now finalize the impltable and allocate the block in the low frequency loader heap
-        size_t objSize = (size_t) DispatchMap::GetObjectSize(cbMap);
-        void * pv = AllocateFromLowFrequencyHeap(S_SIZE_T(objSize));
-        _ASSERTE(pv != NULL);
-
-        // Use placement new
-        pDispatchMap = new (pv) DispatchMap(pbMap, cbMap);
-        pMT->SetDispatchMap(pDispatchMap);
-
-#ifdef LOGGING
-        g_sdStats.m_cDispatchMap++;
-        g_sdStats.m_cbDispatchMap += (UINT32) objSize;
-        LOG((LF_LOADER, LL_INFO1000, "SD: Dispatch map for %s: %d bytes for map, %d bytes total for object.\n",
-            pMT->GetDebugClassName(), cbMap, objSize));
-#endif // LOGGING
-
     }
 
     // GetMethodData by default will cache its result. However, in the case that we're
