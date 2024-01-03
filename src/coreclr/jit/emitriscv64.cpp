@@ -2807,6 +2807,17 @@ BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, in
     return emitOutputIntr_OptsJalr24(dst, immediate);
 }
 
+BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, const instrDesc* id, instruction* ins, BYTE* dstRw)
+{
+    ssize_t immediate = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
+    assert((immediate & 0x01) == 0);
+
+    *ins = id->idIns();
+
+    dst += emitOutput_BTypeInstr(dst, ins, id->idReg1(), id->idReg2(), immediate);
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -2855,25 +2866,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_J_cond:
-        {
-            ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
-            assert(isValidSimm13(imm));
-            assert(!(imm & 1));
-
-            ins  = id->idIns();
-            code = emitInsCode(ins);
-            code |= ((code_t)id->idReg1()) << 15;
-            code |= ((code_t)id->idReg2()) << 20;
-            code |= ((imm >> 11) & 0x1) << 7;
-            code |= ((imm >> 1) & 0xf) << 8;
-            code |= ((imm >> 5) & 0x3f) << 25;
-            code |= ((imm >> 12) & 0x1) << 31;
-            *(code_t*)dstRW = code;
-            dstRW += 4;
-
-            sz = sizeof(instrDescJmp);
-        }
-        break;
+            dst = emitOutputInstr_OptsJCond(dst, id, &ins, dstRW);
+            sz  = sizeof(instrDescJmp);
+            break;
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
