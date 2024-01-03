@@ -13480,6 +13480,231 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the register list size for the given instruction.
+ */
+
+/*static*/ int emitter::insGetSveRegisterListSize(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_sve_ld2b:
+        case INS_sve_ld2h:
+        case INS_sve_ld2w:
+        case INS_sve_ld2d:
+        case INS_sve_ld2q:
+        case INS_sve_st2b:
+        case INS_sve_st2h:
+        case INS_sve_st2w:
+        case INS_sve_st2d:
+        case INS_sve_st2q:
+            return 2;
+
+        case INS_sve_ld3b:
+        case INS_sve_ld3h:
+        case INS_sve_ld3w:
+        case INS_sve_ld3d:
+        case INS_sve_ld3q:
+        case INS_sve_st3b:
+        case INS_sve_st3h:
+        case INS_sve_st3w:
+        case INS_sve_st3d:
+        case INS_sve_st3q:
+            return 3;
+
+        case INS_sve_ld4b:
+        case INS_sve_ld4h:
+        case INS_sve_ld4w:
+        case INS_sve_ld4d:
+        case INS_sve_ld4q:
+        case INS_sve_st4b:
+        case INS_sve_st4h:
+        case INS_sve_st4w:
+        case INS_sve_st4d:
+        case INS_sve_st4q:
+            return 4;
+
+        default:
+            return 1;
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Returns the predicate type for the given instruction's second register.
+ */
+
+/*static*/ emitter::PredicateType emitter::insGetPredicateTypeReg2(instruction ins, insFormat fmt)
+{
+    switch (fmt)
+    {
+        case IF_SVE_BV_2A:
+        case IF_SVE_HW_4A:
+        case IF_SVE_HW_4A_A:
+        case IF_SVE_HW_4A_B:
+        case IF_SVE_HW_4A_C:
+        case IF_SVE_HW_4B:
+        case IF_SVE_HW_4B_D:
+        case IF_SVE_HX_3A_E:
+        case IF_SVE_IJ_3A_F:
+        case IF_SVE_IK_4A_G:
+        case IF_SVE_IJ_3A_G:
+        case IF_SVE_IK_4A_I:
+        case IF_SVE_IH_3A_F:
+        case IF_SVE_II_4A_H:
+        case IF_SVE_IH_3A:
+        case IF_SVE_IH_3A_A:
+        case IF_SVE_II_4A:
+        case IF_SVE_II_4A_B:
+        case IF_SVE_IU_4A:
+        case IF_SVE_IU_4A_C:
+        case IF_SVE_IU_4B:
+        case IF_SVE_IU_4B_D:
+        case IF_SVE_IV_3A:
+        case IF_SVE_IG_4A_F:
+        case IF_SVE_IG_4A_G:
+        case IF_SVE_IJ_3A:
+        case IF_SVE_IK_4A:
+        case IF_SVE_IU_4A_A:
+        case IF_SVE_IU_4B_B:
+        case IF_SVE_HX_3A_B:
+        case IF_SVE_IG_4A_D:
+        case IF_SVE_IG_4A_E:
+        case IF_SVE_IF_4A:
+        case IF_SVE_IF_4A_A:
+        case IF_SVE_IM_3A:
+        case IF_SVE_IN_4A:
+        case IF_SVE_CX_4A:
+        case IF_SVE_CX_4A_A:
+        case IF_SVE_CY_3A:
+        case IF_SVE_CY_3B:
+        case IF_SVE_IX_4A:
+        case IF_SVE_HI_3A:
+        case IF_SVE_HT_4A:
+        case IF_SVE_DG_2A:
+        case IF_SVE_IO_3A:
+        case IF_SVE_IP_4A:
+        case IF_SVE_IQ_3A:
+        case IF_SVE_IR_4A:
+        case IF_SVE_IS_3A:
+        case IF_SVE_IT_4A:
+        case IF_SVE_DA_4A:
+        case IF_SVE_DB_3B:
+        case IF_SVE_DC_3A:
+        case IF_SVE_GE_4A:
+        case IF_SVE_GI_4A:
+        case IF_SVE_IC_3A_C:
+        case IF_SVE_IC_3A:
+        case IF_SVE_IC_3A_B:
+        case IF_SVE_IC_3A_A:
+        case IF_SVE_IL_3A_C:
+        case IF_SVE_IL_3A:
+        case IF_SVE_IL_3A_B:
+        case IF_SVE_IL_3A_A:
+        case IF_SVE_IW_4A:
+            return PREDICATE_ZERO;
+
+        case IF_SVE_BV_2A_J:
+        case IF_SVE_CP_3A:
+        case IF_SVE_CQ_3A:
+        case IF_SVE_CZ_4A_K:
+        case IF_SVE_AM_2A:
+        case IF_SVE_AN_3A:
+        case IF_SVE_AO_3A:
+        case IF_SVE_HL_3A:
+        case IF_SVE_HM_2A:
+        case IF_SVE_AA_3A:
+        case IF_SVE_BU_2A:
+        case IF_SVE_BV_2B:
+        case IF_SVE_HS_3A:
+        case IF_SVE_HS_3A_H:
+        case IF_SVE_HS_3A_I:
+        case IF_SVE_HS_3A_J:
+        case IF_SVE_HP_3B:
+        case IF_SVE_HP_3B_H:
+        case IF_SVE_HP_3B_I:
+        case IF_SVE_HP_3B_J:
+        case IF_SVE_AR_4A:
+        case IF_SVE_BV_2A_A:
+        case IF_SVE_AB_3A:
+        case IF_SVE_ET_3A:
+        case IF_SVE_HU_4A:
+        case IF_SVE_HL_3B:
+        case IF_SVE_AD_3A:
+        case IF_SVE_AB_3B:
+        case IF_SVE_AE_3A:
+        case IF_SVE_EU_3A:
+        case IF_SVE_GT_4A:
+        case IF_SVE_AP_3A:
+        case IF_SVE_HO_3A:
+        case IF_SVE_HO_3A_B:
+        case IF_SVE_GQ_3A:
+        case IF_SVE_HU_4B:
+        case IF_SVE_AQ_3A:
+        case IF_SVE_CU_3A:
+        case IF_SVE_AC_3A:
+        case IF_SVE_ER_3A:
+        case IF_SVE_GR_3A:
+        case IF_SVE_ES_3A:
+        case IF_SVE_HR_3A:
+        case IF_SVE_EP_3A:
+        case IF_SVE_GP_3A:
+        case IF_SVE_EQ_3A:
+        case IF_SVE_HQ_3A:
+        case IF_SVE_AS_4A:
+        case IF_SVE_CT_3A:
+        case IF_SVE_HP_3A:
+        case IF_SVE_HV_4A:
+            return PREDICATE_MERGE;
+
+        case IF_SVE_CZ_4A_L:
+        case IF_SVE_CF_2A:
+        case IF_SVE_CF_2B:
+        case IF_SVE_CF_2C:
+        case IF_SVE_CF_2D:
+        case IF_SVE_CI_3A:
+        case IF_SVE_DL_2A:
+        case IF_SVE_DM_2A:
+        case IF_SVE_DN_2A:
+        case IF_SVE_DO_2A:
+        case IF_SVE_DP_2A:
+        case IF_SVE_CK_2A:
+        case IF_SVE_DI_2A:
+            return PREDICATE_SIZED;
+
+        // This is a special case as the second register could be ZERO or MERGE.
+        // <Pg>/<ZM>
+        // Therefore, by default return NONE due to ambiguity.
+        case IF_SVE_AH_3A:
+        case IF_SVE_DB_3A:
+            return PREDICATE_NONE;
+
+        case IF_SVE_CW_4A:
+            switch (ins)
+            {
+                case INS_sve_sel:
+                    return PREDICATE_NONE;
+
+                default:
+                    return PREDICATE_MERGE;
+            }
+
+        case IF_SVE_CZ_4A:
+            switch (ins)
+            {
+                case INS_sve_sel:
+                    return PREDICATE_NONE;
+
+                default:
+                    return PREDICATE_ZERO;
+            }
+
+        default:
+            return PREDICATE_NONE;
+    }
+}
+
+/*****************************************************************************
+ *
  *  Returns true if the specified instruction can encode the 'dtype' field.
  */
 
@@ -18501,81 +18726,8 @@ void emitter::emitDispInsHelp(
         // { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
-            switch (ins)
-            {
-                case INS_sve_ld2b:
-                case INS_sve_ld2h:
-                case INS_sve_ld2w:
-                case INS_sve_ld2d:
-                case INS_sve_ld2q:
-                case INS_sve_st2b:
-                case INS_sve_st2h:
-                case INS_sve_st2w:
-                case INS_sve_st2d:
-                case INS_sve_st2q:
-                    emitDispSveRegList(id->idReg1(), 2, id->idInsOpt(), true); // ttttt
-                    break;
-
-                case INS_sve_ld3b:
-                case INS_sve_ld3h:
-                case INS_sve_ld3w:
-                case INS_sve_ld3d:
-                case INS_sve_ld3q:
-                case INS_sve_st3b:
-                case INS_sve_st3h:
-                case INS_sve_st3w:
-                case INS_sve_st3d:
-                case INS_sve_st3q:
-                    emitDispSveRegList(id->idReg1(), 3, id->idInsOpt(), true); // ttttt
-                    break;
-
-                case INS_sve_ld4b:
-                case INS_sve_ld4h:
-                case INS_sve_ld4w:
-                case INS_sve_ld4d:
-                case INS_sve_ld4q:
-                case INS_sve_st4b:
-                case INS_sve_st4h:
-                case INS_sve_st4w:
-                case INS_sve_st4d:
-                case INS_sve_st4q:
-                    emitDispSveRegList(id->idReg1(), 4, id->idInsOpt(), true); // ttttt
-                    break;
-
-                default:
-                    emitDispSveRegList(id->idReg1(), 1, id->idInsOpt(), true); // ttttt
-                    break;
-            }
-            switch (ins)
-            {
-                case INS_sve_st2b:
-                case INS_sve_st2h:
-                case INS_sve_st2w:
-                case INS_sve_st2d:
-                case INS_sve_st2q:
-                case INS_sve_st3b:
-                case INS_sve_st3h:
-                case INS_sve_st3w:
-                case INS_sve_st3d:
-                case INS_sve_st3q:
-                case INS_sve_st4b:
-                case INS_sve_st4h:
-                case INS_sve_st4w:
-                case INS_sve_st4d:
-                case INS_sve_st4q:
-                case INS_sve_stnt1b:
-                case INS_sve_stnt1h:
-                case INS_sve_stnt1w:
-                case INS_sve_stnt1d:
-                case INS_sve_st1d:
-                case INS_sve_st1w:
-                    emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true); // ggg
-                    break;
-
-                default:
-                    emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true); // ggg
-                    break;
-            }
+            emitDispSveRegList(id->idReg1(), insGetSveRegisterListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), insGetPredicateTypeReg2(ins, fmt), id->idInsOpt(), true); // ggg
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
             if (imm != 0)

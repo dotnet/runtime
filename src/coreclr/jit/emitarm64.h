@@ -482,6 +482,12 @@ static code_t insEncodeSveElemsize(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+// Returns the register list size for the given instruction.
+static int insGetSveRegisterListSize(instruction ins);
+
+// Returns the predicate type for the given instruction's second register.
+static PredicateType insGetPredicateTypeReg2(instruction ins, insFormat fmt);
+
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
 
