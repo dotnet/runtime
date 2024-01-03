@@ -2461,7 +2461,7 @@ void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
  *
  */
 
-ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
+ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
 {
     UNATIVE_OFFSET srcOffs = emitCurCodeOffs(src);
     const BYTE*    srcAddr = emitOffsetToPtr(srcOffs);
@@ -2807,9 +2807,9 @@ BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, in
     return emitOutputIntr_OptsJalr24(dst, immediate);
 }
 
-BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRw)
+BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
 {
-    ssize_t immediate = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
+    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
     assert((immediate & 0x01) == 0);
 
     *ins = id->idIns();
@@ -2818,9 +2818,9 @@ BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGrou
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRW)
+BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
 {
-    ssize_t immediate = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
+    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
     assert((immediate & 0x03) == 0);
 
     *ins = id->idIns();
@@ -2887,12 +2887,8 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, const instrDesc* id, const insGr
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE*             dst    = *dp;
-    BYTE*             dstRW  = *dp + writeableOffset;
-    BYTE*             dstRW2 = dstRW + 4; // addr for updating gc info if needed.
-    const BYTE* const odstRW = dstRW;
-    const BYTE* const odst   = *dp;
-    code_t            code   = 0;
+    BYTE*             dst  = *dp;
+    const BYTE* const odst = *dp;
     instruction       ins;
     size_t            sz; // = emitSizeOfInsDsc(id);
 
@@ -2924,24 +2920,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_J_cond:
-            dst = emitOutputInstr_OptsJCond(dst, id, ig, &ins, dstRW);
+            dst = emitOutputInstr_OptsJCond(dst, id, ig, &ins);
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
-            dst = emitOutputInstr_OptsJ(dst, id, ig, &ins, dstRW);
+            dst = emitOutputInstr_OptsJ(dst, id, ig, &ins);
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
-            dst    = emitOutputInstr_OptsC(dst, id, ig, &sz);
-            ins    = INS_nop;
-            dstRW2 = dst + writeableOffset; // TODO remove
+            dst = emitOutputInstr_OptsC(dst, id, ig, &sz);
+            ins = INS_nop;
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
-            emitInsCode()
-            ins = id->idIns();
-            sz  = emitSizeOfInsDsc(id);
+            emitInsCode() ins = id->idIns();
+            sz                = emitSizeOfInsDsc(id);
             break;
     }
 
@@ -2954,11 +2948,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dstRW2 - writeableOffset);
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
         }
         else
         {
-            emitGCregDeadUpd(id->idReg1(), dstRW2 - writeableOffset);
+            emitGCregDeadUpd(id->idReg1(), dst);
         }
     }
 
@@ -2972,7 +2966,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dstRW2 - writeableOffset DEBUG_ARG(varNum));
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
         }
         else
         {
@@ -2989,7 +2983,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
-                emitGCvarDeadUpd(adr + ofs, dstRW2 - writeableOffset DEBUG_ARG(varNum));
+                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
         }
         // if (emitInsWritesToLclVarStackLocPair(id))
         //{
@@ -3028,7 +3022,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else  // !DUMP_GC_TABLES
         bool dspOffs = !emitComp->opts.disDiffable;
 #endif // !DUMP_GC_TABLES
-        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - odst), ig);
     }
 
     if (emitComp->compDebugBreak)
@@ -3043,15 +3037,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else  // !DEBUG
     if (emitComp->opts.disAsm)
     {
-        emitDispIns(id, false, false, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
+        emitDispIns(id, false, false, true, emitCurCodeOffs(odst), *dp, (dst - odst), ig);
     }
 #endif // !DEBUG
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != (dstRW - writeableOffset));
+    assert(*dp != dst);
 
-    *dp = dstRW - writeableOffset;
+    *dp = dst;
 
     return sz;
 }

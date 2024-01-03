@@ -81,7 +81,7 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 // Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
-ssize_t emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
+ssize_t emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
 void emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                        instrDescJmp*   jmp,
                                        UNATIVE_OFFSET& dstOffs,
@@ -125,8 +125,8 @@ BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig,
 BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate);
-BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRw);
-BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins, BYTE* dstRW);
+BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, const instrDesc* id, const insGroup* ig, size_t* size);
 
 /************************************************************************/
