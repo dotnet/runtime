@@ -76,7 +76,7 @@ void Compiler::fgDebugCheckUpdate()
      * no unreachable blocks  -> no blocks have countOfInEdges() = 0
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
-     *                           kind of redundand with the above, but to make sure)
+     *                           kind of redundant with the above, but to make sure)
      * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
      */
 
@@ -132,39 +132,18 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        bool prevIsCallAlwaysPair = block->isBBCallAlwaysPairTail();
-
-        // Check for an unnecessary jumps to the next block
-        bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
-
-        if (block->KindIs(BBJ_COND))
+        // Check for an unnecessary jumps to the next block.
+        // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
+        if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            // A conditional branch should never jump to the next block
-            // as it can be folded into a BBJ_ALWAYS;
-            doAssertOnJumpToNextBlock = true;
+            noway_assert(!"Unnecessary jump to the next block!");
         }
 
-        if (doAssertOnJumpToNextBlock)
-        {
-            if (block->JumpsToNext())
-            {
-                noway_assert(!"Unnecessary jump to the next block!");
-            }
-        }
-
-        /* Make sure BBF_KEEP_BBJ_ALWAYS is set correctly */
-
-        if (block->KindIs(BBJ_ALWAYS) && prevIsCallAlwaysPair)
-        {
-            noway_assert(block->HasFlag(BBF_KEEP_BBJ_ALWAYS));
-        }
-
-        /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
-        /* an BBJ_ALWAYS block with BBF_INTERNAL set */
-        /* or that it's a BBF_RETLESS_CALL */
+        // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
+        // or that it's a BBF_RETLESS_CALL.
         if (block->KindIs(BBJ_CALLFINALLY))
         {
-            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
+            assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallFinallyPair());
         }
 
         /* no un-compacted blocks */
@@ -2082,17 +2061,16 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                        maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
                 break;
 
+            case BBJ_CALLFINALLYRET:
+                printf("-> " FMT_BB "%*s (callfr)", block->GetFinallyContinuation()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetFinallyContinuation()->bbNum), 2), "");
+                break;
+
             case BBJ_ALWAYS:
-                if (flags & BBF_KEEP_BBJ_ALWAYS)
-                {
-                    printf("-> " FMT_BB "%*s (ALWAYS)", block->GetTarget()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
-                }
-                else
-                {
-                    printf("-> " FMT_BB "%*s (always)", block->GetTarget()->bbNum,
-                           maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "");
-                }
+                const char* label;
+                label = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
+                printf("-> " FMT_BB "%*s (%s)", block->GetTarget()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetTarget()->bbNum), 2), "", label);
                 break;
 
             case BBJ_LEAVE:
@@ -2398,7 +2376,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     }
     else if (JitConfig.JitDumpFgBlockOrder() == 2)
     {
-
         jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBIDCmp());
         inDefaultOrder = false;
     }
@@ -2505,12 +2482,12 @@ void Compiler::fgDispBasicBlocks(bool dumpTrees)
 // fgDumpStmtTree: dump the statement and the basic block number.
 //
 // Arguments:
-//    stmt  - the statement to dump;
-//    bbNum - the basic block number to dump.
+//    block - the basic block that contains the statement to dump.
+//    stmt  - the statement to dump.
 //
-void Compiler::fgDumpStmtTree(Statement* stmt, unsigned bbNum)
+void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 {
-    printf("\n***** " FMT_BB "\n", bbNum);
+    printf("\n***** %s\n", block->dspToString());
     gtDispStmt(stmt);
 }
 
@@ -2534,7 +2511,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     {
         for (Statement* const stmt : block->Statements())
         {
-            fgDumpStmtTree(stmt, block->bbNum);
+            fgDumpStmtTree(block, stmt);
         }
     }
     else
@@ -2785,11 +2762,11 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     }
 
     // The end of a finally region is a BBJ_EHFINALLYRET block (during importing, BBJ_LEAVE) which
-    // is marked as "returning" to the BBJ_ALWAYS block following the BBJ_CALLFINALLY
-    // block that does a local call to the finally. This BBJ_ALWAYS is within
-    // the try region protected by the finally (for x86, ARM), but that's ok.
+    // is marked as "returning" to the BBJ_CALLFINALLYRET block following the BBJ_CALLFINALLY
+    // block that does a local call to the finally. This BBJ_CALLFINALLYRET is within
+    // the try region protected by the finally (for x86), but that's ok.
     BasicBlock* prevBlock = block->Prev();
-    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_ALWAYS) && blockPred->KindIs(BBJ_EHFINALLYRET))
+    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_CALLFINALLYRET) && blockPred->KindIs(BBJ_EHFINALLYRET))
     {
         return true;
     }
@@ -2850,6 +2827,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
 
         case BBJ_ALWAYS:
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             assert(blockPred->TargetIs(block));
@@ -4763,14 +4741,13 @@ void Compiler::fgDebugCheckSsa()
     }
 
     assert(fgSsaPassesCompleted > 0);
-    assert(fgDomsComputed);
 
     // Visit the blocks that SSA initially renamed
     //
     SsaCheckVisitor scv(this);
     for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
     {
-        BasicBlock* block = m_dfsTree->GetPostOrder()[i];
+        BasicBlock* block = m_dfsTree->GetPostOrder(i);
         scv.SetBlock(block);
 
         for (Statement* const stmt : block->Statements())
@@ -5220,8 +5197,9 @@ void Compiler::fgDebugCheckDfsTree()
         fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
                  [=](BasicBlock* block, unsigned postorderNum) {
                      assert(block->bbNewPostorderNum == postorderNum);
-                     assert(m_dfsTree->GetPostOrder()[postorderNum] == block);
-                 });
+                     assert(m_dfsTree->GetPostOrder(postorderNum) == block);
+                 },
+                 [](BasicBlock* block, BasicBlock* succ) {});
 
     assert(m_dfsTree->GetPostOrderCount() == count);
 }

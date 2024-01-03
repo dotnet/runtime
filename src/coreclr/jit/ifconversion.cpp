@@ -381,15 +381,15 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    for (BasicBlock* dumpBlock = m_startBlock->Next(); dumpBlock != m_finalBlock;
-         dumpBlock             = dumpBlock->GetUniqueSucc())
+    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->Next();
+    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
     }
     if (m_doElseConversion)
     {
-        for (BasicBlock* dumpBlock = m_startBlock->GetTrueTarget(); dumpBlock != m_finalBlock;
-             dumpBlock             = dumpBlock->GetUniqueSucc())
+        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
+        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
         }
@@ -549,7 +549,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || (m_startBlock->NumSucc() != 2))
     {
         return false;
     }
@@ -739,8 +739,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    assert(m_startBlock->HasInitializedTarget());
-    m_startBlock->SetKind(BBJ_ALWAYS);
+    m_startBlock->SetKindAndTarget(BBJ_ALWAYS, m_startBlock->GetTrueTarget());
 
 #ifdef DEBUG
     if (m_comp->verbose)

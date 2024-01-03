@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { "am-ET", 1, "ዓ/ም" };
                 yield return new object[] { "bg-BG", 1, "сл.Хр." };
                 yield return new object[] { "bn-BD", 1, "খৃষ্টাব্দ" };
-                yield return new object[] { "bn-IN", 1, PlatformDetection.IsNodeJSOnWindows ? "খৃষ্টাব্দ" : "খ্রিঃ" }; // "খৃষ্টাব্দ"
+                yield return new object[] { "bn-IN", 1, "খ্রিঃ" }; // "খৃষ্টাব্দ"
                 yield return new object[] { "ca-AD", 1, "dC" };
                 yield return new object[] { "ca-ES", 1, "dC" };
                 yield return new object[] { "cs-CZ", 1, "n.l." };
@@ -140,8 +140,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { "en-ZM", 1, "A" }; // AD
                 yield return new object[] { "en-ZW", 1, "A" }; // AD
                 yield return new object[] { "es-ES", 1, "d. C." };
-                yield return new object[] { "es-419", 1, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." }; // "d. C."
-                yield return new object[] { "es-MX", 1, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." }; // "d. C."
+                yield return new object[] { "es-419", 1, "d.C." }; // "d. C."
+                yield return new object[] { "es-MX", 1, "d.C." }; // "d. C."
                 yield return new object[] { "et-EE", 1, "pKr" };
                 yield return new object[] { "fa-IR", 1, "ه.ش" }; // ه‍.ش.
                 yield return new object[] { "fi-FI", 1, "jKr" };

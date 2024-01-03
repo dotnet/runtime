@@ -1226,7 +1226,7 @@ namespace System.Tests
             Assert.Equal(expected, DateTime.Parse(expectedString, cultureInfo));
         }
 
-        private static bool IsNotOSXOrBrowser => !PlatformDetection.IsOSXLike && !PlatformDetection.IsBrowser;
+        private static bool IsNotOSXOrBrowser => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
 
         [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
         [InlineData("ar")]
@@ -2003,6 +2003,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
@@ -2463,6 +2464,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {

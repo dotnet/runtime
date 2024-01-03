@@ -14389,9 +14389,6 @@ gc_heap::init_semi_shared()
     loh_compaction_mode = loh_compaction_default;
 #endif //FEATURE_LOH_COMPACTION
 
-    loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
-    assert (loh_size_threshold >= LARGE_OBJECT_SIZE);
-
 #ifdef BGC_SERVO_TUNING
     memset (bgc_tuning::gen_calc, 0, sizeof (bgc_tuning::gen_calc));
     memset (bgc_tuning::gen_stats, 0, sizeof (bgc_tuning::gen_stats));
@@ -48150,6 +48147,9 @@ HRESULT GCHeap::Initialize()
 
     GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
 
+    loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
+    loh_size_threshold = max (loh_size_threshold, LARGE_OBJECT_SIZE);
+
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
@@ -48186,6 +48186,37 @@ HRESULT GCHeap::Initialize()
     {
         return E_OUTOFMEMORY;
     }
+
+    /*
+     * Allocation requests less than loh_size_threshold will be allocated on the small object heap.
+     *
+     * An object cannot span more than one region and regions in small object heap are of the same size - gc_region_size. 
+     * However, the space available for actual allocations is reduced by the following implementation details -
+     *
+     * 1.) heap_segment_mem is set to the new pages + sizeof(aligned_plug_and_gap) in make_heap_segment.
+     * 2.) a_fit_segment_end_p set pad to Align(min_obj_size, align_const).
+     * 3.) a_size_fit_p requires the available space to be >= the allocated size + Align(min_obj_size, align_const)
+     *
+     * It is guaranteed that an allocation request with this amount or less will succeed unless
+     * we cannot commit memory for it.
+     */
+    int align_const = get_alignment_constant (TRUE);
+    size_t effective_max_small_object_size = gc_region_size - sizeof(aligned_plug_and_gap) - Align(min_obj_size, align_const) * 2;
+
+#ifdef FEATURE_STRUCTALIGN
+    /*
+     * The above assumed FEATURE_STRUCTALIGN is not turned on for platforms where USE_REGIONS is supported, otherwise it is possible
+     * that the allocation size is inflated by ComputeMaxStructAlignPad in GCHeap::Alloc and we have to compute an upper bound of that 
+     * function.
+     *
+     * Note that ComputeMaxStructAlignPad is defined to be 0 if FEATURE_STRUCTALIGN is turned off.
+     */
+#error "FEATURE_STRUCTALIGN is not supported for USE_REGIONS"
+#endif //FEATURE_STRUCTALIGN
+
+    loh_size_threshold = min (loh_size_threshold, effective_max_small_object_size);
+    GCConfig::SetLOHThreshold(loh_size_threshold);
+
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
@@ -51835,6 +51866,11 @@ void GCHeap::DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* co
 void GCHeap::DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context)
 {
     GCScan::GcScanDependentHandlesForProfilerAndETW (gen_number, context, fn);
+}
+
+size_t GCHeap::GetLOHThreshold()
+{
+    return loh_size_threshold;
 }
 
 void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)

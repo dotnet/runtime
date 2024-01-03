@@ -28,8 +28,8 @@ struct EHEnum
 };
 
 class StackFrameIterator;
-EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault);
-EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke);
+EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
+EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 struct PInvokeTransitionFrame;
 typedef DPTR(PInvokeTransitionFrame) PTR_PInvokeTransitionFrame;
@@ -38,8 +38,8 @@ typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 class StackFrameIterator
 {
     friend class AsmOffsets;
-    friend FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault);
-    friend FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke);
+    friend FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
+    friend FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 public:
     StackFrameIterator() {}
@@ -55,7 +55,7 @@ public:
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
     bool             IsActiveStackFrame();
-    bool             GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind);
+    bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
     void             SetControlPC(PTR_VOID controlPC);
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
@@ -67,7 +67,7 @@ public:
     // stack that might contain outgoing arguments. We then report every pointer that looks like it might
     // refer to the GC heap as a fixed interior reference.
     bool HasStackRangeToReportConservatively();
-    void GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound);
+    void GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound);
 
     // Debugger Hijacked frame looks very much like a usual managed frame except when the
     // frame must be reported conservatively, and when that happens, regular GC reporting should be skipped
@@ -210,7 +210,7 @@ protected:
     PTR_ICodeManager    m_pCodeManager;
     MethodInfo          m_methodInfo;
     PTR_VOID            m_effectiveSafePointAddress;
-    PTR_RtuObjectRef    m_pHijackedReturnValue;
+    PTR_OBJECTREF       m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
     PTR_UIntNative      m_pConservativeStackRangeLowerBound;
     PTR_UIntNative      m_pConservativeStackRangeUpperBound;

@@ -5,6 +5,7 @@
 
 #include "pal_compiler.h"
 
+#if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
@@ -16,8 +17,8 @@ PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
+#else
 
-#ifdef __APPLE__
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
 
 PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);

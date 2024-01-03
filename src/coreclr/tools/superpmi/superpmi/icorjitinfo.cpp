@@ -31,6 +31,12 @@ bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
+bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");
+    return jitInstance->mc->repNotifyMethodInfoUsage(ftn);
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t MyICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
