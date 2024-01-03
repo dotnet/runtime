@@ -10251,10 +10251,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     // vtable
     cbTotalSize += MethodTable::GetNumVtableIndirections(dwVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
-    DWORD dwMultipurposeSlotsMask = 0;
-    if (dwNumDicts != 0)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
-
     BYTE *pbDispatchMapTemp = NULL;
     UINT32 cbDispatchMapTemp = 0;
     S_SIZE_T dispatchMapAllocationSize = S_SIZE_T(0);
@@ -10325,7 +10321,11 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     MethodTable* pMT = (MethodTable*)(pData + dwGCSize);
 
-    pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
+    if (dwNumDicts != 0)
+    {
+        pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
+    }
+
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
         pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 

@@ -3430,7 +3430,6 @@ private:
 
         // The following bits describe usage of optional slots. They have to stay
         // together because of we index using them into offset arrays.
-        enum_flag_MultipurposeSlotsMask     = 0x0001,
         enum_flag_HasPerInstInfo            = 0x0001,
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
@@ -3562,9 +3561,7 @@ private:
     public:
     PTR_InterfaceInfo   m_pInterfaceMap;
 
-    // VTable and Non-Virtual slots go here
-
-    // Overflow multipurpose slots go here
+    // VTable slots go here
 
     // Optional Members go here
     //    See above for the list of optional members
@@ -3661,14 +3658,6 @@ private:
     // The pSlotSize argument is used to return the size occupied by slots (not including
     // the optional back pointer used when expanding dictionaries).
     inline DWORD GetInstAndDictSize(DWORD *pSlotSize);
-
-private:
-    void SetMultipurposeSlotsMask(DWORD dwMask)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE((m_dwFlags2 & enum_flag_MultipurposeSlotsMask) == 0);
-        m_dwFlags2 |= (WORD)dwMask;
-    }
 
 public:
 

@@ -463,7 +463,7 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        // m_pLoaderModule
+        // m_pModule
         // m_pWriteableData
         // union {
         //   m_pEEClass (pointer to the EE class)
@@ -479,7 +479,7 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
-        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero 
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;

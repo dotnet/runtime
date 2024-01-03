@@ -288,8 +288,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         }
     }
 
-    DWORD dwMultipurposeSlotsMask = 0;
-
     // Allocate space for optional members
     // We always have a non-virtual slot array, see assert at end
     cbMT += MethodTable::GetOptionalMembersAllocationSize(true /* hasInterfaceMap */);
@@ -334,8 +332,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     BYTE* pMTHead = pMemory + cbArrayClass + cbCGCDescData;
 
     MethodTable* pMT = (MethodTable *) pMTHead;
-
-    pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
     pMT->AllocateWriteableData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));

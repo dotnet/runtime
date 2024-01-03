@@ -235,10 +235,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbIMap = pOldMT->GetInterfaceMapSize();
     InterfaceInfo_t * pOldIMap = (InterfaceInfo_t *)pOldMT->GetInterfaceMap();
 
-    DWORD dwMultipurposeSlotsMask = 0;
-    dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
-
-    // NonVirtualSlots, and DispatchMap multipurpose slots are used
+    // NonVirtualSlots, and DispatchMap are used
     // from the canonical methodtable, so we do not need to store them here.
 
     // We need space for the optional members.
@@ -291,8 +288,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // <TODO> this is incredibly fragile.  We should just construct the MT all over agin. </TODO>
     pMT->CopyFlags(pOldMT);
 
-    pMT->ClearFlag(MethodTable::enum_flag_MultipurposeSlotsMask);
-    pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
+    pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
     pMT->ClearFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
     // Set generics flags
