@@ -236,7 +236,7 @@ public:
 
         if (!minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, 0))
         {
-            ThrowHR(COR_E_INSUFFICIENTMEMORY);
+            ThrowHR(EMAKEHR(ERROR_NO_UNICODE_TRANSLATION));
         }
     }
 
@@ -251,7 +251,7 @@ public:
 
         if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, 0))
         {
-            ThrowHR(COR_E_INSUFFICIENTMEMORY);
+            ThrowHR(EMAKEHR(ERROR_NO_UNICODE_TRANSLATION));
         }
     }
 
