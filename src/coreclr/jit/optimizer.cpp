@@ -6557,6 +6557,15 @@ PhaseStatus Compiler::optHoistLoopCode()
 #endif // DEBUG
 #endif // 0     -- debugging loop hoisting issues
 
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\n*************** In optHoistLoopCode()\n");
+        fgDispHandlerTab();
+        optPrintLoopTable();
+    }
+#endif
+
     optComputeInterestingVarSets();
 
     // Consider all the loops, visiting child loops first.
