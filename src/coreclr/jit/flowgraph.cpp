@@ -3225,6 +3225,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                         BasicBlock* transitionBlock =
                             fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true, firstColdBlock);
                         transitionBlock->inheritWeight(firstColdBlock);
+                        prevToFirstColdBlock->SetFalseTarget(transitionBlock);
 
                         // Update the predecessor list for firstColdBlock
                         fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);

@@ -263,8 +263,8 @@
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
     <PropertyGroup>
-      <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
-      <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
+      <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
+      <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
       <EmccInitialHeapSize>16777216</EmccInitialHeapSize>
       <EmccStackSize>5MB</EmccStackSize>
