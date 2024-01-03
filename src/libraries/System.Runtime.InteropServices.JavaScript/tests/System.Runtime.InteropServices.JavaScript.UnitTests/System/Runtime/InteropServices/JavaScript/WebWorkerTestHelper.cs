@@ -14,8 +14,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public partial class WebWorkerTestHelper
     {
-        public static readonly string LocalHttpsEcho = "http://" + Environment.GetEnvironmentVariable("DOTNET_TEST_HTTPHOST") + "/Echo.ashx";
-        public static readonly string LocalWssEcho = "ws://" + Environment.GetEnvironmentVariable("DOTNET_TEST_WEBSOCKETHOST") + "/WebSocket/EchoWebSocket.ashx";
+        public static readonly string LocalHttpEcho = "http://" + Environment.GetEnvironmentVariable("DOTNET_TEST_HTTPHOST") + "/Echo.ashx";
+        public static readonly string LocalWsEcho = "ws://" + Environment.GetEnvironmentVariable("DOTNET_TEST_WEBSOCKETHOST") + "/WebSocket/EchoWebSocket.ashx";
 
         [JSImport("globalThis.console.log")]
         public static partial void Log(string message);
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await RunOnTargetAsync(MainSynchronizationContext, job);
         }
 
-        public async static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job)
+        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job)
         {
             TaskCompletionSource tcs = new TaskCompletionSource();
             ctx.Post(async _ =>
@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     await DisposeAsync();
                 }
             }, null);
-            await tcs.Task;
+            return tcs.Task;
         }
 
         #endregion

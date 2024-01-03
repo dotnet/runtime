@@ -9,10 +9,10 @@ const prefix = "MONO_WASM: ";
 let consoleWebSocket: WebSocket;
 let theConsoleApi: any;
 let originalConsoleMethods: any;
-let threadId: string;
+let threadNamePrefix: string;
 
-export function mono_set_thread_id(tid: string) {
-    threadId = tid;
+export function mono_set_thread_name(threadName: string) {
+    threadNamePrefix = threadName;
 }
 
 export function mono_log_debug(msg: string, ...data: any) {
@@ -60,12 +60,12 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
                 if (payload[0] == "[") {
                     const now = new Date().toISOString();
                     if (ENVIRONMENT_IS_WORKER) {
-                        payload = `[${threadId}][${now}] ${payload}`;
+                        payload = `[${threadNamePrefix}][${now}] ${payload}`;
                     } else {
                         payload = `[${now}] ${payload}`;
                     }
                 } else if (ENVIRONMENT_IS_WORKER) {
-                    payload = `[${threadId}] ${payload}`;
+                    payload = `[${threadNamePrefix}] ${payload}`;
                 }
             }
 
@@ -86,7 +86,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
 
 export function setup_proxy_console(id: string, console: Console, origin: string): void {
     theConsoleApi = console as any;
-    threadId = id;
+    threadNamePrefix = id;
     originalConsoleMethods = {
         ...console
     };
@@ -137,11 +137,11 @@ function send(msg: string) {
 }
 
 function logWSError(event: Event) {
-    originalConsoleMethods.error(`[${threadId}] websocket error: ${event}`, event);
+    originalConsoleMethods.error(`[${threadNamePrefix}] websocket error: ${event}`, event);
 }
 
 function logWSClose(event: Event) {
-    originalConsoleMethods.error(`[${threadId}] websocket closed: ${event}`, event);
+    originalConsoleMethods.error(`[${threadNamePrefix}] websocket closed: ${event}`, event);
 }
 
 function setupWS() {

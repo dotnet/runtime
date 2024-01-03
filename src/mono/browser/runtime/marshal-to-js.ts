@@ -350,6 +350,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
 
         holder.resolve_or_reject(type, js_handle, arg_value);
         if (MonoWasmThreads) {
+            // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
             Module._free(args as any);
             return;
         }

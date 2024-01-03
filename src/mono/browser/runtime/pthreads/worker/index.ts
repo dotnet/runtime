@@ -18,7 +18,7 @@ import {
     WorkerThreadEventTarget
 } from "./events";
 import { postRunWorker, preRunWorker } from "../../startup";
-import { mono_log_debug, mono_set_thread_id } from "../../logging";
+import { mono_log_debug, mono_set_thread_name } from "../../logging";
 import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
 
 // re-export some of the events types
@@ -88,8 +88,8 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void 
     if (!MonoWasmThreads) return;
     mono_assert(pthread_self !== null && pthread_self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
     const tid = `0x${pthread_id.toString(16)}-worker`;
-    mono_set_thread_id(tid);
-    loaderHelpers.mono_set_thread_id(tid);
+    mono_set_thread_name(tid);
+    loaderHelpers.mono_set_thread_name(tid);
     preRunWorker();
     set_thread_info(pthread_id, true, false, false);
     jiterpreter_allocate_tables();
@@ -101,8 +101,8 @@ export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void 
     if (!MonoWasmThreads) return;
     postRunWorker();
     set_thread_info(pthread_id, false, false, false);
-    mono_set_thread_id("worker-idle");
-    loaderHelpers.mono_set_thread_id("worker-idle");
+    mono_set_thread_name("worker-idle");
+    loaderHelpers.mono_set_thread_name("worker-idle");
 }
 
 /// This is an implementation detail function.

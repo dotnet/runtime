@@ -315,9 +315,9 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             // This is multi-threading return from JSImport with Task result and we can't return synchronously,
             // because C# caller could be on different thread and sent us an async message.
             // It already returned pending Task to it's own caller.
-            throw new Error("InvalidOperationException: Task return with null value is not supported in multi-threading scenario.");
+            const err = new Error("InvalidOperationException: Task return with null value is not supported in multi-threading scenario.");
             // Alternatively we can return promise and resolve it with null/default value.
-            // value = Promise.resolve(null);
+            value = Promise.reject(err);
         } else {
             set_arg_type(arg, MarshalerType.None);
             return;

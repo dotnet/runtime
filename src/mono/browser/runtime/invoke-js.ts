@@ -50,6 +50,7 @@ export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signat
 
     bound_fn(args);
 
+    // this works together with AllocHGlobal in JSFunctionBinding.DispatchJSImportAsync
     Module._free(args as any);
 }
 

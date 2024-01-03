@@ -10,6 +10,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
+using System.Linq;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
@@ -38,35 +39,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static IEnumerable<object[]> GetTargetThreads()
         {
-            yield return new object[] { new Executor(ExecutorType.Main) };
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker) };
-            yield return new object[] { new Executor(ExecutorType.ThreadPool) };
-            yield return new object[] { new Executor(ExecutorType.NewThread) };
-            yield break;
+            return Enum.GetValues<ExecutorType>().Select(type => new object[] { new Executor(type) });
         }
 
         public static IEnumerable<object[]> GetTargetThreads2x2()
         {
-            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.Main) };
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.Main) };
-            yield return new object[] { new Executor(ExecutorType.ThreadPool), new Executor(ExecutorType.Main) };
-            yield return new object[] { new Executor(ExecutorType.NewThread), new Executor(ExecutorType.Main) };
-
-            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.JSWebWorker) };
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.JSWebWorker) };
-            yield return new object[] { new Executor(ExecutorType.ThreadPool), new Executor(ExecutorType.JSWebWorker) };
-            yield return new object[] { new Executor(ExecutorType.NewThread), new Executor(ExecutorType.JSWebWorker) };
-
-            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.ThreadPool) };
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.ThreadPool) };
-            yield return new object[] { new Executor(ExecutorType.ThreadPool), new Executor(ExecutorType.ThreadPool) };
-            yield return new object[] { new Executor(ExecutorType.NewThread), new Executor(ExecutorType.ThreadPool) };
-
-            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.NewThread) };
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.NewThread) };
-            yield return new object[] { new Executor(ExecutorType.ThreadPool), new Executor(ExecutorType.NewThread) };
-            yield return new object[] { new Executor(ExecutorType.NewThread), new Executor(ExecutorType.NewThread) };
-            yield break;
+            return Enum.GetValues<ExecutorType>().SelectMany(
+                type1 => Enum.GetValues<ExecutorType>().Select(
+                    type2 => new object[] { new Executor(type1), new Executor(type2) }));
         }
 
         #endregion

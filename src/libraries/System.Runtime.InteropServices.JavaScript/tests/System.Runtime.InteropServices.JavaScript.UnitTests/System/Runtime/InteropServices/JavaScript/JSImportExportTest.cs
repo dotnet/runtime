@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             instance1.Dispose();
         }
 
-#if !FEATURE_WASM_THREADS // because in MT JSHost.ImportAsync is really async, it will finish because the caller could cancel
+#if !FEATURE_WASM_THREADS // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
         [Fact]
         public async Task CancelableImportAsync()
         {
