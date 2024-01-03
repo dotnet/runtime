@@ -43,56 +43,56 @@ namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives
     {
-        private static void InvokeSpanIntoSpan<TFloatUnaryOperator>(
+        private static void InvokeSpanIntoSpan<TSingleUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination)
-            where TFloatUnaryOperator : struct, IUnaryOperator<float> =>
-            InvokeSpanIntoSpan<float, TFloatUnaryOperator>(x, destination);
+            where TSingleUnaryOperator : struct, IUnaryOperator<float> =>
+            InvokeSpanIntoSpan<float, TSingleUnaryOperator>(x, destination);
 
-        private static void InvokeSpanSpanIntoSpan<TFloatBinaryOperator>(
+        private static void InvokeSpanSpanIntoSpan<TSingleBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-            where TFloatBinaryOperator : struct, IBinaryOperator<float> =>
-            InvokeSpanSpanIntoSpan<float, TFloatBinaryOperator>(x, y, destination);
+            where TSingleBinaryOperator : struct, IBinaryOperator<float> =>
+            InvokeSpanSpanIntoSpan<float, TSingleBinaryOperator>(x, y, destination);
 
-        private static void InvokeSpanScalarIntoSpan<TFloatBinaryOperator>(
+        private static void InvokeSpanScalarIntoSpan<TSingleBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
-            where TFloatBinaryOperator : struct, IBinaryOperator<float> =>
-            InvokeSpanScalarIntoSpan<float, IdentityOperator<float>, TFloatBinaryOperator>(x, y, destination);
+            where TSingleBinaryOperator : struct, IBinaryOperator<float> =>
+            InvokeSpanScalarIntoSpan<float, IdentityOperator<float>, TSingleBinaryOperator>(x, y, destination);
 
-        private static unsafe void InvokeSpanScalarIntoSpan<TFloatTransformOperator, TFloatBinaryOperator>(
+        private static unsafe void InvokeSpanScalarIntoSpan<TSingleTransformOperator, TSingleBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
-            where TFloatTransformOperator : struct, IUnaryOperator<float>
-            where TFloatBinaryOperator : struct, IBinaryOperator<float> =>
-            InvokeSpanScalarIntoSpan<float, TFloatTransformOperator, TFloatBinaryOperator>(x, y, destination);
+            where TSingleTransformOperator : struct, IUnaryOperator<float>
+            where TSingleBinaryOperator : struct, IBinaryOperator<float> =>
+            InvokeSpanScalarIntoSpan<float, TSingleTransformOperator, TSingleBinaryOperator>(x, y, destination);
 
-        private static unsafe void InvokeSpanSpanSpanIntoSpan<TFloatTernaryOperator>(
+        private static unsafe void InvokeSpanSpanSpanIntoSpan<TSingleTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination)
-            where TFloatTernaryOperator : struct, ITernaryOperator<float> =>
-            InvokeSpanSpanSpanIntoSpan<float, TFloatTernaryOperator>(x, y, z, destination);
+            where TSingleTernaryOperator : struct, ITernaryOperator<float> =>
+            InvokeSpanSpanSpanIntoSpan<float, TSingleTernaryOperator>(x, y, z, destination);
 
-        private static void InvokeSpanSpanScalarIntoSpan<TFloatTernaryOperator>(
+        private static void InvokeSpanSpanScalarIntoSpan<TSingleTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination)
-            where TFloatTernaryOperator : struct, ITernaryOperator<float> =>
-            InvokeSpanSpanScalarIntoSpan<float, TFloatTernaryOperator>(x, y, z, destination);
+            where TSingleTernaryOperator : struct, ITernaryOperator<float> =>
+            InvokeSpanSpanScalarIntoSpan<float, TSingleTernaryOperator>(x, y, z, destination);
 
-        private static void InvokeSpanScalarSpanIntoSpan<TFloatTernaryOperator>(
+        private static void InvokeSpanScalarSpanIntoSpan<TSingleTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination)
-            where TFloatTernaryOperator : struct, ITernaryOperator<float> =>
-            InvokeSpanScalarSpanIntoSpan<float, TFloatTernaryOperator>(x, y, z, destination);
+            where TSingleTernaryOperator : struct, ITernaryOperator<float> =>
+            InvokeSpanScalarSpanIntoSpan<float, TSingleTernaryOperator>(x, y, z, destination);
 
-        private static unsafe float Aggregate<TFloatTransformOperator, TFloatAggregationOperator>(
+        private static unsafe float Aggregate<TSingleTransformOperator, TSingleAggregationOperator>(
             ReadOnlySpan<float> x)
-            where TFloatTransformOperator : struct, IUnaryOperator<float>
-            where TFloatAggregationOperator : struct, IAggregationOperator<float> =>
-            Aggregate<float, TFloatTransformOperator, TFloatAggregationOperator>(x);
+            where TSingleTransformOperator : struct, IUnaryOperator<float>
+            where TSingleAggregationOperator : struct, IAggregationOperator<float> =>
+            Aggregate<float, TSingleTransformOperator, TSingleAggregationOperator>(x);
 
-        private static float Aggregate<TFloatBinaryOperator, TFloatAggregationOperator>(
+        private static float Aggregate<TSingleBinaryOperator, TSingleAggregationOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-            where TFloatBinaryOperator : struct, IBinaryOperator<float>
-            where TFloatAggregationOperator : struct, IAggregationOperator<float> =>
-            Aggregate<float, TFloatBinaryOperator, TFloatAggregationOperator>(x, y);
+            where TSingleBinaryOperator : struct, IBinaryOperator<float>
+            where TSingleAggregationOperator : struct, IAggregationOperator<float> =>
+            Aggregate<float, TSingleBinaryOperator, TSingleAggregationOperator>(x, y);
 
-        private static float MinMaxCore<TFloatMinMaxOperator>(ReadOnlySpan<float> x)
-            where TFloatMinMaxOperator : struct, IAggregationOperator<float> =>
-            MinMaxCore<float, TFloatMinMaxOperator>(x);
+        private static float MinMaxCore<TSingleMinMaxOperator>(ReadOnlySpan<float> x)
+            where TSingleMinMaxOperator : struct, IAggregationOperator<float> =>
+            MinMaxCore<float, TSingleMinMaxOperator>(x);
     }
 }

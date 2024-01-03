@@ -10,7 +10,7 @@ using Xunit.Sdk;
 
 namespace System.Numerics.Tensors.Tests
 {
-    public unsafe class NonGenericFloatTensorPrimitivesTests : TensorPrimitivesTests<float>
+    public unsafe class NonGenericSingleTensorPrimitivesTests : TensorPrimitivesTests<float>
     {
         protected override void Abs(ReadOnlySpan<float> x, Span<float> destination) => TensorPrimitives.Abs(x, destination);
         protected override float Abs(float x) => MathF.Abs(x);
@@ -80,7 +80,7 @@ namespace System.Numerics.Tensors.Tests
         protected override void Tanh(ReadOnlySpan<float> x, Span<float> destination) => TensorPrimitives.Tanh(x, destination);
         protected override float Tanh(float x) => MathF.Tanh(x);
 
-        protected override float ConvertFromFloat(float f) => f;
+        protected override float ConvertFromSingle(float f) => f;
 
         protected override float NaN => float.NaN;
         protected override float NegativeZero => -0f;

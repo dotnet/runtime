@@ -15,7 +15,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
-                using BoundedMemory<float> source = CreateAndFillFloatTensor(tensorLength);
+                using BoundedMemory<float> source = CreateAndFillSingleTensor(tensorLength);
                 foreach (int destLength in new[] { source.Length, source.Length + 1 })
                 {
                     using BoundedMemory<Half> destination = BoundedMemory.Allocate<Half>(destLength);
@@ -44,7 +44,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
-                using BoundedMemory<float> source = CreateAndFillFloatTensor(tensorLength);
+                using BoundedMemory<float> source = CreateAndFillSingleTensor(tensorLength);
                 using BoundedMemory<Half> destination = BoundedMemory.Allocate<Half>(tensorLength);
 
                 // NaN, infinities, and 0s
@@ -68,7 +68,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
-                using BoundedMemory<float> source = CreateAndFillFloatTensor(tensorLength);
+                using BoundedMemory<float> source = CreateAndFillSingleTensor(tensorLength);
                 Half[] destination = new Half[source.Length - 1];
 
                 AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToHalf(source, destination));
@@ -88,7 +88,7 @@ namespace System.Numerics.Tensors.Tests
 
                 foreach (int destLength in new[] { source.Length, source.Length + 1 })
                 {
-                    using BoundedMemory<float> destination = CreateFloatTensor(destLength);
+                    using BoundedMemory<float> destination = CreateSingleTensor(destLength);
                     destination.Span.Fill(0f);
 
                     TensorPrimitives.ConvertToSingle(source, destination);
@@ -120,7 +120,7 @@ namespace System.Numerics.Tensors.Tests
                     source[i] = (Half)_random.NextSingle();
                 }
 
-                using BoundedMemory<float> destination = CreateFloatTensor(tensorLength);
+                using BoundedMemory<float> destination = CreateSingleTensor(tensorLength);
 
                 // NaN, infinities, and 0s
                 source[_random.Next(source.Length)] = Half.NaN;
@@ -144,17 +144,17 @@ namespace System.Numerics.Tensors.Tests
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 Half[] source = new Half[tensorLength];
-                using BoundedMemory<float> destination = CreateFloatTensor(source.Length - 1);
+                using BoundedMemory<float> destination = CreateSingleTensor(source.Length - 1);
 
                 AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToSingle(source, destination));
             });
         }
 
-        public BoundedMemory<float> CreateFloatTensor(int size) => BoundedMemory.Allocate<float>(size);
+        public BoundedMemory<float> CreateSingleTensor(int size) => BoundedMemory.Allocate<float>(size);
 
-        public BoundedMemory<float> CreateAndFillFloatTensor(int size)
+        public BoundedMemory<float> CreateAndFillSingleTensor(int size)
         {
-            BoundedMemory<float> tensor = CreateFloatTensor(size);
+            BoundedMemory<float> tensor = CreateSingleTensor(size);
             Span<float> span = tensor;
             for (int i = 0; i < span.Length; i++)
             {

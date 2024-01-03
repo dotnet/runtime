@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Helpers.cs" />
-    <Compile Include="TensorPrimitives.NonGeneric.Float.cs" />
+    <Compile Include="TensorPrimitives.NonGeneric.Single.cs" />
     <Compile Include="TensorPrimitivesTests.cs" />
   </ItemGroup>
 

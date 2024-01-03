@@ -86,7 +86,7 @@ namespace System.Numerics.Tensors.Tests
         #region Test Utilities
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
-        protected abstract T ConvertFromFloat(float f);
+        protected abstract T ConvertFromSingle(float f);
 
         protected abstract IEnumerable<T> GetSpecialValues();
 
@@ -657,7 +657,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
-            Assert.All(VectorLengthAndIteratedRange(ConvertFromFloat(-100f), ConvertFromFloat(100f), ConvertFromFloat(3f)), arg =>
+            Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
             {
                 T[] x = new T[arg.Length];
                 T[] dest = new T[arg.Length];
@@ -1289,10 +1289,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Max_Tensor_Negative0LesserThanPositive0()
         {
-            Assert.Equal(ConvertFromFloat(+0f), Max([ConvertFromFloat(-0f), ConvertFromFloat(+0f)]));
-            Assert.Equal(ConvertFromFloat(+0f), Max([ConvertFromFloat(+0f), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(-0f), Max([ConvertFromFloat(-1), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(1), Max([ConvertFromFloat(-1), ConvertFromFloat(-0f), ConvertFromFloat(1)]));
+            Assert.Equal(ConvertFromSingle(+0f), Max([ConvertFromSingle(-0f), ConvertFromSingle(+0f)]));
+            Assert.Equal(ConvertFromSingle(+0f), Max([ConvertFromSingle(+0f), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(-0f), Max([ConvertFromSingle(-1), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(1), Max([ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(1)]));
         }
 
         [Fact]
@@ -1466,8 +1466,8 @@ namespace System.Numerics.Tensors.Tests
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
                     FillTensor(x);
-                    x[expected] = ConvertFromFloat(float.NaN);
-                    Assert.Equal(ConvertFromFloat(float.NaN), MaxMagnitude(x));
+                    x[expected] = ConvertFromSingle(float.NaN);
+                    Assert.Equal(ConvertFromSingle(float.NaN), MaxMagnitude(x));
                 }
             });
         }
@@ -1475,12 +1475,12 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void MaxMagnitude_Tensor_Negative0LesserThanPositive0()
         {
-            Assert.Equal(ConvertFromFloat(0), MaxMagnitude([ConvertFromFloat(-0f), ConvertFromFloat(+0f)]));
-            Assert.Equal(ConvertFromFloat(0), MaxMagnitude([ConvertFromFloat(+0f), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(-1), MaxMagnitude([ConvertFromFloat(-1), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(1), MaxMagnitude([ConvertFromFloat(-1), ConvertFromFloat(-0f), ConvertFromFloat(1)]));
-            Assert.Equal(ConvertFromFloat(0), MaxMagnitude([ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(0f)]));
-            Assert.Equal(ConvertFromFloat(1), MaxMagnitude( [ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(-0f), ConvertFromFloat(-1), ConvertFromFloat(-0f), ConvertFromFloat(0f), ConvertFromFloat(1)]));
+            Assert.Equal(ConvertFromSingle(0), MaxMagnitude([ConvertFromSingle(-0f), ConvertFromSingle(+0f)]));
+            Assert.Equal(ConvertFromSingle(0), MaxMagnitude([ConvertFromSingle(+0f), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(-1), MaxMagnitude([ConvertFromSingle(-1), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(1), MaxMagnitude([ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(1)]));
+            Assert.Equal(ConvertFromSingle(0), MaxMagnitude([ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(0f)]));
+            Assert.Equal(ConvertFromSingle(1), MaxMagnitude( [ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(0f), ConvertFromSingle(1)]));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
@@ -1611,7 +1611,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(Enumerable.Min(MemoryMarshal.ToEnumerable<T>(x.Memory)), Min(x));
 
-                T min = ConvertFromFloat(float.PositiveInfinity);
+                T min = ConvertFromSingle(float.PositiveInfinity);
                 foreach (T f in x.Span)
                 {
                     min = Min(min, f);
@@ -1633,7 +1633,7 @@ namespace System.Numerics.Tensors.Tests
 
                 RunForEachSpecialValue(() =>
                 {
-                    T min = ConvertFromFloat(float.PositiveInfinity);
+                    T min = ConvertFromSingle(float.PositiveInfinity);
                     foreach (T f in x.Span)
                     {
                         min = Min(min, f);
@@ -1658,8 +1658,8 @@ namespace System.Numerics.Tensors.Tests
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
                     FillTensor(x);
-                    x[expected] = ConvertFromFloat(float.NaN);
-                    Assert.Equal(ConvertFromFloat(float.NaN), Min(x));
+                    x[expected] = ConvertFromSingle(float.NaN);
+                    Assert.Equal(ConvertFromSingle(float.NaN), Min(x));
                 }
             });
         }
@@ -1667,10 +1667,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Min_Tensor_Negative0LesserThanPositive0()
         {
-            Assert.Equal(ConvertFromFloat(-0f), Min([ConvertFromFloat(-0f), ConvertFromFloat(+0f)]));
-            Assert.Equal(ConvertFromFloat(-0f), Min([ConvertFromFloat(+0f), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(-1), Min([ConvertFromFloat(-1), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(-1), Min([ConvertFromFloat(-1), ConvertFromFloat(-0f), ConvertFromFloat(1)]));
+            Assert.Equal(ConvertFromSingle(-0f), Min([ConvertFromSingle(-0f), ConvertFromSingle(+0f)]));
+            Assert.Equal(ConvertFromSingle(-0f), Min([ConvertFromSingle(+0f), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(-1), Min([ConvertFromSingle(-1), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(-1), Min([ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(1)]));
         }
 
         [Fact]
@@ -1844,8 +1844,8 @@ namespace System.Numerics.Tensors.Tests
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
                     FillTensor(x);
-                    x[expected] = ConvertFromFloat(float.NaN);
-                    Assert.Equal(ConvertFromFloat(float.NaN), MinMagnitude(x));
+                    x[expected] = ConvertFromSingle(float.NaN);
+                    Assert.Equal(ConvertFromSingle(float.NaN), MinMagnitude(x));
                 }
             });
         }
@@ -1853,10 +1853,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void MinMagnitude_Tensor_Negative0LesserThanPositive0()
         {
-            Assert.Equal(ConvertFromFloat(0), MinMagnitude([ConvertFromFloat(-0f), ConvertFromFloat(+0f)]));
-            Assert.Equal(ConvertFromFloat(0), MinMagnitude([ConvertFromFloat(+0f), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(0), MinMagnitude([ConvertFromFloat(-1), ConvertFromFloat(-0f)]));
-            Assert.Equal(ConvertFromFloat(0), MinMagnitude([ConvertFromFloat(-1), ConvertFromFloat(-0f), ConvertFromFloat(1)]));
+            Assert.Equal(ConvertFromSingle(0), MinMagnitude([ConvertFromSingle(-0f), ConvertFromSingle(+0f)]));
+            Assert.Equal(ConvertFromSingle(0), MinMagnitude([ConvertFromSingle(+0f), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(0), MinMagnitude([ConvertFromSingle(-1), ConvertFromSingle(-0f)]));
+            Assert.Equal(ConvertFromSingle(0), MinMagnitude([ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(1)]));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
@@ -2622,7 +2622,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
-            Assert.All(VectorLengthAndIteratedRange(ConvertFromFloat(-100f), ConvertFromFloat(100f), ConvertFromFloat(3f)), args =>
+            Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), args =>
             {
                 T[] x = new T[args.Length];
                 T[] dest = new T[args.Length];
@@ -2998,7 +2998,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
-            Assert.All(VectorLengthAndIteratedRange(ConvertFromFloat(-11f), ConvertFromFloat(11f), ConvertFromFloat(0.2f)), args =>
+            Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-11f), ConvertFromSingle(11f), ConvertFromSingle(0.2f)), args =>
             {
                 T[] x = new T[args.Length];
                 T[] dest = new T[args.Length];

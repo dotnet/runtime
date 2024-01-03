@@ -11,7 +11,7 @@ using Xunit.Sdk;
 namespace System.Numerics.Tensors.Tests
 {
     public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
-    public class FloatGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
+    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
         protected override void AssertEqualTolerance(Half expected, Half actual) => AssertEqualTolerance(expected, actual, Half.CreateTruncating(0.001));
@@ -232,7 +232,7 @@ namespace System.Numerics.Tensors.Tests
         protected override T SumOfMagnitudes(ReadOnlySpan<T> x) => TensorPrimitives.SumOfMagnitudes(x);
         protected override T SumOfSquares(ReadOnlySpan<T> x) => TensorPrimitives.SumOfSquares(x);
 
-        protected override T ConvertFromFloat(float f) => T.CreateTruncating(f);
+        protected override T ConvertFromSingle(float f) => T.CreateTruncating(f);
         protected override bool IsFloatingPoint => typeof(T) == typeof(Half) || base.IsFloatingPoint;
 
         protected override T NextRandom()
