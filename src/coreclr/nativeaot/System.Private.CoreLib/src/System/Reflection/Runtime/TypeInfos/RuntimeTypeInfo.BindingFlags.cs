@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return DefaultBinder.ExactBinding(candidates.AsSpan(), types);
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= Type.DefaultBinder;
 

@@ -16,15 +16,15 @@ namespace System.Runtime.InteropServices.JavaScript
     public class Function : JSObject
     {
         public Function(params object[] args)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Function), args))
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Function), args), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            LegacyHostImplementation.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
-        internal Function(IntPtr jsHandle) : base(jsHandle)
+        internal Function(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainThreadContext)
         { }
 
         /// <summary>

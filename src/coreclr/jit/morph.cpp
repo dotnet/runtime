@@ -2510,7 +2510,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         assert(size != 0);
         assert(byteSize != 0);
 
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
@@ -6156,8 +6156,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Many tailcalls will have call and ret in the same block, and thus be
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
-        // (compCurBB may have a jump target, so use SetJumpKind() to avoid nulling it)
-        compCurBB->SetJumpKind(BBJ_RETURN);
+        // (compCurBB may have a jump target, so use SetKind() to avoid nulling it)
+        compCurBB->SetKind(BBJ_RETURN);
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
@@ -6308,7 +6308,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->SetJumpKindAndTarget(BBJ_THROW);
+            compCurBB->SetKindAndTarget(BBJ_THROW);
         }
 
         if (isRootReplaced)
@@ -7446,7 +7446,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB);
+        block->SetKindAndTarget(BBJ_ALWAYS, fgEntryBB);
     }
     else
     {
@@ -7461,11 +7461,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         //
         fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
+        block->SetKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
     }
 
     // Finish hooking things up.
-    fgAddRefPred(block->GetJumpDest(), block);
+    fgAddRefPred(block->GetTarget(), block);
     block->RemoveFlags(BBF_HAS_JMP);
 }
 
@@ -9139,6 +9139,23 @@ DONE_MORPHING_CHILDREN:
         case GT_LE:
         case GT_GE:
         case GT_GT:
+            if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
+            {
+                // Some branch optimizations don't work well with unsigned relops
+                tree->ClearUnsigned();
+            }
+
+            // Change "CNS relop op2" to "op2 relop* CNS"
+            if (!optValnumCSE_phase && op1->IsIntegralConst() && tree->OperIsCompare() && gtCanSwapOrder(op1, op2))
+            {
+                std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                tree->gtOper = GenTree::SwapRelop(tree->OperGet());
+
+                oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
+            }
 
             if (!optValnumCSE_phase && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
             {
@@ -13158,7 +13175,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
              * Remove the conditional statement */
 
             noway_assert(cond->gtOper == GT_CNS_INT);
-            noway_assert((block->Next()->countOfInEdges() > 0) && (block->GetJumpDest()->countOfInEdges() > 0));
+            noway_assert((block->GetFalseTarget()->countOfInEdges() > 0) &&
+                         (block->GetTrueTarget()->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13183,25 +13201,25 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (cond->AsIntCon()->gtIconVal != 0)
             {
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
-                block->SetJumpKind(BBJ_ALWAYS);
-                bTaken    = block->GetJumpDest();
-                bNotTaken = block->Next();
+                bTaken    = block->GetTrueTarget();
+                bNotTaken = block->GetFalseTarget();
+                block->SetKind(BBJ_ALWAYS);
             }
             else
             {
                 /* Unmark the loop if we are removing a backwards branch */
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
-                if (block->GetJumpDest()->isLoopHead() && (block->GetJumpDest()->bbNum <= block->bbNum) &&
-                    fgReachable(block->GetJumpDest(), block))
+                if (optLoopTableValid && block->GetTrueTarget()->isLoopHead() &&
+                    (block->GetTrueTarget()->bbNum <= block->bbNum) && fgReachable(block->GetTrueTarget(), block))
                 {
-                    optUnmarkLoopBlocks(block->GetJumpDest(), block);
+                    optUnmarkLoopBlocks(block->GetTrueTarget(), block);
                 }
 
                 /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
-                bTaken    = block->Next();
-                bNotTaken = block->GetJumpDest();
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, bTaken);
+                bTaken    = block->GetFalseTarget();
+                bNotTaken = block->GetTrueTarget();
+                block->SetKindAndTarget(BBJ_ALWAYS, bTaken);
                 block->SetFlags(BBF_NONE_QUIRK);
             }
 
@@ -13255,17 +13273,22 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                     FlowEdge* edge;
                     // Now fix the weights of the edges out of 'bUpdated'
-                    switch (bUpdated->GetJumpKind())
+                    switch (bUpdated->GetKind())
                     {
                         case BBJ_COND:
-                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->GetFalseTarget(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            FALLTHROUGH;
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
+
+                            edge         = fgGetPredForBlock(bUpdated->GetTrueTarget(), bUpdated);
+                            newMaxWeight = bUpdated->bbWeight;
+                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
+                            break;
 
                         case BBJ_ALWAYS:
-                            edge         = fgGetPredForBlock(bUpdated->GetJumpDest(), bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->GetTarget(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
@@ -13288,7 +13311,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
                 printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
-                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
+                printf(" to " FMT_BB, block->GetTarget()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13326,7 +13349,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                                     loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
 
                             optMarkLoopRemoved(loopNum);
-                            loop.lpTop->unmarkLoopAlign(this DEBUG_ARG("removed loop"));
                         }
                     }
 
@@ -13340,7 +13362,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                                 loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
 
                         optMarkLoopRemoved(loopNum);
-                        loop.lpTop->unmarkLoopAlign(this DEBUG_ARG("removed loop"));
                     }
                 }
             }
@@ -13401,8 +13422,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             // Find the actual jump target
             size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned     jumpCnt   = block->GetJumpSwt()->bbsCount;
-            BasicBlock** jumpTab   = block->GetJumpSwt()->bbsDstTab;
+            unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
+            BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
             bool         foundVal  = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
@@ -13416,7 +13437,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
+                    block->SetKindAndTarget(BBJ_ALWAYS, curJump);
                     foundVal = true;
                 }
                 else
@@ -13437,7 +13458,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
                 printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
-                printf(" to " FMT_BB, block->GetJumpDest()->bbNum);
+                printf(" to " FMT_BB, block->GetTarget()->bbNum);
                 printf("\n");
             }
 #endif
@@ -13886,14 +13907,14 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 
                     if (useCondAssertions)
                     {
-                        if (block == pred->GetJumpDest())
+                        if (block == pred->GetTrueTarget())
                         {
                             JITDUMP("Using `if true` assertions from pred " FMT_BB "\n", pred->bbNum);
                             assertionsOut = pred->bbAssertionOutIfTrue;
                         }
                         else
                         {
-                            assert(block == pred->Next());
+                            assert(block == pred->GetFalseTarget());
                             JITDUMP("Using `if false` assertions from pred " FMT_BB "\n", pred->bbNum);
                             assertionsOut = pred->bbAssertionOutIfFalse;
                         }
@@ -14065,7 +14086,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         //
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
-            BasicBlock* const block = m_dfsTree->GetPostOrder()[i - 1];
+            BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
             fgMorphBlock(block);
         }
         assert(bbNumMax == fgBBNumMax);
@@ -14162,7 +14183,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
+            block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }
@@ -14659,12 +14680,15 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Chain the flow correctly.
     assert(block->KindIs(BBJ_ALWAYS));
-    block->SetJumpDest(asgBlock);
+    block->SetTarget(asgBlock);
     fgAddRefPred(asgBlock, block);
     fgAddRefPred(cond1Block, asgBlock);
+    fgAddRefPred(remainderBlock, helperBlock);
+
+    cond1Block->SetFalseTarget(cond2Block);
+    cond2Block->SetFalseTarget(helperBlock);
     fgAddRefPred(cond2Block, cond1Block);
     fgAddRefPred(helperBlock, cond2Block);
-    fgAddRefPred(remainderBlock, helperBlock);
     fgAddRefPred(remainderBlock, cond1Block);
     fgAddRefPred(remainderBlock, cond2Block);
 
@@ -14858,9 +14882,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     condBlock->inheritWeight(block);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    block->SetJumpDest(condBlock);
-    condBlock->SetJumpDest(elseBlock);
-    elseBlock->SetJumpDest(remainderBlock);
+    block->SetTarget(condBlock);
+    condBlock->SetTarget(elseBlock);
+    elseBlock->SetTarget(remainderBlock);
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
 
@@ -14883,10 +14907,10 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->SetFlags(propagateFlagsToAll);
+        condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
@@ -14908,7 +14932,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
+        condBlock->SetCond(remainderBlock, elseBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
@@ -14924,7 +14948,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetJumpKindAndTarget(BBJ_COND, remainderBlock);
+        condBlock->SetCond(remainderBlock, elseBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
         elseBlock->inheritWeightPercentage(condBlock, 50);

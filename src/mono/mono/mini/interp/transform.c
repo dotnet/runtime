@@ -8546,6 +8546,16 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			*ip++ = 0xbeef;
 		}
 	} else if (MINT_IS_UNCONDITIONAL_BRANCH (opcode) || MINT_IS_CONDITIONAL_BRANCH (opcode) || MINT_IS_SUPER_BRANCH (opcode)) {
+		if (opcode == MINT_BR) {
+			InterpInst *target_first_ins = interp_first_ins (ins->info.target_bb);
+			if (target_first_ins && MINT_IS_RETURN (target_first_ins->opcode)) {
+				// Emit the return directly instead of branching
+				ins = target_first_ins;
+				opcode = ins->opcode;
+				ip [-1] = opcode;
+				goto opcode_emit;
+			}
+		}
 		const int br_offset = GPTRDIFF_TO_INT (start_ip - td->new_code);
 		gboolean has_imm = opcode >= MINT_BEQ_I4_IMM_SP && opcode <= MINT_BLT_UN_I8_IMM_SP;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
@@ -8685,6 +8695,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		*ip++ = GINT_TO_UINT16 (ins->data [1]);
 		*ip++ = GINT_TO_UINT16 (ins->data [2]);
 	} else {
+opcode_emit:
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
 

@@ -372,6 +372,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
     DllImportEntry(CallCatchFunclet)
+    DllImportEntry(ResumeAtInterceptionLocation)
     DllImportEntry(CallFilterFunclet)
     DllImportEntry(CallFinallyFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)

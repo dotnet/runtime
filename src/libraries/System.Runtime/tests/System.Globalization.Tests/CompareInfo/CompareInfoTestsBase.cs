@@ -45,6 +45,5 @@ namespace System.Globalization.Tests
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         protected static bool IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm() => !PlatformDetection.IsHybridGlobalizationOnBrowser && IsNotWindowsKanaRegressedVersion();
-        protected static bool IsNotWindowsKanaRegressedVersionAndNotHybridGlobalization() => IsNotWindowsKanaRegressedVersion() && PlatformDetection.IsNotHybridGlobalization;
     }
 }

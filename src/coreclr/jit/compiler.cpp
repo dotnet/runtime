@@ -4008,7 +4008,8 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (opts.OptimizationDisabled() ||
+            (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
         {
             // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
@@ -4832,9 +4833,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
-        // Clear loop table info that is not used after this point, and might become invalid.
+        // Compute dominators and exceptional entry blocks
         //
-        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
+        DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
+
+        // The loop table is no longer valid.
+        optLoopTableValid = false;
+        optLoopTable      = nullptr;
+        optLoopCount      = 0;
+
+        // Old dominators and reachability sets are no longer valid.
+        fgDomsComputed         = false;
+        fgCompactRenumberQuirk = true;
     }
 
 #ifdef DEBUG
@@ -5010,16 +5020,20 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             {
                 break;
             }
+
+            // We may have optimized away the canonical entry BB that SSA
+            // depends on above, so if we are going for another iteration then
+            // make sure we still have a canonical entry.
+            //
+            DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
+
             ResetOptAnnotations();
-            RecomputeLoopInfo();
+            RecomputeFlowGraphAnnotations();
         }
     }
 
-    // Dominator and reachability sets are no longer valid.
-    // The loop table is no longer valid.
-    fgDomsComputed            = false;
-    optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
+    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5221,6 +5235,165 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #if FEATURE_LOOP_ALIGN
 
+// TODO-Quirk: Remove
+static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
+{
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+            return true;
+
+        if (HasOldChildLoop(comp, child))
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
+//
+// Parameters:
+//   loops       - Identified natural loops
+//   blockToLoop - Map from block back to its most-nested containing natural loop
+//
+// Remarks:
+//   All innermost loops whose block weight meets a threshold are candidates for alignment.
+//   The `top` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
+//   (the loop table itself is not changed).
+//
+//   Depends on the loop table, and on block weights being set.
+//
+//   Sets `loopAlignCandidates` to the number of loop candidates for alignment.
+//
+void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop)
+{
+    loopAlignCandidates = 0;
+
+    // TODO-Cleanup: We cannot currently renumber blocks after LSRA, so we need
+    // a side map for the lexically top most block here.
+    // Since placeLoopAlignInstructions already does a lexical visit we can
+    // merge it with the identification of candidates to make all of this
+    // cheaper.
+    BasicBlock** topMostBlocks = new (this, CMK_LoopOpt) BasicBlock*[loops->NumLoops()]{};
+    for (BasicBlock* block : Blocks())
+    {
+        FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
+        if (loop == nullptr)
+        {
+            continue;
+        }
+
+        if (topMostBlocks[loop->GetIndex()] == nullptr)
+        {
+            topMostBlocks[loop->GetIndex()] = block;
+        }
+    }
+
+    for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
+    {
+        // TODO-Quirk: Remove. When removing we will likely need to add some
+        // form of "lexicality" heuristic here: only align loops whose blocks
+        // are fairly tightly packed together physically.
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+        {
+            continue;
+        }
+
+        // TODO-Quirk: Switch to loop->GetChild() != nullptr
+        if (HasOldChildLoop(this, loop))
+        {
+            JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
+            continue;
+        }
+
+        BasicBlock* top = topMostBlocks[loop->GetIndex()];
+        if (top == fgFirstBB)
+        {
+            // Adding align instruction in prolog is not supported.
+            // TODO: Insert an empty block before the loop, if want to align it, so we have a place to put
+            // the align instruction.
+            JITDUMP("Skipping alignment for " FMT_LP "; loop starts in first block\n", loop->GetIndex());
+            continue;
+        }
+
+        if (top->HasFlag(BBF_COLD))
+        {
+            JITDUMP("Skipping alignment for cold loop " FMT_LP "\n", loop->GetIndex());
+            continue;
+        }
+
+        bool hasCall = loop->VisitLoopBlocks([](BasicBlock* block) {
+            for (GenTree* tree : LIR::AsRange(block))
+            {
+                if (tree->IsCall())
+                {
+                    return BasicBlockVisit::Abort;
+                }
+            }
+
+            return BasicBlockVisit::Continue;
+        }) == BasicBlockVisit::Abort;
+
+        if (hasCall)
+        {
+            // Heuristic: it is not valuable to align loops with calls.
+            JITDUMP("Skipping alignment for " FMT_LP "; loop contains call\n", loop->GetIndex());
+            continue;
+        }
+
+        if (!top->IsFirst())
+        {
+#if FEATURE_EH_CALLFINALLY_THUNKS
+            if (top->Prev()->KindIs(BBJ_CALLFINALLY))
+            {
+                // It must be a retless BBJ_CALLFINALLY if we get here.
+                assert(!top->Prev()->isBBCallFinallyPair());
+
+                // If the block before the loop start is a retless BBJ_CALLFINALLY
+                // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
+                // because it will affect reported EH region range. For x86 (where
+                // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
+
+                JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n",
+                        loop->GetIndex());
+                continue;
+            }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+            if (top->Prev()->isBBCallFinallyPairTail())
+            {
+                // If the previous block is the BBJ_CALLFINALLYRET of a
+                // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
+                // because we can't add instructions in that block. In the
+                // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
+                // reported EH, as above.
+                JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
+                        loop->GetIndex());
+                continue;
+            }
+        }
+
+        // Now we have an innerloop candidate that might need alignment
+
+        weight_t topWeight     = top->getBBWeight(this);
+        weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT;
+        if (topWeight >= compareWeight)
+        {
+            loopAlignCandidates++;
+            assert(!top->isLoopAlign());
+            top->SetFlags(BBF_LOOP_ALIGN);
+            JITDUMP("Aligning " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " >= " FMT_WT ".\n",
+                    loop->GetIndex(), top->bbNum, topWeight, compareWeight);
+        }
+        else
+        {
+            JITDUMP("Skipping alignment for " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " < " FMT_WT ".\n",
+                    loop->GetIndex(), top->bbNum, topWeight, compareWeight);
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // placeLoopAlignInstructions: determine where to place alignment padding
 //
@@ -5239,55 +5412,79 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 PhaseStatus Compiler::placeLoopAlignInstructions()
 {
-    // Add align only if there were any loops that needed alignment
-    if (loopAlignCandidates == 0)
+    JITDUMP("*************** In placeLoopAlignInstructions()\n");
+
+    if (!codeGen->ShouldAlignLoops())
     {
+        JITDUMP("Not aligning loops; ShouldAlignLoops is false\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
-
-    bool                   madeChanges           = false;
-    weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
-    BasicBlock*            bbHavingAlign         = nullptr;
-    BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
-    bool                   visitedLoopNum[BasicBlock::MAX_LOOP_NUM];
-    memset(visitedLoopNum, false, sizeof(visitedLoopNum));
-
+    if (!fgMightHaveNaturalLoops)
+    {
 #ifdef DEBUG
-    unsigned visitedBlockForLoopNum[BasicBlock::MAX_LOOP_NUM];
-    memset(visitedBlockForLoopNum, 0, sizeof(visitedBlockForLoopNum));
+        // If false, then we expect there to be no natural loops. Phases
+        // between loop finding and loop alignment that may introduce loops
+        // should conservatively set fgMightHaveNaturalLoops.
+        FlowGraphDfsTree*      dfsTree = fgComputeDfs();
+        FlowGraphNaturalLoops* loops   = FlowGraphNaturalLoops::Find(dfsTree);
+        assert(loops->NumLoops() == 0);
 #endif
 
-    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
-    {
-        // Adding align instruction in prolog is not supported
-        // hence just remove that loop from our list.
-        fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
-        madeChanges = true;
+        JITDUMP("Not checking for any loops as fgMightHaveNaturalLoops is false\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    FlowGraphDfsTree*      dfsTree = fgComputeDfs();
+    FlowGraphNaturalLoops* loops   = FlowGraphNaturalLoops::Find(dfsTree);
+
+    // fgMightHaveNaturalLoops being true does not necessarily mean there's still any more loops left.
+    if (loops->NumLoops() == 0)
+    {
+        JITDUMP("No natural loops found\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    BlockToNaturalLoopMap* blockToLoop = BlockToNaturalLoopMap::Build(loops);
+
+    optIdentifyLoopsForAlignment(loops, blockToLoop);
+
+    // Add align only if there were any loops that needed alignment
+    if (loopAlignCandidates == 0)
+    {
+        JITDUMP("Found no candidates for loop alignment\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    JITDUMP("Inside placeLoopAlignInstructions for %d loop candidates.\n", loopAlignCandidates);
+
+    bool                  madeChanges        = false;
+    weight_t              minBlockSoFar      = BB_MAX_WEIGHT;
+    BasicBlock*           bbHavingAlign      = nullptr;
+    FlowGraphNaturalLoop* currentAlignedLoop = nullptr;
 
     int loopsToProcess = loopAlignCandidates;
 
     for (BasicBlock* const block : Blocks())
     {
-        if (currentAlignedLoopNum != BasicBlock::NOT_IN_LOOP)
+        FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
+
+        if (currentAlignedLoop != nullptr)
         {
             // We've been processing blocks within an aligned loop. Are we out of that loop now?
-            if (currentAlignedLoopNum != block->bbNatLoopNum)
+            if (currentAlignedLoop != loop)
             {
-                currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+                currentAlignedLoop = nullptr;
             }
         }
 
-        // If there is an unconditional jump (which is not part of callf/always pair, and isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail() &&
-            !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump that won't be removed
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->CanRemoveJumpToNext(this))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                if (currentAlignedLoopNum == BasicBlock::NOT_IN_LOOP)
+                if (currentAlignedLoop == nullptr)
                 {
                     // Ok to insert align instruction in this block because it is not part of any aligned loop.
                     minBlockSoFar = block->bbWeight;
@@ -5302,99 +5499,35 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert(!block->HasFlag(BBF_COLD));
-            BasicBlock* const loopTop              = block->Next();
-            bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
-            bool              unmarkedLoopAlign    = false;
+            BasicBlock* const loopTop = block->Next();
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-            if (block->KindIs(BBJ_CALLFINALLY))
+            if (bbHavingAlign == nullptr)
             {
-                // It must be a retless BBJ_CALLFINALLY if we get here.
-                assert(!block->isBBCallAlwaysPair());
+                // If jmp was not found, then block before the loop start is where align instruction will be added.
 
-                // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
-                // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
-                // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
-                // BBJ_CALLFINALLY), we allow it.
-                isSpecialCallFinally = true;
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        loopTop->bbNum);
             }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
-
-            if (isSpecialCallFinally)
+            else
             {
-                // There are two special cases:
-                // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
-                //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
-                //    region range.
-                // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
-                //    can't add alignment because we can't add instructions in that block. In the
-                //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
-                // Currently, we don't align loops for these cases.
-
-                loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
-                madeChanges       = true;
-                unmarkedLoopAlign = true;
-            }
-            else if ((loopTop->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && visitedLoopNum[loopTop->bbNatLoopNum])
-            {
-#ifdef DEBUG
-                char buffer[100];
-                sprintf_s(buffer, 100, "loop block " FMT_BB " appears before top of loop",
-                          visitedBlockForLoopNum[loopTop->bbNatLoopNum]);
-#endif
-
-                // In some odd cases we may see blocks within the loop before we see the
-                // top block of the loop. Just bail on aligning such loops.
-                //
-
-                loopTop->unmarkLoopAlign(this DEBUG_ARG(buffer));
-                madeChanges       = true;
-                unmarkedLoopAlign = true;
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, loopTop->bbNum);
             }
 
-            if (!unmarkedLoopAlign)
-            {
-                if (bbHavingAlign == nullptr)
-                {
-                    // If jmp was not found, then block before the loop start is where align instruction will be added.
+            madeChanges = true;
+            bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
 
-                    bbHavingAlign = block;
-                    JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
-                            block->bbNum, loopTop->bbNum);
-                }
-                else
-                {
-                    JITDUMP("Marking " FMT_BB
-                            " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
-                            bbHavingAlign->bbNum, loopTop->bbNum);
-                }
-
-                madeChanges = true;
-                bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
-            }
-
-            minBlockSoFar         = BB_MAX_WEIGHT;
-            bbHavingAlign         = nullptr;
-            currentAlignedLoopNum = loopTop->bbNatLoopNum;
+            minBlockSoFar      = BB_MAX_WEIGHT;
+            bbHavingAlign      = nullptr;
+            currentAlignedLoop = blockToLoop->GetLoop(loopTop);
+            assert(currentAlignedLoop != nullptr);
 
             if (--loopsToProcess == 0)
             {
                 break;
             }
-        }
-
-        if (block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
-        {
-#ifdef DEBUG
-            if (!visitedLoopNum[block->bbNatLoopNum])
-            {
-                // Record the first block for which bbNatLoopNum was seen for
-                // debugging purpose.
-                visitedBlockForLoopNum[block->bbNatLoopNum] = block->bbNum;
-            }
-#endif
-            // If this block is part of loop, mark the loopNum as visited.
-            visitedLoopNum[block->bbNatLoopNum] = true;
         }
     }
 
@@ -5753,14 +5886,14 @@ void Compiler::ResetOptAnnotations()
 }
 
 //------------------------------------------------------------------------
-// RecomputeLoopInfo: Recompute loop annotations between opt-repeat iterations.
+// RecomputeLoopInfo: Recompute flow graph annotations between opt-repeat iterations.
 //
 // Notes:
-//    The intent of this method is to update loop structure annotations, and those
-//    they depend on; these annotations may have become stale during optimization,
-//    and need to be up-to-date before running another iteration of optimizations.
+//    The intent of this method is to update all annotations computed on the flow graph
+//    these annotations may have become stale during optimization, and need to be
+//    up-to-date before running another iteration of optimizations.
 //
-void Compiler::RecomputeLoopInfo()
+void Compiler::RecomputeFlowGraphAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
@@ -5769,11 +5902,20 @@ void Compiler::RecomputeLoopInfo()
     fgDomsComputed = false;
     fgComputeReachability();
     optSetBlockWeights();
-    // Rebuild the loop tree annotations themselves
     optFindLoops();
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+
+    // Dominators and the loop table are computed above for old<->new loop
+    // crossreferencing, but they are not actually used for optimization
+    // anymore.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    optLoopCount      = 0;
+    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/
@@ -5916,17 +6058,17 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     noway_assert(TargetOS::OSSettingConfigured);
 #endif
 
-    if (TargetOS::IsMacOS)
+    if (TargetOS::IsApplePlatform)
     {
-        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_APPLE);
     }
     else if (TargetOS::IsUnix)
     {
         if (TargetArchitecture::IsX64)
         {
-            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            // Apple x64 uses the Unix jit variant in crossgen2, not a special jit
             info.compMatchedVM =
-                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_APPLE));
         }
         else
         {
@@ -9252,7 +9394,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cLoopPtr,    dLoopPtr       : Display the blocks of a loop, including the trees, given a LoopDsc* (call
  *                                    optPrintLoopInfo()).
  *      cLoops,      dLoops         : Display the loop table (call optPrintLoopTable()).
+ *      cNewLoops,   dNewLoops      : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
+ *                                    Compiler::m_loops.
+ *      cNewLoopsA,  dNewLoopsA     : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
+ *                                    loops arg.
+ *      cNewLoop,    dNewLoop       : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
+ *                                    loop arg.
  *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
+ *      cVN,         dVN            : Display a ValueNum (call vnPrint()).
  *
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
@@ -9307,7 +9456,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cLoop")
 #pragma comment(linker, "/include:cLoopPtr")
 #pragma comment(linker, "/include:cLoops")
+#pragma comment(linker, "/include:cNewLoops")
+#pragma comment(linker, "/include:cNewLoopsA")
+#pragma comment(linker, "/include:cNewLoop")
 #pragma comment(linker, "/include:cTreeFlags")
+#pragma comment(linker, "/include:cVN")
 
 // Functions which call the c* functions getting Compiler* using `JitTls::GetCompiler()`
 #pragma comment(linker, "/include:dBlock")
@@ -9332,7 +9485,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dLoop")
 #pragma comment(linker, "/include:dLoopPtr")
 #pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dNewLoops")
+#pragma comment(linker, "/include:dNewLoopsA")
+#pragma comment(linker, "/include:dNewLoop")
 #pragma comment(linker, "/include:dTreeFlags")
+#pragma comment(linker, "/include:dVN")
 
 // Functions which don't require a Compiler*
 #pragma comment(linker, "/include:dRegMask")
@@ -9370,7 +9527,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_cLoop")
 #pragma comment(linker, "/include:_cLoopPtr")
 #pragma comment(linker, "/include:_cLoops")
+#pragma comment(linker, "/include:_cNewLoops")
+#pragma comment(linker, "/include:_cNewLoopsA")
+#pragma comment(linker, "/include:_cNewLoop")
 #pragma comment(linker, "/include:_cTreeFlags")
+#pragma comment(linker, "/include:_cVN")
 
 // Functions which call the c* functions getting Compiler* using `JitTls:_:GetCompiler()`
 #pragma comment(linker, "/include:_dBlock")
@@ -9395,7 +9556,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_dLoop")
 #pragma comment(linker, "/include:_dLoopPtr")
 #pragma comment(linker, "/include:_dLoops")
+#pragma comment(linker, "/include:_dNewLoops")
+#pragma comment(linker, "/include:_dNewLoopsA")
+#pragma comment(linker, "/include:_dNewLoop")
 #pragma comment(linker, "/include:_dTreeFlags")
+#pragma comment(linker, "/include:_dVN")
 
 // Functions which don't require a Compiler*
 #pragma comment(linker, "/include:_dRegMask")
@@ -9576,6 +9741,27 @@ JITDBGAPI void __cdecl cLoops(Compiler* comp)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Loops %u\n", sequenceNumber++);
     comp->optPrintLoopTable();
+}
+
+JITDBGAPI void __cdecl cNewLoops(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
+    FlowGraphNaturalLoops::Dump(comp->m_loops);
+}
+
+JITDBGAPI void __cdecl cNewLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
+    FlowGraphNaturalLoops::Dump(loops);
+}
+
+JITDBGAPI void __cdecl cNewLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
+    FlowGraphNaturalLoop::Dump(loop);
 }
 
 JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
@@ -9806,102 +9992,9 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_CNS_INT:
             {
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
-
-                switch (handleKind)
+                if (handleKind != 0)
                 {
-                    case GTF_ICON_SCOPE_HDL:
-
-                        chars += printf("[ICON_SCOPE_HDL]");
-                        break;
-
-                    case GTF_ICON_CLASS_HDL:
-
-                        chars += printf("[ICON_CLASS_HDL]");
-                        break;
-
-                    case GTF_ICON_METHOD_HDL:
-
-                        chars += printf("[ICON_METHOD_HDL]");
-                        break;
-
-                    case GTF_ICON_FIELD_HDL:
-
-                        chars += printf("[ICON_FIELD_HDL]");
-                        break;
-
-                    case GTF_ICON_STATIC_HDL:
-
-                        chars += printf("[ICON_STATIC_HDL]");
-                        break;
-
-                    case GTF_ICON_STR_HDL:
-
-                        chars += printf("[ICON_STR_HDL]");
-                        break;
-
-                    case GTF_ICON_OBJ_HDL:
-
-                        chars += printf("[ICON_OBJ_HDL]");
-                        break;
-
-                    case GTF_ICON_CONST_PTR:
-
-                        chars += printf("[ICON_CONST_PTR]");
-                        break;
-
-                    case GTF_ICON_GLOBAL_PTR:
-
-                        chars += printf("[ICON_GLOBAL_PTR]");
-                        break;
-
-                    case GTF_ICON_VARG_HDL:
-
-                        chars += printf("[ICON_VARG_HDL]");
-                        break;
-
-                    case GTF_ICON_PINVKI_HDL:
-
-                        chars += printf("[ICON_PINVKI_HDL]");
-                        break;
-
-                    case GTF_ICON_TOKEN_HDL:
-
-                        chars += printf("[ICON_TOKEN_HDL]");
-                        break;
-
-                    case GTF_ICON_TLS_HDL:
-
-                        chars += printf("[ICON_TLD_HDL]");
-                        break;
-
-                    case GTF_ICON_FTN_ADDR:
-
-                        chars += printf("[ICON_FTN_ADDR]");
-                        break;
-
-                    case GTF_ICON_CIDMID_HDL:
-
-                        chars += printf("[ICON_CIDMID_HDL]");
-                        break;
-
-                    case GTF_ICON_BBC_PTR:
-
-                        chars += printf("[ICON_BBC_PTR]");
-                        break;
-
-                    case GTF_ICON_STATIC_BOX_PTR:
-
-                        chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
-                        break;
-
-                    case GTF_ICON_STATIC_ADDR_PTR:
-
-                        chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
-                        break;
-
-                    default:
-                        assert(!"a forgotten handle flag");
-                        break;
+                    chars += printf("[%s]", GenTree::gtGetHandleKindString(handleKind));
                 }
             }
             break;
@@ -10160,6 +10253,14 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
     }
 }
 
+JITDBGAPI void __cdecl cVN(Compiler* comp, ValueNum vn)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *VN %u\n", sequenceNumber++);
+    comp->vnPrint(vn, 1);
+    printf("\n");
+}
+
 JITDBGAPI void __cdecl dBlock(BasicBlock* block)
 {
     cBlock(JitTls::GetCompiler(), block);
@@ -10270,9 +10371,29 @@ JITDBGAPI void __cdecl dLoops()
     cLoops(JitTls::GetCompiler());
 }
 
+JITDBGAPI void __cdecl dNewLoops()
+{
+    cNewLoops(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dNewLoopsA(FlowGraphNaturalLoops* loops)
+{
+    cNewLoopsA(JitTls::GetCompiler(), loops);
+}
+
+JITDBGAPI void __cdecl dNewLoop(FlowGraphNaturalLoop* loop)
+{
+    cNewLoop(JitTls::GetCompiler(), loop);
+}
+
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
 {
     cTreeFlags(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dVN(ValueNum vn)
+{
+    cVN(JitTls::GetCompiler(), vn);
 }
 
 JITDBGAPI void __cdecl dRegMask(regMaskTP mask)
