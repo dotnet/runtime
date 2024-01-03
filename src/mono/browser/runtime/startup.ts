@@ -360,9 +360,9 @@ async function mono_wasm_init_threads() {
     if (!MonoWasmThreads) {
         return;
     }
-    const tid = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
-    mono_set_thread_name(tid);
-    loaderHelpers.mono_set_thread_name(tid);
+    const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
+    mono_set_thread_name(threadName);
+    loaderHelpers.mono_set_thread_name(threadName);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
 }

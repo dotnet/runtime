@@ -20,10 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-                lock (ProxyContext)
-                {
-                    return _isDisposed;
-                }
+                return _isDisposed;
             }
         }
 

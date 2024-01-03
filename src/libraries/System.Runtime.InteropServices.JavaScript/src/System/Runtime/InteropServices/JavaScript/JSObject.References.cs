@@ -84,7 +84,10 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AssertNotDisposed()
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            lock (ProxyContext)
+            {
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+            }
         }
 
         internal void DisposeImpl(bool skipJsCleanup = false)

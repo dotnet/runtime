@@ -87,9 +87,9 @@ function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
     if (!MonoWasmThreads) return;
     mono_assert(pthread_self !== null && pthread_self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
-    const tid = `0x${pthread_id.toString(16)}-worker`;
-    mono_set_thread_name(tid);
-    loaderHelpers.mono_set_thread_name(tid);
+    const threadName = `0x${pthread_id.toString(16)}-worker`;
+    mono_set_thread_name(threadName);
+    loaderHelpers.mono_set_thread_name(threadName);
     preRunWorker();
     set_thread_info(pthread_id, true, false, false);
     jiterpreter_allocate_tables();
@@ -101,8 +101,9 @@ export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void 
     if (!MonoWasmThreads) return;
     postRunWorker();
     set_thread_info(pthread_id, false, false, false);
-    mono_set_thread_name("worker-idle");
-    loaderHelpers.mono_set_thread_name("worker-idle");
+    const threadName = `0x${pthread_id.toString(16)}-worker-detached`;
+    mono_set_thread_name(threadName);
+    loaderHelpers.mono_set_thread_name(threadName);
 }
 
 /// This is an implementation detail function.
