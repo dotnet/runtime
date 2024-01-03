@@ -188,4 +188,13 @@
                      DotNetHostPath="$(DotNetTool)" />
     </ItemGroup>
   </Target>
+
+  <Target Name="UpdateRuntimePackToAddWasiRID" BeforeTargets="ProcessFrameworkReferences">
+    <!-- Always add wasi-wasm since it isn't added by sdk at all -->
+    <ItemGroup>
+      <KnownRuntimePack Update="$(LocalFrameworkOverrideName)"
+        RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm"
+        Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '%(RuntimePackLabels)' == 'Mono' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))" />
+    </ItemGroup>
+  </Target>
 </Project>
