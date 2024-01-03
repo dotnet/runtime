@@ -1310,45 +1310,6 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
             orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
             hotCodeSize_2 = nativeSizeOfCode_2;
         }
-
-        auto rewriteUnsupportedInstrs = [](unsigned char* bytes, size_t numBytes) {
-            for (size_t i = 0; i < numBytes; i += 4)
-            {
-                uint32_t inst;
-                memcpy(&inst, &bytes[i], 4);
-
-                const uint32_t ldapurMask = 0b00111111111000000000110000000000;
-                const uint32_t ldapurBits = 0b00011001010000000000000000000000;
-                const uint32_t ldurBits   = 0b00111000010000000000000000000000;
-
-                const uint32_t stlurMask  = 0b00111111111000000000110000000000;
-                const uint32_t stlurBits  = 0b00011001000000000000000000000000;
-                const uint32_t sturBits   = 0b00111000000000000000000000000000;
-                if ((inst & ldapurMask) == ldapurBits)
-                {
-                    inst ^= (ldapurBits ^ ldurBits);
-                    memcpy(&bytes[i], &inst, 4);
-                }
-                else if ((inst & stlurMask) == stlurBits)
-                {
-                    inst ^= (stlurBits ^ sturBits);
-                    memcpy(&bytes[i], &inst, 4);
-                }
-            }
-            };
-
-        // As of 2023-09-13, our coredistools does not support stlur/ldapur
-        // instructions, so we rewrite them into supported stur/ldur
-        // instructions before passing them to the near differ. This means we
-        // will miss diffs when changing stlur<->stur and ldapur<->ldur,
-        // but this is better than the decode failure that otherwise results
-        // (which shows up as a zero-sized diff unconditionally).
-        // This code should be removed once a new coredistools is compiled that
-        // supports new instructions.
-        rewriteUnsupportedInstrs(hotCodeBlock_1, hotCodeSize_1);
-        rewriteUnsupportedInstrs(coldCodeBlock_1, coldCodeSize_1);
-        rewriteUnsupportedInstrs(hotCodeBlock_2, hotCodeSize_2);
-        rewriteUnsupportedInstrs(coldCodeBlock_2, coldCodeSize_2);
     }
 
     LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
