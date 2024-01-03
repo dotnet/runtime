@@ -3025,12 +3025,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 #endif // FEATURE_EH_FUNCLETS
 
             m_crawl.pFunc = m_crawl.codeInfo.GetMethodDesc();
-            
-            if (m_crawl.pFunc->HasClassOrMethodInstantiation() && m_crawl.pFunc->IsSharedByGenericInstantiations())
-            {
-                TypeHandle th;
-                Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(m_crawl.pFunc, m_crawl.GetExactGenericArgsToken(), &th, &m_crawl.pFunc);
-            }
 
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;

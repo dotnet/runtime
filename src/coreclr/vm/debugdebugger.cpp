@@ -461,6 +461,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         for (int i = 0; i < data.cElements; i++)
         {
             MethodDesc* pFunc = data.pElements[i].pFunc;
+            PTR_VOID pExactGenericArgsToken = data.pElements[i].pExactGenericArgsToken;
+            if (pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
+            {
+                if (pExactGenericArgsToken != NULL)
+                {
+                    TypeHandle th;
+                    Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pFunc);
+                }
+            }
 
             // Method handle
             size_t *pElem = (size_t*)pStackFrameHelper->rgMethodHandle->GetDataPtr();
@@ -1050,7 +1059,8 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
             dwNativeOffset,
             pFunc,
             ip,
-            flags);
+            flags,
+            pCf->GetExactGenericArgsToken());
 
     // We'll init the IL offsets outside the TSL lock.
 
@@ -1154,12 +1164,15 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 {
                     dwNativeOffset = 0;
                 }
-
+                
                 pData->pElements[i].InitPass1(
                     dwNativeOffset,
                     pMD,
                     (PCODE)cur.ip,
-                    cur.flags);
+                    cur.flags,
+                    // The managed stacktrace classes always returns typical method definition,
+                    // so we don't need to provide the pExactGenericArgsToken 
+                    NULL);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
 #endif
@@ -1180,7 +1193,8 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip,
-    INT flags
+    INT flags,
+    PTR_VOID pExactGenericArgsToken
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1193,6 +1207,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
     this->flags = flags;
+    this->pExactGenericArgsToken = pExactGenericArgsToken;
 }
 
 #ifndef DACCESS_COMPILE
