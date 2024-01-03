@@ -19,7 +19,7 @@ Hybrid has higher priority than sharding or custom modes, described in globaliza
 
 **SortKey**
 
-In HybridGlobalization mode Invariant way of SortKey calculation is used. From this reason, the following APIs will work in the same way as they do when `Invariant=true`:
+In HybridGlobalization mode Invariant way of SortKey calculation is used. Comparison functions are locale-sensitive while hasing function are not, one of the side effects are described in the issue: https://github.com/dotnet/runtime/issues/96400. The following APIs will work in the same way as they do when `Invariant=true`:
 
 Affected public APIs:
 - System.Globalization.CompareInfo.GetSortKey
