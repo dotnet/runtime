@@ -28,6 +28,14 @@ bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("notifyMethodInfoUsage");
+    bool temp = original_ICorJitInfo->notifyMethodInfoUsage(ftn);
+    mc->recNotifyMethodInfoUsage(ftn, temp);
+    return temp;
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {

@@ -607,25 +607,16 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             RETURN_ON_ABORT(func(bbTarget));
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
+        case BBJ_CALLFINALLYRET:
+            // No exceptions can occur in this paired block; skip its normal EH successors.
+            return func(bbTarget);
+
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            RETURN_ON_ABORT(func(bbTarget));
-            return VisitEHSuccs(comp, func);
-
         case BBJ_ALWAYS:
             RETURN_ON_ABORT(func(bbTarget));
-
-            // If this is a "leave helper" block (the empty BBJ_ALWAYS block
-            // that pairs with a preceding BBJ_CALLFINALLY block to implement a
-            // "leave" IL instruction), then no exceptions can occur within it
-            // and we skip its normal EH successors.
-            if (!isBBCallAlwaysPairTail())
-            {
-                RETURN_ON_ABORT(VisitEHSuccs(comp, func));
-            }
-
-            return BasicBlockVisit::Continue;
+            return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
             RETURN_ON_ABORT(func(bbFalseTarget));
@@ -687,6 +678,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
             return BasicBlockVisit::Continue;
 
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
@@ -4922,16 +4914,19 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Type parameters:
 //   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
 //   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge      - Functor type that takes two BasicBlock*.
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
 //   visitPostorder - Functor to visit block in its postorder
+//   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
+//                    this is the first time the successor is seen).
 //
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder>
-unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder)
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
@@ -4959,6 +4954,8 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
                     blocks.Emplace(this, succ);
                     visitPreorder(succ, preOrderIndex++);
                 }
+
+                visitEdge(block, succ);
             }
             else
             {

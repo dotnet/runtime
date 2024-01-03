@@ -314,8 +314,8 @@ void CodeGen::genCodeForBBlist()
                 printf("\nThis is the start of the cold region of the method\n");
             }
 #endif
-            // We should never have a block that falls through into the Cold section
-            noway_assert(!block->Prev()->bbFallsThrough());
+            // We should never split call/finally pairs between hot/cold sections
+            noway_assert(!block->isBBCallFinallyPairTail());
 
             needLabel = true;
         }
@@ -516,15 +516,7 @@ void CodeGen::genCodeForBBlist()
 #if defined(DEBUG)
         if (block->IsLast())
         {
-// Unit testing of the emitter: generate a bunch of instructions into the last block
-// (it's as good as any, but better than the prologue, which can only be a single instruction
-// group) then use DOTNET_JitLateDisasm=* to see if the late disassembler
-// thinks the instructions are the same as we do.
-#if defined(TARGET_AMD64) && defined(LATE_DISASM)
-            genAmd64EmitterUnitTests();
-#elif defined(TARGET_ARM64)
-            genArm64EmitterUnitTests();
-#endif // TARGET_ARM64
+            genEmitterUnitTests();
         }
 #endif // defined(DEBUG)
 
@@ -543,7 +535,7 @@ void CodeGen::genCodeForBBlist()
         /* Is this the last block, and are there any open scopes left ? */
 
         bool isLastBlockProcessed;
-        if (block->isBBCallAlwaysPair())
+        if (block->isBBCallFinallyPair())
         {
             isLastBlockProcessed = block->Next()->IsLast();
         }
@@ -814,7 +806,7 @@ void CodeGen::genCodeForBBlist()
             // and 16 bytes for arm64.
 
             assert(ShouldAlignLoops());
-            assert(!block->isBBCallAlwaysPairTail());
+            assert(!block->isBBCallFinallyPairTail());
 #if FEATURE_EH_CALLFINALLY_THUNKS
             assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
@@ -2627,6 +2619,12 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(jcc->OperIs(GT_JCC));
 
     inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    {
+        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2672,3 +2670,69 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+
+/*****************************************************************************
+ * Unit testing of the emitter: If JitDumpEmitUnitTests is set, generate
+ * a bunch of instructions, then:
+ * Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions are the same as we do.
+ * Or, use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and disassemble the output file.
+ *
+ * Possible values for JitDumpEmitUnitTests:
+ * Amd64: all, sse2
+ * Arm64: all, general, advsimd, sve
+ */
+
+#if defined(DEBUG)
+
+void CodeGen::genEmitterUnitTests()
+{
+    const WCHAR* unitTestSection = JitConfig.JitDumpEmitUnitTests();
+
+    if (unitTestSection == nullptr)
+    {
+        return;
+    }
+
+    // Mark the "fake" instructions in the output.
+    JITDUMP("*************** In genEmitterUnitTests()\n");
+
+    // Jump over the generated tests as they are not intended to be run.
+    BasicBlock* skipLabel = genCreateTempLabel();
+    inst_JMP(EJ_jmp, skipLabel);
+
+    // Add NOPs at the start and end for easier script parsing.
+    instGen(INS_nop);
+
+    bool unitTestSectionAll = (u16_strstr(unitTestSection, W("all")) != nullptr);
+
+#if defined(TARGET_AMD64)
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sse2")) != nullptr))
+    {
+        genAmd64EmitterUnitTestsSse2();
+    }
+
+#elif defined(TARGET_ARM64)
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("general")) != nullptr))
+    {
+        genArm64EmitterUnitTestsGeneral();
+    }
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("advsimd")) != nullptr))
+    {
+        genArm64EmitterUnitTestsAdvSimd();
+    }
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sve")) != nullptr))
+    {
+        genArm64EmitterUnitTestsSve();
+    }
+#endif
+
+    genDefineTempLabel(skipLabel);
+    instGen(INS_nop);
+    instGen(INS_nop);
+    instGen(INS_nop);
+    instGen(INS_nop);
+
+    JITDUMP("*************** End of genEmitterUnitTests()\n");
+}
+
+#endif // defined(DEBUG)

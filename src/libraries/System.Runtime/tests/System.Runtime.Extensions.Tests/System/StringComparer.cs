@@ -179,15 +179,18 @@ namespace System.Tests
                 yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true};
             }
 
-            bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
-            yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
-            yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
-            yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
+            if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            {
+                bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
+                yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
+                yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
+                yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
+            }
         }
 
         public static TheoryData<string, string, string, CompareOptions, bool> CreateFromCultureAndOptionsStringSortData => new TheoryData<string, string, string, CompareOptions, bool>

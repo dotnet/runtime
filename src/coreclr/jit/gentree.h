@@ -454,7 +454,7 @@ enum GenTreeFlags : unsigned int
     GTF_LIVENESS_MASK     = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
     GTF_VAR_ITERATOR      = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additonal uses, for example due to cloning
+    GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
 
@@ -2245,6 +2245,7 @@ public:
 
 #ifdef DEBUG
     static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
+    static const char* gtGetHandleKindString(GenTreeFlags flags);
 #endif
 
     // cast operations
@@ -4552,7 +4553,7 @@ public:
     void SetMultiRegNums();
 
     // Return number of stack slots that this argument is taking.
-    // This value is not meaningful on macOS arm64 where multiple arguments can
+    // This value is not meaningful on Apple arm64 where multiple arguments can
     // be passed in the same stack slot.
     unsigned GetStackSlotsNumber() const
     {

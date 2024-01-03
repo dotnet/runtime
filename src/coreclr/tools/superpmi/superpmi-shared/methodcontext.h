@@ -122,6 +122,10 @@ public:
     void dmpIsIntrinsic(DWORDLONG key, DWORD value);
     bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
+    void recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
+    bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
+
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
@@ -1042,7 +1046,7 @@ enum mcPackets
     //Packet_SatisfiesClassConstraints = 110,
     Packet_SatisfiesMethodConstraints = 111,
     Packet_DoesFieldBelongToClass = 112,
-    PacketCR_AddressMap = 113,
+    //PacketCR_AddressMap = 113,
     PacketCR_AllocGCInfo = 114,
     PacketCR_AllocMem = 115,
     PacketCR_CallLog = 116,
@@ -1143,6 +1147,7 @@ enum mcPackets
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
+    Packet_NotifyMethodInfoUsage = 214,
 };
 
 void SetDebugDumpVariables();

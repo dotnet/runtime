@@ -163,6 +163,7 @@ ICorJitInfo::errorTrapFunction,void*
 
 FUNCTIONS
     bool isIntrinsic(        CORINFO_METHOD_HANDLE       ftn        );
+    bool notifyMethodInfoUsage(        CORINFO_METHOD_HANDLE       ftn        );
     uint32_t getMethodAttribs(        CORINFO_METHOD_HANDLE       ftn        );
     void setMethodAttribs(        CORINFO_METHOD_HANDLE       ftn,        CorInfoMethodRuntimeFlags   attribs        );
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );

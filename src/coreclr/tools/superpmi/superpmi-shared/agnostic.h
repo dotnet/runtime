@@ -719,12 +719,6 @@ struct allocGCInfoDetails
     void*  retval;
 };
 
-struct Agnostic_AddressMap
-{
-    DWORDLONG Address;
-    DWORD     size;
-};
-
 struct Agnostic_AllocGCInfo
 {
     DWORDLONG size;
