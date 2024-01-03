@@ -1994,6 +1994,12 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 void Compiler::compDone()
 {
+#ifdef LATE_DISASM
+    if (codeGen != nullptr)
+    {
+        codeGen->getDisAssembler().disDone();
+    }
+#endif // LATE_DISASM
 }
 
 void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum,        /* IN  */
