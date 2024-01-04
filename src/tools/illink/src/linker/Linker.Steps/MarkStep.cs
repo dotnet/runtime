@@ -2036,7 +2036,9 @@ namespace Mono.Linker.Steps
 				// will call MarkType on the attribute type itself).
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
+				// Also don't warn when the type is marked due to an assembly being rooted.
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
+					reason.Kind is not DependencyKind.TypeInAssembly)
 					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
 			}
 
