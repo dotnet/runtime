@@ -16,6 +16,7 @@ namespace System.Text.Json
         private const int ListToDictionaryThreshold = 9;
 
         private Dictionary<string, T>? _propertyDictionary;
+
         private readonly List<KeyValuePair<string, T>> _propertyList;
 
         private readonly StringComparer _stringComparer;
