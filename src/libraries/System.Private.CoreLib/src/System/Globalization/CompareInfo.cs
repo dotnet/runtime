@@ -1532,7 +1532,7 @@ namespace System.Globalization
               NlsGetSortKeyLength(source, options) :
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
-                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+              throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
               IcuGetSortKeyLength(source, options);
 

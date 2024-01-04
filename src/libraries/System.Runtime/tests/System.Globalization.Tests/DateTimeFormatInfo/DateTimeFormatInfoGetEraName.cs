@@ -33,8 +33,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { "bg-BG", 1, "сл.Хр." };
                 yield return new object[] { "bn-BD", 0, "খৃষ্টাব্দ" };
                 yield return new object[] { "bn-BD", 1, "খৃষ্টাব্দ" };
-                yield return new object[] { "bn-IN", 0, PlatformDetection.IsNodeJSOnWindows ? "খৃষ্টাব্দ" : "খ্রিঃ" };
-                yield return new object[] { "bn-IN", 1, PlatformDetection.IsNodeJSOnWindows ? "খৃষ্টাব্দ" : "খ্রিঃ" };
+                yield return new object[] { "bn-IN", 0, "খ্রিঃ" };
+                yield return new object[] { "bn-IN", 1, "খ্রিঃ" };
                 yield return new object[] { "ca-AD", 0, "dC" };
                 yield return new object[] { "ca-AD", 1, "dC" };
                 yield return new object[] { "ca-ES", 0, "dC" };
@@ -269,10 +269,10 @@ namespace System.Globalization.Tests
                 yield return new object[] { "en-US", 1, "AD" };
                 yield return new object[] { "es-ES", 0, "d. C." };
                 yield return new object[] { "es-ES", 1, "d. C." };
-                yield return new object[] { "es-419", 0, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
-                yield return new object[] { "es-419", 1, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
-                yield return new object[] { "es-MX", 0, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
-                yield return new object[] { "es-MX", 1, PlatformDetection.IsNodeJSOnWindows ? "d. C." : "d.C." };
+                yield return new object[] { "es-419", 0, "d.C." };
+                yield return new object[] { "es-419", 1, "d.C." };
+                yield return new object[] { "es-MX", 0, "d.C." };
+                yield return new object[] { "es-MX", 1, "d.C." };
                 yield return new object[] { "et-EE", 0, "pKr" };
                 yield return new object[] { "et-EE", 1, "pKr" };
                 yield return new object[] { "fa-IR", 0, "ه.ش" }; // ه‍.ش.
@@ -387,8 +387,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { "tr-TR", 1, "MS" };
                 yield return new object[] { "uk-UA", 0, "н. е." };
                 yield return new object[] { "uk-UA", 1, "н. е." };
-                yield return new object[] { "vi-VN", 0, PlatformDetection.IsNodeJSOnWindows ? "Sau CN" : "CN" }; // sau CN
-                yield return new object[] { "vi-VN", 1, PlatformDetection.IsNodeJSOnWindows ? "Sau CN" : "CN" }; // sau CN
+                yield return new object[] { "vi-VN", 0, "CN" }; // sau CN
+                yield return new object[] { "vi-VN", 1, "CN" }; // sau CN
                 yield return new object[] { "zh-CN", 0, "公元" };
                 yield return new object[] { "zh-CN", 1, "公元" };
                 yield return new object[] { "zh-Hans-HK", 0, "公元" };

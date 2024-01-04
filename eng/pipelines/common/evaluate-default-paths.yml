@@ -10,6 +10,7 @@ parameters:
         eng/testing/ChromeVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
+        eng/testing/scenarios/BuildWasiAppsJobsList.txt
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
@@ -26,6 +27,7 @@ parameters:
         src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
         src/mono/nuget/Microsoft.NET.Workload*
         src/mono/sample/wasm/*
+        src/mono/browser/*
         src/mono/wasi/*
         src/mono/wasm/*
         src/mono/mono/mini/interp/jiterpreter*
@@ -203,6 +205,7 @@ jobs:
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
+      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
@@ -223,10 +226,11 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
+      - src/mono/browser/build/*
+      - src/mono/browser/emscripten-version.txt
+      - src/mono/browser/runtime/*
       - src/mono/wasm/build/*
-      - src/mono/wasm/emscripten-version.txt
       - src/mono/wasm/host/*
-      - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*
       - src/mono/wasm/Wasm.Build.Tests/*
@@ -249,8 +253,8 @@ jobs:
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
-      - src/mono/wasm/debugger/*
-      - src/mono/wasm/runtime/*
+      - src/mono/browser/debugger/*
+      - src/mono/browser/runtime/*
       - ${{ parameters._const_paths._wasm_src_native }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
@@ -289,10 +293,11 @@ jobs:
       # other paths that should also trigger wasm jobs
       - src/mono/*
       exclude:
+      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/mono/mono/component/mini-wasm-debugger.c
-      - src/mono/wasm/debugger/*
+      - src/mono/browser/debugger/*
       - src/mono/wasm/host/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*

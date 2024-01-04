@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
+#include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -9,7 +10,6 @@
 #include "RedhawkWarnings.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -205,12 +205,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     if (pFrame->m_Flags & PTFF_R0_IS_GCREF)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pR0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF) m_RegDisplay.pR0;
         m_HijackedReturnValueKind = GCRK_Object;
     }
     if (pFrame->m_Flags & PTFF_R0_IS_BYREF)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pR0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF) m_RegDisplay.pR0;
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
@@ -258,7 +258,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pX0;
         m_HijackedReturnValueKind = retValueKind;
     }
 
@@ -292,7 +292,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pRax;
+        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pRax;
         m_HijackedReturnValueKind = retValueKind;
     }
 
@@ -1701,7 +1701,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     m_dwFlags |= MethodStateCalculated;
 }
 
-bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind)
+bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind)
 {
     if (GCRK_Unknown == m_HijackedReturnValueKind)
         return false;
@@ -1762,11 +1762,11 @@ bool StackFrameIterator::HasStackRangeToReportConservatively()
     return IsValid() && (m_pConservativeStackRangeUpperBound != NULL);
 }
 
-void StackFrameIterator::GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound)
+void StackFrameIterator::GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound)
 {
     ASSERT(HasStackRangeToReportConservatively());
-    *ppLowerBound = (PTR_RtuObjectRef)m_pConservativeStackRangeLowerBound;
-    *ppUpperBound = (PTR_RtuObjectRef)m_pConservativeStackRangeUpperBound;
+    *ppLowerBound = (PTR_OBJECTREF)m_pConservativeStackRangeLowerBound;
+    *ppUpperBound = (PTR_OBJECTREF)m_pConservativeStackRangeUpperBound;
 }
 
 PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
@@ -1846,7 +1846,7 @@ bool StackFrameIterator::ShouldSkipRegularGcReporting()
 
 #ifndef DACCESS_COMPILE
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault))
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted))
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
@@ -1865,10 +1865,16 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIM
     bool isValid = pThis->IsValid();
     if (isValid)
         pThis->CalculateCurrentMethodState();
+
+    if (pfIsExceptionIntercepted)
+    {
+        *pfIsExceptionIntercepted = false;
+    }
+
     FC_RETURN_BOOL(isValid);
 }
 
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, (StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke))
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, (StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted))
 {
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we
@@ -1901,6 +1907,11 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpSfiNext, (StackFrameIterator* pThis, uint32_
     if (pfUnwoundReversePInvoke != NULL)
     {
         *pfUnwoundReversePInvoke = (pThis->m_dwFlags & StackFrameIterator::UnwoundReversePInvoke) != 0;
+    }
+
+    if (pfIsExceptionIntercepted)
+    {
+        *pfIsExceptionIntercepted = false;
     }
 
     FC_RETURN_BOOL(isValid);
