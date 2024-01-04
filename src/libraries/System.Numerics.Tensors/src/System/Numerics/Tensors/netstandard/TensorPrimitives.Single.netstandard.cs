@@ -1507,7 +1507,7 @@ namespace System.Numerics.Tensors
         private static void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination, TBinaryOperator op = default)
             where TBinaryOperator : struct, IBinaryOperator =>
-            InvokeSpanScalarIntoSpan<IdentityOperator, TBinaryOperator>(x, y, destination, default, op);
+            InvokeSpanScalarIntoSpan<IdentityOperator_Single, TBinaryOperator>(x, y, destination, default, op);
 
         /// <summary>
         /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
@@ -2901,7 +2901,7 @@ namespace System.Numerics.Tensors
             Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
 
             return AsVector(
-                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x16)),
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                 (count * 16));
         }
 
@@ -2914,12 +2914,12 @@ namespace System.Numerics.Tensors
             Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
 
             return AsVector(
-                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                 (count * 16) + (16 - Vector<float>.Count));
         }
 
         /// <summary>x + y</summary>
-        private readonly struct AddOperator : IAggregationOperator
+        private readonly struct AddOperator_Single : IAggregationOperator
         {
             public float Invoke(float x, float y) => x + y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x + y;
@@ -2927,14 +2927,14 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>x - y</summary>
-        private readonly struct SubtractOperator : IBinaryOperator
+        private readonly struct SubtractOperator_Single : IBinaryOperator
         {
             public float Invoke(float x, float y) => x - y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x - y;
         }
 
         /// <summary>(x - y) * (x - y)</summary>
-        private readonly struct SubtractSquaredOperator : IBinaryOperator
+        private readonly struct SubtractSquaredOperator_Single : IBinaryOperator
         {
             public float Invoke(float x, float y)
             {
@@ -2950,7 +2950,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>x * y</summary>
-        private readonly struct MultiplyOperator : IAggregationOperator
+        private readonly struct MultiplyOperator_Single : IAggregationOperator
         {
             public float Invoke(float x, float y) => x * y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x * y;
@@ -2958,7 +2958,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>x / y</summary>
-        private readonly struct DivideOperator : IBinaryOperator
+        private readonly struct DivideOperator_Single : IBinaryOperator
         {
             public float Invoke(float x, float y) => x / y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x / y;
@@ -2972,7 +2972,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
-        private readonly struct IndexOfMaxOperator : IIndexOfOperator
+        private readonly struct IndexOfMaxOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(Vector<float> result, Vector<int> resultIndex)
@@ -3037,7 +3037,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private readonly struct IndexOfMaxMagnitudeOperator : IIndexOfOperator
+        private readonly struct IndexOfMaxMagnitudeOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -3107,7 +3107,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private readonly struct IndexOfMinOperator : IIndexOfOperator
+        private readonly struct IndexOfMinOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -3172,7 +3172,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private readonly struct IndexOfMinMagnitudeOperator : IIndexOfOperator
+        private readonly struct IndexOfMinMagnitudeOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(ref float result, float current, int resultIndex, int curIndex)
@@ -3242,7 +3242,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Max(x, y) (but without guaranteed NaN propagation)</summary>
-        private readonly struct MaxOperator : IBinaryOperator
+        private readonly struct MaxOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y) =>
@@ -3258,7 +3258,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Max(x, y)</summary>
-        private readonly struct MaxPropagateNaNOperator : IBinaryOperator
+        private readonly struct MaxPropagateNaNOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y) => MathF.Max(x, y);
@@ -3275,7 +3275,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Operator to get x or y based on which has the larger MathF.Abs (but NaNs may not be propagated)</summary>
-        private readonly struct MaxMagnitudeOperator : IBinaryOperator
+        private readonly struct MaxMagnitudeOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y)
@@ -3299,7 +3299,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Operator to get x or y based on which has the larger MathF.Abs</summary>
-        private readonly struct MaxMagnitudePropagateNaNOperator : IBinaryOperator
+        private readonly struct MaxMagnitudePropagateNaNOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y)
@@ -3324,7 +3324,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Min(x, y) (but NaNs may not be propagated)</summary>
-        private readonly struct MinOperator : IBinaryOperator
+        private readonly struct MinOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y) =>
@@ -3340,7 +3340,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Min(x, y)</summary>
-        private readonly struct MinPropagateNaNOperator : IBinaryOperator
+        private readonly struct MinPropagateNaNOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y) => MathF.Min(x, y);
@@ -3357,7 +3357,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Operator to get x or y based on which has the smaller MathF.Abs (but NaNs may not be propagated)</summary>
-        private readonly struct MinMagnitudeOperator : IBinaryOperator
+        private readonly struct MinMagnitudeOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y)
@@ -3381,7 +3381,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Operator to get x or y based on which has the smaller MathF.Abs</summary>
-        private readonly struct MinMagnitudePropagateNaNOperator : IBinaryOperator
+        private readonly struct MinMagnitudePropagateNaNOperator_Single : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y)
@@ -3407,7 +3407,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>-x</summary>
-        private readonly struct NegateOperator : IUnaryOperator
+        private readonly struct NegateOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => true;
             public float Invoke(float x) => -x;
@@ -3415,21 +3415,21 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>(x + y) * z</summary>
-        private readonly struct AddMultiplyOperator : ITernaryOperator
+        private readonly struct AddMultiplyOperator_Single : ITernaryOperator
         {
             public float Invoke(float x, float y, float z) => (x + y) * z;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x + y) * z;
         }
 
         /// <summary>(x * y) + z</summary>
-        private readonly struct MultiplyAddOperator : ITernaryOperator
+        private readonly struct MultiplyAddOperator_Single : ITernaryOperator
         {
             public float Invoke(float x, float y, float z) => (x * y) + z;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x * y) + z;
         }
 
         /// <summary>x</summary>
-        private readonly struct IdentityOperator : IUnaryOperator
+        private readonly struct IdentityOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => true;
             public float Invoke(float x) => x;
@@ -3437,7 +3437,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>x * x</summary>
-        private readonly struct SquaredOperator : IUnaryOperator
+        private readonly struct SquaredOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => true;
             public float Invoke(float x) => x * x;
@@ -3445,7 +3445,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Abs(x)</summary>
-        private readonly struct AbsoluteOperator : IUnaryOperator
+        private readonly struct AbsoluteOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => true;
             public float Invoke(float x) => MathF.Abs(x);
@@ -3453,7 +3453,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Exp(x)</summary>
-        private readonly struct ExpOperator : IUnaryOperator
+        private readonly struct ExpOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => MathF.Exp(x);
@@ -3463,7 +3463,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Sinh(x)</summary>
-        private readonly struct SinhOperator : IUnaryOperator
+        private readonly struct SinhOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => MathF.Sinh(x);
@@ -3473,7 +3473,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Cosh(x)</summary>
-        private readonly struct CoshOperator : IUnaryOperator
+        private readonly struct CoshOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => MathF.Cosh(x);
@@ -3483,7 +3483,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Tanh(x)</summary>
-        private readonly struct TanhOperator : IUnaryOperator
+        private readonly struct TanhOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => MathF.Tanh(x);
@@ -3493,7 +3493,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Log(x)</summary>
-        private readonly struct LogOperator : IUnaryOperator
+        private readonly struct LogOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => MathF.Log(x);
@@ -3503,7 +3503,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>MathF.Log2(x)</summary>
-        private readonly struct Log2Operator : IUnaryOperator
+        private readonly struct Log2Operator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => Log2(x);
@@ -3513,7 +3513,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>1f / (1f + MathF.Exp(-x))</summary>
-        private readonly struct SigmoidOperator : IUnaryOperator
+        private readonly struct SigmoidOperator_Single : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => 1.0f / (1.0f + MathF.Exp(-x));

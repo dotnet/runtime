@@ -267,28 +267,24 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top            = block;
-        BasicBlock*   topFallThrough = nullptr;
-        BasicBlock*   topJumpTarget;
+        BasicBlock*   top                = block;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        if (top->KindIs(BBJ_COND))
-        {
-            topFallThrough     = top->GetFalseTarget();
-            topJumpTarget      = top->GetTrueTarget();
-            lpIndexFallThrough = topFallThrough->bbNatLoopNum;
-        }
-        else
-        {
-            topJumpTarget = top->GetTarget();
-        }
-
-        BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetKind(), poll, true, topJumpTarget);
         BBKinds       oldJumpKind = top->GetKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
+
+        if (oldJumpKind == BBJ_COND)
+        {
+            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
+        }
+
+        BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
+        bottom           = fgNewBBafter(top->GetKind(), poll, true);
+
         poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
+
+        bottom->TransferTarget(top);
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
@@ -398,7 +394,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetCond(bottom);
+        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -614,44 +610,6 @@ PhaseStatus Compiler::fgImport()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-//------------------------------------------------------------------------
-// fgUpdateCallFinally: For BBJ_CALLFINALLY/BBJ_ALWAYS pairs, replace BBJ_ALWAYS with BBJ_CALLFINALLYRET.
-//
-// This should be temporary. Later, fix impImportLeave to do this directly.
-//
-// Returns:
-//    phase status
-//
-PhaseStatus Compiler::fgUpdateCallFinally()
-{
-    if (info.compXcptnsCount == 0)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            // There are no ret-less callfinally yet (this is run early), so there must be a matching
-            // BBJ_ALWAYS block.
-            BasicBlock* blockAlways = block->Next();
-            assert(blockAlways != nullptr);
-            assert(blockAlways->KindIs(BBJ_ALWAYS));
-            assert(blockAlways->isEmpty());
-            assert(blockAlways->HasFlag(BBF_KEEP_BBJ_ALWAYS));
-
-            blockAlways->SetKind(BBJ_CALLFINALLYRET);
-            blockAlways->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
-
-            JITDUMP("Replaced BBJ_ALWAYS " FMT_BB " of BBJ_CALLFINALLY " FMT_BB " pair with BBJ_CALLFINALLYRET.\n",
-                    blockAlways->bbNum, block->bbNum);
-        }
-    }
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
 /*****************************************************************************
  * This function returns true if tree is a node with a call
  * that unconditionally throws an exception
@@ -677,7 +635,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
  * It returns false when the blocks are both in the same regions
  */
 
-bool Compiler::fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2)
+bool Compiler::fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const
 {
     noway_assert(blk1 != nullptr);
     noway_assert(blk2 != nullptr);
@@ -3227,55 +3185,11 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
             }
         }
 
-        // When the last Hot block fall through into the Cold section
-        // we may need to add a jump
-        //
-        if (prevToFirstColdBlock->bbFallsThrough())
+        // Don't split up call/finally pairs
+        if (prevToFirstColdBlock->isBBCallFinallyPair())
         {
-            switch (prevToFirstColdBlock->GetKind())
-            {
-                default:
-                    noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
-                    break;
-
-                case BBJ_CALLFINALLY:
-                    // A BBJ_CALLFINALLY that falls through is always followed
-                    // by an empty BBJ_CALLFINALLYRET.
-                    //
-                    assert(prevToFirstColdBlock->isBBCallFinallyPair());
-                    firstColdBlock =
-                        firstColdBlock->Next(); // Note that this assignment could make firstColdBlock == nullptr
-                    break;
-
-                case BBJ_COND:
-                    //
-                    // This is a slightly more complicated case, because we will
-                    // probably need to insert a block to jump to the cold section.
-                    //
-
-                    // TODO-NoFallThrough: Below logic will need additional check once bbFalseTarget can diverge from
-                    // bbNext
-                    assert(prevToFirstColdBlock->FalseTargetIs(firstColdBlock));
-                    if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
-                    {
-                        // We can just use this block as the transitionBlock
-                        firstColdBlock = firstColdBlock->Next();
-                        // Note that this assignment could make firstColdBlock == NULL
-                    }
-                    else
-                    {
-                        BasicBlock* transitionBlock =
-                            fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true, firstColdBlock);
-                        transitionBlock->inheritWeight(firstColdBlock);
-
-                        // Update the predecessor list for firstColdBlock
-                        fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);
-
-                        // Add prevToFirstColdBlock as a predecessor for transitionBlock
-                        fgAddRefPred(transitionBlock, prevToFirstColdBlock);
-                    }
-                    break;
-            }
+            // Note that this assignment could make firstColdBlock == nullptr
+            firstColdBlock = firstColdBlock->Next();
         }
     }
 
@@ -4079,15 +3993,30 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
+    bool         hasCycle  = false;
 
-    unsigned numBlocks = fgRunDfs([](BasicBlock* block, unsigned preorderNum) { block->bbPreorderNum = preorderNum; },
-                                  [=](BasicBlock* block, unsigned postorderNum) {
-                                      block->bbNewPostorderNum = postorderNum;
-                                      assert(postorderNum < fgBBcount);
-                                      postOrder[postorderNum] = block;
-                                  });
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+        block->bbPreorderNum     = preorderNum;
+        block->bbNewPostorderNum = UINT_MAX;
+    };
 
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks);
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+        block->bbNewPostorderNum = postorderNum;
+        assert(postorderNum < fgBBcount);
+        postOrder[postorderNum] = block;
+    };
+
+    auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ) {
+        // Check if block -> succ is a backedge, in which case the flow
+        // graph has a cycle.
+        if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbNewPostorderNum == UINT_MAX))
+        {
+            hasCycle = true;
+        }
+    };
+
+    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
 
 //------------------------------------------------------------------------
@@ -4388,12 +4317,19 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
     {
         unsigned          rpoNum = dfsTree->GetPostOrderCount() - i;
         BasicBlock* const block  = dfsTree->GetPostOrder(i - 1);
-        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum + 1, block->bbNum, block->bbPreorderNum + 1,
-                block->bbNewPostorderNum + 1);
+        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbNewPostorderNum);
     }
+
+    unsigned improperLoopHeaders = 0;
 #endif
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
+
+    if (!dfsTree->HasCycle())
+    {
+        JITDUMP("Flow graph has no cycles; skipping identification of natural loops\n");
+        return loops;
+    }
 
     ArrayStack<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
 
@@ -4439,7 +4375,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
-            loops->m_improperLoopHeaders++;
+            INDEBUG(improperLoopHeaders++);
             continue;
         }
 
@@ -4545,9 +4481,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
     }
 
-    if (loops->m_improperLoopHeaders > 0)
+    if (improperLoopHeaders > 0)
     {
-        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
+        JITDUMP("Rejected %u loop headers\n", improperLoopHeaders);
     }
 
     JITDUMPEXEC(Dump(loops));
