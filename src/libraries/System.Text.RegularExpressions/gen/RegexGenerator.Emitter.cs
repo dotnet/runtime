@@ -27,7 +27,7 @@ namespace System.Text.RegularExpressions.Generator
     {
         /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
         private static string EscapeXmlComment(string text) =>
-            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\0", "\\0");
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
