@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript
         private static Task<T> RunAsyncImpl<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
             var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            var tcs = new TaskCompletionSource<T>();
+            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             var capturedContext = SynchronizationContext.Current;
             var t = new Thread(() =>
             {
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript
         private static Task RunAsyncImpl(Func<Task> body, CancellationToken cancellationToken)
         {
             var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            var tcs = new TaskCompletionSource();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var capturedContext = SynchronizationContext.Current;
             var t = new Thread(() =>
             {

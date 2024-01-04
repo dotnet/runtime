@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-console */
+
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { ENVIRONMENT_IS_WORKER, loaderHelpers } from "./globals";
 
 const methods = ["debug", "log", "trace", "warn", "info", "error"];
@@ -59,12 +62,16 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
             if (typeof payload === "string") {
                 if (payload[0] == "[") {
                     const now = new Date().toISOString();
-                    if (ENVIRONMENT_IS_WORKER) {
+                    if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
                         payload = `[${threadNamePrefix}][${now}] ${payload}`;
                     } else {
                         payload = `[${now}] ${payload}`;
                     }
-                } else if (ENVIRONMENT_IS_WORKER) {
+                } else if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
+                    if (payload.indexOf("keeping the worker alive for asynchronous operation") != -1) {
+                        // muting emscripten noise
+                        return;
+                    }
                     payload = `[${threadNamePrefix}] ${payload}`;
                 }
             }

@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("JSSynchronizationContext.BackgroundJobHandler failed", e);
+                Environment.FailFast("JSSynchronizationContext.BackgroundJobHandler failed" + e.Message + Environment.NewLine + e.StackTrace);
             }
             finally
             {

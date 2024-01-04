@@ -26,6 +26,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("getTid", "WebWorkerTestHelper")]
         public static partial int GetTid();
 
+        [JSImport("getState", "WebWorkerTestHelper")]
+        public static partial JSObject GetState();
+
+        [JSImport("promiseState", "WebWorkerTestHelper")]
+        public static partial Task<JSObject> PromiseState();
+
+        [JSImport("validateState", "WebWorkerTestHelper")]
+        public static partial bool ValidateState(JSObject state);
+
+        [JSImport("promiseValidateState", "WebWorkerTestHelper")]
+        public static partial Task<bool> PromiseValidateState(JSObject state);
+
         public static string GetOriginUrl()
         {
             using var globalThis = JSHost.GlobalThis;
@@ -42,9 +54,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Execute
 
-        public async static Task RunOnNewThread(Func<Task> job)
+        public static Task RunOnNewThread(Func<Task> job)
         {
-            TaskCompletionSource tcs = new TaskCompletionSource();
+            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var t = new Thread(() =>
             {
                 try
@@ -59,46 +71,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             });
             t.Start();
-            await tcs.Task;
-            t.Join();
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
-        public async static Task RunOnMainAsync(Func<Task> job)
-        {
-            if (MainSynchronizationContext == null)
-            {
-                var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
-                var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
-                var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
-                var mainCtx = mainThreadContext.GetValue(null);
-                MainSynchronizationContext = (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
-            }
-            await RunOnTargetAsync(MainSynchronizationContext, job);
-        }
-
-        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job)
-        {
-            TaskCompletionSource tcs = new TaskCompletionSource();
-            ctx.Post(async _ =>
-            {
-                await InitializeAsync();
-                try
-                {
-                    await job().ConfigureAwait(true);
-                    tcs.SetResult();
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-                finally
-                {
-                    await DisposeAsync();
-                }
-            }, null);
             return tcs.Task;
         }
 
@@ -110,8 +82,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static JSObject WebWorkerTestHelperModule;
         [ThreadStatic]
         public static JSObject InlineTestHelperModule;
-
-        public static SynchronizationContext MainSynchronizationContext;
 
         [JSImport("setup", "WebWorkerTestHelper")]
         internal static partial Task Setup();
@@ -162,7 +132,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #endregion
     }
 
-    #region
+    #region Executor
 
     public enum ExecutorType
     {
@@ -171,14 +141,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         NewThread,
         JSWebWorker,
     }
+
     public class Executor
     {
         public int ExecutorTID;
+        public SynchronizationContext ExecutorSynchronizationContext;
+        public static SynchronizationContext MainSynchronizationContext;
 
         public ExecutorType Type;
 
         public Executor(ExecutorType type)
         {
+            if (MainSynchronizationContext == null)
+            {
+                MainSynchronizationContext = GetMainSynchronizationContext();
+            }
             Type = type;
         }
 
@@ -187,13 +164,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Task wrapExecute()
             {
                 ExecutorTID = Environment.CurrentManagedThreadId;
+                ExecutorSynchronizationContext = SynchronizationContext.Current ?? MainSynchronizationContext;
                 return job();
             }
 
             switch (Type)
             {
                 case ExecutorType.Main:
-                    return WebWorkerTestHelper.RunOnMainAsync(wrapExecute);
+                    return RunOnTargetAsync(MainSynchronizationContext, wrapExecute);
                 case ExecutorType.ThreadPool:
                     return Task.Run(wrapExecute);
                 case ExecutorType.NewThread:
@@ -217,11 +195,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             if (Type == ExecutorType.ThreadPool)
             {
-                Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                Assert.True(Thread.CurrentThread.IsThreadPoolThread, "IsThreadPoolThread:" + Thread.CurrentThread.IsThreadPoolThread + " Type " + Type);
             }
             else
             {
-                Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                Assert.False(Thread.CurrentThread.IsThreadPoolThread, "IsThreadPoolThread:" + Thread.CurrentThread.IsThreadPoolThread + " Type " + Type);
             }
         }
 
@@ -297,6 +275,37 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             AssertTargetThread();
         }
+
+        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job)
+        {
+            TaskCompletionSource tcs = new TaskCompletionSource();
+            ctx.Post(async _ =>
+            {
+                try
+                {
+                    await job().ConfigureAwait(true);
+                    tcs.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            }, null);
+            return tcs.Task;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
+        public static SynchronizationContext GetMainSynchronizationContext()
+        {
+            var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
+            var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
+            var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
+            var mainCtx = mainThreadContext.GetValue(null);
+            return (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
+        }
+
     }
 
     #endregion

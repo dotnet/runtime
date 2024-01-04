@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     // thread allocation, many threads
     // TLS
     // ProxyContext flow, child thread, child task
-    // use JSObject after JSWebWorker finished
+    // use JSObject after JSWebWorker finished, especially HTTP
     // JSWebWorker JS setTimeout till after close
     // WS on JSWebWorker
     // Yield will hit event loop 3x
@@ -32,6 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     // WS continue on TP
     // event pipe
     // FS
+    // unit test for problem **7)**
 
     public class WebWorkerTest
     {
@@ -42,7 +43,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return Enum.GetValues<ExecutorType>().Select(type => new object[] { new Executor(type) });
         }
 
-        public static IEnumerable<object[]> GetTargetThreads2x2()
+        public static IEnumerable<object[]> GetSpecificTargetThreads()
+        {
+            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.Main) };
+            yield break;
+        }
+
+        public static IEnumerable<object[]> GetTargetThreads2x()
         {
             return Enum.GetValues<ExecutorType>().SelectMany(
                 type1 => Enum.GetValues<ExecutorType>().Select(
@@ -185,5 +192,68 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #endregion
 
+        #region affinity
+
+        private async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job)
+        {
+            TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>();
+            TaskCompletionSource doneTCS = new TaskCompletionSource();
+
+            var e1 = executor1.Execute(async () =>
+            {
+                await e1Job(doneTCS.Task, readyTCS);
+                if (!readyTCS.Task.IsCompleted)
+                {
+                    readyTCS.SetResult(default);
+                }
+                await doneTCS.Task;
+            });
+
+            var r1 = await readyTCS.Task.ConfigureAwait(true);
+
+            var e2 = executor2.Execute(async () =>
+            {
+
+                executor2.AssertTargetThread();
+
+                await e2Job(r1);
+
+                doneTCS.SetResult();
+            });
+
+            await e2;
+            await e1;
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads2x))]
+        public async Task JSObject_CapturesAffinity(Executor executor1, Executor executor2)
+        {
+            var e1Job = async (Task e2done, TaskCompletionSource<JSObject> e1State) =>
+            {
+                await WebWorkerTestHelper.InitializeAsync();
+
+                executor1.AssertAwaitCapturedContext();
+
+                var jsState = await WebWorkerTestHelper.PromiseState();
+
+                // share the state with the E2 continuation
+                e1State.SetResult(jsState);
+
+                await e2done;
+
+                // cleanup
+                await WebWorkerTestHelper.DisposeAsync();
+            };
+
+            var e2Job = async (JSObject e1State) =>
+            {
+                bool valid = await WebWorkerTestHelper.PromiseValidateState(e1State);
+                Assert.True(valid);
+            };
+
+            await ActionsInDifferentThreads<JSObject>(executor1, executor2, e1Job, e2Job);
+        }
+
+        #endregion
     }
 }
