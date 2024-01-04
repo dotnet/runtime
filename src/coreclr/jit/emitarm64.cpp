@@ -13833,6 +13833,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
+            break;
 
         case IF_SVE_CZ_4A:
             switch (ins)
@@ -13863,6 +13864,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
+            break;
 
         default:
             assert(!"Unexpected instruction and format");
