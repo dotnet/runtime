@@ -328,8 +328,8 @@ namespace System.Tests
     {
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))
-            /* Stripping RefSafetyRulesAttribute because descriptors tell us so */]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsTrimmedWithILLink))
+            /* Stripping security attributes removes UnverifiableCodeAttribute */]
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
