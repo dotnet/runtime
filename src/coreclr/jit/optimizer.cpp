@@ -19,8 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    fgHasLoops          = false;
-    loopAlignCandidates = 0;
+    fgHasLoops = false;
 
     /* Initialize the # of tracked loops to 0 */
     optLoopCount              = 0;
@@ -30,7 +29,8 @@ void Compiler::optInit()
     optCurLoopEpoch           = 0;
 
 #ifdef DEBUG
-    loopsAligned = 0;
+    loopAlignCandidates = 0;
+    loopsAligned        = 0;
 #endif
 
     /* Keep track of the number of calls and indirect calls made by this method */
@@ -5354,8 +5354,7 @@ void Compiler::optResetLoopInfo()
     }
 #endif
 
-    optLoopCount        = 0; // This will force the table to be rebuilt
-    loopAlignCandidates = 0;
+    optLoopCount = 0; // This will force the table to be rebuilt
 
     // This will cause users to crash if they use the table when it is considered empty.
     // TODO: the loop table is always allocated as the same (maximum) size, so this is wasteful.
