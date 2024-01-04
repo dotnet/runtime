@@ -608,6 +608,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         fgAddRefPred(block, fastPathBb);
 
         tlsRootNullCondBB->SetTrueTarget(fastPathBb);
+        tlsRootNullCondBB->SetFalseTarget(fallbackBb);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
