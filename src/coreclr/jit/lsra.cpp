@@ -13890,9 +13890,14 @@ regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*    currentInter
             return RBM_NONE;
         }
 
-        candidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+        freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+
+        if (freeCandidates != RBM_NONE)
+        {
+            candidates = freeCandidates;
 
         try_REG_ORDER();
+        }
 
 #ifdef DEBUG
 #if TRACK_LSRA_STATS
