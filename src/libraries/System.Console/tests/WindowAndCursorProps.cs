@@ -57,7 +57,7 @@ public class WindowAndCursorProps
         }
         else
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("width", () => Console.WindowWidth = value);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("WindowWidth", () => Console.WindowWidth = value);
         }
     }
 
@@ -89,7 +89,7 @@ public class WindowAndCursorProps
         }
         else
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => Console.WindowHeight = value);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("WindowHeight", () => Console.WindowHeight = value);
         }
     }
 
@@ -559,7 +559,7 @@ public class WindowAndCursorProps
         Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowPosition(50, 50));
     }
 
-    [PlatformSpecific((TestPlatforms.Windows) | (TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {

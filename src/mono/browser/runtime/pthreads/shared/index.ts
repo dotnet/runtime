@@ -11,6 +11,7 @@ import { mono_log_debug } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
 import { pthread_self } from "../worker";
+import { GCHandle, GCHandleNull } from "../../types/internal";
 
 export interface PThreadInfo {
     readonly pthreadId: pthreadPtr;
@@ -19,18 +20,10 @@ export interface PThreadInfo {
 
 export const MainThread: PThreadInfo = {
     get pthreadId(): pthreadPtr {
-        return getBrowserThreadID();
+        return mono_wasm_main_thread_ptr();
     },
     isBrowserThread: true
 };
-
-let browserThreadIdLazy: pthreadPtr | undefined;
-export function getBrowserThreadID(): pthreadPtr {
-    if (browserThreadIdLazy === undefined) {
-        browserThreadIdLazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthreadPtr;
-    }
-    return browserThreadIdLazy;
-}
 
 const enum WorkerMonoCommandType {
     enabledInterop = "notify_enabled_interop",
@@ -166,11 +159,11 @@ export function isMonoWorkerMessagePreload(message: MonoWorkerMessage): message 
     return false;
 }
 
-export function mono_wasm_install_js_worker_interop(): void {
+export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle): void {
     if (!MonoWasmThreads) return;
     bindings_init();
-    if (!runtimeHelpers.jsSynchronizationContextInstalled) {
-        runtimeHelpers.jsSynchronizationContextInstalled = true;
+    if (!runtimeHelpers.proxy_context_gc_handle) {
+        runtimeHelpers.proxy_context_gc_handle = context_gc_handle;
         mono_log_debug("Installed JSSynchronizationContext");
     }
     Module.runtimeKeepalivePush();
@@ -184,20 +177,14 @@ export function mono_wasm_install_js_worker_interop(): void {
 export function mono_wasm_uninstall_js_worker_interop(): void {
     if (!MonoWasmThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
-    mono_assert(runtimeHelpers.jsSynchronizationContextInstalled, "JSSynchronizationContext is not installed on this worker.");
+    mono_assert(runtimeHelpers.proxy_context_gc_handle, "JSSynchronizationContext is not installed on this worker.");
 
     forceDisposeProxies(true, runtimeHelpers.diagnosticTracing);
     Module.runtimeKeepalivePop();
 
-    runtimeHelpers.jsSynchronizationContextInstalled = false;
+    runtimeHelpers.proxy_context_gc_handle = GCHandleNull;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;
     set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, false, false);
-}
-
-export function assert_synchronization_context(): void {
-    if (MonoWasmThreads) {
-        mono_assert(runtimeHelpers.jsSynchronizationContextInstalled, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
-    }
 }
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
@@ -210,4 +197,14 @@ export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInt
             runtimeHelpers.cspPolicy = true;
         }
     }
+}
+
+export function mono_wasm_pthread_ptr(): number {
+    if (!MonoWasmThreads) return 0;
+    return (<any>Module)["_pthread_self"]();
+}
+
+export function mono_wasm_main_thread_ptr(): number {
+    if (!MonoWasmThreads) return 0;
+    return (<any>Module)["_emscripten_main_runtime_thread_id"]();
 }

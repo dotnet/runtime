@@ -79,7 +79,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrsarm64sve.h"
 
 #elif defined(TARGET_LOONGARCH64)
-        #define INST(id, nm, ldst, e1) nm,
+        #define INST(id, nm, ldst, e1, msk, fmt) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_RISCV64)

@@ -190,10 +190,13 @@ protected:
     BasicBlock* genPendingCallLabel;
 
     void**    codePtr;
+    void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
     unsigned  codeSize;
     void*     coldCodePtr;
+    void*     coldCodePtrRW;
     void*     consPtr;
+    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;

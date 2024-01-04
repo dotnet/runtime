@@ -362,10 +362,27 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assem
     ClassLoader* pClassLoader = pAssembly->GetLoader();
 
     NameHandle typeName(pManifestModule, mdtBaseType);
+    CQuickBytes qbszNamespace;
 
     for (int32_t i = -1; i < cNestedTypeNamesLength; i++)
     {
-        typeName.SetName((i == -1) ? szTypeName : rgszNestedTypeNames[i]);
+        LPCUTF8 szFullyQualifiedName = (i == -1) ? szTypeName : rgszNestedTypeNames[i];
+
+        LPCUTF8 szNameSpace = "";
+        LPCUTF8 szName = "";
+
+        if ((szName = ns::FindSep(szFullyQualifiedName)) != NULL)
+        {
+            SIZE_T d = szName - szFullyQualifiedName;
+            szNameSpace = qbszNamespace.SetString(szFullyQualifiedName, d);
+            szName++;
+        }
+        else
+        {
+            szName = szFullyQualifiedName;
+        }
+
+        typeName.SetName(szNameSpace, szName);
 
         // typeName.m_pBucket gets set here if the type is found
         // it will be used in the next iteration to look up the nested type
@@ -415,6 +432,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
     ClassLoader* pClassLoader = pAssembly->GetLoader();
 
     NameHandle typeName(pManifestModule, mdtBaseType);
+    CQuickBytes qbszNamespace;
 
     // Set up the name handle
     typeName.SetCaseInsensitive();
@@ -427,7 +445,23 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
         // The type name is expected to be lower-cased by the caller for case-insensitive lookups
         name.LowerCase();
 
-        typeName.SetName(name.GetUTF8());
+        LPCUTF8 szFullyQualifiedName = name.GetUTF8();
+
+        LPCUTF8 szNameSpace = "";
+        LPCUTF8 szName = "";
+
+        if ((szName = ns::FindSep(szFullyQualifiedName)) != NULL)
+        {
+            SIZE_T d = szName - szFullyQualifiedName;
+            szNameSpace = qbszNamespace.SetString(szFullyQualifiedName, d);
+            szName++;
+        }
+        else
+        {
+            szName = szFullyQualifiedName;
+        }
+
+        typeName.SetName(szNameSpace, szName);
 
         // typeName.m_pBucket gets set here if the type is found
         // it will be used in the next iteration to look up the nested type

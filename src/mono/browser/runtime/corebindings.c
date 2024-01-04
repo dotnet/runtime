@@ -18,10 +18,6 @@
 
 //JS funcs
 extern void mono_wasm_release_cs_owned_object (int js_handle);
-extern void mono_wasm_bind_js_import(void *signature, int *is_exception, MonoObject **result);
-extern void mono_wasm_invoke_js_function(int function_js_handle, void *args);
-extern void mono_wasm_invoke_js_import(int function_handle, void *args);
-extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
 extern void mono_wasm_resolve_or_reject_promise(void *data);
 
 typedef void (*background_job_cb)(void);
@@ -42,8 +38,17 @@ extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *ca
 #endif /* DISABLE_LEGACY_JS_INTEROP */
 
 #ifndef DISABLE_THREADS
-extern void mono_wasm_install_js_worker_interop ();
+extern void mono_wasm_install_js_worker_interop (int context_gc_handle);
 extern void mono_wasm_uninstall_js_worker_interop ();
+extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
+extern void mono_wasm_invoke_import_async(void* args, void* signature);
+extern void mono_wasm_invoke_import_sync(void* args, void* signature);
+extern void mono_wasm_invoke_js_function(int function_js_handle, void *args);
+#else
+extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
+extern void mono_wasm_bind_js_import(void *signature, int *is_exception, MonoObject **result);
+extern void mono_wasm_invoke_js_import(int function_handle, void *args);
+extern void mono_wasm_invoke_js_function(int function_js_handle, void *args);
 #endif /* DISABLE_THREADS */
 
 // HybridGlobalization
@@ -61,10 +66,6 @@ extern int mono_wasm_get_first_week_of_year(MonoString **culture, int *is_except
 void bindings_initialize_internals (void)
 {
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
-	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
-	mono_add_internal_call ("Interop/Runtime::InvokeJSImport", mono_wasm_invoke_js_import);
-	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
 	mono_add_internal_call ("Interop/Runtime::ResolveOrRejectPromise", mono_wasm_resolve_or_reject_promise);
 
 #ifndef	ENABLE_JS_INTEROP_BY_VALUE
@@ -75,6 +76,15 @@ void bindings_initialize_internals (void)
 #ifndef DISABLE_THREADS
 	mono_add_internal_call ("Interop/Runtime::InstallWebWorkerInterop", mono_wasm_install_js_worker_interop);
 	mono_add_internal_call ("Interop/Runtime::UninstallWebWorkerInterop", mono_wasm_uninstall_js_worker_interop);
+	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportSync", mono_wasm_invoke_import_sync);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImportAsync", mono_wasm_invoke_import_async);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
+#else
+	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
+	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSImport", mono_wasm_invoke_js_import);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
 #endif /* DISABLE_THREADS */
 
 #ifndef DISABLE_LEGACY_JS_INTEROP

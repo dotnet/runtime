@@ -71,6 +71,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnySearchValuesString = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<char>), typeof(SearchValues<string>) })!;
         private static readonly MethodInfo s_spanIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
@@ -114,8 +115,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Whether this expression has a non-infinite timeout.</summary>
         protected bool _hasTimeout;
 
-        /// <summary><see cref="SearchValues{T}"/> instances used by the expression. For now these are only ASCII sets.</summary>
-        protected List<SearchValues<char>>? _searchValues;
+        /// <summary><see cref="SearchValues{T}"/> instances used by the expression.</summary>
+        protected List<object>? _searchValues;
 
         /// <summary>Pool of Int32 LocalBuilders.</summary>
         private Stack<LocalBuilder>? _int32LocalsPool;
@@ -460,7 +461,7 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingString_LeftToRight:
                 case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                 case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
-                    EmitIndexOf_LeftToRight();
+                    EmitIndexOfString_LeftToRight();
                     break;
 
                 case FindNextStartingPositionMode.LeadingString_RightToLeft:
@@ -745,7 +746,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Emits a case-sensitive left-to-right search for a substring.
-            void EmitIndexOf_LeftToRight()
+            void EmitIndexOfString_LeftToRight()
             {
                 RegexFindOptimizations opts = _regexTree.FindOptimizations;
                 Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or FindNextStartingPositionMode.FixedDistanceString_LeftToRight);
@@ -762,19 +763,11 @@ namespace System.Text.RegularExpressions
                     Add();
                 }
                 Call(s_spanSliceIntMethod);
-                Ldstr(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
+                string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
                     opts.LeadingPrefix :
-                    opts.FixedDistanceLiteral.String!);
-                Call(s_stringAsSpanMethod);
-                if (opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight)
-                {
-                    Ldc((int)StringComparison.OrdinalIgnoreCase);
-                    Call(s_spanIndexOfSpanStringComparison);
-                }
-                else
-                {
-                    Call(s_spanIndexOfSpan);
-                }
+                    opts.FixedDistanceLiteral.String!;
+                LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                Call(s_spanIndexOfAnySearchValuesString);
                 Stloc(i);
 
                 // if (i < 0) goto ReturnFalse;
@@ -967,12 +960,12 @@ namespace System.Text.RegularExpressions
                         // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
                         // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
                         // all of the target ASCII characters and all of non-ASCII.
-                        var asciiChars = new List<char>();
-                        for (int i = 0; i <= 0x7f; i++)
+                        using var asciiChars = new ValueListBuilder<char>(stackalloc char[128]);
+                        for (int i = 0; i < 128; i++)
                         {
                             if (!RegexCharClass.CharInClass((char)i, primarySet.Set))
                             {
-                                asciiChars.Add((char)i);
+                                asciiChars.Append((char)i);
                             }
                         }
 
@@ -984,7 +977,7 @@ namespace System.Text.RegularExpressions
 
                             // int i = span.
                             Ldloc(span);
-                            if (asciiChars.Count == 128)
+                            if (asciiChars.Length == 128)
                             {
                                 // IndexOfAnyExceptInRange('\0', '\u007f');
                                 Ldc(0);
@@ -994,7 +987,7 @@ namespace System.Text.RegularExpressions
                             else
                             {
                                 // IndexOfAnyExcept(searchValuesArray[...]);
-                                LoadSearchValues(CollectionsMarshal.AsSpan(asciiChars));
+                                LoadSearchValues(asciiChars.AsSpan().ToArray());
                                 Call(s_spanIndexOfAnyExceptSearchValues);
                             }
                             Stloc(i);
@@ -6123,13 +6116,22 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Adds an entry in <see cref="CompiledRegexRunner._searchValues"/> for the given <paramref name="chars"/> and emits a load of that initialized value.
+        /// Adds an entry in <see cref="CompiledRegexRunner._searchValues"/> for the given <paramref name="values"/> and emits a load of that initialized value.
         /// </summary>
-        private void LoadSearchValues(ReadOnlySpan<char> chars)
+        /// <param name="values">The values to pass to SearchValues.Create.</param>
+        /// <param name="comparison">The comparison to pass to SearchValues.Create. Used only when T == string.</param>
+        private void LoadSearchValues<T>(T[] values, StringComparison comparison = StringComparison.Ordinal)
         {
-            List<SearchValues<char>> list = _searchValues ??= new();
+            List<object> list = _searchValues ??= new();
             int index = list.Count;
-            list.Add(SearchValues.Create(chars));
+
+            Debug.Assert(values is char[] or string[]);
+            Debug.Assert(comparison is StringComparison.Ordinal || values is string[]);
+
+            list.Add(
+                typeof(T) == typeof(char) ? SearchValues.Create((char[])(object)values) :
+                typeof(T) == typeof(string) ? SearchValues.Create((string[])(object)values, comparison) :
+                throw new UnreachableException());
 
             // Logically do _searchValues[index], but avoid the bounds check on accessing the array,
             // and cast to the known derived sealed type to enable devirtualization.
