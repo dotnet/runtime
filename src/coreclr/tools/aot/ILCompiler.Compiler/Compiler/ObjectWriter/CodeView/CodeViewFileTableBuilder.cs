@@ -22,7 +22,7 @@ namespace ILCompiler.ObjectWriter
         public CodeViewFileTableBuilder()
         {
             // Insert empty entry at the beginning of string table
-            _stringTableWriter.Write(stackalloc byte[2]);
+            _stringTableWriter.Write(stackalloc byte[2] { 0, 0 });
         }
 
         public uint GetFileIndex(string fileName)
