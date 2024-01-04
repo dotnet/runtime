@@ -6411,15 +6411,13 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         const regNumber offsetReg = initBlkNode->GetSingleTempReg();
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
 
-        BasicBlock* loop = genCreateTempLabel();
-        genDefineTempLabel(loop);
-
+        // loop begin:
         // *(dstReg + offsetReg) = 0
         GetEmitter()->emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_R0, dstReg, offsetReg);
         // offsetReg = offsetReg - 8
         GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
         // if (offsetReg != 0) goto loop;
-        GetEmitter()->emitIns_J_cond_la(INS_beq, loop, offsetReg, REG_R0);
+        GetEmitter()->emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }
