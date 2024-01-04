@@ -13607,6 +13607,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_HW_4B:
         case IF_SVE_HW_4B_D:
         case IF_SVE_HX_3A_E:
+        case IF_SVE_IJ_3A_D:
+        case IF_SVE_IJ_3A_E:
         case IF_SVE_IJ_3A_F:
         case IF_SVE_IK_4A_G:
         case IF_SVE_IJ_3A_G:
