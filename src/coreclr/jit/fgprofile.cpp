@@ -2711,7 +2711,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
         return earlyExitPhaseStatus;
     }
 
-    JITDUMP("Instrumenting method: %d count probes, %d class probes and %d generic probes\n",
+    JITDUMP("Instrumenting method: %d count probes, %d class probes and %d value probes\n",
             fgCountInstrumentor->SchemaCount(), fgHistogramInstrumentor->SchemaCount(),
             fgValueInstrumentor->SchemaCount())
 
