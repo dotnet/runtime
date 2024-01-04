@@ -2315,15 +2315,16 @@ public:
         //     \--*  LCL_VAR   long   tmp
         //
 
-        const unsigned  lenTmpNum            = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
-        GenTree*     storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
-        GenTree*     lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
-        GenTreeOp*   lengthNode     = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
-        GenTree*     histNode       = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
-        unsigned     helper         = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+        const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
+        GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
+        GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
+        GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
+        GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
         GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
 
-        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode, compiler->gtCloneExpr(lengthLocal));
+        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
+                                             compiler->gtCloneExpr(lengthLocal));
         m_instrCount++;
     }
 };
@@ -2677,7 +2678,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     const PhaseStatus earlyExitPhaseStatus =
         madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 
-    // Optionally, when jitting, if there were no class probes and only one count probe,
+    // Optionally, when jitting, if there were no class probes, no value probes and only one count probe,
     // suppress instrumentation.
     //
     // We leave instrumentation in place when prejitting as the sample hits in the method
@@ -2699,8 +2700,8 @@ PhaseStatus Compiler::fgInstrumentMethod()
     if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
         (fgHistogramInstrumentor->SchemaCount() == 0) && (fgValueInstrumentor->SchemaCount() == 0))
     {
-        JITDUMP(
-            "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
+        JITDUMP("Not instrumenting method: minimal probing enabled, and method has only one counter and no class and "
+                "no value probes\n");
 
         return earlyExitPhaseStatus;
     }

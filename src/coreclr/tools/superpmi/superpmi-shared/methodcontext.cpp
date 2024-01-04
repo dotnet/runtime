@@ -5779,6 +5779,18 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                         printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount:
+                    printf("V %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount:
+                    printf("V %" PRIu64 "", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogram:
+                    for (unsigned int j = 0; j < pBuf[i].Count; j++)
+                    {
+                        printf("[%u] %lld", j, (int64_t)*(intptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t)));
+                    }
+                    break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
