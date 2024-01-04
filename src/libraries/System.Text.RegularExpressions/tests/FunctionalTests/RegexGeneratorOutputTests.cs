@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// <code>^(?&lt;proto&gt;\w+)://[^/]+?(?&lt;port&gt;:\d+)?/</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
@@ -434,7 +434,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// <code>href\s*=\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\s]+))</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
