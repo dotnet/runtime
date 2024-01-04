@@ -4251,11 +4251,11 @@ RETRY_UNROLL:
 
             BlockToBlockMap blockMap(getAllocator(CMK_LoopUnroll));
 
-            BasicBlock*            bottom        = loop->GetLexicallyBottomMostBlock();
-            BasicBlock*            insertAfter   = bottom;
-            BasicBlock* const      tail          = bottom->Next();
-            BasicBlock*            prevTestBlock = nullptr;
-            unsigned               iterToUnroll  = totalIter; // The number of iterations left to unroll
+            BasicBlock*       bottom        = loop->GetLexicallyBottomMostBlock();
+            BasicBlock*       insertAfter   = bottom;
+            BasicBlock* const tail          = bottom->Next();
+            BasicBlock*       prevTestBlock = nullptr;
+            unsigned          iterToUnroll  = totalIter; // The number of iterations left to unroll
 
             // Find the exit block of the IV test first. We need to do that
             // here since it may have implicit fallthrough that we'll change
@@ -4361,7 +4361,7 @@ RETRY_UNROLL:
                         BasicBlock* newRedirBlk =
                             fgNewBBafter(BBJ_ALWAYS, insertAfter, /* extendRegion */ true, targetBlk);
                         newRedirBlk->copyEHRegion(insertAfter);
-                        newRedirBlk->bbWeight     = block->Next()->bbWeight;
+                        newRedirBlk->bbWeight = block->Next()->bbWeight;
                         newRedirBlk->CopyFlags(block->Next(), BBF_RUN_RARELY | BBF_PROF_WEIGHT);
                         newRedirBlk->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
