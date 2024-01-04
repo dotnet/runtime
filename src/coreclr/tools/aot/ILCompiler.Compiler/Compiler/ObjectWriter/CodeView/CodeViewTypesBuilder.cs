@@ -144,7 +144,7 @@ namespace ILCompiler.ObjectWriter
                 if (classDescriptor.BaseClassId != 0)
                 {
                     fieldListRecord.StartListEntry(LF_BCLASS);
-                    fieldListRecord.Write((ushort)0); // TODO: Attributes
+                    fieldListRecord.Write((ushort)0); // Attributes
                     fieldListRecord.Write(classDescriptor.BaseClassId);
                     fieldListRecord.WriteEncodedInteger(0); // Offset
                     fieldListRecord.EndListEntry();
@@ -153,7 +153,7 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 fieldListRecord.StartListEntry(LF_MEMBER);
-                fieldListRecord.Write((ushort)0); // TODO: Attributes
+                fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                 fieldListRecord.Write(T_INT4);
                 fieldListRecord.WriteEncodedInteger(offset);
                 fieldListRecord.Write("count");
@@ -166,7 +166,7 @@ namespace ILCompiler.ObjectWriter
                     for (uint i = 0; i < arrayDescriptor.Rank; ++i)
                     {
                         fieldListRecord.StartListEntry(LF_MEMBER);
-                        fieldListRecord.Write((ushort)0); // TODO: Attributes
+                        fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                         fieldListRecord.Write(T_INT4);
                         fieldListRecord.WriteEncodedInteger(offset);
                         fieldListRecord.Write($"length{i}");
@@ -178,7 +178,7 @@ namespace ILCompiler.ObjectWriter
                     for (uint i = 0; i < arrayDescriptor.Rank; ++i)
                     {
                         fieldListRecord.StartListEntry(LF_MEMBER);
-                        fieldListRecord.Write((ushort)0); // TODO: Attributes
+                        fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                         fieldListRecord.Write(T_INT4);
                         fieldListRecord.WriteEncodedInteger(offset);
                         fieldListRecord.Write($"bounds{i}");
@@ -189,7 +189,7 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 fieldListRecord.StartListEntry(LF_MEMBER);
-                fieldListRecord.Write((ushort)0); // TODO: Attributes
+                fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                 fieldListRecord.Write(arrayRecordTypeIndex);
                 fieldListRecord.WriteEncodedInteger(offset);
                 fieldListRecord.Write("values");
@@ -205,7 +205,7 @@ namespace ILCompiler.ObjectWriter
                 Debug.Assert(memberCount <= ushort.MaxValue);
                 Debug.Assert(arrayDescriptor.Size <= ushort.MaxValue);
                 record.Write((ushort)memberCount); // Number of elements in class
-                record.Write((ushort)0); // TODO: Options
+                record.Write((ushort)0);  // Class options (CodeViewPropertyFlags)
                 record.Write(fieldListTypeIndex); // Field descriptor index
                 record.Write((uint)0); // Derived-from descriptor index
                 record.Write((uint)0); // Vtshape descriptor index
@@ -228,7 +228,7 @@ namespace ILCompiler.ObjectWriter
                 foreach (EnumRecordTypeDescriptor record in typeRecords)
                 {
                     fieldListRecord.StartListEntry(LF_ENUMERATE);
-                    fieldListRecord.Write((ushort)0); // TODO: Attributes
+                    fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                     fieldListRecord.WriteEncodedInteger(record.Value);
                     fieldListRecord.Write(record.Name);
                     fieldListRecord.EndListEntry();
@@ -241,7 +241,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Debug.Assert(typeRecords.Length <= ushort.MaxValue);
                 record.Write((ushort)typeRecords.Length); // Number of elements in class
-                record.Write((ushort)0); // TODO: Attributes
+                record.Write((ushort)0);  // Class options (CodeViewPropertyFlags)
                 record.Write(typeDescriptor.ElementType);
                 record.Write(fieldListTypeIndex);
                 record.Write(typeDescriptor.Name);
@@ -258,7 +258,7 @@ namespace ILCompiler.ObjectWriter
             using (LeafRecordWriter record = StartLeafRecord(classDescriptor.IsStruct == 1 ? LF_STRUCTURE : LF_CLASS))
             {
                 record.Write((ushort)0); // Number of elements in class
-                record.Write((ushort)CV_PROP_FORWARD_REFERENCE);
+                record.Write((ushort)CV_PROP_FORWARD_REFERENCE); // Class options (CodeViewPropertyFlags)
                 record.Write((uint)0); // Field descriptor index
                 record.Write((uint)0); // Derived-from descriptor index
                 record.Write((uint)0); // Vtshape descriptor index
@@ -282,7 +282,7 @@ namespace ILCompiler.ObjectWriter
                 if (classTypeDescriptor.BaseClassId != 0)
                 {
                     fieldListRecord.StartListEntry(LF_BCLASS);
-                    fieldListRecord.Write((ushort)0); // TODO: Attributes
+                    fieldListRecord.Write((ushort)0); // Attributes
                     fieldListRecord.Write(classTypeDescriptor.BaseClassId);
                     fieldListRecord.WriteEncodedInteger(0); // Offset
                     fieldListRecord.EndListEntry();
@@ -302,7 +302,7 @@ namespace ILCompiler.ObjectWriter
                     if (desc.Offset == 0xFFFFFFFF)
                     {
                         fieldListRecord.StartListEntry(LF_STMEMBER);
-                        fieldListRecord.Write((ushort)0); // TODO: Attributes
+                        fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                         fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.Write(desc.Name);
                         fieldListRecord.EndListEntry();
@@ -310,7 +310,7 @@ namespace ILCompiler.ObjectWriter
                     else
                     {
                         fieldListRecord.StartListEntry(LF_MEMBER);
-                        fieldListRecord.Write((ushort)0); // TODO: Attributes
+                        fieldListRecord.Write((ushort)CodeViewMemberAccess.CV_public);
                         fieldListRecord.Write(desc.FieldTypeIndex);
                         fieldListRecord.WriteEncodedInteger(desc.Offset);
                         fieldListRecord.Write(desc.Name);
@@ -326,7 +326,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Debug.Assert(memberCount <= ushort.MaxValue);
                 record.Write((ushort)memberCount); // Number of elements in class
-                record.Write((ushort)0); // TODO: Options
+                record.Write((ushort)0); // Class options (CodeViewPropertyFlags)
                 record.Write(fieldListTypeIndex); // Field descriptor index
                 record.Write((uint)0); // Derived-from descriptor index
                 record.Write((uint)0); // Vtshape descriptor index
@@ -360,7 +360,8 @@ namespace ILCompiler.ObjectWriter
                 record.Write(memberDescriptor.ContainingClass);
                 record.Write(memberDescriptor.TypeIndexOfThisPointer);
                 record.Write((byte)memberDescriptor.CallingConvention);
-                record.Write((byte)0); // TODO: Attributes
+                // TODO: Evaluate if we should mark constructors
+                record.Write((byte)0); // Function options (CV_funcattr_t)
                 record.Write((ushort)memberDescriptor.NumberOfArguments);
                 record.Write(argumentListTypeIndex);
                 record.Write((uint)memberDescriptor.ThisAdjust);

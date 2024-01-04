@@ -2091,6 +2091,26 @@ namespace ILCompiler.ObjectWriter
             CV_AMD64_YMM15D3 = 687,
         }
 
+        // Matches CV_access_e
+        public enum CodeViewMemberAccess : byte
+        {
+            CV_private = 1,
+            CV_protected = 2,
+            CV_public = 3,
+        }
+
+        // Matches CV_methodprop_e
+        public enum CodeViewMethodKind : byte
+        {
+            CV_MTvanilla = 0,
+            CV_MTvirtual = 1,
+            CV_MTstatic = 2,
+            CV_MTfriend = 3,
+            CV_MTintro = 4,
+            CV_MTpurevirt = 5,
+            CV_MTpureintro = 6,
+        }
+
         public enum CodeViewSymbolDefinition : ushort
         {
             S_COMPILE = 0x0001, // Compile flags symbol
