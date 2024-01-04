@@ -2553,6 +2553,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
@@ -3143,6 +3144,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
             {
                 // Optimize
@@ -3156,6 +3158,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
                 if (gtIsTypeof(impStackTop().val, &hClass))
                 {
+                    assert(hClass != NO_CLASS_HANDLE);
                     switch (ni)
                     {
                         case NI_System_Type_get_IsEnum:
@@ -3176,6 +3179,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             retNode = gtNewIconNode(
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
+                        case NI_System_Type_get_IsPrimitive:
+                            // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
+                            // because enums are not primitive types.
+                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
+                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            {
+                                retNode = gtNewTrue();
+                            }
+                            else
+                            {
+                                retNode = gtNewFalse();
+                            }
+                            break;
+
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
@@ -8806,6 +8823,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_IsValueType") == 0)
                         {
                             result = NI_System_Type_get_IsValueType;
+                        }
+                        else if (strcmp(methodName, "get_IsPrimitive") == 0)
+                        {
+                            result = NI_System_Type_get_IsPrimitive;
                         }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {

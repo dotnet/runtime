@@ -1994,6 +1994,12 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 void Compiler::compDone()
 {
+#ifdef LATE_DISASM
+    if (codeGen != nullptr)
+    {
+        codeGen->getDisAssembler().disDone();
+    }
+#endif // LATE_DISASM
 }
 
 void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum,        /* IN  */
@@ -4530,11 +4536,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // Convert BBJ_CALLFINALLY/BBJ_ALWAYS pairs to BBJ_CALLFINALLY/BBJ_CALLFINALLYRET.
-    // Temporary: eventually, do this immediately in impImportLeave
-    //
-    DoPhase(this, PHASE_UPDATE_CALLFINALLY, &Compiler::fgUpdateCallFinally);
-
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
@@ -4919,6 +4920,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         while (iterations > 0)
         {
+            fgModified = false;
+
             if (doSsa)
             {
                 // Build up SSA form for the IR
@@ -5010,8 +5013,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
-                //
-                // Note: this invalidates loops, dominators and reachability
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 
@@ -5483,8 +5484,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is an unconditional jump (which isn't to the next block)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->HasFlag(BBF_NONE_QUIRK))
+        // If there is an unconditional jump that won't be removed
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->CanRemoveJumpToNext(this))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -9406,6 +9407,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cNewLoop,    dNewLoop       : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
  *                                    loop arg.
  *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
+ *      cVN,         dVN            : Display a ValueNum (call vnPrint()).
  *
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
@@ -9464,6 +9466,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cNewLoopsA")
 #pragma comment(linker, "/include:cNewLoop")
 #pragma comment(linker, "/include:cTreeFlags")
+#pragma comment(linker, "/include:cVN")
 
 // Functions which call the c* functions getting Compiler* using `JitTls::GetCompiler()`
 #pragma comment(linker, "/include:dBlock")
@@ -9492,6 +9495,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dNewLoopsA")
 #pragma comment(linker, "/include:dNewLoop")
 #pragma comment(linker, "/include:dTreeFlags")
+#pragma comment(linker, "/include:dVN")
 
 // Functions which don't require a Compiler*
 #pragma comment(linker, "/include:dRegMask")
@@ -9529,7 +9533,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_cLoop")
 #pragma comment(linker, "/include:_cLoopPtr")
 #pragma comment(linker, "/include:_cLoops")
+#pragma comment(linker, "/include:_cNewLoops")
+#pragma comment(linker, "/include:_cNewLoopsA")
+#pragma comment(linker, "/include:_cNewLoop")
 #pragma comment(linker, "/include:_cTreeFlags")
+#pragma comment(linker, "/include:_cVN")
 
 // Functions which call the c* functions getting Compiler* using `JitTls:_:GetCompiler()`
 #pragma comment(linker, "/include:_dBlock")
@@ -9554,7 +9562,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_dLoop")
 #pragma comment(linker, "/include:_dLoopPtr")
 #pragma comment(linker, "/include:_dLoops")
+#pragma comment(linker, "/include:_dNewLoops")
+#pragma comment(linker, "/include:_dNewLoopsA")
+#pragma comment(linker, "/include:_dNewLoop")
 #pragma comment(linker, "/include:_dTreeFlags")
+#pragma comment(linker, "/include:_dVN")
 
 // Functions which don't require a Compiler*
 #pragma comment(linker, "/include:_dRegMask")
@@ -9986,102 +9998,9 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_CNS_INT:
             {
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
-
-                switch (handleKind)
+                if (handleKind != 0)
                 {
-                    case GTF_ICON_SCOPE_HDL:
-
-                        chars += printf("[ICON_SCOPE_HDL]");
-                        break;
-
-                    case GTF_ICON_CLASS_HDL:
-
-                        chars += printf("[ICON_CLASS_HDL]");
-                        break;
-
-                    case GTF_ICON_METHOD_HDL:
-
-                        chars += printf("[ICON_METHOD_HDL]");
-                        break;
-
-                    case GTF_ICON_FIELD_HDL:
-
-                        chars += printf("[ICON_FIELD_HDL]");
-                        break;
-
-                    case GTF_ICON_STATIC_HDL:
-
-                        chars += printf("[ICON_STATIC_HDL]");
-                        break;
-
-                    case GTF_ICON_STR_HDL:
-
-                        chars += printf("[ICON_STR_HDL]");
-                        break;
-
-                    case GTF_ICON_OBJ_HDL:
-
-                        chars += printf("[ICON_OBJ_HDL]");
-                        break;
-
-                    case GTF_ICON_CONST_PTR:
-
-                        chars += printf("[ICON_CONST_PTR]");
-                        break;
-
-                    case GTF_ICON_GLOBAL_PTR:
-
-                        chars += printf("[ICON_GLOBAL_PTR]");
-                        break;
-
-                    case GTF_ICON_VARG_HDL:
-
-                        chars += printf("[ICON_VARG_HDL]");
-                        break;
-
-                    case GTF_ICON_PINVKI_HDL:
-
-                        chars += printf("[ICON_PINVKI_HDL]");
-                        break;
-
-                    case GTF_ICON_TOKEN_HDL:
-
-                        chars += printf("[ICON_TOKEN_HDL]");
-                        break;
-
-                    case GTF_ICON_TLS_HDL:
-
-                        chars += printf("[ICON_TLD_HDL]");
-                        break;
-
-                    case GTF_ICON_FTN_ADDR:
-
-                        chars += printf("[ICON_FTN_ADDR]");
-                        break;
-
-                    case GTF_ICON_CIDMID_HDL:
-
-                        chars += printf("[ICON_CIDMID_HDL]");
-                        break;
-
-                    case GTF_ICON_BBC_PTR:
-
-                        chars += printf("[ICON_BBC_PTR]");
-                        break;
-
-                    case GTF_ICON_STATIC_BOX_PTR:
-
-                        chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
-                        break;
-
-                    case GTF_ICON_STATIC_ADDR_PTR:
-
-                        chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
-                        break;
-
-                    default:
-                        assert(!"a forgotten handle flag");
-                        break;
+                    chars += printf("[%s]", GenTree::gtGetHandleKindString(handleKind));
                 }
             }
             break;
@@ -10340,6 +10259,14 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
     }
 }
 
+JITDBGAPI void __cdecl cVN(Compiler* comp, ValueNum vn)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *VN %u\n", sequenceNumber++);
+    comp->vnPrint(vn, 1);
+    printf("\n");
+}
+
 JITDBGAPI void __cdecl dBlock(BasicBlock* block)
 {
     cBlock(JitTls::GetCompiler(), block);
@@ -10468,6 +10395,11 @@ JITDBGAPI void __cdecl dNewLoop(FlowGraphNaturalLoop* loop)
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
 {
     cTreeFlags(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dVN(ValueNum vn)
+{
+    cVN(JitTls::GetCompiler(), vn);
 }
 
 JITDBGAPI void __cdecl dRegMask(regMaskTP mask)

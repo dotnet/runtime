@@ -47,10 +47,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
 #if FEATURE_WASM_THREADS
-                var currentTID = JSSynchronizationContext.CurrentJSSynchronizationContext?.TargetTID;
-                if (jsException.OwnerTID != currentTID)
+                if (!jsException.ProxyContext.IsCurrentThread())
                 {
-                    return bs;
+                    // if we are on another thread, it would be too expensive and risky to obtain lazy stack trace.
+                    return bs + Environment.NewLine + "... omitted JavaScript stack trace from another thread.";
                 }
 #endif
                 string? jsStackTrace = jsException.GetPropertyAsString("stack");

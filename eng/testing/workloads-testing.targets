@@ -211,6 +211,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     IntermediateOutputPath="$(ArtifactsObjDir)wasm"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
