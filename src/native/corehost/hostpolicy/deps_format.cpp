@@ -595,7 +595,7 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
         runtime_target.GetString() :
         runtime_target[_X("name")].GetString();
 
-    trace::verbose(_X("Loading deps file... [%s]: is_framework dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
+    trace::verbose(_X("Loading deps file... [%s]: is_framework_dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
 
     if (is_framework_dependent)
     {
