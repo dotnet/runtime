@@ -2675,7 +2675,8 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * Unit testing of the emitter: If JitEmitUnitTests is set for this function, generate
  * a bunch of instructions, then either:
  * 1. Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions are the same as we do. Or,
- * 2. Use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and disassemble the output file with an external disassembler.
+ * 2. Use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and disassemble the output file with an external
+ * disassembler.
  *
  * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
