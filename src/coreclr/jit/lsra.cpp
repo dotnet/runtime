@@ -3038,7 +3038,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             return REG_NA;
         }
 
-        foundReg    = genRegNumFromMask(foundRegBit);
+        foundReg                   = genRegNumFromMask(foundRegBit);
         availablePhysRegRecord     = getRegisterRecord(foundReg);
         Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
         if ((assignedInterval != currentInterval) &&
