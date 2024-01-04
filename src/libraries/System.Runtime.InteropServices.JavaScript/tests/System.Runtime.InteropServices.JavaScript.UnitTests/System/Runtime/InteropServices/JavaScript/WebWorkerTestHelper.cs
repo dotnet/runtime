@@ -146,16 +146,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     {
         public int ExecutorTID;
         public SynchronizationContext ExecutorSynchronizationContext;
-        public static SynchronizationContext MainSynchronizationContext;
+        private static SynchronizationContext _mainSynchronizationContext;
+        public static SynchronizationContext MainSynchronizationContext
+        {
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
+            get
+            {
+                if (_mainSynchronizationContext != null)
+                {
+                    return _mainSynchronizationContext;
+                }
+                var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
+                var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
+                var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
+                var mainCtx = mainThreadContext.GetValue(null);
+                _mainSynchronizationContext = (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
+                return _mainSynchronizationContext;
+            }
+        }
 
         public ExecutorType Type;
 
         public Executor(ExecutorType type)
         {
-            if (MainSynchronizationContext == null)
-            {
-                MainSynchronizationContext = GetMainSynchronizationContext();
-            }
             Type = type;
         }
 
@@ -293,19 +309,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, null);
             return tcs.Task;
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
-        public static SynchronizationContext GetMainSynchronizationContext()
-        {
-            var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
-            var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
-            var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
-            var mainCtx = mainThreadContext.GetValue(null);
-            return (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
-        }
-
     }
 
     #endregion

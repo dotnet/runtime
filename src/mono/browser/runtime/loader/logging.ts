@@ -68,7 +68,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
                         payload = `[${now}] ${payload}`;
                     }
                 } else if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
-                    if (payload.indexOf("keeping the worker alive for asynchronous operation") != -1) {
+                    if (payload.indexOf("keeping the worker alive for asynchronous operation") !== -1) {
                         // muting emscripten noise
                         return;
                     }
