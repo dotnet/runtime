@@ -24570,7 +24570,15 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         shiftVal = shiftVal / 2;
     }
 
-    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
+#if defined(TARGET_X86)
+    if (varTypeIsLong(simdBaseType))
+    {
+        GenTree* op2 = gtNewIconNode(0);
+        return gtNewSimdGetElementNode(type, op1, op2, simdBaseJitType, simdSize);
+    }
+#endif // TARGET_X86
+
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
 
 #elif defined(TARGET_ARM64)
     switch (simdBaseType)

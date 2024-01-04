@@ -2891,13 +2891,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 break;
             }
-#if defined(TARGET_X86)
-            else if (varTypeIsLong(simdBaseType))
-            {
-                // Revisit this.
-                break;
-            }
-#endif // TARGET_X86
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
