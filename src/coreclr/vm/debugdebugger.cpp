@@ -1086,8 +1086,9 @@ PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PTR_MethodDesc pFunc, PREGDIS
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
+        SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
@@ -1098,10 +1099,25 @@ PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PTR_MethodDesc pFunc, PREGDIS
 
     if (pFunc->AcquiresInstMethodTableFromThis())
     {
-        OBJECTREF obj = pFrame != NULL ? pCodeInfo->GetCodeManager()->GetInstance(pRD, pCodeInfo) : NULL;
-        if (obj == NULL)
+        if (pFrame == NULL)
+        {
+            PTR_MethodTable pMT = NULL;
+#ifdef USE_GC_INFO_DECODER
+            PTR_VOID token = EECodeManager::GetExactGenericsToken(pRD, pCodeInfo);
+            OBJECTREF oRef = ObjectToOBJECTREF(PTR_Object(dac_cast<TADDR>(token)));
+#else
+            OBJECTREF oRef = pCodeInfo->GetCodeManager()->GetInstance(pRD, pCodeInfo);
+#endif
+            GCPROTECT_BEGIN(oRef);
+            if (oRef != NULL)
+                pMT = oRef->GetMethodTable();
+            GCPROTECT_END();
+            return pMT;
+        }
+        else
+        {
             return NULL;
-        return obj->GetMethodTable();
+        }
     }
     else
     {
