@@ -583,7 +583,7 @@ namespace ILCompiler.ObjectWriter
             _debugTypesSectionWriter = GetOrCreateSection(DebugTypesSection);
             _debugTypesSectionWriter.EmitAlignment(4);
             _debugTypesBuilder = new CodeViewTypesBuilder(
-                _nodeFactory.NameMangler, _nodeFactory.Target.Architecture,
+                _nodeFactory.NameMangler, _nodeFactory.Target.PointerSize,
                 _debugTypesSectionWriter);
             return _debugTypesBuilder;
         }

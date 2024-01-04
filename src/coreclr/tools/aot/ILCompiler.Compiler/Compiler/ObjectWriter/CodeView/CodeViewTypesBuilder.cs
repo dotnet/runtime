@@ -50,16 +50,11 @@ namespace ILCompiler.ObjectWriter
 
         public IList<(string, uint)> UserDefinedTypes => _userDefinedTypes;
 
-        public CodeViewTypesBuilder(NameMangler nameMangler, TargetArchitecture targetArchitecture, SectionWriter sectionWriter)
+        public CodeViewTypesBuilder(NameMangler nameMangler, int targetPointerSize, SectionWriter sectionWriter)
         {
             _nameMangler = nameMangler;
             _sectionWriter = sectionWriter;
-            _targetPointerSize = targetArchitecture switch
-            {
-                TargetArchitecture.ARM => 4,
-                TargetArchitecture.X86 => 4,
-                _ => 8,
-            };
+            _targetPointerSize = targetPointerSize;
 
             // Write CodeView version header
             Span<byte> versionBuffer = stackalloc byte[sizeof(uint)];
@@ -79,7 +74,7 @@ namespace ILCompiler.ObjectWriter
             using (LeafRecordWriter record = StartLeafRecord(LF_POINTER))
             {
                 record.Write(_classVTableTypeIndex);
-                record.Write((uint)((_targetPointerSize == 8 ? CV_PTR_64 : CV_PTR_NEAR32) | CV_PTR_MODE_LVREF));
+                record.Write((uint)((targetPointerSize == 8 ? CV_PTR_64 : CV_PTR_NEAR32) | CV_PTR_MODE_LVREF));
             }
             _vfuncTabTypeIndex = _nextTypeIndex++;
         }
