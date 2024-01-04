@@ -1402,14 +1402,7 @@ PhaseStatus LinearScan::doLinearScan()
 #ifdef TARGET_ARM64
     if (compiler->info.compNeedsConsecutiveRegisters)
     {
-        if (enregisterLocalVars)
-        {
-            allocateRegisters<true>();
-        }
-        else
-        {
-            allocateRegistersForMinOpt<true>();
-        }
+        allocateRegisters<true>();
     }
     else
 #endif // TARGET_ARM64
