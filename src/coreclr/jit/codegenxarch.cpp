@@ -2047,12 +2047,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_XCHG:
         case GT_XADD:
-            genLockedInstructions(treeNode->AsOp());
-            break;
-
         case GT_XORR:
         case GT_XAND:
-            NYI("Interlocked.Or and Interlocked.And aren't implemented for x86 yet.");
+            genLockedInstructions(treeNode->AsOp());
             break;
 
         case GT_MEMORYBARRIER:
@@ -4354,7 +4351,7 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 //
 void CodeGen::genLockedInstructions(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_XADD, GT_XCHG));
+    assert(node->OperIs(GT_XADD, GT_XCHG, GT_XORR, GT_XAND));
 
     GenTree* addr = node->gtGetOp1();
     GenTree* data = node->gtGetOp2();
@@ -4365,6 +4362,56 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
     assert((size == EA_4BYTE) || (size == EA_PTRSIZE) || (size == EA_GCREF));
 
     genConsumeOperands(node);
+
+    if (node->OperIs(GT_XORR, GT_XAND))
+    {
+        const instruction ins = node->OperIs(GT_XORR) ? INS_or : INS_and;
+
+        if (node->IsUnusedValue())
+        {
+            // If value is not used we can emit a short form:
+            //
+            //    lock
+            //    or/and  dword ptr [addrReg], val
+            //
+            instGen(INS_lock);
+            GetEmitter()->emitIns_AR_R(ins, size, data->GetRegNum(), addr->GetRegNum(), 0);
+        }
+        else
+        {
+            // When value is used (it's the original value of the memory location)
+            // we fallback to cmpxchg-loop idiom.
+
+            // for cmpxchg we need to keep the original value in RAX
+            assert(node->GetRegNum() == REG_RAX);
+
+            //    mov     RAX, dword ptr [addrReg]
+            //.LOOP:
+            //    mov     tmp, RAX
+            //    or/and  tmp, val
+            //    lock
+            //    cmpxchg dword ptr [addrReg], tmp
+            //    jne    .LOOP
+            //    ret
+
+            // Extend liveness of addr
+            gcInfo.gcMarkRegPtrVal(addr->GetRegNum(), addr->TypeGet());
+
+            const regNumber tmpReg = node->GetSingleTempReg();
+            GetEmitter()->emitIns_R_AR(INS_mov, size, REG_RAX, addr->GetRegNum(), 0);
+            BasicBlock* loop = genCreateTempLabel();
+            genDefineTempLabel(loop);
+            GetEmitter()->emitIns_Mov(INS_mov, size, tmpReg, REG_RAX, false);
+            GetEmitter()->emitIns_R_R(ins, size, tmpReg, data->GetRegNum());
+            instGen(INS_lock);
+            GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, tmpReg, addr->GetRegNum(), 0);
+            inst_JMP(EJ_jne, loop);
+
+            gcInfo.gcMarkRegSetNpt(genRegMask(addr->GetRegNum()));
+            genProduceReg(node);
+        }
+        return;
+    }
 
     // If the destination register is different from the data register then we need
     // to first move the data to the target register. Make sure we don't overwrite

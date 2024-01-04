@@ -436,6 +436,17 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_XORR:
         case GT_XAND:
+            if (!tree->IsUnusedValue())
+            {
+                // if value is unused, we'll emit a cmpxchg-loop idiom (requires RAX)
+                BuildUse(tree->gtGetOp1(), availableIntRegs & ~RBM_RAX);
+                BuildUse(tree->gtGetOp2(), availableIntRegs & ~RBM_RAX);
+                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
+                BuildDef(tree, RBM_RAX);
+                srcCount = 2;
+                assert(dstCount == 1);
+            }
+            FALLTHROUGH;
         case GT_XADD:
         case GT_XCHG:
         {
