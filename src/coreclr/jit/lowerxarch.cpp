@@ -1065,22 +1065,24 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
             uint32_t    simdSize        = node->GetSimdSize();
             var_types   simdType        = node->TypeGet();
-            GenTree* lastOp = node->Op(numArgs);
+            GenTree*    lastOp          = node->Op(numArgs);
 
-            if(lastOp->IsCnsIntOrI())
+            if (lastOp->IsCnsIntOrI())
             {
-                uint8_t  mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
+                uint8_t mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
 
                 GenTreeHWIntrinsic* embRoundingNode;
                 switch (numArgs)
                 {
                     case 3:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2), intrinsicId, simdBaseJitType, simdSize);
+                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2),
+                                                                         intrinsicId, simdBaseJitType, simdSize);
                         break;
                     case 2:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), intrinsicId, simdBaseJitType, simdSize);
+                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), intrinsicId,
+                                                                         simdBaseJitType, simdSize);
                         break;
-                    
+
                     default:
                         unreached();
                 }
@@ -1101,7 +1103,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 node = embRoundingNode;
                 if (mode != 0x08)
                 {
-                    // As embedded rounding can only work under register-to-register form, we can skip contain check at this
+                    // As embedded rounding can only work under register-to-register form, we can skip contain check at
+                    // this
                     // point.
                     return node->gtNext;
                 }

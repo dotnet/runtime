@@ -333,11 +333,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
                     }
                 }
-                else if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && !op3->IsCnsIntOrI())
+                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && !op3->IsCnsIntOrI())
                 {
                     auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM(node, ins, simdSize, i); };
-                    regNumber baseReg = node->ExtractTempReg();
-                    regNumber offsReg = node->GetSingleTempReg();
+                    regNumber                    baseReg = node->ExtractTempReg();
+                    regNumber                    offsReg = node->GetSingleTempReg();
                     genHWIntrinsicJumpTableFallback(intrinsicId, op3Reg, baseReg, offsReg, emitSwCase);
                 }
                 else
