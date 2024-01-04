@@ -193,6 +193,10 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_DIV:
         case GT_UDIV:
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        case GT_MOD:
+        case GT_UMOD:
+#endif
         {
             ExceptionSetFlags exSetFlags = node->OperExceptions(comp);
 

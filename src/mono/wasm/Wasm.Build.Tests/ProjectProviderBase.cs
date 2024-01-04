@@ -33,7 +33,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     };
 
     public string? ProjectDir { get; set; } = _projectDir;
-    protected ITestOutputHelper _testOutput = _testOutput;
+    protected ITestOutputHelper _testOutput = new TestOutputWrapper(_testOutput);
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
     public string BundleDirName { get; set; } = "wwwroot";
 
@@ -283,6 +283,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             Path.Combine(paths.BinDir, "publish", $"{buildArgs.ProjectName}.dll"),
             Path.Combine(paths.ObjWasmDir, "driver.o"),
+            Path.Combine(paths.ObjWasmDir, "runtime.o"),
             Path.Combine(paths.ObjWasmDir, "corebindings.o"),
             Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
 

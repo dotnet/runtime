@@ -7,6 +7,11 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {
+#if TYPE_LOADER_IMPLEMENTATION
+    public
+#else
+    internal
+#endif
     partial struct ExternalReferencesTable
     {
         private IntPtr _elements;

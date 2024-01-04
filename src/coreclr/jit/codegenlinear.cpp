@@ -314,8 +314,8 @@ void CodeGen::genCodeForBBlist()
                 printf("\nThis is the start of the cold region of the method\n");
             }
 #endif
-            // We should never have a block that falls through into the Cold section
-            noway_assert(!block->Prev()->bbFallsThrough());
+            // We should never split call/finally pairs between hot/cold sections
+            noway_assert(!block->isBBCallFinallyPairTail());
 
             needLabel = true;
         }
@@ -516,15 +516,7 @@ void CodeGen::genCodeForBBlist()
 #if defined(DEBUG)
         if (block->IsLast())
         {
-// Unit testing of the emitter: generate a bunch of instructions into the last block
-// (it's as good as any, but better than the prologue, which can only be a single instruction
-// group) then use DOTNET_JitLateDisasm=* to see if the late disassembler
-// thinks the instructions are the same as we do.
-#if defined(TARGET_AMD64) && defined(LATE_DISASM)
-            genAmd64EmitterUnitTests();
-#elif defined(TARGET_ARM64)
-            genArm64EmitterUnitTests();
-#endif // TARGET_ARM64
+            genEmitterUnitTests();
         }
 #endif // defined(DEBUG)
 
@@ -543,7 +535,7 @@ void CodeGen::genCodeForBBlist()
         /* Is this the last block, and are there any open scopes left ? */
 
         bool isLastBlockProcessed;
-        if (block->isBBCallAlwaysPair())
+        if (block->isBBCallFinallyPair())
         {
             isLastBlockProcessed = block->Next()->IsLast();
         }
@@ -599,11 +591,11 @@ void CodeGen::genCodeForBBlist()
         noway_assert(genStackLevel == 0);
 
 #ifdef TARGET_AMD64
-        bool emitNop = false;
+        bool emitNopBeforeEHRegion = false;
         // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
         // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
         // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
-        // The document "X64 and ARM ABIs.docx" has more details. The situations:
+        // The document "clr-abi.md" has more details. The situations:
         // 1. If the call instruction is in a different EH region as the instruction that follows it.
         // 2. If the call immediately precedes an OS epilog. (Note that what the JIT or VM consider an epilog might
         //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
@@ -619,12 +611,12 @@ void CodeGen::genCodeForBBlist()
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->GetJumpKind())
+                switch (block->GetKind())
                 {
                     case BBJ_ALWAYS:
                         // We might skip generating the jump via a peephole optimization.
                         // If that happens, make sure a NOP is emitted as the last instruction in the block.
-                        emitNop = true;
+                        emitNopBeforeEHRegion = true;
                         break;
 
                     case BBJ_THROW:
@@ -644,7 +636,7 @@ void CodeGen::genCodeForBBlist()
                     // These can't have a call as the last instruction!
 
                     default:
-                        noway_assert(!"Unexpected bbJumpKind");
+                        noway_assert(!"Unexpected bbKind");
                         break;
                 }
             }
@@ -653,7 +645,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);
@@ -735,7 +727,7 @@ void CodeGen::genCodeForBBlist()
                 if (block->CanRemoveJumpToNext(compiler))
                 {
 #ifdef TARGET_AMD64
-                    if (emitNop)
+                    if (emitNopBeforeEHRegion)
                     {
                         instGen(INS_nop);
                     }
@@ -744,28 +736,14 @@ void CodeGen::genCodeForBBlist()
                     break;
                 }
 #ifdef TARGET_XARCH
-                // If a block was selected to place an alignment instruction because it ended
-                // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
-                bool isRemovableJmpCandidate =
-                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
+                bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
 
-#ifdef TARGET_AMD64
-                // AMD64 requires an instruction after a call instruction for unwinding
-                // inside an EH region so if the last instruction generated was a call instruction
-                // do not allow this jump to be marked for possible later removal.
-                isRemovableJmpCandidate = isRemovableJmpCandidate && !GetEmitter()->emitIsLastInsCall();
-#endif // TARGET_AMD64
-
-                inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
+                inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else
-                inst_JMP(EJ_jmp, block->GetJumpDest());
+                inst_JMP(EJ_jmp, block->GetTarget());
 #endif // TARGET_XARCH
             }
-
-                FALLTHROUGH;
-
-            case BBJ_COND:
 
 #if FEATURE_LOOP_ALIGN
                 // This is the last place where we operate on blocks and after this, we operate
@@ -776,14 +754,30 @@ void CodeGen::genCodeForBBlist()
                 // During emitter, this information will be used to calculate the loop size.
                 // Depending on the loop size, decision of whether to align a loop or not will be taken.
                 //
-                // In the emitter, we need to calculate the loop size from `block->bbJumpDest` through
+                // In the emitter, we need to calculate the loop size from `block->bbTarget` through
                 // `block` (inclusive). Thus, we need to ensure there is a label on the lexical fall-through
                 // block, even if one is not otherwise needed, to be able to calculate the size of this
                 // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
 
-                if (block->GetJumpDest()->isLoopAlign())
+                if (block->GetTarget()->isLoopAlign())
                 {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetJumpDest());
+                    GetEmitter()->emitSetLoopBackEdge(block->GetTarget());
+
+                    if (!block->IsLast())
+                    {
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                        block->Next()->SetFlags(BBF_HAS_LABEL);
+                    }
+                }
+#endif // FEATURE_LOOP_ALIGN
+                break;
+
+            case BBJ_COND:
+
+#if FEATURE_LOOP_ALIGN
+                if (block->GetTrueTarget()->isLoopAlign())
+                {
+                    GetEmitter()->emitSetLoopBackEdge(block->GetTrueTarget());
 
                     if (!block->IsLast())
                     {
@@ -796,7 +790,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
 
@@ -812,7 +806,7 @@ void CodeGen::genCodeForBBlist()
             // and 16 bytes for arm64.
 
             assert(ShouldAlignLoops());
-            assert(!block->isBBCallAlwaysPairTail());
+            assert(!block->isBBCallFinallyPairTail());
 #if FEATURE_EH_CALLFINALLY_THUNKS
             assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
@@ -2624,7 +2618,13 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
-    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetJumpDest());
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    {
+        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2670,3 +2670,76 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+
+/*****************************************************************************
+ * Unit testing of the emitter: If JitEmitUnitTests is set for this function, generate
+ * a bunch of instructions, then either:
+ * 1. Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions are the same as we do. Or,
+ * 2. Use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and disassemble the output file with an external
+ * disassembler.
+ *
+ * Possible values for JitEmitUnitTestsSections:
+ * Amd64: all, sse2
+ * Arm64: all, general, advsimd, sve
+ */
+
+#if defined(DEBUG)
+
+void CodeGen::genEmitterUnitTests()
+{
+    if (!JitConfig.JitEmitUnitTests().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+                                               &compiler->info.compMethodInfo->args))
+    {
+        return;
+    }
+
+    const WCHAR* unitTestSection = JitConfig.JitEmitUnitTestsSections();
+
+    if (unitTestSection == nullptr)
+    {
+        return;
+    }
+
+    // Mark the "fake" instructions in the output.
+    JITDUMP("*************** In genEmitterUnitTests()\n");
+
+    // Jump over the generated tests as they are not intended to be run.
+    BasicBlock* skipLabel = genCreateTempLabel();
+    inst_JMP(EJ_jmp, skipLabel);
+
+    // Add NOPs at the start and end for easier script parsing.
+    instGen(INS_nop);
+
+    bool unitTestSectionAll = (u16_strstr(unitTestSection, W("all")) != nullptr);
+
+#if defined(TARGET_AMD64)
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sse2")) != nullptr))
+    {
+        genAmd64EmitterUnitTestsSse2();
+    }
+
+#elif defined(TARGET_ARM64)
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("general")) != nullptr))
+    {
+        genArm64EmitterUnitTestsGeneral();
+    }
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("advsimd")) != nullptr))
+    {
+        genArm64EmitterUnitTestsAdvSimd();
+    }
+    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sve")) != nullptr))
+    {
+        genArm64EmitterUnitTestsSve();
+    }
+#endif
+
+    genDefineTempLabel(skipLabel);
+    instGen(INS_nop);
+    instGen(INS_nop);
+    instGen(INS_nop);
+    instGen(INS_nop);
+
+    JITDUMP("*************** End of genEmitterUnitTests()\n");
+}
+
+#endif // defined(DEBUG)

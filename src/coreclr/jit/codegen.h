@@ -190,10 +190,13 @@ protected:
     BasicBlock* genPendingCallLabel;
 
     void**    codePtr;
+    void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
     unsigned  codeSize;
     void*     coldCodePtr;
+    void*     coldCodePtrRW;
     void*     consPtr;
+    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -639,17 +642,20 @@ protected:
 
     void genGeneratePrologsAndEpilogs();
 
-#if defined(DEBUG) && defined(TARGET_ARM64)
-    void genArm64EmitterUnitTests();
+#if defined(DEBUG)
+    void genEmitterUnitTests();
+
+#if defined(TARGET_ARM64)
+    void genArm64EmitterUnitTestsGeneral();
+    void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsSve();
 #endif
 
-#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
-    void genLoongArch64EmitterUnitTests();
+#if defined(TARGET_AMD64)
+    void genAmd64EmitterUnitTestsSse2();
 #endif
 
-#if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
-    void genAmd64EmitterUnitTests();
-#endif
+#endif // defined(DEBUG)
 
 #ifdef TARGET_ARM64
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);

@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
             m_nativeFunctionPointer = nativeFunctionPointer;
         }
 
-        IntPtr m_nativeFunctionPointer;
+        private IntPtr m_nativeFunctionPointer;
 
         public IntPtr NativeFunctionPointer
         {

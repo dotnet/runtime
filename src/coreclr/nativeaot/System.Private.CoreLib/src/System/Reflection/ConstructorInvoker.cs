@@ -42,7 +42,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>());
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

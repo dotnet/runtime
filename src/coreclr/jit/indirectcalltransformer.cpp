@@ -222,9 +222,7 @@ private:
         //
         // Return Value:
         //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind,
-                                              BasicBlock* insertAfter,
-                                              BasicBlock* jumpDest = nullptr)
+        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
         {
             BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
             block->SetFlags(BBF_IMPORTED);
@@ -274,18 +272,18 @@ private:
             if (checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
-                currBlock->SetJumpDest(checkBlock);
+                currBlock->SetTarget(checkBlock);
                 compiler->fgAddRefPred(checkBlock, currBlock);
             }
 
             // checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+            checkBlock->SetCond(elseBlock, thenBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
             // thenBlock
-            assert(thenBlock->HasJumpTo(remainderBlock));
+            assert(thenBlock->TargetIs(remainderBlock));
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
             // elseBlock
@@ -593,7 +591,7 @@ private:
                 checkFallsThrough          = false;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetJumpKindAndTarget(BBJ_COND, checkBlock);
+                prevCheckBlock->SetCond(checkBlock, prevCheckBlock->Next());
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Calculate the total likelihood for this check as a sum of likelihoods
@@ -1011,7 +1009,7 @@ private:
 
             // Also, thenBlock has a single pred - last checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetJumpDest(thenBlock);
+            checkBlock->SetTarget(thenBlock);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
             compiler->fgAddRefPred(thenBlock, checkBlock);
@@ -1033,7 +1031,7 @@ private:
             // where we know the last check is always true (in case of "exact" GDV)
             if (!checkFallsThrough)
             {
-                checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+                checkBlock->SetCond(elseBlock, checkBlock->Next());
                 compiler->fgAddRefPred(elseBlock, checkBlock);
             }
             else
@@ -1111,7 +1109,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->Prev();
 
-            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->HasJumpTo(checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->TargetIs(checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;
@@ -1156,7 +1154,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock);
+            coldBlock->SetKindAndTarget(BBJ_ALWAYS, elseBlock);
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 
