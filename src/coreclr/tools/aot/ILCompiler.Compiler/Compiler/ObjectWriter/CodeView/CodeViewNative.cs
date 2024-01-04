@@ -34,7 +34,7 @@ namespace ILCompiler.ObjectWriter
             T_NOTTRANS = 0x0007, // type not translated by cvpack
             T_BIT = 0x0060, // bit
             T_PASCHAR = 0x0061, // Pascal CHAR
-            T_BOOL32FF = 0x0062, // 32-bit BOOL where true is 0xffffffff
+            T_BOOL32FF = 0x0062, // 32-bit BOOL where true is 0xFFFFFFFF
 
             // Character types
             T_CHAR = 0x0010, // 8 bit signed
@@ -72,22 +72,22 @@ namespace ILCompiler.ObjectWriter
             T_64PWCHAR = 0x0671, // 64 bit pointer to a wide char
 
             // Really a 16-bit unicode char
-            T_CHAR16 = 0x007a, // 16-bit unicode char
-            T_PCHAR16 = 0x017a, // 16 bit pointer to a 16-bit unicode char
-            T_PFCHAR16 = 0x027a, // 16:16 far pointer to a 16-bit unicode char
-            T_PHCHAR16 = 0x037a, // 16:16 huge pointer to a 16-bit unicode char
-            T_32PCHAR16 = 0x047a, // 32 bit pointer to a 16-bit unicode char
-            T_32PFCHAR16 = 0x057a, // 16:32 pointer to a 16-bit unicode char
-            T_64PCHAR16 = 0x067a, // 64 bit pointer to a 16-bit unicode char
+            T_CHAR16 = 0x007A, // 16-bit unicode char
+            T_PCHAR16 = 0x017A, // 16 bit pointer to a 16-bit unicode char
+            T_PFCHAR16 = 0x027A, // 16:16 far pointer to a 16-bit unicode char
+            T_PHCHAR16 = 0x037A, // 16:16 huge pointer to a 16-bit unicode char
+            T_32PCHAR16 = 0x047A, // 32 bit pointer to a 16-bit unicode char
+            T_32PFCHAR16 = 0x057A, // 16:32 pointer to a 16-bit unicode char
+            T_64PCHAR16 = 0x067A, // 64 bit pointer to a 16-bit unicode char
 
             // Really a 32-bit unicode char
-            T_CHAR32 = 0x007b, // 32-bit unicode char
-            T_PCHAR32 = 0x017b, // 16 bit pointer to a 32-bit unicode char
-            T_PFCHAR32 = 0x027b, // 16:16 far pointer to a 32-bit unicode char
-            T_PHCHAR32 = 0x037b, // 16:16 huge pointer to a 32-bit unicode char
-            T_32PCHAR32 = 0x047b, // 32 bit pointer to a 32-bit unicode char
-            T_32PFCHAR32 = 0x057b, // 16:32 pointer to a 32-bit unicode char
-            T_64PCHAR32 = 0x067b, // 64 bit pointer to a 32-bit unicode char
+            T_CHAR32 = 0x007B, // 32-bit unicode char
+            T_PCHAR32 = 0x017B, // 16 bit pointer to a 32-bit unicode char
+            T_PFCHAR32 = 0x027B, // 16:16 far pointer to a 32-bit unicode char
+            T_PHCHAR32 = 0x037B, // 16:16 huge pointer to a 32-bit unicode char
+            T_32PCHAR32 = 0x047B, // 32 bit pointer to a 32-bit unicode char
+            T_32PFCHAR32 = 0x057B, // 16:32 pointer to a 32-bit unicode char
+            T_64PCHAR32 = 0x067B, // 64 bit pointer to a 32-bit unicode char
 
             // 8-bit int types
             T_INT1 = 0x0068, // 8 bit signed int
@@ -374,12 +374,12 @@ namespace ILCompiler.ObjectWriter
             T_32PFBOOL64 = 0x0533, // 16:32 pointer to 64 bit boolean
             T_64PBOOL64 = 0x0633, // 64 bit pointer to 64 bit boolean
 
-            T_NCVPTR = 0x01f0, // CV Internal type for created near pointers
-            T_FCVPTR = 0x02f0, // CV Internal type for created far pointers
-            T_HCVPTR = 0x03f0, // CV Internal type for created huge pointers
-            T_32NCVPTR = 0x04f0, // CV Internal type for created near 32-bit pointers
-            T_32FCVPTR = 0x05f0, // CV Internal type for created far 32-bit pointers
-            T_64NCVPTR = 0x06f0, // CV Internal type for created near 64-bit pointers
+            T_NCVPTR = 0x01F0, // CV Internal type for created near pointers
+            T_FCVPTR = 0x02F0, // CV Internal type for created far pointers
+            T_HCVPTR = 0x03F0, // CV Internal type for created huge pointers
+            T_32NCVPTR = 0x04F0, // CV Internal type for created near 32-bit pointers
+            T_32FCVPTR = 0x05F0, // CV Internal type for created far 32-bit pointers
+            T_64NCVPTR = 0x06F0, // CV Internal type for created near 64-bit pointers
         }
 
         /// <summary>Type enum for pointer records</summary>
@@ -400,10 +400,10 @@ namespace ILCompiler.ObjectWriter
             CV_PTR_BASE_SEGADDR = 0x07, // based on segment address of base
             CV_PTR_BASE_TYPE = 0x08, // based on type
             CV_PTR_BASE_SELF = 0x09, // based on self
-            CV_PTR_NEAR32 = 0x0a, // 32 bit pointer
-            CV_PTR_FAR32 = 0x0b, // 16:32 pointer
-            CV_PTR_64 = 0x0c, // 64 bit pointer
-            CV_PTR_UNUSEDPTR = 0x0d, // first unused pointer type
+            CV_PTR_NEAR32 = 0x0A, // 32 bit pointer
+            CV_PTR_FAR32 = 0x0B, // 16:32 pointer
+            CV_PTR_64 = 0x0C, // 64 bit pointer
+            CV_PTR_UNUSEDPTR = 0x0D, // first unused pointer type
 
             CV_PTR_MODE_PTR = 0x00 << 5, // "normal" pointer
             CV_PTR_MODE_REF = 0x01 << 5, // "old" reference
@@ -441,7 +441,7 @@ namespace ILCompiler.ObjectWriter
         // Matches DEBUG_S_SUBSECTION_TYPE in cvinfo.h
         public enum DebugSymbolsSubsectionType : uint
         {
-            Symbols = 0xf1,
+            Symbols = 0xF1,
             Lines,
             StringTable,
             FileChecksums,
@@ -471,12 +471,12 @@ namespace ILCompiler.ObjectWriter
             LF_ENUM_16t = 0x0007,
             LF_PROCEDURE_16t = 0x0008,
             LF_MFUNCTION_16t = 0x0009,
-            LF_VTSHAPE = 0x000a,
-            LF_COBOL0_16t = 0x000b,
-            LF_COBOL1 = 0x000c,
-            LF_BARRAY_16t = 0x000d,
-            LF_LABEL = 0x000e,
-            LF_NULL = 0x000f,
+            LF_VTSHAPE = 0x000A,
+            LF_COBOL0_16t = 0x000B,
+            LF_COBOL1 = 0x000C,
+            LF_BARRAY_16t = 0x000D,
+            LF_LABEL = 0x000E,
+            LF_NULL = 0x000F,
             LF_NOTTRAN = 0x0010,
             LF_DIMARRAY_16t = 0x0011,
             LF_VFTPATH_16t = 0x0012,
@@ -496,9 +496,9 @@ namespace ILCompiler.ObjectWriter
             LF_METHODLIST_16t = 0x0207,
             LF_DIMCONU_16t = 0x0208,
             LF_DIMCONLU_16t = 0x0209,
-            LF_DIMVARU_16t = 0x020a,
-            LF_DIMVARLU_16t = 0x020b,
-            LF_REFSYM = 0x020c,
+            LF_DIMVARU_16t = 0x020A,
+            LF_DIMVARLU_16t = 0x020B,
+            LF_REFSYM = 0x020C,
 
             LF_BCLASS_16t = 0x0400,
             LF_VBCLASS_16t = 0x0401,
@@ -510,10 +510,10 @@ namespace ILCompiler.ObjectWriter
             LF_STMEMBER_16t = 0x0407,
             LF_METHOD_16t = 0x0408,
             LF_NESTTYPE_16t = 0x0409,
-            LF_VFUNCTAB_16t = 0x040a,
-            LF_FRIENDCLS_16t = 0x040b,
-            LF_ONEMETHOD_16t = 0x040c,
-            LF_VFUNCOFF_16t = 0x040d,
+            LF_VFUNCTAB_16t = 0x040A,
+            LF_FRIENDCLS_16t = 0x040B,
+            LF_ONEMETHOD_16t = 0x040C,
+            LF_VFUNCOFF_16t = 0x040D,
 
             // 32-bit type index versions of leaves, all have the 0x1000 bit set
             LF_TI16_MAX = 0x1000,
@@ -527,12 +527,12 @@ namespace ILCompiler.ObjectWriter
             LF_ENUM_ST = 0x1007,
             LF_PROCEDURE = 0x1008,
             LF_MFUNCTION = 0x1009,
-            LF_COBOL0 = 0x100a,
-            LF_BARRAY = 0x100b,
-            LF_DIMARRAY_ST = 0x100c,
-            LF_VFTPATH = 0x100d,
-            LF_PRECOMP_ST = 0x100e, // not referenced from symbol
-            LF_OEM = 0x100f, // oem definable type string
+            LF_COBOL0 = 0x100A,
+            LF_BARRAY = 0x100B,
+            LF_DIMARRAY_ST = 0x100C,
+            LF_VFTPATH = 0x100D,
+            LF_PRECOMP_ST = 0x100E, // not referenced from symbol
+            LF_OEM = 0x100F, // oem definable type string
             LF_ALIAS_ST = 0x1010, // alias (typedef) type
             LF_OEM2 = 0x1011, // oem definable type string
 
@@ -547,7 +547,7 @@ namespace ILCompiler.ObjectWriter
             LF_DIMCONU = 0x1207,
             LF_DIMCONLU = 0x1208,
             LF_DIMVARU = 0x1209,
-            LF_DIMVARLU = 0x120a,
+            LF_DIMVARLU = 0x120A,
 
             LF_BCLASS = 0x1400,
             LF_VBCLASS = 0x1401,
@@ -559,12 +559,12 @@ namespace ILCompiler.ObjectWriter
             LF_METHOD_ST = 0x1407,
             LF_NESTTYPE_ST = 0x1408,
             LF_VFUNCTAB = 0x1409,
-            LF_FRIENDCLS = 0x140a,
-            LF_ONEMETHOD_ST = 0x140b,
-            LF_VFUNCOFF = 0x140c,
-            LF_NESTTYPEEX_ST = 0x140d,
-            LF_MEMBERMODIFY_ST = 0x140e,
-            LF_MANAGED_ST = 0x140f,
+            LF_FRIENDCLS = 0x140A,
+            LF_ONEMETHOD_ST = 0x140B,
+            LF_VFUNCOFF = 0x140C,
+            LF_NESTTYPEEX_ST = 0x140D,
+            LF_MEMBERMODIFY_ST = 0x140E,
+            LF_MANAGED_ST = 0x140F,
 
             // Types w/ SZ names
             LF_ST_MAX = 0x1500,
@@ -578,12 +578,12 @@ namespace ILCompiler.ObjectWriter
             LF_ENUM = 0x1507,
             LF_DIMARRAY = 0x1508,
             LF_PRECOMP = 0x1509, // not referenced from symbol
-            LF_ALIAS = 0x150a, // alias (typedef) type
-            LF_DEFARG = 0x150b,
-            LF_FRIENDFCN = 0x150c,
-            LF_MEMBER = 0x150d,
-            LF_STMEMBER = 0x150e,
-            LF_METHOD = 0x150f,
+            LF_ALIAS = 0x150A, // alias (typedef) type
+            LF_DEFARG = 0x150B,
+            LF_FRIENDFCN = 0x150C,
+            LF_MEMBER = 0x150D,
+            LF_STMEMBER = 0x150E,
+            LF_METHOD = 0x150F,
             LF_NESTTYPE = 0x1510,
             LF_ONEMETHOD = 0x1511,
             LF_NESTTYPEEX = 0x1512,
@@ -595,11 +595,11 @@ namespace ILCompiler.ObjectWriter
             LF_HLSL = 0x1517,
             LF_MODIFIER_EX = 0x1518,
             LF_INTERFACE = 0x1519,
-            LF_BINTERFACE = 0x151a,
-            LF_VECTOR = 0x151b,
-            LF_MATRIX = 0x151c,
+            LF_BINTERFACE = 0x151A,
+            LF_VECTOR = 0x151B,
+            LF_MATRIX = 0x151C,
 
-            LF_VFTABLE = 0x151d, // a virtual function table
+            LF_VFTABLE = 0x151D, // a virtual function table
             LF_ENDOFLEAFRECORD = LF_VFTABLE,
 
             LF_TYPE_LAST, // one greater than the last type record
@@ -629,39 +629,39 @@ namespace ILCompiler.ObjectWriter
             LF_REAL80 = 0x8007,
             LF_REAL128 = 0x8008,
             LF_QUADWORD = 0x8009,
-            LF_UQUADWORD = 0x800a,
-            LF_REAL48 = 0x800b,
-            LF_COMPLEX32 = 0x800c,
-            LF_COMPLEX64 = 0x800d,
-            LF_COMPLEX80 = 0x800e,
-            LF_COMPLEX128 = 0x800f,
+            LF_UQUADWORD = 0x800A,
+            LF_REAL48 = 0x800B,
+            LF_COMPLEX32 = 0x800C,
+            LF_COMPLEX64 = 0x800D,
+            LF_COMPLEX80 = 0x800E,
+            LF_COMPLEX128 = 0x800F,
             LF_VARSTRING = 0x8010,
 
             LF_OCTWORD = 0x8017,
             LF_UOCTWORD = 0x8018,
 
             LF_DECIMAL = 0x8019,
-            LF_DATE = 0x801a,
-            LF_UTF8STRING = 0x801b,
+            LF_DATE = 0x801A,
+            LF_UTF8STRING = 0x801B,
 
-            LF_REAL16 = 0x801c,
+            LF_REAL16 = 0x801C,
 
-            LF_PAD0 = 0xf0,
-            LF_PAD1 = 0xf1,
-            LF_PAD2 = 0xf2,
-            LF_PAD3 = 0xf3,
-            LF_PAD4 = 0xf4,
-            LF_PAD5 = 0xf5,
-            LF_PAD6 = 0xf6,
-            LF_PAD7 = 0xf7,
-            LF_PAD8 = 0xf8,
-            LF_PAD9 = 0xf9,
-            LF_PAD10 = 0xfa,
-            LF_PAD11 = 0xfb,
-            LF_PAD12 = 0xfc,
-            LF_PAD13 = 0xfd,
-            LF_PAD14 = 0xfe,
-            LF_PAD15 = 0xff,
+            LF_PAD0 = 0xF0,
+            LF_PAD1 = 0xF1,
+            LF_PAD2 = 0xF2,
+            LF_PAD3 = 0xF3,
+            LF_PAD4 = 0xF4,
+            LF_PAD5 = 0xF5,
+            LF_PAD6 = 0xF6,
+            LF_PAD7 = 0xF7,
+            LF_PAD8 = 0xF8,
+            LF_PAD9 = 0xF9,
+            LF_PAD10 = 0xFA,
+            LF_PAD11 = 0xFB,
+            LF_PAD12 = 0xFC,
+            LF_PAD13 = 0xFD,
+            LF_PAD14 = 0xFE,
+            LF_PAD15 = 0xFF,
         }
 
         // Matches CV_HREG_e in cvinfo.h
@@ -2122,11 +2122,11 @@ namespace ILCompiler.ObjectWriter
             S_SKIP = 0x0007, // Reserve symbol space in $$Symbols table
             S_CVRESERVE = 0x0008, // Reserved symbol for CV internal use
             S_OBJNAME_ST = 0x0009, // path to object file name
-            S_ENDARG = 0x000a, // end of argument/return list
-            S_COBOLUDT_16t = 0x000b, // special UDT for cobol that does not symbol pack
-            S_MANYREG_16t = 0x000c, // multiple register variable
-            S_RETURN = 0x000d, // return description symbol
-            S_ENTRYTHIS = 0x000e, // description of this pointer on entry
+            S_ENDARG = 0x000A, // end of argument/return list
+            S_COBOLUDT_16t = 0x000B, // special UDT for cobol that does not symbol pack
+            S_MANYREG_16t = 0x000C, // multiple register variable
+            S_RETURN = 0x000D, // return description symbol
+            S_ENTRYTHIS = 0x000E, // description of this pointer on entry
 
             S_BPREL16 = 0x0100, // BP-relative
             S_LDATA16 = 0x0101, // Module-local symbol
@@ -2138,9 +2138,9 @@ namespace ILCompiler.ObjectWriter
             S_BLOCK16 = 0x0107, // block start
             S_WITH16 = 0x0108, // with start
             S_LABEL16 = 0x0109, // code label
-            S_CEXMODEL16 = 0x010a, // change execution model
-            S_VFTABLE16 = 0x010b, // address of virtual function table
-            S_REGREL16 = 0x010c, // register relative address
+            S_CEXMODEL16 = 0x010A, // change execution model
+            S_VFTABLE16 = 0x010B, // address of virtual function table
+            S_REGREL16 = 0x010C, // register relative address
 
             S_BPREL32_16t = 0x0200, // BP-relative
             S_LDATA32_16t = 0x0201, // Module-local symbol
@@ -2152,12 +2152,12 @@ namespace ILCompiler.ObjectWriter
             S_BLOCK32_ST = 0x0207, // block start
             S_WITH32_ST = 0x0208, // with start
             S_LABEL32_ST = 0x0209, // code label
-            S_CEXMODEL32 = 0x020a, // change execution model
-            S_VFTABLE32_16t = 0x020b, // address of virtual function table
-            S_REGREL32_16t = 0x020c, // register relative address
-            S_LTHREAD32_16t = 0x020d, // local thread storage
-            S_GTHREAD32_16t = 0x020e, // global thread storage
-            S_SLINK32 = 0x020f, // static link for MIPS EH implementation
+            S_CEXMODEL32 = 0x020A, // change execution model
+            S_VFTABLE32_16t = 0x020B, // address of virtual function table
+            S_REGREL32_16t = 0x020C, // register relative address
+            S_LTHREAD32_16t = 0x020D, // local thread storage
+            S_GTHREAD32_16t = 0x020E, // global thread storage
+            S_SLINK32 = 0x020F, // static link for MIPS EH implementation
 
             S_LPROCMIPS_16t = 0x0300, // Local procedure start
             S_GPROCMIPS_16t = 0x0301, // Global procedure start
@@ -2185,12 +2185,12 @@ namespace ILCompiler.ObjectWriter
             S_LDATA32_ST = 0x1007, // Module-local symbol
             S_GDATA32_ST = 0x1008, // Global data symbol
             S_PUB32_ST = 0x1009, // a public symbol (CV internal reserved)
-            S_LPROC32_ST = 0x100a, // Local procedure start
-            S_GPROC32_ST = 0x100b, // Global procedure start
-            S_VFTABLE32 = 0x100c, // address of virtual function table
-            S_REGREL32_ST = 0x100d, // register relative address
-            S_LTHREAD32_ST = 0x100e, // local thread storage
-            S_GTHREAD32_ST = 0x100f, // global thread storage
+            S_LPROC32_ST = 0x100A, // Local procedure start
+            S_GPROC32_ST = 0x100B, // Global procedure start
+            S_VFTABLE32 = 0x100C, // address of virtual function table
+            S_REGREL32_ST = 0x100D, // register relative address
+            S_LTHREAD32_ST = 0x100E, // local thread storage
+            S_GTHREAD32_ST = 0x100F, // global thread storage
 
             S_LPROCMIPS_ST = 0x1010, // Local procedure start
             S_GPROCMIPS_ST = 0x1011, // Global procedure start
@@ -2211,12 +2211,12 @@ namespace ILCompiler.ObjectWriter
             S_ANNOTATION = 0x1019, // Annotation string literals
 
             // Symbols to support managed code debugging
-            S_GMANPROC_ST = 0x101a, // Global proc
-            S_LMANPROC_ST = 0x101b, // Local proc
-            S_RESERVED1 = 0x101c, // reserved
-            S_RESERVED2 = 0x101d, // reserved
-            S_RESERVED3 = 0x101e, // reserved
-            S_RESERVED4 = 0x101f, // reserved
+            S_GMANPROC_ST = 0x101A, // Global proc
+            S_LMANPROC_ST = 0x101B, // Local proc
+            S_RESERVED1 = 0x101C, // reserved
+            S_RESERVED2 = 0x101D, // reserved
+            S_RESERVED3 = 0x101E, // reserved
+            S_RESERVED4 = 0x101F, // reserved
             S_LMANDATA_ST = 0x1020,
             S_GMANDATA_ST = 0x1021,
             S_MANFRAMEREL_ST = 0x1022,
@@ -2240,12 +2240,12 @@ namespace ILCompiler.ObjectWriter
             S_CONSTANT = 0x1107, // constant symbol
             S_UDT = 0x1108, // User defined type
             S_COBOLUDT = 0x1109, // special UDT for cobol that does not symbol pack
-            S_MANYREG = 0x110a, // multiple register variable
-            S_BPREL32 = 0x110b, // BP-relative
-            S_LDATA32 = 0x110c, // Module-local symbol
-            S_GDATA32 = 0x110d, // Global data symbol
-            S_PUB32 = 0x110e, // a public symbol (CV internal reserved)
-            S_LPROC32 = 0x110f, // Local procedure start
+            S_MANYREG = 0x110A, // multiple register variable
+            S_BPREL32 = 0x110B, // BP-relative
+            S_LDATA32 = 0x110C, // Module-local symbol
+            S_GDATA32 = 0x110D, // Global data symbol
+            S_PUB32 = 0x110E, // a public symbol (CV internal reserved)
+            S_LPROC32 = 0x110F, // Local procedure start
             S_GPROC32 = 0x1110, // Global procedure start
             S_REGREL32 = 0x1111, // register relative address
             S_LTHREAD32 = 0x1112, // local thread storage
@@ -2257,15 +2257,15 @@ namespace ILCompiler.ObjectWriter
             S_MANYREG2 = 0x1117, // multiple register variable
             S_LPROCIA64 = 0x1118, // Local procedure start (IA64)
             S_GPROCIA64 = 0x1119, // Global procedure start (IA64)
-            S_LOCALSLOT = 0x111a, // local IL sym with field for local slot index
+            S_LOCALSLOT = 0x111A, // local IL sym with field for local slot index
             S_SLOT = S_LOCALSLOT, // alias for LOCALSLOT
-            S_PARAMSLOT = 0x111b, // local IL sym with field for parameter slot index
+            S_PARAMSLOT = 0x111B, // local IL sym with field for parameter slot index
 
             // symbols to support managed code debugging
-            S_LMANDATA = 0x111c,
-            S_GMANDATA = 0x111d,
-            S_MANFRAMEREL = 0x111e,
-            S_MANREGISTER = 0x111f,
+            S_LMANDATA = 0x111C,
+            S_GMANDATA = 0x111D,
+            S_MANFRAMEREL = 0x111E,
+            S_MANREGISTER = 0x111F,
             S_MANSLOT = 0x1120,
             S_MANMANYREG = 0x1121,
             S_MANREGREL = 0x1122,
@@ -2280,16 +2280,16 @@ namespace ILCompiler.ObjectWriter
             S_TOKENREF = 0x1129, // Reference to one of the many MANPROCSYM's
 
             // continuation of managed symbols
-            S_GMANPROC = 0x112a, // Global proc
-            S_LMANPROC = 0x112b, // Local proc
+            S_GMANPROC = 0x112A, // Global proc
+            S_LMANPROC = 0x112B, // Local proc
 
             // short, light-weight thunks
-            S_TRAMPOLINE = 0x112c, // trampoline thunks
-            S_MANCONSTANT = 0x112d, // constants with metadata type info
+            S_TRAMPOLINE = 0x112C, // trampoline thunks
+            S_MANCONSTANT = 0x112D, // constants with metadata type info
 
             // native attributed local/parms
-            S_ATTR_FRAMEREL = 0x112e, // relative to virtual frame ptr
-            S_ATTR_REGISTER = 0x112f, // stored in a register
+            S_ATTR_FRAMEREL = 0x112E, // relative to virtual frame ptr
+            S_ATTR_REGISTER = 0x112F, // stored in a register
             S_ATTR_REGREL = 0x1130, // relative to register (alternate frame ptr)
             S_ATTR_MANYREG = 0x1131, // stored in >1 register
 
@@ -2305,15 +2305,15 @@ namespace ILCompiler.ObjectWriter
             S_EXPORT = 0x1138, // A export
 
             S_CALLSITEINFO = 0x1139, // Indirect call site information
-            S_FRAMECOOKIE = 0x113a, // Security cookie information
+            S_FRAMECOOKIE = 0x113A, // Security cookie information
 
-            S_DISCARDED = 0x113b, // Discarded by LINK /OPT:REF (experimental, see richards)
+            S_DISCARDED = 0x113B, // Discarded by LINK /OPT:REF (experimental, see richards)
 
-            S_COMPILE3 = 0x113c, // Replacement for S_COMPILE2
-            S_ENVBLOCK = 0x113d, // Environment block split off from S_COMPILE2
+            S_COMPILE3 = 0x113C, // Replacement for S_COMPILE2
+            S_ENVBLOCK = 0x113D, // Environment block split off from S_COMPILE2
 
-            S_LOCAL = 0x113e, // defines a local symbol in optimized code
-            S_DEFRANGE = 0x113f, // defines a single range of addresses in which symbol can be evaluated
+            S_LOCAL = 0x113E, // defines a local symbol in optimized code
+            S_DEFRANGE = 0x113F, // defines a single range of addresses in which symbol can be evaluated
             S_DEFRANGE_SUBFIELD = 0x1140, // ranges for a subfield
 
             S_DEFRANGE_REGISTER = 0x1141, // ranges for en-registered symbol
@@ -2327,13 +2327,13 @@ namespace ILCompiler.ObjectWriter
             S_GPROC32_ID = 0x1147,
             S_LPROCMIPS_ID = 0x1148,
             S_GPROCMIPS_ID = 0x1149,
-            S_LPROCIA64_ID = 0x114a,
-            S_GPROCIA64_ID = 0x114b,
+            S_LPROCIA64_ID = 0x114A,
+            S_GPROCIA64_ID = 0x114B,
 
-            S_BUILDINFO = 0x114c, // build information.
-            S_INLINESITE = 0x114d, // inlined function callsite.
-            S_INLINESITE_END = 0x114e,
-            S_PROC_ID_END = 0x114f,
+            S_BUILDINFO = 0x114C, // build information.
+            S_INLINESITE = 0x114D, // inlined function callsite.
+            S_INLINESITE_END = 0x114E,
+            S_PROC_ID_END = 0x114F,
 
             S_DEFRANGE_HLSL = 0x1150,
             S_GDATA_HLSL = 0x1151,
@@ -2342,14 +2342,14 @@ namespace ILCompiler.ObjectWriter
             S_FILESTATIC = 0x1153,
 
             S_ARMSWITCHTABLE = 0x1159,
-            S_CALLEES = 0x115a,
-            S_CALLERS = 0x115b,
-            S_POGODATA = 0x115c,
-            S_INLINESITE2 = 0x115d, // extended inline site information
+            S_CALLEES = 0x115A,
+            S_CALLERS = 0x115B,
+            S_POGODATA = 0x115C,
+            S_INLINESITE2 = 0x115D, // extended inline site information
 
-            S_HEAPALLOCSITE = 0x115e, // heap allocation site
+            S_HEAPALLOCSITE = 0x115E, // heap allocation site
 
-            S_MOD_TYPEREF = 0x115f, // only generated at link time
+            S_MOD_TYPEREF = 0x115F, // only generated at link time
 
             S_REF_MINIPDB = 0x1160, // only generated at link time for mini PDB
             S_PDBMAP = 0x1161, // only generated at link time for mini PDB

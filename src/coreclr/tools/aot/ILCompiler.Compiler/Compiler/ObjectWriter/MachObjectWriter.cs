@@ -244,15 +244,15 @@ namespace ILCompiler.ObjectWriter
             {
                 case TargetOS.OSX:
                     buildVersion.Platform = PLATFORM_MACOS;
-                    buildVersion.MinimumPlatformVersion = 0x0a_0c_00; // 10.12.0
+                    buildVersion.MinimumPlatformVersion = 0x0A_0C_00; // 10.12.0
                     break;
 
                 case TargetOS.MacCatalyst:
                     buildVersion.Platform = PLATFORM_MACCATALYST;
                     buildVersion.MinimumPlatformVersion = _cpuType switch
                     {
-                        CPU_TYPE_X86_64 => 0x0d_05_00u, // 13.5.0
-                        _ => 0x0e_02_00u, // 14.2.0
+                        CPU_TYPE_X86_64 => 0x0D_05_00u, // 13.5.0
+                        _ => 0x0E_02_00u, // 14.2.0
                     };
                     break;
 
@@ -268,7 +268,7 @@ namespace ILCompiler.ObjectWriter
                         TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
-                    buildVersion.MinimumPlatformVersion = 0x0b_00_00; // 11.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0B_00_00; // 11.0.0
                     break;
             }
             buildVersion.Write(outputFileStream);
@@ -880,7 +880,7 @@ namespace ILCompiler.ObjectWriter
             public uint NumberOfRelocationEntries => relocationCollection is null ? 0u : (uint)relocationCollection.Count;
             public uint Flags { get; set; }
 
-            public uint Type => Flags & 0xff;
+            public uint Type => Flags & 0xFF;
             public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
 
             public bool IsDwarfSection { get; }

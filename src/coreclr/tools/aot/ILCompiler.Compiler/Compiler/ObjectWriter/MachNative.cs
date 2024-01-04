@@ -7,7 +7,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal static class MachNative
     {
-        public const uint MH_MAGIC_64 = 0xfeedfacf;
+        public const uint MH_MAGIC_64 = 0xFEEDFACF;
 
         // File type
         public const uint MH_OBJECT = 0x1;
@@ -23,7 +23,7 @@ namespace ILCompiler.ObjectWriter
 
         // Load command types
         public const uint LC_SYMTAB = 0x2;
-        public const uint LC_DYSYMTAB = 0xb;
+        public const uint LC_DYSYMTAB = 0xB;
         public const uint LC_SEGMENT_64 = 0x19;
         public const uint LC_BUILD_VERSION = 0x32;
 
@@ -93,9 +93,9 @@ namespace ILCompiler.ObjectWriter
         public const byte N_UNDF = 0;
         public const byte N_EXT = 1;
         public const byte N_ABS = 2;
-        public const byte N_INDR = 0xa;
-        public const byte N_SECT = 0xe;
-        public const byte N_PBUD = 0xc;
+        public const byte N_INDR = 0xA;
+        public const byte N_SECT = 0xE;
+        public const byte N_PBUD = 0xC;
 
         // Symbol descriptor flags
         public const ushort REFERENCE_FLAG_UNDEFINED_NON_LAZY = 0;

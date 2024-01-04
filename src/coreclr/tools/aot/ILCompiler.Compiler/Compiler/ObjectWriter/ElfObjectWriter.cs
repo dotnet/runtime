@@ -583,7 +583,7 @@ namespace ILCompiler.ObjectWriter
             symbolTableSectionHeader.Write<TSize>(outputFileStream);
 
             // If the symbol table has references to sections with indexes higher than
-            // SHN_LORESERVE (0xff00) we need to write them down in a separate table
+            // SHN_LORESERVE (0xFF00) we need to write them down in a separate table
             // in the .symtab_shndx section.
             if (hasSymTabExtendedIndices)
             {
@@ -616,7 +616,7 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class ElfHeader
         {
-            private static ReadOnlySpan<byte> Magic => new byte[] { 0x7f, 0x45, 0x4c, 0x46 };
+            private static ReadOnlySpan<byte> Magic => new byte[] { 0x7F, 0x45, 0x4C, 0x46 };
 
             public ushort Type { get; set; }
             public ushort Machine { get; set; }

@@ -6,16 +6,16 @@ namespace ILCompiler.ObjectWriter
     internal static class DwarfNative
     {
         public const byte DW_EH_PE_absptr = 0x00;
-        public const byte DW_EH_PE_omit = 0xff;
+        public const byte DW_EH_PE_omit = 0xFF;
         public const byte DW_EH_PE_ptr = 0x00;
         public const byte DW_EH_PE_uleb128 = 0x01;
         public const byte DW_EH_PE_udata2 = 0x02;
         public const byte DW_EH_PE_udata4 = 0x03;
         public const byte DW_EH_PE_udata8 = 0x04;
         public const byte DW_EH_PE_sleb128 = 0x09;
-        public const byte DW_EH_PE_sdata2 = 0x0a;
-        public const byte DW_EH_PE_sdata4 = 0x0b;
-        public const byte DW_EH_PE_sdata8 = 0x0c;
+        public const byte DW_EH_PE_sdata2 = 0x0A;
+        public const byte DW_EH_PE_sdata4 = 0x0B;
+        public const byte DW_EH_PE_sdata8 = 0x0C;
         public const byte DW_EH_PE_signed = 0x08;
         public const byte DW_EH_PE_pcrel = 0x10;
         public const byte DW_EH_PE_textrel = 0x20;
@@ -34,12 +34,12 @@ namespace ILCompiler.ObjectWriter
         public const byte DW_CFA_undefined = 0x7;
         public const byte DW_CFA_same_value = 0x8;
         public const byte DW_CFA_register = 0x9;
-        public const byte DW_CFA_remember_state = 0xa;
-        public const byte DW_CFA_restore_state = 0xb;
-        public const byte DW_CFA_def_cfa = 0xc;
-        public const byte DW_CFA_def_cfa_register = 0xd;
-        public const byte DW_CFA_def_cfa_offset = 0xe;
-        public const byte DW_CFA_def_cfa_expression = 0xf;
+        public const byte DW_CFA_remember_state = 0xA;
+        public const byte DW_CFA_restore_state = 0xB;
+        public const byte DW_CFA_def_cfa = 0xC;
+        public const byte DW_CFA_def_cfa_register = 0xD;
+        public const byte DW_CFA_def_cfa_offset = 0xE;
+        public const byte DW_CFA_def_cfa_expression = 0xF;
         public const byte DW_CFA_expression = 0x10;
         public const byte DW_CFA_offset_extended_sf = 0x11;
         public const byte DW_CFA_def_cfa_sf = 0x12;
@@ -49,11 +49,11 @@ namespace ILCompiler.ObjectWriter
         public const byte DW_CFA_val_expression = 0x16;
         public const byte DW_CFA_advance_loc = 0x40;
         public const byte DW_CFA_offset = 0x80;
-        public const byte DW_CFA_restore = 0xc0;
-        public const byte DW_CFA_GNU_window_save = 0x2d;
-        public const byte DW_CFA_GNU_args_size = 0x2e;
-        public const byte DW_CFA_GNU_negative_offset_extended = 0x2f;
-        public const byte DW_CFA_AARCH64_negate_ra_state = 0x2d;
+        public const byte DW_CFA_restore = 0xC0;
+        public const byte DW_CFA_GNU_window_save = 0x2D;
+        public const byte DW_CFA_GNU_args_size = 0x2E;
+        public const byte DW_CFA_GNU_negative_offset_extended = 0x2F;
+        public const byte DW_CFA_AARCH64_negate_ra_state = 0x2D;
 
         public const byte DW_ATE_address                  = 0x01;
         public const byte DW_ATE_boolean                  = 0x02;
@@ -64,12 +64,12 @@ namespace ILCompiler.ObjectWriter
         public const byte DW_ATE_unsigned                 = 0x07;
         public const byte DW_ATE_unsigned_char            = 0x08;
         public const byte DW_ATE_imaginary_float          = 0x09;  /* DWARF3 */
-        public const byte DW_ATE_packed_decimal           = 0x0a;  /* DWARF3f */
-        public const byte DW_ATE_numeric_string           = 0x0b;  /* DWARF3f */
-        public const byte DW_ATE_edited                   = 0x0c;  /* DWARF3f */
-        public const byte DW_ATE_signed_fixed             = 0x0d;  /* DWARF3f */
-        public const byte DW_ATE_unsigned_fixed           = 0x0e;  /* DWARF3f */
-        public const byte DW_ATE_decimal_float            = 0x0f;  /* DWARF3f */
+        public const byte DW_ATE_packed_decimal           = 0x0A;  /* DWARF3f */
+        public const byte DW_ATE_numeric_string           = 0x0B;  /* DWARF3f */
+        public const byte DW_ATE_edited                   = 0x0C;  /* DWARF3f */
+        public const byte DW_ATE_signed_fixed             = 0x0D;  /* DWARF3f */
+        public const byte DW_ATE_unsigned_fixed           = 0x0E;  /* DWARF3f */
+        public const byte DW_ATE_decimal_float            = 0x0F;  /* DWARF3f */
         public const byte DW_ATE_UTF                      = 0x10;  /* DWARF4 */
         public const byte DW_ATE_UCS                      = 0x11;  /* DWARF5 */
         public const byte DW_ATE_ASCII                    = 0x12;  /* DWARF5 */

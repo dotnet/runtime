@@ -9,7 +9,7 @@ namespace ILCompiler.ObjectWriter
     {
         private readonly ushort[] _definition;
 
-        public static ushort DW_FORM_size = 0xdead; // Dummy value
+        public static ushort DW_FORM_size = 0xDEAD; // Dummy value
 
         public DwarfAbbrev(ushort[] definition)
         {

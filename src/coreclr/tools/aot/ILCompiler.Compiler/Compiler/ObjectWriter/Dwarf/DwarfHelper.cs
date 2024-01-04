@@ -33,7 +33,7 @@ namespace ILCompiler.ObjectWriter
                 int pos = 0;
                 do
                 {
-                    buffer[pos++] = (byte)((value & 0x7f) | ((value >= 0x80) ? 0x80u : 0));
+                    buffer[pos++] = (byte)((value & 0x7F) | ((value >= 0x80) ? 0x80u : 0));
                     value >>= 7;
                 }
                 while (value > 0);
@@ -58,7 +58,7 @@ namespace ILCompiler.ObjectWriter
             int pos = 0;
             while (cont)
             {
-                var b = (byte)((byte)value & 0x7f);
+                var b = (byte)((byte)value & 0x7F);
                 value >>= 7;
                 bool isSignBitSet = (b & 0x40) != 0;
                 if ((value == 0 && !isSignBitSet) || (value == -1 && isSignBitSet))

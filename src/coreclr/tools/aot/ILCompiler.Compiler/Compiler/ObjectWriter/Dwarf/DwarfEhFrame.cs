@@ -88,7 +88,7 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, length + padding - 4u);
             _sectionWriter.Write(tempBuffer);
 
-            _sectionWriter.WriteByte(cie.ReturnAddressRegister < 0x7f ? (byte)1u : (byte)3u); // Version
+            _sectionWriter.WriteByte(cie.ReturnAddressRegister < 0x7F ? (byte)1u : (byte)3u); // Version
             _sectionWriter.Write(augmentationString.UnderlyingArray);
 
             _sectionWriter.WriteULEB128(cie.CodeAlignFactor);
@@ -160,7 +160,7 @@ namespace ILCompiler.ObjectWriter
 
         private uint AddressSize(byte encoding)
         {
-            switch (encoding & 0xf)
+            switch (encoding & 0xF)
             {
                 case DW_EH_PE_ptr: return _is64Bit ? 8u : 4u;
                 case DW_EH_PE_sdata4: return 4u;
