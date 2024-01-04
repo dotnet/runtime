@@ -13867,9 +13867,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
             break;
 
         default:
-            assert(!"Unexpected instruction and format");
-            return PREDICATE_NONE;
+            break;
     }
+
+    assert(!"Unexpected instruction and format");
+    return PREDICATE_NONE;
 }
 
 /*****************************************************************************
