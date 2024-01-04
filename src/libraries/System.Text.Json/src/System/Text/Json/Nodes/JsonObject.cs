@@ -33,6 +33,11 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
+            if (properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection)
+            {
+                _initialCapacity = propertiesCollection.Count;
+            }
+
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
                 Add(node.Key, node.Value);
