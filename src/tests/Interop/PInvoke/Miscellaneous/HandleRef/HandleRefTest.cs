@@ -76,12 +76,8 @@ public unsafe class HandleRefTest
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/96364", RuntimeTestModes.GCStressC)]
     public static void Validate_NoGC()
     {
-        int* pInt = (int*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(CollectableClass), sizeof(int));
-        *pInt = intManaged;
-        {
-            HandleRef hr = CreateHandleRef(pInt);
-            Assert.Equal(intReturn, TestNoGC(hr, (delegate* unmanaged<void>)&Callback));
-        }
+        HandleRef hr = CreateHandleRef();
+        Assert.Equal(intReturn, TestNoGC(hr, (delegate* unmanaged<void>)&Callback));
 
         [UnmanagedCallersOnly]
         static void Callback()
@@ -96,10 +92,14 @@ public unsafe class HandleRefTest
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static HandleRef CreateHandleRef(int* addr)
+        static HandleRef CreateHandleRef()
         {
-            CollectableClass collectableClass = new(addr);
-            return new HandleRef(collectableClass, (IntPtr)addr);
+            // We don't free this memory so we don't have to worry
+            // about a race with CollectableClass's finalizer.
+            int* pInt = (int*)NativeMemory.Alloc(sizeof(int));
+            *pInt = intManaged;
+            CollectableClass collectableClass = new(pInt);
+            return new HandleRef(collectableClass, (IntPtr)pInt);
         }
     }
 
