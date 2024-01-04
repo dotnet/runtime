@@ -96,8 +96,13 @@ namespace ILAssembler
             _resourceLocator = resourceLocator;
         }
 
-        public PEBuilder BuildImage()
+        public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
         {
+            if (_diagnostics.Any(diag => diag.Severity == DiagnosticSeverity.Error))
+            {
+                return (_diagnostics.ToImmutable(), null);
+            }
+
             BlobBuilder ilStream = new();
             _entityRegistry.WriteContentTo(_metadataBuilder, ilStream);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder);
@@ -120,7 +125,7 @@ namespace ILAssembler
                 _manifestResources,
                 flags: CorFlags.ILOnly, entryPoint: entryPoint);
 
-            return peBuilder;
+            return (_diagnostics.ToImmutable(), peBuilder);
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);

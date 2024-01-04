@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
-#pragma warning disable IDE0059
 #pragma warning disable CA1822
 internal sealed class DocumentParser
 {
-    public void Parse(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    public (ImmutableArray<Diagnostic>, PEBuilder?) Parse(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
         var inputSource = new AntlrInputStream(document.Text)
         {
@@ -34,13 +36,24 @@ internal sealed class DocumentParser
             loadedDocuments.Add(document.Path, document);
             return new CILLexer(includedSource);
         });
-        // TODO Handle preprocessor diagnostics.
+
+        ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+        preprocessor.OnPreprocessorSyntaxError += (source, start, length, msg) =>
+        {
+            diagnostics.Add(new Diagnostic("Preprocessor", DiagnosticSeverity.Error, msg, new Location(new(start, length), loadedDocuments[source])));
+        };
+
         CILParser parser = new(new CommonTokenStream(lexer));
         var result = parser.decls();
-        // TODO: Handle parse errors.
-        var metadataBuilder = new MetadataBuilder();
         GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, resourceLocator);
         _ = result.Accept(visitor);
-        // TODO: Get result information out of visitor and create MetadataRootBuilder.
+
+        var image = visitor.BuildImage();
+
+        bool anyErrors = diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+
+        diagnostics.AddRange(image.Diagnostics);
+
+        return (diagnostics.ToImmutable(), anyErrors ? null : image.Image);
     }
 }
