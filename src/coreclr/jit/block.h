@@ -565,11 +565,14 @@ public:
 
     void SetPrev(BasicBlock* prev)
     {
-        bbPrev = prev;
-        if (prev)
-        {
-            prev->bbNext = this;
-        }
+        assert(prev != nullptr);
+        bbPrev       = prev;
+        prev->bbNext = this;
+    }
+
+    void SetPrevToNull()
+    {
+        bbPrev = nullptr;
     }
 
     BasicBlock* Next() const
@@ -579,17 +582,14 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
-        if (next)
-        {
-            next->bbPrev = this;
-        }
+        assert(next != nullptr);
+        bbNext       = next;
+        next->bbPrev = this;
+    }
 
-        // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
-        // For now, if a BBJ_COND's bbTrueTarget is not taken, we expect to fall through,
-        // so bbFalseTarget must be the next block.
-        // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
-        bbFalseTarget = next;
+    void SetNextToNull()
+    {
+        bbNext = nullptr;
     }
 
     bool IsFirst() const
@@ -616,7 +616,9 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
-    bool CanRemoveJumpToNext(Compiler* compiler);
+    bool CanRemoveJumpToNext(Compiler* compiler) const;
+
+    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
@@ -700,12 +702,14 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCond(BasicBlock* trueTarget)
+    void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
         assert(trueTarget != nullptr);
-        bbKind       = BBJ_COND;
-        bbTrueTarget = trueTarget;
-        // TODO-NoFallThrough: also set bbFalseTarget
+        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
+        assert(falseTarget == bbNext);
+        bbKind        = BBJ_COND;
+        bbTrueTarget  = trueTarget;
+        bbFalseTarget = falseTarget;
     }
 
     // Set both the block kind and target. This can clear `bbTarget` when setting

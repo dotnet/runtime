@@ -6504,6 +6504,29 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
+bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(ftn);
+
+#ifdef FEATURE_REJIT
+    MethodDesc *pCallee = GetMethod(ftn);
+    MethodDesc *pCaller = m_pMethodBeingCompiled;
+    pCallee->GetModule()->AddInlining(pCaller, pCallee);
+#endif // FEATURE_REJIT
+
+    EE_TO_JIT_TRANSITION();
+    
+    return true;
+}
+
 /*********************************************************************/
 uint32_t CEEInfo::getMethodAttribs (CORINFO_METHOD_HANDLE ftn)
 {

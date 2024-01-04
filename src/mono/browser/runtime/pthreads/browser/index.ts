@@ -101,7 +101,6 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
     }
     else if (isMonoWorkerMessageChannelCreated(data)) {
-        // mono_log_debug("received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthreadId = data[monoSymbol].threadId;
         const thread = addThread(pthreadId, worker, port);

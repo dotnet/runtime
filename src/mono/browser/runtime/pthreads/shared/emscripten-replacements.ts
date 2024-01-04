@@ -40,7 +40,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
             worker.onmessage!(new MessageEvent("message", {
                 data: {
                     "cmd": "killThread",
-                    thread: worker.pthread
+                    thread: worker.pthread_ptr
                 }
             }));
         } else {
