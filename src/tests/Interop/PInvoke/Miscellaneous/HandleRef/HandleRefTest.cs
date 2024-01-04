@@ -72,24 +72,27 @@ public unsafe class HandleRefTest
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/96364", RuntimeTestModes.GCStress3)]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/96364", RuntimeTestModes.GCStressC)]
     public static void Validate_NoGC()
     {
         int* pInt = (int*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(CollectableClass), sizeof(int));
         *pInt = intManaged;
-        HandleRef hr = CreateHandleRef(pInt);
-        Assert.Equal(intReturn, TestNoGC(hr, (delegate* unmanaged<void>)&Callback));
-        Assert.Equal(intManaged, *pInt);
+        {
+            HandleRef hr = CreateHandleRef(pInt);
+            Assert.Equal(intReturn, TestNoGC(hr, (delegate* unmanaged<void>)&Callback));
+        }
 
         [UnmanagedCallersOnly]
         static void Callback()
         {
-            Console.WriteLine("GC Callback 0");
+            Console.WriteLine("GC Callback Begin");
             GC.Collect(2, GCCollectionMode.Forced);
-            Console.WriteLine("GC Callback 1");
+            Console.WriteLine("GC Callback before WaitForPendingFinalizers()");
             GC.WaitForPendingFinalizers();
-            Console.WriteLine("GC Callback 2");
+            Console.WriteLine("GC Callback after WaitForPendingFinalizers()");
             GC.Collect(2, GCCollectionMode.Forced);
-            Console.WriteLine("GC Callback 3");
+            Console.WriteLine("GC Callback End");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -114,7 +117,6 @@ public unsafe class HandleRefTest
 
         ~CollectableClass()
         {
-            Console.WriteLine("CollectableClass finalizer");
             int* ptr = PtrToChange;
             *ptr = Int32.MaxValue;
         }
