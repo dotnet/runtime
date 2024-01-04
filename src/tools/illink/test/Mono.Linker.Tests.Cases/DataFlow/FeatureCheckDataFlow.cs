@@ -673,8 +673,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			// TODO: move generic analysis to dataflow analyzer to support this if it is an actual scenario.
-			[ExpectedWarning ("IL2091", nameof (RequiresAllGeneric<T>), ProducedBy = Tool.Analyzer)]
 			static void GenericRequirement<T> ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported) {

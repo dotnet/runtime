@@ -586,7 +586,7 @@ BEGIN
         BFA_METHOD_WITH_NONZERO_RVA             "Method with non-zero RVA in an Import."
         BFA_ABSTRACT_METHOD_WITH_RVA            "Abstract method with non-zero RVA."
         BFA_RUNTIME_METHOD_WITH_RVA             "Runtime-implemented method with non-zero RVA."
-        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method with non_NULL RVA."
+        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method '%1.%3' with non-zero RVA."
         BFA_AB_METHOD_IN_AB_CLASS               "Abstract method in non-abstract class."
         BFA_NONVIRT_AB_METHOD                   "Non-virtual abstract method."
         BFA_NONAB_NONCCTOR_METHOD_ON_INT        "Non-abstract, non-.cctor method in an interface."

@@ -762,8 +762,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
             else if (isInsideTry)
             {
                 // Inside try we allow only stores to locals not live in handlers.
-                // lvVolatileHint is set to true on variables that are line in handlers.
-                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvVolatileHint;
+                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvLiveInOutOfHndlr;
             }
             else
             {

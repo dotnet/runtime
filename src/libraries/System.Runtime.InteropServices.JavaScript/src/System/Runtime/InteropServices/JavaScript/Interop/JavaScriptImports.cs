@@ -7,19 +7,6 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
-        public static void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
-        {
-            fixed (JSMarshalerArgument* ptr = arguments)
-            {
-                Interop.Runtime.ResolveOrRejectPromise(ptr);
-                ref JSMarshalerArgument exceptionArg = ref arguments[0];
-                if (exceptionArg.slot.Type != MarshalerType.None)
-                {
-                    JSHostImplementation.ThrowException(ref exceptionArg);
-                }
-            }
-        }
-
 #if !DISABLE_LEGACY_JS_INTEROP
         #region legacy
 

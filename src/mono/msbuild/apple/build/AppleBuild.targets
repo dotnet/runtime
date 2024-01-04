@@ -73,6 +73,7 @@
       <_CommonLinkerArgs Include="-lz" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
+      <_CommonLinkerArgs Include="-licucore" />
       <_CommonLinkerArgs Include="-framework Foundation" />
       <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework UIKit" />

@@ -98,7 +98,7 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod);
-                tb.DefineMethod("TestMethod", MethodAttributes.Public);
+                tb.DefineMethod("TestMethod", MethodAttributes.Public).GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
@@ -170,6 +170,7 @@ namespace System.Reflection.Emit.Tests
             {
                 TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod);
                 MethodBuilder method = tb.DefineMethod("TestMethod", MethodAttributes.Public);
+                method.GetILGenerator().Emit(OpCodes.Ldarg_0);
                 GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(typeParamNames);
                 if (typeParams.Length > 2)
                 {
@@ -235,6 +236,7 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod);
                 MethodBuilder method = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 GenericTypeParameterBuilder[] typeParams = method.DefineGenericParameters(typeParamNames);
+                method.GetILGenerator().Emit(OpCodes.Ldarg_0);
                 if (typeParams.Length > 2)
                 {
                     SetVariousGenericParameterValues(typeParams);
@@ -270,6 +272,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), arrayType, typeof(int[,,,]) });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
@@ -304,6 +307,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), byrefType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
@@ -332,6 +336,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), pointerType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
@@ -370,6 +375,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(genericType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), genericType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
@@ -448,6 +454,7 @@ namespace System.Reflection.Emit.Tests
                 Type genericType = tb.MakeGenericType(typeParams);
                 mb.SetReturnType(methodParams[0]);
                 mb.SetParameters(new Type[] { typeof(INoMethod), genericType, typeParams[1] });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
@@ -488,13 +495,17 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder m12 = tb.DefineMethod("FiveTypeParameters", MethodAttributes.Public);
                 MethodBuilder m13 = tb.DefineMethod("OneParameter", MethodAttributes.Public);
                 m11.DefineGenericParameters(new string[] { "M", "N" });
+                m11.GetILGenerator().Emit(OpCodes.Ret);
                 GenericTypeParameterBuilder[] methodParams = m12.DefineGenericParameters(new string[] { "A", "B", "C", "D", "F" });
+                m12.GetILGenerator().Emit(OpCodes.Ret);
                 methodParams[2].SetInterfaceConstraints(new [] { typeof(IMultipleMethod) });
                 m13.DefineGenericParameters(new string[] { "T" });
+                m13.GetILGenerator().Emit(OpCodes.Ret);
                 TypeBuilder tb2 = mb.DefineType("TestInterface2", TypeAttributes.Interface | TypeAttributes.Abstract);
                 tb2.DefineGenericParameters(new string[] { "TFirst", "TSecond", "TThird" });
                 MethodBuilder m21 = tb2.DefineMethod("TestMethod", MethodAttributes.Public);
                 m21.DefineGenericParameters(new string[] { "X", "Y", "Z" });
+                m21.GetILGenerator().Emit(OpCodes.Ret);
                 TypeBuilder tb3 = mb.DefineType("TestType");
                 GenericTypeParameterBuilder[] typePar = tb3.DefineGenericParameters(new string[] { "TOne" });
                 typePar[0].SetBaseTypeConstraint(typeof(EmptyTestClass));

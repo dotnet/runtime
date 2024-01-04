@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseGetEnumeratorTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(10)]
         public void GetEnumerator(int count)
@@ -29,7 +29,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(10)]
         public void GetEnumerator_Invalid(int count)
