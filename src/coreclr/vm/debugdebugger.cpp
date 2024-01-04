@@ -1060,7 +1060,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
             pFunc,
             ip,
             flags,
-            GetExactGenericArgsToken(NULL, NULL, pCf));
+            GetExactGenericArgsToken(pCf->GetRegisterSet(), pCf->GetCodeInfo(), pCf->GetFrame()));
 
     // We'll init the IL offsets outside the TSL lock.
 
@@ -1081,38 +1081,54 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
 }
 #endif // !DACCESS_COMPILE
 
-PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PREGDISPLAY pRD, EECodeInfo* pCodeInfo, CrawlFrame* pCf)
+PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PREGDISPLAY pRD, EECodeInfo* pCodeInfo, PTR_Frame pFrame)
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    ASSERT (pCf != NULL || (pRD != NULL && pCodeInfo != NULL));
-
-    if (pCf)
-    {
-        return pCf->GetExactGenericArgsToken();
-    }
+    _ASSERTE(pRD != NULL && pCodeInfo != NULL);
 
     MethodDesc* pFunc = pCodeInfo->GetMethodDesc();
     if (!pFunc || !pFunc->IsSharedByGenericInstantiations())
         return NULL;
+    
+    _ASSERTE(pFunc->RequiresInstArg());
 
     if (pFunc->AcquiresInstMethodTableFromThis())
     {
-        OBJECTREF obj = pCodeInfo->GetCodeManager()->GetInstance(pRD, pCodeInfo);
+        OBJECTREF obj = !!pCodeInfo->IsValid() ? pCodeInfo->GetCodeManager()->GetInstance(pRD, pCodeInfo) : NULL;
         if (obj == NULL)
             return NULL;
         return obj->GetMethodTable();
     }
     else
     {
-        _ASSERTE(pFunc->RequiresInstArg());
-        return pCodeInfo->GetCodeManager()->GetParamTypeArg(pRD, pCodeInfo);
+        if (!!pCodeInfo->IsValid())
+        {
+            return pCodeInfo->GetCodeManager()->GetParamTypeArg(pRD, pCodeInfo);
+        }
+
+#ifdef FEATURE_INTERPRETER
+        if (pFrame != NULL && pFrame->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
+        {
+#ifdef DACCESS_COMPILE
+            // TBD: DACize the interpreter.
+            return NULL;
+#else
+            return dac_cast<PTR_InterpreterFrame>(pFrame)->GetInterpreter()->GetParamTypeArg();
+#endif
+        }
+        // Otherwise...
+#endif // FEATURE_INTERPRETER
+
+        _ASSERTE(pFrame);
+        _ASSERTE(pFunc);
+        return (dac_cast<PTR_FramedMethodFrame>(pFrame))->GetParamTypeArg();
     }
 }
 
@@ -1200,7 +1216,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     SetIP(&ctx, cur.ip);
                     SetSP(&ctx, cur.sp);
                     FillRegDisplay(&pRD, &ctx);
-                    pExactGenericArgsToken = GetExactGenericArgsToken(&pRD, &codeInfo);
+                    pExactGenericArgsToken = GetExactGenericArgsToken(&pRD, &codeInfo, NULL);
                 }
                 else
                 {
