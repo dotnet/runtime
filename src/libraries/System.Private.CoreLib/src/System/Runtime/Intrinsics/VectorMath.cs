@@ -302,11 +302,11 @@ namespace System.Runtime.Intrinsics
             {
                 return (TVectorDouble)(object)Vector128.ConvertToDouble((Vector128<long>)(object)vector);
             }
-            else if (typeof(TVectorInt64) == typeof(Vector128<long>))
+            else if (typeof(TVectorInt64) == typeof(Vector256<long>))
             {
                 return (TVectorDouble)(object)Vector256.ConvertToDouble((Vector256<long>)(object)vector);
             }
-            else if (typeof(TVectorInt64) == typeof(Vector128<long>))
+            else if (typeof(TVectorInt64) == typeof(Vector512<long>))
             {
                 return (TVectorDouble)(object)Vector512.ConvertToDouble((Vector512<long>)(object)vector);
             }
@@ -333,11 +333,11 @@ namespace System.Runtime.Intrinsics
             {
                 return (TVectorSingle)(object)Vector128.ConvertToSingle((Vector128<int>)(object)vector);
             }
-            else if (typeof(TVectorInt32) == typeof(Vector128<int>))
+            else if (typeof(TVectorInt32) == typeof(Vector256<int>))
             {
                 return (TVectorSingle)(object)Vector256.ConvertToSingle((Vector256<int>)(object)vector);
             }
-            else if (typeof(TVectorInt32) == typeof(Vector128<int>))
+            else if (typeof(TVectorInt32) == typeof(Vector512<int>))
             {
                 return (TVectorSingle)(object)Vector512.ConvertToSingle((Vector512<int>)(object)vector);
             }
