@@ -40,8 +40,8 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal sealed class CodeViewSymbolsBuilder
     {
-        private TargetArchitecture _targetArchitecture;
-        private SectionWriter _sectionWriter;
+        private readonly TargetArchitecture _targetArchitecture;
+        private readonly SectionWriter _sectionWriter;
 
         public CodeViewSymbolsBuilder(TargetArchitecture targetArchitecture, SectionWriter sectionWriter)
         {
@@ -243,8 +243,10 @@ namespace ILCompiler.ObjectWriter
                         if (codes.Count > 0)
                         {
                             recordWriter.Write(fileIndex);
+                            // Number of code pairs (ie. offset + sequence code)
                             recordWriter.Write((uint)(codes.Count / 2));
-                            recordWriter.Write((uint)(12 + 4 * codes.Count));
+                            // Record size including this header
+                            recordWriter.Write((uint)(3 * sizeof(uint) + codes.Count * sizeof(uint)));
                             foreach (uint code in codes)
                             {
                                 recordWriter.Write((uint)code);
@@ -293,11 +295,11 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class SubsectionWriter : IDisposable
         {
-            private DebugSymbolsSubsectionType _kind;
-            private SectionWriter _sectionWriter;
+            private readonly DebugSymbolsSubsectionType _kind;
+            private readonly SectionWriter _sectionWriter;
             internal uint _size;
-            internal List<byte[]> _data = new();
-            internal List<(uint, RelocType, string)> _relocations = new();
+            internal readonly List<byte[]> _data = new();
+            internal readonly List<(uint, RelocType, string)> _relocations = new();
 
             public SubsectionWriter(DebugSymbolsSubsectionType kind, SectionWriter sectionWriter)
             {
@@ -345,9 +347,9 @@ namespace ILCompiler.ObjectWriter
 
         private ref struct RecordWriter
         {
-            private SubsectionWriter _subsectionWriter;
-            private ArrayBufferWriter<byte> _bufferWriter;
-            private bool _hasLengthPrefix;
+            private readonly SubsectionWriter _subsectionWriter;
+            private readonly ArrayBufferWriter<byte> _bufferWriter;
+            private readonly bool _hasLengthPrefix;
 
             public RecordWriter(SubsectionWriter subsectionWriter, bool hasLengthPrefix)
             {

@@ -29,6 +29,9 @@ namespace ILCompiler.ObjectWriter
         {
             if (fileName == "")
             {
+                // Match the placeholder value from LLVM. We need to use a non-empty
+                // string to ensure that the null terminator of the UTF-8 representation
+                // is not treated as the terminator of the whole file name table.
                 fileName = "<stdin>";
             }
 
