@@ -5788,7 +5788,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::ValueHistogram:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
-                        printf("[%u] %lld", j, (int64_t)*(intptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t)));
+                        printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:

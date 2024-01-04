@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Internal.Pgo
 {
@@ -623,23 +622,22 @@ namespace Internal.Pgo
                                 break;
                             }
 
-
                         case PgoInstrumentationKind.ValueHistogram:
                             {
                                 if (mergedElem.DataObject.GetType() != schema.DataObject.GetType())
                                 {
-                                    // Might happen if merge MIBC collected for x86 with the one collected for x64
-                                    // then our ValueHistogram will be int[] and long[] respectively
-                                    throw new Exception($"Unable to merge ValueHistogram {mergedElem.DataObject} with {schema.DataObject}. Are you merging 32bit MIBC with 64bit MIBC?");
+                                    throw new Exception($"Unable to merge ValueHistogram {mergedElem.DataObject} " +
+                                        $"with {schema.DataObject}. Are you merging 32bit MIBC with 64bit MIBC?");
                                 }
 
                                 mergedElem.Count = existingSchemaItem.Count + schema.Count;
                                 mergedElem.DataObject = mergedElem.DataObject switch
-                                {
-                                    int[] mergedIntHistogram => mergedIntHistogram.Concat((int[])schema.DataObject).ToArray(),
-                                    long[] mergedLongHistogram => mergedLongHistogram.Concat((long[])schema.DataObject).ToArray(),
-                                    _ => throw new Exception("ValueHistogram is expected to be either int[] or long[]")
-                                };
+                                    {
+                                        // Concat two int[] or long[] arrays
+                                        int[] mergedIntHistogram => (int[])[.. mergedIntHistogram, .. (int[])schema.DataObject],
+                                        long[] mergedLongHistogram => (long[])[.. mergedLongHistogram, .. (long[])schema.DataObject],
+                                        _ => throw new Exception("ValueHistogram is expected to be either int[] or long[]")
+                                    };
                                 break;
                             }
 
