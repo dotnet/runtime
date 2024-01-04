@@ -10,9 +10,9 @@ namespace ILCompiler.ObjectWriter
 {
     internal ref struct DwarfExpressionBuilder
     {
-        private TargetArchitecture _architecture;
-        private byte _targetPointerSize;
-        private IBufferWriter<byte> _writer;
+        private readonly TargetArchitecture _architecture;
+        private readonly byte _targetPointerSize;
+        private readonly IBufferWriter<byte> _writer;
 
         public DwarfExpressionBuilder(TargetArchitecture architecture, byte targetPointerSize, IBufferWriter<byte> writer)
         {

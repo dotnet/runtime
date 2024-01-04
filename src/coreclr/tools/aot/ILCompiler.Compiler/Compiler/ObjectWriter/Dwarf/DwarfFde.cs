@@ -10,13 +10,13 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfFde
     {
-        public DwarfCie Cie;
+        public readonly DwarfCie Cie;
         public string PcStartSymbolName;
         public long PcStartSymbolOffset;
         public ulong PcLength;
         public string LsdaSymbolName;
         public string PersonalitySymbolName;
-        public byte[] Instructions;
+        public readonly byte[] Instructions;
 
         public DwarfFde(DwarfCie cie, byte[] instructions)
         {

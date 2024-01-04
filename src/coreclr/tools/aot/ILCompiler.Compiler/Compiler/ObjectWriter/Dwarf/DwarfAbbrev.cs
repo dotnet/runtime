@@ -7,7 +7,7 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfAbbrev
     {
-        private ushort[] _definition;
+        private readonly ushort[] _definition;
 
         public static ushort DW_FORM_size = 0xdead; // Dummy value
 

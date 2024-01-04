@@ -15,9 +15,9 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class CodeViewFileTableBuilder
     {
-        private MemoryStream _stringTableWriter = new();
-        private MemoryStream _fileTableWriter = new();
-        private Dictionary<string, uint> _fileNameToIndex = new();
+        private readonly MemoryStream _stringTableWriter = new();
+        private readonly MemoryStream _fileTableWriter = new();
+        private readonly Dictionary<string, uint> _fileNameToIndex = new();
 
         public CodeViewFileTableBuilder()
         {

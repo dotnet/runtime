@@ -14,15 +14,14 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfEhFrame
     {
-        private SectionWriter _sectionWriter;
-        private bool _is64Bit;
-        private Dictionary<DwarfCie, uint> _cieOffset;
+        private readonly SectionWriter _sectionWriter;
+        private readonly bool _is64Bit;
+        private readonly Dictionary<DwarfCie, uint> _cieOffset = new();
 
         public DwarfEhFrame(SectionWriter sectionWriter, bool is64Bit)
         {
             _sectionWriter = sectionWriter;
             _is64Bit = is64Bit;
-            _cieOffset = new Dictionary<DwarfCie, uint>();
         }
 
         public void AddCie(DwarfCie cie)

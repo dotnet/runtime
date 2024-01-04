@@ -49,14 +49,14 @@ namespace ILCompiler.ObjectWriter
     {
         private sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
 
-        private Machine _machine;
-        private List<SectionDefinition> _sections = new();
+        private readonly Machine _machine;
+        private readonly List<SectionDefinition> _sections = new();
 
         // Symbol table
-        private List<CoffSymbolRecord> _symbols = new();
-        private Dictionary<string, uint> _symbolNameToIndex = new(StringComparer.Ordinal);
-        private Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
-        private HashSet<string> _referencedMethods = new();
+        private readonly List<CoffSymbolRecord> _symbols = new();
+        private readonly Dictionary<string, uint> _symbolNameToIndex = new(StringComparer.Ordinal);
+        private readonly Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
+        private readonly HashSet<string> _referencedMethods = new();
 
         // Exception handling
         private SectionWriter _xdataSectionWriter;
@@ -69,10 +69,10 @@ namespace ILCompiler.ObjectWriter
         private CodeViewSymbolsBuilder _debugSymbolsBuilder;
         private CodeViewTypesBuilder _debugTypesBuilder;
 
-        private ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
-        private ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
-        private ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
-        private ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
         public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)

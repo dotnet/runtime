@@ -38,13 +38,13 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal sealed class CodeViewTypesBuilder : ITypesDebugInfoWriter
     {
-        private NameMangler _nameMangler;
-        private SectionWriter _sectionWriter;
-        private int _targetPointerSize;
+        private readonly NameMangler _nameMangler;
+        private readonly SectionWriter _sectionWriter;
+        private readonly int _targetPointerSize;
 
-        private uint _classVTableTypeIndex;
-        private uint _vfuncTabTypeIndex;
-        private List<(string, uint)> _userDefinedTypes = new();
+        private readonly uint _classVTableTypeIndex;
+        private readonly uint _vfuncTabTypeIndex;
+        private readonly List<(string, uint)> _userDefinedTypes = new();
 
         private uint _nextTypeIndex = 0x1000;
 
