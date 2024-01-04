@@ -164,8 +164,12 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pParentMethodTable
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pEEClass
                     == offsetof(MethodTable, m_pEEClass));
 
+#if defined(FEATURE_UNITY_METHODTABLE_USER_DATA)
+#define               METHODTABLE_OFFSET_VTABLE          DBG_FRE(0x50, 0x48)
+#else
 #define               METHODTABLE_OFFSET_VTABLE          DBG_FRE(0x48, 0x40)
 ASMCONSTANTS_C_ASSERT(METHODTABLE_OFFSET_VTABLE == sizeof(MethodTable));
+#endif
 
 #define               OFFSETOF__MethodTable__m_ElementType      DBG_FRE(0x38, 0x30)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_ElementType

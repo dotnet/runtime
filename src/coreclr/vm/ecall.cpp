@@ -13,6 +13,124 @@
 
 #include "comdelegate.h"
 
+#ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
+#include "clr_std/vector"
+
+struct ICallNameToId
+{
+    LPCWSTR Name;
+    DWORD Id;
+
+    ICallNameToId() : Name(nullptr), Id(0)
+    {
+    }
+
+    ICallNameToId(LPCWSTR name, DWORD id) : Name(name), Id(id)
+    {
+    }
+};
+
+
+class ICallNameToIdTraits : public NoRemoveSHashTraits< DefaultSHashTraits< ICallNameToId > >
+{
+public:
+    typedef PCWSTR key_t;
+    static const ICallNameToId Null() { ICallNameToId e; e.Name = nullptr; return e; }
+    static bool IsNull(const ICallNameToId & e) { return e.Name == nullptr; }
+    static const key_t GetKey(const ICallNameToId & e)
+    {
+        key_t key;
+        key = e.Name;
+        return key;
+    }
+    static count_t Hash(const key_t &str) { return HashiString(str); }
+    static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (_wcsicmp(lhs, rhs) == 0); }
+};
+
+SHash<ICallNameToIdTraits>* g_ICallToId = new SHash<ICallNameToIdTraits>();
+std::vector<ECFunc*> g_ICallIdToCode;
+
+INT FindICall(MethodDesc *pMD)
+{
+    // TODO: Lock
+    auto pMT = pMD->GetMethodTable();
+    LPCUTF8 pszNamespace = 0;
+    LPCUTF8 pszName = pMT->GetFullyQualifiedNameInfo(&pszNamespace);
+    SString methodName(SString::Utf8Literal, pszName);
+
+    while (pMT->GetClass()->IsNested())
+    {
+        pMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pMT->GetModule(), pMT->GetEnclosingCl(), NULL).AsMethodTable();
+        methodName.InsertUTF8(methodName.Begin(), "/");
+        methodName.InsertUTF8(methodName.Begin(), pMT->GetFullyQualifiedNameInfo(&pszNamespace));
+    }
+    SString fullMethodName(SString::Utf8Literal, pszNamespace);
+    fullMethodName.AppendUTF8(".");
+    fullMethodName.Append(methodName);
+    fullMethodName.AppendUTF8("::");
+    fullMethodName.AppendUTF8(pMD->GetName());
+
+    auto result = g_ICallToId->LookupPtr(fullMethodName);
+    if (result)
+    {
+        return result->Id;
+    }
+    return 0;
+}
+
+bool IsICall(DWORD id)
+{
+    return (id >> 16) == 0xFFFF;
+}
+
+DWORD GetIndexICall(DWORD id)
+{
+    assert(IsICall(id));
+    return id & 0xFFFF;
+}
+
+void ECall::RegisterICall(const char* fullMethodName, PCODE code)
+{
+    // CAUTION: THIS METHOD IS NOT THREADSAFE
+    // PROTECT IT IN THE CALLER
+    SString* fullMethodNameUTF8 = new SString(SString::Utf8Literal, fullMethodName);
+
+    auto result = g_ICallToId->LookupPtr(*fullMethodNameUTF8);
+    if (result)
+    {
+        auto indexICall = GetIndexICall(result->Id);
+        g_ICallIdToCode[indexICall]->m_pImplementation = (LPVOID)code;
+    }
+    else
+    {
+        auto index = g_ICallIdToCode.size();
+        auto id = (DWORD)0xFFFF0000 | (DWORD)g_ICallIdToCode.size();
+
+        g_ICallToId->AddOrReplace(ICallNameToId(fullMethodNameUTF8->GetUnicode(), id));
+
+        auto eeFuncs = new ECFunc[2];
+#ifdef HOST_64BIT
+        eeFuncs[0].m_dwFlags = 0xffffffffffff0000;
+#else
+        eeFuncs[0].m_dwFlags = 0xffff0000;
+#endif
+        eeFuncs[0].m_pImplementation = (LPVOID)code;
+        eeFuncs[0].m_pMethodSig = nullptr;
+        eeFuncs[0].m_szMethodName = nullptr;
+#ifdef HOST_64BIT
+        eeFuncs[1].m_dwFlags = 0xffffffffffff0000 | FCFuncFlag_EndOfArray;
+#else
+        eeFuncs[1].m_dwFlags = 0xffff0000 | FCFuncFlag_EndOfArray;
+#endif
+        eeFuncs[1].m_pImplementation = 0;
+        eeFuncs[1].m_pMethodSig = nullptr;
+        eeFuncs[1].m_szMethodName = nullptr;
+        g_ICallIdToCode.push_back(&eeFuncs[0]);
+    }
+}
+
+#endif
+
 #ifndef DACCESS_COMPILE
 
 extern const ECClass c_rgECClasses[];
@@ -317,6 +435,15 @@ DWORD ECall::GetIDForMethod(MethodDesc *pMD)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
+    // Check any registered ICalls
+    auto id = FindICall(pMD);
+    if (id != 0)
+    {
+        return id;
+    }
+#endif
+
     INT ImplsIndex = FindImplsIndexForClass(pMD->GetMethodTable());
     if (ImplsIndex < 0)
         return 0;
@@ -333,6 +460,14 @@ static ECFunc *FindECFuncForID(DWORD id)
 
     if (id == 0)
         return NULL;
+
+#ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
+    if (IsICall(id))
+    {
+        auto indexICall = GetIndexICall(id);
+        return g_ICallIdToCode[indexICall];
+    }
+#endif
 
     INT ImplsIndex  = (id >> 16);
     INT ECIndex     = (id & 0xffff) - 1;
@@ -366,6 +501,45 @@ static ECFunc* FindECFuncForMethod(MethodDesc* pMD)
 
     return FindECFuncForID(id);
 }
+
+#ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
+
+void UpdateTargetBackToMethodMap(PCODE pTarg, MethodDesc *newMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        HOST_NOCALLS;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    // Searching all of the entries is expensive
+    // and we are often called with pTarg == NULL so
+    // check for this value and early exit.
+
+    if (!pTarg)
+        return;
+
+    // Could this possibily be an FCall?
+    if ((pTarg < gLowestFCall) || (pTarg > gHighestFCall))
+        return;
+
+    ECHash * pECHash = gFCallMethods[FCallHash(pTarg)];
+    while (pECHash != NULL)
+    {
+        if (pECHash->m_pImplementation == pTarg)
+        {
+            pECHash->m_pMD = newMD;
+            return;
+        }
+        pECHash = pECHash->m_pNext;
+    }
+}
+
+#endif
 
 /*******************************************************************************
 * Returns 0 if it is an ECALL,
@@ -420,8 +594,10 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         return GetEEFuncEntryPoint(FCComCtor);
     }
 
+#ifndef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
     if (!pMD->GetModule()->IsSystem())
         COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
+#endif
 
     ECFunc* ret = FindECFuncForMethod(pMD);
 
@@ -476,6 +652,9 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     {
         if (pMDinTable != pMD)
         {
+#ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
+            UpdateTargetBackToMethodMap(pImplementation, pMD);
+#else
             // The fcall entrypoints has to be at unique addresses. If you get failure here, use the following steps
             // to fix it:
             // 1. Consider merging the offending fcalls into one fcall. Do they really do different things?
@@ -484,6 +663,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
 
             _ASSERTE(!"Duplicate pImplementation entries found in reverse fcall table");
             ThrowHR(E_FAIL);
+#endif
         }
     }
     else

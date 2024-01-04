@@ -1,0 +1,26 @@
+{
+    "windows": {
+        "agent": {
+            "image": "burst/burst-base:1.0.16-1315771",
+            "flavor": "b1.xlarge",
+            "resource": "Unity::VM"
+        },
+        "System": "windows"
+    },
+    "ubuntu": {
+        "agent": {
+            "image": "platform-foundation/linux-ubuntu-18.04-mono-bokken:0.1.7-978398",
+            "flavor": "b1.xlarge",
+            "resource": "Unity::VM"
+        },
+        "System": "ubuntu"
+    },
+    "macos": {
+        "agent": {
+            "image": "platform-foundation/coreclr-osx:v0.0.1-1277968",
+            "flavor": "b1.xlarge",
+            "resource": "Unity::VM::osx"
+        },
+        "System": "macos"
+    }
+}

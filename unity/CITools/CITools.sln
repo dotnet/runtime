@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildDriver", "BuildDriver\BuildDriver.csproj", "{403C25BB-EA37-416C-BCDC-93C70117C61B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.Cookbook", "Unity.Cookbook\Unity.Cookbook.csproj", "{D40D7031-6E9F-4C5E-BB72-795427195038}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckYamatoFiles", "CheckYamatoFiles\CheckYamatoFiles.csproj", "{9DBC4E0D-1901-4F0E-A3CC-9212DCAFCB1F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{403C25BB-EA37-416C-BCDC-93C70117C61B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{403C25BB-EA37-416C-BCDC-93C70117C61B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{403C25BB-EA37-416C-BCDC-93C70117C61B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{403C25BB-EA37-416C-BCDC-93C70117C61B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D40D7031-6E9F-4C5E-BB72-795427195038}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D40D7031-6E9F-4C5E-BB72-795427195038}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D40D7031-6E9F-4C5E-BB72-795427195038}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D40D7031-6E9F-4C5E-BB72-795427195038}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DBC4E0D-1901-4F0E-A3CC-9212DCAFCB1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DBC4E0D-1901-4F0E-A3CC-9212DCAFCB1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DBC4E0D-1901-4F0E-A3CC-9212DCAFCB1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DBC4E0D-1901-4F0E-A3CC-9212DCAFCB1F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

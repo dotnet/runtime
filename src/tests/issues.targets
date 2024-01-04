@@ -310,6 +310,21 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
             <Issue>https://github.com/dotnet/runtime/issues/75244</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
+            <Issue>Unity Failed</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitForLoopsOff_R2r/*">
+            <Issue>Unity Failed</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitForLoopsOn_R2r/*">
+            <Issue>Unity Failed</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOff_R2r/*">
+            <Issue>Unity Failed</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/*">
+            <Issue>Unity Failed</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->

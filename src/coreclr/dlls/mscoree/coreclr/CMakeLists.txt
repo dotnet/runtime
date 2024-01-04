@@ -111,6 +111,14 @@ set(CORECLR_LIBRARIES
     gc_pal
 )
 
+if(FEATURE_UNITY_EMBEDDING_INTERFACE)
+    list(APPEND CORECLR_LIBRARIES
+        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
+        mono
+        ${END_WHOLE_ARCHIVE}
+    )
+endif(FEATURE_UNITY_EMBEDDING_INTERFACE)
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
         ${STATIC_MT_CRT_LIB}

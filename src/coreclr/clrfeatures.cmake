@@ -39,3 +39,8 @@ endif()
 if (CLR_CMAKE_TARGET_APPLE)
   set(FEATURE_OBJCMARSHAL 1)
 endif()
+
+# should default this to 0 once we figure out how to enable in build scripting
+if(NOT DEFINED FEATURE_UNITY_EMBEDDING_INTERFACE)
+  set(FEATURE_UNITY_EMBEDDING_INTERFACE 1)
+endif(NOT DEFINED FEATURE_UNITY_EMBEDDING_INTERFACE)
