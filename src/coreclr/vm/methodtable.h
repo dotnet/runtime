@@ -438,7 +438,7 @@ public:
 
     static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableWriteableData pWriteableData)
     {
-        return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pWriteableData) + sizeof(GenericsStaticsInfo));
+        return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pWriteableData) - sizeof(GenericsStaticsInfo));
     }
 };  // struct MethodTableWriteableData
 

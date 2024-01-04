@@ -914,8 +914,7 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
             // the specified function so walk up the parent chain to make sure we return
             // an exact instantiation of the CORRECT parent class.
             pMT = pMD->GetExactDeclaringType(dac_cast<PTR_MethodTable>(pExactGenericArgsToken));
-            _ASSERTE(pMT != NULL);
-            retVal = TRUE;
+            retVal = pMT != NULL ? TRUE : FALSE;
         }
         else
         {
