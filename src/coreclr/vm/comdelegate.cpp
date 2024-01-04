@@ -1973,39 +1973,35 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     RETURN ret;
 }
 
-FCIMPL1(Object*, COMDelegate::InternalAlloc, ReflectClassBaseObject * pTargetUNSAFE)
+extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refTarget = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetUNSAFE);
-    OBJECTREF refRetVal = NULL;
-    TypeHandle targetTH = refTarget->GetType();
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refTarget);
+    BEGIN_QCALL;
 
-    _ASSERTE(targetTH.GetMethodTable() != NULL && targetTH.GetMethodTable()->IsDelegate());
+    GCX_COOP();
 
-    refRetVal = targetTH.GetMethodTable()->Allocate();
+    _ASSERTE(pType.AsTypeHandle().AsMethodTable()->IsDelegate());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    d.Set(pType.AsTypeHandle().AsMethodTable()->Allocate());
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
+extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+    BEGIN_QCALL;
 
-    _ASSERTE(pThis->GetMethodTable() != NULL && pThis->GetMethodTable()->IsDelegate());
+    GCX_COOP();
 
-    refRetVal = pThis->GetMethodTable()->AllocateNoChecks();
+    _ASSERTE(d.Get()->GetMethodTable()->IsDelegate());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    d.Set(d.Get()->GetMethodTable()->AllocateNoChecks());
+
+    END_QCALL;
 }
-FCIMPLEND
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {

@@ -423,11 +423,24 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern MulticastDelegate InternalAlloc(RuntimeType type);
+        private static MulticastDelegate InternalAlloc(RuntimeType type)
+        {
+            MulticastDelegate? d = null;
+            InternalAlloc(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref d));
+            return d!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern MulticastDelegate InternalAllocLike(Delegate d);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAlloc")]
+        private static partial void InternalAlloc(QCallTypeHandle type, ObjectHandleOnStack d);
+
+        internal static MulticastDelegate InternalAllocLike(MulticastDelegate d)
+        {
+            InternalAllocLike(ObjectHandleOnStack.Create(ref d));
+            return d;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAllocLike")]
+        private static partial void InternalAllocLike(ObjectHandleOnStack d);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool InternalEqualTypes(object a, object b)

@@ -278,8 +278,6 @@ FCFuncEnd()
 FCFuncStart(gDelegateFuncs)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
-    FCFuncElement("InternalAlloc", COMDelegate::InternalAlloc)
-    FCFuncElement("InternalAllocLike", COMDelegate::InternalAllocLike)
     FCFuncElement("InternalEqualMethodHandles", COMDelegate::InternalEqualMethodHandles)
     FCFuncElement("FindMethodHandle", COMDelegate::FindMethodHandle)
 

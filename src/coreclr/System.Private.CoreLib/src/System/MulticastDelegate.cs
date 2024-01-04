@@ -182,7 +182,7 @@ namespace System
         private MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = (MulticastDelegate)InternalAllocLike(this);
+            MulticastDelegate result = InternalAllocLike(this);
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them

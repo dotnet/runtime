@@ -55,9 +55,6 @@ public:
 
     static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
-    static FCDECL1(Object*, InternalAlloc, ReflectClassBaseObject* target);
-    static FCDECL1(Object*, InternalAllocLike, Object* pThis);
-
     // This gets the MethodInfo for a delegate, creating it if necessary
     static FCDECL1(ReflectMethodObject*, FindMethodHandle, Object* refThis);
     static FCDECL2(FC_BOOL_RET, InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn);
@@ -154,6 +151,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
     MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
+
+extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d);
+
+extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d);
 
 
 void DistributeEvent(OBJECTREF *pDelegate,
