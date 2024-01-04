@@ -4849,8 +4849,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         optLoopCount      = 0;
 
         // Old dominators and reachability sets are no longer valid.
-        fgDomsComputed         = false;
-        fgCompactRenumberQuirk = true;
+        fgDomsComputed = false;
     }
 
 #ifdef DEBUG
@@ -5039,7 +5038,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 
     optLoopsRequirePreHeaders = false;
-    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
