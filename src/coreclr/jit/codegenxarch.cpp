@@ -9037,7 +9037,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 void CodeGen::genAmd64EmitterUnitTestsSse2()
 {
-    assert(verbose);
     emitter* theEmitter = GetEmitter();
 
     //

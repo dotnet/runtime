@@ -30,8 +30,11 @@ unsigned emitEndCodeGen(Compiler* comp,
                         unsigned* prologSize,
                         unsigned* epilogSize,
                         void**    codeAddr,
+                        void**    codeAddrRW,
                         void**    coldCodeAddr,
-                        void** consAddr DEBUGARG(unsigned* instrCount));
+                        void**    coldCodeAddrRW,
+                        void**    consAddr,
+                        void** consAddrRW DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/
 /*                      Method prolog and epilog                        */
