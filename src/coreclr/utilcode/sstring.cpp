@@ -879,7 +879,7 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
     {
         if (!minipal_convert_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
         {
-            ThrowHR(COR_E_INSUFFICIENTMEMORY);
+            ThrowHR(EMAKEHR(errno));
         }
     }
 
