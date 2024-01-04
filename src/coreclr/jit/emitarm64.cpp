@@ -18893,7 +18893,7 @@ void emitter::emitDispInsHelp(
         // { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
-            emitDispSveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispSveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true);        // ttttt
             emitDispPredicateReg(id->idReg2(), insGetSveReg2PredicateType(fmt), id->idInsOpt(), true); // ggg
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
