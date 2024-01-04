@@ -3415,9 +3415,9 @@ simd_type_to_shl_op (int t)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #if TARGET_SIZEOF_VOID_P == 8
-		return OP_PSHLD;
-#else
 		return OP_PSHLQ;
+#else
+		return OP_PSHLD;
 #endif
 	default:
 		g_assert_not_reached ();
