@@ -2174,5 +2174,39 @@ internal class Dummy
                 Assert.Equal(55, recursiveMethodFromDisk.Invoke(null, [10]));
             }
         }
+
+        [Fact]
+        public void CallOpenGenericMembersFromConstructedGenericType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                MethodBuilder method = type.DefineMethod("M1", MethodAttributes.Public, null, null);
+
+                ILGenerator ilGenerator = method.GetILGenerator();
+                LocalBuilder span = ilGenerator.DeclareLocal(typeof(ReadOnlySpan<char>));
+                LocalBuilder str = ilGenerator.DeclareLocal(typeof(string));
+
+                ilGenerator.Emit(OpCodes.Ldstr, "hello");
+                ilGenerator.Emit(OpCodes.Call, typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!);
+                ilGenerator.Emit(OpCodes.Stloc, span);
+                ilGenerator.Emit(OpCodes.Ldloca_S, span);
+                ilGenerator.Emit(OpCodes.Ldc_I4_1);
+                ilGenerator.Emit(OpCodes.Call, typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int)])!);
+                ilGenerator.Emit(OpCodes.Stloc, span);
+                ilGenerator.Emit(OpCodes.Ldloca_S, span);
+                ilGenerator.Emit(OpCodes.Constrained, typeof(ReadOnlySpan<char>));
+                ilGenerator.Emit(OpCodes.Callvirt, typeof(object).GetMethod("ToString"));
+                ilGenerator.Emit(OpCodes.Stloc, str);
+                ilGenerator.EmitWriteLine(str);
+                ilGenerator.Emit(OpCodes.Ret);
+
+                type.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                Type typeFromDisk = Assembly.LoadFile(file.Path).GetType("MyType");
+                typeFromDisk.GetMethod("M1").Invoke(Activator.CreateInstance(typeFromDisk), null);
+            }
+        }
     }
 }
