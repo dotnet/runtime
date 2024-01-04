@@ -2029,11 +2029,14 @@ struct NaturalLoopIterInfo
     int ConstInitValue = 0;
 
     // Block outside the loop that initializes the induction variable. Only
-    // value if HasConstInit is true.
+    // valid if HasConstInit is true.
     BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
+
+    // Block that has the loop test.
+    BasicBlock* TestBlock = nullptr;
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
