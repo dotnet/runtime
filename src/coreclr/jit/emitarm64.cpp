@@ -13480,13 +13480,66 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the register list size for the given instruction.
+ *  Returns the register list size for the given SVE instruction.
  */
 
-/*static*/ int emitter::insGetSveRegisterListSize(instruction ins)
+/*static*/ int emitter::insGetSveReg1ListSize(instruction ins)
 {
     switch (ins)
     {
+        case INS_sve_ld1d:
+        case INS_sve_ld1w:
+        case INS_sve_ld1sw:
+        case INS_sve_ld1sb:
+        case INS_sve_ld1b:
+        case INS_sve_ld1sh:
+        case INS_sve_ld1h:
+        case INS_sve_ldnf1d:
+        case INS_sve_ldnf1sw:
+        case INS_sve_ldnf1sh:
+        case INS_sve_ldnf1w:
+        case INS_sve_ldnf1h:
+        case INS_sve_ldnf1sb:
+        case INS_sve_ldnf1b:
+        case INS_sve_ldnt1b:
+        case INS_sve_ldnt1d:
+        case INS_sve_ldnt1h:
+        case INS_sve_ldnt1w:
+        case INS_sve_ld1rob:
+        case INS_sve_ld1rod:
+        case INS_sve_ld1roh:
+        case INS_sve_ld1row:
+        case INS_sve_ld1rqb:
+        case INS_sve_ld1rqd:
+        case INS_sve_ld1rqh:
+        case INS_sve_ld1rqw:
+        case INS_sve_stnt1b:
+        case INS_sve_stnt1d:
+        case INS_sve_stnt1h:
+        case INS_sve_stnt1w:
+        case INS_sve_st1d:
+        case INS_sve_st1w:
+        case INS_sve_ldff1sh:
+        case INS_sve_ldff1w:
+        case INS_sve_ldff1h:
+        case INS_sve_ldff1d:
+        case INS_sve_ldff1sw:
+        case INS_sve_st1b:
+        case INS_sve_ldff1sb:
+        case INS_sve_ldff1b:
+        case INS_sve_ldnt1sb:
+        case INS_sve_ldnt1sh:
+        case INS_sve_ld1rd:
+        case INS_sve_ld1rsw:
+        case INS_sve_ld1rh:
+        case INS_sve_ld1rsb:
+        case INS_sve_ld1rsh:
+        case INS_sve_ld1rw:
+        case INS_sve_ld1q:
+        case INS_sve_ldnt1sw:
+        case INS_sve_st1q:
+            return 1;
+
         case INS_sve_ld2b:
         case INS_sve_ld2h:
         case INS_sve_ld2w:
@@ -13497,6 +13550,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case INS_sve_st2w:
         case INS_sve_st2d:
         case INS_sve_st2q:
+        case INS_sve_whilege: // SVE_DX_3A
+        case INS_sve_whilegt: // SVE_DX_3A
+        case INS_sve_whilehi: // SVE_DX_3A
+        case INS_sve_whilehs: // SVE_DX_3A
+        case INS_sve_whilele: // SVE_DX_3A
+        case INS_sve_whilels: // SVE_DX_3A
+        case INS_sve_whilelt: // SVE_DX_3A
+        case INS_sve_pext:    // SVE_DW_2B
             return 2;
 
         case INS_sve_ld3b:
@@ -13524,16 +13585,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
             return 4;
 
         default:
+            assert(!"Unexpected instruction");
             return 1;
     }
 }
 
 /*****************************************************************************
  *
- *  Returns the predicate type for the given instruction's second register.
+ *  Returns the predicate type for the given SVE instruction's second register.
  */
 
-/*static*/ emitter::PredicateType emitter::insGetPredicateTypeReg2(instruction ins, insFormat fmt)
+/*static*/ emitter::PredicateType emitter::insGetSveReg2PredicateType(insFormat fmt)
 {
     switch (fmt)
     {
@@ -13656,6 +13718,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_HV_4A:
             return PREDICATE_MERGE;
 
+        case IF_SVE_CZ_4A_A:
         case IF_SVE_CZ_4A_L:
         case IF_SVE_CF_2A:
         case IF_SVE_CF_2B:
@@ -13676,16 +13739,97 @@ void emitter::emitIns_Call(EmitCallType          callType,
         // Therefore, by default return NONE due to ambiguity.
         case IF_SVE_AH_3A:
         case IF_SVE_DB_3A:
+            // TODO: Handle these cases.
+            break;
+
+        case IF_SVE_JD_4B:
+        case IF_SVE_JD_4C:
+        case IF_SVE_JI_3A_A:
+        case IF_SVE_JJ_4A:
+        case IF_SVE_JJ_4A_B:
+        case IF_SVE_JJ_4A_C:
+        case IF_SVE_JJ_4A_D:
+        case IF_SVE_JJ_4B:
+        case IF_SVE_JJ_4B_E:
+        case IF_SVE_JN_3B:
+        case IF_SVE_JN_3C:
+        case IF_SVE_JD_4A:
+        case IF_SVE_JN_3A:
+        case IF_SVE_JD_4C_A:
+        case IF_SVE_JJ_4B_C:
+        case IF_SVE_JL_3A:
+        case IF_SVE_JN_3C_D:
+        case IF_SVE_HY_3A:
+        case IF_SVE_HY_3A_A:
+        case IF_SVE_HY_3B:
+        case IF_SVE_HZ_2A_B:
+        case IF_SVE_IA_2A:
+        case IF_SVE_IB_3A:
+        case IF_SVE_JK_4A:
+        case IF_SVE_JK_4A_B:
+        case IF_SVE_JK_4B:
+        case IF_SVE_IZ_4A:
+        case IF_SVE_IZ_4A_A:
+        case IF_SVE_JB_4A:
+        case IF_SVE_JM_3A:
+        case IF_SVE_CM_3A:
+        case IF_SVE_CN_3A:
+        case IF_SVE_CO_3A:
+        case IF_SVE_JA_4A:
+        case IF_SVE_CR_3A:
+        case IF_SVE_CS_3A:
+        case IF_SVE_CV_3A:
+        case IF_SVE_CV_3B:
+        case IF_SVE_DK_3A:
+        case IF_SVE_DW_2A: // <PNn>[<imm>]
+        case IF_SVE_DW_2B: // <PNn>[<imm>]
+        case IF_SVE_JC_4A:
+        case IF_SVE_JO_3A:
+        case IF_SVE_JE_3A:
+        case IF_SVE_JF_4A:
+        case IF_SVE_AK_3A:
+        case IF_SVE_HE_3A:
+        case IF_SVE_AF_3A:
+        case IF_SVE_AG_3A:
+        case IF_SVE_AI_3A:
+        case IF_SVE_AJ_3A:
+        case IF_SVE_AL_3A:
+        case IF_SVE_CL_3A:
+        case IF_SVE_DD_2A:
+        case IF_SVE_DF_2A:
+        case IF_SVE_GS_3A:
+        case IF_SVE_HJ_3A:
+        case IF_SVE_IY_4A:
             return PREDICATE_NONE;
 
+        default:
+            break;
+    }
+
+    assert(!"Unexpected instruction format");
+    return PREDICATE_NONE;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the predicate type for the given SVE instruction's second register.
+ */
+
+/*static*/ emitter::PredicateType emitter::insGetSveReg2PredicateType(instruction ins, insFormat fmt)
+{
+    switch (fmt)
+    {
         case IF_SVE_CW_4A:
             switch (ins)
             {
                 case INS_sve_sel:
                     return PREDICATE_NONE;
 
+                case INS_sve_mov:
+                    return PREDICATE_ZERO;
+
                 default:
-                    return PREDICATE_MERGE;
+                    break;
             }
 
         case IF_SVE_CZ_4A:
@@ -13694,11 +13838,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 case INS_sve_sel:
                     return PREDICATE_NONE;
 
-                default:
+                case INS_sve_mov:
+                case INS_sve_movs:
+                case INS_sve_and:
+                case INS_sve_bic:
+                case INS_sve_eor:
+                case INS_sve_orr:
+                case INS_sve_orn:
+                case INS_sve_not:
+                case INS_sve_ands:
+                case INS_sve_bics:
+                case INS_sve_eors:
+                case INS_sve_nand:
+                case INS_sve_nands:
+                case INS_sve_nor:
+                case INS_sve_nors:
+                case INS_sve_nots:
+                case INS_sve_orns:
+                case INS_sve_orrs:
                     return PREDICATE_ZERO;
+
+                default:
+                    break;
             }
 
         default:
+            assert(!"Unexpected instruction and format");
             return PREDICATE_NONE;
     }
 }
@@ -18726,8 +18891,8 @@ void emitter::emitDispInsHelp(
         // { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
-            emitDispSveRegList(id->idReg1(), insGetSveRegisterListSize(ins), id->idInsOpt(), true); // ttttt
-            emitDispPredicateReg(id->idReg2(), insGetPredicateTypeReg2(ins, fmt), id->idInsOpt(), true); // ggg
+            emitDispSveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), insGetSveReg2PredicateType(fmt), id->idInsOpt(), true); // ggg
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
             if (imm != 0)
