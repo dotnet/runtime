@@ -305,22 +305,22 @@ namespace System.Collections.ObjectModel
                     return items;
                 }
             }
-        }
 
-        [DebuggerDisplay("{Value}", Name = "[{Key}]")]
-        private readonly struct KeyedCollectionDebugViewItem
-        {
-            public KeyedCollectionDebugViewItem(TKey key, TItem value)
+            [DebuggerDisplay("{Value}", Name = "[{Key}]")]
+            internal readonly struct KeyedCollectionDebugViewItem
             {
-                Key = key;
-                Value = value;
+                public KeyedCollectionDebugViewItem(TKey key, TItem value)
+                {
+                    Key = key;
+                    Value = value;
+                }
+
+                [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
+                public TKey Key { get; }
+
+                [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
+                public TItem Value { get; }
             }
-
-            [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-            public TKey Key { get; }
-
-            [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-            public TItem Value { get; }
         }
     }
 }
