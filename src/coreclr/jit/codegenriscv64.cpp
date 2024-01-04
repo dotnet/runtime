@@ -5991,22 +5991,22 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // Extend liveness of dstReg in case if it gets killed by the store.
         gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
-        const regNumber offsetReg = initBlkNode->ExtractTempReg();
-        const regNumber tempReg   = initBlkNode->ExtractTempReg();
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+        const regNumber tempReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, size - TARGET_POINTER_SIZE);
+
+        // tempReg = dstReg + tempReg (a new interior pointer, but in a nongc region)
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tempReg, dstReg, tempReg);
 
         BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
         GetEmitter()->emitDisableGC(); // TODO: add gcinfo to tempReg and remove nogc
 
-        // tempReg = dstReg + offset (a new interior pointer, but in a nongc region)
-        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tempReg, dstReg, offsetReg);
         // *tempReg = 0
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, tempReg, 0);
-        // offsetReg = offsetReg - 8
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, offsetReg, offsetReg, -8);
-        // if (offsetReg != 0) goto loop;
-        GetEmitter()->emitIns_J(INS_bnez, loop, offsetReg);
+        // tempReg = tempReg - 8
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -8);
+        // if (tempReg != dstReg) goto loop;
+        GetEmitter()->emitIns_J(INS_bne, loop, (int)tempReg | ((int)dstReg << 5));
         GetEmitter()->emitEnableGC();
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));

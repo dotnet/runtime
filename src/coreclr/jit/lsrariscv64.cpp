@@ -1130,8 +1130,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             break;
 
             case GenTreeBlk::BlkOpKindLoop:
-                // Needed for offsetReg
-                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 // Needed for tempReg
                 buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
