@@ -278,8 +278,6 @@ FCFuncEnd()
 FCFuncStart(gDelegateFuncs)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
-    FCFuncElement("InternalEqualMethodHandles", COMDelegate::InternalEqualMethodHandles)
-    FCFuncElement("FindMethodHandle", COMDelegate::FindMethodHandle)
 
     // The FCall mechanism knows how to wire multiple different constructor calls into a
     // single entrypoint, without the following entry.  But we need this entry to satisfy

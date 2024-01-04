@@ -55,10 +55,6 @@ public:
 
     static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
-    // This gets the MethodInfo for a delegate, creating it if necessary
-    static FCDECL1(ReflectMethodObject*, FindMethodHandle, Object* refThis);
-    static FCDECL2(FC_BOOL_RET, InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn);
-
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
     static FCDECL1(PCODE, GetMulticastInvoke, Object* refThis);
     static FCDECL1(MethodDesc*, GetInvokeMethod, Object* refThis);
@@ -155,6 +151,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d
 extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d);
 
 extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d);
+
+extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
+
+extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
 
 
 void DistributeEvent(OBJECTREF *pDelegate,

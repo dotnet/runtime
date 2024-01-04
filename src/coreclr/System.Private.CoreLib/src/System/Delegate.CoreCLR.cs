@@ -476,11 +476,25 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern IntPtr GetInvokeMethod();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IRuntimeMethodInfo FindMethodHandle();
+        internal IRuntimeMethodInfo FindMethodHandle()
+        {
+            Delegate d = this;
+            IRuntimeMethodInfo? methodInfo = null;
+            FindMethodHandle(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref methodInfo));
+            return methodInfo!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool InternalEqualMethodHandles(Delegate left, Delegate right);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_FindMethodHandle")]
+        private static partial void FindMethodHandle(ObjectHandleOnStack d, ObjectHandleOnStack retMethodInfo);
+
+        private static bool InternalEqualMethodHandles(Delegate left, Delegate right)
+        {
+            return InternalEqualMethodHandles(ObjectHandleOnStack.Create(ref left), ObjectHandleOnStack.Create(ref right));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalEqualMethodHandles")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool InternalEqualMethodHandles(ObjectHandleOnStack left, ObjectHandleOnStack right);
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {

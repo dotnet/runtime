@@ -2095,46 +2095,40 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
     return gc.innerDel;
 }
 
-// InternalGetMethodInfo
 // This method will get the MethodInfo for a delegate
-FCIMPL1(ReflectMethodObject *, COMDelegate::FindMethodHandle, Object* refThisIn)
+extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    MethodDesc* pMD = NULL;
-    REFLECTMETHODREF pRet = NULL;
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
+    GCX_COOP();
 
-    pMD = GetMethodDesc(refThis);
+    MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    pRet = pMD->GetStubMethodInfo();
-    HELPER_METHOD_FRAME_END();
+    retMethodInfo.Set(pMD->GetStubMethodInfo());
 
-    return (ReflectMethodObject*)OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn)
+extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF refLeft = ObjectToOBJECTREF(refLeftIn);
-    OBJECTREF refRight = ObjectToOBJECTREF(refRightIn);
     BOOL fRet = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refLeft, refRight);
+    BEGIN_QCALL;
 
-    MethodDesc* pMDLeft = GetMethodDesc(refLeft);
-    MethodDesc* pMDRight = GetMethodDesc(refRight);
+    GCX_COOP();
+
+    MethodDesc* pMDLeft = COMDelegate::GetMethodDesc(left.Get());
+    MethodDesc* pMDRight = COMDelegate::GetMethodDesc(right.Get());
     fRet = pMDLeft == pMDRight;
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
-    FC_RETURN_BOOL(fRet);
+    return fRet;
 }
-FCIMPLEND
 
 FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
 {
