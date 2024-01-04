@@ -830,7 +830,7 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
     size_t version_str_len = strlen(cxt->version);
     uint32_t version_buf_len = align_to((uint32_t)version_str_len + 1, 4);
 
-    if (!write_u32(&buffer, &remaining_buffer_len, (uint32_t)version_str_len + 1))
+    if (!write_u32(&buffer, &remaining_buffer_len, (uint32_t)version_buf_len))
         return false;
     
     if (remaining_buffer_len < version_buf_len)
