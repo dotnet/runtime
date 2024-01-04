@@ -202,7 +202,7 @@ namespace System.Text.Json.Nodes
             {
                 bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
                 dictionary = _initialCapacity.HasValue
-                    ? new JsonPropertyDictionary<JsonNode>(caseInsensitive, _initialCapacity.Value)
+                    ? new JsonPropertyDictionary<JsonNode?>(caseInsensitive, _initialCapacity.Value)
                     : new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
                 if (jsonElement.HasValue)
                 {
