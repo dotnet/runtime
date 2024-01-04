@@ -12645,10 +12645,16 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
 void LinearScan::RegisterSelection::try_FREE()
 {
     assert(!found);
+#ifdef DEBUG
+    // We try the "free" heuristics only if we have free candidates and this is
+    // guarded by a check in Release mode.
+    // In Debug mode, JitLsraOrdering can reorder the heuristics and we can come
+    // here in any order, hence we should check if it is RBM_NONE or not.
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     found = applySelection(FREE, freeCandidates);
 }
@@ -12661,10 +12667,6 @@ void LinearScan::RegisterSelection::try_FREE()
 void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 {
     assert(!found);
-    if (freeCandidates == RBM_NONE)
-    {
-        return;
-    }
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
@@ -12684,10 +12686,13 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
 {
     assert(!found);
+#ifdef DEBUG
+    // See comments in try_FREE
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     if (currentInterval->assignedReg != nullptr)
     {
@@ -12717,6 +12722,11 @@ void LinearScan::RegisterSelection::try_OWN_PREFERENCE()
     assert(!found);
 
 #ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
     calculateCoversSets();
 #endif
 
@@ -12731,6 +12741,11 @@ void LinearScan::RegisterSelection::try_COVERS_RELATED()
     assert(!found);
 
 #ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
     calculateCoversSets();
 #endif
 
@@ -12743,6 +12758,13 @@ void LinearScan::RegisterSelection::try_COVERS_RELATED()
 void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
 {
     assert(!found);
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
 
     found = applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates);
 }
@@ -12753,6 +12775,13 @@ void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
 void LinearScan::RegisterSelection::try_CALLER_CALLEE()
 {
     assert(!found);
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
 
     found = applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates);
 }
@@ -12779,6 +12808,11 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     assert(!found);
 
 #ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
     calculateCoversSets();
 #endif
 
@@ -12797,11 +12831,6 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
 void LinearScan::RegisterSelection::try_BEST_FIT()
 {
     assert(!found);
-
-    if (freeCandidates == RBM_NONE)
-    {
-        return;
-    }
 
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
@@ -12886,11 +12915,6 @@ void LinearScan::RegisterSelection::try_IS_PREV_REG()
 void LinearScan::RegisterSelection::try_REG_ORDER()
 {
     assert(!found);
-
-    if (freeCandidates == RBM_NONE)
-    {
-        return;
-    }
 
     // This will always result in a single candidate. That is, it is the tie-breaker
     // for free candidates, and doesn't make sense as anything other than the last
@@ -13895,7 +13919,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*    currentInter
         {
             candidates = freeCandidates;
 
-        try_REG_ORDER();
+            try_REG_ORDER();
         }
 
 #ifdef DEBUG
