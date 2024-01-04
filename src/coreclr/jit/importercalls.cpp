@@ -3247,6 +3247,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
 #endif
                 {
+#if defined(TARGET_X86)
+                    if (genActualType(callType) == TYP_LONG)
+                    {
+                        break;
+                    }
+#endif
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;

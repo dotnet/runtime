@@ -445,6 +445,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 BuildDef(tree, RBM_RAX);
                 srcCount = 2;
                 assert(dstCount == 1);
+                break;
             }
             FALLTHROUGH;
         case GT_XADD:
