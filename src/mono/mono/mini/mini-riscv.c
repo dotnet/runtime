@@ -1525,7 +1525,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	sig_reg = mono_alloc_ireg (cfg);
 	MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
 
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, cinfo->sig_cookie.offset, sig_arg->dreg);
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, cinfo->sig_cookie.offset, sig_reg);
 }
 
 /**
