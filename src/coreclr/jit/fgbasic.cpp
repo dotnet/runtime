@@ -33,7 +33,6 @@ void Compiler::fgInit()
     /* We haven't yet computed the dominator sets */
     fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
-    fgCompactRenumberQuirk = false;
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;

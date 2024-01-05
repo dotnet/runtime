@@ -8865,6 +8865,15 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
+    if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
+    {
+        // Make sure we don't use GT_STORE_DYN_BLK
+        assert(blkNode->OperIs(GT_STORE_BLK));
+
+        // and we only zero it (and that zero is better to be not hoisted/CSE'd)
+        assert(blkNode->Data()->IsIntegralConst(0));
+    }
+
     // Lose the type information stored in the source - we no longer need it.
     if (blkNode->Data()->OperIs(GT_BLK))
     {
