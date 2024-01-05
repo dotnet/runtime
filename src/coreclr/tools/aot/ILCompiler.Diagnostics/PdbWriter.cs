@@ -90,7 +90,6 @@ namespace ILCompiler.Diagnostics
         Dictionary<SymDocument,int> _documentToChecksumOffsetMapping;
 
         UIntPtr _pdbMod;
-        IntPtr _pdbWriterInst;
         ISymNGenWriter2 _ngenWriter;
 
         static PdbWriter()
@@ -152,7 +151,6 @@ namespace ILCompiler.Diagnostics
                         }
                         ComObject ngenWriterComObject = (ComObject)(object)_ngenWriter;
                         ngenWriterComObject.FinalRelease();
-                        Marshal.Release(_pdbWriterInst);
                     }
                 }
 
@@ -216,8 +214,9 @@ namespace ILCompiler.Diagnostics
             File.Delete(_pdbFilePath);
 
             var comWrapper = new StrategyBasedComWrappers();
-            CreateNGenPdbWriter(dllPath, _pdbFilePath, out _pdbWriterInst);
-            _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(_pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
+            _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            Marshal.Release(pdbWriterInst);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
