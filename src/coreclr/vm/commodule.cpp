@@ -730,7 +730,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         }
         EX_CATCH_THROWABLE(&gc.throwable);
 
-        if (gc.throwable != 0) {
+        if (gc.throwable != NULL) {
             // Lazily allocate an array to store the exceptions in
             if (gc.xcept == NULL)
                 gc.xcept = (PTRARRAYREF) AllocateObjectArray(dwNumTypeDefs,g_pExceptionClass);
