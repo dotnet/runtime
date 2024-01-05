@@ -125,6 +125,8 @@ namespace ILCompiler.ObjectWriter
             bufferWriter.Advance(size);
         }
 
+        public readonly void WritePadding(int size) => _sectionData.AppendPadding(size);
+
         public readonly long Position => _sectionData.Length;
     }
 }

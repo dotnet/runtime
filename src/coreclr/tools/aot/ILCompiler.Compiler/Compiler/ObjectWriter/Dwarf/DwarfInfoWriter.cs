@@ -169,7 +169,7 @@ namespace ILCompiler.ObjectWriter
 
         public void WriteEndLocationList()
         {
-            _locSectionWriter.Write(stackalloc byte[TargetPointerSize * 2]);
+            _locSectionWriter.WritePadding(TargetPointerSize * 2);
         }
 
         public void WriteStartRangeList()
@@ -187,7 +187,7 @@ namespace ILCompiler.ObjectWriter
 
         public void WriteEndRangeList()
         {
-            _rangeSectionWriter.Write(stackalloc byte[TargetPointerSize * 2]);
+            _rangeSectionWriter.WritePadding(TargetPointerSize * 2);
         }
 
         public void Dispose()

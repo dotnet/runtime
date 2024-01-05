@@ -110,7 +110,7 @@ namespace ILCompiler.ObjectWriter
 
             _sectionWriter.Write(cie.Instructions);
 
-            _sectionWriter.Write(stackalloc byte[(int)padding]);
+            _sectionWriter.WritePadding((int)padding);
         }
 
         private void WriteFde(DwarfFde fde, uint cieOffset)
@@ -149,7 +149,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             _sectionWriter.Write(fde.Instructions);
-            _sectionWriter.Write(stackalloc byte[(int)padding]);
+            _sectionWriter.WritePadding((int)padding);
         }
 
         private uint AddressSize(byte encoding)
@@ -177,8 +177,7 @@ namespace ILCompiler.ObjectWriter
             }
             else
             {
-                Span<byte> address = stackalloc byte[(int)AddressSize(encoding)];
-                _sectionWriter.Write(address);
+                _sectionWriter.WritePadding((int)AddressSize(encoding));
             }
         }
 

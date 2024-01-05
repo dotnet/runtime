@@ -416,7 +416,7 @@ namespace ILCompiler.ObjectWriter
                 BinaryPrimitives.WriteUInt16LittleEndian(lengthBuffer, (ushort)(length + padding - sizeof(ushort)));
                 _debugTypesBuilder._sectionWriter.Write(lengthBuffer);
                 _debugTypesBuilder._sectionWriter.Write(_bufferWriter.WrittenSpan);
-                _debugTypesBuilder._sectionWriter.Write(stackalloc byte[padding]);
+                _debugTypesBuilder._sectionWriter.WritePadding(padding);
                 _bufferWriter.Clear();
             }
 
@@ -515,7 +515,7 @@ namespace ILCompiler.ObjectWriter
                     int padding = ((length + 3) & ~3) - length;
                     _debugTypesBuilder._sectionWriter.WriteLittleEndian<ushort>((ushort)(length + padding - sizeof(ushort)));
                     _debugTypesBuilder._sectionWriter.Write(_bufferWriter.WrittenSpan.Slice(0, _lastListMemberStart));
-                    _debugTypesBuilder._sectionWriter.Write(stackalloc byte[padding]);
+                    _debugTypesBuilder._sectionWriter.WritePadding(padding);
                     byte[] overflow = _bufferWriter.WrittenSpan.Slice(_lastListMemberStart).ToArray();
                     _bufferWriter.Clear();
 

@@ -244,7 +244,7 @@ namespace ILCompiler.ObjectWriter
                     default: throw new NotSupportedException();
                 }
             }
-            arangeSectionWriter.Write(stackalloc byte[_targetPointerSize * 2]);
+            arangeSectionWriter.WritePadding(_targetPointerSize * 2);
             // Update the size
             BinaryPrimitives.WriteUInt32LittleEndian(sizeBuffer, (uint)(arangeSectionWriter.Position - sizeof(uint)));
         }
