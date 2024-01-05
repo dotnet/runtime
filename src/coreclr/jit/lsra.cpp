@@ -5562,9 +5562,13 @@ void LinearScan::allocateRegisters()
         }
     }
 
-    resetRegState();
-
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#ifdef TARGET_ARM64
+    // allocateRegisters() can be called even if enregisterLocalVars= false, but
+    // method needs consecutive registers.
+    if (enregisterLocalVars)
+#endif
+    {
     VarSetOps::Iter largeVectorVarsIter(compiler, largeVectorVars);
     unsigned        largeVectorVarIndex = 0;
     while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
@@ -5572,8 +5576,10 @@ void LinearScan::allocateRegisters()
         Interval* lclVarInterval           = getIntervalForLocalVar(largeVectorVarIndex);
         lclVarInterval->isPartiallySpilled = false;
     }
+    }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
+    resetRegState();
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
