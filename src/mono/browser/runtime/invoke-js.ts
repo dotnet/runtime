@@ -13,7 +13,7 @@ import { Int32Ptr } from "./types/emscripten";
 import { ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
+import { mono_log_debug, mono_log_info, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
@@ -49,11 +49,13 @@ export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signat
     }
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
 
+    let max_postpone_count = 10;
     function postpone_invoke_import_async() {
-        if (is_thread_available()) {
+        if (max_postpone_count < 0 || is_thread_available()) {
             bound_fn(args);
             Module._free(args as any);
         } else {
+            max_postpone_count--;
             Module.safeSetTimeout(postpone_invoke_import_async, 10);
         }
     }

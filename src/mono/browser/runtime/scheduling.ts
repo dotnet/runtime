@@ -6,6 +6,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import cwraps from "./cwraps";
 import { ENVIRONMENT_IS_WORKER, Module, loaderHelpers } from "./globals";
 import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
+import { mono_log_info } from "./logging";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
@@ -51,10 +52,12 @@ function mono_background_exec_until_done() {
 
 export function schedule_background_exec(): void {
     ++pump_count;
+    let max_postpone_count = 10;
     function postpone_schedule_background() {
-        if (is_thread_available()) {
+        if (max_postpone_count < 0 || is_thread_available()) {
             Module.safeSetTimeout(mono_background_exec_until_done, 0);
         } else {
+            max_postpone_count--;
             Module.safeSetTimeout(postpone_schedule_background, 10);
         }
     }
