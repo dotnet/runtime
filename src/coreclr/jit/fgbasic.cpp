@@ -33,7 +33,6 @@ void Compiler::fgInit()
     /* We haven't yet computed the dominator sets */
     fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
-    fgCompactRenumberQuirk = false;
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -1359,6 +1358,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_get_IsEnum:
                             case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
+                            case NI_System_Type_get_IsPrimitive:
                             case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
@@ -2668,12 +2668,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
 
-        if (retBlocks == 0 && isInlining)
+        if ((retBlocks == 0) && isInlining &&
+            info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
         {
             // Mark the call node as "no return" as it can impact caller's code quality.
             impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
             // Mark root method as containing a noreturn call.
             impInlineRoot()->setMethodHasNoReturnCalls();
+
+            // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
+            // as "no-return" if its IL may change.
         }
 
         // If the inline is viable and discretionary, do the
@@ -3550,7 +3554,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         else
         {
             fgFirstBB = curBBdesc;
-            curBBdesc->SetPrev(nullptr);
+            assert(fgFirstBB->IsFirst());
         }
 
         fgLastBB = curBBdesc;
@@ -3684,14 +3688,6 @@ void Compiler::fgFindBasicBlocks()
 
     if (compIsForInlining())
     {
-
-#ifdef DEBUG
-        // If fgFindJumpTargets marked the call as "no return" there
-        // really should be no BBJ_RETURN blocks in the method.
-        bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
-        assert((markedNoReturn && (fgReturnCount == 0)) || (!markedNoReturn && (fgReturnCount >= 1)));
-#endif // DEBUG
-
         if (compInlineResult->IsFailure())
         {
             return;
@@ -5134,7 +5130,7 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
         assert((fgFirstBBScratch == nullptr) || (fgFirstBBScratch == fgFirstBB));
 
         fgFirstBB = block->Next();
-        fgFirstBB->SetPrev(nullptr);
+        fgFirstBB->SetPrevToNull();
 
         if (fgFirstBBScratch != nullptr)
         {
@@ -5150,10 +5146,14 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
     }
     else
     {
-        block->Prev()->SetNext(block->Next());
         if (block == fgLastBB)
         {
             fgLastBB = block->Prev();
+            fgLastBB->SetNextToNull();
+        }
+        else
+        {
+            block->Prev()->SetNext(block->Next());
         }
     }
 }
@@ -5186,13 +5186,15 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
-    bPrev->SetNext(bEnd->Next());
-
     /* If we removed the last block in the method then update fgLastBB */
     if (fgLastBB == bEnd)
     {
         fgLastBB = bPrev;
-        noway_assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
+    }
+    else
+    {
+        bPrev->SetNext(bEnd->Next());
     }
 
     // If bEnd was the first Cold basic block update fgFirstColdBlock
@@ -5772,15 +5774,18 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 
     /* relink [bStart .. bEnd] into the flow graph */
 
-    bEnd->SetNext(insertAfterBlk->Next());
-    insertAfterBlk->SetNext(bStart);
-
     /* If insertAfterBlk was fgLastBB then update fgLastBB */
     if (insertAfterBlk == fgLastBB)
     {
         fgLastBB = bEnd;
-        noway_assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
     }
+    else
+    {
+        bEnd->SetNext(insertAfterBlk->Next());
+    }
+
+    insertAfterBlk->SetNext(bStart);
 }
 
 /*****************************************************************************
@@ -6317,7 +6322,7 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
         newBlk->SetNext(fgFirstBB);
 
         fgFirstBB = newBlk;
-        newBlk->SetPrev(nullptr);
+        assert(fgFirstBB->IsFirst());
     }
     else
     {
@@ -6344,14 +6349,17 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
  */
 void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 {
-    newBlk->SetNext(insertAfterBlk->Next());
-    insertAfterBlk->SetNext(newBlk);
-
     if (fgLastBB == insertAfterBlk)
     {
         fgLastBB = newBlk;
-        assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
     }
+    else
+    {
+        newBlk->SetNext(insertAfterBlk->Next());
+    }
+
+    insertAfterBlk->SetNext(newBlk);
 }
 
 // We have two edges (bAlt => bCur) and (bCur => bNext).

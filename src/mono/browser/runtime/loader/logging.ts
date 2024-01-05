@@ -2,14 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-console */
-import { loaderHelpers } from "./globals";
+import { ENVIRONMENT_IS_WORKER, loaderHelpers } from "./globals";
 
 const methods = ["debug", "log", "trace", "warn", "info", "error"];
 const prefix = "MONO_WASM: ";
 let consoleWebSocket: WebSocket;
 let theConsoleApi: any;
 let originalConsoleMethods: any;
-let threadId: string;
+let threadNamePrefix: string;
+
+export function mono_set_thread_name(threadName: string) {
+    threadNamePrefix = threadName;
+}
 
 export function mono_log_debug(msg: string, ...data: any) {
     if (loaderHelpers.diagnosticTracing) {
@@ -55,13 +59,13 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
             if (typeof payload === "string") {
                 if (payload[0] == "[") {
                     const now = new Date().toISOString();
-                    if (threadId !== "main") {
-                        payload = `[${threadId}][${now}] ${payload}`;
+                    if (ENVIRONMENT_IS_WORKER) {
+                        payload = `[${threadNamePrefix}][${now}] ${payload}`;
                     } else {
                         payload = `[${now}] ${payload}`;
                     }
-                } else if (threadId !== "main") {
-                    payload = `[${threadId}] ${payload}`;
+                } else if (ENVIRONMENT_IS_WORKER) {
+                    payload = `[${threadNamePrefix}] ${payload}`;
                 }
             }
 
@@ -82,7 +86,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
 
 export function setup_proxy_console(id: string, console: Console, origin: string): void {
     theConsoleApi = console as any;
-    threadId = id;
+    threadNamePrefix = id;
     originalConsoleMethods = {
         ...console
     };
@@ -94,11 +98,6 @@ export function setup_proxy_console(id: string, console: Console, origin: string
     consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.addEventListener("error", logWSError);
     consoleWebSocket.addEventListener("close", logWSClose);
-    consoleWebSocket.addEventListener("open", () => {
-        originalConsoleMethods.log(`browser: [${threadId}] Console websocket connected.`);
-    }, {
-        once: true
-    });
 }
 
 export function teardown_proxy_console(message?: string) {
@@ -138,11 +137,11 @@ function send(msg: string) {
 }
 
 function logWSError(event: Event) {
-    originalConsoleMethods.error(`[${threadId}] websocket error: ${event}`, event);
+    originalConsoleMethods.error(`[${threadNamePrefix}] websocket error: ${event}`, event);
 }
 
 function logWSClose(event: Event) {
-    originalConsoleMethods.error(`[${threadId}] websocket closed: ${event}`, event);
+    originalConsoleMethods.error(`[${threadNamePrefix}] websocket closed: ${event}`, event);
 }
 
 function setupWS() {
