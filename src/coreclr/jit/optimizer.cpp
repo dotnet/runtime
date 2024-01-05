@@ -4011,7 +4011,7 @@ RETRY_UNROLL:
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
         // TODO-Quirk: Remove
-        if (m_newToOldLoop[loop->GetIndex()] == nullptr)
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
         {
             continue;
         }
@@ -6536,7 +6536,7 @@ PhaseStatus Compiler::optHoistLoopCode()
     LoopHoistContext hoistCtxt(this);
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        if (m_newToOldLoop[loop->GetIndex()] == nullptr)
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
         {
             continue;
         }
@@ -6741,7 +6741,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     for (FlowGraphNaturalLoop* childLoop = loop->GetChild(); childLoop != nullptr; childLoop = childLoop->GetSibling())
     {
-        if (m_newToOldLoop[childLoop->GetIndex()] == nullptr)
+        if (!childLoop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
         {
             continue;
         }

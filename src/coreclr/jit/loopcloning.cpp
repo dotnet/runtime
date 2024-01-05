@@ -1831,7 +1831,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     // that block; this is one of those cases.  This could be fixed fairly easily; for example,
     // we could add a dummy nop block after the (cloned) loop bottom, in the same handler scope as the
     // loop.  This is just a corner to cut to get this working faster.
-    // TODO-Quirk: Should rework this to avoid the lexically bottom most block here.
+    // TODO: Should rework this to avoid the lexically bottom most block here.
     BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
 
     BasicBlock* bbAfterLoop = bottom->Next();
@@ -2004,7 +2004,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 #endif
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned depth         = optLoopDepth((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable));
+    unsigned depth         = loop->GetDepth();
     weight_t ambientWeight = 1;
     for (unsigned j = 0; j < depth; j++)
     {
@@ -2168,11 +2168,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         {
             if (blk->KindIs(BBJ_COND))
             {
-                // TODO-Quirk: We see a lot of these cases and some of them cause diffs.
                 BasicBlock* targetBlk = blk->GetFalseTarget();
                 assert(blk->NextIs(targetBlk));
-                if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
-                    targetBlk = targetBlk->GetTarget();
 
                 // Need to insert a block.
                 BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
@@ -2181,11 +2178,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 newRedirBlk->bbWeight     = blk->Next()->bbWeight;
                 newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
                 newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
-
-                // TODO-Quirk: This next block is not part of the loop and
-                // should not be scaled down, especially once we get rid of the
-                // other quirk above.
-                blk->Next()->scaleBBWeight(fastPathWeightScaleFactor);
 
                 JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
                         blk->Next()->bbNum, newRedirBlk->bbNum);
@@ -3044,8 +3036,7 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
 
-    // TODO-Quirk: Switch this to VisitLoopBlocks
-    loop->VisitLoopBlocksLexical([=, &info](BasicBlock* block) {
+    loop->VisitLoopBlocksReversePostOrder([=, &info](BasicBlock* block) {
         compCurBB = block;
         for (Statement* const stmt : block->Statements())
         {
@@ -3077,17 +3068,22 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
 bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 {
     bool result = false;
-    for (unsigned i = 0; i < optLoopCount; i++)
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        FlowGraphNaturalLoop* loop = m_oldToNewLoop[i];
+        // TODO-Quirk: Remove
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+        {
+            continue;
+        }
+
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
         // TODO-Quirk: Remove
-        if ((optLoopTable[i].lpFlags & LPFLG_ITER) != 0)
+        if ((m_newToOldLoop[loop->GetIndex()]->lpFlags & LPFLG_ITER) != 0)
         {
             if (loop->AnalyzeIteration(&iterInfo))
             {
-                INDEBUG(optCrossCheckIterInfo(iterInfo, optLoopTable[i]));
+                INDEBUG(optCrossCheckIterInfo(iterInfo, *m_newToOldLoop[loop->GetIndex()]));
                 context->SetLoopIterInfo(loop->GetIndex(), new (this, CMK_LoopClone) NaturalLoopIterInfo(iterInfo));
             }
         }
@@ -3133,7 +3129,7 @@ bool Compiler::optLoopCloningEnabled()
 PhaseStatus Compiler::optCloneLoops()
 {
     JITDUMP("\n*************** In optCloneLoops()\n");
-    if (optLoopCount == 0)
+    if (m_loops->NumLoops() == 0)
     {
         JITDUMP("  No loops to clone\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -3157,10 +3153,8 @@ PhaseStatus Compiler::optCloneLoops()
     unsigned optStaticallyOptimizedLoops = 0;
 
     // For each loop, derive cloning conditions for the optimization candidates.
-    for (unsigned i = 0; i < optLoopCount; i++)
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        FlowGraphNaturalLoop* loop = m_oldToNewLoop[i];
-
         JitExpandArrayStack<LcOptInfo*>* optInfos = context.GetLoopOptInfo(loop->GetIndex());
         if (optInfos == nullptr)
         {
@@ -3223,9 +3217,8 @@ PhaseStatus Compiler::optCloneLoops()
 #endif
 
     assert(optLoopsCloned == 0); // It should be initialized, but not yet changed.
-    for (unsigned i = 0; i < optLoopCount; ++i)
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        FlowGraphNaturalLoop* loop = m_oldToNewLoop[i];
         if (context.GetLoopOptInfo(loop->GetIndex()) != nullptr)
         {
             optLoopsCloned++;
