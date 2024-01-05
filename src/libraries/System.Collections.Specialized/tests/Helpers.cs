@@ -7,7 +7,9 @@ namespace System.Collections.Specialized.Tests
     {
         public static MyNameObjectCollection CreateNameObjectCollection(int count)
         {
-            MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();
+            MyNameObjectCollection nameObjectCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new MyNameObjectCollection(StringComparer.OrdinalIgnoreCase) :
+                new MyNameObjectCollection();
 
             for (int i = 0; i < count; i++)
             {
@@ -19,7 +21,9 @@ namespace System.Collections.Specialized.Tests
 
         public static NameValueCollection CreateNameValueCollection(int count, int start = 0)
         {
-            NameValueCollection nameValueCollection = new NameValueCollection();
+            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                new NameValueCollection();
 
             for (int i = start; i < start + count; i++)
             {

@@ -20,11 +20,13 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(0, coll.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Constructor_Int_Provider_Comparer()
         {
 #pragma warning disable CS0618 // Type or member is obsolete
-            MyNameObjectCollection coll = new MyNameObjectCollection(5, CaseInsensitiveHashCodeProvider.DefaultInvariant, CaseInsensitiveComparer.DefaultInvariant);
+            MyNameObjectCollection coll = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new MyNameObjectCollection(5, StringComparer.OrdinalIgnoreCase) :
+                new MyNameObjectCollection(5, CaseInsensitiveHashCodeProvider.DefaultInvariant, CaseInsensitiveComparer.DefaultInvariant);
 #pragma warning restore CS0618 // Type or member is obsolete
             coll.Add("a", new Foo("1"));
             int i = 0;

@@ -7,14 +7,14 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseCopyToTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0, 0)]
         [InlineData(0, 5)]
         [InlineData(10, 0)]
         [InlineData(10, 5)]
         public void CopyTo(int count, int index)
         {
-            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
             ICollection collection = nameObjectCollection;
 
             string[] copyArray = new string[index + collection.Count + index];
@@ -39,7 +39,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(previousCount, copyArray.Length);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void CopyTo_Invalid(int count)

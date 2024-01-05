@@ -22,7 +22,7 @@ namespace System.Collections.Specialized.Tests
 
         public bool HasKeys() => BaseHasKeys();
 
-        public void Add(string name, Foo value) =>  BaseAdd(name, value);
+        public void Add(string name, Foo value) => BaseAdd(name, value);
 
         public void Remove(string name) => BaseRemove(name);
 

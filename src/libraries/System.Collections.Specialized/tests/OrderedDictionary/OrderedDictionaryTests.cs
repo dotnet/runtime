@@ -35,10 +35,12 @@ namespace System.Collections.Specialized.Tests
         }
 
         // public OrderedDictionary(IEqualityComparer comparer);
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void PassingEqualityComparers()
         {
-            var d1 = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
+            var d1 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new OrderedDictionary(StringComparer.OrdinalIgnoreCase) :
+                new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
             d1.Add("foo", "bar");
             AssertExtensions.Throws<ArgumentException>(null, () => d1.Add("FOO", "bar"));
 
@@ -55,14 +57,17 @@ namespace System.Collections.Specialized.Tests
         }
 
         // public OrderedDictionary(int capacity, IEqualityComparer comparer);
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void PassingCapacityAndIEqualityComparer()
         {
-            var d1 = new OrderedDictionary(-1000, StringComparer.InvariantCultureIgnoreCase);
-            var d2 = new OrderedDictionary(-1, StringComparer.InvariantCultureIgnoreCase);
-            var d3 = new OrderedDictionary(0, StringComparer.InvariantCultureIgnoreCase);
-            var d4 = new OrderedDictionary(1, StringComparer.InvariantCultureIgnoreCase);
-            var d5 = new OrderedDictionary(1000, StringComparer.InvariantCultureIgnoreCase);
+            var comparer = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                StringComparer.OrdinalIgnoreCase :
+                StringComparer.InvariantCultureIgnoreCase;
+            var d1 = new OrderedDictionary(-1000, comparer);
+            var d2 = new OrderedDictionary(-1, comparer);
+            var d3 = new OrderedDictionary(0, comparer);
+            var d4 = new OrderedDictionary(1, comparer);
+            var d5 = new OrderedDictionary(1000, comparer);
             Assert.Throws<ArgumentOutOfRangeException>(() => d1.Add("foo", "bar"));
             Assert.Throws<ArgumentOutOfRangeException>(() => d2.Add("foo", "bar"));
             d3.Add("foo", "bar");
@@ -626,10 +631,12 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void IListedKeysPropertyCanUseCustomEqualityComparer()
         {
-            var orderedDictionary = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
+            var orderedDictionary = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new OrderedDictionary(StringComparer.OrdinalIgnoreCase) :
+                new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
             orderedDictionary.Add("KeY", null);
 
             IList list = (IList)orderedDictionary.Keys;
