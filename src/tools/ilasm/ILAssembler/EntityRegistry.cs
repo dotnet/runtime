@@ -64,12 +64,21 @@ namespace ILAssembler
             });
         }
 
+        private IReadOnlyList<EntityBase> GetSeenEntities(TableIndex table)
+        {
+            if (_seenEntities.TryGetValue(table, out var entities))
+            {
+                return entities;
+            }
+            return Array.Empty<EntityBase>();
+        }
+
         public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream)
         {
             // Now that we've seen all of the entities, we can write them out in the correct order.
             // Record the entities in the correct order so they are assigned handles.
             // After this, we'll write out the content of the entities in the correct order.
-            foreach (TypeDefinitionEntity type in _seenEntities[TableIndex.TypeDef])
+            foreach (TypeDefinitionEntity type in GetSeenEntities(TableIndex.TypeDef))
             {
                 // Record entries for members defined in list columns
                 foreach (var method in type.Methods)
@@ -132,7 +141,7 @@ namespace ILAssembler
             // we can start writing out the content of the entities.
             builder.AddModule(0, Module.Name is null ? default : builder.GetOrAddString(Module.Name), builder.GetOrAddGuid(Guid.NewGuid()), default, default);
 
-            foreach (TypeReferenceEntity type in _seenEntities[TableIndex.TypeRef])
+            foreach (TypeReferenceEntity type in GetSeenEntities(TableIndex.TypeRef))
             {
                 EntityBase resolutionScope = type.ResolutionScope;
                 builder.AddTypeReference(
@@ -141,23 +150,23 @@ namespace ILAssembler
                     builder.GetOrAddString(type.Name));
             }
 
-            for (int i = 0; i < _seenEntities[TableIndex.TypeDef].Count; i++)
+            for (int i = 0; i < GetSeenEntities(TableIndex.TypeDef).Count; i++)
             {
-                TypeDefinitionEntity type = (TypeDefinitionEntity)_seenEntities[TableIndex.TypeDef][i];
+                TypeDefinitionEntity type = (TypeDefinitionEntity)GetSeenEntities(TableIndex.TypeDef)[i];
                 builder.AddTypeDefinition(
                     type.Attributes,
-                    builder.GetOrAddString(type.Name),
                     builder.GetOrAddString(type.Namespace),
+                    builder.GetOrAddString(type.Name),
                     type.BaseType is null ? default : type.BaseType.Handle,
-                    (FieldDefinitionHandle)GetHandleForList(type.Fields, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Fields, i, TableIndex.Field),
-                    (MethodDefinitionHandle)GetHandleForList(type.Methods, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Methods, i, TableIndex.MethodDef));
+                    (FieldDefinitionHandle)GetHandleForList(type.Fields, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Fields, i, TableIndex.Field),
+                    (MethodDefinitionHandle)GetHandleForList(type.Methods, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Methods, i, TableIndex.MethodDef));
 
                 builder.AddEventMap(
                     (TypeDefinitionHandle)type.Handle,
-                    (EventDefinitionHandle)GetHandleForList(type.Events, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Events, i, TableIndex.Event));
+                    (EventDefinitionHandle)GetHandleForList(type.Events, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Events, i, TableIndex.Event));
                 builder.AddPropertyMap(
                     (TypeDefinitionHandle)type.Handle,
-                    (PropertyDefinitionHandle)GetHandleForList(type.Properties, _seenEntities[TableIndex.TypeDef], type => ((TypeDefinitionEntity)type).Properties, i, TableIndex.Property));
+                    (PropertyDefinitionHandle)GetHandleForList(type.Properties, GetSeenEntities(TableIndex.TypeDef), type => ((TypeDefinitionEntity)type).Properties, i, TableIndex.Property));
 
                 // TODO: ClassLayout
                 if (type.ContainingType is not null)
@@ -166,7 +175,7 @@ namespace ILAssembler
                 }
             }
 
-            foreach (FieldDefinitionEntity fieldDef in _seenEntities[TableIndex.Field])
+            foreach (FieldDefinitionEntity fieldDef in GetSeenEntities(TableIndex.Field))
             {
                 builder.AddFieldDefinition(
                     fieldDef.Attributes,
@@ -180,9 +189,9 @@ namespace ILAssembler
                 }
             }
 
-            for (int i = 0; i < _seenEntities[TableIndex.MethodDef].Count; i++)
+            for (int i = 0; i < GetSeenEntities(TableIndex.MethodDef).Count; i++)
             {
-                MethodDefinitionEntity methodDef = (MethodDefinitionEntity)_seenEntities[TableIndex.MethodDef][i];
+                MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
                 int rva = 0;
                 if (methodDef.MethodBody.CodeBuilder.Count != 0)
@@ -197,7 +206,7 @@ namespace ILAssembler
                     builder.GetOrAddString(methodDef.Name),
                     builder.GetOrAddBlob(methodDef.MethodSignature!),
                     rva,
-                    (ParameterHandle)GetHandleForList(methodDef.Parameters, _seenEntities[TableIndex.MethodDef], method => ((MethodDefinitionEntity)method).Parameters, i, TableIndex.Param));
+                    (ParameterHandle)GetHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i, TableIndex.Param));
 
                 if (methodDef.MethodImportInformation is not null)
                 {
@@ -209,7 +218,7 @@ namespace ILAssembler
                 }
             }
 
-            foreach (ParameterEntity param in _seenEntities[TableIndex.Param])
+            foreach (ParameterEntity param in GetSeenEntities(TableIndex.Param))
             {
                 builder.AddParameter(
                     param.Attributes,
@@ -222,7 +231,7 @@ namespace ILAssembler
                 }
             }
 
-            foreach (InterfaceImplementationEntity impl in _seenEntities[TableIndex.InterfaceImpl])
+            foreach (InterfaceImplementationEntity impl in GetSeenEntities(TableIndex.InterfaceImpl))
             {
                 builder.AddInterfaceImplementation(
                     (TypeDefinitionHandle)impl.Type.Handle,
@@ -237,7 +246,7 @@ namespace ILAssembler
                     builder.GetOrAddBlob(memberRef.Signature));
             }
 
-            foreach (DeclarativeSecurityAttributeEntity declSecurity in _seenEntities[TableIndex.DeclSecurity])
+            foreach (DeclarativeSecurityAttributeEntity declSecurity in GetSeenEntities(TableIndex.DeclSecurity))
             {
                 builder.AddDeclarativeSecurityAttribute(
                     declSecurity.Parent?.Handle ?? default,
@@ -245,13 +254,13 @@ namespace ILAssembler
                     builder.GetOrAddBlob(declSecurity.PermissionSet));
             }
 
-            foreach (StandaloneSignatureEntity standaloneSig in _seenEntities[TableIndex.StandAloneSig])
+            foreach (StandaloneSignatureEntity standaloneSig in GetSeenEntities(TableIndex.StandAloneSig))
             {
                 builder.AddStandaloneSignature(
                     builder.GetOrAddBlob(standaloneSig.Signature));
             }
 
-            foreach (EventEntity evt in _seenEntities[TableIndex.Event])
+            foreach (EventEntity evt in GetSeenEntities(TableIndex.Event))
             {
                 builder.AddEvent(
                     evt.Attributes,
@@ -264,7 +273,7 @@ namespace ILAssembler
                 }
             }
 
-            foreach (PropertyEntity prop in _seenEntities[TableIndex.Property])
+            foreach (PropertyEntity prop in GetSeenEntities(TableIndex.Property))
             {
                 builder.AddProperty(
                     prop.Attributes,
@@ -277,12 +286,12 @@ namespace ILAssembler
                 }
             }
 
-            foreach (ModuleReferenceEntity moduleRef in _seenEntities[TableIndex.ModuleRef])
+            foreach (ModuleReferenceEntity moduleRef in GetSeenEntities(TableIndex.ModuleRef))
             {
                 builder.AddModuleReference(builder.GetOrAddString(moduleRef.Name));
             }
 
-            foreach (TypeSpecificationEntity typeSpec in _seenEntities[TableIndex.TypeSpec])
+            foreach (TypeSpecificationEntity typeSpec in GetSeenEntities(TableIndex.TypeSpec))
             {
                 builder.AddTypeSpecification(builder.GetOrAddBlob(typeSpec.Signature));
             }
@@ -298,7 +307,7 @@ namespace ILAssembler
                     Assembly.HashAlgorithm);
             }
 
-            foreach (FileEntity file in _seenEntities[TableIndex.File])
+            foreach (FileEntity file in GetSeenEntities(TableIndex.File))
             {
                 builder.AddAssemblyFile(
                     builder.GetOrAddString(file.Name),
@@ -306,7 +315,7 @@ namespace ILAssembler
                     file.HasMetadata);
             }
 
-            foreach (ExportedTypeEntity exportedType in _seenEntities[TableIndex.ExportedType])
+            foreach (ExportedTypeEntity exportedType in GetSeenEntities(TableIndex.ExportedType))
             {
                 builder.AddExportedType(
                     exportedType.Attributes,
@@ -316,7 +325,7 @@ namespace ILAssembler
                     exportedType.TypeDefinitionId);
             }
 
-            foreach (ManifestResourceEntity resource in _seenEntities[TableIndex.ManifestResource])
+            foreach (ManifestResourceEntity resource in GetSeenEntities(TableIndex.ManifestResource))
             {
                 builder.AddManifestResource(
                     resource.Attributes,
@@ -325,7 +334,7 @@ namespace ILAssembler
                     resource.Offset);
             }
 
-            foreach (MethodSpecificationEntity methodSpec in _seenEntities[TableIndex.MethodSpec])
+            foreach (MethodSpecificationEntity methodSpec in GetSeenEntities(TableIndex.MethodSpec))
             {
                 builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
             }
@@ -409,9 +418,11 @@ namespace ILAssembler
 
         public AssemblyEntity? Assembly { get; set; }
 
-        private TypeEntity ResolveFromCoreAssembly(string typeName)
+        private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
         {
-            throw new NotImplementedException();
+            // TODO: System.Private.CoreLib as the core assembly?
+            var coreAsmRef = GetOrCreateAssemblyReference("mscorlib", new Version(4, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
+            return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
 
         public interface IHasHandle
@@ -787,7 +798,7 @@ namespace ILAssembler
                     // where we always return a TypeReference type, but it might just point to a TypeDef handle.
                     case TypeEntity { Handle.Kind: HandleKind.TypeDefinition } type:
                         {
-                            var typeDef = (TypeDefinitionEntity)_seenEntities[TableIndex.TypeDef][MetadataTokens.GetRowNumber(type.Handle) - 1];
+                            var typeDef = (TypeDefinitionEntity)GetSeenEntities(TableIndex.TypeDef)[MetadataTokens.GetRowNumber(type.Handle) - 1];
                             // Look on this type for methods with the same name and signature
                             foreach (var method in typeDef.Methods)
                             {
@@ -909,8 +920,7 @@ namespace ILAssembler
                 Version = version,
                 CultureName = culture,
                 Flags = (AssemblyNameFlags)flags,
-                ProcessorArchitecture = architecture,
-                KeyPair = publicKeyOrToken is null ? null : new StrongNameKeyPair(publicKeyOrToken.ToArray())
+                ProcessorArchitecture = architecture
             };
             return GetOrCreateEntity(key, TableIndex.AssemblyRef, _seenAssemblyRefs, (value) => new AssemblyReferenceEntity(name), entity =>
             {

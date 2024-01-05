@@ -471,8 +471,23 @@ namespace ILAssembler
                 return new((new(TypeAttributes.Sealed), EntityRegistry.WellKnownBaseType.System_ValueType, true));
             }
 
-            // TODO: We should probably do this based on each token instead of just parsing all values.
-            return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
+            switch (context.GetText())
+            {
+                case "private":
+                    return new((new(TypeAttributes.NotPublic), null, false));
+                case "ansi":
+                    return new((new(TypeAttributes.AnsiClass), null, false));
+                case "autochar":
+                    return new((new(TypeAttributes.AutoClass), null, false));
+                case "auto":
+                    return new((new(TypeAttributes.AutoLayout), null, false));
+                case "sequential":
+                    return new((new(TypeAttributes.SequentialLayout), null, false));
+                case "explicit":
+                    return new((new(TypeAttributes.ExplicitLayout), null, false));
+                default:
+                    return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
+            }
         }
 
         private sealed class CurrentMethodContext

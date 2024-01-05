@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -23,7 +24,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            MetadataReader reader = CompileAndGetReader(source, new Options());
+            using var pe = CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
 
             // One for the <Module> type, one for Test.
             Assert.Equal(2, reader.TypeDefinitions.Count);
@@ -32,7 +34,7 @@ namespace ILAssembler.Tests
             Assert.Equal("Test", reader.GetString(typeDef.Name));
         }
 
-        private static MetadataReader CompileAndGetReader(string source, Options options)
+        private static PEReader CompileAndGetReader(string source, Options options)
         {
             var sourceText = new SourceText(source, "test.il");
             var documentCompiler = new DocumentCompiler();
@@ -45,7 +47,7 @@ namespace ILAssembler.Tests
             Assert.NotNull(result);
             var blobBuilder = new BlobBuilder();
             result!.Serialize(blobBuilder);
-            return MetadataReaderProvider.FromMetadataImage(blobBuilder.ToImmutableArray()).GetMetadataReader();
+            return new PEReader(blobBuilder.ToImmutableArray());
         }
     }
 }
