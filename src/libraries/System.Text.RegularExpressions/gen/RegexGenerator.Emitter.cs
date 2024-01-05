@@ -27,7 +27,56 @@ namespace System.Text.RegularExpressions.Generator
     {
         /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
         private static string EscapeXmlComment(string text) =>
-            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\0", "\\0");
+            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+        /// <summary>Use Regex excape syntax (\unnnn) for invalid xml chars (such as 0x00, 0xFFFF).</summary>
+        private static string UseValidXmlChars(string pattern)
+        {
+            StringBuilder? sb = null;
+            var isPreviousCharBackslash = false;
+            var backslashes = 0;
+
+            for (var i = 0; i < pattern.Length; i++)
+            {
+                var c = pattern[i];
+
+                if (!System.Xml.XmlConvert.IsXmlChar(c))
+                {
+                    sb ??= new StringBuilder(pattern, 0, i, pattern.Length + 20);
+
+                    // We need to look back if any \ could change our \, when it follows odd number of backslashes.
+                    // For example,
+                    //     @"\\\" + '\uFFFF'
+                    // In this case,
+                    // the first \ escapes the second \, instructs the regex engine to match a backslash.
+                    // The third \ on the left becomes effectively nothing, because '\uFFFF' is not recognized as an escaped character.
+
+                    if (!isPreviousCharBackSlash || backslashes % 2 == 0)
+                    {
+                        sb.Append('\\');
+                    }
+
+                    sb.Append($"u{(int)c:x4}");
+                }
+                else
+                {
+                    sb?.Append(c);
+
+                    if (c == '\\')
+                    {
+                        backslashes++;
+                        isPreviousCharBackSlash = true;
+                    }
+                    else
+                    {
+                        isPreviousCharBackSlash = false;
+                        backslashes = 0;
+                    }
+                }
+            }
+
+            return sb is null ? pattern : sb.ToString();
+        }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
@@ -58,7 +107,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeXmlComment(regexMethod.Pattern)}</code><br/>");
+            writer.WriteLine($"/// <code>{EscapeXmlComment(UseValidXmlChars(regexMethod.Pattern))}</code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");
