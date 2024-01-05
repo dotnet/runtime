@@ -18,8 +18,14 @@ namespace System.Globalization
             {
                 return StringComparer.OrdinalIgnoreCase;
             }
-
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                return (options == CompareOptions.IgnoreCase) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+            }
+#endif
             return new CultureAwareComparer(compareInfo, options);
+
         }
     }
 }

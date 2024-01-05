@@ -14,6 +14,23 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
     {
+#if TARGET_BROWSER
+        public static StringComparer InvariantCulture => GlobalizationMode.Hybrid ?
+            OrdinalCaseSensitiveComparer.Instance :
+            CultureAwareComparer.InvariantCaseSensitiveInstance;
+
+        public static StringComparer InvariantCultureIgnoreCase => GlobalizationMode.Hybrid ?
+            OrdinalIgnoreCaseComparer.Instance :
+            CultureAwareComparer.InvariantIgnoreCaseInstance;
+
+        public static StringComparer CurrentCulture => GlobalizationMode.Hybrid ?
+            OrdinalCaseSensitiveComparer.Instance :
+            new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.None);
+
+        public static StringComparer CurrentCultureIgnoreCase => GlobalizationMode.Hybrid ?
+            OrdinalIgnoreCaseComparer.Instance :
+            new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase);
+#else
         public static StringComparer InvariantCulture => CultureAwareComparer.InvariantCaseSensitiveInstance;
 
         public static StringComparer InvariantCultureIgnoreCase => CultureAwareComparer.InvariantIgnoreCaseInstance;
@@ -23,7 +40,7 @@ namespace System
 
         public static StringComparer CurrentCultureIgnoreCase =>
             new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase);
-
+#endif
         public static StringComparer Ordinal => OrdinalCaseSensitiveComparer.Instance;
 
         public static StringComparer OrdinalIgnoreCase => OrdinalIgnoreCaseComparer.Instance;

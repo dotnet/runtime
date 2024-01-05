@@ -416,17 +416,6 @@ namespace System.Collections
         //
         public virtual void Add(object key, object? value)
         {
-#if TARGET_BROWSER
-            if (_keycomparer == null)
-            {
-                // for non-generic collections type of keys is defined in the runtime
-                // adding keys of different types later will throw an exception
-                if (GlobalizationMode.Hybrid && key is string)
-                {
-                    _keycomparer = StringComparer.Ordinal;
-                }
-            }
-#endif
             Insert(key, value, true);
         }
 

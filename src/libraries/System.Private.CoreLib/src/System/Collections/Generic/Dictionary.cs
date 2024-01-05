@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Globalization;
 
 namespace System.Collections.Generic
 {
@@ -73,18 +72,7 @@ namespace System.Collections.Generic
                 if (typeof(TKey) == typeof(string) &&
                     NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
                 {
-#if TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid)
-                    {
-                        _comparer = comparer ?? (IEqualityComparer<TKey>)(IEqualityComparer<string>)StringComparer.Ordinal;
-                    }
-                    else
-                    {
-                        _comparer = (IEqualityComparer<TKey>)stringComparer;
-                    }
-#else
                     _comparer = (IEqualityComparer<TKey>)stringComparer;
-#endif
                 }
             }
             else if (comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
