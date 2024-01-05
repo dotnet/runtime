@@ -570,7 +570,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
                     rii->canInferFromTrue  = inferFromTrue;
                     rii->canInferFromFalse = !inferFromTrue;
-                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
+                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue ? !inferFromTrue : inferFromTrue;
                     return;
                 }
             }
