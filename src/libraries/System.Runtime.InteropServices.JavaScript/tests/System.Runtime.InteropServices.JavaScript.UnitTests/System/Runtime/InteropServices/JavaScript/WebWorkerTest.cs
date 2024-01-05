@@ -150,12 +150,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96493")]
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
             await executor.Execute(async () =>
             {
                 executor.AssertTargetThread();
-                await Task.Delay(1).ContinueWith(_ =>
+                await Task.Delay(10).ContinueWith(_ =>
                 {
                     // continue on the context of the Timer's thread pool thread
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);

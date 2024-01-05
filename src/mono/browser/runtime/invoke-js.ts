@@ -10,13 +10,14 @@ import { setI32_unchecked, receiveWorkerHeapViews } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
@@ -48,10 +49,24 @@ export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signat
     }
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
 
-    bound_fn(args);
+    function postpone_invoke_import_async() {
+        if (is_thread_available()) {
+            bound_fn(args);
+            Module._free(args as any);
+        } else {
+            Module.safeSetTimeout(postpone_invoke_import_async, 10);
+        }
+    }
 
-    // this works together with AllocHGlobal in JSFunctionBinding.DispatchJSImportAsync
-    Module._free(args as any);
+    if (MonoWasmThreads && !ENVIRONMENT_IS_WORKER) {
+        // give thread chance to load before we run more synchronous code on UI thread
+        postpone_invoke_import_async();
+    }
+    else {
+        bound_fn(args);
+        // this works together with AllocHGlobal in JSFunctionBinding.DispatchJSImportAsync
+        Module._free(args as any);
+    }
 }
 
 export function mono_wasm_invoke_import_sync(args: JSMarshalerArguments, signature: JSFunctionSignature) {
