@@ -44,7 +44,7 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private static bool TryGetEscapedPatternChar(char c, out int e)
+        private static bool TryGetEscapedPatternChar(char c, out char e)
         {
             // For String, see https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/#string-escape-sequences
             // For Regex,  see https://learn.microsoft.com/en-us/dotnet/standard/base-types/character-escapes-in-regular-expressions#character-escapes-in-net
