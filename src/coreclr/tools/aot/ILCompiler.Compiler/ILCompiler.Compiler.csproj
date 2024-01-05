@@ -429,6 +429,7 @@
     <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectedDelegateNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />

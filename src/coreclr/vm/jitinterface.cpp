@@ -12563,10 +12563,10 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
 
 #ifdef DEBUGGING_SUPPORTED
 
-#ifdef _DEBUG
     if (g_pConfig->GenDebuggableCode())
+    {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
-#endif // _DEBUG
+    }
 
 #ifdef FEATURE_METADATA_UPDATER
     if (pModule->IsEditAndContinueEnabled())

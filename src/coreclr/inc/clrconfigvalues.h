@@ -296,7 +296,7 @@ CONFIG_DWORD_INFO(INTERNAL_GCUseGlobalAllocationContext, W("GCUseGlobalAllocatio
 /// JIT
 ///
 CONFIG_DWORD_INFO(INTERNAL_JitBreakEmit, W("JitBreakEmit"), (DWORD)-1, "")
-CONFIG_DWORD_INFO(INTERNAL_JitDebuggable, W("JitDebuggable"), 0, "")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitDebuggable, W("JitDebuggable"), 0, "If set, suppress JIT optimizations that make debugging code difficult")
 #if !defined(DEBUG) && !defined(_DEBUG)
 #define INTERNAL_JitEnableNoWayAssert_Default 0
 #else
