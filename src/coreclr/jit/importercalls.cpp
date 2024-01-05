@@ -3231,14 +3231,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer) and for RV64A
-            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                ARM64_ONLY(if (compOpportunisticallyDependsOn(InstructionSet_Atomics)))
+#if defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
                 {
+#if defined(TARGET_X86)
+                    if (genActualType(callType) == TYP_LONG)
+                    {
+                        break;
+                    }
+#endif
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
