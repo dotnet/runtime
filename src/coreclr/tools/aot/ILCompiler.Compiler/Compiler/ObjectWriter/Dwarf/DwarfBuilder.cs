@@ -342,7 +342,10 @@ namespace ILCompiler.ObjectWriter
                 Name = "m_Data",
             });
 
-            // TODO: Verify that this makes sense
+            // We currently don't encode the size of the variable length data. The DWARF5
+            // specification allows encoding variable length arrays through DW_AT_lower_bound,
+            // DW_AT_upper_bound, and DW_AT_count expressions. There's potentially room
+            // to improve the debugging information by a more substential restructuring.
             arrayClassDescriptor.InstanceSize = fieldOffset;
 
             ClassFieldsTypeDescriptor fieldsTypeDesc = new ClassFieldsTypeDescriptor
