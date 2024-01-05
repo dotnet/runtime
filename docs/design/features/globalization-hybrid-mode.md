@@ -19,31 +19,36 @@ Hybrid has higher priority than sharding or custom modes, described in globaliza
 
 **SortKey**
 
+SortKey equivalent is not available in JS. Following APIs will throw `PlatformNotSupportedException`:
+
 Affected public APIs:
 - System.Globalization.CompareInfo.GetSortKey
 - System.Globalization.CompareInfo.GetSortKeyLength
 - System.Globalization.CompareInfo.GetHashCode
-Indirectly affected APIs (the list might not be complete):
-- Microsoft.VisualBasic.Collection.Add
-- System.Collections.Hashtable.Add
-- System.Collections.Hashtable.GetHash
-- System.Collections.CaseInsensitiveHashCodeProvider.GetHashCode
-- System.Collections.Specialized.NameObjectCollectionBase.BaseAdd
-- System.Collections.Specialized.NameValueCollection.Add
-- System.Collections.Specialized.NameObjectCollectionBase.BaseGet
-- System.Collections.Specialized.NameValueCollection.Get
-- System.Collections.Specialized.NameObjectCollectionBase.BaseRemove
-- System.Collections.Specialized.NameValueCollection.Remove
-- System.Collections.Specialized.OrderedDictionary.Add
-- System.Collections.Specialized.NameObjectCollectionBase.BaseSet
-- System.Collections.Specialized.NameValueCollection.Set
-- System.Data.DataColumnCollection.Add
-- System.Collections.Generic.HashSet
-- System.Collections.Generic.Dictionary
+
+Some classes use these functions internally. We were able to maintain support for most of them, with changed behavior.
+
+Indirectly affected APIs that throw `PlatformNotSupportedException`:
+- System.Collections.CaseInsensitiveHashCodeProvider.GetHashCode (deprecated)
+- Microsoft.VisualBasic.Collection.Add (string-keyed collections only)
+- System.Data.DataColumnCollection.Add (string-keyed collections only)
 - System.Net.Mail.MailAddress.GetHashCode
 - System.Xml.Xsl.XslCompiledTransform.Transform
 
-Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+Indirectly affected APIs with changed behavior (string-keyed collections):
+
+In `Hybrid Globalization` these collections use `StringComparer.Ordinal` as a default comparer:
+- System.Collections.Generic.Dictionary
+- System.Collections.Generic.HashSet
+- System.Collections.Hashtable
+You can overwrite this comparer by using constructor with parameter, e.g. [Dictionary<TKey,TValue>(IEqualityComparer<TKey>)](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2.-ctor#system-collections-generic-dictionary-2-ctor(system-collections-generic-iequalitycomparer((-0)))). The only supported options for string-keys are: `StringComparer.Ordinal` and `StringComparer.OrdinalIgnoreCase`, other options throw `PlatformNotSupportedException`.
+
+`Hashtable` is non-generic collection that defines the types of keys in the runtime. `Hybrid Globalization` does not support using `string` keys together with `non-string` keys in the same collection.
+
+These collections will throw `PlatformNotSupportedException` if they were constructed without `StringComparer.Ordinal` or `StringComparer.OrdinalIgnoreCase` but use string keys.
+- System.Collections.Specialized.NameValueCollection
+- System.Collections.Specialized.NameObjectCollectionBase
+- System.Collections.Specialized.OrderedDictionary
 
 **Case change**
 
