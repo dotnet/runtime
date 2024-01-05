@@ -1208,17 +1208,24 @@ namespace System.Net
         {
             _sendRequestTask ??= SendRequest(async);
 
-            if (_requestStream is not null) // If we didn't flush and end the request stream, do it now, don't wait for dispose.
+            try
             {
-                if (async)
+                if (_requestStream is not null) // If we didn't flush and end the request stream, do it now, don't wait for dispose.
                 {
-                    await _requestStream!.FlushAsync().ConfigureAwait(false);
+                    if (async)
+                    {
+                        await _requestStream!.FlushAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        _requestStream!.Flush();
+                    }
+                    _requestStream!.EndWriteOnStreamBuffer();
                 }
-                else
-                {
-                    _requestStream!.Flush();
-                }
-                _requestStream!.EndWriteOnStreamBuffer();
+            }
+            catch (ObjectDisposedException)
+            {
+                // If the request stream was disposed, don't do anything.
             }
 
             HttpResponseMessage responseMessage = await _sendRequestTask!.ConfigureAwait(false);
