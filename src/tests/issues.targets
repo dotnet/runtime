@@ -3655,6 +3655,12 @@
         </ExcludeList>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>
             <FilteredExcludeList
@@ -3664,10 +3670,4 @@
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
-            <Issue>function dlopen at mono-dl.c:250 can't open the native lib libGCPollNative.so</Issue>
-        </ExcludeList>
-    </ItemGroup>
 </Project>
