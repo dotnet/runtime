@@ -333,7 +333,7 @@ namespace System.Text.RegularExpressions.Tests
                     /// </code>
                     /// </remarks>
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
-                    private static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
+                    public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
 
                 namespace System.Text.RegularExpressions.Generated
