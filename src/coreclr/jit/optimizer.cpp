@@ -4590,8 +4590,7 @@ RETRY_UNROLL:
     optLoopCount      = 0;
 
     // Old dominators and reachability sets are no longer valid.
-    fgDomsComputed         = false;
-    fgCompactRenumberQuirk = true;
+    fgDomsComputed = false;
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
