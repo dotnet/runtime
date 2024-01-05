@@ -638,9 +638,6 @@ public:
     void           buildIntervals();
 
 // This is where the actual assignment is done
-#ifdef TARGET_ARM64
-    template <bool hasConsecutiveRegister = false>
-#endif
     void allocateRegistersForMinOpt();
 
 // This is where the actual assignment is done

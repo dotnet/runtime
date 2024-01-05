@@ -4787,9 +4787,6 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 // LinearScan::allocateRegistersForMinOpt: Perform the actual register allocation for MinOpts by iterating over
 //                                all of the previously constructed Intervals
 //
-#ifdef TARGET_ARM64
-template <bool hasConsecutiveRegister>
-#endif
 void LinearScan::allocateRegistersForMinOpt()
 {
     JITDUMP("*************** In LinearScan::allocateRegistersForMinOpt()\n");
@@ -4932,12 +4929,6 @@ void LinearScan::allocateRegistersForMinOpt()
             copyRegsToFree        = RBM_NONE;
             regsInUseThisLocation = regsInUseNextLocation;
             regsInUseNextLocation = RBM_NONE;
-#ifdef TARGET_ARM64
-            if (hasConsecutiveRegister)
-            {
-                consecutiveRegsInUseThisLocation = RBM_NONE;
-            }
-#endif
             if ((regsToFree | delayRegsToFree) != RBM_NONE)
             {
                 freeRegisters(regsToFree);
@@ -5056,24 +5047,6 @@ void LinearScan::allocateRegistersForMinOpt()
             }
         }
         prevLocation = currentLocation;
-#ifdef TARGET_ARM64
-
-#ifdef DEBUG
-        if (hasConsecutiveRegister)
-        {
-            if (currentRefPosition.needsConsecutive)
-            {
-                // track all the refpositions around the location that is also
-                // allocating consecutive registers.
-                consecutiveRegistersLocation = currentLocation;
-            }
-            else if (consecutiveRegistersLocation < currentLocation)
-            {
-                consecutiveRegistersLocation = MinLocation;
-            }
-        }
-#endif // DEBUG
-#endif // TARGET_ARM64
 
         // get previous refposition, then current refpos is the new previous
         if (currentReferent != nullptr)
@@ -5278,89 +5251,6 @@ void LinearScan::allocateRegistersForMinOpt()
             }
             else if ((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
             {
-#ifdef TARGET_ARM64
-                if (hasConsecutiveRegister && currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
-                {
-                    // For consecutive registers, if the first RefPosition is already assigned to a register,
-                    // check if consecutive registers are free so they can be assigned to the subsequent
-                    // RefPositions.
-                    if (canAssignNextConsecutiveRegisters(&currentRefPosition, assignedRegister))
-                    {
-                        // Current assignedRegister satisfies the consecutive registers requirements
-                        currentRefPosition.registerAssignment = assignedRegBit;
-                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
-
-                        assignConsecutiveRegisters(&currentRefPosition, assignedRegister);
-                    }
-                    else
-                    {
-                        // It doesn't satisfy, so do a copyReg for the first RefPosition to such a register, so
-                        // it would be possible to allocate consecutive registers to the subsequent RefPositions.
-                        regNumber copyReg = assignCopyReg<true>(&currentRefPosition);
-                        assignConsecutiveRegisters(&currentRefPosition, copyReg);
-
-                        if (copyReg != assignedRegister)
-                        {
-                            lastAllocatedRefPosition  = &currentRefPosition;
-                            regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                            regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
-
-                            if ((consecutiveRegsInUseThisLocation & assignedRegMask) != RBM_NONE)
-                            {
-                                // If assigned register is one of the consecutive register we are about to assign
-                                // to the subsequent RefPositions, do not mark it busy otherwise when we allocate
-                                // for that particular subsequent RefPosition, we will not find any candidates
-                                // available. Not marking it busy should be fine because we have already set the
-                                // register assignments for all the consecutive refpositions.
-                                assignedRegMask = RBM_NONE;
-                            }
-
-                            // For consecutive register, although it shouldn't matter what the assigned register was,
-                            // because we have just assigned it `copyReg` and that's the one in-use, and not the
-                            // one that was assigned previously. However, in situation where an upper-vector restore
-                            // happened to be restored in assignedReg, we would need assignedReg to stay alive because
-                            // we will copy the entire vector value from it to the `copyReg`.
-
-                            updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                                    &delayRegsToFree DEBUG_ARG(currentInterval)
-                                                        DEBUG_ARG(assignedRegister));
-                            if (!currentRefPosition.lastUse)
-                            {
-                                copyRegsToFree |= copyRegMask;
-                            }
-
-                            // If this is a tree temp (non-localVar) interval, we will need an explicit move.
-                            // Note: In theory a moveReg should cause the Interval to now have the new reg as its
-                            // assigned register. However, that's not currently how this works.
-                            // If we ever actually move lclVar intervals instead of copying, this will need to change.
-                            if (!currentInterval->isLocalVar)
-                            {
-                                currentRefPosition.moveReg = true;
-                                currentRefPosition.copyReg = false;
-                            }
-                            clearNextIntervalRef(copyReg, currentInterval->registerType);
-                            clearSpillCost(copyReg, currentInterval->registerType);
-                            updateNextIntervalRef(assignedRegister, currentInterval);
-                            updateSpillCost(assignedRegister, currentInterval);
-                        }
-                        else
-                        {
-                            // We first noticed that with assignedRegister, we were not getting consecutive registers
-                            // assigned, so we decide to perform copyReg. However, copyReg assigned same register
-                            // because there were no other free registers that would satisfy the consecutive registers
-                            // requirements. In such case, just revert the copyReg state update.
-                            currentRefPosition.copyReg = false;
-
-                            // Current assignedRegister satisfies the consecutive registers requirements
-                            currentRefPosition.registerAssignment = assignedRegBit;
-                        }
-
-                        continue;
-                    }
-                }
-                else
-#endif
-                {
                     currentRefPosition.registerAssignment = assignedRegBit;
                     if (!currentInterval->isActive)
                     {
@@ -5368,51 +5258,17 @@ void LinearScan::allocateRegistersForMinOpt()
                     }
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
                 }
-            }
             else
             {
                 // It's already in a register, but not one we need.
                 if (!RefTypeIsDef(currentRefPosition.refType))
                 {
-                    regNumber copyReg;
-#ifdef TARGET_ARM64
-                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive &&
-                        currentRefPosition.refType == RefTypeUse)
-                    {
-                        copyReg = assignCopyReg<true>(&currentRefPosition);
-                    }
-                    else
-#endif
-                    {
-                        copyReg = assignCopyReg(&currentRefPosition);
-                    }
+                    regNumber copyReg = assignCopyReg<false, false>(&currentRefPosition);
 
                     lastAllocatedRefPosition  = &currentRefPosition;
                     regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                     regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
-#ifdef TARGET_ARM64
-                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
-                    {
-                        if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
-                        {
-                            // If the first RefPosition was not assigned to the register that we wanted, we added
-                            // a copyReg for it. Allocate subsequent RefPositions with the consecutive
-                            // registers.
-                            assignConsecutiveRegisters(&currentRefPosition, copyReg);
-                        }
-
-                        if ((consecutiveRegsInUseThisLocation & assignedRegMask) != RBM_NONE)
-                        {
-                            // If assigned register is one of the consecutive register we are about to assign
-                            // to the subsequent RefPositions, do not mark it busy otherwise when we allocate
-                            // for that particular subsequent RefPosition, we will not find any candidates
-                            // available. Not marking it busy should be fine because we have already set the
-                            // register assignments for all the consecutive refpositions.
-                            assignedRegMask = RBM_NONE;
-                        }
-                    }
-#endif
                     // For consecutive register, although it shouldn't matter what the assigned register was,
                     // because we have just assigned it `copyReg` and that's the one in-use, and not the
                     // one that was assigned previously. However, in situation where an upper-vector restore
@@ -5447,48 +5303,6 @@ void LinearScan::allocateRegistersForMinOpt()
                 }
             }
         }
-
-#ifdef TARGET_ARM64
-        if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
-        {
-            // For consecutive register, we would like to assign a register (if not already assigned)
-            // to the 1st refPosition and the subsequent refPositions will just get the consecutive register.
-            if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
-            {
-                if (assignedRegister != REG_NA)
-                {
-                    // For the 1st refPosition, if it already has a register assigned, then just assign
-                    // subsequent registers to the remaining position and skip the allocation for the
-                    // 1st refPosition altogether.
-
-                    if (!canAssignNextConsecutiveRegisters(&currentRefPosition, assignedRegister))
-                    {
-                        // The consecutive registers are busy. Force to allocate even for the 1st
-                        // refPosition
-                        assignedRegister                      = REG_NA;
-                        RegRecord* physRegRecord              = getRegisterRecord(currentInterval->physReg);
-                        currentRefPosition.registerAssignment = allRegs(currentInterval->registerType);
-                    }
-                }
-            }
-            else if (currentRefPosition.refType == RefTypeUse)
-            {
-                // remaining refPosition of the series...
-                if (assignedRegBit == currentRefPosition.registerAssignment)
-                {
-                    // For the subsequent position, if they already have the subsequent register assigned, then
-                    // no need to find register to assign.
-                    allocate = false;
-                }
-                else
-                {
-                    // If the subsequent refPosition is not assigned to the consecutive register, then reassign the
-                    // right consecutive register.
-                    assignedRegister = REG_NA;
-                }
-            }
-        }
-#endif // TARGET_ARM64
 
         if (assignedRegister == REG_NA)
         {
@@ -5532,22 +5346,7 @@ void LinearScan::allocateRegistersForMinOpt()
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
-
-#ifdef TARGET_ARM64
-                if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
-                {
-                    assignedRegister =
-                        allocateReg<true>(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
-                    if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
-                    {
-                        assignConsecutiveRegisters(&currentRefPosition, assignedRegister);
-                    }
-                }
-                else
-#endif // TARGET_ARM64
-                {
-                    assignedRegister = allocateReg(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
-                }
+                assignedRegister = allocateRegForMinOpts(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
             }
 
             // If no register was found, this RefPosition must not require a register.
