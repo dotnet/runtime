@@ -268,6 +268,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(_targetOS)' == 'win' and $(IlcMultiModule) != 'true' and '$(IlcGenerateWin32Resources)' != 'false' and '$(NativeLib)' != 'Static'" Include="--win32resourcemodule:%(ManagedBinary.Filename)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
+      <IlcArg Condition="$(TreatWarningsAsErrors) == 'true'" Include="--warnaserror" />
+      <IlcArg Condition="$(WarningsAsErrors) != ''" Include='--enable-warnaserror:"$([MSBuild]::Escape($(WarningsAsErrors)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
+      <IlcArg Condition="$(WarningsNotAsErrors) != ''" Include='--disable-warnaserror:"$([MSBuild]::Escape($(WarningsNotAsErrors)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
       <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
       <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />
