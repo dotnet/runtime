@@ -7,10 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILAssembler", "ILAssembler\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILAssembler.Tests", "ILAssembler.Tests\ILAssembler.Tests.csproj", "{5961BC6B-1DE1-48DB-B12A-C865E7A2611D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Metadata", "..\..\libraries\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj", "{7F89A56E-CE99-4593-A080-6203695AA036}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable", "..\..\libraries\System.Collections.Immutable\src\System.Collections.Immutable.csproj", "{75A92500-37A6-418D-A2D1-FCA6B1E6B960}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,14 +21,6 @@ Global
 		{5961BC6B-1DE1-48DB-B12A-C865E7A2611D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5961BC6B-1DE1-48DB-B12A-C865E7A2611D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5961BC6B-1DE1-48DB-B12A-C865E7A2611D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F89A56E-CE99-4593-A080-6203695AA036}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F89A56E-CE99-4593-A080-6203695AA036}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F89A56E-CE99-4593-A080-6203695AA036}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F89A56E-CE99-4593-A080-6203695AA036}.Release|Any CPU.Build.0 = Release|Any CPU
-		{75A92500-37A6-418D-A2D1-FCA6B1E6B960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{75A92500-37A6-418D-A2D1-FCA6B1E6B960}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{75A92500-37A6-418D-A2D1-FCA6B1E6B960}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{75A92500-37A6-418D-A2D1-FCA6B1E6B960}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

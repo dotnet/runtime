@@ -11,10 +11,9 @@ using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
-#pragma warning disable CA1822
-internal sealed class DocumentParser
+public sealed class DocumentCompiler
 {
-    public (ImmutableArray<Diagnostic>, PEBuilder?) Parse(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
+    public (ImmutableArray<Diagnostic>, PEBuilder?) Compile(SourceText document, Func<string, SourceText> includedDocumentLoader, Func<string, byte[]> resourceLocator, Options options)
     {
         var inputSource = new AntlrInputStream(document.Text)
         {

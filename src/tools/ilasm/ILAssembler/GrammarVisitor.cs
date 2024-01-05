@@ -470,6 +470,7 @@ namespace ILAssembler
                 // COMPAT: ilasm implies the Sealed flag when using the 'value' keyword in a type declaration
                 return new((new(TypeAttributes.Sealed), EntityRegistry.WellKnownBaseType.System_ValueType, true));
             }
+
             // TODO: We should probably do this based on each token instead of just parsing all values.
             return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
         }
@@ -534,7 +535,7 @@ namespace ILAssembler
             string typeNS;
             if (_currentTypeDefinition.Count != 0)
             {
-                if (typeFullNameLastDot != -1)
+                if (typeFullNameLastDot == -1)
                 {
                     typeNS = string.Empty;
                 }
@@ -545,7 +546,7 @@ namespace ILAssembler
             }
             else
             {
-                if (typeFullNameLastDot != -1)
+                if (typeFullNameLastDot == -1)
                 {
                     typeNS = _currentNamespace.PeekOrDefault() ?? string.Empty;
                 }

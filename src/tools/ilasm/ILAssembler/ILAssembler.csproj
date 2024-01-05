@@ -15,8 +15,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable/src/System.Collections.Immutable.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>

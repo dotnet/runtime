@@ -616,7 +616,7 @@ namespace ILAssembler
             return entity;
         }
 
-        private class SignatureRewriter : ISignatureTypeProvider<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>
+        private sealed class SignatureRewriter : ISignatureTypeProvider<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>
         {
             public readonly struct BlobOrHandle
             {

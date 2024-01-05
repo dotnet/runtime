@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ILAssembler
 {
-    internal sealed class Options
+    public sealed class Options
     {
         public bool NoAutoInherit { get; set; }
     }
