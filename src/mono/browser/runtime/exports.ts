@@ -20,7 +20,7 @@ import { mono_bind_static_method } from "./net6-legacy/method-calls";
 import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { initializeLegacyExports } from "./net6-legacy/globals";
 import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
-import { instantiate_asset, instantiate_symbols_asset } from "./assets";
+import { instantiate_asset, instantiate_symbols_asset, instantiate_static_json_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
 
@@ -46,6 +46,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_asset,
         jiterpreter_dump_stats,
         forceDisposeProxies,
+        instantiate_static_json_asset,
     });
 
     const API = export_api();

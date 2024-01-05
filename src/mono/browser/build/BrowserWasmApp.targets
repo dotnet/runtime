@@ -110,6 +110,7 @@
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
+      <WasmNativeAsset Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)segmentation-rules.json"/>
     </ItemGroup>
 
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>

@@ -201,6 +201,12 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
+
+    /// <summary>
+    /// Static JSON assets
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary staticJsonAssets { get; set; }
 }
 
 public enum GlobalizationMode : int

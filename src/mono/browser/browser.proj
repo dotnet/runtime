@@ -456,6 +456,11 @@
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
+    <!-- Grapheme segmentation rules for Hybrid Globalization-->
+    <Copy SourceFiles="runtime/hybrid-globalization/segmentation-rules.json;"
+          DestinationFolder="$(NativeBinDir)"
+          SkipUnchangedFiles="true" />
+          
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="@(_CmakeEnvironmentVariable)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)"
@@ -481,7 +486,8 @@
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm"
+                       $(NativeBinDir)dotnet.native.wasm;
+                       $(NativeBinDir)segmentation-rules.json;"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

@@ -7,7 +7,7 @@
  * https://github.com/formatjs/formatjs/blob/58d6a7b398d776ca3d2726d72ae1573b65cc3bef/packages/intl-segmenter/src/segmentation-utils.ts
  */
 
-import { SegmentationRules } from "./segmentation-rules";
+import { mono_assert } from "../globals";
 import { isSurrogate } from "./helpers";
 
 type SegmentationRule = {
@@ -27,6 +27,8 @@ type SegmentationTypeRaw = {
     rules: Record<string, SegmentationRuleRaw>
 }
 
+let segmentationRules: Record<string, SegmentationRule>;
+
 function replaceVariables(variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
     return input.replaceAll(findVarRegex, match => {
@@ -41,13 +43,21 @@ function generateRegexRule (rule: string, variables: Record<string, string>, aft
     return new RegExp(`${after ? "^" : ""}${replaceVariables(variables, rule)}${after ? "" : "$"}`);
 }
 
+function isSegmentationTypeRaw(obj: any): obj is SegmentationTypeRaw {
+    return obj.variables != null && obj.rules != null;
+}
+
+export function setSegmentationRulesFromJson(json: string) {
+    mono_assert(isSegmentationTypeRaw(json), "Provided grapheme segmentation rules are not valid");
+    segmentationRules = GraphemeSegmenter.prepareSegmentationRules(json);
+}
+
 export class GraphemeSegmenter {
-    private readonly rules;
-    private readonly ruleSortedKeys;
+    private readonly rules: Record<string, SegmentationRule>;
+    private readonly ruleSortedKeys: string[];
 
     public constructor() {  
-        // Process segmentation rules
-        this.rules = GraphemeSegmenter.prepareSegmentationRules(SegmentationRules);
+        this.rules = segmentationRules;
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
 
@@ -111,7 +121,7 @@ export class GraphemeSegmenter {
         return true;
     }
 
-    private static prepareSegmentationRules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
+    public static prepareSegmentationRules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
         const preparedRules: Record<string, SegmentationRule> = {};
     
         for (const key of Object.keys(segmentationRules.rules)) {

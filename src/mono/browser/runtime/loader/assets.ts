@@ -68,6 +68,7 @@ const skipBufferByAssetTypes: {
 } = {
     "dotnetwasm": true,
     "symbols": true,
+    "static-json": true,
 };
 
 const containedInSnapshotByAssetTypes: {
@@ -87,6 +88,7 @@ const skipInstantiateByAssetTypes: {
     ...jsModulesAssetTypes,
     "dotnetwasm": true,
     "symbols": true,
+    "static-json": true,
 };
 
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
@@ -224,6 +226,9 @@ export async function mono_download_assets(): Promise<void> {
                         if (asset.behavior === "symbols") {
                             await runtimeHelpers.instantiate_symbols_asset(asset);
                             cleanupAsset(asset);
+                        } else if (asset.behavior === "static-json") {
+                            await runtimeHelpers.instantiate_static_json_asset(asset);
+                            cleanupAsset(asset);
                         }
 
                         if (skipBufferByAssetTypes[asset.behavior]) {
@@ -353,6 +358,16 @@ export function prepareAssets() {
                     name,
                     hash: resources.wasmSymbols[name],
                     behavior: "symbols"
+                });
+            }
+        }
+
+        if (resources.staticJsonAssets) {
+            for (const name in resources.staticJsonAssets) {
+                alwaysLoadedAssets.push({
+                    name,
+                    hash: resources.staticJsonAssets[name],
+                    behavior: "static-json"
                 });
             }
         }
