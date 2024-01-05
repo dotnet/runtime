@@ -81,7 +81,7 @@ namespace System.Net
                 return task;
             }
 
-            return Task.CompletedTask;
+            return !cancellationToken.IsCancellationRequested ? Task.CompletedTask : Task.FromCanceled(cancellationToken);
         }
 
         public override long Length
