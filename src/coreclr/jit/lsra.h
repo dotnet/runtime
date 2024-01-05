@@ -637,7 +637,7 @@ public:
     template <bool localVarsEnregistered>
     void           buildIntervals();
 
-// This is where the actual assignment is done
+    // This is where the actual assignment is done
     void allocateRegistersForMinOpt();
 
 // This is where the actual assignment is done
@@ -1189,7 +1189,8 @@ private:
 #endif
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
-    regNumber allocateRegForMinOpts(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+    regNumber allocateRegForMinOpts(Interval*    current,
+                                    RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
     regNumber assignCopyRegForMinOpts(RefPosition* refPosition);

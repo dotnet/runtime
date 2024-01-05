@@ -2916,8 +2916,8 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     return false;
 }
 
-regNumber LinearScan::allocateRegForMinOpts(Interval*                currentInterval,
-                                  RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+regNumber LinearScan::allocateRegForMinOpts(Interval*    currentInterval,
+                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regNumber  foundReg;
     regMaskTP  foundRegBit;
@@ -3026,7 +3026,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             // Note that we need to compute this condition before calling unassignPhysReg, which wil reset
             // assignedInterval->physReg.
             bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
-                                (assignedInterval->physReg == foundReg);
+                               (assignedInterval->physReg == foundReg);
             unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
             if (regSelector->isMatchingConstant() && compiler->opts.OptimizationEnabled())
             {
@@ -3036,7 +3036,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             else if (wasAssigned)
             {
                 updatePreviousInterval(availablePhysRegRecord,
-                                        assignedInterval ARM_ARG(assignedInterval->registerType));
+                                       assignedInterval ARM_ARG(assignedInterval->registerType));
             }
             else
             {
@@ -5393,7 +5393,8 @@ void LinearScan::allocateRegistersForMinOpt()
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
-                assignedRegister = allocateRegForMinOpts(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
+                assignedRegister =
+                    allocateRegForMinOpts(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
             }
 
             // If no register was found, this RefPosition must not require a register.
@@ -5955,7 +5956,6 @@ void LinearScan::allocateRegisters()
                     if (enregisterLocalVars)
                     {
                         processBlockEndAllocation<true>(currentBlock);
-
                     }
                     else
                     {
