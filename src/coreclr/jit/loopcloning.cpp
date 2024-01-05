@@ -1790,7 +1790,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     // for the cloned loop (and its embedded EH regions).
     //
     BasicBlockVisit result = loop->VisitLoopBlocks([=](BasicBlock* blk) {
-        assert(!blk->KindIs(BBJ_RETURN));
         if (bbIsTryBeg(blk))
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It has a `try` begin.\n", loop->GetIndex());
@@ -1804,6 +1803,19 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     {
         return false;
     }
+
+#ifdef DEBUG
+    // With the EH constraint above verified it is not possible for
+    // BBJ_RETURN blocks to be part of the loop; a BBJ_RETURN block can
+    // only be part of the loop if its exceptional flow can reach the
+    // header, but that would require the handler to also be part of
+    // the loop, which guarantees that the loop contains two distinct
+    // EH regions.
+    loop->VisitLoopBlocks([](BasicBlock* block) {
+        assert(!block->KindIs(BBJ_RETURN));
+        return BasicBlockVisit::Continue;
+    });
+#endif
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.
@@ -1842,37 +1854,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    // TODO-Quirk: Reject loops that with the old loop cloning would put us
-    // above max number of returns. Return blocks are not considered part of
-    // loops in the new loop finding since they are never part of the SCC (and
-    // they aren't present inside try-regions).
-    //
-    LoopDsc* oldLoop      = m_newToOldLoop[loop->GetIndex()];
-    unsigned loopRetCount = 0;
-    for (BasicBlock* const blk : oldLoop->LoopBlocks())
-    {
-        if (blk->KindIs(BBJ_RETURN))
-        {
-            loopRetCount++;
-        }
-    }
-
-    // We've previously made a decision whether to have separate return epilogs, or branch to one.
-    // There's a GCInfo limitation in the x86 case, so that there can be no more than SET_EPILOGCNT_MAX separate
-    // epilogs.  Other architectures have a limit of 4 here for "historical reasons", but this should be revisited
-    // (or return blocks should not be considered part of the loop, rendering this issue moot).
-    unsigned epilogLimit = 4;
-#ifdef JIT32_GCENCODER
-    epilogLimit = SET_EPILOGCNT_MAX;
-#endif // JIT32_GCENCODER
-    if (fgReturnCount + loopRetCount > epilogLimit)
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It has %d returns;"
-                " if added to previously existing %d returns, it would exceed the limit of %d.\n",
-                loop->GetIndex(), loopRetCount, fgReturnCount, epilogLimit);
-        return false;
-    }
-
+    LoopDsc* oldLoop = m_newToOldLoop[loop->GetIndex()];
     assert(!requireIterable || !lvaVarAddrExposed(iterInfo->IterVar));
 
     // TODO-Quirk: These conditions are unnecessary.
