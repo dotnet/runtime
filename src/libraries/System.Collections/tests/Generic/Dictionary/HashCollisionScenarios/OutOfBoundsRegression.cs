@@ -163,7 +163,7 @@ namespace System.Collections.Tests
             if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
             {
                 // linguistic comparer (not optimized)
-                RunDictionaryTest(
+                RunHashSetTest(
                     equalityComparer: StringComparer.InvariantCulture,
                     expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
                     expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
