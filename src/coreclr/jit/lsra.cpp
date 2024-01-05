@@ -2916,6 +2916,33 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     return false;
 }
 
+regNumber LinearScan::allocateRegForMinOpts(Interval*                currentInterval,
+                                  RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+{
+    regNumber  foundReg;
+    regMaskTP  foundRegBit;
+    RegRecord* availablePhysRegRecord;
+    foundRegBit = regSelector->selectMinOpts(currentInterval, refPosition DEBUG_ARG(registerScore));
+    if (foundRegBit == RBM_NONE)
+    {
+        return REG_NA;
+    }
+
+    foundReg                   = genRegNumFromMask(foundRegBit);
+    availablePhysRegRecord     = getRegisterRecord(foundReg);
+    Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
+    if ((assignedInterval != currentInterval) &&
+        isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
+    {
+        // For minopts, just unassign `foundReg` from existing interval
+        unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
+    }
+
+    assignPhysReg(availablePhysRegRecord, currentInterval);
+    refPosition->registerAssignment = foundRegBit;
+    return foundReg;
+}
+
 //------------------------------------------------------------------------
 // allocateReg: Find a register that satisfies the requirements for refPosition,
 //              taking into account the preferences for the given Interval,
@@ -2954,20 +2981,15 @@ template <bool needsConsecutiveRegisters>
 regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
-    regNumber  foundReg;
-    regMaskTP  foundRegBit;
-    RegRecord* availablePhysRegRecord;
-    if (enregisterLocalVars || needsConsecutiveRegisters)
-    {
-        foundRegBit =
+    regMaskTP foundRegBit =
             regSelector->select<needsConsecutiveRegisters>(currentInterval, refPosition DEBUG_ARG(registerScore));
         if (foundRegBit == RBM_NONE)
         {
             return REG_NA;
         }
 
-        foundReg                   = genRegNumFromMask(foundRegBit);
-        availablePhysRegRecord     = getRegisterRecord(foundReg);
+    regNumber  foundReg               = genRegNumFromMask(foundRegBit);
+    RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
         Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
         if ((assignedInterval != currentInterval) &&
             isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
@@ -3022,25 +3044,6 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
                 }
             }
         }
-    }
-    else
-    {
-        foundRegBit = regSelector->selectMinOpts(currentInterval, refPosition DEBUG_ARG(registerScore));
-        if (foundRegBit == RBM_NONE)
-        {
-            return REG_NA;
-        }
-
-        foundReg                   = genRegNumFromMask(foundRegBit);
-        availablePhysRegRecord     = getRegisterRecord(foundReg);
-        Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
-        if ((assignedInterval != currentInterval) &&
-            isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
-        {
-            // For minopts, just unassign `foundReg` from existing interval
-            unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
-        }
-    }
 
     assignPhysReg(availablePhysRegRecord, currentInterval);
     refPosition->registerAssignment = foundRegBit;

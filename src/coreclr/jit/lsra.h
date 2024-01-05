@@ -1193,6 +1193,7 @@ private:
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     template <bool needsConsecutiveRegisters = false>
+    regNumber allocateRegForMinOpts(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
