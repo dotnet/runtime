@@ -637,8 +637,9 @@ public:
     template <bool localVarsEnregistered>
     void           buildIntervals();
 
-    // This is where the actual assignment is done
-    void allocateRegistersForMinOpt();
+    // This is where the actual assignment is done for scenarios where
+    // no local var enregistration is done.
+    void allocateRegistersMinimal();
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
@@ -1189,11 +1190,11 @@ private:
 #endif
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
-    regNumber allocateRegForMinOpts(Interval*    current,
+    regNumber allocateRegMinimal(Interval*    current,
                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
-    regNumber assignCopyRegForMinOpts(RefPosition* refPosition);
+    regNumber assignCopyRegMinimal(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
     bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
@@ -1267,7 +1268,7 @@ private:
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-        FORCEINLINE regMaskTP selectMinOpts(Interval*    currentInterval,
+        FORCEINLINE regMaskTP selectMinimal(Interval*    currentInterval,
                                             RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
@@ -1355,7 +1356,7 @@ private:
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
-        FORCEINLINE void resetMinOpts(Interval* interval, RefPosition* refPosition);
+        FORCEINLINE void resetMinimal(Interval* interval, RefPosition* refPosition);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)

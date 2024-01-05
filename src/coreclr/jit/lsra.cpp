@@ -1413,7 +1413,7 @@ PhaseStatus LinearScan::doLinearScan()
         }
         else
         {
-            allocateRegistersForMinOpt();
+            allocateRegistersMinimal();
         }
     }
 
@@ -2916,13 +2916,22 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     return false;
 }
 
-regNumber LinearScan::allocateRegForMinOpts(Interval*    currentInterval,
+//------------------------------------------------------------------------
+// allocateRegMinimal: Find a register that satisfies the requirements for refPosition,
+//              taking into account the preferences for the given Interval,
+//              and possibly spilling a lower weight Interval.
+//
+// Note: This is a minimal version of `allocateReg()` and used when localVars are not set
+// for enregistration. It simply finds the register to be assigned, if it was assigned to something
+// else, then will unassign it and then assign to the currentInterval
+//
+regNumber LinearScan::allocateRegMinimal(Interval*    currentInterval,
                                             RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regNumber  foundReg;
     regMaskTP  foundRegBit;
     RegRecord* availablePhysRegRecord;
-    foundRegBit = regSelector->selectMinOpts(currentInterval, refPosition DEBUG_ARG(registerScore));
+    foundRegBit = regSelector->selectMinimal(currentInterval, refPosition DEBUG_ARG(registerScore));
     if (foundRegBit == RBM_NONE)
     {
         return REG_NA;
@@ -3258,7 +3267,7 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
 // Prefer a free register that's got the earliest next use.
 // Otherwise, spill something with the farthest next use
 //
-regNumber LinearScan::assignCopyRegForMinOpts(RefPosition* refPosition)
+regNumber LinearScan::assignCopyRegMinimal(RefPosition* refPosition)
 {
     Interval* currentInterval = refPosition->getInterval();
     assert(currentInterval != nullptr);
@@ -3281,7 +3290,7 @@ regNumber LinearScan::assignCopyRegForMinOpts(RefPosition* refPosition)
 
     RegisterScore registerScore = NONE;
 
-    regNumber allocatedReg = allocateRegForMinOpts(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    regNumber allocatedReg = allocateRegMinimal(currentInterval, refPosition DEBUG_ARG(&registerScore));
     assert(allocatedReg != REG_NA);
 
     // restore the related interval
@@ -4831,13 +4840,13 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 }
 
 //------------------------------------------------------------------------
-// LinearScan::allocateRegistersForMinOpt: Perform the actual register allocation for MinOpts by iterating over
-//                                all of the previously constructed Intervals
+// LinearScan::allocateRegistersMinimal: Perform the actual register allocation when localVars
+//  are not enregistered.
 //
-void LinearScan::allocateRegistersForMinOpt()
+void LinearScan::allocateRegistersMinimal()
 {
-    JITDUMP("*************** In LinearScan::allocateRegistersForMinOpt()\n");
-    DBEXEC(VERBOSE, lsraDumpIntervals("before allocateRegistersForMinOpt"));
+    JITDUMP("*************** In LinearScan::allocateRegistersMinimal()\n");
+    DBEXEC(VERBOSE, lsraDumpIntervals("before allocateRegistersMinimal"));
 
     // at start, nothing is active except for register args
     for (Interval& interval : intervals)
@@ -5310,7 +5319,7 @@ void LinearScan::allocateRegistersForMinOpt()
                 // It's already in a register, but not one we need.
                 if (!RefTypeIsDef(currentRefPosition.refType))
                 {
-                    regNumber copyReg = assignCopyRegForMinOpts(&currentRefPosition);
+                    regNumber copyReg = assignCopyRegMinimal(&currentRefPosition);
 
                     lastAllocatedRefPosition  = &currentRefPosition;
                     regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
@@ -5394,7 +5403,7 @@ void LinearScan::allocateRegistersForMinOpt()
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
                 assignedRegister =
-                    allocateRegForMinOpts(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
+                    allocateRegMinimal(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
             }
 
             // If no register was found, this RefPosition must not require a register.
@@ -12411,7 +12420,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 // ----------------------------------------------------------
 //  reset: Resets the values of all the fields used for register selection.
 //
-void LinearScan::RegisterSelection::resetMinOpts(Interval* interval, RefPosition* refPos)
+void LinearScan::RegisterSelection::resetMinimal(Interval* interval, RefPosition* refPos)
 {
     currentInterval = interval;
     refPosition     = refPos;
@@ -13638,7 +13647,7 @@ Selection_Done:
 }
 
 // ----------------------------------------------------------
-//  selectMinOpts: For given `currentInterval` and `refPosition`, selects a register to be assigned.
+//  selectMinimal: For given `currentInterval` and `refPosition`, selects a register to be assigned.
 //
 // Arguments:
 //   currentInterval - Current interval for which register needs to be selected.
@@ -13647,7 +13656,11 @@ Selection_Done:
 //  Return Values:
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
-regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*    currentInterval,
+//  Note - This routine just eliminates the busy candidates and the ones that has conflicting use and
+//  select the REG_ORDER heuristics (if there are any free candidates) or REG_NUM (if all registers
+//  are busy).
+//
+regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInterval,
                                                        RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
@@ -13658,7 +13671,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinOpts(Interval*    currentInter
     assert(!refPosition->needsConsecutive);
 #endif
 
-    resetMinOpts(currentInterval, refPosition);
+    resetMinimal(currentInterval, refPosition);
 
     // process data-structures
     if (RefTypeIsDef(refPosition->refType))
