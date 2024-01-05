@@ -20,8 +20,8 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class DwarfPrimitiveTypeInfo : DwarfInfo
     {
-        private TypeFlags _typeFlags;
-        private int _targetPointerSize;
+        private readonly TypeFlags _typeFlags;
+        private readonly int _targetPointerSize;
 
         public DwarfPrimitiveTypeInfo(TypeFlags typeFlags, int targetPointerSize)
         {
