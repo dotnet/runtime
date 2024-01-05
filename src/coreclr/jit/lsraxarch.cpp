@@ -438,7 +438,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XAND:
             if (!tree->IsUnusedValue())
             {
-                // if value is unused, we'll emit a cmpxchg-loop idiom (requires RAX)
+                // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
                 buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
                 BuildUse(tree->gtGetOp1(), availableIntRegs & ~RBM_RAX);
                 BuildUse(tree->gtGetOp2(), availableIntRegs & ~RBM_RAX);
