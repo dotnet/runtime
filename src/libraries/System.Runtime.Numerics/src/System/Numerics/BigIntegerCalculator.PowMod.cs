@@ -227,7 +227,7 @@ namespace System.Numerics
 
             if (value.Length > modulus.Length)
             {
-                Remainder(value, modulus, valueCopy);
+                Remainder(value, modulus, valueCopy.Slice(0, value.Length));
             }
             else
             {
@@ -276,7 +276,7 @@ namespace System.Numerics
 
             if (value.Length > modulus.Length)
             {
-                Remainder(value, modulus, valueCopy);
+                Remainder(value, modulus, valueCopy.Slice(0, value.Length));
             }
             else
             {
