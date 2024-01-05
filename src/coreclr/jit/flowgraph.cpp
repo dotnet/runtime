@@ -5086,6 +5086,8 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 //
 bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 {
+    Compiler* comp = m_dfsTree->GetCompiler();
+
     // Obtain the relop from the "test" tree.
     GenTree* relop;
     if (test->OperIs(GT_JTRUE))
@@ -5141,8 +5143,14 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     }
     else if (limitOp->OperIs(GT_LCL_VAR))
     {
-        // See if limit var is a loop invariant
+        // See if limit var is loop invariant
         //
+        if (comp->lvaGetDesc(limitOp->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("  Limit var V%02u is address exposed\n", limitOp->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
         GenTreeLclVarCommon* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
@@ -5165,7 +5173,13 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
             return false;
         }
 
-        GenTreeLclVarCommon* def = FindDef(array->AsLclVar()->GetLclNum());
+        if (comp->lvaGetDesc(array->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("  Array base local V%02u is address exposed\n", array->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
+        GenTreeLclVarCommon* def = FindDef(array->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
             JITDUMP("  Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),
