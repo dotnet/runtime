@@ -14,7 +14,6 @@ namespace System.Reflection
     {
         internal RuntimeModule() { throw new NotSupportedException(); }
 
-        #region FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
         private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
@@ -31,7 +30,6 @@ namespace System.Reflection
             GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types));
             return types!;
         }
-        #endregion
 
         #region Module overrides
         private static RuntimeTypeHandle[]? ConvertToTypeHandleArray(Type[]? genericArguments)
