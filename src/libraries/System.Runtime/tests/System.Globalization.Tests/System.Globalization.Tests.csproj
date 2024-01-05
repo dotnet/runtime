@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
+    <TrimmerRootDescriptor Include="ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

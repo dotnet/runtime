@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="NativeLibrary" />
+  <assembly fullname="SecondNativeLibrary" />
+  <assembly fullname="System.Diagnostics.FileVersionInfo.TestAssembly" />
+</linker>
