@@ -9,9 +9,9 @@ namespace ILCompiler.ObjectWriter
     {
         private readonly ushort[] _definition;
 
-        public static ushort DW_FORM_size = 0xDEAD; // Dummy value
+        public const ushort DW_FORM_size = 0xDEAD; // Dummy value
 
-        public DwarfAbbrev(ushort[] definition)
+        private DwarfAbbrev(ushort[] definition)
         {
             _definition = definition;
         }
@@ -20,11 +20,8 @@ namespace ILCompiler.ObjectWriter
 
         public bool HasChildren => _definition[1] == DW_CHILDREN_yes;
 
-        public int AbbreviationCode { get; set; }
-
         public void Write(SectionWriter writer, int targetPointerSize)
         {
-            writer.WriteULEB128((ulong)AbbreviationCode);
             writer.WriteULEB128(Tag);
             writer.WriteULEB128(HasChildren ? DW_CHILDREN_yes : DW_CHILDREN_no);
 

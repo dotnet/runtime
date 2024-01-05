@@ -23,7 +23,7 @@ namespace ILCompiler.ObjectWriter
         private readonly RelocType _codeRelocType;
         private readonly List<InfoReference> _lateBoundReferences = new();
         private readonly Stack<DwarfAbbrev> _dieStack = new();
-        private readonly List<DwarfAbbrev> _usedAbbrevs = new();
+        private readonly Dictionary<DwarfAbbrev, int> _usedAbbrevs = new();
         private readonly ArrayBufferWriter<byte> _expressionBufferWriter = new();
 
         public DwarfInfoWriter(
@@ -56,14 +56,15 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidOperationException($"Trying to write a children into DIE (Tag {_dieStack.Peek().Tag}) with DW_CHILDREN_no");
             }
 
-            if (abbrev.AbbreviationCode == 0)
+            if (!_usedAbbrevs.TryGetValue(abbrev, out int abbreviationCode))
             {
-                _usedAbbrevs.Add(abbrev);
-                abbrev.AbbreviationCode = _usedAbbrevs.Count;
+                abbreviationCode = _usedAbbrevs.Count + 1;
+                _usedAbbrevs.Add(abbrev, abbreviationCode);
             }
 
+
             _dieStack.Push(abbrev);
-            WriteULEB128((ulong)abbrev.AbbreviationCode);
+            WriteULEB128((ulong)abbreviationCode);
         }
 
         public void WriteEndDIE()
@@ -208,8 +209,9 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Write abbreviation section
-            foreach (var abbrev in _usedAbbrevs)
+            foreach ((DwarfAbbrev abbrev, int abbreviationCode) in _usedAbbrevs)
             {
+                _abbrevSectionWriter.WriteULEB128((ulong)abbreviationCode);
                 abbrev.Write(_abbrevSectionWriter, TargetPointerSize);
             }
             _abbrevSectionWriter.Write([0, 0]);
