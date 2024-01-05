@@ -1190,8 +1190,9 @@ private:
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     regNumber allocateRegForMinOpts(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
-    template <bool hasConsecutiveRegister = false, bool needsConsecutiveRegisters = false>
+    template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
+    regNumber assignCopyRegForMinOpts(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
     bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
