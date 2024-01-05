@@ -97,6 +97,7 @@ namespace System.Text.RegularExpressions.Tests
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
@@ -226,6 +227,7 @@ namespace System.Text.RegularExpressions.Tests
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
@@ -355,6 +357,7 @@ namespace System.Text.RegularExpressions.Tests
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
@@ -485,6 +488,7 @@ namespace System.Text.RegularExpressions.Tests
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
