@@ -84,8 +84,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
-            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions, _dllImportData), GetGenericArguments().Length, !IsStatic);
+        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.GetMethodSignature(_module, _parameterTypes,
+            _returnType, GetSignatureConvention(_callingConventions, _dllImportData), GetGenericArguments().Length, !IsStatic);
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention, DllImportData? dllImportData = null)
         {

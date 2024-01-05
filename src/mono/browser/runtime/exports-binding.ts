@@ -7,7 +7,7 @@ import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
-import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_js_import } from "./invoke-js";
+import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_import_async, mono_wasm_invoke_import_sync, mono_wasm_invoke_js_import } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
@@ -53,6 +53,8 @@ export const mono_wasm_threads_imports = !MonoWasmThreads ? [] : [
     // corebindings.c
     mono_wasm_install_js_worker_interop,
     mono_wasm_uninstall_js_worker_interop,
+    mono_wasm_invoke_import_async,
+    mono_wasm_invoke_import_sync,
 ];
 
 export const mono_wasm_legacy_interop_imports = !WasmEnableLegacyJsInterop ? [] : [

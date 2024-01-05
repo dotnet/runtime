@@ -4303,7 +4303,7 @@ void RethrowNew()
 {
     Thread *pThread = GetThread();
 
-    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
 

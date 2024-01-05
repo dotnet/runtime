@@ -7,7 +7,7 @@ import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { mono_log_info } from "./logging";
-import { assert_bindings } from "./invoke-js";
+import { assert_js_interop } from "./invoke-js";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -66,7 +66,7 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
 
 export function find_entry_point(assembly: string) {
     loaderHelpers.assert_runtime_running();
-    assert_bindings();
+    assert_js_interop();
     const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);

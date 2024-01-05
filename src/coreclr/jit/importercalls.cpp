@@ -1303,11 +1303,10 @@ DONE_CALL:
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
         }
 
-        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
-
-        if (call->IsCall())
+        // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+        if (!bIntrinsicImported)
         {
-            // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+            assert(call->IsCall());
 
             GenTreeCall* origCall = call->AsCall();
 
@@ -1423,10 +1422,7 @@ DONE_CALL:
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
                 }
             }
-        }
 
-        if (!bIntrinsicImported)
-        {
             //-------------------------------------------------------------------------
             //
             /* If the call is of a small type and the callee is managed, the callee will normalize the result
@@ -1441,13 +1437,9 @@ DONE_CALL:
             }
         }
 
+        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
         impPushOnStack(call, tiRetVal);
     }
-
-    // VSD functions get a new call target each time we getCallInfo, so clear the cache.
-    // Also, the call info cache for CALLI instructions is largely incomplete, so clear it out.
-    // if ( (opcode == CEE_CALLI) || (callInfoCache.fetchCallInfo().kind == CORINFO_VIRTUALCALL_STUB))
-    //  callInfoCache.uncacheCallInfo();
 
     return callRetTyp;
 }
@@ -2553,6 +2545,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
@@ -3143,6 +3136,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
             {
                 // Optimize
@@ -3156,6 +3150,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
                 if (gtIsTypeof(impStackTop().val, &hClass))
                 {
+                    assert(hClass != NO_CLASS_HANDLE);
                     switch (ni)
                     {
                         case NI_System_Type_get_IsEnum:
@@ -3176,6 +3171,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             retNode = gtNewIconNode(
                                 (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
                             break;
+                        case NI_System_Type_get_IsPrimitive:
+                            // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
+                            // because enums are not primitive types.
+                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
+                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            {
+                                retNode = gtNewTrue();
+                            }
+                            else
+                            {
+                                retNode = gtNewFalse();
+                            }
+                            break;
+
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
@@ -3222,14 +3231,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer) and for RV64A
-            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                ARM64_ONLY(if (compOpportunisticallyDependsOn(InstructionSet_Atomics)))
+#if defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
                 {
+#if defined(TARGET_X86)
+                    if (genActualType(callType) == TYP_LONG)
+                    {
+                        break;
+                    }
+#endif
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
@@ -8806,6 +8821,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_IsValueType") == 0)
                         {
                             result = NI_System_Type_get_IsValueType;
+                        }
+                        else if (strcmp(methodName, "get_IsPrimitive") == 0)
+                        {
+                            result = NI_System_Type_get_IsPrimitive;
                         }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {

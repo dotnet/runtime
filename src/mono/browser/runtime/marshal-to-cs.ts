@@ -309,13 +309,22 @@ export class PromiseHolder extends ManagedObject {
 }
 
 function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
+    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     if (value === null || value === undefined) {
-        set_arg_type(arg, MarshalerType.None);
-        return;
+        if (MonoWasmThreads && handleIsPreallocated) {
+            // This is multi-threading return from JSImport with Task result and we can't return synchronously,
+            // because C# caller could be on different thread and sent us an async message.
+            // It already returned pending Task to it's own caller.
+            const err = new Error("InvalidOperationException: Task return with null value is not supported in multi-threading scenario.");
+            // Alternatively we can return promise and resolve it with null/default value.
+            value = Promise.reject(err);
+        } else {
+            set_arg_type(arg, MarshalerType.None);
+            return;
+        }
     }
     mono_check(isThenable(value), "Value is not a Promise");
 
-    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     const gc_handle = handleIsPreallocated ? get_arg_gc_handle(arg) : alloc_gcv_handle();
     if (!handleIsPreallocated) {
         set_gc_handle(arg, gc_handle);
@@ -330,7 +339,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     if (MonoWasmThreads)
         addUnsettledPromise();
 
-    value.then(data => {
+    function resolve(data: any) {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.");
             return;
@@ -349,7 +358,9 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         catch (ex) {
             runtimeHelpers.abort(ex);
         }
-    }).catch(reason => {
+    }
+
+    function reject(reason: any) {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.", reason);
             return;
@@ -367,7 +378,9 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         catch (ex) {
             runtimeHelpers.abort(ex);
         }
-    });
+    }
+
+    value.then(resolve).catch(reject);
 }
 
 export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): void {
