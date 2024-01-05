@@ -196,7 +196,7 @@ namespace System.Text.RegularExpressions.Tests
                 #pragma warning disable CS0162 // Unreachable code
                 #pragma warning disable CS0164 // Unreferenced label
                 #pragma warning disable CS0219 // Variable assigned but never used
-
+                
                 partial class C
                 {
                     /// <remarks>
@@ -212,7 +212,7 @@ namespace System.Text.RegularExpressions.Tests
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
-
+                
                 namespace System.Text.RegularExpressions.Generated
                 {
                     using System;
@@ -224,7 +224,7 @@ namespace System.Text.RegularExpressions.Tests
                     using System.Runtime.CompilerServices;
                     using System.Text.RegularExpressions;
                     using System.Threading;
-
+                
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     [SkipLocalsInit]
@@ -232,7 +232,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
                         internal static readonly Valid_0 Instance = new();
-                    
+                
                         /// <summary>Initializes the instance.</summary>
                         private Valid_0()
                         {
@@ -243,13 +243,13 @@ namespace System.Text.RegularExpressions.Tests
                             base.factory = new RunnerFactory();
                             base.capsize = 1;
                         }
-                    
+                
                         /// <summary>Provides a factory for creating <see cref="RegexRunner"/> instances to be used by methods on <see cref="Regex"/>.</summary>
                         private sealed class RunnerFactory : RegexRunnerFactory
                         {
                             /// <summary>Creates an instance of a <see cref="RegexRunner"/> used by methods on <see cref="Regex"/>.</summary>
                             protected override RegexRunner CreateInstance() => new Runner();
-                        
+                
                             /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
                             private sealed class Runner : RegexRunner
                             {
@@ -265,45 +265,48 @@ namespace System.Text.RegularExpressions.Tests
                                         base.Capture(0, start, end);
                                     }
                                 }
-                        
+                
                                 /// <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if a possible match was found; false if no more matches are possible.</returns>
                                 private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)
                                 {
                                     int pos = base.runtextpos;
-                                    
+                
                                     // Any possible match is at least 2 characters.
                                     if (pos <= inputSpan.Length - 2)
                                     {
                                         // The pattern has the literal "\\\uffff" at the beginning of the pattern. Find the next occurrence.
                                         // If it can't be found, there's no match.
-                                        int i = inputSpan.Slice(pos).IndexOf("\\\uffff");
+                                        int i = inputSpan.Slice(pos).IndexOfAny(Utilities.s_indexOfString_6D4536B5396DF4C9BDE2BA4B2B55651CDD8BD8CB135649680B3997EC2D00AE2B);
                                         if (i >= 0)
                                         {
                                             base.runtextpos = pos + i;
                                             return true;
                                         }
                                     }
-                                    
+                
                                     // No match found.
                                     base.runtextpos = inputSpan.Length;
                                     return false;
                                 }
                             }
                         }
-
+                
                     }
-                    
+                
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
                         internal static readonly TimeSpan s_defaultTimeout = AppContext.GetData("REGEX_DEFAULT_MATCH_TIMEOUT") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;
-                        
+                
                         /// <summary>Whether <see cref="s_defaultTimeout"/> is non-infinite.</summary>
                         internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
+                
+                        /// <summary>Supports searching for the string "\\\uffff".</summary>
+                        internal static readonly SearchValues<string> s_indexOfString_6D4536B5396DF4C9BDE2BA4B2B55651CDD8BD8CB135649680B3997EC2D00AE2B = SearchValues.Create(["\\\uffff"], StringComparison.Ordinal);
                     }
                 }
                 """
@@ -326,7 +329,7 @@ namespace System.Text.RegularExpressions.Tests
                 #pragma warning disable CS0162 // Unreachable code
                 #pragma warning disable CS0164 // Unreferenced label
                 #pragma warning disable CS0219 // Variable assigned but never used
-
+                
                 partial class C
                 {
                     /// <remarks>
@@ -342,7 +345,7 @@ namespace System.Text.RegularExpressions.Tests
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
-
+                
                 namespace System.Text.RegularExpressions.Generated
                 {
                     using System;
@@ -354,7 +357,7 @@ namespace System.Text.RegularExpressions.Tests
                     using System.Runtime.CompilerServices;
                     using System.Text.RegularExpressions;
                     using System.Threading;
-
+                
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     [SkipLocalsInit]
@@ -362,7 +365,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
                         internal static readonly Valid_0 Instance = new();
-                    
+                
                         /// <summary>Initializes the instance.</summary>
                         private Valid_0()
                         {
@@ -373,13 +376,13 @@ namespace System.Text.RegularExpressions.Tests
                             base.factory = new RunnerFactory();
                             base.capsize = 1;
                         }
-                    
+                
                         /// <summary>Provides a factory for creating <see cref="RegexRunner"/> instances to be used by methods on <see cref="Regex"/>.</summary>
                         private sealed class RunnerFactory : RegexRunnerFactory
                         {
                             /// <summary>Creates an instance of a <see cref="RegexRunner"/> used by methods on <see cref="Regex"/>.</summary>
                             protected override RegexRunner CreateInstance() => new Runner();
-                        
+                
                             /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
                             private sealed class Runner : RegexRunner
                             {
@@ -395,45 +398,48 @@ namespace System.Text.RegularExpressions.Tests
                                         base.Capture(0, start, end);
                                     }
                                 }
-                        
+                
                                 /// <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if a possible match was found; false if no more matches are possible.</returns>
                                 private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)
                                 {
                                     int pos = base.runtextpos;
-                                    
+                
                                     // Any possible match is at least 2 characters.
                                     if (pos <= inputSpan.Length - 2)
                                     {
                                         // The pattern has the literal "\\\0" at the beginning of the pattern. Find the next occurrence.
                                         // If it can't be found, there's no match.
-                                        int i = inputSpan.Slice(pos).IndexOf("\\\0");
+                                        int i = inputSpan.Slice(pos).IndexOfAny(Utilities.s_indexOfString_F5AD4E08A1DC241CCEB8A64C3AE3475B0ABA933EF3F444A8DD725FEEBB8F767B);
                                         if (i >= 0)
                                         {
                                             base.runtextpos = pos + i;
                                             return true;
                                         }
                                     }
-                                    
+                
                                     // No match found.
                                     base.runtextpos = inputSpan.Length;
                                     return false;
                                 }
                             }
                         }
-
+                
                     }
-                    
+      
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
                         internal static readonly TimeSpan s_defaultTimeout = AppContext.GetData("REGEX_DEFAULT_MATCH_TIMEOUT") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;
-                        
+                
                         /// <summary>Whether <see cref="s_defaultTimeout"/> is non-infinite.</summary>
                         internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
+                
+                        /// <summary>Supports searching for the string "\\\0".</summary>
+                        internal static readonly SearchValues<string> s_indexOfString_F5AD4E08A1DC241CCEB8A64C3AE3475B0ABA933EF3F444A8DD725FEEBB8F767B = SearchValues.Create(["\\\0"], StringComparison.Ordinal);
                     }
                 }
                 """
@@ -456,7 +462,7 @@ namespace System.Text.RegularExpressions.Tests
                 #pragma warning disable CS0162 // Unreachable code
                 #pragma warning disable CS0164 // Unreferenced label
                 #pragma warning disable CS0219 // Variable assigned but never used
-
+                
                 partial class C
                 {
                     /// <remarks>
@@ -473,7 +479,7 @@ namespace System.Text.RegularExpressions.Tests
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
-
+                
                 namespace System.Text.RegularExpressions.Generated
                 {
                     using System;
@@ -485,7 +491,7 @@ namespace System.Text.RegularExpressions.Tests
                     using System.Runtime.CompilerServices;
                     using System.Text.RegularExpressions;
                     using System.Threading;
-
+                
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     [SkipLocalsInit]
@@ -493,7 +499,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
                         internal static readonly Valid_0 Instance = new();
-                    
+                
                         /// <summary>Initializes the instance.</summary>
                         private Valid_0()
                         {
@@ -504,13 +510,13 @@ namespace System.Text.RegularExpressions.Tests
                             base.factory = new RunnerFactory();
                             base.capsize = 1;
                         }
-                    
+                
                         /// <summary>Provides a factory for creating <see cref="RegexRunner"/> instances to be used by methods on <see cref="Regex"/>.</summary>
                         private sealed class RunnerFactory : RegexRunnerFactory
                         {
                             /// <summary>Creates an instance of a <see cref="RegexRunner"/> used by methods on <see cref="Regex"/>.</summary>
                             protected override RegexRunner CreateInstance() => new Runner();
-                        
+                
                             /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
                             private sealed class Runner : RegexRunner
                             {
@@ -520,8 +526,8 @@ namespace System.Text.RegularExpressions.Tests
                                 {
                                     // Search until we can't find a valid starting position, we find a match, or we reach the end of the input.
                                     while (TryFindNextPossibleStartingPosition(inputSpan) &&
-                                        !TryMatchAtCurrentPosition(inputSpan) &&
-                                        base.runtextpos != inputSpan.Length)
+                                           !TryMatchAtCurrentPosition(inputSpan) &&
+                                           base.runtextpos != inputSpan.Length)
                                     {
                                         base.runtextpos++;
                                         if (Utilities.s_hasTimeout)
@@ -530,14 +536,14 @@ namespace System.Text.RegularExpressions.Tests
                                         }
                                     }
                                 }
-                        
+                
                                 /// <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if a possible match was found; false if no more matches are possible.</returns>
                                 private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)
                                 {
                                     int pos = base.runtextpos;
-                                    
+                
                                     // Any possible match is at least 2 characters.
                                     if (pos <= inputSpan.Length - 2)
                                     {
@@ -552,7 +558,7 @@ namespace System.Text.RegularExpressions.Tests
                                                 goto NoMatchFound;
                                             }
                                             i += indexOfPos;
-                                            
+                
                                             if (char.IsDigit(span[i]))
                                             {
                                                 base.runtextpos = pos + i;
@@ -560,13 +566,13 @@ namespace System.Text.RegularExpressions.Tests
                                             }
                                         }
                                     }
-                                    
+                
                                     // No match found.
                                     NoMatchFound:
                                     base.runtextpos = inputSpan.Length;
                                     return false;
                                 }
-                        
+                
                                 /// <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
@@ -575,14 +581,14 @@ namespace System.Text.RegularExpressions.Tests
                                     int pos = base.runtextpos;
                                     int matchStart = pos;
                                     ReadOnlySpan<char> slice = inputSpan.Slice(pos);
-                                    
+                
                                     if ((uint)slice.Length < 2 ||
                                         !char.IsDigit(slice[0]) || // Match a Unicode digit.
                                         slice[1] != '\0') // Match '\0'.
                                     {
                                         return false; // The input didn't match.
                                     }
-                                    
+                
                                     // The input matched.
                                     pos += 2;
                                     base.runtextpos = pos;
@@ -591,16 +597,16 @@ namespace System.Text.RegularExpressions.Tests
                                 }
                             }
                         }
-
+                
                     }
-                    
+                
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
                         internal static readonly TimeSpan s_defaultTimeout = AppContext.GetData("REGEX_DEFAULT_MATCH_TIMEOUT") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;
-                        
+                
                         /// <summary>Whether <see cref="s_defaultTimeout"/> is non-infinite.</summary>
                         internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
                     }
