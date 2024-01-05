@@ -175,7 +175,7 @@ public:
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
-    static FCDECL1(INT64,    GetTotalAllocatedBytes, CLR_BOOL precise);
+    static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
     static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
 
@@ -195,6 +195,8 @@ private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
     NOINLINE static void GarbageCollectModeAny(int generation);
 };
+
+extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 

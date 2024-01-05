@@ -376,8 +376,13 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern long GetTotalAllocatedBytes(bool precise = false);
+        private static extern long GetTotalAllocatedBytesApproximate();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);

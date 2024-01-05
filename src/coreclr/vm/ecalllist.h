@@ -434,7 +434,7 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("_ReRegisterForFinalize", GCInterface::ReRegisterForFinalize)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
-    FCFuncElement("GetTotalAllocatedBytes", GCInterface::GetTotalAllocatedBytes)
+    FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
 
     FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
 FCFuncEnd()
