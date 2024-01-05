@@ -553,16 +553,23 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 // BB4:
                 //   return;
 
-                // Check whether the dominating compare being "false" implies the dominated compare is known
+                // Check whether the dominating compare being "true" (or "false") implies the dominated compare is known
                 // to be either "true" or "false".
-                RelopResult treeOperStatus =
-                    IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                RelopResult treeOperStatus = IsCmp2ImpliedByCmp1(domOper, domCns, treeOper, treeCns);
+                bool        inferFromTrue  = true;
+                if (treeOperStatus == RelopResult::Unknown)
+                {
+                    // Try again with the dominating compare reversed (infer from domOper being "false")
+                    treeOperStatus = IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                    inferFromTrue  = false;
+                }
+
                 if (treeOperStatus != RelopResult::Unknown)
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    rii->canInferFromTrue  = false;
-                    rii->canInferFromFalse = true;
+                    rii->canInferFromTrue  = inferFromTrue;
+                    rii->canInferFromFalse = !inferFromTrue;
                     rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
                     return;
                 }
