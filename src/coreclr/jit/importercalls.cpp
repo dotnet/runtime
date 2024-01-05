@@ -1303,11 +1303,10 @@ DONE_CALL:
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
         }
 
-        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
-
-        if (call->IsCall())
+        // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+        if (!bIntrinsicImported)
         {
-            // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+            assert(call->IsCall());
 
             GenTreeCall* origCall = call->AsCall();
 
@@ -1423,10 +1422,7 @@ DONE_CALL:
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
                 }
             }
-        }
 
-        if (!bIntrinsicImported)
-        {
             //-------------------------------------------------------------------------
             //
             /* If the call is of a small type and the callee is managed, the callee will normalize the result
@@ -1441,13 +1437,9 @@ DONE_CALL:
             }
         }
 
+        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
         impPushOnStack(call, tiRetVal);
     }
-
-    // VSD functions get a new call target each time we getCallInfo, so clear the cache.
-    // Also, the call info cache for CALLI instructions is largely incomplete, so clear it out.
-    // if ( (opcode == CEE_CALLI) || (callInfoCache.fetchCallInfo().kind == CORINFO_VIRTUALCALL_STUB))
-    //  callInfoCache.uncacheCallInfo();
 
     return callRetTyp;
 }
