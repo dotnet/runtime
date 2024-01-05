@@ -24,13 +24,13 @@ namespace ILCompiler.ObjectWriter
             _is64Bit = is64Bit;
         }
 
-        public void AddCie(DwarfCie cie)
+        public void AddCie(in DwarfCie cie)
         {
             _cieOffset.Add(cie, (uint)_sectionWriter.Position);
             WriteCie(cie);
         }
 
-        public void AddFde(DwarfFde fde)
+        public void AddFde(in DwarfFde fde)
         {
             uint cieOffset;
 

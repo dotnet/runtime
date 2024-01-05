@@ -7,19 +7,19 @@ using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal sealed class DwarfCie
+    internal readonly struct DwarfCie
     {
-        public byte PointerEncoding;
-        public byte LsdaEncoding;
-        public byte PersonalityEncoding;
-        public string PersonalitySymbolName;
-        public uint CodeAlignFactor;
-        public int DataAlignFactor;
-        public bool IsSignalFrame;
-        public bool FdesHaveAugmentationData;
-        public byte ReturnAddressRegister;
-        public byte[] Instructions;
-        public byte InitialCFAOffset;
+        public readonly byte PointerEncoding;
+        public readonly byte LsdaEncoding;
+        public readonly byte PersonalityEncoding;
+        public readonly string PersonalitySymbolName;
+        public readonly uint CodeAlignFactor;
+        public readonly int DataAlignFactor;
+        public readonly bool IsSignalFrame;
+        public readonly bool FdesHaveAugmentationData;
+        public readonly byte ReturnAddressRegister;
+        public readonly byte[] Instructions;
+        public readonly byte InitialCFAOffset;
 
         public DwarfCie(TargetArchitecture targetArchitecture)
         {

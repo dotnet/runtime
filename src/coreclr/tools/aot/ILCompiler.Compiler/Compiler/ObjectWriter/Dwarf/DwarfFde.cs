@@ -8,21 +8,32 @@ using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal sealed class DwarfFde
+    internal readonly struct DwarfFde
     {
         public readonly DwarfCie Cie;
-        public string PcStartSymbolName;
-        public long PcStartSymbolOffset;
-        public ulong PcLength;
-        public string LsdaSymbolName;
-        public string PersonalitySymbolName;
         public readonly byte[] Instructions;
+        public readonly string PcStartSymbolName;
+        public readonly long PcStartSymbolOffset;
+        public readonly ulong PcLength;
+        public readonly string LsdaSymbolName;
+        public readonly string PersonalitySymbolName;
 
-        public DwarfFde(DwarfCie cie, byte[] instructions)
+        public DwarfFde(
+            DwarfCie cie,
+            byte[] blobData,
+            string pcStartSymbolName,
+            long pcStartSymbolOffset,
+            ulong pcLength,
+            string lsdaSymbolName,
+            string personalitySymbolName)
         {
             Cie = cie;
-            Instructions = instructions;
-            PersonalitySymbolName = null;
+            Instructions = CfiCodeToInstructions(cie, blobData);
+            PcStartSymbolName = pcStartSymbolName;
+            PcStartSymbolOffset = pcStartSymbolOffset;
+            PcLength = pcLength;
+            LsdaSymbolName = lsdaSymbolName;
+            PersonalitySymbolName = personalitySymbolName;
         }
 
         private enum CFI_OPCODE
@@ -36,7 +47,7 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Convert JIT version of CFI blob into the the DWARF byte code form.
         /// </summary>
-        public static byte[] CfiCodeToInstructions(DwarfCie cie, byte[] blobData)
+        private static byte[] CfiCodeToInstructions(DwarfCie cie, byte[] blobData)
         {
             int cfaOffset = cie.InitialCFAOffset;
             var cfiCode = ArrayPool<byte>.Shared.Rent(4096);
@@ -59,12 +70,12 @@ namespace ILCompiler.ObjectWriter
                     int diff = (int)((codeOffset - lastCodeOffset) / cie.CodeAlignFactor);
                     if (diff <= 0x3F)
                     {
-                        cfiCode[cfiCodeOffset++] = (byte)((byte)DW_CFA_advance_loc | diff);
+                        cfiCode[cfiCodeOffset++] = (byte)(DW_CFA_advance_loc | diff);
                     }
                     else
                     {
                         Debug.Assert(diff <= 0xFF);
-                        cfiCode[cfiCodeOffset++] = (byte)DW_CFA_advance_loc1;
+                        cfiCode[cfiCodeOffset++] = DW_CFA_advance_loc1;
                         cfiCode[cfiCodeOffset++] = (byte)diff;
                     }
                     lastCodeOffset = codeOffset;
@@ -73,14 +84,14 @@ namespace ILCompiler.ObjectWriter
                 switch (opcode)
                 {
                     case CFI_OPCODE.CFI_DEF_CFA_REGISTER:
-                        cfiCode[cfiCodeOffset++] = (byte)DW_CFA_def_cfa_register;
+                        cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa_register;
                         cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
                         break;
 
                     case CFI_OPCODE.CFI_REL_OFFSET:
                         if (dwarfReg <= 0x3F)
                         {
-                            cfiCode[cfiCodeOffset++] = (byte)((byte)DW_CFA_offset | (byte)dwarfReg);
+                            cfiCode[cfiCodeOffset++] = (byte)(DW_CFA_offset | (byte)dwarfReg);
                         }
                         else
                         {
@@ -91,13 +102,13 @@ namespace ILCompiler.ObjectWriter
                         break;
 
                     case CFI_OPCODE.CFI_ADJUST_CFA_OFFSET:
-                        cfiCode[cfiCodeOffset++] = (byte)DW_CFA_def_cfa_offset;
+                        cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa_offset;
                         cfaOffset += cfiOffset;
                         cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)cfaOffset);
                         break;
 
                     case CFI_OPCODE.CFI_DEF_CFA:
-                        cfiCode[cfiCodeOffset++] = (byte)DW_CFA_def_cfa;
+                        cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa;
                         cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
                         cfaOffset = cfiOffset;
                         cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)cfaOffset);

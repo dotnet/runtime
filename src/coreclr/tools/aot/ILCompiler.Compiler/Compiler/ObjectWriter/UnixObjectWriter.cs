@@ -146,14 +146,14 @@ namespace ILCompiler.ObjectWriter
                     ulong length = (ulong)(end - start);
                     if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {
-                        var fde = new DwarfFde(_dwarfCie, DwarfFde.CfiCodeToInstructions(_dwarfCie, blob))
-                        {
-                            PcStartSymbolName = startSymbolName,
-                            PcStartSymbolOffset = useFrameNames ? 0 : start,
-                            PcLength = (ulong)(end - start),
-                            LsdaSymbolName = lsdaSymbolName,
-                        };
-
+                        var fde = new DwarfFde(
+                            _dwarfCie,
+                            blob,
+                            pcStartSymbolName: startSymbolName,
+                            pcStartSymbolOffset: useFrameNames ? 0 : start,
+                            pcLength: (ulong)(end - start),
+                            lsdaSymbolName,
+                            personalitySymbolName: null);
                         _dwarfEhFrame.AddFde(fde);
                     }
                 }
