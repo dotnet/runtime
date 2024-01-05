@@ -47,7 +47,6 @@ namespace ILCompiler.ObjectWriter
         {
             Utf8StringBuilder augmentationString = new Utf8StringBuilder();
             uint augmentationLength = 0;
-            Span<byte> tempBuffer = stackalloc byte[8];
 
             if (cie.FdesHaveAugmentationData)
             {
@@ -85,8 +84,7 @@ namespace ILCompiler.ObjectWriter
                 (uint)cie.Instructions.Length;
             uint padding = ((length + 7u) & ~7u) - length;
 
-            BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, length + padding - 4u);
-            _sectionWriter.Write(tempBuffer);
+            _sectionWriter.WriteLittleEndian<uint>(length + padding - 4u);
 
             _sectionWriter.WriteByte(cie.ReturnAddressRegister < 0x7F ? (byte)1u : (byte)3u); // Version
             _sectionWriter.Write(augmentationString.UnderlyingArray);
@@ -117,8 +115,6 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteFde(DwarfFde fde, uint cieOffset)
         {
-            Span<byte> tempBuffer = stackalloc byte[8];
-
             uint augmentationLength =
                 fde.Cie.FdesHaveAugmentationData ?
                     1u + // Length
@@ -134,10 +130,8 @@ namespace ILCompiler.ObjectWriter
                 (uint)fde.Instructions.Length;
             uint padding = ((length + 7u) & ~7u) - length;
 
-            BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, length + padding - 4u);
-            _sectionWriter.Write(tempBuffer.Slice(0, 4));
-            BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, (uint)(_sectionWriter.Position - cieOffset));
-            _sectionWriter.Write(tempBuffer.Slice(0, 4));
+            _sectionWriter.WriteLittleEndian<uint>(length + padding - 4u);
+            _sectionWriter.WriteLittleEndian<uint>((uint)(_sectionWriter.Position - cieOffset));
             WriteAddress(fde.Cie.PointerEncoding, fde.PcStartSymbolName, fde.PcStartSymbolOffset);
             WriteSize(fde.Cie.PointerEncoding, fde.PcLength);
 
