@@ -52,8 +52,6 @@ namespace ILCompiler.ObjectWriter
                     InitialCFAOffset = 0;
                     break;
 
-                //case TargetArchitecture.ARM:
-
                 case TargetArchitecture.X64:
                     CodeAlignFactor = 1;
                     DataAlignFactor = -8;
@@ -69,10 +67,8 @@ namespace ILCompiler.ObjectWriter
                     InitialCFAOffset = 8;
                     break;
 
-                //case TargetArchitecture.X86:
-
                 default:
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("Unsupported architecture");
             }
         }
     }
