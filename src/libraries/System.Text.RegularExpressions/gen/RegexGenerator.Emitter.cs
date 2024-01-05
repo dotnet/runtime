@@ -51,7 +51,7 @@ namespace System.Text.RegularExpressions.Generator
                     // the first \ escapes the second \, instructs the regex engine to match a backslash.
                     // The third \ on the left becomes effectively nothing, because '\uFFFF' is not recognized as an escaped character.
 
-                    if (!isPreviousCharBackSlash || backslashes % 2 == 0)
+                    if (!isPreviousCharBackslash || backslashes % 2 == 0)
                     {
                         sb.Append('\\');
                     }
@@ -65,11 +65,11 @@ namespace System.Text.RegularExpressions.Generator
                     if (c == '\\')
                     {
                         backslashes++;
-                        isPreviousCharBackSlash = true;
+                        isPreviousCharBackslash = true;
                     }
                     else
                     {
-                        isPreviousCharBackSlash = false;
+                        isPreviousCharBackslash = false;
                         backslashes = 0;
                     }
                 }
