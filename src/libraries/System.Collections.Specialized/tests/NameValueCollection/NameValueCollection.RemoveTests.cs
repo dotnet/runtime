@@ -49,9 +49,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Remove_MultipleValues_SameName()
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection = new NameValueCollection();
             string name = "name";
             nameValueCollection.Add(name, "value1");
             nameValueCollection.Add(name, "value2");

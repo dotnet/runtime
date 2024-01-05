@@ -10,9 +10,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Item_Set()
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection = new NameValueCollection();
             for (int i = 0; i < 10; i++)
             {
                 string newName = "Name_" + i;
@@ -27,9 +25,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Item_Set_OvewriteExistingValue()
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection = new NameValueCollection();
             string name = "name";
             string value = "value";
             nameValueCollection.Add(name, "old-value");
@@ -81,9 +77,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Item_Set_IsCaseSensitive()
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection = new NameValueCollection();
             nameValueCollection["name"] = "value1";
             nameValueCollection["Name"] = "value2";
             nameValueCollection["NAME"] = "value3";

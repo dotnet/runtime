@@ -46,12 +46,8 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add_ExistingKeys()
         {
-            NameValueCollection nameValueCollection1 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
-            NameValueCollection nameValueCollection2 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection1 = new NameValueCollection();
+            NameValueCollection nameValueCollection2 = new NameValueCollection();
 
             string name = "name";
             string value1 = "value1";
@@ -68,12 +64,8 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add_MultipleValues()
         {
-            NameValueCollection nameValueCollection1 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
-            NameValueCollection nameValueCollection2 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection1 = new NameValueCollection();
+            NameValueCollection nameValueCollection2 = new NameValueCollection();
 
             string name = "name";
             string value1 = "value1";
@@ -91,15 +83,9 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add_NameValueCollection_WithNullKeys()
         {
-            NameValueCollection nameValueCollection1 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
-            NameValueCollection nameValueCollection2 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
-            NameValueCollection nameValueCollection3 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection1 = new NameValueCollection();
+            NameValueCollection nameValueCollection2 = new NameValueCollection();
+            NameValueCollection nameValueCollection3 = new NameValueCollection();
 
 
             string nullKeyValue1 = "value";
@@ -121,12 +107,8 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add_NameValueCollection_WithNullValues()
         {
-            NameValueCollection nameValueCollection1 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
-            NameValueCollection nameValueCollection2 = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection1 = new NameValueCollection();
+            NameValueCollection nameValueCollection2 = new NameValueCollection();
 
             string nullValueName = "name";
             nameValueCollection1.Add(nullValueName, null);

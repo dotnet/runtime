@@ -36,9 +36,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public static void GetAllValues_Invalid()
         {
-            MyNameObjectCollection nameObjectCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new MyNameObjectCollection(StringComparer.OrdinalIgnoreCase) :
-                new MyNameObjectCollection();
+            MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();
             AssertExtensions.Throws<ArgumentNullException>("type", () => nameObjectCollection.GetAllValues(null));
 
             nameObjectCollection.Add("name", new Foo("value"));

@@ -51,9 +51,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData(5)]
         public void Ctor_Int(int capacity)
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(capacity, StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection(capacity);
+            NameValueCollection nameValueCollection = new NameValueCollection(capacity);
             Assert.Equal(0, nameValueCollection.Count);
             Assert.Equal(0, nameValueCollection.Keys.Count);
             Assert.Equal(0, nameValueCollection.AllKeys.Length);
@@ -82,16 +80,8 @@ namespace System.Collections.Specialized.Tests
 
         public static IEnumerable<object[]> Ctor_NameValueCollection_TestData()
         {
-            yield return new object[] {
-                PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
-                    new NameValueCollection(10)
-                };
-            yield return new object[] {
-                PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                    new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                    new NameValueCollection()
-                };
+            yield return new object[] {new NameValueCollection(10) };
+            yield return new object[] { new NameValueCollection() };
             yield return new object[] { Helpers.CreateNameValueCollection(10) };
         }
 
@@ -125,26 +115,10 @@ namespace System.Collections.Specialized.Tests
 
         public static IEnumerable<object[]> Ctor_Int_NameValueCollection_TestData()
         {
-            yield return new object[] { 0, 
-                PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                    new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                    new NameValueCollection()
-            };
-            yield return new object[] { 10,
-                PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
-                    new NameValueCollection(10)
-            };
-            yield return new object[] { 5,
-                PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
-                    new NameValueCollection(10)
-            };
-            yield return new object[] { 15,
-                PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
-                    new NameValueCollection(10)
-            };
+            yield return new object[] { 0, new NameValueCollection() };
+            yield return new object[] { 10, new NameValueCollection(10) };
+            yield return new object[] { 5, new NameValueCollection(10) };
+            yield return new object[] { 15, new NameValueCollection(10) };
             yield return new object[] { 10, Helpers.CreateNameValueCollection(10) };
             yield return new object[] { 5, Helpers.CreateNameValueCollection(10) };
             yield return new object[] { 15, Helpers.CreateNameValueCollection(10) };

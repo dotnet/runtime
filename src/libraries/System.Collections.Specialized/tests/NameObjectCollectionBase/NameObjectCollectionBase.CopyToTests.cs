@@ -14,7 +14,7 @@ namespace System.Collections.Specialized.Tests
         [InlineData(10, 5)]
         public void CopyTo(int count, int index)
         {
-             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
+            MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
             ICollection collection = nameObjectCollection;
 
             string[] copyArray = new string[index + collection.Count + index];

@@ -11,9 +11,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add()
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection = new NameValueCollection();
             Assert.False(nameValueCollection.HasKeys());
             for (int i = 0; i < 10; i++)
             {
@@ -87,9 +85,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add_NullValue()
         {
-            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            NameValueCollection nameValueCollection = new NameValueCollection();
             string name = "name";
             nameValueCollection.Add(name, null);
             Assert.Equal(1, nameValueCollection.Count);
@@ -115,9 +111,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Add_AddingValueToExistingName_AppendsValueToOriginalValue()
         {
-            var nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
-                new NameValueCollection();
+            var nameValueCollection = new NameValueCollection();
             string name = "name";
             nameValueCollection.Add(name, "value1");
             nameValueCollection.Add(name, "value2");

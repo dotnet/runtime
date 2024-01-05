@@ -10,9 +10,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void Set_ObjectAtIndex_ModifiesCollection()
         {
-            var noc = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new MyNameObjectCollection(StringComparer.OrdinalIgnoreCase) :
-                new MyNameObjectCollection();
+            var noc = new MyNameObjectCollection();
             for (int i = 0; i < 10; i++)
             {
                 var foo1 = new Foo("Value_1");
