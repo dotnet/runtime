@@ -24,7 +24,7 @@ namespace ILCompiler.ObjectWriter
             _is64Bit = is64Bit;
         }
 
-        public void AddCie(in DwarfCie cie)
+        public void AddCie(DwarfCie cie)
         {
             _cieOffset.Add(cie, (uint)_sectionWriter.Position);
             WriteCie(cie);
@@ -85,6 +85,7 @@ namespace ILCompiler.ObjectWriter
             uint padding = ((length + 7u) & ~7u) - length;
 
             _sectionWriter.WriteLittleEndian<uint>(length + padding - 4u);
+            _sectionWriter.WriteLittleEndian<uint>(0);
 
             _sectionWriter.WriteByte(cie.ReturnAddressRegister < 0x7F ? (byte)1u : (byte)3u); // Version
             _sectionWriter.Write(augmentationString.UnderlyingArray);
@@ -113,7 +114,7 @@ namespace ILCompiler.ObjectWriter
             _sectionWriter.WritePadding((int)padding);
         }
 
-        private void WriteFde(DwarfFde fde, uint cieOffset)
+        private void WriteFde(in DwarfFde fde, uint cieOffset)
         {
             uint augmentationLength =
                 fde.Cie.FdesHaveAugmentationData ?

@@ -7,7 +7,7 @@ using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal readonly struct DwarfCie
+    internal sealed class DwarfCie
     {
         public readonly byte PointerEncoding;
         public readonly byte LsdaEncoding;
