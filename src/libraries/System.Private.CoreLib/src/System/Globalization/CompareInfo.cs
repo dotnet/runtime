@@ -1609,7 +1609,7 @@ namespace System.Globalization
                 NlsGetHashCodeOfString(source, options) :
 #if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
-                throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
+                throw new PlatformNotSupportedException(GetPNSETextHashCode("HashCode")) :
 #endif
                 IcuGetHashCodeOfString(source, options);
 
@@ -1649,6 +1649,7 @@ namespace System.Globalization
 
 #if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
         private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
+        private static string GetPNSETextHashCode(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalizationHashCode, funcName);
 #endif
     }
 }
