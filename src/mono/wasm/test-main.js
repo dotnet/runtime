@@ -350,11 +350,11 @@ async function run() {
 
         if (ENVIRONMENT_IS_WEB && runArgs.memorySnapshot) {
             if (globalThis.isSecureContext) {
-            const dryOk = await dry_run(runArgs);
-            if (!dryOk) {
-                mono_exit(1, "Failed during dry run");
-                return;
-            }
+                const dryOk = await dry_run(runArgs);
+                if (!dryOk) {
+                    mono_exit(1, "Failed during dry run");
+                    return;
+                }
             } else {
                 console.log("Skipping dry run as the context is not secure and the snapshot would be not trusted.");
             }

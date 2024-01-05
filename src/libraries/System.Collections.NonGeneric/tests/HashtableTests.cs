@@ -779,7 +779,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void HashCodeProvider_Set_ImpactsSearch()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
@@ -834,7 +834,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => hash.Comparer = StringComparer.OrdinalIgnoreCase);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void Comparer_Set_ImpactsSearch()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);

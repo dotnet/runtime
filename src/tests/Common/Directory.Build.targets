@@ -197,6 +197,9 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\browser\build\*"
+          TargetDir="build/"/>
     </ItemGroup>
 
     <ItemGroup>

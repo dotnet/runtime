@@ -564,6 +564,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
+#ifdef DEBUG
+        // Use BlkOpKindLoop for more cases under stress mode
+        if (comp->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) && blkNode->OperIs(GT_STORE_BLK) &&
+            ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            return;
+        }
+#endif
+
         if (src->OperIs(GT_INIT_VAL))
         {
             src->SetContained();
@@ -607,6 +617,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->AsIntCon()->SetIconValue(fill);
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
         }
         else
         {
@@ -2774,7 +2793,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())
@@ -2880,7 +2899,7 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())

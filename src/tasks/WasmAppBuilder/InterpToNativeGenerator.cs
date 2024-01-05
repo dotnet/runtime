@@ -26,23 +26,16 @@ internal sealed class InterpToNativeGenerator
 
     public void Generate(IEnumerable<string> cookies, string outputPath)
     {
-        string tmpFileName = Path.GetTempFileName();
-        try
+        using TempFileName tmpFileName = new();
+        using (var w = File.CreateText(tmpFileName.Path))
         {
-            using (var w = File.CreateText(tmpFileName))
-            {
-                Emit(w, cookies);
-            }
+            Emit(w, cookies);
+        }
 
-            if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-                Log.LogMessage(MessageImportance.Low, $"Generating managed2native table to '{outputPath}'.");
-            else
-                Log.LogMessage(MessageImportance.Low, $"Managed2native table in {outputPath} is unchanged.");
-        }
-        finally
-        {
-            File.Delete(tmpFileName);
-        }
+        if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating managed2native table to '{outputPath}'.");
+        else
+            Log.LogMessage(MessageImportance.Low, $"Managed2native table in {outputPath} is unchanged.");
     }
 
     private static void Emit(StreamWriter w, IEnumerable<string> cookies)
@@ -136,8 +129,8 @@ internal sealed class InterpToNativeGenerator
         {
             return strcmp (key, *(void**)elem);
         }
-        
-        static void* 
+
+        static void*
         mono_wasm_interp_to_native_callback (char* cookie)
         {
             void* p = bsearch (cookie, interp_to_native_signatures, interp_to_native_signatures_count, sizeof (void*), compare_icall_tramp);

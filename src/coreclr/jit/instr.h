@@ -67,7 +67,7 @@ enum instruction : uint32_t
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)
-    #define INST(id, nm, ldst, e1) INS_##id,
+    #define INST(id, nm, ldst, e1, msk, fmt) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
@@ -293,6 +293,11 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_H_WITH_SCALAR,
     INS_OPTS_SCALABLE_S_WITH_SCALAR,
     INS_OPTS_SCALABLE_D_WITH_SCALAR,
+
+    INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE,
+    INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE,
+    INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE,
+    INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE,
 
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 

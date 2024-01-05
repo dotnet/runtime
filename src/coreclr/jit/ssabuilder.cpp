@@ -18,9 +18,6 @@ PhaseStatus Compiler::fgSsaBuild()
         fgResetForSsa();
     }
 
-    // Reset BlockPredsWithEH cache.
-    m_blockToEHPreds = nullptr;
-
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
@@ -479,7 +476,7 @@ void SsaBuilder::InsertPhiFunctions()
         }
 
         // Now make a similar phi definition if the block defines memory.
-        if (block->bbMemoryDef != 0)
+        if (block->bbMemoryDef != emptyMemoryKindSet)
         {
             // For each block "bbInDomFront" that is in the dominance frontier of "block".
             for (BasicBlock* bbInDomFront : blockIDF)
@@ -784,8 +781,8 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
 {
     assert(block->HasPotentialEHSuccs(m_pCompiler));
 
-    // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-    if (block->HasFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
+    // Don't do anything for a compiler-inserted BBJ_CALLFINALLYRET that is a "leave helper".
+    if (block->isBBCallFinallyPairTail())
     {
         return;
     }
@@ -1251,7 +1248,7 @@ void SsaBuilder::RenameVariables()
     };
 
     SsaRenameDomTreeVisitor visitor(m_pCompiler, this, &m_renameStack);
-    visitor.WalkTree(m_pCompiler->fgSsaDomTree);
+    visitor.WalkTree(m_pCompiler->m_domTree);
 }
 
 //------------------------------------------------------------------------
@@ -1284,18 +1281,10 @@ void SsaBuilder::RenameVariables()
 //
 void SsaBuilder::Build()
 {
-#ifdef DEBUG
-    if (m_pCompiler->verbose)
-    {
-        printf("*************** In SsaBuilder::Build()\n");
-    }
-#endif
+    JITDUMP("*************** In SsaBuilder::Build()\n");
 
     m_visitedTraits = m_pCompiler->m_dfsTree->PostOrderTraits();
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
-
-    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfsTree);
-    EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.
     m_pCompiler->fgLocalVarLiveness();

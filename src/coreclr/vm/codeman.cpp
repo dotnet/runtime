@@ -26,7 +26,6 @@
 
 #include "shimload.h"
 #include "debuginfostore.h"
-#include "strsafe.h"
 
 #include "configuration.h"
 
@@ -1983,7 +1982,7 @@ BOOL EEJitManager::LoadJIT()
             // We have some inconsistency all over the place with osx vs macos, let's handle both here
             if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
             {
-                targetOs = CORINFO_MACOS;
+                targetOs = CORINFO_APPLE;
             }
             else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
             {

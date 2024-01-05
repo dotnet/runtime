@@ -468,13 +468,19 @@ static LPVOID VIRTUALReserveMemory(
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize,           /* Size of Region */
                 IN DWORD flAllocationType,  /* Type of allocation */
-                IN DWORD flProtect)         /* Type of access protection */
+                IN DWORD flProtect,         /* Type of access protection */
+                OUT BOOL *newMemory = NULL) /* Set if new virtual memory is allocated */
 {
     LPVOID pRetVal      = NULL;
     UINT_PTR StartBoundary;
     SIZE_T MemSize;
 
     TRACE( "Reserving the memory now..\n");
+
+    if (newMemory != NULL)
+    {
+        *newMemory = false;
+    }
 
     // First, figure out where we're trying to reserve the memory and
     // how much we need. On most systems, requests to mmap must be
@@ -509,6 +515,11 @@ static LPVOID VIRTUALReserveMemory(
              flAllocationType |= MEM_RESERVE_EXECUTABLE;
         }
         pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize, flAllocationType);
+
+        if (newMemory != NULL && pRetVal != NULL)
+        {
+            *newMemory = true;
+        }
     }
 
     if (pRetVal != NULL)
@@ -618,8 +629,11 @@ static LPVOID ReserveVirtualMemory(
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
 #ifdef MADV_DONTDUMP
-    // Do not include reserved memory in coredump.
-    madvise(pRetVal, MemSize, MADV_DONTDUMP);
+    // Do not include reserved uncommitted memory in coredump.
+    if (!(fAllocationType & MEM_COMMIT))
+    {
+        madvise(pRetVal, MemSize, MADV_DONTDUMP);
+    }
 #endif
 
     return pRetVal;
@@ -646,6 +660,7 @@ VIRTUALCommitMemory(
     PCMI pInformation           = 0;
     LPVOID pRetVal              = NULL;
     BOOL IsLocallyReserved      = FALSE;
+    BOOL IsNewMemory            = FALSE;
     INT nProtect;
 
     if ( lpAddress )
@@ -668,7 +683,7 @@ VIRTUALCommitMemory(
         */
         LPVOID pReservedMemory =
                 VIRTUALReserveMemory( pthrCurrent, lpAddress, dwSize,
-                                      flAllocationType, flProtect );
+                                      flAllocationType, flProtect, &IsNewMemory );
 
         TRACE( "Reserve and commit the memory!\n " );
 
@@ -710,8 +725,11 @@ VIRTUALCommitMemory(
     }
 
 #ifdef MADV_DODUMP
-    // Include committed memory in coredump.
-    madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
+    // Include committed memory in coredump. Any newly allocated memory included by default.
+    if (!IsNewMemory)
+    {
+        madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
+    }
 #endif
 
     pRetVal = (void *) StartBoundary;

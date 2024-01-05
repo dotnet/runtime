@@ -130,7 +130,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->GetJumpKind())
+        else if (BBJ_SWITCH == block->GetKind())
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -268,21 +268,23 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
         BasicBlock*   top                = block;
-        BasicBlock*   topFallThrough     = nullptr;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        if (top->KindIs(BBJ_COND))
+        BBKinds       oldJumpKind = top->GetKind();
+        unsigned char lpIndex     = top->bbNatLoopNum;
+
+        if (oldJumpKind == BBJ_COND)
         {
-            topFallThrough     = top->Next();
-            lpIndexFallThrough = topFallThrough->bbNatLoopNum;
+            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
         }
 
-        BasicBlock* poll          = fgNewBBafter(BBJ_ALWAYS, top, true);
-        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetJumpDest());
-        BBjumpKinds   oldJumpKind = top->GetJumpKind();
-        unsigned char lpIndex     = top->bbNatLoopNum;
-        poll->SetJumpDest(bottom);
+        BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
+        bottom           = fgNewBBafter(top->GetKind(), poll, true);
+
+        poll->SetTarget(bottom);
         assert(poll->JumpsToNext());
+
+        bottom->TransferTarget(top);
 
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
@@ -296,23 +298,27 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         bottom->SetFlags(originalFlags &
                          (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
-        poll->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_NONE_QUIRK));
+        poll->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT));
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
-        poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-        if (lpIndex != BasicBlock::NOT_IN_LOOP)
+        if (optLoopTableValid)
         {
-            // Set the new lpBottom in the natural loop table
-            optLoopTable[lpIndex].lpBottom = bottom;
-        }
+            poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
-        {
-            // Set the new lpHead in the natural loop table
-            optLoopTable[lpIndexFallThrough].lpHead = bottom;
+            bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
+            if (lpIndex != BasicBlock::NOT_IN_LOOP)
+            {
+                // Set the new lpBottom in the natural loop table
+                optLoopTable[lpIndex].lpBottom = bottom;
+            }
+
+            if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
+            {
+                // Set the new lpHead in the natural loop table
+                optLoopTable[lpIndexFallThrough].lpHead = bottom;
+            }
         }
 
         // Add the GC_CALL node to Poll.
@@ -388,7 +394,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetJumpKindAndTarget(BBJ_COND, bottom);
+        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -403,16 +409,15 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 // no successors
                 break;
             case BBJ_COND:
-                // replace predecessor in the fall through block.
+                // replace predecessor in true/false successors.
                 noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->Next(), top, bottom);
-
-                // fall through for the jump target
-                FALLTHROUGH;
+                fgReplacePred(bottom->GetFalseTarget(), top, bottom);
+                fgReplacePred(bottom->GetTrueTarget(), top, bottom);
+                break;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgReplacePred(bottom->GetJumpDest(), top, bottom);
+                fgReplacePred(bottom->GetTarget(), top, bottom);
                 break;
             case BBJ_SWITCH:
                 NO_WAY("SWITCH should be a call rather than an inlined poll.");
@@ -630,7 +635,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
  * It returns false when the blocks are both in the same regions
  */
 
-bool Compiler::fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2)
+bool Compiler::fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const
 {
     noway_assert(blk1 != nullptr);
     noway_assert(blk2 != nullptr);
@@ -1624,8 +1629,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 // Convert a BBJ_RETURN block in a synchronized method to a BBJ_ALWAYS.
 // We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit().
 // Thus, we put BBJ_RETURN blocks inside a 'try'. In IL this is illegal. Instead, we would
-// see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_ALWAYS blocks
-// during importing, and the BBJ_ALWAYS would point at an outer block with the BBJ_RETURN.
+// see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_CALLFINALLYRET blocks
+// during importing, and the BBJ_CALLFINALLYRET would point at an outer block with the BBJ_RETURN.
 // Here, we mimic some of the logic of importing a LEAVE to get the same effect for synchronized methods.
 void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 {
@@ -1650,14 +1655,14 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
+    block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
     fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Synchronized method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n", block->bbNum,
-               block->GetJumpDest()->bbNum);
+               block->GetTarget()->bbNum);
     }
 #endif
 }
@@ -2121,7 +2126,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock);
+                    returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
@@ -2691,7 +2696,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 //
 BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
@@ -2704,7 +2709,7 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
         }
 
         // We check pred's count of InEdges - it's quite conservative.
-        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        // We, probably, could use optReachable(fgFirstBb, pred) here to detect unreachable preds
         if (predBlock->countOfInEdges() > 0)
         {
             if (lastReachablePred != nullptr)
@@ -2807,11 +2812,11 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             // It's a jump from outside the handler; add it to the newHead preds list and remove
             // it from the block preds list.
 
-            switch (predBlock->GetJumpKind())
+            switch (predBlock->GetKind())
             {
                 case BBJ_CALLFINALLY:
-                    noway_assert(predBlock->HasJumpTo(block));
-                    predBlock->SetJumpDest(newHead);
+                    noway_assert(predBlock->TargetIs(block));
+                    predBlock->SetTarget(newHead);
                     fgRemoveRefPred(block, predBlock);
                     fgAddRefPred(newHead, predBlock);
                     break;
@@ -3180,58 +3185,17 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
             }
         }
 
-        // When the last Hot block fall through into the Cold section
-        // we may need to add a jump
-        //
-        if (prevToFirstColdBlock->bbFallsThrough())
+        // Don't split up call/finally pairs
+        if (prevToFirstColdBlock->isBBCallFinallyPair())
         {
-            switch (prevToFirstColdBlock->GetJumpKind())
-            {
-                default:
-                    noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
-                    break;
-
-                case BBJ_CALLFINALLY:
-                    // A BBJ_CALLFINALLY that falls through is always followed
-                    // by an empty BBJ_ALWAYS.
-                    //
-                    assert(prevToFirstColdBlock->isBBCallAlwaysPair());
-                    firstColdBlock =
-                        firstColdBlock->Next(); // Note that this assignment could make firstColdBlock == nullptr
-                    break;
-
-                case BBJ_COND:
-                    //
-                    // This is a slightly more complicated case, because we will
-                    // probably need to insert a block to jump to the cold section.
-                    //
-                    if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
-                    {
-                        // We can just use this block as the transitionBlock
-                        firstColdBlock = firstColdBlock->Next();
-                        // Note that this assignment could make firstColdBlock == NULL
-                    }
-                    else
-                    {
-                        BasicBlock* transitionBlock =
-                            fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true, firstColdBlock);
-                        transitionBlock->inheritWeight(firstColdBlock);
-
-                        // Update the predecessor list for firstColdBlock
-                        fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);
-
-                        // Add prevToFirstColdBlock as a predecessor for transitionBlock
-                        fgAddRefPred(transitionBlock, prevToFirstColdBlock);
-                    }
-                    break;
-            }
+            // Note that this assignment could make firstColdBlock == nullptr
+            firstColdBlock = firstColdBlock->Next();
         }
     }
 
     for (block = firstColdBlock; block != nullptr; block = block->Next())
     {
         block->SetFlags(BBF_COLD);
-        block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
     }
 
 EXIT:;
@@ -3420,7 +3384,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
     //
     assert(!fgRngChkThrowAdded);
 
-    const static BBjumpKinds jumpKinds[] = {
+    const static BBKinds jumpKinds[] = {
         BBJ_ALWAYS, // SCK_NONE
         BBJ_THROW,  // SCK_RNGCHK_FAIL
         BBJ_THROW,  // SCK_DIV_BY_ZERO
@@ -3508,7 +3472,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 #endif // DEBUG
 
         //  Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no bbJumpDest points to these blocks.
+        // graph optimizations. Note that no bbTarget points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 
@@ -4029,15 +3993,30 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
+    bool         hasCycle  = false;
 
-    unsigned numBlocks = fgRunDfs([](BasicBlock* block, unsigned preorderNum) { block->bbPreorderNum = preorderNum; },
-                                  [=](BasicBlock* block, unsigned postorderNum) {
-                                      block->bbNewPostorderNum = postorderNum;
-                                      assert(postorderNum < fgBBcount);
-                                      postOrder[postorderNum] = block;
-                                  });
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+        block->bbPreorderNum     = preorderNum;
+        block->bbNewPostorderNum = UINT_MAX;
+    };
 
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks);
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+        block->bbNewPostorderNum = postorderNum;
+        assert(postorderNum < fgBBcount);
+        postOrder[postorderNum] = block;
+    };
+
+    auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ) {
+        // Check if block -> succ is a backedge, in which case the flow
+        // graph has a cycle.
+        if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbNewPostorderNum == UINT_MAX))
+        {
+            hasCycle = true;
+        }
+    };
+
+    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
 
 //------------------------------------------------------------------------
@@ -4048,7 +4027,7 @@ void Compiler::fgInvalidateDfsTree()
 {
     m_dfsTree      = nullptr;
     m_loops        = nullptr;
-    fgSsaDomTree   = nullptr;
+    m_domTree      = nullptr;
     m_newToOldLoop = nullptr;
     m_oldToNewLoop = nullptr;
     fgSsaValid     = false;
@@ -4069,6 +4048,23 @@ FlowGraphNaturalLoop::FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, Basi
     , m_entryEdges(dfsTree->GetCompiler()->getAllocator(CMK_Loops))
     , m_exitEdges(dfsTree->GetCompiler()->getAllocator(CMK_Loops))
 {
+}
+
+//------------------------------------------------------------------------
+// GetDepth: Get the depth of the loop.
+//
+// Returns:
+//   The number of ancestors (0 for a top-most loop).
+//
+unsigned FlowGraphNaturalLoop::GetDepth() const
+{
+    unsigned depth = 0;
+    for (FlowGraphNaturalLoop* ancestor = GetParent(); ancestor != nullptr; ancestor = ancestor->GetParent())
+    {
+        depth++;
+    }
+
+    return depth;
 }
 
 //------------------------------------------------------------------------
@@ -4316,22 +4312,30 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
 #ifdef DEBUG
     JITDUMP("Identifying loops in DFS tree with following reverse post order:\n");
+    JITDUMP("RPO -> BB [pre, post]\n");
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         unsigned          rpoNum = dfsTree->GetPostOrderCount() - i;
-        BasicBlock* const block  = dfsTree->GetPostOrder()[i - 1];
-        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum + 1, block->bbNum, block->bbPreorderNum + 1,
-                block->bbNewPostorderNum + 1);
+        BasicBlock* const block  = dfsTree->GetPostOrder(i - 1);
+        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbNewPostorderNum);
     }
+
+    unsigned improperLoopHeaders = 0;
 #endif
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
 
-    jitstd::list<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
+    if (!dfsTree->HasCycle())
+    {
+        JITDUMP("Flow graph has no cycles; skipping identification of natural loops\n");
+        return loops;
+    }
+
+    ArrayStack<BasicBlock*> worklist(comp->getAllocator(CMK_Loops));
 
     for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
     {
-        BasicBlock* const header = dfsTree->GetPostOrder()[i - 1];
+        BasicBlock* const header = dfsTree->GetPostOrder(i - 1);
 
         // If a block is a DFS ancestor of one if its predecessors then the block is a loop header.
         //
@@ -4364,7 +4368,6 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         // this is a natural loop and to find all the blocks in the loop.
         //
 
-        worklist.clear();
         loop->m_blocksSize = loop->m_header->bbNewPostorderNum + 1;
 
         BitVecTraits loopTraits = loop->LoopBlockTraits();
@@ -4372,7 +4375,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
-            loops->m_improperLoopHeaders++;
+            INDEBUG(improperLoopHeaders++);
             continue;
         }
 
@@ -4478,10 +4481,12 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
     }
 
-    if (loops->m_improperLoopHeaders > 0)
+    if (improperLoopHeaders > 0)
     {
-        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
+        JITDUMP("Rejected %u loop headers\n", improperLoopHeaders);
     }
+
+    JITDUMPEXEC(Dump(loops));
 #endif
 
     return loops;
@@ -4499,7 +4504,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 //   True if the loop is natural; marks the loop blocks into 'loop' as part of
 //   the search.
 //
-bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist)
+bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist)
 {
     const FlowGraphDfsTree* dfsTree    = loop->m_dfsTree;
     Compiler*               comp       = dfsTree->GetCompiler();
@@ -4508,7 +4513,7 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
 
     // Seed the worklist
     //
-    worklist.clear();
+    worklist.Reset();
     for (FlowEdge* backEdge : loop->m_backEdges)
     {
         BasicBlock* const backEdgeSource = backEdge->getSourceBlock();
@@ -4518,17 +4523,16 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
         }
 
         assert(!BitVecOps::IsMember(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(backEdgeSource)));
-        worklist.push_back(backEdgeSource);
+        worklist.Push(backEdgeSource);
         BitVecOps::AddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(backEdgeSource));
     }
 
     // Work back through flow to loop head or to another pred
     // that is clearly outside the loop.
     //
-    while (!worklist.empty())
+    while (!worklist.Empty())
     {
-        BasicBlock* const loopBlock = worklist.back();
-        worklist.pop_back();
+        BasicBlock* const loopBlock = worklist.Pop();
 
         for (FlowEdge* predEdge = comp->BlockPredsWithEH(loopBlock); predEdge != nullptr;
              predEdge           = predEdge->getNextPredEdge())
@@ -4550,13 +4554,268 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ji
 
             if (BitVecOps::TryAddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(predBlock)))
             {
-                worklist.push_back(predBlock);
+                worklist.Push(predBlock);
             }
         }
     }
 
     return true;
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::Dump: print one loops to the JitDump
+//
+/* static */
+void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
+{
+    if (loop == nullptr)
+    {
+        printf("loop is nullptr");
+        return;
+    }
+
+    // Display: LOOP# (old LOOP#) / header / parent loop# / blocks / entry edges / exit edges / back edges
+    // Blocks can compacted be "[top .. bottom]" if lexically adjacent and no non-loop blocks in
+    // the range. Otherwise, print a verbose list of blocks.
+
+    Compiler* comp = loop->GetDfsTree()->GetCompiler();
+    printf(FMT_LP, loop->GetIndex());
+
+    // We might want to print out the old loop number using something like:
+    //
+    // if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
+    // {
+    //   printf(" (old: " FMT_LP ")", (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
+    // }
+    //
+    // However, not all callers of FlowGraphNaturalLoops::Find update m_newToOldLoop -- only
+    // Compiler::optFindNewLoops() does that. This dumper should work with any construction of
+    // FlowGraphNaturalLoops.
+
+    printf(" header: " FMT_BB, loop->GetHeader()->bbNum);
+    if (loop->GetParent() != nullptr)
+    {
+        printf(" parent: " FMT_LP, loop->GetParent()->GetIndex());
+    }
+
+    // Dump the set of blocks in the loop. There are three cases:
+    // 1. If there is only one block in the loop, display it.
+    // 2. If the blocks happen to be lexically dense and without non-loop blocks in the range,
+    //    then use a shortcut of `[BBtop .. BBbottom]`. Note that "lexically dense" is defined
+    //    in terms of the "bbNext" ordering of blocks, which is the default used by the basic
+    //    block dumper fgDispBasicBlocks. However, setting JitDumpFgBlockOrder can change the
+    //    basic block dump order.
+    // 3. If all the loop blocks are found when traversing from the lexical top to lexical
+    //    bottom block (as defined by `bbNum` ordering, not `bbNext` ordering), then display
+    //    a set of ranges, with the non-loop blocks in the range breaking up the continuous range.
+    // 4. Otherwise, display the entire list of blocks individually.
+    //
+    // Lexicality depends on properly renumbered blocks, which we might not have when dumping.
+
+    bool           first;
+    const unsigned numBlocks = loop->NumLoopBlocks();
+    printf("\n  Members (%u): ", numBlocks);
+
+    if (numBlocks == 0)
+    {
+        // This should never happen
+        printf("NONE?");
+    }
+    else if (numBlocks == 1)
+    {
+        // If there's exactly one block, it must be the header.
+        printf(FMT_BB, loop->GetHeader()->bbNum);
+    }
+    else
+    {
+        BasicBlock* const lexicalTopBlock     = loop->GetLexicallyTopMostBlock();
+        BasicBlock* const lexicalBottomBlock  = loop->GetLexicallyBottomMostBlock();
+        BasicBlock* const lexicalEndIteration = lexicalBottomBlock->Next();
+        unsigned          numLexicalBlocks    = 0;
+
+        // Count the number of loop blocks found in the identified lexical range. If there are non-loop blocks
+        // found, or if we don't find all the loop blocks in the lexical walk (meaning the bbNums might not be
+        // properly ordered), we fail.
+        bool lexicallyDense                    = true; // assume the best
+        bool lexicalRangeContainsAllLoopBlocks = true; // assume the best
+        for (BasicBlock* block = lexicalTopBlock; (block != nullptr) && (block != lexicalEndIteration);
+             block             = block->Next())
+        {
+            if (!loop->ContainsBlock(block))
+            {
+                lexicallyDense = false;
+            }
+            else
+            {
+                ++numLexicalBlocks;
+            }
+        }
+        if (numBlocks != numLexicalBlocks)
+        {
+            lexicalRangeContainsAllLoopBlocks = false;
+        }
+
+        if (lexicallyDense && lexicalRangeContainsAllLoopBlocks)
+        {
+            // This is just an optimization over the next case (`!lexicallyDense`) as there's no need to
+            // loop over the blocks again.
+            printf("[" FMT_BB ".." FMT_BB "]", lexicalTopBlock->bbNum, lexicalBottomBlock->bbNum);
+        }
+        else if (lexicalRangeContainsAllLoopBlocks)
+        {
+            // The lexical range from top to bottom contains all the loop blocks, but also contains some
+            // non-loop blocks. Try to display the blocks in groups of ranges, to avoid dumping all the
+            // blocks individually.
+            BasicBlock* firstInRange = nullptr;
+            BasicBlock* lastInRange  = nullptr;
+            first                    = true;
+            auto printRange          = [&]() {
+                // Dump current range if there is one; reset firstInRange.
+                if (firstInRange == nullptr)
+                {
+                    return;
+                }
+                if (!first)
+                {
+                    printf(";");
+                }
+                if (firstInRange == lastInRange)
+                {
+                    // Just one block in range
+                    printf(FMT_BB, firstInRange->bbNum);
+                }
+                else
+                {
+                    printf("[" FMT_BB ".." FMT_BB "]", firstInRange->bbNum, lastInRange->bbNum);
+                }
+                firstInRange = lastInRange = nullptr;
+                first                      = false;
+            };
+            for (BasicBlock* block = lexicalTopBlock; block != lexicalEndIteration; block = block->Next())
+            {
+                if (!loop->ContainsBlock(block))
+                {
+                    printRange();
+                }
+                else
+                {
+                    if (firstInRange == nullptr)
+                    {
+                        firstInRange = block;
+                    }
+                    lastInRange = block;
+                }
+            }
+            printRange();
+        }
+        else
+        {
+            // We didn't see all the loop blocks in the lexical range; maybe the `bbNum` order is
+            // not well ordered such that `top` and `bottom` are not first/last in `bbNext` order.
+            // Just dump all the blocks individually using the loop block visitor.
+            first = true;
+            loop->VisitLoopBlocksReversePostOrder([&first](BasicBlock* block) {
+                printf("%s" FMT_BB, first ? "" : ";", block->bbNum);
+                first = false;
+                return BasicBlockVisit::Continue;
+            });
+
+            // Print out the lexical top and bottom blocks, which will explain why we didn't print ranges.
+            printf("\n  Lexical top: " FMT_BB, lexicalTopBlock->bbNum);
+            printf("\n  Lexical bottom: " FMT_BB, lexicalBottomBlock->bbNum);
+        }
+    }
+
+    // Dump Entry Edges, Back Edges, Exit Edges
+
+    printf("\n  Entry: ");
+    if (loop->EntryEdges().size() == 0)
+    {
+        printf("NONE");
+    }
+    else
+    {
+        first = true;
+        for (FlowEdge* const edge : loop->EntryEdges())
+        {
+            printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum,
+                   loop->GetHeader()->bbNum);
+            first = false;
+        }
+    }
+
+    printf("\n  Exit: ");
+    if (loop->ExitEdges().size() == 0)
+    {
+        printf("NONE");
+    }
+    else
+    {
+        first = true;
+        for (FlowEdge* const edge : loop->ExitEdges())
+        {
+            BasicBlock* const exitingBlock = edge->getSourceBlock();
+            printf("%s" FMT_BB " ->", first ? "" : "; ", exitingBlock->bbNum);
+            exitingBlock->VisitRegularSuccs(comp, [=](BasicBlock* succ) {
+                if (comp->fgGetPredForBlock(succ, exitingBlock) == edge)
+                {
+                    printf(" " FMT_BB, succ->bbNum);
+                }
+                return BasicBlockVisit::Continue;
+            });
+            first = false;
+        }
+    }
+
+    printf("\n  Back: ");
+    if (loop->BackEdges().size() == 0)
+    {
+        printf("NONE");
+    }
+    else
+    {
+        first = true;
+        for (FlowEdge* const edge : loop->BackEdges())
+        {
+            printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", edge->getSourceBlock()->bbNum,
+                   loop->GetHeader()->bbNum);
+            first = false;
+        }
+    }
+
+    printf("\n");
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::Dump: print the loops to the JitDump
+//
+/* static */
+void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
+{
+    printf("\n***************  (New) Natural loop graph\n");
+
+    if (loops == nullptr)
+    {
+        printf("loops is nullptr\n");
+    }
+    else if (loops->NumLoops() == 0)
+    {
+        printf("No loops\n");
+    }
+    else
+    {
+        for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
+        {
+            FlowGraphNaturalLoop::Dump(loop);
+        }
+    }
+
+    printf("\n");
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitDefs: Visit all definitions contained in the
@@ -4704,7 +4963,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    info->IterVar = comp->optIsLoopIncrTree(info->IterTree);
+    info->TestBlock = cond;
+    info->IterVar   = comp->optIsLoopIncrTree(info->IterTree);
 
     assert(info->IterVar != BAD_VAR_NUM);
     LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
@@ -5302,6 +5562,9 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     Compiler*    comp      = dfsTree->GetCompiler();
     BasicBlock** postOrder = dfsTree->GetPostOrder();
     unsigned     count     = dfsTree->GetPostOrderCount();
+
+    // Reset BlockPredsWithEH cache.
+    comp->m_blockToEHPreds = nullptr;
 
     assert((comp->fgFirstBB->bbPreds == nullptr) && !comp->fgFirstBB->hasTryIndex());
     assert(postOrder[count - 1] == comp->fgFirstBB);
