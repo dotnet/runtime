@@ -5911,7 +5911,24 @@ void LinearScan::allocateRegisters()
             }
             else
             {
+#ifdef TARGET_ARM64
+                if (hasConsecutiveRegister)
+                {
+                    if (enregisterLocalVars)
+                    {
+                        processBlockEndAllocation<true>(currentBlock);
+
+                    }
+                    else
+                    {
+                        processBlockEndAllocation<false>(currentBlock);
+                    }
+                }
+                else
+#endif
+                {
                 processBlockEndAllocation<true>(currentBlock);
+                }
                 currentBlock = moveToNextBlock();
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_START_BB, nullptr, REG_NA, currentBlock));
             }
@@ -6764,7 +6781,7 @@ void LinearScan::allocateRegisters()
     // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
     // in the same register for the entire method, or keep it on the stack. Rather than imposing this constraint
     // as we allocate, we will force all refs to the stack if it is split or spilled.
-    if (enregisterLocalVars && compiler->lvaKeepAliveAndReportThis())
+    if (compiler->lvaKeepAliveAndReportThis())
     {
         LclVarDsc* thisVarDsc = compiler->lvaGetDesc(compiler->info.compThisArg);
         if (thisVarDsc->lvLRACandidate)
