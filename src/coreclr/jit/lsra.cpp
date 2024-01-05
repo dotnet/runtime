@@ -3258,9 +3258,12 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
 // Prefer a free register that's got the earliest next use.
 // Otherwise, spill something with the farthest next use
 //
-template <bool needsConsecutiveRegisters>
+template <bool hasConsecutiveRegister, bool needsConsecutiveRegisters>
 regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 {
+    // We will never have hasConsecutiveRegister = false, but needsConsecutiveRegisters = true
+    static_assert_no_msg(hasConsecutiveRegister || !needsConsecutiveRegisters);
+
     Interval* currentInterval = refPosition->getInterval();
     assert(currentInterval != nullptr);
     assert(currentInterval->isActive);
@@ -3281,8 +3284,20 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     refPosition->copyReg = true;
 
     RegisterScore registerScore = NONE;
-    regNumber     allocatedReg =
-        allocateReg<needsConsecutiveRegisters>(currentInterval, refPosition DEBUG_ARG(&registerScore));
+
+    regNumber allocatedReg;
+    if (enregisterLocalVars
+#ifdef TARGET_ARM64
+        || hasConsecutiveRegister
+#endif
+    )
+    {
+        allocatedReg = allocateReg<needsConsecutiveRegisters>(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    }
+    else
+    {
+        allocatedReg = allocateRegForMinOpts(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    }
 
     assert(allocatedReg != REG_NA);
 
@@ -6322,7 +6337,7 @@ void LinearScan::allocateRegisters()
                     {
                         // It doesn't satisfy, so do a copyReg for the first RefPosition to such a register, so
                         // it would be possible to allocate consecutive registers to the subsequent RefPositions.
-                        regNumber copyReg = assignCopyReg<true>(&currentRefPosition);
+                        regNumber copyReg = assignCopyReg<true, true>(&currentRefPosition);
                         assignConsecutiveRegisters(&currentRefPosition, copyReg);
 
                         if (copyReg != assignedRegister)
@@ -6413,15 +6428,22 @@ void LinearScan::allocateRegisters()
                 {
                     regNumber copyReg;
 #ifdef TARGET_ARM64
-                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive &&
-                        currentRefPosition.refType == RefTypeUse)
+
+                    if (hasConsecutiveRegister)
                     {
-                        copyReg = assignCopyReg<true>(&currentRefPosition);
+                        if (currentRefPosition.needsConsecutive && currentRefPosition.refType == RefTypeUse)
+                        {
+                            copyReg = assignCopyReg<true, true>(&currentRefPosition);
+                        }
+                        else
+                    {
+                            copyReg = assignCopyReg<true, false>(&currentRefPosition);
+                        }
                     }
                     else
 #endif
                     {
-                        copyReg = assignCopyReg(&currentRefPosition);
+                        copyReg = assignCopyReg<false, false>(&currentRefPosition);
                     }
 
                     lastAllocatedRefPosition  = &currentRefPosition;
