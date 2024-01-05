@@ -142,6 +142,7 @@ export type LoaderHelpers = {
     mono_download_assets: () => Promise<void>,
     resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
+    mono_set_thread_name: (tid: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
     out(message: string): void;

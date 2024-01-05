@@ -363,10 +363,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             holder.AssertNotDisposed();
 
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
-#endif
-
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
             ref JSMarshalerArgument res = ref args[1];
@@ -399,16 +395,13 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
             // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
 #endif
         }
 
         private static void ResolveVoidPromise(JSObject holder)
         {
             holder.AssertNotDisposed();
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
-#endif
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -441,16 +434,13 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
             // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
 #endif
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
         {
             holder.AssertNotDisposed();
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
-#endif
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -484,7 +474,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
             // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
 #endif
         }
     }

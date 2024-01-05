@@ -40,10 +40,12 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-                ObjectDisposedException.ThrowIf(value.IsDisposed, value);
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(value);
+#if !FEATURE_WASM_THREADS
+                value.AssertNotDisposed();
+#else
+                value.AssertNotDisposed();
                 var ctx = value.ProxyContext;
+
                 if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
                 {
                     JSProxyContext.CaptureContextFromParameter(ctx);

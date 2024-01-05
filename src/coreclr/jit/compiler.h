@@ -2029,11 +2029,14 @@ struct NaturalLoopIterInfo
     int ConstInitValue = 0;
 
     // Block outside the loop that initializes the induction variable. Only
-    // value if HasConstInit is true.
+    // valid if HasConstInit is true.
     BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
+
+    // Block that has the loop test.
+    BasicBlock* TestBlock = nullptr;
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
@@ -5372,7 +5375,7 @@ public:
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
 #if FEATURE_LOOP_ALIGN
-    void optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop);
+    bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
@@ -6406,7 +6409,7 @@ private:
     bool fgIsThrow(GenTree* tree);
 
 public:
-    bool fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2);
+    bool fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const;
 
 private:
     bool fgIsBlockCold(BasicBlock* block);
@@ -7101,7 +7104,6 @@ public:
     bool          optLoopTableValid;         // info in loop table should be valid
     bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
     unsigned char optLoopCount;              // number of tracked loops
-    unsigned      loopAlignCandidates;       // number of loops identified for alignment
 
     // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
     // loop table pointers from the previous epoch are invalid.
@@ -7115,7 +7117,8 @@ public:
     }
 
 #ifdef DEBUG
-    unsigned char loopsAligned; // number of loops actually aligned
+    unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
+    unsigned loopsAligned;        // number of loops actually aligned
 #endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
@@ -10393,6 +10396,7 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
+        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

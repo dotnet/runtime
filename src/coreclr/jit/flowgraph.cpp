@@ -394,7 +394,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetCond(bottom);
+        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -635,7 +635,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
  * It returns false when the blocks are both in the same regions
  */
 
-bool Compiler::fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2)
+bool Compiler::fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const
 {
     noway_assert(blk1 != nullptr);
     noway_assert(blk2 != nullptr);
@@ -3185,55 +3185,11 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
             }
         }
 
-        // When the last Hot block fall through into the Cold section
-        // we may need to add a jump
-        //
-        if (prevToFirstColdBlock->bbFallsThrough())
+        // Don't split up call/finally pairs
+        if (prevToFirstColdBlock->isBBCallFinallyPair())
         {
-            switch (prevToFirstColdBlock->GetKind())
-            {
-                default:
-                    noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
-                    break;
-
-                case BBJ_CALLFINALLY:
-                    // A BBJ_CALLFINALLY that falls through is always followed
-                    // by an empty BBJ_CALLFINALLYRET.
-                    //
-                    assert(prevToFirstColdBlock->isBBCallFinallyPair());
-                    firstColdBlock =
-                        firstColdBlock->Next(); // Note that this assignment could make firstColdBlock == nullptr
-                    break;
-
-                case BBJ_COND:
-                    //
-                    // This is a slightly more complicated case, because we will
-                    // probably need to insert a block to jump to the cold section.
-                    //
-
-                    // TODO-NoFallThrough: Below logic will need additional check once bbFalseTarget can diverge from
-                    // bbNext
-                    assert(prevToFirstColdBlock->FalseTargetIs(firstColdBlock));
-                    if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
-                    {
-                        // We can just use this block as the transitionBlock
-                        firstColdBlock = firstColdBlock->Next();
-                        // Note that this assignment could make firstColdBlock == NULL
-                    }
-                    else
-                    {
-                        BasicBlock* transitionBlock =
-                            fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true, firstColdBlock);
-                        transitionBlock->inheritWeight(firstColdBlock);
-
-                        // Update the predecessor list for firstColdBlock
-                        fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);
-
-                        // Add prevToFirstColdBlock as a predecessor for transitionBlock
-                        fgAddRefPred(transitionBlock, prevToFirstColdBlock);
-                    }
-                    break;
-            }
+            // Note that this assignment could make firstColdBlock == nullptr
+            firstColdBlock = firstColdBlock->Next();
         }
     }
 
@@ -5007,7 +4963,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    info->IterVar = comp->optIsLoopIncrTree(info->IterTree);
+    info->TestBlock = cond;
+    info->IterVar   = comp->optIsLoopIncrTree(info->IterTree);
 
     assert(info->IterVar != BAD_VAR_NUM);
     LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
