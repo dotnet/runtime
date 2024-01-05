@@ -1503,10 +1503,12 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	NOT_IMPLEMENTED;
 	MonoMethodSignature *tmp_sig;
-	MonoInst *sig_arg;
+	int sig_reg;
 
 	if (MONO_IS_TAILCALL_OPCODE (call))
 		NOT_IMPLEMENTED;
+
+	g_assert (cinfo->sig_cookie.storage == ArgOnStack);
 
 	/*
 	 * mono_ArgIterator_Setup assumes the signature cookie is
@@ -1520,10 +1522,8 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos,
 	        tmp_sig->param_count * sizeof (MonoType *));
 
-	MONO_INST_NEW (cfg, sig_arg, OP_I8CONST);
-	sig_arg->dreg = mono_alloc_ireg (cfg);
-	sig_arg->inst_l = tmp_sig;
-	MONO_ADD_INS (cfg->cbb, sig_arg);
+	sig_reg = mono_alloc_ireg (cfg);
+	MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
 
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, cinfo->sig_cookie.offset, sig_arg->dreg);
 }
