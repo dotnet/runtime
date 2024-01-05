@@ -2539,7 +2539,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
                " is true or false)\n",
-               block->bbNum, block->GetFalseTarget()->bbNum);
+               block->bbNum, block->GetTarget()->bbNum);
     }
 #endif
 
