@@ -4891,16 +4891,28 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 //   lclNum - The local.
 //
 // Returns:
-//   Tree that represents a def of the local; nullptr if no def was found.
+//   Tree that represents a def of the local, or a def of the parent local if
+//   the local is a field; nullptr if no def was found.
 //
 // Remarks:
-//   Does not take promotion into account.
+//   Does not support promoted struct locals, but does support fields of
+//   promoted structs.
 //
 GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 {
+    LclVarDsc* dsc = m_dfsTree->GetCompiler()->lvaGetDesc(lclNum);
+    assert(!dsc->lvPromoted);
+
+    unsigned lclNum2 = BAD_VAR_NUM;
+
+    if (dsc->lvIsStructField)
+    {
+        lclNum2 = dsc->lvParentLcl;
+    }
+
     GenTreeLclVarCommon* result = nullptr;
-    VisitDefs([&result, lclNum](GenTreeLclVarCommon* def) {
-        if (def->GetLclNum() == lclNum)
+    VisitDefs([&result, lclNum, lclNum2](GenTreeLclVarCommon* def) {
+        if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
         {
             result = def;
             return false;
