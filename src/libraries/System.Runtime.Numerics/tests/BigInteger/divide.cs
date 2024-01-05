@@ -26,6 +26,22 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunDivideOneLargeOneHalfBI()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    tempByteArray1 = GetRandomByteArray(s_random, 512 + i);
+                    tempByteArray2 = GetRandomByteArray(s_random, 256 + j);
+                    VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
+                }
+        }
+
+        [Fact]
         public static void RunDivideTwoSmallBI()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -147,6 +163,31 @@ namespace System.Numerics.Tests
 
             // 32 bit boundary  n1=0 n2=1
             VerifyDivideString(Math.Pow(2, 33) + " 2 bDivide");
+        }
+
+        [Fact]
+        public static void RunDivideLarge()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            for (int i = 1; i < 15; i += 3)
+            {
+                var num = 1 << i;
+                tempByteArray1 = GetRandomByteArray(s_random, num);
+                tempByteArray2 = GetRandomByteArray(s_random, num / 2);
+                VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
+            }
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    int num = (1 << 13) + i;
+                    tempByteArray1 = GetRandomByteArray(s_random, num);
+                    tempByteArray2 = GetRandomByteArray(s_random, num / 3 + j);
+                    VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
+                }
         }
 
         [Fact]

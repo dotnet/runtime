@@ -32,6 +32,15 @@ namespace System.Numerics.Tests
                 VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "b/");
             }
 
+            // Divide Method - One large and one half BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    tempByteArray1 = GetRandomByteArray(s_random, 512 + i);
+                    tempByteArray2 = GetRandomByteArray(s_random, 256 + j);
+                    VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "b/");
+                }
+
             // Divide Method - One large and one small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
