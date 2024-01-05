@@ -86,6 +86,10 @@ called from `Main`. In this example, we'll be looking at the disassembly of our 
     ...
     ```
 
+Note that `dotnet run` runs quite a lot of code, such as msbuild, nuget, the Roslyn compiler, etc. The environment variables
+will apply to all of them. Thus, it might be preferable to first build the application using `dotnet build` or `dotnet publish`
+and then set the configuration variables and run the program.
+
 If you want to use a Debug or Checked build of the JIT, to get access to configuration variables only available
 in those build flavors, you will need to build your own version of the runtime repo. See instructions
 [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md).
@@ -129,13 +133,12 @@ For example, for Windows x64 machine, the project file is:
 # Setting configuration variables
 
 The behavior of the JIT can be controlled via a number of configuration variables.
-These are declared in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h).
-When used as an environment variable, the string name generally has `DOTNET_` prepended.
-When used as a registry value name, or as an argument to SuperPMI, the configuration name is used directly.
+These are declared in [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h). However, some configuration variables
+are read and processed by the VM instead of the JIT; these are specified in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h).
+The configuration string name generally has `DOTNET_` prepended.
 
-These can be set in one of three ways:
-
-* Setting the environment variable `DOTNET_<flagname>`. For example, the following will set the `JitDisasm` flag so that the disassembly of all methods named `Main` will be displayed:
+The configuration variables are generally set as environment variables, using the name `DOTNET_<name>`.
+For example, the following will set the `JitDisasm` flag so that the disassembly of all methods named `Main` will be displayed:
 
    ```shell
    # Windows
@@ -148,8 +151,13 @@ These can be set in one of three ways:
    export DOTNET_JitDisasm=Main
    ```
 
-* *Windows-only:* Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
-* *Windows-only:* Setting the registry key `HKLM\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
+Specifying a JIT configuration variable to crossgen2 (ReadyToRun) or ilc (NativeAOT) requires passing the JIT configuration
+on the command-line using the `--codegenopt` switch; it cannot be specified using an environment variable.
+For more information, see [debugging-aot-compilers](/docs/workflow/debugging/coreclr/debugging-aot-compilers.md).
+
+Also, JIT developers using superpmi.exe pass JIT a configuration variable via the `-jitoption` / `-jit2option` switches,
+and to superpmi.py using the `-jitoption` / `-base_jit_option` / `-diff_jit_option` switches. In each case, the variable
+is passed without the `DOTNET_` prefix.
 
 A configuration variable is either a string, an integer (often 0 meaning "false" or "off" and 1 meaning "true" or "on"), or a method (function) list.
 Note that integers are interpreted as hexadecimal numbers. Specifying method lists is described in the next section.
@@ -340,5 +348,7 @@ Here are some variables that control JIT dump output:
 If you followed the tutorial above and ran the sample app, you may be wondering why the disassembly for methods like
 `Substring` didn't show up in the output. This is because `Substring` lives in System.Private.CoreLib.dll,
 which (by default) is compiled ahead-of-time via crossgen2. Telling crossgen2 to dump the info works slightly
-differently in that it has to be specified on the command line instead. For more information,
-see the [debugging-aot-compilers](/docs/workflow/debugging/coreclr/debugging-aot-compilers.md) document.
+differently in that it has to be specified on the command line instead. In particular, you need to use the
+`--codegenopt` argument using the configuration name *without* the `DOTNET_` prefix.
+
+For more information, see [debugging-aot-compilers](/docs/workflow/debugging/coreclr/debugging-aot-compilers.md).
