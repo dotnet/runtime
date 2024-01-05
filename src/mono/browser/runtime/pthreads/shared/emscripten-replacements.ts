@@ -47,6 +47,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
                 }
             }));
         } else {
+            availableThreadCount++;
             originalReturnWorkerToPool(worker);
         }
     };
