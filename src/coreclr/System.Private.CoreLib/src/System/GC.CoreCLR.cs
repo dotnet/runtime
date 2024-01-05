@@ -390,11 +390,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _CancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCApproach(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {

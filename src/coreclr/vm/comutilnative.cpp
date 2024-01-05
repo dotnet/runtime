@@ -665,53 +665,41 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 }
 FCIMPLEND
 
-FCIMPL1(int, GCInterface::WaitForFullGCApproach, int millisecondsTimeout)
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     int result = 0;
 
-    //We don't need to check the top end because the GC will take care of that.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(dwMilliseconds);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
-FCIMPL1(int, GCInterface::WaitForFullGCComplete, int millisecondsTimeout)
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     int result = 0;
 
-    //We don't need to check the top end because the GC will take care of that.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(dwMilliseconds);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
 /*================================GetGeneration=================================
 **Action: Returns the generation in which args->obj is found.

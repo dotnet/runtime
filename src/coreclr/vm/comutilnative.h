@@ -209,6 +209,10 @@ extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZ
 extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandle);
 #endif // FEATURE_BASICFREEZE
 
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout);
+
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout);
+
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();

@@ -233,6 +233,8 @@ static const Entry s_QCall[] =
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
+    DllImportEntry(GCInterface_WaitForFullGCApproach)
+    DllImportEntry(GCInterface_WaitForFullGCComplete)
     DllImportEntry(GCInterface_StartNoGCRegion)
     DllImportEntry(GCInterface_EndNoGCRegion)
     DllImportEntry(GCInterface_GetTotalMemory)
