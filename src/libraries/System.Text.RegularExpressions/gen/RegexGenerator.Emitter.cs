@@ -29,10 +29,75 @@ namespace System.Text.RegularExpressions.Generator
         private static string EscapeXmlComment(string text) =>
             text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 
-        /// <summary>Use Regex excape syntax (\unnnn) for invalid xml chars (such as 0x00, 0xFFFF).</summary>
-        private static string UseValidXmlChars(string pattern)
+        private static bool EscapingHelpsPatternReadability(char c)
         {
-            StringBuilder? sb = null;
+            switch (CharUnicodeInfo.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.Control:
+                case UnicodeCategory.OtherNotAssigned:
+                case UnicodeCategory.ParagraphSeparator:
+                case UnicodeCategory.LineSeparator:
+                case UnicodeCategory.Surrogate:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryGetEscapedPatternChar(char c, out int e)
+        {
+            // For String, see https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/#string-escape-sequences
+            // For Regex,  see https://learn.microsoft.com/en-us/dotnet/standard/base-types/character-escapes-in-regular-expressions#character-escapes-in-net
+            // We pick those who mean the same character under both contexts.
+            switch (c)
+            {
+                case '\a':
+                    e = 'a';
+                    return true;
+                case '\f':
+                    e = 'f';
+                    return true;
+                case '\n':
+                    e = 'n';
+                    return true;
+                case '\r':
+                    e = 'r';
+                    return true;
+                case '\t':
+                    e = 't';
+                    return true;
+                case '\v':
+                    e = 'v';
+                    return true;
+                default:
+                    e = '\0';
+                    return false;
+            }
+        }
+
+        private static bool TryGetEscapedXmlText(char c, [NotNullWhen(true)] out string? e)
+        {
+            switch (c)
+            {
+                case '&':
+                    e = "&amp;";
+                    return true;
+                case '<':
+                    e = "&lt;";
+                    return true;
+                case '>':
+                    e = "&gt;";
+                    return true;
+                default:
+                    e = null;
+                    return false;
+            }
+        }
+
+        private static void WritePatternInXmlComment(string pattern, IndentedTextWriter writer)
+        {
+            writer.Write("/// ");
+
             var isPreviousCharBackslash = false;
             var backslashes = 0;
 
@@ -40,10 +105,8 @@ namespace System.Text.RegularExpressions.Generator
             {
                 var c = pattern[i];
 
-                if (!System.Xml.XmlConvert.IsXmlChar(c))
+                if (!System.Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
                 {
-                    sb ??= new StringBuilder(pattern, 0, i, pattern.Length + 20);
-
                     // We need to look back if any \ could change our \, when it follows odd number of backslashes.
                     // For example,
                     //     @"\\\" + '\uFFFF'
@@ -53,14 +116,28 @@ namespace System.Text.RegularExpressions.Generator
 
                     if (!isPreviousCharBackslash || backslashes % 2 == 0)
                     {
-                        sb.Append('\\');
+                        writer.Write('\\');
                     }
 
-                    sb.Append($"u{(int)c:x4}");
+                    if (TryGetEscapedPatternChar(c, out var e))
+                    {
+                        writer.Write(e);
+                    }
+                    else
+                    {
+                        writer.Write($"u{(int)c:x4}");
+                    }
                 }
                 else
                 {
-                    sb?.Append(c);
+                    if (TryGetEscapedXmlText(c, out var entity))
+                    {
+                        writer.Write(entity);
+                    }
+                    else
+                    {
+                        writer.Write(c);
+                    }
 
                     if (c == '\\')
                     {
@@ -75,7 +152,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            return sb is null ? pattern : sb.ToString();
+            writer.WriteLine();
         }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
@@ -107,7 +184,9 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeXmlComment(UseValidXmlChars(regexMethod.Pattern))}</code><br/>");
+            writer.WriteLine($"/// <code>");
+            WritePatternInXmlComment(regexMethod.Pattern, writer);
+            writer.WriteLine($"/// </code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");
