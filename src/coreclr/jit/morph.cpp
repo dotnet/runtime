@@ -327,13 +327,20 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // This if check needs to be changed to make sure we only 
     // block casts which are already Fixed UP.
     do {
-        if ( varTypeIsFloating(srcType) &&  (dstType))
+        if ( varTypeIsFloating(srcType) &&  varTypeIsIntegral(dstType))
         {
-            CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
             if (tree->IsSaturatedConversion())
             {
                 break;
             }
+            if (srcType == TYP_FLOAT && dstType == TYP_INT)
+            {
+                oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+                tree = gtNewCastNode(dstType, oper, false, dstType);
+                return fgMorphTree(tree);
+                // srcType = TYP_DOUBLE;
+            }
+            CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
             if ( compOpportunisticallyDependsOn(InstructionSet_AVX512F) )
             {
@@ -393,12 +400,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // The logic is that first and second operand are basically the same because we want 
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    GenTree* op2Clone;
-                    oper = impCloneExpr(oper, &op2Clone, CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+                    GenTree* op2Clone = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewZeroConNode(srcType), fieldType, 16);
+                    // oper = impCloneExpr(oper, &op2Clone, CHECK_SPILL_ALL,
+                    //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
                     
+
                     //run vfixupimmsd base on table and no flags reporting
-                    GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
+                    GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2Clone, oper, tbl, gtNewIconNode(0),
                                                                 NI_AVX512F_FixupScalar, fieldType, 16);
                     
                     GenTree* saturate_val = retNode;
@@ -483,10 +491,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 {
                     case TYP_INT:
 #ifdef TARGET_AMD64
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
-#else //TARGET_AMD64
-                        return nullptr;
+                        if (!tree->IsSaturatedConversion())
+                        {
+                            return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
+                        }
 #endif //TARGET_AMD64
+                        return nullptr;
 
                     case TYP_UINT:
 #if defined(TARGET_ARM) || defined(TARGET_AMD64)
