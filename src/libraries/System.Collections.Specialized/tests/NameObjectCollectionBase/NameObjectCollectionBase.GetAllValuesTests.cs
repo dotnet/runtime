@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class GetAllValuesTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0, typeof(object))]
         [InlineData(0, typeof(Foo))]
         [InlineData(10, typeof(object))]
@@ -33,10 +33,12 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void GetAllValues_Invalid()
         {
-            MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();
+            MyNameObjectCollection nameObjectCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new MyNameObjectCollection(StringComparer.OrdinalIgnoreCase) :
+                new MyNameObjectCollection();
             AssertExtensions.Throws<ArgumentNullException>("type", () => nameObjectCollection.GetAllValues(null));
 
             nameObjectCollection.Add("name", new Foo("value"));

@@ -46,12 +46,14 @@ namespace System.Collections.Specialized.Tests
             Assert.False(((ICollection)nameValueCollection).IsSynchronized);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(5)]
         public void Ctor_Int(int capacity)
         {
-            NameValueCollection nameValueCollection = new NameValueCollection(capacity);
+            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new NameValueCollection(capacity, StringComparer.OrdinalIgnoreCase) :
+                new NameValueCollection(capacity);
             Assert.Equal(0, nameValueCollection.Count);
             Assert.Equal(0, nameValueCollection.Keys.Count);
             Assert.Equal(0, nameValueCollection.AllKeys.Length);
@@ -80,12 +82,20 @@ namespace System.Collections.Specialized.Tests
 
         public static IEnumerable<object[]> Ctor_NameValueCollection_TestData()
         {
-            yield return new object[] { new NameValueCollection(10) };
-            yield return new object[] { new NameValueCollection() };
+            yield return new object[] {
+                PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
+                    new NameValueCollection(10)
+                };
+            yield return new object[] {
+                PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                    new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                    new NameValueCollection()
+                };
             yield return new object[] { Helpers.CreateNameValueCollection(10) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_NameValueCollection_TestData))]
         public void Ctor_NameValueCollection(NameValueCollection nameValueCollection1)
         {
@@ -115,18 +125,32 @@ namespace System.Collections.Specialized.Tests
 
         public static IEnumerable<object[]> Ctor_Int_NameValueCollection_TestData()
         {
-            yield return new object[] { 0, new NameValueCollection() };
-
-            yield return new object[] { 10, new NameValueCollection(10) };
-            yield return new object[] { 5, new NameValueCollection(10) };
-            yield return new object[] { 15, new NameValueCollection(10) };
-
+            yield return new object[] { 0, 
+                PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                    new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                    new NameValueCollection()
+            };
+            yield return new object[] { 10,
+                PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
+                    new NameValueCollection(10)
+            };
+            yield return new object[] { 5,
+                PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
+                    new NameValueCollection(10)
+            };
+            yield return new object[] { 15,
+                PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                    new NameValueCollection(10, StringComparer.OrdinalIgnoreCase) :
+                    new NameValueCollection(10)
+            };
             yield return new object[] { 10, Helpers.CreateNameValueCollection(10) };
             yield return new object[] { 5, Helpers.CreateNameValueCollection(10) };
             yield return new object[] { 15, Helpers.CreateNameValueCollection(10) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_Int_NameValueCollection_TestData))]
         public void Ctor_Int_NameValueCollection(int capacity, NameValueCollection nameValueCollection1)
         {
@@ -152,11 +176,14 @@ namespace System.Collections.Specialized.Tests
             yield return new object[] { 0, new IdiotComparer() };
             yield return new object[] { 10, new IdiotComparer() };
             yield return new object[] { 1000, new IdiotComparer() };
-            yield return new object[] { 0, null };
-            yield return new object[] { 10, null };
+            if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { 0, null };
+                yield return new object[] { 10, null };
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_Int_IEqualityComparer_TestData))]
         public void Ctor_Int_IEqualityComparer(int capacity, IEqualityComparer equalityComparer)
         {
@@ -167,10 +194,11 @@ namespace System.Collections.Specialized.Tests
         public static IEnumerable<object[]> Ctor_IEqualityComparer_TestData()
         {
             yield return new object[] { new IdiotComparer() };
-            yield return new object[] { null };
+            if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+                yield return new object[] { null };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Ctor_IEqualityComparer_TestData))]
         public void Ctor_IEqualityComparer(IEqualityComparer equalityComparer)
         {

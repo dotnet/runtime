@@ -8,7 +8,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionRemoveTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(5)]
         public void Remove(int count)
@@ -46,10 +46,12 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Remove_MultipleValues_SameName()
         {
-            NameValueCollection nameValueCollection = new NameValueCollection();
+            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                new NameValueCollection();
             string name = "name";
             nameValueCollection.Add(name, "value1");
             nameValueCollection.Add(name, "value2");

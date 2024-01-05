@@ -8,10 +8,12 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionAddStringStringTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Add()
         {
-            NameValueCollection nameValueCollection = new NameValueCollection();
+            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                new NameValueCollection();
             Assert.False(nameValueCollection.HasKeys());
             for (int i = 0; i < 10; i++)
             {
@@ -82,10 +84,12 @@ namespace System.Collections.Specialized.Tests
             Assert.False(nameValueCollection.HasKeys());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Add_NullValue()
         {
-            NameValueCollection nameValueCollection = new NameValueCollection();
+            NameValueCollection nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                new NameValueCollection();
             string name = "name";
             nameValueCollection.Add(name, null);
             Assert.Equal(1, nameValueCollection.Count);
@@ -108,10 +112,12 @@ namespace System.Collections.Specialized.Tests
             Assert.True(nameValueCollection.HasKeys());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Add_AddingValueToExistingName_AppendsValueToOriginalValue()
         {
-            var nameValueCollection = new NameValueCollection();
+            var nameValueCollection = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new NameValueCollection(StringComparer.OrdinalIgnoreCase) :
+                new NameValueCollection();
             string name = "name";
             nameValueCollection.Add(name, "value1");
             nameValueCollection.Add(name, "value2");

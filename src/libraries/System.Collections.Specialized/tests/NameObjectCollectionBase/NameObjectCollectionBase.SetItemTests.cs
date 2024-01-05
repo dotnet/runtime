@@ -7,10 +7,12 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseSetItemTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Set_ObjectAtIndex_ModifiesCollection()
         {
-            var noc = new MyNameObjectCollection();
+            var noc = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                new MyNameObjectCollection(StringComparer.OrdinalIgnoreCase) :
+                new MyNameObjectCollection();
             for (int i = 0; i < 10; i++)
             {
                 var foo1 = new Foo("Value_1");

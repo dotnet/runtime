@@ -4100,6 +4100,9 @@
   <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
     <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
+  <data name="PlatformNotSupported_HybridGlobalizationHashCode" xml:space="preserve">
+    <value>{0} is not supported when HybridGlobalization=true. If possible, use collection cctr(IEqualityComparer) with value StringComparer.Ordinal or StringComparer.OrdinalIgnoreCase instead. Otherwise, disable Hybrid Globalization to increase application size by loading ICU data.</value>
+  </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
   </data>

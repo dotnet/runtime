@@ -42,7 +42,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
         {
             Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -82,13 +82,15 @@ namespace System.Collections.Tests
                 expectedPublicComparerBeforeCollisionThreshold: StringComparer.OrdinalIgnoreCase,
                 expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalIgnoreCaseComparerType);
 
-            // linguistic comparer (not optimized)
-
-            RunDictionaryTest(
-                equalityComparer: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
+            if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+            {
+                // linguistic comparer (not optimized)
+                RunDictionaryTest(
+                    equalityComparer: StringComparer.InvariantCulture,
+                    expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
+                    expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
+                    expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
+            }
 
             // CollectionsMarshal.GetValueRefOrAddDefault
 
@@ -118,7 +120,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void ComparerImplementations_HashSet_WithWellKnownStringComparers()
         {
             Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -158,13 +160,15 @@ namespace System.Collections.Tests
                 expectedPublicComparerBeforeCollisionThreshold: StringComparer.OrdinalIgnoreCase,
                 expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalIgnoreCaseComparerType);
 
-            // linguistic comparer (not optimized)
-
-            RunHashSetTest(
-                equalityComparer: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
+            if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+            {
+                // linguistic comparer (not optimized)
+                RunHashSetTest(
+                    equalityComparer: StringComparer.InvariantCulture,
+                    expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
+                    expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
+                    expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
+            }
 
             static void RunHashSetTest(
                 IEqualityComparer<string> equalityComparer,
