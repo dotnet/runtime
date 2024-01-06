@@ -11,6 +11,7 @@ namespace System.Text.RegularExpressions
     {
         private readonly ScanDelegate _scanMethod;
 
+#pragma warning disable IDE0051, IDE0052 // Accessed via reflection
         /// <summary>Set if the regex uses any SearchValues instances. Accessed via reflection.</summary>
         /// <remarks>If the array is non-null, this contains instances of SearchValues{char} or SearchValues{string}.</remarks>
         private readonly object[]? _searchValues;
@@ -20,6 +21,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Caches a RegexCaseBehavior. Accessed via reflection.</summary>
         private RegexCaseBehavior _caseBehavior;
+#pragma warning restore IDE0051, IDE0052
 
         internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
 
