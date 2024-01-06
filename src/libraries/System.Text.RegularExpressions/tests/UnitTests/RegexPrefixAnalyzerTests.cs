@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions.Tests
             var sb = new StringBuilder();
             foreach (char c in set)
             {
-                if (c > 32 && c < 127)
+                if (c is > (char)32 and < (char)127)
                 {
                     sb.Append(c);
                 }

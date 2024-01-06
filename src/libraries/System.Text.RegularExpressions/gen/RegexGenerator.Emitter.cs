@@ -1200,7 +1200,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (needLoop)
                 {
-                    Debug.Assert(setIndex == 0 || setIndex == 1);
+                    Debug.Assert(setIndex is 0 or 1);
                     bool hasCharClassConditions = false;
                     if (setIndex < setsToUse)
                     {
@@ -5396,7 +5396,7 @@ namespace System.Text.RegularExpressions.Generator
                 value == 1 ? $"{variable}++;" :
                 value == -1 ? $"{variable}--;" :
                 value > 0 ? $"{variable} += {value};" :
-                value < 0 && value > int.MinValue ? $"{variable} -= {-value};" :
+                value is < 0 and > int.MinValue ? $"{variable} -= {-value};" :
                 $"{variable} += {value.ToString(CultureInfo.InvariantCulture)};");
         }
 

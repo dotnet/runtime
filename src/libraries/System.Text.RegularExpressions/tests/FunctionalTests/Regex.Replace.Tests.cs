@@ -340,7 +340,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static string MatchEvaluator3(Match match)
         {
-            if (match.Value == "a" || match.Value == "b" || match.Value == "c")
+            if (match.Value is "a" or "b" or "c")
                 return match.Value.ToUpperInvariant();
             return string.Empty;
         }

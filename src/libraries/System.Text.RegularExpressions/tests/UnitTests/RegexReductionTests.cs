@@ -601,12 +601,12 @@ namespace System.Text.RegularExpressions.Tests
             int minRequiredLength = tree.FindOptimizations.MinRequiredLength;
 
             Assert.True(
-                minRequiredLength == 1 /* successfully analyzed */ || minRequiredLength == 0 /* ran out of stack space to complete analysis */,
+                minRequiredLength is 1 /* successfully analyzed */ or 0 /* ran out of stack space to complete analysis */,
                 $"Expected 1 or 0, got {minRequiredLength}");
 
             int? maxPossibleLength = tree.FindOptimizations.MaxPossibleLength;
             Assert.True(
-                maxPossibleLength == 1 /* successfully analyzed */ || maxPossibleLength is null /* ran out of stack space to complete analysis */,
+                maxPossibleLength is 1 /* successfully analyzed */ or null /* ran out of stack space to complete analysis */,
                 $"Expected 1 or null, got {maxPossibleLength}");
         }
 

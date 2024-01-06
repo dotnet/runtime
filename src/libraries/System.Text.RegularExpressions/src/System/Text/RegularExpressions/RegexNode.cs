@@ -1421,7 +1421,7 @@ namespace System.Text.RegularExpressions
         /// </returns>
         public StartingLiteralData? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max efficiently optimized by IndexOfAny today
         {
-            Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
+            Debug.Assert(maxSetCharacters is >= 0 and <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
 
             if (FindStartingLiteralNode() is RegexNode node)
             {
