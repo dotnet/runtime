@@ -17,8 +17,8 @@ namespace System.Buffers
 
         public Any2CharPackedIgnoreCaseSearchValues(char value0, char value1)
         {
-            Debug.Assert(value0 != 0 && (value0 | 0x20) == value0 && char.IsAscii(value0));
-            Debug.Assert(value1 != 0 && (value1 | 0x20) == value1 && char.IsAscii(value1));
+            Debug.Assert((value0 | 0x20) == value0 && char.IsAscii(value0));
+            Debug.Assert((value1 | 0x20) == value1 && char.IsAscii(value1));
 
             (_e0, _e1) = (value0, value1);
             IndexOfAnyAsciiSearcher.ComputeAsciiState([(char)(_e0 & ~0x20), _e0, (char)(_e1 & ~0x20), _e1], out _state);

@@ -31,9 +31,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override unsafe bool ContainsCore(T value) =>
-            *(TImpl*)&value == _e0 ||
-            *(TImpl*)&value == _e1 ||
-            *(TImpl*)&value == _e2;
+            *(TImpl*)&value == _e0 || *(TImpl*)&value == _e1 || *(TImpl*)&value == _e2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>

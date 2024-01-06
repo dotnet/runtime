@@ -14,7 +14,6 @@ namespace System.Buffers
 
         public Any1CharPackedIgnoreCaseSearchValues(char value)
         {
-            Debug.Assert(value != 0);
             Debug.Assert((value | 0x20) == value);
 
             _lowerCase = value;
