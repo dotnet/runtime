@@ -20,23 +20,29 @@ namespace System.Linq
         {
             public TResult[] ToArray()
             {
-                LargeArrayBuilder<TResult> builder = new();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    builder.Add(_selector(item));
+                    builder.Add(selector(item));
                 }
 
-                return builder.ToArray();
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    list.Add(_selector(item));
+                    list.Add(selector(item));
                 }
 
                 return list;
@@ -596,13 +602,19 @@ namespace System.Linq
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
-                LargeArrayBuilder<TResult> builder = new();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource input in _source)
                 {
-                    builder.Add(_selector(input));
+                    builder.Add(selector(input));
                 }
-                return builder.ToArray();
+
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             private TResult[] PreallocatingToArray(int count)

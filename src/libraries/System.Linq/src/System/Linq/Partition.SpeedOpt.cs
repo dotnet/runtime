@@ -609,9 +609,8 @@ namespace System.Linq
                         int remaining = Limit - 1; // Max number of items left, not counting the current element.
                         int comparand = HasLimit ? 0 : int.MinValue; // If we don't have an upper bound, have the comparison always return true.
 
-                        int maxCapacity = HasLimit ? Limit : int.MaxValue;
-                        var builder = new LargeArrayBuilder<TSource>(maxCapacity);
-
+                        SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                        SegmentedArrayBuilder<TSource> builder = new(scratch);
                         do
                         {
                             remaining--;
@@ -619,7 +618,10 @@ namespace System.Linq
                         }
                         while (remaining >= comparand && en.MoveNext());
 
-                        return builder.ToArray();
+                        TSource[] result = builder.ToArray();
+                        builder.Dispose();
+
+                        return result;
                     }
                 }
 
