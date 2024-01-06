@@ -844,6 +844,8 @@ struct LoopCloneContext
 
     jitstd::vector<NaturalLoopIterInfo*> iterInfo;
 
+    jitstd::vector<BasicBlock*> coldHeaders;
+
     LoopCloneContext(unsigned loopCount, CompAllocator alloc)
         : alloc(alloc)
         , optInfo(alloc)
@@ -852,6 +854,7 @@ struct LoopCloneContext
         , objDerefs(alloc)
         , blockConditions(alloc)
         , iterInfo(alloc)
+        , coldHeaders(alloc)
     {
         optInfo.resize(loopCount, nullptr);
         conditions.resize(loopCount, nullptr);
@@ -859,7 +862,11 @@ struct LoopCloneContext
         objDerefs.resize(loopCount, nullptr);
         blockConditions.resize(loopCount, nullptr);
         iterInfo.resize(loopCount, nullptr);
+        coldHeaders.resize(loopCount, nullptr);
     }
+
+    BasicBlock* GetColdHeader(unsigned loopNum);
+    void SetColdHeader(unsigned loopNumn, BasicBlock* coldHeader);
 
     NaturalLoopIterInfo* GetLoopIterInfo(unsigned loopNum);
     void SetLoopIterInfo(unsigned loopNum, NaturalLoopIterInfo* info);

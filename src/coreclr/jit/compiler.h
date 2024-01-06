@@ -6871,6 +6871,7 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    void optRecordColdHeaders(FlowGraphNaturalLoop* loop, BlockToBlockMap* blockMap, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
