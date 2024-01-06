@@ -27,7 +27,7 @@ namespace System.Text.RegularExpressions.Symbolic
             const int MaxBit = 15; // most significant bit of a 16-bit char
 
             if (set.IsEmpty)
-                return Array.Empty<(uint, uint)>();
+                return [];
 
             if (set.IsFull)
                 return [(0u, ((uint)1 << MaxBit << 1) - 1)];

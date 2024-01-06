@@ -239,7 +239,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private BDD[] TopologicalSort()
         {
             if (IsFull || IsEmpty)
-                return Array.Empty<BDD>();
+                return [];
 
             if (IsLeaf)
                 return [this];

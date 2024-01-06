@@ -1440,7 +1440,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 alternativesAndEffects.Add((this, currentEffects.Count > 0 ?
                     currentEffects.ToArray() :
-                    Array.Empty<DerivativeEffect>()));
+                    []));
                 return;
             }
 
@@ -1489,14 +1489,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (IsLazy)
                         alternativesAndEffects.Add((builder.Epsilon, currentEffects.Count > 0 ?
                             currentEffects.ToArray() :
-                            Array.Empty<DerivativeEffect>()));
+                            []));
                     // Recurse into the body
                     _left.StripAndMapEffects(builder, context, alternativesAndEffects, currentEffects);
                     // For eager loops the body is preferred, so output the epsilon last
                     if (!IsLazy)
                         alternativesAndEffects.Add((builder.Epsilon, currentEffects.Count > 0 ?
                             currentEffects.ToArray() :
-                            Array.Empty<DerivativeEffect>()));
+                            []));
                     break;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
