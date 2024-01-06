@@ -545,7 +545,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"((a{1,2}){4}){3,7}", 0, 12, 56)]
         [InlineData(@"((a{1,2}){4}?){3,7}", 0, 12, 56)]
         [InlineData(@"\b\w{4}\b", 0, 4, 4)]
-        [InlineData(@"\b\w{4}\b", (int)RegexOptions.ECMAScript,  4, 4)]
+        [InlineData(@"\b\w{4}\b", (int)RegexOptions.ECMAScript, 4, 4)]
         [InlineData(@"abcd(?=efgh)efgh", 0, 8, 8)]
         [InlineData(@"abcd(?<=cd)efgh", 0, 8, 8)]
         [InlineData(@"abcd(?!ab)efgh", 0, 8, 8)]

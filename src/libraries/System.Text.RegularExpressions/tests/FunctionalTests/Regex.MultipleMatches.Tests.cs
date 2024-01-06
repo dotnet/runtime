@@ -435,7 +435,6 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
 #if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
-                
                 yield return new object[]
                 {
                     engine, "@(a*)+?", "@", RegexOptions.None, new[]

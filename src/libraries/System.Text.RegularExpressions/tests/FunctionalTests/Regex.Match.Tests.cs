@@ -2114,7 +2114,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Match_Count(RegexEngine engine, string pattern, string input, int expectedCount)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
-            Assert.Equal(expectedCount,r.Matches(input).Count);
+            Assert.Equal(expectedCount, r.Matches(input).Count);
         }
 
         public static IEnumerable<object[]> StressTestDeepNestingOfConcat_TestData()
@@ -2397,7 +2397,7 @@ namespace System.Text.RegularExpressions.Tests
                 string pattern = "(" + pattern_orig + "===" + pattern_WL + ")+";
                 string input = "=====" + pattern_orig + "===" + pattern_WL + pattern_orig + "===" + pattern_WL + "===" + pattern_orig + "===" + pattern_orig;
                 int length = 2 * (pattern_orig.Length + 3 + pattern_WL.Length);
-                yield return new object[] { engine, pattern, RegexOptions.None, input, new (int, int, string)[]{(5, length, input.Substring(5, length)) } };
+                yield return new object[] { engine, pattern, RegexOptions.None, input, new (int, int, string)[] { (5, length, input.Substring(5, length)) } };
             }
         }
 
@@ -2541,7 +2541,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(MatchAmbiguousRegexes_TestData))]
-        public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int,int) expected_match)
+        public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int, int) expected_match)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             var match = r.Match(input);

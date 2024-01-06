@@ -1142,16 +1142,16 @@ namespace System.Text.RegularExpressions
             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
         ];
 
-         /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
-         private const int WordCategoriesMask =
-               1 << (int)UnicodeCategory.UppercaseLetter |
-               1 << (int)UnicodeCategory.LowercaseLetter |
-               1 << (int)UnicodeCategory.TitlecaseLetter |
-               1 << (int)UnicodeCategory.ModifierLetter |
-               1 << (int)UnicodeCategory.OtherLetter |
-               1 << (int)UnicodeCategory.NonSpacingMark |
-               1 << (int)UnicodeCategory.DecimalDigitNumber |
-               1 << (int)UnicodeCategory.ConnectorPunctuation;
+        /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
+        private const int WordCategoriesMask =
+            1 << (int)UnicodeCategory.UppercaseLetter |
+            1 << (int)UnicodeCategory.LowercaseLetter |
+            1 << (int)UnicodeCategory.TitlecaseLetter |
+            1 << (int)UnicodeCategory.ModifierLetter |
+            1 << (int)UnicodeCategory.OtherLetter |
+            1 << (int)UnicodeCategory.NonSpacingMark |
+            1 << (int)UnicodeCategory.DecimalDigitNumber |
+            1 << (int)UnicodeCategory.ConnectorPunctuation;
 
         /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
         public static bool IsWordChar(char ch)

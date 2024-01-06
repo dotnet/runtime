@@ -2581,7 +2581,7 @@ namespace System.Text.RegularExpressions
                     // but can still remain in some situations.
                 }
                 else if (consumeZeroWidthNodes &&
-                                       // anchors
+                         // anchors
                          child.Kind is RegexNodeKind.Beginning or
                                        RegexNodeKind.Bol or
                                        RegexNodeKind.Start or

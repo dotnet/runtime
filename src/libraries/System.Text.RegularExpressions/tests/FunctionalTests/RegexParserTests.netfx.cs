@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions.Tests
             throw new XunitException($"Expected ArgumentException with error: ({error}) -> Actual: No exception thrown");
         }
 
-       /// <summary>
+        /// <summary>
         /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
         // environment and the action.
         /// </summary>

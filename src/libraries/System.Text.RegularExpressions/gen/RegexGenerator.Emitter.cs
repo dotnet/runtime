@@ -3745,7 +3745,7 @@ namespace System.Text.RegularExpressions.Generator
                     EmitStackPush(
                         !isInLoop ? (expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } : new[] { "pos" }) :
                         iterationMayBeEmpty ? (expressionHasCaptures ? new[] { "pos", iterationCount, startingPos!, sawEmpty!, "base.Crawlpos()" } : new[] { "pos", iterationCount, startingPos!, sawEmpty! }) :
-                        expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()"} :
+                        expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()" } :
                         new[] { "pos", iterationCount });
 
                     string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");

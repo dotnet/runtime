@@ -261,7 +261,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?<= ", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.InsufficientClosingParentheses, 5)]
         [InlineData("(?<!)", RegexOptions.None, null)]
         [InlineData("(?<!a)", RegexOptions.None, null)]
-        [InlineData("(?<!", RegexOptions.None, (int)RegexParseError.InsufficientClosingParentheses,4)]
+        [InlineData("(?<!", RegexOptions.None, (int)RegexParseError.InsufficientClosingParentheses, 4)]
         [InlineData("(?<! ", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.InsufficientClosingParentheses, 5)]
         [InlineData("(?<", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData("(?<>", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.CaptureGroupNameInvalid, 3)]
@@ -732,7 +732,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         private static void LogActual(string pattern, RegexOptions options, RegexParseError error, int offset)
-        {   
+        {
             // To conveniently add new interesting patterns to these tests, add them to the code in the format:
             //
             // [InlineData("SOMEREGEX1", RegexOptions.None, null)]

@@ -1182,11 +1182,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "IsValidCSharpName", true };
                 yield return new object[] { engine, "_IsValidCSharpName", true };
                 yield return new object[] { engine, "__", true };
-                yield return new object[] { engine, "a\u2169", true  }; // \u2169 is in {Nl}
-                yield return new object[] { engine, "\u2169b", true  }; // \u2169 is in {Nl}
-                yield return new object[] { engine, "a\u0600", true  }; // \u0600 is in {Cf}
+                yield return new object[] { engine, "a\u2169", true };  // \u2169 is in {Nl}
+                yield return new object[] { engine, "\u2169b", true };  // \u2169 is in {Nl}
+                yield return new object[] { engine, "a\u0600", true };  // \u0600 is in {Cf}
                 yield return new object[] { engine, "\u0600b", false }; // \u0600 is in {Cf}
-                yield return new object[] { engine, "a\u0300", true  }; // \u0300 is in {Mn}
+                yield return new object[] { engine, "a\u0300", true };  // \u0300 is in {Mn}
                 yield return new object[] { engine, "\u0300b", false }; // \u0300 is in {Mn}
                 yield return new object[] { engine, "https://foo.com:443/bar/17/groups/0ad1/providers/Network/public/4e-ip?version=16", false };
                 yield return new object[] { engine, "david.jones@proseware.com", false };
