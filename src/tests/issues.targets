@@ -3656,6 +3656,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/*">
+            <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
