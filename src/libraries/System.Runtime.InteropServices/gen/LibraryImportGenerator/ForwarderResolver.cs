@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Microsoft.Interop
 {
-    internal sealed class ForwarderMarshallingGeneratorFactory : IMarshallingGeneratorFactory
+    internal sealed class ForwarderResolver : IMarshallingGeneratorResolver
     {
         private static readonly Forwarder s_forwarder = new Forwarder();
 

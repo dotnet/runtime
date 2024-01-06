@@ -17,7 +17,7 @@ namespace Microsoft.Interop
     {
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorFactoryCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
@@ -63,7 +63,7 @@ namespace Microsoft.Interop
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorFactoryCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
@@ -145,7 +145,7 @@ namespace Microsoft.Interop
         public static BlockSyntax GenerateVirtualMethodTableSlotAssignments(
             IEnumerable<IncrementalMethodStubGenerationContext> vtableMethods,
             string vtableIdentifier,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorFactoryCreator)
         {
             List<StatementSyntax> statements = new();
             foreach (var method in vtableMethods)
@@ -170,7 +170,7 @@ namespace Microsoft.Interop
 
         private static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
             IncrementalMethodStubGenerationContext method,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorFactoryCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), method.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 

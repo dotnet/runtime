@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             bool setLastError,
             bool implicitThis,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorFactory)
         {
             _setLastError = setLastError;
             if (implicitThis)

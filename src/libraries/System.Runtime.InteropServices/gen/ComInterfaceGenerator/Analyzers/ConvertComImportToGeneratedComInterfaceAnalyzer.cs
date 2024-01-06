@@ -186,7 +186,7 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorResolver
         {
             private readonly Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> _func;
 

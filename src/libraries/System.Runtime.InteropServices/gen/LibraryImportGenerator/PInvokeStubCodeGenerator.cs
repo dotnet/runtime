@@ -49,7 +49,7 @@ namespace Microsoft.Interop
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory,
+            IMarshallingGeneratorResolver generatorFactory,
             CodeEmitOptions codeEmitOptions)
         {
             _setLastError = setLastError;

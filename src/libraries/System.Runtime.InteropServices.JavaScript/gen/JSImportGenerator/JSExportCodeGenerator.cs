@@ -24,7 +24,7 @@ namespace Microsoft.Interop.JavaScript
             JSExportData attributeData,
             JSSignatureContext signatureContext,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorFactory)
         {
             _signatureContext = signatureContext;
             NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier)

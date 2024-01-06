@@ -212,7 +212,7 @@ namespace Microsoft.Interop.Analyzers
             return interopData;
         }
 
-        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorResolver
         {
             private readonly Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> _func;
 
