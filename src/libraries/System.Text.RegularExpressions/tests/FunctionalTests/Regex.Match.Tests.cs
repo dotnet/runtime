@@ -2394,7 +2394,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 //this will need a total of 2x70 + 2 parts in the partition of NonBacktracking
                 string pattern_orig = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>:;&@%!";
-                string pattern_WL = new String(Array.ConvertAll(pattern_orig.ToCharArray(), c => (char)((int)c + 0xFF00 - 32)));
+                string pattern_WL = new String(Array.ConvertAll(pattern_orig.ToCharArray(), c => (char)(c + 0xFF00 - 32)));
                 string pattern = "(" + pattern_orig + "===" + pattern_WL + ")+";
                 string input = "=====" + pattern_orig + "===" + pattern_WL + pattern_orig + "===" + pattern_WL + "===" + pattern_orig + "===" + pattern_orig;
                 int length = 2 * (pattern_orig.Length + 3 + pattern_WL.Length);

@@ -1389,7 +1389,7 @@ namespace System.Text.RegularExpressions.Generator
             // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
             const int MaxUnrollSize = 16;
 
-            RegexOptions options = (RegexOptions)rm.Options;
+            RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
 
             // Helper to define names.  Names start unadorned, but as soon as there's repetition,
