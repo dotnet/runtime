@@ -5400,16 +5400,10 @@ namespace System.Text.RegularExpressions.Generator
                 $"{variable} += {value.ToString(CultureInfo.InvariantCulture)};");
         }
 
-        private readonly struct FinishEmitBlock : IDisposable
+        private readonly struct FinishEmitBlock(IndentedTextWriter writer, bool faux) : IDisposable
         {
-            private readonly IndentedTextWriter _writer;
-            private readonly bool _faux;
-
-            public FinishEmitBlock(IndentedTextWriter writer, bool faux)
-            {
-                _writer = writer;
-                _faux = faux;
-            }
+            private readonly IndentedTextWriter _writer = writer;
+            private readonly bool _faux = faux;
 
             public void Dispose()
             {

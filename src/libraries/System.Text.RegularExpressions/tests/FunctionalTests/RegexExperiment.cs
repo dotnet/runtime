@@ -16,11 +16,9 @@ namespace System.Text.RegularExpressions.Tests
     /// It contains temporary experimental code, such as lightweight profiling and debugging locally.
     /// Set <see cref="Enabled"/> to true to run all the tests.
     /// </summary>
-    public class RegexExperiment
+    public class RegexExperiment(ITestOutputHelper output)
     {
-        private readonly ITestOutputHelper _output;
-
-        public RegexExperiment(ITestOutputHelper output) => _output = output;
+        private readonly ITestOutputHelper _output = output;
 
         public static bool Enabled => false;
 

@@ -257,14 +257,9 @@ namespace System.Text.RegularExpressions.Tests
             string.Join(Environment.NewLine, source.Split(Environment.NewLine).Select((line, lineNumber) => $"{lineNumber,6}: {line}"));
 
         /// <summary>Simple AssemblyLoadContext used to load source generated regex assemblies so they can be unloaded.</summary>
-        private sealed class RegexLoadContext : AssemblyLoadContext
+        private sealed class RegexLoadContext(string pluginPath) : AssemblyLoadContext(isCollectible: true)
         {
-            private readonly AssemblyDependencyResolver _resolver;
-
-            public RegexLoadContext(string pluginPath) : base(isCollectible: true)
-            {
-                _resolver = new AssemblyDependencyResolver(pluginPath);
-            }
+            private readonly AssemblyDependencyResolver _resolver = new AssemblyDependencyResolver(pluginPath);
 
             protected override Assembly? Load(AssemblyName assemblyName)
             {
