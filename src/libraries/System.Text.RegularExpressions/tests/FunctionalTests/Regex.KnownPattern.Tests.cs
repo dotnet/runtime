@@ -1567,11 +1567,8 @@ namespace System.Text.RegularExpressions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         public async Task PatternsDataSet_GenerateInputsWithNonBacktracking_MatchWithAllEngines()
         {
-            MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (sampleMatchesMI is null)
-            {
+            MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance) ??
                 throw new SkipTestException("Could not find Regex.SampleMatches");
-            }
             Func<Regex, int, int, IEnumerable<string>> sampleMatches = sampleMatchesMI.CreateDelegate<Func<Regex, int, int, IEnumerable<string>>>();
 
             DataSetExpression[] entries = s_patternsDataSet.Value;
