@@ -3652,9 +3652,12 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'riscv64'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
     </ItemGroup>
 
