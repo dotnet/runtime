@@ -48,6 +48,7 @@ namespace ILCompiler.ObjectWriter
             {
                 TargetArchitecture.X86 => EM_386,
                 TargetArchitecture.X64 => EM_X86_64,
+                TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
@@ -231,6 +232,9 @@ namespace ILCompiler.ObjectWriter
                 case EM_X86_64:
                     EmitRelocationsX64(sectionIndex, relocationList);
                     break;
+                case EM_ARM:
+                    EmitRelocationsARM(sectionIndex, relocationList);
+                    break;
                 case EM_AARCH64:
                     EmitRelocationsARM64(sectionIndex, relocationList);
                     break;
@@ -312,6 +316,48 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void EmitRelocationsARM(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            if (relocationList.Count > 0)
+            {
+                Span<byte> relocationEntry = stackalloc byte[12];
+                var relocationStream = new MemoryStream(12 * relocationList.Count);
+                _sections[sectionIndex].RelocationStream = relocationStream;
+                foreach (SymbolicRelocation symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+                    uint type = symbolicRelocation.Type switch
+                    {
+                        IMAGE_REL_BASED_HIGHLOW => R_ARM_ABS32,
+                        IMAGE_REL_BASED_RELPTR32 => R_ARM_REL32,
+                        IMAGE_REL_BASED_REL32 => R_ARM_REL32,
+                        IMAGE_REL_BASED_THUMB_MOV32 => R_ARM_THM_MOVW_ABS_NC,
+                        IMAGE_REL_BASED_THUMB_MOV32_PCREL => R_ARM_THM_MOVW_PREL_NC,
+                        IMAGE_REL_BASED_THUMB_BRANCH24 => R_ARM_THM_PC22,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    long addend = symbolicRelocation.Addend;
+                    if (symbolicRelocation.Type == IMAGE_REL_BASED_REL32)
+                    {
+                        addend -= 4;
+                    }
+
+                    BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)symbolIndex << 8) | type);
+                    BinaryPrimitives.WriteInt32LittleEndian(relocationEntry.Slice(8), (int)addend);
+                    relocationStream.Write(relocationEntry);
+
+                    if (symbolicRelocation.Type is IMAGE_REL_BASED_THUMB_MOV32 or IMAGE_REL_BASED_THUMB_MOV32_PCREL)
+                    {
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)(symbolicRelocation.Offset + 4));
+                        BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)symbolIndex << 8) | (type + 1));
+                        relocationStream.Write(relocationEntry);
+                    }
+                }
+            }
+        }
+
         private void EmitRelocationsARM64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             if (relocationList.Count > 0)
@@ -353,6 +399,7 @@ namespace ILCompiler.ObjectWriter
             switch (_machine)
             {
                 case EM_386:
+                case EM_ARM:
                     EmitObjectFile<uint>(outputFileStream);
                     break;
                 default:
@@ -544,7 +591,7 @@ namespace ILCompiler.ObjectWriter
                         Link = symTabSectionIndex,
                         Info = section.SectionIndex,
                         Alignment = 8u,
-                        EntrySize = 24u,
+                        EntrySize = (ulong)default(TSize).GetByteCount() * 3u,
                     };
                     relaSectionHeader.Write<TSize>(outputFileStream);
                 }
