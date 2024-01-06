@@ -425,7 +425,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1CharPackedSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1CharPackedIgnoreCaseSearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3CharPackedIgnoreCaseSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2CharPackedIgnoreCaseSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3CharPackedSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2CharPackedSearchValues.cs" />

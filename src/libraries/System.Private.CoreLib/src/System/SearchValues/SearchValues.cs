@@ -126,30 +126,20 @@ namespace System.Buffers
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                // If the values are sets of 2 or 3 ASCII letters with both cases, we can use an approach that
+                // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
                 // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
                 // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
-                if (PackedSpanHelpers.PackedIndexOfIsSupported && values.Length is 4 or 6 && minInclusive > 0)
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && values.Length == 4 && minInclusive > 0)
                 {
-                    Span<char> copy = stackalloc char[values.Length];
+                    Span<char> copy = stackalloc char[4];
                     values.CopyTo(copy);
                     copy.Sort();
 
-                    if (copy.Length == 4 &&
-                        (copy[0] ^ copy[2]) == 0x20 &&
+                    if ((copy[0] ^ copy[2]) == 0x20 &&
                         (copy[1] ^ copy[3]) == 0x20)
                     {
                         // "AaBb" => 'a', 'b'
                         return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
-                    }
-
-                    if (copy.Length == 6 &&
-                        (copy[0] ^ copy[3]) == 0x20 &&
-                        (copy[1] ^ copy[4]) == 0x20 &&
-                        (copy[2] ^ copy[5]) == 0x20)
-                    {
-                        // "AaBbCc" => 'a', 'b', 'c'
-                        return new Any3CharPackedIgnoreCaseSearchValues(copy[3], copy[4], copy[5]);
                     }
                 }
 
