@@ -2891,6 +2891,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 break;
             }
+#if defined(TARGET_X86)
+            else if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // We need SSE41 to handle long, use software fallback
+                break;
+            }
+#endif // TARGET_X86
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
@@ -2904,23 +2911,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
 
 #if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
+            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // We need SSE41 to handle long, use software fallback
-                    break;
-                }
-                // Create a GetElement node which handles decomposition
-                op1     = impSIMDPopStack();
-                op2     = gtNewIconNode(0);
-                retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
+                // We need SSE41 to handle long, use software fallback
                 break;
             }
 #endif // TARGET_X86
 
             op1     = impSIMDPopStack();
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewSimdToScalarNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
