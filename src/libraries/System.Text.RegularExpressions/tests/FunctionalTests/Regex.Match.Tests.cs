@@ -11,7 +11,6 @@ using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {

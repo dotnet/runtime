@@ -8,7 +8,6 @@ using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions.Tests
 {

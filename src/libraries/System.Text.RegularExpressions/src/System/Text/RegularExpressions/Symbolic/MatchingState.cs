@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Symbolic
