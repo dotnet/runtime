@@ -36,34 +36,27 @@ namespace System.Text.RegularExpressions
         public static bool OpcodeBacktracks(RegexOpcode opcode)
         {
             opcode &= RegexOpcode.OperatorMask;
-
-            switch (opcode)
-            {
-                case RegexOpcode.Oneloop:
-                case RegexOpcode.Onelazy:
-                case RegexOpcode.Notoneloop:
-                case RegexOpcode.Notonelazy:
-                case RegexOpcode.Setloop:
-                case RegexOpcode.Setlazy:
-                case RegexOpcode.Lazybranch:
-                case RegexOpcode.Branchmark:
-                case RegexOpcode.Lazybranchmark:
-                case RegexOpcode.Nullcount:
-                case RegexOpcode.Setcount:
-                case RegexOpcode.Branchcount:
-                case RegexOpcode.Lazybranchcount:
-                case RegexOpcode.Setmark:
-                case RegexOpcode.Capturemark:
-                case RegexOpcode.Getmark:
-                case RegexOpcode.Setjump:
-                case RegexOpcode.Backjump:
-                case RegexOpcode.Forejump:
-                case RegexOpcode.Goto:
-                    return true;
-
-                default:
-                    return false;
-            }
+            return opcode is
+                RegexOpcode.Oneloop or
+                RegexOpcode.Onelazy or
+                RegexOpcode.Notoneloop or
+                RegexOpcode.Notonelazy or
+                RegexOpcode.Setloop or
+                RegexOpcode.Setlazy or
+                RegexOpcode.Lazybranch or
+                RegexOpcode.Branchmark or
+                RegexOpcode.Lazybranchmark or
+                RegexOpcode.Nullcount or
+                RegexOpcode.Setcount or
+                RegexOpcode.Branchcount or
+                RegexOpcode.Lazybranchcount or
+                RegexOpcode.Setmark or
+                RegexOpcode.Capturemark or
+                RegexOpcode.Getmark or
+                RegexOpcode.Setjump or
+                RegexOpcode.Backjump or
+                RegexOpcode.Forejump or
+                RegexOpcode.Goto;
         }
 
 #if DEBUG
