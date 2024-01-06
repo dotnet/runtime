@@ -14,8 +14,8 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Matches_MultipleCapturingGroups(RegexEngine engine)
         {
-            string[] expectedGroupValues = { "abracadabra", "abra", "cad" };
-            string[] expectedGroupCaptureValues = { "abracad", "abra" };
+            string[] expectedGroupValues = ["abracadabra", "abra", "cad"];
+            string[] expectedGroupCaptureValues = ["abracad", "abra"];
 
             // Another example - given by Brad Merril in an article on RegularExpressions
             Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(abra(cad)?)+");

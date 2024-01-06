@@ -26,7 +26,7 @@ namespace System.Text
         {
             var chars = new char[stringBuilder.Length];
             stringBuilder.CopyTo(0, chars, 0, chars.Length);
-            return new[] { new ReadOnlyMemory<char>(chars) };
+            return [new ReadOnlyMemory<char>(chars)];
         }
     }
 }

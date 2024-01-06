@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions.Tests
             // GenerateUnicodeTables is not available in Release build
             if (genUnicode is not null)
             {
-                genUnicode.Invoke(null, new object[] { s_tmpWorkingDir });
+                genUnicode.Invoke(null, [s_tmpWorkingDir]);
             }
         }
 
@@ -141,7 +141,7 @@ namespace System.Text.RegularExpressions.Tests
             MethodInfo explore = regex.GetType().GetMethod("Explore", BindingFlags.NonPublic | BindingFlags.Instance);
             if (explore is not null)
             {
-                explore.Invoke(regex, new object[] { includeDotStarred, includeReverse, includeOriginal, !exploreAsNFA, exploreAsNFA });
+                explore.Invoke(regex, [includeDotStarred, includeReverse, includeOriginal, !exploreAsNFA, exploreAsNFA]);
                 return true;
             }
 
@@ -153,7 +153,7 @@ namespace System.Text.RegularExpressions.Tests
             MethodInfo saveDgml = regex.GetType().GetMethod("SaveDGML", BindingFlags.NonPublic | BindingFlags.Instance);
             if (saveDgml is not null)
             {
-                saveDgml.Invoke(regex, new object[] { writer, maxLabelLength });
+                saveDgml.Invoke(regex, [writer, maxLabelLength]);
                 return true;
             }
 
@@ -163,7 +163,7 @@ namespace System.Text.RegularExpressions.Tests
         #region Random input generation tests
         public static IEnumerable<object[]> SampledMatchesMatchAsExpected_TestData()
         {
-            string[] patterns = new string[] { @"pa[5\$s]{2}w[o0]rd$", @"\w\d+", @"\d{10}" };
+            string[] patterns = [@"pa[5\$s]{2}w[o0]rd$", @"\w\d+", @"\d{10}"];
             foreach (string pattern in patterns)
             {
                 Regex re = new Regex(pattern, RegexHelpers.RegexOptionNonBacktracking);
@@ -193,11 +193,11 @@ namespace System.Text.RegularExpressions.Tests
             MethodInfo? gen = regex.GetType().GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance);
             if (gen is not null)
             {
-                return (IEnumerable<string>)gen.Invoke(regex, new object[] { how_many_inputs, randomseed });
+                return (IEnumerable<string>)gen.Invoke(regex, [how_many_inputs, randomseed]);
             }
             else
             {
-                return new string[] { };
+                return [];
             }
         }
         #endregion

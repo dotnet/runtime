@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions.Tests
             if (PlatformDetection.IsBrowser)
             {
                 // These tests that use Roslyn don't work well on browser wasm today
-                return new MetadataReference[0];
+                return [];
             }
 
             // Typically we'd want to use the right reference assemblies, but as we're not persisting any
@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Tests
         internal static async Task<Regex> SourceGenRegexAsync(
             string pattern, CultureInfo? culture, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
         {
-            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, culture, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
+            Regex[] results = await SourceGenRegexAsync([(pattern, culture, options, matchTimeout)], cancellationToken).ConfigureAwait(false);
             return results[0];
         }
 

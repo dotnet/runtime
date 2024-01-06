@@ -1515,12 +1515,12 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         new CaptureData("209.25.0.111", 0, 12),
                         new CaptureData("209.25.0.111", 0, 12),
-                        new CaptureData(".111", 8, 4, new CaptureData[]
-                        {
+                        new CaptureData(".111", 8, 4,
+                        [
                             new CaptureData(".25", 3, 3),
                             new CaptureData(".0", 6, 2),
                             new CaptureData(".111", 8, 4),
-                        }),
+                        ]),
                     }
                 };
 
@@ -1657,12 +1657,12 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData[]
                         {
                             new CaptureData("aaaa", 0, 4),
-                            new CaptureData("a", 2, 1, new CaptureData[]
-                            {
+                            new CaptureData("a", 2, 1,
+                            [
                                 new CaptureData("a", 0, 1),
                                 new CaptureData("a", 1, 1),
                                 new CaptureData("a", 2, 1),
-                            }),
+                            ]),
                             new CaptureData("a", 3, 1)
                         }
                     };

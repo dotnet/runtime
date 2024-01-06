@@ -229,7 +229,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             const string Pattern = @"\D+(?<digit>\d+)\D+(?<digit>\d+)?";
-            string[] inputs = { "abc123def456", "abc123def" };
+            string[] inputs = ["abc123def456", "abc123def"];
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
@@ -622,7 +622,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             const string Pattern = @"^([a-z]+)(\d+)?\.([a-z]+(\d)*)$";
-            string[] values = { "AC10", "Za203.CYM", "XYZ.CoA", "ABC.x170" };
+            string[] values = ["AC10", "Za203.CYM", "XYZ.CoA", "ABC.x170"];
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
@@ -1039,7 +1039,7 @@ namespace System.Text.RegularExpressions.Tests
 
             const string Input = "capybara,squirrel,chipmunk,porcupine";
             const string Pattern = @"\G(\w+\s?\w*),?";
-            string[] expected = new[] { "capybara", "squirrel", "chipmunk", "porcupine" };
+            string[] expected = ["capybara", "squirrel", "chipmunk", "porcupine"];
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 

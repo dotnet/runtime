@@ -115,7 +115,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "This ", "is ", "a ", "sentence" };
+            string[] expected = ["This ", "is ", "a ", "sentence"];
             ICollection<Capture> collection = CreateCollection();
 
             Capture[] array = new Capture[collection.Count];

@@ -1280,8 +1280,8 @@ public partial class Program
         public static IEnumerable<object[]> InvocationTypes
             => new object[][]
             {
-                new object[] { InvocationType.StaticMethods },
-                new object[] { InvocationType.Constructor }
+                [InvocationType.StaticMethods],
+                [InvocationType.Constructor]
             };
 
         public enum InvocationType
