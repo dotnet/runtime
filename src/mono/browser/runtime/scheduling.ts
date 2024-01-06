@@ -6,7 +6,6 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import cwraps from "./cwraps";
 import { ENVIRONMENT_IS_WORKER, Module, loaderHelpers } from "./globals";
 import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
-import { mono_log_info } from "./logging";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;

@@ -13,7 +13,7 @@ import { Int32Ptr } from "./types/emscripten";
 import { ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_log_debug, mono_log_info, mono_wasm_symbolicate_string } from "./logging";
+import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
