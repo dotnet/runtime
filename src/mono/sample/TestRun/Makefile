@@ -9,7 +9,7 @@ AOT?=false
 QEMU=qemu-riscv64-static
 SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
 CORE_BASELINE_ROOT=/home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.x64.Debug/Tests/Core_Root
-ANY_PATH= /home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.x64.Debug/JIT/Directed/Directed_3/Directed_3.dll
+ANY_PATH= /home/wuxinlong/workspace/runtime/artifacts/tests/coreclr/linux.riscv64.Debug/JIT/Directed/Directed_3/Directed_3.dll
 
 GitHubKey=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
 
@@ -17,8 +17,8 @@ GitHubKey=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
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = "-v --trace=all --break StrAccess1:Run"
-MONO_ENV_RUN_OPTIONS=""
+MONO_ENV_DEBUG_OPTIONS = "-v --trace=all --break AliasingRetBuf:TestEntryPoint"
+MONO_ENV_RUN_OPTIONS="-v --trace=all"
 
 build: TestRun.cs
 	@mcs TestRun.cs
@@ -109,9 +109,8 @@ debug-any-baseline:
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
 	gdb \
-	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-x86/shared/Microsoft.NETCore.App/8.0.0" \
-	-ex "b mini.c:2156" \
-	--args $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet \
+	-ex "set solib-search-path ${CORE_BASELINE_ROOT}" \
+	--args ${CORE_BASELINE_ROOT}/corerun -p System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=true $(ANY_PATH) \
 	$(ANY_PATH) \
 
 clean:
