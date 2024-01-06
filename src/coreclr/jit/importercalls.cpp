@@ -1440,6 +1440,33 @@ DONE_CALL:
                 {
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
                 }
+
+                if (JitConfig.JitProfileValues() && call->IsCall() &&
+                    call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+                {
+                    if (opts.IsOptimizedWithProfile())
+                    {
+                        call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
+                        if (call->OperIs(GT_QMARK))
+                        {
+                            unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
+                            impStoreTemp(tmp, call, CHECK_SPILL_ALL);
+                            call = gtNewLclvNode(tmp, call->TypeGet());
+                        }
+                    }
+                    else if (opts.IsInstrumented() &&
+                             !strcmp(info.compFullName, "System.MemoryExtensions:SequenceEqual[int](System.Span`1[int],"
+                                                        "System.ReadOnlySpan`1[int]):ubyte"))
+                    {
+                        // We might want to instrument it for optimized versions too, but we don't currently.
+                        HandleHistogramProfileCandidateInfo* pInfo =
+                            new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                        pInfo->ilOffset                                       = rawILOffset;
+                        pInfo->probeIndex                                     = 0;
+                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+                    }
+                }
             }
 
             //-------------------------------------------------------------------------
@@ -1536,7 +1563,15 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             argNum = 2;
 
             minValue = 1; // TODO: enable for 0 as well.
-            maxValue = (ssize_t)getUnrollThreshold(Memmove);
+            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemmove);
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+        {
+            // dst(0), src(1), len(2)
+            argNum = 2;
+
+            minValue = 1; // TODO: enable for 0 as well.
+            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemcmp);
         }
         else
         {
@@ -2729,7 +2764,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
 
             case NI_System_Buffer_Memmove:
-                // We're going to instrument this one
+            case NI_System_SpanHelpers_SequenceEqual:
+                // We're going to instrument these
                 betterToExpand = opts.IsInstrumented();
                 break;
 
