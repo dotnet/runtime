@@ -755,9 +755,6 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 	klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_internal (klass);
 
-	if (m_class_is_simd_type (klass))
-		return FALSE;
-
 	int size = mono_class_value_size (klass, NULL);
 	if (size == 0 || size > 8)
 		return FALSE;

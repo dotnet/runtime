@@ -4167,7 +4167,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
 		case LLVMArgAsFpArgs:
-		{
+		case LLVMArgWasmVtypeAsScalar: {
 			if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
 				ctx->values [reg] = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
@@ -4935,6 +4935,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 		emit_store (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE), is_volatile);
+		load_name = "wasm_vtype_as_scalar";
+		should_promote_to_value = TRUE;
 		break;
 	}
 	default:
@@ -5387,6 +5389,7 @@ static LLVMValueRef
 concatenate_vectors (EmitContext *ctx, LLVMValueRef xs, LLVMValueRef ys)
 {
 	LLVMTypeRef t = LLVMTypeOf (xs);
+	g_assert (LLVMGetTypeKind (t) == LLVMVectorTypeKind);
 	unsigned int elems = LLVMGetVectorSize (t) * 2;
 	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	for (guint i = 0; i < elems; ++i)
@@ -6141,8 +6144,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					}
 					break;
 				case LLVMArgWasmVtypeAsScalar:
-					g_assert (addresses [ins->sreg1]);
-					retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+					if (!addresses [ins->sreg1]) {
+						/* SIMD value */
+						g_assert (lhs);
+						retval = LLVMBuildBitCast (builder, lhs, ret_type, "");
+						mono_llvm_dump_value (lhs);
+						mono_llvm_dump_type (ret_type);
+					} else {
+						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+					}
 					break;
 				}
 				LLVMBuildRet (builder, retval);
