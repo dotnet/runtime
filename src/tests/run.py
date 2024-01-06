@@ -805,8 +805,8 @@ def run_tests(args,
         test_env_script_path  : Path to script to use to set the test environment, if any.
     """
 
-    # Set default per-test timeout to 30 minutes (in milliseconds).
-    per_test_timeout = 30*60*1000
+    # Set default per-test timeout to 2 minutes (in milliseconds).
+    per_test_timeout = 5*60*1000
 
     # Setup the environment
     if args.long_gc:
@@ -862,8 +862,11 @@ def run_tests(args,
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
-    print("Setting __TestTimeout=%s" % str(per_test_timeout))
-    os.environ["__TestTimeout"] = str(per_test_timeout)
+    if "__TestTimeout" in os.environ:
+        print("__TestTimeout already set in environment to %s" % os.environ["__TestTimeout"])
+    else:
+        print("Setting __TestTimeout=%s" % str(per_test_timeout))
+        os.environ["__TestTimeout"] = str(per_test_timeout)
 
     # Set CORE_ROOT
     print("Setting CORE_ROOT=%s" % args.core_root)
