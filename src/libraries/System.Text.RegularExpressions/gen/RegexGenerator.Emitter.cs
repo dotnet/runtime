@@ -2962,14 +2962,9 @@ namespace System.Text.RegularExpressions.Generator
                     $"{sliceSpan}[{Sum(sliceStaticPos, offset)}]" :
                      "inputSpan[pos - 1]";
 
-                if (node.IsSetFamily)
-                {
-                    expr = MatchCharacterClass(expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers);
-                }
-                else
-                {
-                    expr = $"{expr} {(node.IsOneFamily ? "!=" : "==")} {Literal(node.Ch)}";
-                }
+                expr = node.IsSetFamily ?
+                    MatchCharacterClass(expr, node.Str!, negate: true, additionalDeclarations, requiredHelpers) :
+                    $"{expr} {(node.IsOneFamily ? "!=" : "==")} {Literal(node.Ch)}";
 
                 if (clauseOnly)
                 {
@@ -3979,14 +3974,9 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"int {iterationLocal} = 0;");
 
                         string expr = $"inputSpan[pos - {iterationLocal} - 1]";
-                        if (node.IsSetFamily)
-                        {
-                            expr = MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
-                        }
-                        else
-                        {
-                            expr = $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
-                        }
+                        expr = node.IsSetFamily ?
+                            MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers) :
+                            $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
 
                         string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
                         using (EmitBlock(writer, $"while ({maxClause}pos > {iterationLocal} && {expr})"))
@@ -4092,14 +4082,9 @@ namespace System.Text.RegularExpressions.Generator
                     $"{sliceSpan}[{sliceStaticPos}]" :
                     "inputSpan[pos - 1]";
 
-                if (node.IsSetFamily)
-                {
-                    expr = MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
-                }
-                else
-                {
-                    expr = $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
-                }
+                expr = node.IsSetFamily ?
+                    MatchCharacterClass(expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers) :
+                    $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
 
                 string spaceAvailable =
                     rtl ? "pos > 0" :

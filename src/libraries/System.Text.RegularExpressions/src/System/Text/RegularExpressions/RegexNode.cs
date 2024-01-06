@@ -1603,14 +1603,9 @@ namespace System.Text.RegularExpressions
                         prev.Str = prev.Ch.ToString();
                     }
 
-                    if ((optionsAt & RegexOptions.RightToLeft) == 0)
-                    {
-                        prev.Str = (at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str;
-                    }
-                    else
-                    {
-                        prev.Str = (at.Kind == RegexNodeKind.One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str;
-                    }
+                    prev.Str = (optionsAt & RegexOptions.RightToLeft) == 0 ?
+                        ((at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str) :
+                        ((at.Kind == RegexNodeKind.One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str);
                 }
                 else if (at.Kind == RegexNodeKind.Empty)
                 {

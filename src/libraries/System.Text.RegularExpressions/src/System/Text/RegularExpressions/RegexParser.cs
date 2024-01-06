@@ -913,14 +913,9 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (_capnames?[uncapname] is int tmpCapnum)
-                                        {
-                                            uncapnum = tmpCapnum;
-                                        }
-                                        else
-                                        {
+                                        uncapnum = _capnames?[uncapname] is int tmpCapnum ?
+                                            tmpCapnum :
                                             throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, uncapname));
-                                        }
 
                                         // check if we have bogus character after the name
                                         if (_pos < _pattern.Length && _pattern[_pos] != close)
