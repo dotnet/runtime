@@ -1449,14 +1449,13 @@ DONE_CALL:
                         call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
                         if (call->OperIs(GT_QMARK))
                         {
+                            // QMARK has to be a root node
                             unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
                             impStoreTemp(tmp, call, CHECK_SPILL_ALL);
                             call = gtNewLclvNode(tmp, call->TypeGet());
                         }
                     }
-                    else if (opts.IsInstrumented() &&
-                             !strcmp(info.compFullName, "System.MemoryExtensions:SequenceEqual[int](System.Span`1[int],"
-                                                        "System.ReadOnlySpan`1[int]):ubyte"))
+                    else if (opts.IsInstrumented())
                     {
                         // We might want to instrument it for optimized versions too, but we don't currently.
                         HandleHistogramProfileCandidateInfo* pInfo =
