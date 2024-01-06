@@ -1061,7 +1061,7 @@ namespace System.Text.RegularExpressions.Symbolic
         // -When backtracking is being simulated calling into PruneLowerPriorityThanNullability
         private SymbolicRegexNode<TSet> CreateDerivativeWrapper(SymbolicRegexBuilder<TSet> builder, TSet elem, uint context)
         {
-            if (this._kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+            if (_kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
             {
                 // This node kind can only occur at the top level and indicates that backtracking simulation is turned off
                 Debug.Assert(_left is not null);
