@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-
 import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js, end_marshal_task_to_js } from "./marshal-to-js";
