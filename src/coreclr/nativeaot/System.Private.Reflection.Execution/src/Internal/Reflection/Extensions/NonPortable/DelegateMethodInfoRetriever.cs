@@ -17,8 +17,6 @@ namespace Internal.Reflection.Extensions.NonPortable
     {
         public static MethodInfo GetDelegateMethodInfo(Delegate del)
         {
-            if (del == null)
-                throw new ArgumentException();
             Delegate[] invokeList = del.GetInvocationList();
             del = invokeList[invokeList.Length - 1];
             IntPtr originalLdFtnResult = RuntimeAugments.GetDelegateLdFtnResult(del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint);

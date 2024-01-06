@@ -51,7 +51,7 @@ bool EHblkDsc::InTryRegionILRange(BasicBlock* pBlk)
 {
     // BBF_INTERNAL blocks may not have a valid bbCodeOffs. This function
     // should only be used before any BBF_INTERNAL blocks have been added.
-    assert(!(pBlk->bbFlags & BBF_INTERNAL));
+    assert(!pBlk->HasFlag(BBF_INTERNAL));
 
     return Compiler::jitIsBetween(pBlk->bbCodeOffs, ebdTryBegOffs(), ebdTryEndOffs());
 }
@@ -60,7 +60,7 @@ bool EHblkDsc::InFilterRegionILRange(BasicBlock* pBlk)
 {
     // BBF_INTERNAL blocks may not have a valid bbCodeOffs. This function
     // should only be used before any BBF_INTERNAL blocks have been added.
-    assert(!(pBlk->bbFlags & BBF_INTERNAL));
+    assert(!pBlk->HasFlag(BBF_INTERNAL));
 
     return HasFilter() && Compiler::jitIsBetween(pBlk->bbCodeOffs, ebdFilterBegOffs(), ebdFilterEndOffs());
 }
@@ -69,7 +69,7 @@ bool EHblkDsc::InHndRegionILRange(BasicBlock* pBlk)
 {
     // BBF_INTERNAL blocks may not have a valid bbCodeOffs. This function
     // should only be used before any BBF_INTERNAL blocks have been added.
-    assert(!(pBlk->bbFlags & BBF_INTERNAL));
+    assert(!pBlk->HasFlag(BBF_INTERNAL));
 
     return Compiler::jitIsBetween(pBlk->bbCodeOffs, ebdHndBegOffs(), ebdHndEndOffs());
 }
@@ -588,7 +588,7 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
 
 // bbIsTryBeg() returns true if this block is the start of any try region.
 //              This is computed by examining the current values in the
-//              EH table rather than just looking at the block->bbFlags.
+//              EH table rather than just looking at the block's bbFlags.
 //
 // Note that a block is the beginning of any try region if it is the beginning of the
 // most nested try region it is a member of. Thus, we only need to check the EH
@@ -815,7 +815,7 @@ unsigned Compiler::ehGetEnclosingRegionIndex(unsigned regionIndex, bool* inTryRe
  */
 void Compiler::ehUpdateForDeletedBlock(BasicBlock* block)
 {
-    assert(block->bbFlags & BBF_REMOVED);
+    assert(block->HasFlag(BBF_REMOVED));
 
     if (!block->hasTryIndex() && !block->hasHndIndex())
     {
@@ -897,7 +897,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if FEATURE_EH_CALLFINALLY_THUNKS
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -1075,22 +1075,7 @@ void* Compiler::ehEmitCookie(BasicBlock* block)
 {
     noway_assert(block);
 
-    void* cookie;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (block->bbFlags & BBF_FINALLY_TARGET)
-    {
-        // Use the offset of the beginning of the NOP padding, not the main block.
-        // This might include loop head padding, too, if this is a loop head.
-        assert(block->bbUnwindNopEmitCookie); // probably not null-initialized, though, so this might not tell us
-                                              // anything
-        cookie = block->bbUnwindNopEmitCookie;
-    }
-    else
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    {
-        cookie = block->bbEmitCookie;
-    }
+    void* cookie = block->bbEmitCookie;
 
     noway_assert(cookie != nullptr);
     return cookie;
@@ -1308,7 +1293,7 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
 
     // Find the first non-removed block after the 'try' region to end our iteration.
     bEnd = handlerTab->ebdTryLast->Next();
-    while ((bEnd != nullptr) && (bEnd->bbFlags & BBF_REMOVED))
+    while ((bEnd != nullptr) && bEnd->HasFlag(BBF_REMOVED))
     {
         bEnd = bEnd->Next();
     }
@@ -1317,7 +1302,7 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
     block = handlerTab->ebdTryBeg;
     while (block != nullptr)
     {
-        if ((block->bbFlags & BBF_REMOVED) == 0)
+        if (!block->HasFlag(BBF_REMOVED))
         {
             bLast = block;
         }
@@ -1337,7 +1322,7 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
 
     // Find the first non-removed block after the handler region to end our iteration.
     bEnd = handlerTab->ebdHndLast->Next();
-    while ((bEnd != nullptr) && (bEnd->bbFlags & BBF_REMOVED))
+    while ((bEnd != nullptr) && bEnd->HasFlag(BBF_REMOVED))
     {
         bEnd = bEnd->Next();
     }
@@ -1346,7 +1331,7 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
     block = handlerTab->ebdHndBeg;
     while (block != nullptr)
     {
-        if ((block->bbFlags & BBF_REMOVED) == 0)
+        if (!block->HasFlag(BBF_REMOVED))
         {
             bLast = block;
         }
@@ -1470,7 +1455,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
             {
                 if (blk->getTryIndex() == XTnum)
                 {
-                    noway_assert(blk->bbFlags & BBF_REMOVED);
+                    noway_assert(blk->HasFlag(BBF_REMOVED));
                     INDEBUG(blk->setTryIndex(MAX_XCPTN_INDEX);) // Note: this is still a legal index, just unlikely
                 }
                 else if (blk->getTryIndex() > XTnum)
@@ -1483,7 +1468,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
             {
                 if (blk->getHndIndex() == XTnum)
                 {
-                    noway_assert(blk->bbFlags & BBF_REMOVED);
+                    noway_assert(blk->HasFlag(BBF_REMOVED));
                     INDEBUG(blk->setHndIndex(MAX_XCPTN_INDEX);) // Note: this is still a legal index, just unlikely
                 }
                 else if (blk->getHndIndex() > XTnum)
@@ -1822,8 +1807,8 @@ void Compiler::fgSortEHTable()
 //
 //      to this:
 //
-//               try3 -------------   BB08  // empty BBJ_NONE block
-//               |      try2 ------   BB09  // empty BBJ_NONE block
+//               try3 -------------   BB08  // empty BBJ_ALWAYS block
+//               |      try2 ------   BB09  // empty BBJ_ALWAYS block
 //               |      |      try1
 //               |      |      |---   BB01
 //               |      |      |      BB02
@@ -1881,12 +1866,12 @@ void Compiler::fgSortEHTable()
 //               |      |      handler1 BB03
 //               |      |      |        BB04
 //               |      |      |------- BB05
-//               |      |-------------- BB06 // empty BBJ_NONE block
-//               |--------------------- BB07 // empty BBJ_NONE block
+//               |      |-------------- BB06 // empty BBJ_ALWAYS block
+//               |--------------------- BB07 // empty BBJ_ALWAYS block
 //
 //      No branches need to change: if something branched to BB05, it will still branch to BB05. If BB05 is a
-//      BBJ_NONE block, then control flow will fall through the newly added blocks as well. If it is anything
-//      else, it will retain that block branch type and BB06 and BB07 will be unreachable.
+//      BBJ_ALWAYS block to the next block, then control flow will fall through the newly added blocks as well.
+//      If it is anything else, it will retain that block branch type and BB06 and BB07 will be unreachable.
 //
 //      The benefit of this is, once again, to remove the need to consider every EH region when adding new blocks.
 //
@@ -1999,7 +1984,7 @@ bool Compiler::fgNormalizeEHCase1()
         {
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
-            BasicBlock* newHndStart = BasicBlock::New(this, BBJ_NONE);
+            BasicBlock* newHndStart = BasicBlock::New(this, BBJ_ALWAYS, handlerStart);
             fgInsertBBbefore(handlerStart, newHndStart);
             fgAddRefPred(handlerStart, newHndStart);
 
@@ -2039,7 +2024,7 @@ bool Compiler::fgNormalizeEHCase1()
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
-            newHndStart->bbFlags |= (BBF_DONT_REMOVE | BBF_INTERNAL);
+            newHndStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL | BBF_NONE_QUIRK);
             modified = true;
 
 #ifdef DEBUG
@@ -2168,7 +2153,7 @@ bool Compiler::fgNormalizeEHCase2()
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
-                        BasicBlock* newTryStart = BasicBlock::New(this, BBJ_NONE);
+                        BasicBlock* newTryStart = BasicBlock::New(this, BBJ_ALWAYS, insertBeforeBlk);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
                         fgAddRefPred(insertBeforeBlk, newTryStart);
@@ -2181,6 +2166,12 @@ bool Compiler::fgNormalizeEHCase2()
                             assert(insertBeforeBlk->bbRefs >= 2);
                             insertBeforeBlk->bbRefs--;
                             newTryStart->bbRefs++;
+                        }
+
+                        // Same for OSR's protected entry BB.
+                        if (insertBeforeBlk == fgEntryBB)
+                        {
+                            fgEntryBB = newTryStart;
                         }
 
                         JITDUMP("'try' begin for EH#%u and EH#%u are same block; inserted new " FMT_BB " before " FMT_BB
@@ -2201,11 +2192,11 @@ bool Compiler::fgNormalizeEHCase2()
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
-                        newTryStart->bbFlags |= (BBF_DONT_REMOVE | BBF_INTERNAL);
+                        newTryStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL | BBF_NONE_QUIRK);
 
-                        if (insertBeforeBlk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
+                        if (insertBeforeBlk->HasFlag(BBF_BACKWARD_JUMP_TARGET))
                         {
-                            newTryStart->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
+                            newTryStart->SetFlags(BBF_BACKWARD_JUMP_TARGET);
                         }
 
                         // Now we need to split any flow edges targeting the old try begin block between the old
@@ -2263,13 +2254,11 @@ bool Compiler::fgNormalizeEHCase2()
 
                             // Change pred branches.
                             //
-                            if (!predBlock->KindIs(BBJ_NONE))
-                            {
-                                fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
-                            }
+                            fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
 
-                            if (predBlock->NextIs(newTryStart) && predBlock->bbFallsThrough())
+                            if (predBlock->NextIs(newTryStart) && predBlock->KindIs(BBJ_COND))
                             {
+                                predBlock->SetFalseTarget(newTryStart);
                                 fgRemoveRefPred(insertBeforeBlk, predBlock);
                                 fgAddRefPred(newTryStart, predBlock);
                             }
@@ -2398,7 +2387,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
             filterBb->bbSetRunRarely();
-            filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
+            filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
             eh->ebdHandlerType    = EH_HANDLER_FILTER;
@@ -2647,7 +2636,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
                     // shares a 'last' pointer
 
-                    BasicBlock* newLast = BasicBlock::New(this, BBJ_NONE);
+                    BasicBlock* newLast = BasicBlock::New(this, BBJ_ALWAYS, insertAfterBlk->Next());
                     newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);
@@ -2695,7 +2684,7 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
-                    newLast->bbFlags |= BBF_INTERNAL;
+                    newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
                     fgAddRefPred(newLast, insertAfterBlk);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
@@ -2993,30 +2982,30 @@ void Compiler::fgVerifyHandlerTab()
         assert(HBtab->ebdHndBeg != nullptr);
         assert(HBtab->ebdHndLast != nullptr);
 
-        assert(HBtab->ebdTryBeg->bbFlags & BBF_DONT_REMOVE);
+        assert(HBtab->ebdTryBeg->HasFlag(BBF_DONT_REMOVE));
 
-        assert(HBtab->ebdHndBeg->bbFlags & BBF_DONT_REMOVE);
+        assert(HBtab->ebdHndBeg->HasFlag(BBF_DONT_REMOVE));
 
-        assert((HBtab->ebdTryBeg->bbFlags & BBF_REMOVED) == 0);
-        assert((HBtab->ebdTryLast->bbFlags & BBF_REMOVED) == 0);
-        assert((HBtab->ebdHndBeg->bbFlags & BBF_REMOVED) == 0);
-        assert((HBtab->ebdHndLast->bbFlags & BBF_REMOVED) == 0);
+        assert(!HBtab->ebdTryBeg->HasFlag(BBF_REMOVED));
+        assert(!HBtab->ebdTryLast->HasFlag(BBF_REMOVED));
+        assert(!HBtab->ebdHndBeg->HasFlag(BBF_REMOVED));
+        assert(!HBtab->ebdHndLast->HasFlag(BBF_REMOVED));
 
         if (HBtab->HasFilter())
         {
             assert(HBtab->ebdFilter != nullptr);
-            assert(HBtab->ebdFilter->bbFlags & BBF_DONT_REMOVE);
-            assert((HBtab->ebdFilter->bbFlags & BBF_REMOVED) == 0);
+            assert(HBtab->ebdFilter->HasFlag(BBF_DONT_REMOVE));
+            assert(!HBtab->ebdFilter->HasFlag(BBF_REMOVED));
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
         if (fgFuncletsCreated)
         {
-            assert(HBtab->ebdHndBeg->bbFlags & BBF_FUNCLET_BEG);
+            assert(HBtab->ebdHndBeg->HasFlag(BBF_FUNCLET_BEG));
 
             if (HBtab->HasFilter())
             {
-                assert(HBtab->ebdFilter->bbFlags & BBF_FUNCLET_BEG);
+                assert(HBtab->ebdFilter->HasFlag(BBF_FUNCLET_BEG));
             }
         }
 #endif // FEATURE_EH_FUNCLETS
@@ -3037,7 +3026,7 @@ void Compiler::fgVerifyHandlerTab()
     unsigned newBBnum = 1;
     for (BasicBlock* const block : Blocks())
     {
-        assert((block->bbFlags & BBF_REMOVED) == 0);
+        assert(!block->HasFlag(BBF_REMOVED));
         assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
         assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
         blockNumMap[block->bbNum] = newBBnum++;
@@ -3081,7 +3070,7 @@ void Compiler::fgVerifyHandlerTab()
     {
         // Assert some things about the "first funclet block" pointer.
         assert(fgFirstFuncletBB != nullptr);
-        assert((fgFirstFuncletBB->bbFlags & BBF_REMOVED) == 0);
+        assert(!fgFirstFuncletBB->HasFlag(BBF_REMOVED));
         bbNumFirstFunclet = blockNumMap[fgFirstFuncletBB->bbNum];
         assert(bbNumFirstFunclet != 0);
     }
@@ -3471,13 +3460,13 @@ void Compiler::fgVerifyHandlerTab()
             if (fgFuncletsCreated)
             {
                 // Make sure blocks that aren't the first block of a funclet do not have the BBF_FUNCLET_BEG flag set.
-                assert((block->bbFlags & BBF_FUNCLET_BEG) == 0);
+                assert(!block->HasFlag(BBF_FUNCLET_BEG));
             }
 #endif // FEATURE_EH_FUNCLETS
         }
 
         // Check for legal block types
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_EHFINALLYRET:
             {
@@ -4011,43 +4000,6 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-#if defined(TARGET_ARM)
-
-/*****************************************************************************
- * We just removed a BBJ_CALLFINALLY/BBJ_ALWAYS pair. If this was the only such pair
- * targeting the BBJ_ALWAYS target, then we need to clear the BBF_FINALLY_TARGET bit
- * so that target can also be removed. 'block' is the finally target. Since we just
- * removed the BBJ_ALWAYS, it better have the BBF_FINALLY_TARGET bit set.
- */
-
-void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
-{
-    assert(fgPredsComputed);
-    assert((block->bbFlags & BBF_FINALLY_TARGET) != 0);
-
-    for (BasicBlock* const predBlock : block->PredBlocks())
-    {
-        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(block))
-        {
-            BasicBlock* pPrev = predBlock->Prev();
-            if (pPrev != nullptr)
-            {
-                if (pPrev->KindIs(BBJ_CALLFINALLY))
-                {
-                    // We found a BBJ_CALLFINALLY / BBJ_ALWAYS that still points to this finally target
-                    return;
-                }
-            }
-        }
-    }
-
-    // Didn't find any BBJ_CALLFINALLY / BBJ_ALWAYS that still points here, so clear the bit
-
-    block->bbFlags &= ~BBF_FINALLY_TARGET;
-}
-
-#endif // defined(TARGET_ARM)
-
 /*****************************************************************************
  * Is this an intra-handler control flow edge?
  *
@@ -4082,11 +4034,11 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
     {
         assert((xtab->ebdHndBeg == block) || // The normal case
                (xtab->ebdHndBeg->NextIs(block) &&
-                (xtab->ebdHndBeg->bbFlags & BBF_INTERNAL))); // After we've already inserted a header block, and we're
-                                                             // trying to decide how to split up the predecessor edges.
+                xtab->ebdHndBeg->HasFlag(BBF_INTERNAL))); // After we've already inserted a header block, and we're
+                                                          // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
-            assert(predBlock->HasJumpTo(block));
+            assert(predBlock->TargetIs(block));
 
             // A BBJ_CALLFINALLY predecessor of the handler can only come from the corresponding try,
             // not from any EH clauses nested in this handler. However, we represent the BBJ_CALLFINALLY
@@ -4346,7 +4298,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             }
 #endif // DEBUG
             HBtab->ebdTryBeg = bPrev;
-            bPrev->bbFlags |= BBF_DONT_REMOVE;
+            bPrev->SetFlags(BBF_DONT_REMOVE);
         }
 
         if (HBtab->ebdHndBeg == block)
@@ -4359,7 +4311,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             HBtab->ebdHndBeg = bPrev;
-            bPrev->bbFlags |= BBF_DONT_REMOVE;
+            bPrev->SetFlags(BBF_DONT_REMOVE);
 
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
             noway_assert(block->countOfInEdges() > 0);
@@ -4369,14 +4321,14 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
             {
-                assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
-                bPrev->bbFlags |= BBF_FUNCLET_BEG;
-                block->bbFlags &= ~BBF_FUNCLET_BEG;
+                assert(block->HasFlag(BBF_FUNCLET_BEG));
+                bPrev->SetFlags(BBF_FUNCLET_BEG);
+                block->RemoveFlags(BBF_FUNCLET_BEG);
             }
 #endif // FEATURE_EH_FUNCLETS
 
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of
+            // a BBJ_EHFILTERRET block that has a bbTarget that jumps to the first block of
             // its handler. So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
@@ -4384,17 +4336,17 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 BasicBlock* bFilterLast = HBtab->BBFilterLast();
                 assert(bFilterLast != nullptr);
                 assert(bFilterLast->KindIs(BBJ_EHFILTERRET));
-                assert(bFilterLast->HasJumpTo(block));
+                assert(bFilterLast->TargetIs(block));
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating bbJumpDest for filter ret block: " FMT_BB " => " FMT_BB "\n",
+                    printf("EH#%u: Updating bbTarget for filter ret block: " FMT_BB " => " FMT_BB "\n",
                            ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
-                // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->GetJumpDest(), bFilterLast);
-                bFilterLast->SetJumpDest(bPrev);
+                // Change the bbTarget for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRemoveRefPred(bFilterLast->GetTarget(), bFilterLast);
+                bFilterLast->SetTarget(bPrev);
                 fgAddRefPred(bPrev, bFilterLast);
             }
         }
@@ -4413,14 +4365,14 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
 
             HBtab->ebdFilter = bPrev;
-            bPrev->bbFlags |= BBF_DONT_REMOVE;
+            bPrev->SetFlags(BBF_DONT_REMOVE);
 
 #if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
             {
-                assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
-                bPrev->bbFlags |= BBF_FUNCLET_BEG;
-                block->bbFlags &= ~BBF_FUNCLET_BEG;
+                assert(block->HasFlag(BBF_FUNCLET_BEG));
+                bPrev->SetFlags(BBF_FUNCLET_BEG);
+                block->RemoveFlags(BBF_FUNCLET_BEG);
             }
 #endif // FEATURE_EH_FUNCLETS
 

@@ -27,7 +27,7 @@ public class TestClass
     }
 }
 
-public class IUnknownMarshalingTest 
+public class IUnknownMarshalingTest
 {
     [DllImport(@"IUnknownNative", CallingConvention = CallingConvention.Cdecl)]
     private static extern bool Marshal_IUnknown([In]IntPtr ptr);
@@ -36,14 +36,14 @@ public class IUnknownMarshalingTest
 
     public void GetIUnknownForObjectTest()
     {
-        
+
         try
         {
             //test null
-            IntPtr nullPtr = Marshal.GetIUnknownForObject(null);            
+            IntPtr nullPtr = Marshal.GetIUnknownForObject(null);
         }
         catch (ArgumentNullException) { }
-        
+
 
         foreach (object obj in TestObjects)
         {
@@ -57,7 +57,7 @@ public class IUnknownMarshalingTest
                 {
                     throw new Exception("Failure on native side. Ref counts do not work as expected");
                 }
-            }          
+            }
             finally
             {
                 if (ptr != IntPtr.Zero)
@@ -73,7 +73,7 @@ public class IUnknownMarshalingTest
         IntPtr nullPtr = Marshal.GetComInterfaceForObject(null, typeof(object));
             if (nullPtr != IntPtr.Zero)
                 throw new Exception("A valid ptr was returned for null object.");
-       
+
         foreach (object obj in TestObjects)
         {
             IntPtr ptr = IntPtr.Zero;
@@ -86,7 +86,7 @@ public class IUnknownMarshalingTest
                 {
                     throw new Exception("Failure on native side. Ref counts do not work as expected");
                 }
-            }           
+            }
             finally
             {
                 if (ptr != IntPtr.Zero)
@@ -110,8 +110,8 @@ public class IUnknownMarshalingTest
                if (!Marshal_IUnknown(ptr))
                 {
                    throw new Exception("Failure on native side. Ref counts do not work as expected");
-                } 
-            }   
+                }
+            }
             finally
             {
                 if (ptr != IntPtr.Zero)
@@ -126,7 +126,7 @@ public class IUnknownMarshalingTest
         {
             //test IntPtr.Zero
             Object nullObj = Marshal.GetObjectForIUnknown(IntPtr.Zero);
-           
+
         }
         catch (ArgumentNullException) { }
 
@@ -143,7 +143,7 @@ public class IUnknownMarshalingTest
                 //compare the new object reference with the original object, they should point to the same underlying object
                 if (!object.ReferenceEquals(obj, tmpObj))
                     throw new Exception("GetObjectForIUnknown returned a different object. Original: " + obj + ", New: " + tmpObj);
-            }          
+            }
             finally
             {
                 if (ptr != IntPtr.Zero)
@@ -154,13 +154,13 @@ public class IUnknownMarshalingTest
 
     public void GetUniqueObjectForIUnknownTest()
     {
-        
+
             //test IntPtr.Zero
             Object nullObj = Marshal.GetUniqueObjectForIUnknown(IntPtr.Zero);
 
             if (nullObj != null)
-                throw new Exception("Object returned for IntPtr.Zero is not null.");   
-      
+                throw new Exception("Object returned for IntPtr.Zero is not null.");
+
 
         foreach (object obj in TestObjects)
         {
@@ -181,7 +181,7 @@ public class IUnknownMarshalingTest
                 if (!obj.Equals(tmpObj))
                     throw new Exception("GetUniqueObjectForIUnknown returned an object with different value. Original: " + obj + ", New: " + tmpObj);
 
-            }         
+            }
             finally
             {
                 if (tmpObj != null)
@@ -192,7 +192,7 @@ public class IUnknownMarshalingTest
         }
     }
 
-    public  bool RunTests()
+    public bool RunTests()
     {
         Initialize();
         GetIUnknownForObjectTest();
@@ -207,18 +207,28 @@ public class IUnknownMarshalingTest
         TestObjects[1] = 'a';                           //char
         TestObjects[2] = false;                         //bool
         TestObjects[3] = "string";                      //string
-        TestObjects[4] = new TestClass();               //Object of type TestClass 
+        TestObjects[4] = new TestClass();               //Object of type TestClass
         TestObjects[5] = new List<int>();               //Projected Type
-        TestObjects[6] = new Nullable<int>(2);          //Nullable Type        
+        TestObjects[6] = new Nullable<int>(2);          //Nullable Type
         return true;
     }
 
-    [Fact]
-    public static void TestEntryPoint()
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("Requires COM support")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85234", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsGCStress))]
+    public static void Run()
     {
-        IUnknownMarshalingTest testObj = new IUnknownMarshalingTest(); 
+        IUnknownMarshalingTest testObj = new IUnknownMarshalingTest();
         testObj.Initialize();
         testObj.RunTests();
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("Requires COM support")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85234", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsGCStress))]
+    public static void RunInALC()
+    {
+        TestLibrary.Utilities.ExecuteAndUnload(typeof(IUnknownMarshalingTest).Assembly.Location, nameof(IUnknownMarshalingTest), nameof(Run));
     }
 
 }

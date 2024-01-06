@@ -3,12 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators;
 
@@ -1009,7 +1007,9 @@ namespace System.Text.Json.SourceGeneration
                     /// <summary>
                     /// Defines the source generated JSON serialization contract metadata for a given type.
                     /// </summary>
+                    #nullable disable annotations // Marking the property type as nullable-oblivious.
                     public {{typeInfoFQN}} {{typeInfoPropertyName}}
+                    #nullable enable annotations
                     {
                         get => _{{typeInfoPropertyName}} ??= ({{typeInfoFQN}}){{OptionsInstanceVariableName}}.GetTypeInfo(typeof({{typeFQN}}));
                     }

@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.Qil
                     parent[i] = VisitReference(child);
 
                     // If no substutition found, then use original child
-                   parent[i] ??= child;
+                    parent[i] ??= child;
                 }
                 else
                 {

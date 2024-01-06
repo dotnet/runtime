@@ -232,24 +232,96 @@ bool IntegralRange::Contains(int64_t value) const
             switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
             {
 #if defined(TARGET_XARCH)
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+                case NI_Vector256_op_Equality:
+                case NI_Vector256_op_Inequality:
+                case NI_Vector512_op_Equality:
+                case NI_Vector512_op_Inequality:
+                case NI_SSE_CompareScalarOrderedEqual:
+                case NI_SSE_CompareScalarOrderedNotEqual:
+                case NI_SSE_CompareScalarOrderedLessThan:
+                case NI_SSE_CompareScalarOrderedLessThanOrEqual:
+                case NI_SSE_CompareScalarOrderedGreaterThan:
+                case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
+                case NI_SSE_CompareScalarUnorderedEqual:
+                case NI_SSE_CompareScalarUnorderedNotEqual:
+                case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
+                case NI_SSE_CompareScalarUnorderedLessThan:
+                case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
+                case NI_SSE_CompareScalarUnorderedGreaterThan:
+                case NI_SSE2_CompareScalarOrderedEqual:
+                case NI_SSE2_CompareScalarOrderedNotEqual:
+                case NI_SSE2_CompareScalarOrderedLessThan:
+                case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
+                case NI_SSE2_CompareScalarOrderedGreaterThan:
+                case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
+                case NI_SSE2_CompareScalarUnorderedEqual:
+                case NI_SSE2_CompareScalarUnorderedNotEqual:
+                case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
+                case NI_SSE2_CompareScalarUnorderedLessThan:
+                case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
+                case NI_SSE2_CompareScalarUnorderedGreaterThan:
+                case NI_SSE41_TestC:
+                case NI_SSE41_TestZ:
+                case NI_SSE41_TestNotZAndNotC:
+                case NI_AVX_TestC:
+                case NI_AVX_TestZ:
+                case NI_AVX_TestNotZAndNotC:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+
+                case NI_SSE2_Extract:
+                case NI_SSE41_Extract:
+                case NI_SSE41_X64_Extract:
+                case NI_Vector128_ToScalar:
+                case NI_Vector256_ToScalar:
+                case NI_Vector512_ToScalar:
+                case NI_Vector128_GetElement:
+                case NI_Vector256_GetElement:
+                case NI_Vector512_GetElement:
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                    {
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                    }
+                    break;
+
                 case NI_BMI1_TrailingZeroCount:
                 case NI_BMI1_X64_TrailingZeroCount:
                 case NI_LZCNT_LeadingZeroCount:
                 case NI_LZCNT_X64_LeadingZeroCount:
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
+                case NI_Vector64_op_Equality:
+                case NI_Vector64_op_Inequality:
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+
+                case NI_AdvSimd_Extract:
+                case NI_Vector64_ToScalar:
+                case NI_Vector128_ToScalar:
+                case NI_Vector64_GetElement:
+                case NI_Vector128_GetElement:
+                    if (varTypeIsSmall(node->AsHWIntrinsic()->GetSimdBaseType()))
+                    {
+                        return ForType(node->AsHWIntrinsic()->GetSimdBaseType());
+                    }
+                    break;
+
                 case NI_AdvSimd_PopCount:
                 case NI_AdvSimd_LeadingZeroCount:
                 case NI_AdvSimd_LeadingSignCount:
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
+                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
 #endif
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
-                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
                 default:
                     break;
             }
@@ -1049,7 +1121,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         //
         // Set op1 to the instance pointer of the indirection
         //
-        op1 = op1->gtEffectiveVal(/* commaOnly */ true);
+        op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
         while ((op1->gtOper == GT_ADD) && (op1->gtType == TYP_BYREF))
@@ -1057,12 +1129,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp1()->gtEffectiveVal(/* commaOnly */ true);
+                op1 = op1->gtGetOp1()->gtEffectiveVal();
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp2()->gtEffectiveVal(/* commaOnly */ true);
+                op1 = op1->gtGetOp2()->gtEffectiveVal();
             }
             else
             {
@@ -4284,8 +4356,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
         foldResult = !foldResult;
     }
 
-    op2->AsIntCon()->gtIconVal = foldResult;
-    op2->gtType                = TYP_INT;
+    op2->BashToConst((ssize_t)foldResult, TYP_INT);
 
     return optAssertionProp_Update(op2, tree, stmt);
 }
@@ -4461,7 +4532,7 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
         return true;
     }
 
-    op = op->gtEffectiveVal(/* commaOnly */ true);
+    op = op->gtEffectiveVal();
 
     if (!op->OperIs(GT_LCL_VAR))
     {
@@ -5479,7 +5550,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->TrueTargetIs(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5487,7 +5558,7 @@ public:
             {
                 // Scenario where next block and conditional block, both point to the same block.
                 // In such case, intersect the assertions present on both the out edges of predBlock.
-                assert(predBlock->NextIs(block));
+                assert(predBlock->FalseTargetIs(block));
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
                 if (VerboseDataflow())
@@ -5657,7 +5728,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
                 if (jumpDestAssertionIndex != NO_ASSERTION_INDEX)
                 {
-                    // Update jumpDestValueGen if we have an assertion for the bbJumpDest edge
+                    // Update jumpDestValueGen if we have an assertion for the bbTarget edge
                     optImpliedAssertions(jumpDestAssertionIndex, jumpDestValueGen);
                     BitVecOps::AddElemD(apTraits, jumpDestValueGen, jumpDestAssertionIndex - 1);
                 }
@@ -5684,7 +5755,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             optPrintAssertionIndices(block->bbAssertionGen);
             if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetTrueTarget()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6244,7 +6315,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
+                printf(" " FMT_BB " = ", block->GetTrueTarget()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

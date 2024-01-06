@@ -797,7 +797,7 @@ namespace System.Text.Json.Serialization.Tests
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
                 }
             };
-            
+
             RemoteExecutor.Invoke(static () =>
             {
                 var unsupportedValue = new MyClass { Value = "value" };
@@ -1118,6 +1118,47 @@ namespace System.Text.Json.Serialization.Tests
             optionsSingleton.MakeReadOnly(populateMissingResolver: false);
             optionsSingleton.MakeReadOnly(populateMissingResolver: true);
             Assert.Same(resolver, optionsSingleton.TypeInfoResolver);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_MatchesConstructorWithJsonSerializerDefaults()
+        {
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver
+            };
+
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Web;
+
+            Assert.Equal(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.True(options.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
+
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_SerializesWithExpectedSettings()
+        {
+            string json = JsonSerializer.Serialize(new { PropertyName = 42 }, JsonSerializerOptions.Web);
+            Assert.Equal("""{"propertyName":42}""", json);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Web, JsonSerializerOptions.Web);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_IsReadOnly()
+        {
+            var optionsSingleton = JsonSerializerOptions.Web;
+            Assert.True(optionsSingleton.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNameCaseInsensitive = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
         }
 
         [Theory]

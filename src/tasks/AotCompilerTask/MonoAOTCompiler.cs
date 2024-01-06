@@ -1101,8 +1101,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
 
-        string tmpAotModulesTablePath = Path.GetTempFileName();
-        using (var writer = File.CreateText(tmpAotModulesTablePath))
+        using TempFileName tmpAotModulesTablePath = new();
+        using (var writer = File.CreateText(tmpAotModulesTablePath.Path))
         {
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
@@ -1165,7 +1165,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (Utils.CopyIfDifferent(tmpAotModulesTablePath, outputFile, useHash: false))
+        if (Utils.CopyIfDifferent(tmpAotModulesTablePath.Path, outputFile, useHash: false))
         {
             _fileWrites.Add(outputFile);
             Log.LogMessage(MessageImportance.Low, $"Generated {outputFile}");

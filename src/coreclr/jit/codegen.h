@@ -190,10 +190,13 @@ protected:
     BasicBlock* genPendingCallLabel;
 
     void**    codePtr;
+    void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
     unsigned  codeSize;
     void*     coldCodePtr;
+    void*     coldCodePtrRW;
     void*     consPtr;
+    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -626,9 +629,6 @@ protected:
     void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
-#if defined(TARGET_ARM)
-    void genInsertNopForUnwinder(BasicBlock* block);
-#endif
 
 #else // !FEATURE_EH_FUNCLETS
 
@@ -642,17 +642,20 @@ protected:
 
     void genGeneratePrologsAndEpilogs();
 
-#if defined(DEBUG) && defined(TARGET_ARM64)
-    void genArm64EmitterUnitTests();
+#if defined(DEBUG)
+    void genEmitterUnitTests();
+
+#if defined(TARGET_ARM64)
+    void genArm64EmitterUnitTestsGeneral();
+    void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsSve();
 #endif
 
-#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
-    void genLoongArch64EmitterUnitTests();
+#if defined(TARGET_AMD64)
+    void genAmd64EmitterUnitTestsSse2();
 #endif
 
-#if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
-    void genAmd64EmitterUnitTests();
-#endif
+#endif // defined(DEBUG)
 
 #ifdef TARGET_ARM64
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
@@ -803,7 +806,11 @@ protected:
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+    void genScaledAdd(emitAttr  attr,
+                      regNumber targetReg,
+                      regNumber baseReg,
+                      regNumber indexReg,
+                      int scale RISCV64_ARG(regNumber scaleTempReg));
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_ARMARCH)
@@ -820,6 +827,7 @@ protected:
     // Generate the instruction to move a value between register files
     void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
 
+public:
     struct GenIntCastDesc
     {
         enum CheckKind
@@ -897,6 +905,7 @@ protected:
         }
     };
 
+protected:
     void genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg);
     void genIntToIntCast(GenTreeCast* cast);
     void genFloatToFloatCast(GenTree* treeNode);
@@ -1231,6 +1240,7 @@ protected:
 #ifndef TARGET_X86
     void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
 #endif
+    void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     void genJumpTable(GenTree* tree);

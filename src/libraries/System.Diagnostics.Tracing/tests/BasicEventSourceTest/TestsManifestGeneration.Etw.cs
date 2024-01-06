@@ -30,6 +30,7 @@ namespace BasicEventSourceTests
 
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48798")]
         public void Test_EventSource_EtwManifestGeneration()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
@@ -76,6 +77,7 @@ namespace BasicEventSourceTests
         }
 
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48798")]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
             RemoteExecutor.Invoke(() =>

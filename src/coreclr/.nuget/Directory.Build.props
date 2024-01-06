@@ -2,6 +2,7 @@
   <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
   <Import Project="..\Directory.Build.props" />
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.templating\$(MicrosoftDotNetBuildTasksTemplatingVersion)\build\Microsoft.DotNet.Build.Tasks.Templating.props" />
 
   <PropertyGroup>
     <!-- Defined in Packaging.targets, but we need this before targets are imported -->

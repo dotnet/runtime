@@ -1060,7 +1060,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;
-    var_types              retType         = JITtype2varType(sig->retType);
+    var_types              retType         = genActualType(JITtype2varType(sig->retType));
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
 

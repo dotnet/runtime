@@ -2110,8 +2110,8 @@ namespace System.Globalization
 
                 if ((FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
-                    string [] genitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: false);
-                    string [] abbreviatedGenitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: true);
+                    string[] genitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: false);
+                    string[] abbreviatedGenitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: true);
 
                     for (int i = 1; i <= 13; i++)
                     {

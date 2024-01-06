@@ -257,7 +257,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         }
 
         const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
-        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_IN_BYTE) - 1;
+        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE) - 1;
 
         if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
         {
@@ -564,6 +564,16 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
+#ifdef DEBUG
+        // Use BlkOpKindLoop for more cases under stress mode
+        if (comp->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) && blkNode->OperIs(GT_STORE_BLK) &&
+            ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            return;
+        }
+#endif
+
         if (src->OperIs(GT_INIT_VAL))
         {
             src->SetContained();
@@ -607,6 +617,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->AsIntCon()->SetIconValue(fill);
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
         }
         else
         {
@@ -1273,7 +1292,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-    assert(node->gtType == TYP_UBYTE);
+    assert(node->TypeIs(TYP_INT));
     assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
 
     // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
@@ -2037,13 +2056,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64
-    else if (addr->OperIs(GT_CLS_VAR_ADDR))
-    {
-        // These nodes go into an addr mode:
-        // - GT_CLS_VAR_ADDR turns into a constant.
-        // make this contained, it turns into a constant that goes into an addr mode
-        MakeSrcContained(indirNode, addr);
-    }
     else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         MakeSrcContained(indirNode, addr);
@@ -2781,7 +2793,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())
@@ -2887,7 +2899,7 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
-    if (!JitConfig.EnableHWIntrinsic())
+    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
         return nullptr;
 
     if (op->isContained())

@@ -6,6 +6,7 @@
 using System.Threading;
 using System.Threading.Channels;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 using WorkItemQueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -19,17 +20,12 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     internal sealed class JSSynchronizationContext : SynchronizationContext
     {
+        internal readonly JSProxyContext ProxyContext;
         private readonly Action _DataIsAvailable;// don't allocate Action on each call to UnsafeOnCompleted
-        public readonly Thread TargetThread;
-        public readonly IntPtr TargetThreadId;
         private readonly WorkItemQueueType Queue;
 
-        internal static JSSynchronizationContext? MainJSSynchronizationContext;
-
-        [ThreadStatic]
-        internal static JSSynchronizationContext? CurrentJSSynchronizationContext;
         internal SynchronizationContext? previousSynchronizationContext;
-        internal bool isDisposed;
+        internal bool _isDisposed;
 
         internal readonly struct WorkItem
         {
@@ -45,42 +41,33 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        internal JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId)
-            : this(
-                targetThread, targetThreadId,
-                Channel.CreateUnbounded<WorkItem>(
-                    new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true }
-                )
-            )
+        public JSSynchronizationContext(bool isMainThread)
         {
-        }
-
-        internal static void AssertWebWorkerContext()
-        {
-#if FEATURE_WASM_THREADS
-            if (CurrentJSSynchronizationContext == null)
-            {
-                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://aka.ms/dotnet-JS-interop-threads");
-            }
-#endif
-        }
-
-        private JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, WorkItemQueueType queue)
-        {
-            TargetThread = targetThread;
-            TargetThreadId = targetThreadId;
-            Queue = queue;
+            ProxyContext = new JSProxyContext(isMainThread, this);
+            Queue = Channel.CreateUnbounded<WorkItem>(new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true });
             _DataIsAvailable = DataIsAvailable;
+        }
+
+        internal JSSynchronizationContext(JSProxyContext proxyContext, WorkItemQueueType queue, Action dataIsAvailable)
+        {
+            ProxyContext = proxyContext;
+            Queue = queue;
+            _DataIsAvailable = dataIsAvailable;
         }
 
         public override SynchronizationContext CreateCopy()
         {
-            return new JSSynchronizationContext(TargetThread, TargetThreadId, Queue);
+            return new JSSynchronizationContext(ProxyContext, Queue, _DataIsAvailable);
         }
 
         internal void AwaitNewData()
         {
-            ObjectDisposedException.ThrowIf(isDisposed, this);
+            if (_isDisposed)
+            {
+                // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
+                // ObjectDisposedException.ThrowIf(_isDisposed, this);
+                return;
+            }
 
             var vt = Queue.Reader.WaitToReadAsync();
             if (vt.IsCompleted)
@@ -101,16 +88,16 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(TargetThreadId, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
         {
-            ObjectDisposedException.ThrowIf(isDisposed, this);
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
             var workItem = new WorkItem(d, state, null);
             if (!Queue.Writer.TryWrite(workItem))
-                throw new Exception("Internal error");
+                Environment.FailFast($"JSSynchronizationContext.Post failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
         }
 
         // This path can only run when threading is enabled
@@ -118,9 +105,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override void Send(SendOrPostCallback d, object? state)
         {
-            ObjectDisposedException.ThrowIf(isDisposed, this);
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            if (Thread.CurrentThread == TargetThread)
+            if (ProxyContext.IsCurrentThread())
             {
                 d(state);
                 return;
@@ -130,14 +117,14 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 var workItem = new WorkItem(d, state, signal);
                 if (!Queue.Writer.TryWrite(workItem))
-                    throw new Exception("Internal error");
+                    Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
 
                 signal.Wait();
             }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetThread, void* callback);
+        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetTID, void* callback);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -145,14 +132,16 @@ namespace System.Runtime.InteropServices.JavaScript
         // this callback will arrive on the target thread, called from mono_background_exec
         private static void BackgroundJobHandler()
         {
-            CurrentJSSynchronizationContext!.Pump();
+            var ctx = JSProxyContext.AssertIsInteropThread();
+            ctx.SynchronizationContext.Pump();
         }
 
         private void Pump()
         {
-            if (isDisposed)
+            if (_isDisposed)
             {
                 // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
+                // ObjectDisposedException.ThrowIf(_isDisposed, this);
                 return;
             }
             try
@@ -174,13 +163,32 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast("JSSynchronizationContext.BackgroundJobHandler failed", e);
+                Environment.FailFast($"JSSynchronizationContext.BackgroundJobHandler failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
             }
             finally
             {
                 // If an item throws, we want to ensure that the next pump gets scheduled appropriately regardless.
-                if(!isDisposed) AwaitNewData();
+                if (!_isDisposed) AwaitNewData();
             }
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    Queue.Writer.Complete();
+                }
+                previousSynchronizationContext = null;
+                _isDisposed = true;
+            }
+        }
+
+        internal void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
