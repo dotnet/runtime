@@ -2621,6 +2621,16 @@ NO_MORE_LOOPS:
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
+    for (BasicBlock* block : Blocks())
+    {
+        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
+    for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        optLoopTable[loopInd].lpEntry->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
     // Starting now, we require all loops to have pre-headers.
     optLoopsRequirePreHeaders = true;
 
@@ -4313,6 +4323,8 @@ RETRY_UNROLL:
                         return BasicBlockVisit::Abort;
                     }
 
+                    newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+
                     // Block weight should no longer have the loop multiplier
                     //
                     // Note this is not quite right, as we may not have upscaled by this amount
@@ -4583,14 +4595,6 @@ RETRY_UNROLL:
 #ifdef DEBUG
     fgDebugCheckBBlist(true);
 #endif // DEBUG
-
-    // The loop table is no longer valid.
-    optLoopTableValid = false;
-    optLoopTable      = nullptr;
-    optLoopCount      = 0;
-
-    // Old dominators and reachability sets are no longer valid.
-    fgDomsComputed = false;
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -5480,6 +5484,14 @@ PhaseStatus Compiler::optFindLoopsPhase()
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
+    // The old loop table is no longer valid.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    optLoopCount      = 0;
+
+    // Old dominators and reachability sets are no longer valid.
+    fgDomsComputed = false;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -5490,9 +5502,6 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    m_newToOldLoop = (m_loops->NumLoops() == 0) ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
-    m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
-
     // Leave a bread crumb for future phases like loop alignment about whether
     // looking for loops makes sense. We generally do not expect phases to
     // introduce new cycles/loops in the flow graph; if they do, they should
@@ -5502,50 +5511,6 @@ void Compiler::optFindNewLoops()
     // loops by removing edges.
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
-
-    for (BasicBlock* block : Blocks())
-    {
-        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-    }
-
-    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
-    {
-        BasicBlock* head = loop->GetHeader();
-        if (head->bbNatLoopNum == BasicBlock::NOT_IN_LOOP)
-            continue;
-
-        LoopDsc* dsc = &optLoopTable[head->bbNatLoopNum];
-        if (dsc->lpEntry != head)
-            continue;
-
-        assert(m_oldToNewLoop[head->bbNatLoopNum] == nullptr);
-        assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
-        m_oldToNewLoop[head->bbNatLoopNum] = loop;
-        m_newToOldLoop[loop->GetIndex()]   = dsc;
-        head->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-    }
-}
-
-//-----------------------------------------------------------------------------
-// optCrossCheckIterInfo: Validate that new IV analysis matches the old one.
-//
-// Parameters:
-//   iterInfo - New IV information
-//   dsc      - Old loop structure containing IV analysis information
-//
-void Compiler::optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc)
-{
-    assert(iterInfo.HasConstInit == ((dsc.lpFlags & LPFLG_CONST_INIT) != 0));
-    assert(iterInfo.HasConstLimit == ((dsc.lpFlags & LPFLG_CONST_LIMIT) != 0));
-    assert(iterInfo.HasSimdLimit == ((dsc.lpFlags & LPFLG_SIMD_LIMIT) != 0));
-    assert(iterInfo.HasInvariantLocalLimit == ((dsc.lpFlags & LPFLG_VAR_LIMIT) != 0));
-    assert(iterInfo.HasArrayLengthLimit == ((dsc.lpFlags & LPFLG_ARRLEN_LIMIT) != 0));
-    if (iterInfo.HasConstInit)
-    {
-        assert(iterInfo.ConstInitValue == dsc.lpConstInit);
-        assert(iterInfo.InitBlock == dsc.lpInitBlock);
-    }
-    assert(iterInfo.TestTree == dsc.lpTestTree);
 }
 
 /*****************************************************************************
