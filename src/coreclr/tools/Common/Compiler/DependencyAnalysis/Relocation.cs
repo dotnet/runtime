@@ -511,6 +511,7 @@ namespace ILCompiler.DependencyAnalysis
             return relocType switch
             {
                 RelocType.IMAGE_REL_BASED_DIR64 => 8,
+                RelocType.IMAGE_REL_BASED_HIGHLOW => 4,
                 RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
                 _ => throw new NotSupportedException(),
             };
