@@ -945,6 +945,13 @@ namespace System.Reflection.Tests
             Assert.Equal(expected.OrderBy(t => t.Name), type.GetTypeInfo().GetInterfaces().OrderBy(t => t.Name));
         }
 
+        [Fact]
+        public void GetInterfaces_InvariantArrayType()
+        {
+            Assert.Equal(typeof(Type[]), typeof(int[]).GetInterfaces().GetType());
+            Assert.Equal(typeof(Type[]), typeof(int[]).GetTypeInfo().GetInterfaces().GetType());
+        }
+
         [Theory]
         [InlineData(typeof(List<>), new string[] { "T" })]
         [InlineData(typeof(Dictionary<,>), new string[] { "TKey", "TValue" })]
