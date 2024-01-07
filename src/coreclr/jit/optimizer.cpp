@@ -2624,6 +2624,16 @@ NO_MORE_LOOPS:
     // Starting now, we require all loops to have pre-headers.
     optLoopsRequirePreHeaders = true;
 
+    for (BasicBlock* block : Blocks())
+    {
+        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
+    for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        optLoopTable[loopInd].lpEntry->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
 #ifdef DEBUG
     if (verbose && (optLoopCount > 0))
     {
@@ -5503,11 +5513,6 @@ void Compiler::optFindNewLoops()
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
 
-    for (BasicBlock* block : Blocks())
-    {
-        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-    }
-
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         BasicBlock* head = loop->GetHeader();
@@ -5522,7 +5527,6 @@ void Compiler::optFindNewLoops()
         assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
         m_oldToNewLoop[head->bbNatLoopNum] = loop;
         m_newToOldLoop[loop->GetIndex()]   = dsc;
-        head->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
     }
 }
 
