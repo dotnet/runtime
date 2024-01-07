@@ -4795,6 +4795,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
         else if (bPrev->KindIs(BBJ_COND))
         {
+            if (!bPrev->FalseTargetIs(block))
+            {
+                continue;
+            }
+
             bDest          = bPrev->GetTrueTarget();
             forwardBranch  = fgIsForwardBranch(bPrev, bDest);
             backwardBranch = !forwardBranch;
@@ -5774,6 +5779,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             noway_assert(condTest->gtOper == GT_JTRUE);
             condTest->AsOp()->gtOp1 = gtReverseCond(condTest->AsOp()->gtOp1);
 
+            bPrev->SetFalseTarget(bPrev->GetTrueTarget());
+
             // may need to rethread
             //
             if (fgNodeThreading == NodeThreading::AllTrees)
@@ -5836,29 +5843,29 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         if (bDest)
         {
             /* We may need to insert an unconditional branch after bPrev to bDest */
-            fgConnectFallThrough(bPrev, bDest);
+            fgConnectFallThrough(bPrev, bDest, /* noFallThroughQuirk */ useProfile);
         }
         else
         {
             /* If bPrev falls through, we must insert a jump to block */
-            fgConnectFallThrough(bPrev, block);
+            fgConnectFallThrough(bPrev, block, /* noFallThroughQuirk */ useProfile);
         }
 
         BasicBlock* bSkip = bEnd->Next();
 
         /* If bEnd falls through, we must insert a jump to bNext */
-        fgConnectFallThrough(bEnd, bNext);
+        fgConnectFallThrough(bEnd, bNext, /* noFallThroughQuirk */ useProfile);
 
         if (bStart2 == nullptr)
         {
             /* If insertAfterBlk falls through, we are forced to     */
             /* add a jump around the block(s) we just inserted */
-            fgConnectFallThrough(insertAfterBlk, bSkip);
+            fgConnectFallThrough(insertAfterBlk, bSkip, /* noFallThroughQuirk */ useProfile);
         }
         else
         {
             /* We may need to insert an unconditional branch after bPrev2 to bStart */
-            fgConnectFallThrough(bPrev2, bStart);
+            fgConnectFallThrough(bPrev2, bStart, /* noFallThroughQuirk */ useProfile);
         }
 
 #if DEBUG
@@ -6048,16 +6055,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             else if (block->KindIs(BBJ_COND))
             {
                 bDest = block->GetTrueTarget();
-                if (bDest == bNext)
+                if (block->FalseTargetIs(bDest))
                 {
-                    // TODO-NoFallThrough: Fix above condition once bbFalseTarget can diverge from bbNext
-                    assert(block->FalseTargetIs(bNext));
-                    if (fgOptimizeBranchToNext(block, bNext, bPrev))
-                    {
-                        change   = true;
-                        modified = true;
-                        bDest    = nullptr;
-                    }
+                    fgRemoveConditionalJump(block);
+                    change   = true;
+                    modified = true;
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    assert(block->TargetIs(bDest));
                 }
             }
 
@@ -6085,18 +6089,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 // (b) block jump target is elsewhere but join free, and
                 //      bNext's jump target has a join.
                 //
-                if (block->KindIs(BBJ_COND) &&   // block is a BBJ_COND block
-                    (bNext->bbRefs == 1) &&      // No other block jumps to bNext
-                    bNext->KindIs(BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
-                    !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
-                    bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->TargetIs(bNext) &&   // special case for self jumps
+                if (block->KindIs(BBJ_COND) &&     // block is a BBJ_COND block
+                    (bNext != nullptr) &&          // block isn't the last block
+                    block->FalseTargetIs(bNext) && // block falls into its false target
+                    (bNext->bbRefs == 1) &&        // No other block jumps to bNext
+                    bNext->KindIs(BBJ_ALWAYS) &&   // The next block is a BBJ_ALWAYS block
+                    !bNext->JumpsToNext() &&       // and it doesn't jump to the next block (we might compact them)
+                    bNext->isEmpty() &&            // and it is an empty block
+                    !bNext->TargetIs(bNext) &&     // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
-                    // bbFalseTarget cannot be null
-                    assert(block->FalseTargetIs(bNext));
-                    assert(bNext != nullptr);
+                    assert(!block->IsLast());
 
                     // case (a)
                     //
@@ -6150,6 +6154,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         {
                             optimizeJump = false;
                         }
+                    }
+
+                    // TODO-NoFallThrough: Remove this requirement
+                    if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
+                    {
+                        optimizeJump = false;
                     }
 
                     if (optimizeJump && isJumpToJoinFree)
@@ -6232,6 +6242,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         }
 
                         // Optimize the Conditional JUMP to go to the new target
+                        assert(block->FalseTargetIs(bNext));
                         block->SetTrueTarget(bNext->GetTarget());
                         block->SetFalseTarget(bNext->Next());
 

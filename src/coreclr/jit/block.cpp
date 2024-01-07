@@ -1177,7 +1177,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1302,7 +1302,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }

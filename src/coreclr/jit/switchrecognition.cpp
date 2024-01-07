@@ -349,6 +349,26 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
+    // BBJ_COND no fall-through quirk
+    bool skipPredRemoval = false;
+    if (!lastBlock->FalseTargetIs(lastBlock->Next()))
+    {
+        if (isReversed)
+        {
+            assert(lastBlock->FalseTargetIs(blockIfTrue));
+            fgRemoveRefPred(blockIfTrue, firstBlock);
+            blockIfTrue = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, blockIfTrue);
+            fgAddRefPred(blockIfTrue->GetTarget(), blockIfTrue);
+            skipPredRemoval = true;
+        }
+        else
+        {
+            assert(lastBlock->FalseTargetIs(blockIfFalse));
+            blockIfFalse = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, blockIfFalse);
+            fgAddRefPred(blockIfFalse->GetTarget(), blockIfFalse);
+        }
+    }
+
     fgHasSwitch                                   = true;
     firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
     firstBlock->GetSwitchTargets()->bbsHasDefault = true;
@@ -368,7 +388,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     }
 
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
-    fgRemoveRefPred(blockIfTrue, firstBlock);
+    if (!skipPredRemoval)
+    {
+        fgRemoveRefPred(blockIfTrue, firstBlock);
+    }
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
