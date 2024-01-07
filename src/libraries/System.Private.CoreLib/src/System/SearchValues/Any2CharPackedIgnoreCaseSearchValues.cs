@@ -39,8 +39,8 @@ namespace System.Buffers
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
             PackedSpanHelpers.IndexOfAnyIgnoreCase(ref MemoryMarshal.GetReference(span), _e0, _e1, span.Length);
 
-        [CompExactlyDependsOn(typeof(Sse2))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
             PackedSpanHelpers.IndexOfAnyExceptIgnoreCase(ref MemoryMarshal.GetReference(span), _e0, _e1, span.Length);
 
