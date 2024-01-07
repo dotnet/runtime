@@ -94,10 +94,11 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private static void WritePatternInXmlComment(string pattern, IndentedTextWriter writer)
+        private static void WritePatternInXmlComment(string pattern, bool ignorePatternWhitespace, IndentedTextWriter writer)
         {
             writer.Write("/// ");
 
+            bool inCharClass = false;
             bool isPreviousCharBackslash = false;
             int backslashes = 0;
 
@@ -107,25 +108,44 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (!Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
                 {
-                    // We need to look back if any \ could change our \, when it follows odd number of backslashes.
-                    // For example,
-                    //     @"\\\" + '\uFFFF'
-                    // In this case,
-                    // the first \ escapes the second \, instructs the regex engine to match a backslash.
-                    // The third \ on the left becomes effectively nothing, because '\uFFFF' is not recognized as an escaped character.
-
-                    if (!isPreviousCharBackslash || backslashes % 2 == 0)
+                    if (!ignorePatternWhitespace || !char.IsWhiteSpace(c) || inCharClass)
                     {
-                        writer.Write('\\');
+                        // We need to look back if any \ could change our \, when it follows odd number of backslashes.
+                        // For example,
+                        //     @"\\\" + '\uFFFF'
+                        // In this case,
+                        // the first \ escapes the second \, instructs the regex engine to match a backslash.
+                        // The third \ on the left becomes effectively nothing, because '\uFFFF' is not recognized as an escaped character.
+
+                        if (!inEscape())
+                        {
+                            writer.Write('\\');
+                        }
+
+                        if (TryGetEscapedPatternChar(c, out char e))
+                        {
+                            writer.Write(e);
+                        }
+                        else
+                        {
+                            writer.Write($"u{(int)c:x4}");
+                        }
                     }
-
-                    if (TryGetEscapedPatternChar(c, out char e))
+                    else if (SyntaxFacts.IsNewLine(c))
                     {
-                        writer.Write(e);
+                        if (c == '\r' && i + 1 < pattern.Length && pattern[i + 1] == '\n')
+                        {
+                            continue;
+                        }
+
+                        writer.WriteLine();
+                        writer.Write("/// ");
                     }
                     else
                     {
-                        writer.Write($"u{(int)c:x4}");
+                        Debug.Assert(Xml.XmlConvert.IsXmlChar(c));
+
+                        writer.Write(c);
                     }
                 }
                 else
@@ -139,7 +159,15 @@ namespace System.Text.RegularExpressions.Generator
                         writer.Write(c);
                     }
 
-                    if (c == '\\')
+                    if (c == '[' && !inEscape() && !inCharClass)
+                    {
+                        inCharClass = true;
+                    }
+                    else if (c == ']' && !inEscape() && inCharClass)
+                    {
+                        inCharClass = false;
+                    }
+                    else if (c == '\\')
                     {
                         backslashes++;
                         isPreviousCharBackslash = true;
@@ -153,6 +181,8 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             writer.WriteLine();
+
+            bool inEscape() => isPreviousCharBackslash && backslashes % 2 != 0;
         }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
@@ -185,7 +215,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
             writer.WriteLine($"/// <code>");
-            WritePatternInXmlComment(regexMethod.Pattern, writer);
+            WritePatternInXmlComment(regexMethod.Pattern, regexMethod.Options.HasFlag(RegexOptions.IgnorePatternWhitespace), writer);
             writer.WriteLine($"/// </code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
