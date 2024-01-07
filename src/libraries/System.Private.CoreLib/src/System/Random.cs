@@ -33,11 +33,11 @@ namespace System
             _impl = GetType() == typeof(Random) ? new XoshiroImpl() : new Net5CompatDerivedImpl(this);
 
         /// <summary>Initializes a new instance of the Random class, using the specified seed value.</summary>
-        /// <param name="Seed">
+        /// <param name="seed">
         /// A number used to calculate a starting value for the pseudo-random number sequence. If a negative number
         /// is specified, the absolute value of the number is used.
         /// </param>
-        public Random(int Seed) =>
+        public Random(int seed) =>
             // With a custom seed, if this is the base Random class, we still need to respect the same algorithm that's been
             // used in the past, but we can do so without having to deal with calling the right overrides in a derived type.
             // If this is a derived type, we need to handle always using the same overrides we've done previously.
