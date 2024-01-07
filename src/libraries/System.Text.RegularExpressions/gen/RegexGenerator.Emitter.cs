@@ -98,14 +98,14 @@ namespace System.Text.RegularExpressions.Generator
         {
             writer.Write("/// ");
 
-            var isPreviousCharBackslash = false;
-            var backslashes = 0;
+            bool isPreviousCharBackslash = false;
+            int backslashes = 0;
 
-            for (var i = 0; i < pattern.Length; i++)
+            for (int i = 0; i < pattern.Length; i++)
             {
-                var c = pattern[i];
+                char c = pattern[i];
 
-                if (!System.Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
+                if (!Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
                 {
                     // We need to look back if any \ could change our \, when it follows odd number of backslashes.
                     // For example,
@@ -119,7 +119,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.Write('\\');
                     }
 
-                    if (TryGetEscapedPatternChar(c, out var e))
+                    if (TryGetEscapedPatternChar(c, out char e))
                     {
                         writer.Write(e);
                     }
@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    if (TryGetEscapedXmlText(c, out var entity))
+                    if (TryGetEscapedXmlText(c, out string? entity))
                     {
                         writer.Write(entity);
                     }
