@@ -41,7 +41,7 @@ namespace System
             // With a custom seed, if this is the base Random class, we still need to respect the same algorithm that's been
             // used in the past, but we can do so without having to deal with calling the right overrides in a derived type.
             // If this is a derived type, we need to handle always using the same overrides we've done previously.
-            _impl = GetType() == typeof(Random) ? new Net5CompatSeedImpl(Seed) : new Net5CompatDerivedImpl(this, seed);
+            _impl = GetType() == typeof(Random) ? new Net5CompatSeedImpl(seed) : new Net5CompatDerivedImpl(this, seed);
 
         /// <summary>Constructor used by <see cref="ThreadSafeRandom"/>.</summary>
         /// <param name="isThreadSafeRandom">Must be true.</param>
