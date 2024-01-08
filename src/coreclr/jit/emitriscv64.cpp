@@ -2664,7 +2664,7 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
         // special for INT64_MAX or UINT32_MAX
         dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, 0xfff);
         ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
-        dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
+        dst += emitOutput_ITypeInstr_Shift(dst, INS_srli, reg1, reg1, shiftValue);
     }
     else
     {
@@ -2680,11 +2680,11 @@ BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber r
     dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
     ssize_t lowerWord = LowerWordOfDoubleWord(immediate);
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
+    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 11);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
+    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 11);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 10));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 10);
+    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 10);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<10>(lowerWord));
     return dst;
 }
@@ -2744,7 +2744,7 @@ BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsign
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
+    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, rsvdReg, rsvdReg, 11);
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
 }
@@ -2788,7 +2788,7 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_ZERO, LowerNBitsOfWord<12>(upperSignExt));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 32);
+    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 32);
     dst += emitOutput_RTypeInstr(dst, INS_add, reg1, reg1, rsvdReg);
     return dst;
 }
@@ -2836,7 +2836,7 @@ BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, REG_RA, REG_RA, 32);
+    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, REG_RA, REG_RA, 32);
 
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
     ssize_t   low     = LowerWordOfDoubleWord(immediate);
