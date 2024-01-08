@@ -166,6 +166,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
 
         [Theory, MemberData(nameof(GetTargetThreads))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96628")]
         public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
         {
             await executor.Execute(async () =>
