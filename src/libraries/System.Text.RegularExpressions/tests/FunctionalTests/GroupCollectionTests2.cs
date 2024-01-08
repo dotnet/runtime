@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "212-555-6666", "212", "555-6666" };
+            string[] expected = ["212-555-6666", "212", "555-6666"];
             ICollection<Group> collection = CreateCollection();
 
             Group[] array = new Group[collection.Count];
