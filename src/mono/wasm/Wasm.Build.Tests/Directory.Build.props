@@ -1,5 +1,7 @@
 <Project TreatAsLocalProperty="TargetOS;TargetArchitecture">
   <PropertyGroup>
+    <!-- Reset TargetOS/TargetArchitecture so they default to the host,
+         as the tests build for the host architecture, and not wasm -->
     <TargetOS />
     <TargetArchitecture />
 

@@ -102,8 +102,6 @@
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
     <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' == ''">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
-    <!--<SdkWithWorkloadForTestingPath Condition="'$(TargetOS)' == 'browser'">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>-->
-    <!--<SdkWithWorkloadForTestingPath Condition="'$(TargetOS)' == 'wasi'">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>-->
     <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' != ''">$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
