@@ -3756,7 +3756,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         bool      isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         regNumber regOp1      = op1->GetRegNum();
         regNumber regOp2      = op2->GetRegNum();
-        regNumber tempReg     = rsGetRsvdReg();
 
         if (isUnordered)
         {
@@ -8049,9 +8048,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     int totalFrameSize     = genTotalFrameSize();
     int remainingSPSize    = totalFrameSize;
+    int callerSPtoFPdelta  = 0;
     int calleeSaveSPOffset = 0; // This will be the starting place for restoring
                                 // the callee-saved registers, in decreasing order.
-    int SPtoFPdelta = 0;
 
     // ensure offset of sd/ld
     if (totalFrameSize <= 2040)
@@ -8061,7 +8060,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
         if (compiler->compLocallocUsed)
         {
-            SPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8 + compiler->lvaOutgoingArgSpaceSize;
+            callerSPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8 + compiler->lvaOutgoingArgSpaceSize;
         }
         calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
         // remainingSPSize = totalFrameSize;
@@ -8078,7 +8077,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
             if (compiler->compLocallocUsed)
             {
-                SPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8;
+                callerSPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8;
             }
             else
             {
@@ -8091,7 +8090,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         {
             if (compiler->compLocallocUsed)
             {
-                SPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8 + compiler->lvaOutgoingArgSpaceSize;
+                callerSPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8 + compiler->lvaOutgoingArgSpaceSize;
             }
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
             // remainingSPSize = totalFrameSize;
@@ -8102,12 +8101,12 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     if (compiler->compLocallocUsed)
     {
-        // restore sp form fp: addi sp, -#SPtoFPdelta(fp)
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
-        compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
+        // restore sp form fp: addi sp, -#callerSPtoFPdelta(fp)
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -callerSPtoFPdelta);
+        compiler->unwindSetFrameReg(REG_FPBASE, callerSPtoFPdelta);
     }
 
-    JITDUMP("    calleeSaveSPOffset=%d, SPtoFPdelta=%d\n", calleeSaveSPOffset, SPtoFPdelta);
+    JITDUMP("    calleeSaveSPOffset=%d, callerSPtoFPdelta=%d\n", calleeSaveSPOffset, callerSPtoFPdelta);
     genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, 0);
 
     // restore ra/fp regs
