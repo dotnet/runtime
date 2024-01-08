@@ -188,31 +188,49 @@ namespace System.Numerics
         /// <remarks>The <see cref="Quaternion.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Quaternion" /> objects.</remarks>
         public static Quaternion operator *(Quaternion value1, Quaternion value2)
         {
-            Quaternion ans;
+            if (Vector.IsHardwareAccelerated)
+	        {
+		        // Concatenate rotation is actually q2 * q1 instead of q1 * q2.
+		        // So that's why value2 goes q1 and value1 goes q2.
+		        float q1w = value2.W;
+		        float q2w = value1.W;
 
-            float q1x = value1.X;
-            float q1y = value1.Y;
-            float q1z = value1.Z;
-            float q1w = value1.W;
+		        Vector3 q1V = new Vector3(value2.X, value2.Y, value2.Z);
+		        Vector3 q2V = new Vector3(value1.X, value2.Y, value2.Z);
 
-            float q2x = value2.X;
-            float q2y = value2.Y;
-            float q2z = value2.Z;
-            float q2w = value2.W;
+		        return new Quaternion(
+			        q1w * q2V + q2w * q1V + Vector3.Cross(q1V, q2V),
+			        q1w * q2w - Vector3.Dot(q1V, q2V)
+		        );
+	        }
+	        else
+	        {
+		        // Concatenate rotation is actually q2 * q1 instead of q1 * q2.
+		        // So that's why value2 goes q1 and value1 goes q2.
+		        float q1x = value2.X;
+		        float q1y = value2.Y;
+		        float q1z = value2.Z;
+		        float q1w = value2.W;
 
-            // cross(av, bv)
-            float cx = q1y * q2z - q1z * q2y;
-            float cy = q1z * q2x - q1x * q2z;
-            float cz = q1x * q2y - q1y * q2x;
+		        float q2x = value1.X;
+		        float q2y = value1.Y;
+		        float q2z = value1.Z;
+		        float q2w = value1.W;
 
-            float dot = q1x * q2x + q1y * q2y + q1z * q2z;
+		        // cross(av, bv)
+		        float cx = q1y * q2z - q1z * q2y;
+		        float cy = q1z * q2x - q1x * q2z;
+		        float cz = q1x * q2y - q1y * q2x;
 
-            ans.X = q1x * q2w + q2x * q1w + cx;
-            ans.Y = q1y * q2w + q2y * q1w + cy;
-            ans.Z = q1z * q2w + q2z * q1w + cz;
-            ans.W = q1w * q2w - dot;
+		        float dot = q1x * q2x + q1y * q2y + q1z * q2z;
 
-            return ans;
+		        Quaternion ans;
+		        ans.X = q1x * q2w + q2x * q1w + cx;
+		        ans.Y = q1y * q2w + q2y * q1w + cy;
+		        ans.Z = q1z * q2w + q2z * q1w + cz;
+		        ans.W = q1w * q2w - dot;
+		        return ans;
+	        }
         }
 
         /// <summary>Returns the quaternion that results from scaling all the components of a specified quaternion by a scalar factor.</summary>
