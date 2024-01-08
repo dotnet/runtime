@@ -4,9 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-#if NET6_0_OR_GREATER
-using System.Linq;
-#endif
 
 namespace System.Text.Json.Nodes
 {
@@ -36,15 +33,9 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
-#if NET6_0_OR_GREATER
-            if (properties.TryGetNonEnumeratedCount(out int initialCapacity))
-            {
-#else
             if (properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection)
             {
-                int initialCapacity = propertiesCollection.Count;
-#endif
-                _initialCapacity = initialCapacity;
+                _initialCapacity = propertiesCollection.Count;
             }
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
