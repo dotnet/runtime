@@ -101,17 +101,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void RequiresValidationContext_Get_ReturnsExpected(string method, bool expected)
         {
             CustomValidationAttribute attribute = GetAttribute(method);
-
-            // The .NET Framework has a bug where CustomValidationAttribute doesn't
-            // validate the context. See https://github.com/dotnet/runtime/issues/21100.
-            if (PlatformDetection.IsNetFramework)
-            {
-                Assert.False(attribute.RequiresValidationContext);
-            }
-            else
-            {
-                Assert.Equal(expected, attribute.RequiresValidationContext);
-            }
+            Assert.Equal(expected, attribute.RequiresValidationContext);
         }
 
         public static IEnumerable<object[]> BadlyFormed_TestData()

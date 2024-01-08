@@ -2758,7 +2758,7 @@
     </ItemGroup>
 
     <!-- These are known failures on mono-arm64 on OSX -->
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true'" >
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true' and '$(RuntimeVariant)' == 'monointerpreter'" >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
         </ExcludeList>
@@ -3649,6 +3649,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
     </ItemGroup>
 
