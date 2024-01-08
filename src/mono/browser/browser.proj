@@ -358,7 +358,7 @@
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
                                   $(ICULibDir)/libicudata.a;
-                                  runtime/hybrid-globalization/segmentation-rules.json" />
+                                  $(MSBuildThisFileDirectory)runtime/hybrid-globalization/segmentation-rules.json" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
