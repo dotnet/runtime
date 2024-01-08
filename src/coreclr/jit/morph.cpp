@@ -400,21 +400,22 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // The logic is that first and second operand are basically the same because we want 
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    GenTree* op2Clone = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewZeroConNode(srcType), fieldType, 16);
+                    // GenTree* op2Clone = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewDconNode(2.0, srcType), fieldType, 16);
                     // oper = impCloneExpr(oper, &op2Clone, CHECK_SPILL_ALL,
                     //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+                    GenTree* op2Clone = fgMakeMultiUse(&oper);
                     
 
                     //run vfixupimmsd base on table and no flags reporting
-                    GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2Clone, oper, tbl, gtNewIconNode(0),
+                    oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
                                                                 NI_AVX512F_FixupScalar, fieldType, 16);
                     
-                    GenTree* saturate_val = retNode;
+                    GenTree* saturate_val = oper;
                     if (srcType == TYP_DOUBLE && dstType == TYP_INT)
                     {
                         GenTree* min_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewDconNodeD(static_cast<double>(INT32_MIN)), fieldType, 16);
                         GenTree* max_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewDconNodeD(static_cast<double>(INT32_MAX)), fieldType, 16);
-                        GenTree* saturate_min = gtNewSimdMaxNode(TYP_SIMD16, min_val, retNode, fieldType, 16);
+                        GenTree* saturate_min = gtNewSimdMaxNode(TYP_SIMD16, min_val, saturate_val, fieldType, 16);
                         saturate_val = gtNewSimdMinNode(TYP_SIMD16, saturate_min, max_val, fieldType, 16);
                     }
                     // Convert to scalar
