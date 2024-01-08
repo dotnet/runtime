@@ -2452,27 +2452,28 @@ class SuperPMIReplayAsmDiffs:
         missing_diff_contexts = sum_diff("Overall", "Missing compiles")
         total_contexts = missing_base_contexts + sum_base("Overall", "Successful compiles") + sum_base("Overall", "Failing compiles")
 
-        num_contexts_color = "#1460aa"
-        write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
-            html_color(num_contexts_color, "{:,d}".format(diffed_contexts)),
-            html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
-            html_color(num_contexts_color, "{:,d}".format(diffed_opts_contexts))))
+        def write_top_context_section():
+            num_contexts_color = "#1460aa"
+            write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
+                html_color(num_contexts_color, "{:,d}".format(diffed_contexts)),
+                html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
+                html_color(num_contexts_color, "{:,d}".format(diffed_opts_contexts))))
 
-        if missing_base_contexts > 0 or missing_diff_contexts > 0:
-            missed_color = "#d35400"
-            if missing_base_contexts == missing_diff_contexts:
-                write_fh.write("{} contexts: {}\n\n".format(
-                    html_color(missed_color, "MISSED"),
-                    html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100))))
-            else:
-                base_color = missed_color if missing_base_contexts > 0 else "green"
-                diff_color = missed_color if missing_diff_contexts > 0 else "green"
-                write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
-                    html_color(missed_color, "MISSED"),
-                    html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100)),
-                    html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / total_contexts * 100))))
+            if missing_base_contexts > 0 or missing_diff_contexts > 0:
+                missed_color = "#d35400"
+                if missing_base_contexts == missing_diff_contexts:
+                    write_fh.write("{} contexts: {}\n\n".format(
+                        html_color(missed_color, "MISSED"),
+                        html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100))))
+                else:
+                    base_color = missed_color if missing_base_contexts > 0 else "green"
+                    diff_color = missed_color if missing_diff_contexts > 0 else "green"
+                    write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
+                        html_color(missed_color, "MISSED"),
+                        html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100)),
+                        html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / total_contexts * 100))))
 
-        write_jit_options(self.coreclr_args, write_fh)
+            write_jit_options(self.coreclr_args, write_fh)
 
         def has_diffs(row):
             return row["Contexts with diffs"] > 0
@@ -2503,6 +2504,7 @@ class SuperPMIReplayAsmDiffs:
                                 base_metrics[row]["Diffed code bytes"],
                                 diff_metrics[row]["Diffed code bytes"])))
 
+            write_top_context_section()
             write_pivot_section("Overall")
             write_pivot_section("MinOpts")
             write_pivot_section("FullOpts")
@@ -2511,6 +2513,7 @@ class SuperPMIReplayAsmDiffs:
                 # Next add a section with example diffs for each collection.
                 self.write_example_diffs_to_markdown_summary(write_fh, asm_diffs)
         elif include_details:
+            write_top_context_section()
             write_fh.write("No diffs found.\n")
 
         if include_details:
