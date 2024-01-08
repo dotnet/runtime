@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 	[SetupLinkerArgument ("-a", "library.dll")]
 	[IgnoreSubstitutions (false)]
 	[IgnoreLinkAttributes (false)]
+
 	[ExpectedNoWarnings]
 	[KeptMemberInAssembly ("library.dll", typeof (RootAllLibrary), "Public()")]
 	[KeptMemberInAssembly ("library.dll", typeof (RootAllLibrary), "Private()")]

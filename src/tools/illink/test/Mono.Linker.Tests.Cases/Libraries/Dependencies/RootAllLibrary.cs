@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
@@ -24,14 +25,24 @@ namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
 		{
 		}
 
-		public void RemovedBranch ()
+		public static void RemovedBranch ()
 		{
 			if (SubstitutedProperty)
 				RootAllLibrary_OptionalDependency.Use ();
 		}
 
 		// Substituted to false in RootAllLibrary_Substitutions.xml
-		static bool SubstitutedProperty => true;
+		static bool SubstitutedProperty {
+			get {
+				RequiresUnreferencedCode ();
+				return true;
+			}
+		}
+
+		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
+		static void RequiresUnreferencedCode ()
+		{
+		}
 
 		[RootAllLibrary_RemovedAttribute]
 		class TypeWithRemovedAttribute
