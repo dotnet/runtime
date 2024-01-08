@@ -508,6 +508,21 @@ uint64_t GetPC(void* context)
     uint64_t& UNIX_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(ctx.uc_mcontext); }
 
+#elif defined(TARGET_ARM)
+    uint64_t& UNIX_CONTEXT::Pc(){ return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Sp(){ return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Lr(){ return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R0(){ return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R1(){ return (uint64_t&)MCREG_R1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R4(){ return (uint64_t&)MCREG_R4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R5(){ return (uint64_t&)MCREG_R5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R6(){ return (uint64_t&)MCREG_R6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R7(){ return (uint64_t&)MCREG_R7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
+
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");
 #endif // TARGET_ARM
