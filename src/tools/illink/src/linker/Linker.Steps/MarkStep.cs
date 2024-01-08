@@ -393,6 +393,8 @@ namespace Mono.Linker.Steps
 
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
+					if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
+						Annotations.SetAction (method, MethodAction.ForceParse);
 					MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
