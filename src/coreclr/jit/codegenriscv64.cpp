@@ -1064,7 +1064,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     unsigned pspSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? 8 : 0;
 
     // If there is a PSP slot, we have to pad the funclet frame size for OSR.
-    // Form more details see CodeGen::genFuncletProlog
+    // For more details see CodeGen::genFuncletProlog
     //
     unsigned osrPad = 0;
     if (compiler->opts.IsOSR() && (pspSize != 0))
@@ -7502,7 +7502,7 @@ void CodeGen::genSmallStackProbe(ssize_t probeOffset, regNumber rOffset)
 }
 
 //------------------------------------------------------------------------
-// genSmallStackProbe: Probe the stack without changing it
+// genStackProbe: Probe the stack without changing it
 //
 // Notes:
 //      This function is using loop to probe each memory page.
@@ -7916,8 +7916,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // is not worth it.
     //
 
-    // we will push calee-save registers along with fp and ra registers to stack
-    regMaskTP rsPushRegsMask = rsPushRegs | RBM_FPBASE | RBM_RA;
+    // we will push callee-saved registers along with fp and ra registers to stack
+    regMaskTP rsPushRegsMask = rsPushRegs | RBM_FP | RBM_RA;
     regSet.rsMaskCalleeSaved = rsPushRegsMask;
 
 #ifdef DEBUG
