@@ -199,8 +199,10 @@ CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
 CONFIG_METHODSET(JitHalt, W("JitHalt")) // Emits break instruction into jitted code
 CONFIG_METHODSET(JitInclude, W("JitInclude"))
-CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))
-CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName"))                   // Forces MinOpts for a named function
+CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))   // Generate late disassembly for the specified methods.
+CONFIG_STRING(JitLateDisasmTo, W("JitLateDisasmTo"))  // If set, sends late disassembly output to this file instead of
+                                                      // stdout/JitStdOutFile.
+CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName")) // Forces MinOpts for a named function
 CONFIG_METHODSET(JitNoProcedureSplitting, W("JitNoProcedureSplitting")) // Disallow procedure splitting for specified
                                                                         // methods
 CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // Disallow procedure splitting for
@@ -218,9 +220,11 @@ CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgr
                                                    // phases
 CONFIG_STRING(JitDumpFgPrePhase,
               W("JitDumpFgPrePhase")) // Same as JitDumpFgPhase, but specifies to dump pre-phase, not post-phase.
-CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)     // 0 == dump XML format; non-zero == dump DOT format
-CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)       // 0 == no EH regions; non-zero == include EH regions
-CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0) // 0 == no loop regions; non-zero == include loop regions
+CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)           // 0 == dump XML format; non-zero == dump DOT format
+CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)             // 0 == no EH regions; non-zero == include EH regions
+CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0)       // 0 == no loop regions; non-zero == include loop regions
+CONFIG_INTEGER(JitDumpFgOldLoops, W("JitDumpFgOldLoops"), 0) // 0 == no old loop regions; non-zero == include old loop
+                                                             // regions
 
 CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't constrain to mostly linear layout;
                                                                    // non-zero == force mostly lexical block
@@ -233,7 +237,6 @@ CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext 
                                                                  // order
 CONFIG_INTEGER(JitDumpFgMemorySsa, W("JitDumpFgMemorySsa"), 0)   // non-zero: show memory phis + SSA/VNs
 
-CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
                                                            // stress mode names, e.g. STRESS_REGS, STRESS_TAILCALL
@@ -241,6 +244,9 @@ CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot")) // Internal Jit
                                                                  // given set of stress mode names, e.g. STRESS_REGS,
                                                                  // STRESS_TAILCALL
 CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit stress mode
+CONFIG_METHODSET(JitEmitUnitTests, W("JitEmitUnitTests")) // Generate emitter unit tests in the specified functions
+CONFIG_STRING(JitEmitUnitTestsSections, W("JitEmitUnitTestsSections")) // Generate this set of unit tests
+
 ///
 /// JIT Hardware Intrinsics
 ///
@@ -609,7 +615,8 @@ CONFIG_INTEGER(JitCounterPadding, W("JitCounterPadding"), 0) // number of unused
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
-CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)                     // Profile castclass/isinst
+CONFIG_INTEGER(JitProfileValues, W("JitProfileValues"), 1) // Value profiling, e.g. Buffer.Memmove's size
+CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)   // Profile castclass/isinst
 CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 1) // Consume profile data (if any) for
                                                                              // castclass/isinst
 

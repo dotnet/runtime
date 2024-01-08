@@ -515,12 +515,13 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  size      - size of the virtual memory range
-//  alignment - requested memory alignment, 0 means no specific alignment requested
-//  flags     - flags to control special settings like write watching
+//  size       - size of the virtual memory range
+//  alignment  - requested memory alignment, 0 means no specific alignment requested
+//  flags      - flags to control special settings like write watching
+//  committing - memory will be comitted
 // Return:
 //  Starting virtual address of the reserved range
-static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
+static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag, bool committing)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
     if (alignment < OS_PAGE_SIZE)
@@ -550,8 +551,11 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 
         pRetVal = pAlignedRetVal;
 #ifdef MADV_DONTDUMP
-        // Do not include reserved memory in coredump.
-        madvise(pRetVal, size, MADV_DONTDUMP);
+        // Do not include reserved uncommitted memory in coredump.
+        if (!committing)
+        {
+            madvise(pRetVal, size, MADV_DONTDUMP);
+        }
 #endif
         return pRetVal;
     }
@@ -569,7 +573,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 //  Starting virtual address of the reserved range
 void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
-    return VirtualReserveInner(size, alignment, flags);
+    return VirtualReserveInner(size, alignment, flags, 0, /* committing */ false);
 }
 
 // Release virtual memory range previously reserved using VirtualReserve
@@ -585,44 +589,21 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
     return (ret == 0);
 }
 
-// Commit virtual memory range.
-// Parameters:
-//  size      - size of the virtual memory range
-// Return:
-//  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
-{
-#if HAVE_MAP_HUGETLB
-    uint32_t largePagesFlag = MAP_HUGETLB;
-#elif HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
-    uint32_t largePagesFlag = VM_FLAGS_SUPERPAGE_SIZE_ANY;
-#else
-    uint32_t largePagesFlag = 0;
-#endif
-
-    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, node))
-    {
-        return pRetVal;
-    }
-
-    return nullptr;
-}
-
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
 // Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
+//  address   - starting virtual address
+//  size      - size of the virtual memory range
+//  newMemory - memory has been newly allocated
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
+static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
 #ifdef MADV_DODUMP
-    if (success)
+    if (success && !newMemory)
     {
-        // Include committed memory in coredump.
+        // Include committed memory in coredump. New memory is included by default.
         madvise(address, size, MADV_DODUMP);
     }
 #endif
@@ -648,6 +629,41 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 #endif // TARGET_LINUX
 
     return success;
+}
+
+// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
+{
+    return VirtualCommitInner(address, size, node, /* newMemory */ false);
+}
+
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
+{
+#if HAVE_MAP_HUGETLB
+    uint32_t largePagesFlag = MAP_HUGETLB;
+#elif HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
+    uint32_t largePagesFlag = VM_FLAGS_SUPERPAGE_SIZE_ANY;
+#else
+    uint32_t largePagesFlag = 0;
+#endif
+
+    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag, true);
+    if (VirtualCommitInner(pRetVal, size, node, /* newMemory */ true))
+    {
+        return pRetVal;
+    }
+
+    return nullptr;
 }
 
 // Decomit virtual memory range.
@@ -686,31 +702,33 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    int st;
-#if HAVE_MADV_FREE
-    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
-    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
-    // occurs.
-    st = madvise(address, size, MADV_FREE);
-    if (st != 0)
-#endif
-    {
-#if HAVE_POSIX_MADVISE
-        // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = posix_madvise(address, size, MADV_DONTNEED);
-#else
-        // If we don't have posix_madvise, report failure
-        st = EINVAL;
-#endif
-    }
+    int st = EINVAL;
+
+#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
+    int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
-    if (st == 0)
-    {
-        // Do not include reset memory in coredump.
-        madvise(address, size, MADV_DONTDUMP);
-    }
+    // Do not include reset memory in coredump.
+    madviseFlags |= MADV_DONTDUMP;
 #endif
+
+#ifdef HAVE_MADV_FREE
+    // Tell the kernel that the application doesn't need the pages in the range.
+    // Freeing the pages can be delayed until a memory pressure occurs.
+    madviseFlags |= MADV_FREE;
+#endif
+
+    st = madvise(address, size, madviseFlags);
+
+#endif //defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
+#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+    // DONTNEED is the nearest posix equivalent of FREE.
+    // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
+    st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
+
+#endif //defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
 
     return (st == 0);
 }

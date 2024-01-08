@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             get
             {
-                if (PlatformDetection.IsOSXLike)
+                if (PlatformDetection.IsApplePlatform)
                 {
                     return false;
                 }

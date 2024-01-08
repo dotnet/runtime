@@ -62,7 +62,7 @@ namespace Internal.Runtime.TypeLoader
                 if (_nativeFormatStrings.TryGetValue(str, out result))
                     return result;
 
-                NativePrimitiveEncoder stringEncoder = new NativePrimitiveEncoder();
+                NativePrimitiveEncoder stringEncoder = default;
                 stringEncoder.Init();
                 byte[] utf8Bytes = Encoding.UTF8.GetBytes(str);
                 stringEncoder.WriteUnsigned(checked((uint)utf8Bytes.Length));

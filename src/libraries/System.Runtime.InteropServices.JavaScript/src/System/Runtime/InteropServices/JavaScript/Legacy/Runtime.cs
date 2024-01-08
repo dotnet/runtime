@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.JavaScript
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
             ArgumentNullException.ThrowIfNull(self);
-            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
+            self.AssertNotDisposed();
             Interop.Runtime.InvokeJSWithArgsRef(self.JSHandle, method, args, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
             ArgumentNullException.ThrowIfNull(self);
-            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
+            self.AssertNotDisposed();
 
             Interop.Runtime.GetObjectPropertyRef(self.JSHandle, name, out int exception, out object propertyValue);
             if (exception != 0)
@@ -102,16 +102,11 @@ namespace System.Runtime.InteropServices.JavaScript
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
             ArgumentNullException.ThrowIfNull(self);
-            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
+            self.AssertNotDisposed();
 
             Interop.Runtime.SetObjectPropertyRef(self.JSHandle, name, in value, createIfNotExists, hasOwnProperty, out int exception, out object res);
             if (exception != 0)
                 throw new JSException(SR.Format(SR.ErrorLegacySettingProperty, name, self.JSHandle, res));
-        }
-
-        public static void AssertNotDisposed(this JSObject self)
-        {
-            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
         }
 
         public static void AssertInFlight(this JSObject self, int expectedInFlightCount)

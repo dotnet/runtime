@@ -17,11 +17,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisAssignmentPattern
 	{
-		public MultiValue Source { init; get; }
-		public MultiValue Target { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
-		public FeatureContext FeatureContext { init; get; }
+		public MultiValue Source { get; init; }
+		public MultiValue Target { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisAssignmentPattern (
 			MultiValue source,

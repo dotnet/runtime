@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public class MsQuicRemoteExecutorTests : QuicTestBase
     {
         public MsQuicRemoteExecutorTests()
