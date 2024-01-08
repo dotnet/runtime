@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-SYSTEM_DOTNET=`which dotnet`
-SYSTEM_DOTNET=${SYSTEM_DOTNET:=dotnet}
+#SYSTEM_DOTNET=`which dotnet`
+#SYSTEM_DOTNET=${SYSTEM_DOTNET:=dotnet}
 
 # create dummy console app to workaround https://github.com/dotnet/runtime/issues/80619
 (CONSOLE_TEMP_DIR="$(mktemp -d)"; "$DOTNET_ROOT/dotnet" new console -o "$CONSOLE_TEMP_DIR"; rm -rf "$CONSOLE_TEMP_DIR") || true
@@ -50,7 +50,7 @@ function set_env_vars()
         _SDK_DIR=$BASE_DIR/$SDK_DIR_NAME
     fi
 
-    export PATH=$_SDK_DIR:$PATH
+    #export PATH=$_SDK_DIR:$PATH
     export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
 }
 

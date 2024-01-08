@@ -24,8 +24,8 @@ echo XHARNESS_CLI_PATH=%XHARNESS_CLI_PATH%
 
 set TEST_LOG_PATH=%XHARNESS_OUT%\logs
 
-:: ========================= BEGIN Test Execution ============================= 
-echo ----- start %DATE% %TIME% ===============  To repro directly: ===================================================== 
+:: ========================= BEGIN Test Execution =============================
+echo ----- start %DATE% %TIME% ===============  To repro directly: =====================================================
 echo pushd %EXECUTION_DIR%
 :: RunCommands defined in eng\testing\tests.wasm.targets
 [[RunCommandsEcho]]
@@ -64,6 +64,6 @@ if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     set _SDK_DIR=%BASE_DIR%\%SDK_DIR_NAME%
 )
 
-set "PATH=%_SDK_DIR%;%PATH%"
+REM set "PATH=%_SDK_DIR%;%PATH%"
 set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
 EXIT /b 0
