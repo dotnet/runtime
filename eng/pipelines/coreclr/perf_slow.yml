@@ -81,7 +81,7 @@ extends:
           parameters:
             jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
             buildConfig: release
-            # platforms:
+            platforms:
             # - linux_x64
             # - windows_x64
             - linux_arm64
