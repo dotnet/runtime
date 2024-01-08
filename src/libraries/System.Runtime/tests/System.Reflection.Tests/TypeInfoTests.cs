@@ -945,6 +945,7 @@ namespace System.Reflection.Tests
             Assert.Equal(expected.OrderBy(t => t.Name), type.GetTypeInfo().GetInterfaces().OrderBy(t => t.Name));
         }
 
+        [SkipOnMono("Mono returns a RuntimeType[] rather than a Type[]. https://github.com/dotnet/runtime/pull/96589")]
         [Fact]
         public void GetInterfaces_InvariantArrayType()
         {
