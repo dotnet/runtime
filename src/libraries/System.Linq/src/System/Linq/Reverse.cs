@@ -15,6 +15,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsImmutableEmpty(source))
+            {
+                return [];
+            }
+
             return new ReverseIterator<TSource>(source);
         }
 

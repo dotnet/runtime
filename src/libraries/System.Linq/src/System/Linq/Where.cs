@@ -28,9 +28,12 @@ namespace System.Linq
 
             if (source is TSource[] array)
             {
-                return array.Length == 0 ?
-                    Empty<TSource>() :
-                    new WhereArrayIterator<TSource>(array, predicate);
+                if (array.Length == 0)
+                {
+                    return [];
+                }
+
+                return new WhereArrayIterator<TSource>(array, predicate);
             }
 
             if (source is List<TSource> list)
@@ -51,6 +54,11 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsImmutableEmpty(source))
+            {
+                return [];
             }
 
             return WhereIterator(source, predicate);

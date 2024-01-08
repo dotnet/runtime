@@ -18,6 +18,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsImmutableEmpty(source))
+            {
+                return [];
+            }
+
             return IndexIterator(source);
         }
 

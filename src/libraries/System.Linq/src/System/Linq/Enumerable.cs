@@ -11,6 +11,19 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source) => source;
 
+        /// <summary>Returns an empty <see cref="IEnumerable{TResult}"/>.</summary>
+        public static IEnumerable<TResult> Empty<TResult>() =>
+            Array.Empty<TResult>(); // explicitly not using [] in case the compiler ever changed to using Enumerable.Empty
+
+        /// <summary>Gets whether the enumerable is empty and is known to always be empty.</summary>
+        /// <remarks>
+        /// This can only return true for empty things that are known to then always be empty, like an array.
+        /// It must not return true for things that are currently empty but could become non-empty, like a list.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsImmutableEmpty<TSource>(IEnumerable<TSource> source) =>
+            source is TSource[] { Length: 0 };
+
         /// <summary>
         /// Sets the <paramref name="list"/>'s <see cref="List{T}.Count"/> to be <paramref name="count"/>
         /// and returns the relevant portion of the list's backing array as a span.

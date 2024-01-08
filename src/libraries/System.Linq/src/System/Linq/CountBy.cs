@@ -19,6 +19,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
+            if (IsImmutableEmpty(source))
+            {
+                return [];
+            }
+
             return CountByIterator(source, keySelector, keyComparer);
         }
 
