@@ -99,7 +99,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.Write("/// ");
 
             bool inCharClass = false;
-            bool isPreviousCharBackslash = false;
             int backslashes = 0;
 
             for (int i = 0; i < pattern.Length; i++)
@@ -179,11 +178,9 @@ namespace System.Text.RegularExpressions.Generator
                     else if (c == '\\')
                     {
                         backslashes++;
-                        isPreviousCharBackslash = true;
                     }
                     else
                     {
-                        isPreviousCharBackslash = false;
                         backslashes = 0;
                     }
                 }
@@ -191,7 +188,7 @@ namespace System.Text.RegularExpressions.Generator
 
             writer.WriteLine();
 
-            bool inEscape() => isPreviousCharBackslash && backslashes % 2 != 0;
+            bool inEscape() => backslashes % 2 != 0;
         }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
