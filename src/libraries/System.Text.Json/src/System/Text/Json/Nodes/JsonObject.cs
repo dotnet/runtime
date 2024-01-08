@@ -40,12 +40,9 @@ namespace System.Text.Json.Nodes
             if (properties.TryGetNonEnumeratedCount(out int initialCapacity))
             {
 #else
-            if (properties is ICollection<KeyValuePair<string, JsonNode?>> or IReadOnlyCollection<KeyValuePair<string, JsonNode?>>)
+            if (properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection)
             {
-                int initialCapacity =
-                    (properties as ICollection<KeyValuePair<string, JsonNode?>>)?.Count // TODO: can I avoid the redundant type checks?
-                    ?? (properties as IReadOnlyCollection<KeyValuePair<string, JsonNode?>>)?.Count
-                    ?? throw null; // should be unreachable, amirite??
+                int initialCapacity = propertiesCollection.Count;
 #endif
                 _initialCapacity = initialCapacity;
             }
