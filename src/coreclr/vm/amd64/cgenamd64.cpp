@@ -72,6 +72,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     SyncRegDisplayToCurrentContext(pRD);
+    pRD->pCurrentContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -113,6 +114,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->Rbp = (DWORD64 *)&m_pCalleeSavedFP;
 
     SyncRegDisplayToCurrentContext(pRD);
+    pRD->pCurrentContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
@@ -194,6 +196,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     //
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
+    pRD->pCurrentContext->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)

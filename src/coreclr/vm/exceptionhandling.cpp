@@ -899,8 +899,8 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     else
     {
         GCX_COOP();
-        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-        FaultingExceptionFrame *frame = &frameWithCookie;
+        FrameWithCookie<NativeToManagedExceptionFrame> frameWithCookie;
+        NativeToManagedExceptionFrame *frame = &frameWithCookie;
     #if defined(FEATURE_EH_FUNCLETS)
         *frame->GetGSCookiePtr() = GetProcessGSCookie();
     #endif // FEATURE_EH_FUNCLETS
@@ -8214,7 +8214,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     if (result)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
-        if (!pThis->m_crawl.HasFaulted())
+        if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         }
@@ -8457,7 +8457,7 @@ Exit:;
     if (retVal != SWA_FAILED)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
-        if (!pThis->m_crawl.HasFaulted())
+        if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         }
