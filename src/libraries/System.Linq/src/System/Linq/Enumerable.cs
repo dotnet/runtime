@@ -15,13 +15,13 @@ namespace System.Linq
         public static IEnumerable<TResult> Empty<TResult>() =>
             Array.Empty<TResult>(); // explicitly not using [] in case the compiler ever changed to using Enumerable.Empty
 
-        /// <summary>Gets whether the enumerable is empty and is known to always be empty.</summary>
+        /// <summary>Gets whether the enumerable is an empty array</summary>
         /// <remarks>
-        /// This can only return true for empty things that are known to then always be empty, like an array.
-        /// It must not return true for things that are currently empty but could become non-empty, like a list.
+        /// If <see cref="Empty{TResult}"/> is ever changed to return something other than an empty array,
+        /// this helper should also be updated to return true for that in addition to for an empty array.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsImmutableEmpty<TSource>(IEnumerable<TSource> source) =>
+        private static bool IsEmptyArray<TSource>(IEnumerable<TSource> source) =>
             source is TSource[] { Length: 0 };
 
         /// <summary>

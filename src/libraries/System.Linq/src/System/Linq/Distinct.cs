@@ -17,7 +17,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -61,7 +61,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }

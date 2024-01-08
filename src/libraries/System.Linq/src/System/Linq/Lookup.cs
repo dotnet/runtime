@@ -24,7 +24,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return EmptyLookup<TKey, TSource>.Instance;
             }
@@ -52,7 +52,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return EmptyLookup<TKey, TElement>.Instance;
             }

@@ -18,7 +18,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }

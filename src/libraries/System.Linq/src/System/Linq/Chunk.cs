@@ -45,7 +45,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.size);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }

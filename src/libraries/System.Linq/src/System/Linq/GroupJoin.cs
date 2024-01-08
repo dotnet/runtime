@@ -37,7 +37,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
 
-            if (IsImmutableEmpty(outer))
+            if (IsEmptyArray(outer))
             {
                 return [];
             }

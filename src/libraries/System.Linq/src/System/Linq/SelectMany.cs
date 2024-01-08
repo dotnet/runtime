@@ -20,7 +20,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -40,7 +40,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -82,7 +82,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -124,7 +124,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }

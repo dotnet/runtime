@@ -29,7 +29,7 @@ namespace System.Linq
             {
                 return partition.Skip(count) ?? Empty<TSource>();
             }
-            else if (IsImmutableEmpty(source))
+            else if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -49,7 +49,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -90,7 +90,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -133,7 +133,7 @@ namespace System.Linq
             }
 
             return
-                IsImmutableEmpty(source) ? [] :
+                IsEmptyArray(source) ? [] :
                 count <= 0 ? source.Skip(0) :
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: false, startIndex: 0,

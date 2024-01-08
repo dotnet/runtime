@@ -15,7 +15,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 || IsImmutableEmpty(source) ?
+            return count <= 0 || IsEmptyArray(source) ?
                 [] :
                 TakeIterator(source, count);
         }
@@ -37,7 +37,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -199,7 +199,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -232,7 +232,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (IsImmutableEmpty(source))
+            if (IsEmptyArray(source))
             {
                 return [];
             }
@@ -266,7 +266,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 || IsImmutableEmpty(source) ?
+            return count <= 0 || IsEmptyArray(source) ?
                 [] :
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: true, startIndex: count,

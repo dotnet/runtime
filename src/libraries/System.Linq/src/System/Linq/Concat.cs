@@ -20,12 +20,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
-            if (IsImmutableEmpty(first))
+            if (IsEmptyArray(first))
             {
                 return second;
             }
 
-            if (IsImmutableEmpty(second))
+            if (IsEmptyArray(second))
             {
                 return first;
             }
