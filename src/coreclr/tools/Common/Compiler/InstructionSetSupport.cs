@@ -141,6 +141,10 @@ namespace ILCompiler
             {
                 return SimdVectorLength.None;
             }
+            else if (_targetArchitecture == TargetArchitecture.RiscV64)
+            {
+                return SimdVectorLength.None;
+            }
             else
             {
                 Debug.Assert(false); // Unknown architecture

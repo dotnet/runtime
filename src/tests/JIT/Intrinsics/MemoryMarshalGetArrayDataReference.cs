@@ -8,14 +8,16 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace MemoryMarshalGetArrayDataReferenceTest
 {
-    class Program
+    public class Program
     {
         private static int _errors = 0;
 
-        unsafe static int Main(string[] args)
+        [Fact]
+        public unsafe static int TestEntryPoint()
         {
             // use no inline methods to avoid indirect call inlining in the future
             [MethodImpl(MethodImplOptions.NoInlining)]

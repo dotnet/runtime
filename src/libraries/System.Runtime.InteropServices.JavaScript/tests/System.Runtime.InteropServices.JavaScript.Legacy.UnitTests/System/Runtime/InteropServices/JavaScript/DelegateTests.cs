@@ -240,7 +240,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var temp = new bool[attempts];
             Action<JSObject> cb = (JSObject envt) =>
             {
-                envt.AssertNotDisposed();
+                ObjectDisposedException.ThrowIf(envt.IsDisposed, envt);
                 envt.AssertInFlight(0);
                 var data = (int)envt.GetObjectProperty("data");
                 temp[data] = true;
