@@ -1,5 +1,8 @@
-<Project>
+<Project TreatAsLocalProperty="TargetOS;TargetArchitecture">
   <PropertyGroup>
+    <TargetOS />
+    <TargetArchitecture />
+
     <!-- needs to be set early -->
     <Scenario>BuildWasmApps</Scenario>
     <IsTestProject>true</IsTestProject>

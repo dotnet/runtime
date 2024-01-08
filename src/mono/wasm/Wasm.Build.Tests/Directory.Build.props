@@ -8,8 +8,8 @@
     <IsTestProject>true</IsTestProject>
     <AssemblyBeingTested>Wasm.Build.Tests</AssemblyBeingTested>
 
-    <RIDForWorkload>wasi-wasm</RIDForWorkload>
-    <TargetOSForWorkload>wasi</TargetOSForWorkload>
+    <RIDForWorkload>browser-wasm</RIDForWorkload>
+    <TargetOSForWorkload>browser</TargetOSForWorkload>
     <TargetArchitectureForWorkload>wasm</TargetArchitectureForWorkload>
   </PropertyGroup>
 
