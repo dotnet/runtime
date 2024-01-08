@@ -902,6 +902,19 @@ struct LikelyClassMethodRecord
     UINT32   likelihood;
 };
 
+struct LikelyValueRecord
+{
+    ssize_t value;
+    UINT32  likelihood;
+};
+
+extern "C" UINT32 WINAPI getLikelyValues(LikelyValueRecord*                     pLikelyValues,
+                                         UINT32                                 maxLikelyValues,
+                                         ICorJitInfo::PgoInstrumentationSchema* schema,
+                                         UINT32                                 countSchemaItems,
+                                         BYTE*                                  pInstrumentationData,
+                                         int32_t                                ilOffset);
+
 extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
                                           UINT32                                 maxLikelyClasses,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
