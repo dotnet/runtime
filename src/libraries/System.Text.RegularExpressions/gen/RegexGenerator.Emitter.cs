@@ -106,8 +106,15 @@ namespace System.Text.RegularExpressions.Generator
             {
                 char c = pattern[i];
 
-                if (!Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
+                if (c == ' ')
                 {
+                    writer.Write(' ');
+                }
+                else if (!Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
+                {
+                    // For the behavior of IgnorePatternWhitespace,
+                    // see https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-options#ignore-white-space
+
                     if (!ignorePatternWhitespace || !char.IsWhiteSpace(c) || inCharClass)
                     {
                         // We need to look back if any \ could change our \, when it follows odd number of backslashes.
@@ -133,16 +140,18 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     else if (SyntaxFacts.IsNewLine(c))
                     {
-                        if (c == '\r' && i + 1 < pattern.Length && pattern[i + 1] == '\n')
-                        {
-                            continue;
-                        }
+                        // IgnorePatternWhitespace only recognizes '\n' as the new line char for # comments,
+                        // otherwise they're ignored anyways. To avoid confusions, we don't print them in the summary.
 
-                        writer.WriteLine();
-                        writer.Write("/// ");
+                        if (c == '\n')
+                        {
+                            writer.WriteLine();
+                            writer.Write("/// ");
+                        }
                     }
                     else
                     {
+                        Debug.Assert(char.IsWhiteSpace(c));
                         Debug.Assert(Xml.XmlConvert.IsXmlChar(c));
 
                         writer.Write(c);
