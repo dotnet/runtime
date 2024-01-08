@@ -516,6 +516,14 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     if (GetTypeDefRid() != pMT->GetTypeDefRid())
         return FALSE;
 
+    // Compare CanonicalMethodTables ahead of comparing Module
+    // Array MethodTables result of GetModule cannot be used for type comparison
+    // as the Rank is not part of the rid, and the Module may not
+    // match even if the MethodTable should return a match. So compare
+    // CanonicalMethodTable instead.
+    if (IsArray())
+        return GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable();
+
     return (GetModule() == pMT->GetModule());
 }
 
