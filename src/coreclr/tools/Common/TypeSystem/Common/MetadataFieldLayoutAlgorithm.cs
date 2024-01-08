@@ -498,13 +498,6 @@ namespace Internal.TypeSystem
                 long size = instanceByteSizeAndAlignment.Size.AsInt;
                 size *= repeat;
 
-                // limit the max size of array instance to 1MiB
-                const int maxSize = 1024 * 1024;
-                if (size > maxSize)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
-                }
-
                 instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
             }
 
