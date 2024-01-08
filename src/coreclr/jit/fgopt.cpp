@@ -5747,6 +5747,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         /* We have decided to insert the block(s) after 'insertAfterBlk' */
         fgMoveBlocksAfter(bStart, bEnd, insertAfterBlk);
 
+        // useProfile should be true only when finalizing the block layout in Compiler::optOptimizeLayout.
+        // In this final pass, allow BBJ_COND blocks' false targets to diverge from bbNext.
+        // TODO-NoFallThrough: Always allow the false targets to diverge.
         if (bDest)
         {
             /* We may need to insert an unconditional branch after bPrev to bDest */

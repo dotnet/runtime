@@ -349,7 +349,12 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
-    // BBJ_COND no fall-through quirk
+    // Quirk: lastBlock's false target may have diverged from bbNext. If the false target is behind firstBlock,
+    // we may create a cycle in the BasicBlock list by setting firstBlock->bbNext to it.
+    // Add a new BBJ_ALWAYS to the false target to avoid this.
+    // (We only need this if the false target is behind firstBlock,
+    // but it's cheaper to just check if the false target has diverged)
+    // TODO-NoFallThrough: Revisit this quirk?
     bool skipPredRemoval = false;
     if (!lastBlock->FalseTargetIs(lastBlock->Next()))
     {

@@ -5547,6 +5547,9 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, b
     {
         assert(fgGetPredForBlock(bDst, bSrc) != nullptr);
 
+        // Allow the caller to decide whether to use the old logic of maintaining implicit fallthrough behavior,
+        // or to allow BBJ_COND blocks' false targets to diverge from bbNext.
+        // TODO-NoFallThrough: Remove this quirk once callers' dependencies on implicit fallthrough are gone.
         if (noFallThroughQuirk)
         {
             return jmpBlk;
