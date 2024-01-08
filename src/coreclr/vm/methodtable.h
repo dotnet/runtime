@@ -2627,7 +2627,11 @@ public:
     BOOL HasPerInstInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(!IsArray());
+        // Assert that either this is an array, or m_pPerInstInfo is non-NULL only if HasPerInstInfo is set
+        _ASSERTE(IsArray() || (m_pPerInstInfo == NULL) == !GetFlag(enum_flag_HasPerInstInfo));
+
+        // Assert that this if this is an Array, HasPerInstInfo is not set
+        _ASSERTE(!IsArray() || !GetFlag(enum_flag_HasPerInstInfo));
         return GetFlag(enum_flag_HasPerInstInfo);
     }
 #ifndef DACCESS_COMPILE
