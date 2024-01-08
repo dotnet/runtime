@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -45,6 +43,11 @@ namespace System.Linq
             if (size < 1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.size);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return ChunkIterator(source, size);
