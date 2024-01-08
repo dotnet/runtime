@@ -4247,10 +4247,10 @@ RETRY_UNROLL:
 
             BlockToBlockMap blockMap(getAllocator(CMK_LoopUnroll));
 
-            BasicBlock*       bottom        = loop->GetLexicallyBottomMostBlock();
-            BasicBlock*       insertAfter   = bottom;
-            BasicBlock*       prevTestBlock = nullptr;
-            unsigned          iterToUnroll  = totalIter; // The number of iterations left to unroll
+            BasicBlock* bottom        = loop->GetLexicallyBottomMostBlock();
+            BasicBlock* insertAfter   = bottom;
+            BasicBlock* prevTestBlock = nullptr;
+            unsigned    iterToUnroll  = totalIter; // The number of iterations left to unroll
 
             // Find the exit block of the IV test first. We need to do that
             // here since it may have implicit fallthrough that we'll change
