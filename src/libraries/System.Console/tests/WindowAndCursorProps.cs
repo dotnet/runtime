@@ -258,15 +258,7 @@ public class WindowAndCursorProps
             string newTitle = new string('a', int.Parse(lengthOfTitleString));
             Console.Title = newTitle;
 
-            if (newTitle.Length >= 511 && !PlatformDetection.IsNetCore && PlatformDetection.IsWindows10Version1703OrGreater && !PlatformDetection.IsWindows10Version1709OrGreater)
-            {
-                // RS2 has a bug when getting the window title when the title length is longer than 513 character
-                Assert.Throws<IOException>(() => Console.Title);
-            }
-            else
-            {
-                Assert.Equal(newTitle, Console.Title);
-            }
+            Assert.Equal(newTitle, Console.Title);
         }, lengthOfTitle.ToString()).Dispose();
     }
 
