@@ -33,7 +33,6 @@ void Compiler::fgInit()
     /* We haven't yet computed the dominator sets */
     fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
-    fgCompactRenumberQuirk = false;
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -184,6 +183,7 @@ void Compiler::fgInit()
     fgPgoInlineeNoPgoSingleBlock = 0;
     fgCountInstrumentor          = nullptr;
     fgHistogramInstrumentor      = nullptr;
+    fgValueInstrumentor          = nullptr;
     fgPredListSortVector         = nullptr;
     fgCanonicalizedFirstBB       = false;
 }
