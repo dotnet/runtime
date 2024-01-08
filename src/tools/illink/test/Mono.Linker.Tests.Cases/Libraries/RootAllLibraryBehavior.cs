@@ -42,6 +42,8 @@ namespace Mono.Linker.Tests.Cases.Libraries
 
 	// Substitutions and branch removal work. Dependencies reachable only from removed branches are removed.
 	[RemovedAssembly ("optionaldependency.dll")]
+	[LogDoesNotContain ("IL2026:.*SubstitutedProperty.get:.*RequiresUnreferencedCode\\(\\)", regexMatch: true)]
+	[LogDoesNotContain ("IL2026:.*RemovedBranch\\(\\):.*RootAllLibrary_OptionalDependency.Use\\(\\)", regexMatch: true)]
 
 	// Attribute removal works.
 	[RemovedAssembly ("removedattribute.dll")]
