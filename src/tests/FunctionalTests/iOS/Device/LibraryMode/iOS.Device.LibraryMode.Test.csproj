@@ -47,9 +47,6 @@
       <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
       <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
     </PropertyGroup>
-    <ItemGroup>
-      <DirectPInvoke Include="__Internal" KeepDuplicates="false" />
-    </ItemGroup>
   </Target>
 
 </Project>
