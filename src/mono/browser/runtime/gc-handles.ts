@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { js_import_wrapper_by_fn_handle } from "./invoke-js";
+import { assert_js_interop, js_import_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
@@ -70,6 +70,7 @@ export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle): any {
 }
 
 export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
+    assert_js_interop();
     if (js_obj[cs_owned_js_handle_symbol]) {
         return js_obj[cs_owned_js_handle_symbol];
     }
@@ -90,6 +91,7 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
 }
 
 export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
+    assert_js_interop();
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
     _cs_owned_objects_by_jsv_handle[0 - <any>jsv_handle] = js_obj;
 
@@ -98,6 +100,7 @@ export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
     }
 }
 
+// note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
 export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {
@@ -108,6 +111,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
     else if (is_jsv_handle(js_handle)) {
         obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
         _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
+        // see free list in JSProxyContext.FreeJSVHandle
     }
     mono_assert(obj !== undefined && obj !== null, "ObjectDisposedException");
     if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {
@@ -116,6 +120,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
 }
 
 export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
+    assert_js_interop();
     // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
     owner[js_owned_gc_handle_symbol] = gc_handle;
 
@@ -132,6 +137,7 @@ export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
 }
 
 export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
+    assert_js_interop();
     // The JS object associated with this gc_handle has been collected by the JS GC.
     // As such, it's not possible for this gc_handle to be invoked by JS anymore, so
     //  we can release the tracking weakref (it's null now, by definition),

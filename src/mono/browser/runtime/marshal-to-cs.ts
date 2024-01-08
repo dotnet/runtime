@@ -309,13 +309,22 @@ export class PromiseHolder extends ManagedObject {
 }
 
 function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
+    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     if (value === null || value === undefined) {
-        set_arg_type(arg, MarshalerType.None);
-        return;
+        if (MonoWasmThreads && handleIsPreallocated) {
+            // This is multi-threading return from JSImport with Task result and we can't return synchronously,
+            // because C# caller could be on different thread and sent us an async message.
+            // It already returned pending Task to it's own caller.
+            const err = new Error("InvalidOperationException: Task return with null value is not supported in multi-threading scenario.");
+            // Alternatively we can return promise and resolve it with null/default value.
+            value = Promise.reject(err);
+        } else {
+            set_arg_type(arg, MarshalerType.None);
+            return;
+        }
     }
     mono_check(isThenable(value), "Value is not a Promise");
 
-    const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     const gc_handle = handleIsPreallocated ? get_arg_gc_handle(arg) : alloc_gcv_handle();
     if (!handleIsPreallocated) {
         set_gc_handle(arg, gc_handle);
@@ -330,37 +339,48 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     if (MonoWasmThreads)
         addUnsettledPromise();
 
-    value.then(data => {
+    function resolve(data: any) {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.");
             return;
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
-            if (MonoWasmThreads)
+            if (MonoWasmThreads) {
                 settleUnsettledPromise();
+            }
+            // we can unregister the GC handle on JS side
+            teardown_managed_proxy(holder, gc_handle, true);
+            // order of operations with teardown_managed_proxy matters
+            // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
-            teardown_managed_proxy(holder, gc_handle, true); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
         }
         catch (ex) {
             runtimeHelpers.abort(ex);
         }
-    }).catch(reason => {
+    }
+
+    function reject(reason: any) {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise can't be propagated to managed code, mono runtime already exited.", reason);
             return;
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
-            if (MonoWasmThreads)
+            if (MonoWasmThreads) {
                 settleUnsettledPromise();
+            }
+            // we can unregister the GC handle on JS side
+            teardown_managed_proxy(holder, gc_handle, true);
+            // order of operations with teardown_managed_proxy matters
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
-            teardown_managed_proxy(holder, gc_handle, true); // this holds holder alive for finalizer, until the promise is freed
         }
         catch (ex) {
             runtimeHelpers.abort(ex);
         }
-    });
+    }
+
+    value.then(resolve).catch(reject);
 }
 
 export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): void {

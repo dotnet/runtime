@@ -2388,5 +2388,12 @@ namespace Internal.JitInterface
             }
             return true;
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return true;
+        }
     }
 }

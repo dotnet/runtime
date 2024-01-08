@@ -2,26 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
     /// <summary>A <see cref="RegexRunnerFactory"/> for creating <see cref="RegexInterpreter"/>s.</summary>
-    internal sealed class RegexInterpreterFactory : RegexRunnerFactory
+    internal sealed class RegexInterpreterFactory(RegexTree tree) : RegexRunnerFactory
     {
-        private readonly RegexInterpreterCode _code;
-        private readonly CultureInfo? _culture;
-
-        public RegexInterpreterFactory(RegexTree tree)
-        {
-            // We use the CultureInfo field from the tree's culture which will only be set to an actual culture if the
-            // tree contains IgnoreCase backreferences. If the tree doesn't have IgnoreCase backreferences, then we keep _culture as null.
-            _culture = tree.Culture;
-            // Generate and store the RegexInterpretedCode for the RegexTree and the specified culture
-            _code = RegexWriter.Write(tree);
-        }
+        /// <summary>The RegexInterpretedCode for the RegexTree and the specified culture.</summary>
+        private readonly RegexInterpreterCode _code = RegexWriter.Write(tree);
+        /// <summary>
+        /// CultureInfo field from the tree's culture which will only be set to an actual culture if the
+        /// tree contains IgnoreCase backreferences. If the tree doesn't have IgnoreCase backreferences, then we keep _culture as null.
+        /// </summary>
+        private readonly CultureInfo? _culture = tree.Culture;
 
         protected internal override RegexRunner CreateInstance() =>
             // Create a new interpreter instance.

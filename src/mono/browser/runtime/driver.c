@@ -322,6 +322,27 @@ mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArgum
 	return is_err;
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_invoke_method_raw (MonoMethod *method, MonoString **out_exc)
+{
+	PVOLATILE(MonoObject) temp_exc = NULL;
+
+	int is_err = 0;
+
+	MONO_ENTER_GC_UNSAFE;
+	mono_runtime_invoke (method, NULL, NULL, (MonoObject **)&temp_exc);
+
+	if (temp_exc && out_exc) {
+		PVOLATILE(MonoObject) exc2 = NULL;
+		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
+		if (exc2)
+			store_volatile((MonoObject**)out_exc, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
+		is_err = 1;
+	}
+	MONO_EXIT_GC_UNSAFE;
+	return is_err;
+}
+
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
 {

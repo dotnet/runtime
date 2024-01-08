@@ -32,17 +32,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
-            if (JSHostImplementation.ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-            {
-                reference.TryGetTarget(out JSObject? jsObject);
-                if (shouldAddInflight != 0)
-                {
-                    jsObject?.AddInFlight();
-                }
-                result = jsObject;
-                return;
-            }
-            result = null;
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+            result = JSProxyContext.MainThreadContext.GetCSOwnedObjectByJSHandle(jsHandle, shouldAddInflight);
         }
 
         public static IntPtr GetCSOwnedObjectJSHandleRef(in JSObject jsObject, int shouldAddInflight)
@@ -71,32 +64,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-
-            JSObject? res = null;
-
-            if (!JSHostImplementation.ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
-                !reference.TryGetTarget(out res) ||
-                res.IsDisposed)
-            {
-#pragma warning disable CS0612 // Type or member is obsolete
-                res = mappedType switch
-                    {
-                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
-                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
-                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
-                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
-                    };
-#pragma warning restore CS0612 // Type or member is obsolete
-                JSHostImplementation.ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-            }
-            if (shouldAddInflight != 0)
-            {
-                res.AddInFlight();
-            }
-            jsObject = res;
+            jsObject = JSProxyContext.MainThreadContext.CreateCSOwnedProxy(jsHandle, mappedType, shouldAddInflight);
         }
 
         public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
@@ -107,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
-            return JSHostImplementation.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
+            return JSProxyContext.MainThreadContext.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
         }
 
         public static IntPtr CreateTaskSource()
