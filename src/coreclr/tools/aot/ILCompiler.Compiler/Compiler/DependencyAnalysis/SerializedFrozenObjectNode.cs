@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
+
+using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -53,9 +56,13 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+        public override bool HasConditionalStaticDependencies => _data.HasConditionalDependencies;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            _data.GetNonRelocationDependencies(ref dependencies, factory);
+            CombinedDependencyList result = null;
+            _data.GetConditionalDependencies(ref result, factory);
+            return result;
         }
 
         public override int ClassCode => 1789429316;

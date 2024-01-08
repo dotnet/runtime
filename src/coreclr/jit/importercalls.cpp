@@ -1289,6 +1289,25 @@ DONE_CALL:
             assert(verCurrentState.esStackDepth > 0);
             impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
         }
+        else if (JitConfig.JitProfileValues() && call->IsCall() &&
+                 call->AsCall()->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+        {
+            if (opts.IsOptimizedWithProfile())
+            {
+                call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
+            }
+            else if (opts.IsInstrumented())
+            {
+                // We might want to instrument it for optimized versions too, but we don't currently.
+                HandleHistogramProfileCandidateInfo* pInfo =
+                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                pInfo->ilOffset                                       = rawILOffset;
+                pInfo->probeIndex                                     = 0;
+                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+            }
+            impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+        }
         else
         {
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
@@ -1303,11 +1322,10 @@ DONE_CALL:
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
         }
 
-        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
-
-        if (call->IsCall())
+        // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+        if (!bIntrinsicImported)
         {
-            // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+            assert(call->IsCall());
 
             GenTreeCall* origCall = call->AsCall();
 
@@ -1422,11 +1440,34 @@ DONE_CALL:
                 {
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
                 }
-            }
-        }
 
-        if (!bIntrinsicImported)
-        {
+                if (JitConfig.JitProfileValues() && call->IsCall() &&
+                    call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+                {
+                    if (opts.IsOptimizedWithProfile())
+                    {
+                        call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
+                        if (call->OperIs(GT_QMARK))
+                        {
+                            // QMARK has to be a root node
+                            unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
+                            impStoreTemp(tmp, call, CHECK_SPILL_ALL);
+                            call = gtNewLclvNode(tmp, call->TypeGet());
+                        }
+                    }
+                    else if (opts.IsInstrumented())
+                    {
+                        // We might want to instrument it for optimized versions too, but we don't currently.
+                        HandleHistogramProfileCandidateInfo* pInfo =
+                            new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                        pInfo->ilOffset                                       = rawILOffset;
+                        pInfo->probeIndex                                     = 0;
+                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+                    }
+                }
+            }
+
             //-------------------------------------------------------------------------
             //
             /* If the call is of a small type and the callee is managed, the callee will normalize the result
@@ -1441,19 +1482,147 @@ DONE_CALL:
             }
         }
 
+        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
         impPushOnStack(call, tiRetVal);
     }
-
-    // VSD functions get a new call target each time we getCallInfo, so clear the cache.
-    // Also, the call info cache for CALLI instructions is largely incomplete, so clear it out.
-    // if ( (opcode == CEE_CALLI) || (callInfoCache.fetchCallInfo().kind == CORINFO_VIRTUALCALL_STUB))
-    //  callInfoCache.uncacheCallInfo();
 
     return callRetTyp;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// impDuplicateWithProfiledArg: duplicates a call with a profiled argument, e.g.:
+//    Given `Buffer.Memmove(dst, src, len)` call,
+//    optimize it to:
+//
+//    if (len == popularSize)
+//        Buffer.Memmove(dst, src, popularSize); // can be unrolled now
+//    else
+//        Buffer.Memmove(dst, src, len); // fallback
+//
+//    if we can obtain the popular size from PGO data.
+//
+// Arguments:
+//    call     -- call to optimize with profiled argument
+//    ilOffset -- Raw IL offset of the call
+//
+// Return Value:
+//    Optimized tree (or the original call tree if we can't optimize it).
+//
+GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset)
+{
+    assert(call->IsSpecialIntrinsic());
+    assert(opts.IsOptimizedWithProfile());
+
+    if (call->IsInlineCandidate())
+    {
+        // We decided to inline the whole thing? We won't be able to clone it then.
+        return call;
+    }
+
+    const unsigned    MaxLikelyValues = 8;
+    LikelyValueRecord likelyValues[MaxLikelyValues];
+    UINT32            valuesCount =
+        getLikelyValues(likelyValues, MaxLikelyValues, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+
+    JITDUMP("%u likely values:\n", valuesCount)
+    for (UINT32 i = 0; i < valuesCount; i++)
+    {
+        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+    }
+
+    // For now, we only do a single guess, but it's pretty straightforward to
+    // extend it to support multiple guesses.
+    LikelyValueRecord likelyValue = likelyValues[0];
+#if DEBUG
+    // Re-use JitRandomGuardedDevirtualization for stress-testing.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        CLRRandom* random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+        valuesCount            = 1;
+        likelyValue.value      = random->Next(256);
+        likelyValue.likelihood = 100;
+    }
+#endif
+
+    // TODO: Tune the likelihood threshold, for now it's 50%
+    if ((valuesCount > 0) && (likelyValue.likelihood >= 50))
+    {
+        const ssize_t profiledValue = likelyValue.value;
+
+        unsigned argNum   = 0;
+        ssize_t  minValue = 0;
+        ssize_t  maxValue = 0;
+        if (call->IsSpecialIntrinsic(this, NI_System_Buffer_Memmove))
+        {
+            // dst(0), src(1), len(2)
+            argNum = 2;
+
+            minValue = 1; // TODO: enable for 0 as well.
+            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemmove);
+        }
+        else if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+        {
+            // dst(0), src(1), len(2)
+            argNum = 2;
+
+            minValue = 1; // TODO: enable for 0 as well.
+            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemcmp);
+        }
+        else
+        {
+            // only Memmove is expected at the moment.
+            // Possible future extensions: Memset, Memcpy
+            unreached();
+        }
+
+        if ((profiledValue >= minValue) && (profiledValue <= maxValue))
+        {
+            JITDUMP("Duplicating for popular value = %u\n", profiledValue)
+            DISPTREE(call)
+
+            if (call->gtArgs.GetUserArgByIndex(argNum)->GetNode()->OperIsConst())
+            {
+                JITDUMP("Profiled arg is already a constant - bail out.\n")
+                return call;
+            }
+
+            // Spill all the arguments to temp locals to preserve the execution order
+            GenTree** argRef   = nullptr;
+            GenTree*  argClone = nullptr;
+            for (unsigned i = 0; i < call->gtArgs.CountUserArgs(); i++)
+            {
+                GenTree** node   = &call->gtArgs.GetUserArgByIndex(i)->EarlyNodeRef();
+                GenTree*  cloned = impCloneExpr(*node, node, CHECK_SPILL_ALL, nullptr DEBUGARG("spilling arg"));
+
+                // Record the reference to the argument we're going to replace.
+                if (i == argNum)
+                {
+                    argRef   = node;
+                    argClone = cloned;
+                }
+            }
+
+            GenTree* fallbackCall      = gtCloneExpr(call);
+            GenTree* profiledValueNode = gtNewIconNode(profiledValue, argClone->TypeGet());
+            *argRef                    = profiledValueNode;
+
+            // TODO: Specify weights for the branches in the Qmark node.
+            GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(call->TypeGet(), call, fallbackCall);
+            GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
+            GenTreeQmark* qmark = gtNewQmarkNode(call->TypeGet(), cond, colon);
+
+            JITDUMP("\n\nResulting tree:\n")
+            DISPTREE(qmark)
+
+            return qmark;
+        }
+    }
+    return call;
+}
 
 #ifdef DEBUG
 //
@@ -2588,11 +2757,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_ExchangeAdd:
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
-
             case NI_System_Threading_Volatile_Read:
             case NI_System_Threading_Volatile_Write:
-
                 betterToExpand = true;
+                break;
+
+            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_SequenceEqual:
+                // We're going to instrument these
+                betterToExpand = opts.IsInstrumented();
                 break;
 
             default:
@@ -3239,14 +3412,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer) and for RV64A
-            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                ARM64_ONLY(if (compOpportunisticallyDependsOn(InstructionSet_Atomics)))
+#if defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
                 {
+#if defined(TARGET_X86)
+                    if (genActualType(callType) == TYP_LONG)
+                    {
+                        break;
+                    }
+#endif
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;

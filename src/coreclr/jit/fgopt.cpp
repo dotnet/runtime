@@ -2356,54 +2356,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->RemoveFlags(BBF_NONE_QUIRK);
     }
 
-    // If we're collapsing a block created after the dominators are
-    // computed, copy block number the block and reuse dominator
-    // information from bNext to block.
-    //
-    // Note we have to do this renumbering after the full set of pred list
-    // updates above, since those updates rely on stable bbNums; if we renumber
-    // before the updates, we can create pred lists with duplicate m_block->bbNum
-    // values (though different m_blocks).
-    //
-    if ((fgDomsComputed || fgCompactRenumberQuirk) && (block->bbNum > fgDomBBcount))
-    {
-        if (fgDomsComputed)
-        {
-            assert(fgReachabilitySetsValid);
-            BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-            BlockSetOps::ClearD(this, bNext->bbReach);
-
-            block->bbIDom = bNext->bbIDom;
-            bNext->bbIDom = nullptr;
-
-            // In this case, there's no need to update the preorder and postorder numbering
-            // since we're changing the bbNum, this makes the basic block all set.
-            //
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
-                    bNext->bbNum);
-        }
-        else
-        {
-            // TODO-Quirk: Remove
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " for a quirk\n", block->bbNum, bNext->bbNum);
-        }
-
-        block->bbNum = bNext->bbNum;
-
-        // Because we may have reordered pred lists when we swapped in
-        // block for bNext above, we now need to re-reorder pred lists
-        // to reflect the bbNum update.
-        //
-        // This process of reordering and re-reordering could likely be avoided
-        // via a different update strategy. But because it's probably rare,
-        // and we avoid most of the work if pred lists are already in order,
-        // we'll just ensure everything is properly ordered.
-        //
-        for (BasicBlock* const checkBlock : Blocks())
-        {
-            checkBlock->ensurePredListOrder(this);
-        }
-    }
+    assert(!fgDomsComputed);
 
     if (optLoopTableValid)
     {
@@ -2557,6 +2510,109 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
     // Update bbRefs and bbPreds for the blocks reached by this block
     fgRemoveBlockAsPred(block);
+}
+
+//-------------------------------------------------------------
+// fgRemoveConditionalJump: Remove or morph a jump when we jump to the same
+// block when both the condition is true or false. Remove the branch condition,
+// but leave any required side effects.
+//
+// Arguments:
+//    block - block with conditional branch
+//
+void Compiler::fgRemoveConditionalJump(BasicBlock* block)
+{
+    noway_assert(block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()));
+    assert(compRationalIRForm == block->IsLIR());
+
+    FlowEdge* flow = fgGetPredForBlock(block->GetFalseTarget(), block);
+    noway_assert(flow->getDupCount() == 2);
+
+    // Change the BBJ_COND to BBJ_ALWAYS, and adjust the refCount and dupCount.
+    --block->GetFalseTarget()->bbRefs;
+    block->SetKind(BBJ_ALWAYS);
+    block->SetFlags(BBF_NONE_QUIRK);
+    flow->decrementDupCount();
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
+               " is true or false)\n",
+               block->bbNum, block->GetTarget()->bbNum);
+    }
+#endif
+
+    // Remove the block jump condition
+
+    if (block->IsLIR())
+    {
+        LIR::Range& blockRange = LIR::AsRange(block);
+
+        GenTree* test = blockRange.LastNode();
+        assert(test->OperIsConditionalJump());
+
+        bool               isClosed;
+        unsigned           sideEffects;
+        LIR::ReadOnlyRange testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
+
+        // TODO-LIR: this should really be checking GTF_ALL_EFFECT, but that produces unacceptable
+        //            diffs compared to the existing backend.
+        if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
+        {
+            // If the jump and its operands form a contiguous, side-effect-free range,
+            // remove them.
+            blockRange.Delete(this, block, std::move(testRange));
+        }
+        else
+        {
+            // Otherwise, just remove the jump node itself.
+            blockRange.Remove(test, true);
+        }
+    }
+    else
+    {
+        Statement* test = block->lastStmt();
+        GenTree*   tree = test->GetRootNode();
+
+        noway_assert(tree->gtOper == GT_JTRUE);
+
+        GenTree* sideEffList = nullptr;
+
+        if (tree->gtFlags & GTF_SIDE_EFFECT)
+        {
+            gtExtractSideEffList(tree, &sideEffList);
+
+            if (sideEffList)
+            {
+                noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Extracted side effects list from condition...\n");
+                    gtDispTree(sideEffList);
+                    printf("\n");
+                }
+#endif
+            }
+        }
+
+        // Delete the cond test or replace it with the side effect tree
+        if (sideEffList == nullptr)
+        {
+            fgRemoveStmt(block, test);
+        }
+        else
+        {
+            test->SetRootNode(sideEffList);
+
+            if (fgNodeThreading != NodeThreading::None)
+            {
+                gtSetStmtInfo(test);
+                fgSetStmtSeq(test);
+            }
+        }
+    }
 }
 
 //-------------------------------------------------------------
