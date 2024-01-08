@@ -4783,6 +4783,18 @@ void Compiler::fgDebugCheckSsa()
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+    if (m_loops != nullptr)
+    {
+        if (optLoopsRequirePreHeaders)
+        {
+            for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+            {
+                assert(loop->EntryEdges().size() == 1);
+                assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+            }
+        }
+    }
+
 #ifdef DEBUG
     if (!optLoopTableValid)
     {
