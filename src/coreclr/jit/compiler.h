@@ -6055,8 +6055,6 @@ public:
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
 
-    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
-
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG
     void fgPrintEdgeWeights();

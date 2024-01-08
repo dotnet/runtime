@@ -2560,109 +2560,6 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 }
 
 //-------------------------------------------------------------
-// fgRemoveConditionalJump: Remove or morph a jump when we jump to the same
-// block when both the condition is true or false. Remove the branch condition,
-// but leave any required side effects.
-//
-// Arguments:
-//    block - block with conditional branch
-//
-void Compiler::fgRemoveConditionalJump(BasicBlock* block)
-{
-    noway_assert(block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()));
-    assert(compRationalIRForm == block->IsLIR());
-
-    FlowEdge* flow = fgGetPredForBlock(block->GetFalseTarget(), block);
-    noway_assert(flow->getDupCount() == 2);
-
-    // Change the BBJ_COND to BBJ_ALWAYS, and adjust the refCount and dupCount.
-    --block->GetFalseTarget()->bbRefs;
-    block->SetKind(BBJ_ALWAYS);
-    block->SetFlags(BBF_NONE_QUIRK);
-    flow->decrementDupCount();
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
-               " is true or false)\n",
-               block->bbNum, block->GetFalseTarget()->bbNum);
-    }
-#endif
-
-    // Remove the block jump condition
-
-    if (block->IsLIR())
-    {
-        LIR::Range& blockRange = LIR::AsRange(block);
-
-        GenTree* test = blockRange.LastNode();
-        assert(test->OperIsConditionalJump());
-
-        bool               isClosed;
-        unsigned           sideEffects;
-        LIR::ReadOnlyRange testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
-
-        // TODO-LIR: this should really be checking GTF_ALL_EFFECT, but that produces unacceptable
-        //            diffs compared to the existing backend.
-        if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
-        {
-            // If the jump and its operands form a contiguous, side-effect-free range,
-            // remove them.
-            blockRange.Delete(this, block, std::move(testRange));
-        }
-        else
-        {
-            // Otherwise, just remove the jump node itself.
-            blockRange.Remove(test, true);
-        }
-    }
-    else
-    {
-        Statement* test = block->lastStmt();
-        GenTree*   tree = test->GetRootNode();
-
-        noway_assert(tree->gtOper == GT_JTRUE);
-
-        GenTree* sideEffList = nullptr;
-
-        if (tree->gtFlags & GTF_SIDE_EFFECT)
-        {
-            gtExtractSideEffList(tree, &sideEffList);
-
-            if (sideEffList)
-            {
-                noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Extracted side effects list from condition...\n");
-                    gtDispTree(sideEffList);
-                    printf("\n");
-                }
-#endif
-            }
-        }
-
-        // Delete the cond test or replace it with the side effect tree
-        if (sideEffList == nullptr)
-        {
-            fgRemoveStmt(block, test);
-        }
-        else
-        {
-            test->SetRootNode(sideEffList);
-
-            if (fgNodeThreading != NodeThreading::None)
-            {
-                gtSetStmtInfo(test);
-                fgSetStmtSeq(test);
-            }
-        }
-    }
-}
-
-//-------------------------------------------------------------
 // fgOptimizeBranchToEmptyUnconditional:
 //    Optimize a jump to an empty block which ends in an unconditional branch.
 //
@@ -3728,27 +3625,25 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 }
 
 //-------------------------------------------------------------
-// fgOptimizeBranchToNext:
-//    Optimize a block which has a branch to the following block
+// fgRemoveConditionalJump: Remove or morph a jump when we jump to the same
+// block when both the condition is true or false. Remove the branch condition,
+// but leave any required side effects.
 //
 // Arguments:
-//    block - block with a BBJ_COND jump kind
-//    bNext - target that block jumps to regardless of its condition
-//    bPrev - block which is prior to the first block
+//    block - block with conditional branch
 //
-// Returns: true if changes were made
-//
-bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev)
+void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_COND));
-    assert(block->TrueTargetIs(bNext));
-    assert(block->FalseTargetIs(bNext));
-    assert(block->PrevIs(bPrev));
+    assert(block->FalseTargetIs(block->GetTrueTarget()));
+    BasicBlock* target = block->GetTrueTarget();
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nRemoving conditional jump to next block (" FMT_BB " -> " FMT_BB ")\n", block->bbNum, bNext->bbNum);
+        printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
+               " is true or false)\n",
+               block->bbNum, target->bbNum);
     }
 #endif // DEBUG
 
@@ -3847,17 +3742,20 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
         }
     }
 
-    /* Conditional is gone - always jump to the next block */
+    /* Conditional is gone - always jump to target */
 
     block->SetKind(BBJ_ALWAYS);
+
+    if (block->JumpsToNext())
+    {
+        block->SetFlags(BBF_NONE_QUIRK);
+    }
 
     /* Update bbRefs and bbNum - Conditional predecessors to the same
         * block are counted twice so we have to remove one of them */
 
-    noway_assert(bNext->countOfInEdges() > 1);
-    fgRemoveRefPred(bNext, block);
-
-    return true;
+    noway_assert(target->countOfInEdges() > 1);
+    fgRemoveRefPred(target, block);
 }
 
 //-------------------------------------------------------------
@@ -4952,9 +4850,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         noway_assert(edgeToBlock != nullptr);
                         //
                         // Calculate the taken ratio
-                        //   A takenRation of 0.10 means taken 10% of the time, not taken 90% of the time
-                        //   A takenRation of 0.50 means taken 50% of the time, not taken 50% of the time
-                        //   A takenRation of 0.90 means taken 90% of the time, not taken 10% of the time
+                        //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
+                        //   A takenRatio of 0.50 means taken 50% of the time, not taken 50% of the time
+                        //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
                         //
                         double takenCount =
                             ((double)edgeToDest->edgeWeightMin() + (double)edgeToDest->edgeWeightMax()) / 2.0;
@@ -5339,7 +5237,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     {
                         // Treat jumps to next block as fall-through
                     }
-                    else if (bEnd2->bbFallsThrough() == false)
+                    else if (!bEnd2->KindIs(BBJ_COND) || !bEnd2->FalseTargetIs(bNext))
                     {
                         break;
                     }
@@ -5427,7 +5325,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 }
                 else
                 {
-                    if (bPrev->bbFallsThrough())
+                    if (bPrev->KindIs(BBJ_COND) && bPrev->NextIs(bPrev->GetFalseTarget()))
                     {
                         printf("since it falls into a rarely run block\n");
                     }
@@ -5523,12 +5421,21 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             // Find new location for the unlinked block(s)
             // Set insertAfterBlk to the block which will precede the insertion point
 
+            EHblkDsc* ehDsc;
+
             if (!bStart->hasTryIndex() && isRare)
             {
                 // We'll just insert the blocks at the end of the method. If the method
                 // has funclets, we will insert at the end of the main method but before
                 // any of the funclets. Note that we create funclets before we call
                 // fgReorderBlocks().
+
+                // TODO-NoFallThrough: With JitStress, we sometimes try to move a BBJ_SWITCH
+                // to the end of the block list (?); remove this quirk eventually
+                if (bEnd->KindIs(BBJ_SWITCH))
+                {
+                    goto CANNOT_MOVE;
+                }
 
                 insertAfterBlk = fgLastBBInMainFunction();
                 noway_assert(insertAfterBlk != bPrev);
@@ -5537,7 +5444,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             {
                 BasicBlock* startBlk;
                 BasicBlock* lastBlk;
-                EHblkDsc*   ehDsc = ehInitTryBlockRange(bStart, &startBlk, &lastBlk);
+                ehDsc = ehInitTryBlockRange(bStart, &startBlk, &lastBlk);
 
                 BasicBlock* endBlk;
 
