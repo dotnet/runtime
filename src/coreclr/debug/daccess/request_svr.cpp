@@ -400,14 +400,13 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)pHeap->alloc_allocated;
                     pHeaps[i].EphemeralSegment = j;
-                    pHeaps[i].Segments[j].Generation = CorDebug_Gen0;
                 }
                 else
                 {
                     pHeaps[i].Segments[j].End = (CORDB_ADDRESS)seg->allocated;
-                    pHeaps[i].Segments[j].Generation = seg->flags & HEAP_SEGMENT_FLAGS_READONLY ? CorDebug_NonGC : CorDebug_Gen2;;
                 }
-
+                
+                pHeaps[i].Segments[j].Generation = CorDebug_Gen0;
                 seg = seg->next;
             }
         }
