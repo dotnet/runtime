@@ -649,7 +649,7 @@ namespace System.Reflection.Emit.Tests
                 int intTypeToken = BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(22, 4));
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[26]);
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[27]);
-                Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(28, 4)));
+                Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(28, 4)));
                 Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[32]);
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[33]);
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
