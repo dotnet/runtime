@@ -193,16 +193,14 @@ namespace System.Text.Json.Nodes
         /// </returns>
         IEnumerator IEnumerable.GetEnumerator() => Dictionary.GetEnumerator();
 
-        private JsonPropertyDictionary<JsonNode?> InitializeDictionary(int? capacity = null)
+        private JsonPropertyDictionary<JsonNode?> InitializeDictionary()
         {
             GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null)
             {
-                bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-                dictionary = capacity.HasValue
-                    ? new JsonPropertyDictionary<JsonNode?>(caseInsensitive, capacity.Value)
-                    : new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
+                dictionary = new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive);
+
                 if (jsonElement.HasValue)
                 {
                     foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
@@ -225,6 +223,8 @@ namespace System.Text.Json.Nodes
 
             return dictionary;
         }
+
+        private bool IsCaseInsensitive => Options?.PropertyNameCaseInsensitive ?? false;
 
         /// <summary>
         /// Provides a coherent view of the underlying representation of the current node.
