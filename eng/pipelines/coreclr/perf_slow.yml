@@ -81,11 +81,11 @@ extends:
           parameters:
             jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
             buildConfig: release
-            platforms:
-            - linux_x64
-            - windows_x64
+            # platforms:
+            # - linux_x64
+            # - windows_x64
             - linux_arm64
-            - windows_arm64
+            # - windows_arm64
             jobParameters:
               testGroup: perf
 
@@ -186,92 +186,92 @@ extends:
         #       timeoutInMinutes: 780
         #       r2rRunType: --nor2r
 
-      # run coreclr Windows arm64 microbenchmarks perf job
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-            buildConfig: release
-            runtimeFlavor: coreclr
-            platforms:
-            - windows_arm64
-            jobParameters:
-              testGroup: perf
-              liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
-              runKind: micro
-              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfsurf'
+      # # run coreclr Windows arm64 microbenchmarks perf job
+      #   - template: /eng/pipelines/common/platform-matrix.yml
+      #     parameters:
+      #       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      #       buildConfig: release
+      #       runtimeFlavor: coreclr
+      #       platforms:
+      #       - windows_arm64
+      #       jobParameters:
+      #         testGroup: perf
+      #         liveLibrariesBuildConfig: Release
+      #         projectFile: microbenchmarks.proj
+      #         runKind: micro
+      #         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+      #         logicalmachine: 'perfsurf'
 
-      # run coreclr Windows arm64 ampere microbenchmarks perf job
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-            buildConfig: release
-            runtimeFlavor: coreclr
-            platforms:
-            - windows_arm64
-            jobParameters:
-              testGroup: perf
-              liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
-              runKind: micro
-              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfampere'
-              timeoutInMinutes: 780
+      # # run coreclr Windows arm64 ampere microbenchmarks perf job
+      #   - template: /eng/pipelines/common/platform-matrix.yml
+      #     parameters:
+      #       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      #       buildConfig: release
+      #       runtimeFlavor: coreclr
+      #       platforms:
+      #       - windows_arm64
+      #       jobParameters:
+      #         testGroup: perf
+      #         liveLibrariesBuildConfig: Release
+      #         projectFile: microbenchmarks.proj
+      #         runKind: micro
+      #         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+      #         logicalmachine: 'perfampere'
+      #         timeoutInMinutes: 780
 
-      # run coreclr Windows arm64 ampere no dynamic pgo microbenchmarks perf job
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-            buildConfig: release
-            runtimeFlavor: coreclr
-            platforms:
-            - windows_arm64
-            jobParameters:
-              testGroup: perf
-              liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
-              runKind: micro
-              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfampere'
-              pgoRunType: -NoDynamicPGO
-              timeoutInMinutes: 780
+      # # run coreclr Windows arm64 ampere no dynamic pgo microbenchmarks perf job
+      #   - template: /eng/pipelines/common/platform-matrix.yml
+      #     parameters:
+      #       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      #       buildConfig: release
+      #       runtimeFlavor: coreclr
+      #       platforms:
+      #       - windows_arm64
+      #       jobParameters:
+      #         testGroup: perf
+      #         liveLibrariesBuildConfig: Release
+      #         projectFile: microbenchmarks.proj
+      #         runKind: micro
+      #         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+      #         logicalmachine: 'perfampere'
+      #         pgoRunType: -NoDynamicPGO
+      #         timeoutInMinutes: 780
 
-      # run coreclr Windows arm64 ampere no R2R microbenchmarks perf job
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-            buildConfig: release
-            runtimeFlavor: coreclr
-            platforms:
-            - windows_arm64
-            jobParameters:
-              testGroup: perf
-              liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
-              runKind: micro
-              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfampere'
-              r2rRunType: -NoR2R
-              timeoutInMinutes: 780
+      # # run coreclr Windows arm64 ampere no R2R microbenchmarks perf job
+      #   - template: /eng/pipelines/common/platform-matrix.yml
+      #     parameters:
+      #       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      #       buildConfig: release
+      #       runtimeFlavor: coreclr
+      #       platforms:
+      #       - windows_arm64
+      #       jobParameters:
+      #         testGroup: perf
+      #         liveLibrariesBuildConfig: Release
+      #         projectFile: microbenchmarks.proj
+      #         runKind: micro
+      #         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+      #         logicalmachine: 'perfampere'
+      #         r2rRunType: -NoR2R
+      #         timeoutInMinutes: 780
 
-        # run coreclr cloudvm microbenchmarks perf job
-        # this run is added temporarily for measuring AVX-512 performance
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-            buildConfig: release
-            runtimeFlavor: coreclr
-            platforms:
-            - linux_x64
-            - windows_x64
-            jobParameters:
-              testGroup: perf
-              liveLibrariesBuildConfig: Release
-              projectFile: microbenchmarks.proj
-              runKind: micro
-              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'cloudvm'
+      #   # run coreclr cloudvm microbenchmarks perf job
+      #   # this run is added temporarily for measuring AVX-512 performance
+      #   - template: /eng/pipelines/common/platform-matrix.yml
+      #     parameters:
+      #       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      #       buildConfig: release
+      #       runtimeFlavor: coreclr
+      #       platforms:
+      #       - linux_x64
+      #       - windows_x64
+      #       jobParameters:
+      #         testGroup: perf
+      #         liveLibrariesBuildConfig: Release
+      #         projectFile: microbenchmarks.proj
+      #         runKind: micro
+      #         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+      #         logicalmachine: 'cloudvm'
 
       # Uncomment once we fix https://github.com/dotnet/performance/issues/1950
       # # run coreclr linux crossgen perf job
