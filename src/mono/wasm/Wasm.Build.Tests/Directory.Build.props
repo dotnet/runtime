@@ -1,9 +1,16 @@
-<Project>
+<Project TreatAsLocalProperty="TargetOS;TargetArchitecture">
   <PropertyGroup>
+    <TargetOS />
+    <TargetArchitecture />
+
     <!-- needs to be set early -->
     <Scenario>BuildWasmApps</Scenario>
     <IsTestProject>true</IsTestProject>
     <AssemblyBeingTested>Wasm.Build.Tests</AssemblyBeingTested>
+
+    <RIDForWorkload>wasi-wasm</RIDForWorkload>
+    <TargetOSForWorkload>wasi</TargetOSForWorkload>
+    <TargetArchitectureForWorkload>wasm</TargetArchitectureForWorkload>
   </PropertyGroup>
 
   <Import Project="..\..\..\libraries\Directory.Build.props" />

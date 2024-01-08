@@ -105,7 +105,7 @@ run-tests-%:
 	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
