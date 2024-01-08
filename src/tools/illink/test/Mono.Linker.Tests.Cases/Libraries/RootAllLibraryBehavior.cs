@@ -7,6 +7,7 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
+	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
 	// This validates the trimming behavior of a library when it is trimmed following
 	// the instructions for preparing libraries for trimming:
 	// https://learn.microsoft.comdotnet/core/deploying/trimming/prepare-libraries-for-trimming
