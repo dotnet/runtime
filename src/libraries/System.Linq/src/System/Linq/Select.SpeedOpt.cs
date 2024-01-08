@@ -123,12 +123,12 @@ namespace System.Linq
                 return _source.Length;
             }
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
                 if (count >= _source.Length)
                 {
-                    return EmptyPartition<TResult>.Instance;
+                    return null;
                 }
 
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
@@ -138,7 +138,7 @@ namespace System.Linq
             {
                 Debug.Assert(count > 0);
                 return count >= _source.Length ?
-                    (IPartition<TResult>)this :
+                    this :
                     new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
@@ -247,13 +247,13 @@ namespace System.Linq
                 return _end - _start;
             }
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
                 if (count >= (_end - _start))
                 {
-                    return EmptyPartition<TResult>.Instance;
+                    return null;
                 }
 
                 return new SelectRangeIterator<TResult>(_start + count, _end, _selector);
@@ -305,7 +305,7 @@ namespace System.Linq
                 ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
                 if (source.Length == 0)
                 {
-                    return Array.Empty<TResult>();
+                    return [];
                 }
 
                 var results = new TResult[source.Length];
@@ -407,7 +407,7 @@ namespace System.Linq
                 int count = _source.Count;
                 if (count == 0)
                 {
-                    return Array.Empty<TResult>();
+                    return [];
                 }
 
                 var results = new TResult[count];
@@ -562,16 +562,18 @@ namespace System.Linq
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new SelectIPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectIPartitionIterator<TSource, TResult>(_source.Skip(count), _selector);
+                IPartition<TSource>? source = _source.Skip(count);
+                return source is null ? null : new SelectIPartitionIterator<TSource, TResult>(source, _selector);
             }
 
-            public IPartition<TResult> Take(int count)
+            public IPartition<TResult>? Take(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectIPartitionIterator<TSource, TResult>(_source.Take(count), _selector);
+                IPartition<TSource>? source = _source.Take(count);
+                return source is null ? null : new SelectIPartitionIterator<TSource, TResult>(source, _selector);
             }
 
             public TResult? TryGetElementAt(int index, out bool found)
@@ -633,7 +635,7 @@ namespace System.Linq
                 return count switch
                 {
                     -1 => LazyToArray(),
-                    0 => Array.Empty<TResult>(),
+                    0 => [],
                     _ => PreallocatingToArray(count),
                 };
             }
@@ -745,11 +747,11 @@ namespace System.Linq
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new SelectListPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector), _minIndexInclusive, _maxIndexInclusive);
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
                 int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
             }
 
             public IPartition<TResult> Take(int count)
@@ -815,7 +817,7 @@ namespace System.Linq
                 int count = Count;
                 if (count == 0)
                 {
-                    return Array.Empty<TResult>();
+                    return [];
                 }
 
                 TResult[] array = new TResult[count];

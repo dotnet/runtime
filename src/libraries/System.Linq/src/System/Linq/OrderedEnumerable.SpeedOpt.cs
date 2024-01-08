@@ -59,7 +59,7 @@ namespace System.Linq
             TElement[] buffer = _source.ToArray();
             if (buffer.Length <= minIdx)
             {
-                return Array.Empty<TElement>();
+                return [];
             }
 
             if (buffer.Length <= maxIdx)

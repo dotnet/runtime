@@ -12,7 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(OptimizeForSize)' == true">
-    <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
     <Compile Include="System\Linq\Skip.SizeOpt.cs" />
     <Compile Include="System\Linq\Take.SizeOpt.cs" />
   </ItemGroup>
@@ -22,7 +21,6 @@
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
     <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Enumerable.SpeedOpt.cs" />
     <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
     <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.SpeedOpt.cs" />

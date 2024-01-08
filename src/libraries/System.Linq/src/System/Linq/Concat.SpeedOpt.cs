@@ -170,7 +170,7 @@ namespace System.Linq
 
                 if (count == 0)
                 {
-                    return Array.Empty<TSource>();
+                    return [];
                 }
 
                 var array = new TSource[count];
