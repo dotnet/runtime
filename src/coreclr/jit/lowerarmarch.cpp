@@ -2444,9 +2444,9 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     tree->SetOper(GT_SETCC);
     tree->AsCC()->gtCondition = cond2;
 
-    JITDUMP("Conversion was legal. Result:\n")
-    DISPTREERANGE(BlockRange(), tree)
-    JITDUMP("\n")
+    JITDUMP("Conversion was legal. Result:\n");
+    DISPTREERANGE(BlockRange(), tree);
+    JITDUMP("\n");
 
     *next = tree->gtNext;
     return true;
@@ -2883,10 +2883,10 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
     BlockRange().Remove(mul);
     BlockRange().Remove(op);
 
-    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLong[Add/Sub]'.\n")
-    JITDUMP(":\n")
-    DISPTREERANGE(BlockRange(), outOp)
-    JITDUMP("\n")
+    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLong[Add/Sub]'.\n");
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), outOp);
+    JITDUMP("\n");
 
     *next = outOp;
     return true;
