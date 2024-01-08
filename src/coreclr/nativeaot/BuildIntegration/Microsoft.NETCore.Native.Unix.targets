@@ -58,17 +58,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
-      <_WhereXcrun>0</_WhereXcrun>
-    </PropertyGroup>
-
-    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
-    </Exec>
-    <Error Condition="'$(_WhereXcrun)' != '0' and '$(_IsiOSLikePlatform)' == 'true'"
-      Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
-
-    <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst' and '$(_targetArchitecture)' == 'x64'">13.5</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">14.2</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">11.0</AppleMinOSVersion>
@@ -92,6 +81,17 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
       Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' CrossCompileArch = '$(CrossCompileArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
+
+    <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
+      <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
+      <_WhereXcrun>0</_WhereXcrun>
+    </PropertyGroup>
+
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
+    </Exec>
+    <Error Condition="'$(_WhereXcrun)' != '0' and '$(_IsiOSLikePlatform)' == 'true'"
+      Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
 
     <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == '' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
