@@ -357,7 +357,8 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
+                                  $(ICULibDir)/libicudata.a;
+                                  runtime/hybrid-globalization/segmentation-rules.json" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -453,11 +454,6 @@
     <Copy SourceFiles="@(ICULibFiles);
                        @(ICULibNativeFiles);
                        @(_WasmArchivedTimezones);"
-          DestinationFolder="$(NativeBinDir)"
-          SkipUnchangedFiles="true" />
-
-    <!-- Grapheme segmentation rules for Hybrid Globalization-->
-    <Copy SourceFiles="runtime/hybrid-globalization/segmentation-rules.json;"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
           
