@@ -190,6 +190,7 @@ FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
+FRAME_TYPE_NAME(NativeToManagedExceptionFrame)
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED
@@ -1118,6 +1119,26 @@ public:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_DTOR(FaultingExceptionFrame)
+};
+
+class NativeToManagedExceptionFrame : public FaultingExceptionFrame
+{
+    VPTR_VTABLE_CLASS(NativeToManagedExceptionFrame, FaultingExceptionFrame)
+public:
+#ifndef DACCESS_COMPILE
+    NativeToManagedExceptionFrame() {
+        LIMITED_METHOD_CONTRACT;
+    }
+#endif
+
+    unsigned GetFrameAttribs()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_EXCEPTION;
+    }
+
+    // Keep as last entry in class
+    DEFINE_VTABLE_GETTER_AND_DTOR(NativeToManagedExceptionFrame)
 };
 
 //-----------------------------------------------------------------------

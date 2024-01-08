@@ -899,8 +899,8 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     else
     {
         GCX_COOP();
-        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-        FaultingExceptionFrame *frame = &frameWithCookie;
+        FrameWithCookie<NativeToManagedExceptionFrame> frameWithCookie;
+        NativeToManagedExceptionFrame *frame = &frameWithCookie;
     #if defined(FEATURE_EH_FUNCLETS)
         *frame->GetGSCookiePtr() = GetProcessGSCookie();
     #endif // FEATURE_EH_FUNCLETS
@@ -8041,7 +8041,6 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
         GCX_COOP();
         pThread->SafeSetThrowables(pExInfo->m_exception);
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
-        UpdatePerformanceMetrics(&pThis->m_crawl, false, ((uint8_t)pExInfo->m_kind & (uint8_t)ExKind::RethrowFlag) == 0);
     }
     else // pExInfo->m_passNumber == 2
     {
@@ -8167,6 +8166,13 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     new (pThis) StackFrameIterator();
     result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE) != FALSE;
 
+    if (result && (pExInfo->m_passNumber == 1))
+    {
+        // TODO: is this coop mode needed?
+        GCX_COOP();
+        UpdatePerformanceMetrics(&pThis->m_crawl, false, ((uint8_t)pExInfo->m_kind & (uint8_t)ExKind::RethrowFlag) == 0);
+    }
+
     // Walk the stack until it finds the first managed method
     while (result && pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
     {
@@ -8214,7 +8220,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     if (result)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
-        if (!pThis->m_crawl.HasFaulted())
+        if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         }
@@ -8457,7 +8463,7 @@ Exit:;
     if (retVal != SWA_FAILED)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
-        if (!pThis->m_crawl.HasFaulted())
+        if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         }
