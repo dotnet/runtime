@@ -72,13 +72,13 @@ namespace Microsoft.Interop
             else
             {
                 bool isDownstreamScenario = tf.TargetFramework != TargetFramework.Net || tf.Version.Major < 7;
+                // If we're using our downstream support, fall back to the Forwarder marshaller when the TypePositionInfo is unhandled.
+                // If we're in a "supported" scenario, then emit a diagnostic as our final fallback.
+                IMarshallingGeneratorResolver fallbackResolver = isDownstreamScenario ? new ForwarderResolver() : new NotSupportedResolver();
                 List<IMarshallingGeneratorResolver> coreResolvers =
                 [
                     new MarshalAsMarshallingGeneratorResolver(new InteropGenerationOptions(options.UseMarshalType)),
                     new NoMarshallingInfoErrorResolver(TypeNames.LibraryImportAttribute_ShortName),
-                    // If we're using our downstream support, fall back to the Forwarder marshaller when the TypePositionInfo is unhandled.
-                    // If we're in a "supported" scenario, then emit a diagnostic as our final fallback.
-                    isDownstreamScenario ? new ForwarderResolver() : new NotSupportedResolver(),
                 ];
 
                 if (tf.TargetFramework == TargetFramework.Net || tf.Version.Major >= 7)
@@ -89,7 +89,8 @@ namespace Microsoft.Interop
                     IMarshallingGeneratorResolver elementFactory = new AttributedMarshallingModelGeneratorResolver(
                         new CompositeMarshallingGeneratorResolver([
                             charElementMarshaller,
-                            ..coreResolvers
+                            .. coreResolvers,
+                            fallbackResolver
                         ]),
                         new AttributedMarshallingModelOptions(
                             env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
@@ -97,13 +98,13 @@ namespace Microsoft.Interop
                             MarshalMode.ElementRef,
                             MarshalMode.ElementOut,
                             ResolveElementsFromSelf: true));
-                    coreResolvers.Insert(
-                        0,
+                    coreResolvers.Add(
                         new AttributedMarshallingModelGeneratorResolver(
                             new CompositeMarshallingGeneratorResolver([
                                 elementFactory,
                                 charElementMarshaller,
-                                ..coreResolvers]),
+                                .. coreResolvers,
+                                fallbackResolver]),
                             new AttributedMarshallingModelOptions(
                                 env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
                                 MarshalMode.ManagedToUnmanagedIn,
@@ -113,10 +114,11 @@ namespace Microsoft.Interop
                 }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(new CompositeMarshallingGeneratorResolver([
+                    .. coreResolvers,
                     // Since the char type can go into the P/Invoke signature here, we can only use it when
                     // runtime marshalling is disabled.
                     new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.LibraryImportAttribute_ShortName),
-                    ..coreResolvers
+                    fallbackResolver
                     ]));
                 generatorFactory = new BreakingChangeDetector(generatorFactory);
             }

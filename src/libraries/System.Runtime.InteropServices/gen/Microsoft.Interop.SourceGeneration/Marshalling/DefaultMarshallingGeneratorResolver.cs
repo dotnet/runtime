@@ -54,9 +54,6 @@ namespace Microsoft.Interop
                 new CompositeMarshallingGeneratorResolver(
                     [
                         .. coreResolvers,
-                        // Since the char type can go into the P/Invoke signature here, we can only use it when
-                        // runtime marshalling is disabled.
-                        new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), stringMarshallingAttribute),
                         new AttributedMarshallingModelGeneratorResolver(
                             new CompositeMarshallingGeneratorResolver(
                                [elementFactory, .. coreResolvers, charElementMarshaller, fallbackResolver]),
@@ -72,6 +69,9 @@ namespace Microsoft.Interop
                                     ? MarshalMode.ManagedToUnmanagedOut
                                     : MarshalMode.UnmanagedToManagedIn,
                                 ResolveElementsFromSelf: false)),
+                        // Since the char type can go into the P/Invoke signature here, we can only use it when
+                        // runtime marshalling is disabled.
+                        new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), stringMarshallingAttribute),
                         fallbackResolver
                     ]));
             generatorResolver = new BreakingChangeDetector(generatorResolver);
