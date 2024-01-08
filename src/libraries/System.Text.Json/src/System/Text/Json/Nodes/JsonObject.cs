@@ -4,6 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+#if NET6_0_OR_GREATER
+using System.Linq;
+#endif
 
 namespace System.Text.Json.Nodes
 {
@@ -33,9 +36,18 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
-            if (properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection)
+#if NET6_0_OR_GREATER
+            if (properties.TryGetNonEnumeratedCount(out int initialCapacity))
             {
-                _initialCapacity = propertiesCollection.Count;
+#else
+            if (properties is ICollection<KeyValuePair<string, JsonNode?>> or IReadOnlyCollection<KeyValuePair<string, JsonNode?>>)
+            {
+                int initialCapacity =
+                    (properties as ICollection<KeyValuePair<string, JsonNode?>>)?.Count // TODO: can I avoid the redundant type checks?
+                    ?? (properties as IReadOnlyCollection<KeyValuePair<string, JsonNode?>>)?.Count
+                    ?? throw null; // should be unreachable, amirite??
+#endif
+                _initialCapacity = initialCapacity;
             }
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
