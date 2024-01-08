@@ -26,6 +26,47 @@ jobs:
 
 # Linux arm
 
+# WASI WebAssembly
+
+- ${{ if containsValue(parameters.platforms, 'wasi_wasm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: wasi
+      archType: wasm
+      targetRid: wasi-wasm
+      platform: wasi_wasm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: wasi_wasm
+      jobParameters:
+        hostedOs: linux
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WASI WebAssembly windows
+
+- ${{ if containsValue(parameters.platforms, 'wasi_wasm_win') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: wasi
+      archType: wasm
+      targetRid: wasi-wasm
+      platform: wasi_wasm_win
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      jobParameters:
+        hostedOs: windows
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Browser WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
