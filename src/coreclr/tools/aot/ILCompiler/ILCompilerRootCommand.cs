@@ -132,9 +132,9 @@ namespace ILCompiler
         public CliOption<bool> TreatWarningsAsErrors { get; } =
             new("--warnaserror") { Description = "Treat warnings as errors" };
         public CliOption<string[]> WarningsAsErrorsEnable { get; } =
-            new("--enable-warnaserror") { Description = "Enable treating specific warnings as errors" };
+            new("--warnaserr") { Description = "Enable treating specific warnings as errors" };
         public CliOption<string[]> WarningsAsErrorsDisable { get; } =
-            new("--disable-warnaserror") { Description = "Disable treating specific warnings as errors" };
+            new("--nowarnaserr") { Description = "Disable treating specific warnings as errors" };
         public CliOption<string[]> DirectPInvokes { get; } =
             new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "PInvoke to call directly" };
         public CliOption<string[]> DirectPInvokeLists { get; } =
