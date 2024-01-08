@@ -464,6 +464,21 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+{
+    _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
+    while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+    {
+#ifdef TARGET_UNIX
+        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+#else
+        Thread::VirtualUnwindCallFrame(pRD);
+#endif
+    }
+}
+#endif // !TARGET_X86 || TARGET_UNIX
+
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------
