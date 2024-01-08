@@ -10,10 +10,11 @@ namespace System.Reflection.Emit
         internal readonly MethodBuilderImpl _methodBuilder;
         internal bool _isDefaultConstructor;
 
-        public ConstructorBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[]? parameterTypes, ModuleBuilderImpl mod, TypeBuilderImpl type)
+        public ConstructorBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes,
+            Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilderImpl module, TypeBuilderImpl type)
         {
-            _methodBuilder = new MethodBuilderImpl(name, attributes, callingConvention, null, parameterTypes, mod, type);
+            _methodBuilder = new MethodBuilderImpl(name, attributes, callingConvention, returnType: null, returnTypeRequiredCustomModifiers: null,
+                returnTypeOptionalCustomModifiers: null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, module, type);
 
             type._methodDefinitions.Add(_methodBuilder);
         }

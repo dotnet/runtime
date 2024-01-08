@@ -15,6 +15,8 @@ namespace System.Reflection.Emit
         private readonly TypeBuilderImpl _typeBuilder;
         private readonly string _fieldName;
         private readonly Type _fieldType;
+        private readonly Type[]? _requiredCustomModifiers;
+        private readonly Type[]? _optionalCustomModifiers;
         private FieldAttributes _attributes;
 
         internal MarshallingData? _marshallingData;
@@ -23,13 +25,15 @@ namespace System.Reflection.Emit
         internal object? _defaultValue = DBNull.Value;
         internal FieldDefinitionHandle _handle;
 
-        internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
+        internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             _fieldName = fieldName;
             _typeBuilder = typeBuilder;
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
             _offset = -1;
+            _requiredCustomModifiers = requiredCustomModifiers;
+            _optionalCustomModifiers = optionalCustomModifiers;
         }
 
         protected override void SetConstantCore(object? defaultValue)
@@ -158,6 +162,10 @@ namespace System.Reflection.Emit
         public override RuntimeFieldHandle FieldHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         public override FieldAttributes Attributes => _attributes;
+
+        public override Type[] GetRequiredCustomModifiers() => _requiredCustomModifiers ?? Type.EmptyTypes;
+
+        public override Type[] GetOptionalCustomModifiers() => _optionalCustomModifiers ?? Type.EmptyTypes;
 
         #endregion
 

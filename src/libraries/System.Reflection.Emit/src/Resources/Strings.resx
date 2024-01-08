@@ -267,4 +267,16 @@
   <data name="Argument_RedefinedLabel" xml:space="preserve">
     <value>Label defined multiple times.</value>
   </data>
+  <data name="Argument_BadPInvokeMethod" xml:space="preserve">
+    <value>PInvoke methods must be static and native and cannot be abstract.</value>
+  </data>
+  <data name="Argument_BadPInvokeOnInterface" xml:space="preserve">
+    <value>PInvoke methods cannot exist on interfaces.</value>
+  </data>
+  <data name="Argument_MethodRedefined" xml:space="preserve">
+    <value>Method has been already defined.</value>
+  </data>
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
+    <value>Global members must be static</value>
+  </data>
 </root>

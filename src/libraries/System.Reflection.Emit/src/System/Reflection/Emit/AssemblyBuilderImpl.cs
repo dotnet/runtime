@@ -137,5 +137,9 @@ namespace System.Reflection.Emit
         }
 
         public override string? FullName => _assemblyName.FullName;
+
+        public override Module ManifestModule => _module ?? throw new InvalidOperationException(SR.InvalidOperation_AModuleRequired);
+
+        public override AssemblyName GetName(bool copiedName) => (AssemblyName)_assemblyName.Clone();
     }
 }
