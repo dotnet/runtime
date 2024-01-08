@@ -2340,7 +2340,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1 & 0x1f, imm12));
 }
 
-unsigned emitOutput_ITypeInstr_Shift(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int shamt) const
+unsigned emitter::emitOutput_ITypeInstr_Shift(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int shamt) const
 {
     unsigned insCode = emitInsCode(ins);
 
