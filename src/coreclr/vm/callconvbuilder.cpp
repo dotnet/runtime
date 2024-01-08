@@ -53,7 +53,8 @@ namespace
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_CDECL, C)             \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_STDCALL, Stdcall)     \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Thiscall)   \
-    BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall)
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall)   \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_SWIFT, Swift)
 
 #define DECLARE_MOD_CALL_CONVS \
     CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION, CALL_CONV_MOD_SUPPRESSGCTRANSITION) \
@@ -176,6 +177,8 @@ namespace
             return CorInfoCallConvExtension::FastcallMemberFunction;
         case CorInfoCallConvExtension::Thiscall:
             return CorInfoCallConvExtension::Thiscall;
+        case CorInfoCallConvExtension::Swift:
+            return CorInfoCallConvExtension::Swift;
         default:
             _ASSERTE("Calling convention is not an unmanaged base calling convention.");
             return baseCallConv;
