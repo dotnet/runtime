@@ -26,7 +26,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
         case "dotnetwasm":
         case "js-module-threads":
         case "symbols":
-        case "static-json":
+        case "segmentation-rules":
             // do nothing
             break;
         case "resource":
@@ -106,18 +106,11 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
     }
 }
 
-export async function instantiate_static_json_asset(pendingAsset: AssetEntryInternal): Promise<void> {
+export async function instantiate_segmentation_rules_asset(pendingAsset: AssetEntryInternal): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
-        
-        switch (pendingAsset.name) {
-            case "segmentation-rules.json":
-                setSegmentationRulesFromJson(json);
-                break;
-            default:
-                throw new Error(`Unknown static json asset: ${pendingAsset.name}`);
-        }
+        setSegmentationRulesFromJson(json);
     } catch (error: any) {
         mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }

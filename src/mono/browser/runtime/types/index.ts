@@ -154,7 +154,6 @@ export interface ResourceGroups {
     wasmSymbols?: ResourceList;
     wasmNative: ResourceList;
     icu?: ResourceList;
-    staticJsonAssets?: ResourceList;
 
     satelliteResources?: { [cultureName: string]: ResourceList };
 
@@ -302,9 +301,9 @@ export type AssetBehaviors = SingleAssetBehaviors |
      */
     | "symbols"
     /**
-     * Load static JSON file.
+     * Load segmentation rules file for Hybrid Globalization.
      */
-    | "static-json"
+    | "segmentation-rules"
 
 export const enum GlobalizationMode {
     /**

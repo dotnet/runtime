@@ -69,7 +69,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             else if (resourceName.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.icu ??= new();
             else if (resourceName.StartsWith("segmentation-rules", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".json", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.staticJsonAssets ??= new();
+                return bootConfig.resources.icu ??= new();
             else
                 Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
 

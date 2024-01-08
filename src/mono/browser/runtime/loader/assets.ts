@@ -68,7 +68,7 @@ const skipBufferByAssetTypes: {
 } = {
     "dotnetwasm": true,
     "symbols": true,
-    "static-json": true,
+    "segmentation-rules": true,
 };
 
 const containedInSnapshotByAssetTypes: {
@@ -88,7 +88,7 @@ const skipInstantiateByAssetTypes: {
     ...jsModulesAssetTypes,
     "dotnetwasm": true,
     "symbols": true,
-    "static-json": true,
+    "segmentation-rules": true,
 };
 
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
@@ -226,8 +226,8 @@ export async function mono_download_assets(): Promise<void> {
                         if (asset.behavior === "symbols") {
                             await runtimeHelpers.instantiate_symbols_asset(asset);
                             cleanupAsset(asset);
-                        } else if (asset.behavior === "static-json") {
-                            await runtimeHelpers.instantiate_static_json_asset(asset);
+                        } else if (asset.behavior === "segmentation-rules") {
+                            await runtimeHelpers.instantiate_segmentation_rules_asset(asset);
                             cleanupAsset(asset);
                         }
 
@@ -348,6 +348,12 @@ export function prepareAssets() {
                         behavior: "icu",
                         loadRemote: true
                     });
+                } else if (name === "segmentation-rules.json") {
+                    alwaysLoadedAssets.push({
+                        name,
+                        hash: resources.icu[name],
+                        behavior: "segmentation-rules",
+                    });
                 }
             }
         }
@@ -358,16 +364,6 @@ export function prepareAssets() {
                     name,
                     hash: resources.wasmSymbols[name],
                     behavior: "symbols"
-                });
-            }
-        }
-
-        if (resources.staticJsonAssets) {
-            for (const name in resources.staticJsonAssets) {
-                alwaysLoadedAssets.push({
-                    name,
-                    hash: resources.staticJsonAssets[name],
-                    behavior: "static-json"
                 });
             }
         }
