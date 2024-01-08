@@ -616,7 +616,7 @@ CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
 CONFIG_INTEGER(JitProfileValues, W("JitProfileValues"), 1) // Value profiling, e.g. Buffer.Memmove's size
-CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)   // Profile castclass/isinst
+CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 1)   // Profile castclass/isinst
 CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 1) // Consume profile data (if any) for
                                                                              // castclass/isinst
 
