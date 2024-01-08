@@ -32,6 +32,6 @@ namespace Microsoft.Interop
             return new(generator, diagnostics);
         }
 
-        public static ResolvedGenerator UnresolvedGenerator { get; } = new(null, default);
+        public static ResolvedGenerator UnresolvedGenerator { get; } = new(null, ImmutableArray<GeneratorDiagnostic>.Empty);
     }
 }
