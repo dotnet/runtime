@@ -31,15 +31,9 @@ jobs:
             eq(variables['System.PullRequest.TargetBranch'], 'main'))
           ]
       - name: wbtProjectArg
-        ${{ if eq(platform, 'browser_wasm_win') }}:
-          value: '-projects'
-        ${{ else }}:
-          value: '--projects'
+        value: '--projects'
       - name: wbtProjectPath
-        ${{ if contains(platform, 'browser_wasm') }}:
-          value: 'src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj'
-        ${{ else }}:
-          value: 'src/mono/wasi/Wasi.Build.Tests/Wasi.Build.Tests.csproj'
+        value: 'src/mono/wasi/Wasi.Build.Tests/Wasi.Build.Tests.csproj'
 
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
@@ -71,4 +65,3 @@ jobs:
             extraHelixArguments: /p:BrowserHost=$(_hostedOs)
             scenarios:
             - buildwasmapps
-
