@@ -5,15 +5,13 @@
 Provides dataflow components that are collectively referred to as the *TPL Dataflow Library*.
 This dataflow model promotes actor-based programming by providing in-process message passing for coarse-grained dataflow and pipelining tasks.
 
-Note: This package is part of the larger *Task Parallel library* and is designed to help increase the robustness of concurrency-enabled applications.
-
 ## Key Features
 
 <!-- The key features of this package -->
 
 * Foundation for message passing and parallelizing CPU-intensive and I/O-intensive applications that have high throughput and low latency.
 * Provides multiple block types for various dataflow operations (e.g., `BufferBlock`, `ActionBlock`, `TransformBlock`).
-* Blocks support linking to form *networks*, allowing for the creation of complex processing topologies.
+* Dataflow blocks support linking to form *networks*, allowing you to create complex processing topologies.
 
 ## How to Use
 
@@ -23,7 +21,11 @@ This sample demonstrates a dataflow pipeline that downloads the book "The Iliad 
 
 ```csharp
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks.Dataflow;
+
+var nonLetterRegex = new Regex(@"\P{L}", RegexOptions.Compiled);
+var client = new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip });
 
 // Setup blocks
 
@@ -32,7 +34,7 @@ TransformBlock<string, string> downloadString = new TransformBlock<string, strin
 {
     Console.WriteLine("Downloading '{0}'...", uri);
 
-    return await new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip }).GetStringAsync(uri);
+    return await client.GetStringAsync(uri);
 });
 
 // Separates the specified text into an array of words.
@@ -41,8 +43,7 @@ TransformBlock<string, string[]> createWordList = new TransformBlock<string, str
     Console.WriteLine("Creating word list...");
 
     // Remove common punctuation by replacing all non-letter characters with a space character.
-    char[] tokens = text.Select(c => char.IsLetter(c) ? c : ' ').ToArray();
-    text = new string(tokens);
+    text = nonLetterRegex.Replace(text, " ");
 
     // Separate the text into an array of words.
     return text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -55,7 +56,6 @@ TransformBlock<string[], string[]> filterWordList = new TransformBlock<string[],
 
     return words
        .Where(word => word.Length > 3)
-       .Distinct()
        .ToArray();
 });
 
@@ -66,7 +66,7 @@ TransformManyBlock<string[], string> findReversedWords = new TransformManyBlock<
 
     var wordsSet = new HashSet<string>(words);
 
-    return from word in words.AsParallel()
+    return from word in wordsSet
            let reverse = new string(word.Reverse().ToArray())
            where word != reverse && wordsSet.Contains(reverse)
            select word;
