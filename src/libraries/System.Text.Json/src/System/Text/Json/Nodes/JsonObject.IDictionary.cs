@@ -10,7 +10,6 @@ namespace System.Text.Json.Nodes
 {
     public partial class JsonObject : IDictionary<string, JsonNode?>
     {
-        private readonly int? _initialCapacity;
         private JsonPropertyDictionary<JsonNode?>? _dictionary;
 
         /// <summary>
@@ -194,15 +193,15 @@ namespace System.Text.Json.Nodes
         /// </returns>
         IEnumerator IEnumerable.GetEnumerator() => Dictionary.GetEnumerator();
 
-        private JsonPropertyDictionary<JsonNode?> InitializeDictionary()
+        private JsonPropertyDictionary<JsonNode?> InitializeDictionary(int? capacity = null)
         {
             GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null)
             {
                 bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-                dictionary = _initialCapacity.HasValue
-                    ? new JsonPropertyDictionary<JsonNode?>(caseInsensitive, _initialCapacity.Value)
+                dictionary = capacity.HasValue
+                    ? new JsonPropertyDictionary<JsonNode?>(caseInsensitive, capacity.Value)
                     : new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
                 if (jsonElement.HasValue)
                 {

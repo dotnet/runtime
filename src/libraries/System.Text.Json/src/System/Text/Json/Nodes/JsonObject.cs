@@ -35,7 +35,7 @@ namespace System.Text.Json.Nodes
         {
             if (properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection)
             {
-                _initialCapacity = propertiesCollection.Count;
+                InitializeDictionary(propertiesCollection.Count);
             }
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
