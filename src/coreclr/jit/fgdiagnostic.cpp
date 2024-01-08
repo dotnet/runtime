@@ -136,7 +136,7 @@ void Compiler::fgDebugCheckUpdate()
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
         if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            noway_assert(!"Unnecessary jump to the next block!");
+            noway_assert(!"BBJ_COND true/false targets are the same!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
