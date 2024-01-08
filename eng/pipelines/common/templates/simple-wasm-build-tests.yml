@@ -30,6 +30,17 @@ jobs:
             eq(variables['Build.SourceBranchName'], 'main'),
             eq(variables['System.PullRequest.TargetBranch'], 'main'))
           ]
+      - name: wbtProjectArg
+        ${{ if eq(platform, 'browser_wasm_win') }}:
+          value: '-projects'
+        ${{ else }}:
+          value: '--projects'
+      - name: wbtProjectPath
+        ${{ if contains(platform, 'browser_wasm') }}:
+          value: 'src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj'
+        ${{ else }}:
+          value: 'src/mono/wasi/Wasi.Build.Tests/Wasi.Build.Tests.csproj'
+
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
@@ -42,6 +53,17 @@ jobs:
           eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
       # extra steps, run tests
       postBuildSteps:
+        - script: >-
+            $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci
+            $(wbtProjectArg) $(Build.SourcesDirectory)/$(wbtProjectPath)
+            /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/WBTBuild.binlog
+            /p:Configuration=$(_BuildConfig)
+            /p:TestUsingWorkloads=true
+            /p:InstallWorkloadForTesting=true
+            /p:BrowserHost=$(_hostedOs)
+            /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
+            /p:ArchiveTests=true
+
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
