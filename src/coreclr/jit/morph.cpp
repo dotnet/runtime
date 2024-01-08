@@ -9139,13 +9139,6 @@ DONE_MORPHING_CHILDREN:
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->IsNeverNegative(this) &&
-                op2->IsNeverNegative(this))
-            {
-                // Some branch optimizations don't work well with unsigned relops
-                tree->ClearUnsigned();
-            }
-
             // Change "CNS relop op2" to "op2 relop* CNS"
             if (!optValnumCSE_phase && op1->IsIntegralConst() && tree->OperIsCompare() && gtCanSwapOrder(op1, op2))
             {

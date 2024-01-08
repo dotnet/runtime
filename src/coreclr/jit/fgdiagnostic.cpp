@@ -2573,6 +2573,10 @@ void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
         {
             printf(" = m:%u\n", block->bbMemorySsaNumIn[memoryKind]);
         }
+        else if (block->bbMemorySsaPhiFunc[memoryKind] == BasicBlock::EmptyMemoryPhiDef)
+        {
+            printf(" = phi([not filled])\n");
+        }
         else
         {
             printf(" = phi(");

@@ -62,7 +62,7 @@ namespace System.Linq
             int count = buffer._count;
             if (count <= minIdx)
             {
-                return Array.Empty<TElement>();
+                return [];
             }
 
             if (count <= maxIdx)
@@ -72,7 +72,7 @@ namespace System.Linq
 
             if (minIdx == maxIdx)
             {
-                return new TElement[] { GetEnumerableSorter().ElementAt(buffer._items, count, minIdx) };
+                return [GetEnumerableSorter().ElementAt(buffer._items, count, minIdx)];
             }
 
             TElement[] array = new TElement[maxIdx - minIdx + 1];

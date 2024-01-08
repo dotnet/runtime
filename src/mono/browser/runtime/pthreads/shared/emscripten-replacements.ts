@@ -7,7 +7,7 @@ import { onWorkerLoadInitiated } from "../browser";
 import { afterThreadInitTLS } from "../worker";
 import { Internals, PThreadLibrary, PThreadWorker } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
-import { mono_log_debug } from "../../logging";
+import { mono_log_warn } from "../../logging";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
@@ -23,6 +23,9 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
 
     modulePThread.loadWasmModuleToWorker = (worker: Worker): Promise<Worker> => {
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
+        afterLoaded.then(() => {
+            availableThreadCount++;
+        });
         onWorkerLoadInitiated(worker, afterLoaded);
         return afterLoaded;
     };
@@ -40,21 +43,29 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
             worker.onmessage!(new MessageEvent("message", {
                 data: {
                     "cmd": "killThread",
-                    thread: worker.pthread
+                    thread: worker.pthread_ptr
                 }
             }));
         } else {
+            availableThreadCount++;
             originalReturnWorkerToPool(worker);
         }
     };
+}
+
+let availableThreadCount = 0;
+export function is_thread_available() {
+    return availableThreadCount > 0;
 }
 
 function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
     if (!MonoWasmThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
+        mono_log_warn("Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolSize.");
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
+        availableThreadCount--;
         return worker;
     }
 
@@ -68,10 +79,12 @@ function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
         const worker = modulePThread.unusedWorkers[i];
         if (worker.loaded) {
             modulePThread.unusedWorkers.splice(i, 1);
+            availableThreadCount--;
             return worker;
         }
     }
-    mono_log_debug("Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolSize.");
+    mono_log_warn("Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolSize.");
+    availableThreadCount--; // negative value
     return modulePThread.unusedWorkers.pop()!;
 }
 

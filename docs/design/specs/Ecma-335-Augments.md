@@ -381,6 +381,12 @@ The text should be deleted:
 
 > Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the GenericParam table is sorted using the Number column as a secondary key.
 
+In addition to the TypeDef table having a special ordering constraint, the ExportedTypes table ALSO has the same constraint.
+
+This line should be changed.
+
+> Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
+
 ## Module Initializer
 
 All modules may have a module initializer. A module initializer is defined as the type initializer (§ II.10.5.3) of the `<Module>` type (§ II.10.8).

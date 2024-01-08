@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Linq
 {
     /// <summary>
@@ -14,15 +12,15 @@ namespace System.Linq
         /// Creates a new partition that skips the specified number of elements from this sequence.
         /// </summary>
         /// <param name="count">The number of elements to skip.</param>
-        /// <returns>An <see cref="IPartition{TElement}"/> with the first <paramref name="count"/> items removed.</returns>
-        IPartition<TElement> Skip(int count);
+        /// <returns>An <see cref="IPartition{TElement}"/> with the first <paramref name="count"/> items removed, or null if known empty.</returns>
+        IPartition<TElement>? Skip(int count);
 
         /// <summary>
         /// Creates a new partition that takes the specified number of elements from this sequence.
         /// </summary>
         /// <param name="count">The number of elements to take.</param>
-        /// <returns>An <see cref="IPartition{TElement}"/> with only the first <paramref name="count"/> items.</returns>
-        IPartition<TElement> Take(int count);
+        /// <returns>An <see cref="IPartition{TElement}"/> with only the first <paramref name="count"/> items, or null if known empty.</returns>
+        IPartition<TElement>? Take(int count);
 
         /// <summary>
         /// Gets the item associated with a 0-based index in this sequence.

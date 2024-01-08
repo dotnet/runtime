@@ -4,107 +4,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
-    /// <summary>
-    /// Represents an enumerable with zero elements.
-    /// </summary>
-    /// <typeparam name="TElement">The element type.</typeparam>
-    /// <remarks>
-    /// Returning an instance of this type is useful to quickly handle scenarios where it is known
-    /// that an operation will result in zero elements.
-    /// </remarks>
-    [DebuggerDisplay("Count = 0")]
-    internal sealed class EmptyPartition<TElement> : IPartition<TElement>, IEnumerator<TElement>, IList<TElement>, IReadOnlyList<TElement>
-    {
-        /// <summary>
-        /// A cached, immutable instance of an empty enumerable.
-        /// </summary>
-        public static readonly IPartition<TElement> Instance = new EmptyPartition<TElement>();
-
-        private EmptyPartition()
-        {
-        }
-
-        public IEnumerator<TElement> GetEnumerator() => this;
-
-        IEnumerator IEnumerable.GetEnumerator() => this;
-
-        public bool MoveNext() => false;
-
-        [ExcludeFromCodeCoverage(Justification = "Shouldn't be called, and as undefined can return or throw anything anyway")]
-        public TElement Current => default!;
-
-        [ExcludeFromCodeCoverage(Justification = "Shouldn't be called, and as undefined can return or throw anything anyway")]
-        object IEnumerator.Current => default!;
-
-        void IEnumerator.Reset()
-        {
-            // Do nothing.
-        }
-
-        void IDisposable.Dispose()
-        {
-            // Do nothing.
-        }
-
-        public IPartition<TElement> Skip(int count) => this;
-
-        public IPartition<TElement> Take(int count) => this;
-
-        public TElement? TryGetElementAt(int index, out bool found)
-        {
-            found = false;
-            return default;
-        }
-
-        public TElement? TryGetFirst(out bool found)
-        {
-            found = false;
-            return default;
-        }
-
-        public TElement? TryGetLast(out bool found)
-        {
-            found = false;
-            return default;
-        }
-
-        public TElement[] ToArray() => Array.Empty<TElement>();
-
-        public List<TElement> ToList() => new List<TElement>();
-
-        public int GetCount(bool onlyIfCheap) => 0;
-
-        public int Count => 0;
-
-        public bool Contains(TElement item) => false;
-
-        public int IndexOf(TElement item) => -1;
-
-        public void CopyTo(TElement[] array, int arrayIndex) { }
-
-        public TElement this[int index]
-        {
-            get
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-                return default!;
-            }
-            set => ThrowHelper.ThrowNotSupportedException();
-        }
-
-        public bool IsReadOnly => true;
-
-        void ICollection<TElement>.Add(TElement item) => ThrowHelper.ThrowNotSupportedException();
-        void ICollection<TElement>.Clear() => ThrowHelper.ThrowNotSupportedException();
-        void IList<TElement>.Insert(int index, TElement item) => ThrowHelper.ThrowNotSupportedException();
-        bool ICollection<TElement>.Remove(TElement item) => ThrowHelper.ThrowNotSupportedException_Boolean();
-        void IList<TElement>.RemoveAt(int index) => ThrowHelper.ThrowNotSupportedException();
-    }
-
     internal sealed class OrderedPartition<TElement> : IPartition<TElement>
     {
         private readonly OrderedEnumerable<TElement> _source;
@@ -122,10 +24,10 @@ namespace System.Linq
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public IPartition<TElement> Skip(int count)
+        public IPartition<TElement>? Skip(int count)
         {
             int minIndex = unchecked(_minIndexInclusive + count);
-            return unchecked((uint)minIndex > (uint)_maxIndexInclusive) ? EmptyPartition<TElement>.Instance : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
+            return unchecked((uint)minIndex > (uint)_maxIndexInclusive) ? null : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
         }
 
         public IPartition<TElement> Take(int count)
@@ -208,10 +110,10 @@ namespace System.Linq
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
                 new SelectListPartitionIterator<TSource, TResult>(_source, selector, _minIndexInclusive, _maxIndexInclusive);
 
-            public IPartition<TSource> Skip(int count)
+            public IPartition<TSource>? Skip(int count)
             {
                 int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? EmptyPartition<TSource>.Instance : new ListPartition<TSource>(_source, minIndex, _maxIndexInclusive);
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new ListPartition<TSource>(_source, minIndex, _maxIndexInclusive);
             }
 
             public IPartition<TSource> Take(int count)
@@ -278,7 +180,7 @@ namespace System.Linq
                 int count = Count;
                 if (count == 0)
                 {
-                    return Array.Empty<TSource>();
+                    return [];
                 }
 
                 TSource[] array = new TSource[count];
@@ -484,7 +386,7 @@ namespace System.Linq
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
                 new SelectIPartitionIterator<TSource, TResult>(this, selector);
 
-            public IPartition<TSource> Skip(int count)
+            public IPartition<TSource>? Skip(int count)
             {
                 int minIndex = unchecked(_minIndexInclusive + count);
 
@@ -503,7 +405,7 @@ namespace System.Linq
                     // If minIndex overflows and we have an upper bound, we will go down this branch.
                     // We know our upper bound must be smaller than minIndex, since our upper bound fits in an int.
                     // This branch should not be taken if we don't have a bound.
-                    return EmptyPartition<TSource>.Instance;
+                    return null;
                 }
 
                 Debug.Assert(minIndex >= 0, $"We should have taken care of all cases when {nameof(minIndex)} overflows.");
@@ -623,7 +525,7 @@ namespace System.Linq
                     }
                 }
 
-                return Array.Empty<TSource>();
+                return [];
             }
 
             public List<TSource> ToList()

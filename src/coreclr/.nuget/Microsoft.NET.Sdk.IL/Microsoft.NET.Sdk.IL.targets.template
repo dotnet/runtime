@@ -77,7 +77,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Condition="'@(ILResourceReference->Count())' != '1'" Text="Only one ILResourceReference can be specified" />
     <PropertyGroup>
       <_ilResourceReference>%(ILResourceReference.FullPath)</_ilResourceReference>
-      <_IldasmCommand>&quot;$(_IldasmDir)ildasm&quot;</_IldasmCommand>
+      <_IldasmCommand>"$(_IldasmDir)ildasm"</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) "$(_ilResourceReference)"</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
 
