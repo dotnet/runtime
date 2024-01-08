@@ -14,6 +14,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             if (count <= 0)
             {
                 // Return source if not actually skipping, but only if it's a type from here, to avoid
@@ -28,10 +33,6 @@ namespace System.Linq
             else if (source is IPartition<TSource> partition)
             {
                 return partition.Skip(count) ?? Empty<TSource>();
-            }
-            else if (IsEmptyArray(source))
-            {
-                return [];
             }
 
             return SkipIterator(source, count);
