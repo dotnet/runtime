@@ -18,7 +18,7 @@ namespace System.Linq
 
             if (count == 0)
             {
-                return Empty<int>();
+                return [];
             }
 
             return new RangeIterator(start, count);

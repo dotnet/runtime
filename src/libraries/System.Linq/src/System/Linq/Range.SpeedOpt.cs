@@ -72,11 +72,11 @@ namespace System.Linq
 
             public int Count => _end - _start;
 
-            public IPartition<int> Skip(int count)
+            public IPartition<int>? Skip(int count)
             {
                 if (count >= _end - _start)
                 {
-                    return EmptyPartition<int>.Instance;
+                    return null;
                 }
 
                 return new RangeIterator(_start + count, _end - _start - count);
