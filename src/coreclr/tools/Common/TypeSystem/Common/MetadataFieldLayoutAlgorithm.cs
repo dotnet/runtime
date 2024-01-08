@@ -498,6 +498,11 @@ namespace Internal.TypeSystem
                 long size = instanceByteSizeAndAlignment.Size.AsInt;
                 size *= repeat;
 
+                if (size != (int)size)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
+                }
+
                 instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
             }
 
