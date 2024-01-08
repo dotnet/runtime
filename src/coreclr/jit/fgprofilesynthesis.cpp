@@ -335,9 +335,13 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 {
     // Assume each switch case is equally probable
     //
+
+#pragma warning(push)
+#pragma warning(disable : 4723) // silence "potential divide by 0" warning
     const unsigned n = block->NumSucc();
     assert(n != 0);
     const weight_t p = 1 / (weight_t)n;
+#pragma warning(pop)
 
     // Each unique edge gets some multiple of that basic probability
     //
