@@ -2294,6 +2294,112 @@ static constexpr unsigned kInstructionOpcodeMask = 0x7f;
 static constexpr unsigned kInstructionFunct3Mask = 0x7000;
 static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 
+static bool IsIntegralRegister(regNumber reg) {
+    return (reg >= 0) && (reg <= 31);
+}
+
+static bool IsFloatRegister(regNumber reg) {
+    return (reg >= FBASE) && (reg <= (FBASE + 31));
+}
+
+static void CheckIfInstructionIsValidForRTypeInstr(instruction ins, regNumber rd, regNumber rs1, regNumber rs2) {
+    switch (ins) {
+        case INS_addw:
+            FALLTHROUGH;
+        case INS_subw:
+            FALLTHROUGH;
+        case INS_sllw:
+            FALLTHROUGH;
+        case INS_slrw:
+            FALLTHROUGH;
+        case INS_sraw:
+            FALLTHROUGH;
+        case INS_mul:
+            FALLTHROUGH;
+        case INS_mulh:
+            FALLTHROUGH;
+        case INS_mulhsu:
+            FALLTHROUGH;
+        case INS_mulhu:
+            FALLTHROUGH;
+        case INS_div:
+            FALLTHROUGH;
+        case INS_divu:
+            FALLTHROUGH;
+        case INS_rem:
+            FALLTHROUGH;
+        case INS_remu:
+            FALLTHROUGH;
+        case INS_mulw:
+            FALLTHROUGH;
+        case INS_divw:
+            FALLTHROUGH;
+        case INS_divuw:
+            FALLTHROUGH;
+        case INS_remw:
+            FALLTHROUGH;
+        case INS_remuw:
+            assert(IsIntegralRegister(rd));
+            assert(IsIntegralRegister(rs1));
+            assert(IsIntegralRegister(rs2));
+            break;
+        case INS_fadd_s:
+            FALLTHROUGH;
+        case INS_fsub_s:
+            FALLTHROUGH;
+        case INS_fmul_s:
+            FALLTHROUGH;
+        case INS_fdiv_s:
+            FALLTHROUGH;
+        case INS_sgnj_s:
+            FALLTHROUGH;
+        case INS_sgnjn_s:
+            FALLTHROUGH;
+        case INS_sgnjx_s:
+            FALLTHROUGH;
+        case INS_fmin_s:
+            FALLTHROUGH;
+        case INS_fmax_s:
+            FALLTHROUGH;
+        case INS_feq_s:
+            FALLTHROUGH;
+        case INS_flt_s:
+            FALLTHROUGH;
+        case INS_fle_s:
+            FALLTHROUGH;
+        case INS_fadd_d:
+            FALLTHROUGH;
+        case INS_fsub_d:
+            FALLTHROUGH;
+        case INS_fmul_d:
+            FALLTHROUGH;
+        case INS_fdiv_d:
+            FALLTHROUGH;
+        case INS_sgnj_d:
+            FALLTHROUGH;
+        case INS_sgnjn_d:
+            FALLTHROUGH;
+        case INS_sgnjx_d:
+            FALLTHROUGH;
+        case INS_fmin_d:
+            FALLTHROUGH;
+        case INS_fmax_d:
+            FALLTHROUGH;
+        case INS_feq_d:
+            FALLTHROUGH;
+        case INS_flt_d:
+            FALLTHROUGH;
+        case INS_fle_d:
+            assert(IsFloatRegister(rd));
+            assert(IsFloatRegister(rs1));
+            assert(IsFloatRegister(rs2));
+            break;
+    default:
+        NO_WAY("Illegal ins within emitOutput_RTypeInstr!");
+        break;
+    }
+}
+
 /*****************************************************************************
  *
  *  Emit a 32-bit RISCV64 R-Type instruction to the given buffer. Returns a
@@ -2310,6 +2416,8 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
         ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
 
     assert((insCode & kInstructionMask) == 0);
+
+    CheckIfInstructionIsValidForRTypeInstr(ins, rd, rs1, rs2);
 #endif // DEBUG
 
     unsigned opcode = insCode & kInstructionOpcodeMask;
@@ -2375,7 +2483,8 @@ unsigned emitter::emitOutput_ITypeInstr_Shift(
         }
         break;
         default:
-            unreached();
+            NO_WAY("Illegal ins within emitOutput_ITypeInstr_Shift!");
+        return;
     }
 #endif // DEBUG
 
