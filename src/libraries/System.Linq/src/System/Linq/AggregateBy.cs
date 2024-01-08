@@ -28,7 +28,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
-            return AggregateByIterator(source, keySelector, _ => seed, func, keyComparer);
+            return AggregateByIterator(source, keySelector, seed, func, keyComparer);
         }
 
         public static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(

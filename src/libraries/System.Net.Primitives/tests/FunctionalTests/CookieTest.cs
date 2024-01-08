@@ -149,12 +149,9 @@ namespace System.Net.Primitives.Functional.Tests
             c1.Name = "hello";
             Assert.Equal("hello", c1.Name);
 
-            if (!PlatformDetection.IsNetFramework)
-            {
-                Cookie c2 = new Cookie();
-                c2.Name = "hello world";
-                Assert.Equal("hello world", c2.Name);
-            }
+            Cookie c2 = new Cookie();
+            c2.Name = "hello world";
+            Assert.Equal("hello world", c2.Name);
         }
 
         [Theory]
