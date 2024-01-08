@@ -28,7 +28,7 @@ namespace Microsoft.Interop
             foreach (IMarshallingGeneratorResolver resolver in resolvers)
             {
                 ResolvedGenerator generator = resolver.Create(info, context);
-                if (!generator.IsResolved)
+                if (generator.IsResolved)
                 {
                     return generator;
                 }

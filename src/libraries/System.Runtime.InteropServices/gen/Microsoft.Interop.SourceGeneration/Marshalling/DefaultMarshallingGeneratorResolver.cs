@@ -31,12 +31,16 @@ namespace Microsoft.Interop
                 new NoMarshallingInfoErrorResolver(TypeNames.GeneratedComInterfaceAttribute_ShortName),
                 ];
 
+            // Since the char type in an array will not be part of the P/Invoke signature, we can
+            // use the regular blittable marshaller in all cases.
+            var charElementMarshaller = new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: true, stringMarshallingAttribute);
+
             IMarshallingGeneratorResolver elementFactory = new AttributedMarshallingModelGeneratorResolver(
                 new CompositeMarshallingGeneratorResolver([
                     .. coreResolvers,
                     // Since the char type in an array will not be part of the P/Invoke signature, we can
                     // use the regular blittable marshaller in all cases.
-                    new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: true, TypeNames.GeneratedComInterfaceAttribute_ShortName),
+                    charElementMarshaller,
                     fallbackResolver,
                 ]),
                 new AttributedMarshallingModelOptions(
@@ -52,9 +56,10 @@ namespace Microsoft.Interop
                         .. coreResolvers,
                         // Since the char type can go into the P/Invoke signature here, we can only use it when
                         // runtime marshalling is disabled.
-                        new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.GeneratedComInterfaceAttribute_ShortName),
+                        new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), stringMarshallingAttribute),
                         new AttributedMarshallingModelGeneratorResolver(
-                            elementFactory,
+                            new CompositeMarshallingGeneratorResolver(
+                               [elementFactory, .. coreResolvers, charElementMarshaller, fallbackResolver]),
                             new AttributedMarshallingModelOptions(
                                 env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
                                 direction == MarshalDirection.ManagedToUnmanaged

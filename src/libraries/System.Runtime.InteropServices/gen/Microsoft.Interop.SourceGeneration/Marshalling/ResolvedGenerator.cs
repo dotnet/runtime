@@ -13,7 +13,7 @@ namespace Microsoft.Interop
 
         private bool? _resolvedWithoutErrors;
 
-        public bool IsResolvedWithoutErrors => _resolvedWithoutErrors ??= !IsResolved && Diagnostics.All(d => !d.IsFatal);
+        public bool IsResolvedWithoutErrors => _resolvedWithoutErrors ??= IsResolved && Diagnostics.All(d => !d.IsFatal);
 
         public readonly bool IsResolved => Generator is not null;
 

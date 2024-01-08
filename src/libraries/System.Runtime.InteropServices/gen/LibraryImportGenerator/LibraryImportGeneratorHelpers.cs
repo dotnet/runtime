@@ -83,11 +83,12 @@ namespace Microsoft.Interop
 
                 if (tf.TargetFramework == TargetFramework.Net || tf.Version.Major >= 7)
                 {
+                    // Since the char type in an array will not be part of the P/Invoke signature, we can
+                    // use the regular blittable marshaller in all cases.
+                    var charElementMarshaller = new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: true, TypeNames.LibraryImportAttribute_ShortName);
                     IMarshallingGeneratorResolver elementFactory = new AttributedMarshallingModelGeneratorResolver(
                         new CompositeMarshallingGeneratorResolver([
-                            // Since the char type in an array will not be part of the P/Invoke signature, we can
-                            // use the regular blittable marshaller in all cases.
-                            new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: true, TypeNames.LibraryImportAttribute_ShortName),
+                            charElementMarshaller,
                             ..coreResolvers
                         ]),
                         new AttributedMarshallingModelOptions(
@@ -99,7 +100,10 @@ namespace Microsoft.Interop
                     coreResolvers.Insert(
                         0,
                         new AttributedMarshallingModelGeneratorResolver(
-                            elementFactory,
+                            new CompositeMarshallingGeneratorResolver([
+                                elementFactory,
+                                charElementMarshaller,
+                                ..coreResolvers]),
                             new AttributedMarshallingModelOptions(
                                 env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling),
                                 MarshalMode.ManagedToUnmanagedIn,
