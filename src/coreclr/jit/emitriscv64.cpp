@@ -2345,11 +2345,37 @@ unsigned emitOutput_ITypeInstr_Shift(BYTE* dst, instruction ins, regNumber rs1, 
     unsigned insCode = emitInsCode(ins);
 
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask =
-        ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
+    switch (ins)
+    {
+        case INS_slli:
+            FALLTHROUGH;
+        case INS_srli:
+            FALLTHROUGH;
+        case INS_srai:
+        {
+            static constexpr unsigned kInstructionMask =
+                ~(kInstructionOpcodeMask | kInstructionFunct3Mask | (kInstructionFunct7Mask - 1));
 
-    assert((insCode & kInstructionMask) == 0);
-    assert(shamt < 32);
+            assert((insCode & kInstructionMask) == 0);
+            assert(shamt < 64);
+        }
+        break;
+        case INS_slliw:
+            FALLTHROUGH;
+        case INS_srliw:
+            FALLTHROUGH;
+        case INS_sraiw:
+        {
+            static constexpr unsigned kInstructionMask =
+                ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
+
+            assert((insCode & kInstructionMask) == 0);
+            assert(shamt < 32);
+        }
+        break;
+        default:
+            unreached();
+    }
 #endif // DEBUG
 
     unsigned opcode = insCode & kInstructionOpcodeMask;
