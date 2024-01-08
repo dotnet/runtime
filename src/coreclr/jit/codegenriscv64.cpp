@@ -530,8 +530,8 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
         if (regPair.reg2 != REG_NA)
         {
             // We can use two SD instructions.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta,
-                                 regPair.useSaveNextPair, tempReg, nullptr);
+            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, tempReg,
+                                 nullptr);
 
             spOffset += slotSize << 1;
         }
@@ -650,8 +650,8 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
         {
             spOffset -= slotSize << 1;
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta,
-                                    regPair.useSaveNextPair, tempReg, nullptr);
+            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, tempReg,
+                                    nullptr);
         }
         else
         {
@@ -986,7 +986,7 @@ void CodeGen::genFuncletEpilog()
     regMaskTP maskRestoreRegs = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
     int       regsRestoreSize = (compiler->compCalleeRegsPushed - 2) << 3;
 
-    int calleeSavedDelta   = genFuncletInfo.fiSP_to_CalleeSaved_delta;
+    int calleeSavedDelta = genFuncletInfo.fiSP_to_CalleeSaved_delta;
 
     regNumber tempReg = rsGetRsvdReg();
 
@@ -2274,8 +2274,7 @@ ALLOC_DONE:
         assert((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) || (lastTouchDelta >= 0));
 
         if ((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) ||
-            (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
-             pageSize))
+            (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize))
         {
             genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, tempReg);
         }
@@ -7632,7 +7631,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         noway_assert(availMask != RBM_NONE);
 
-        regMask  = genFindLowestBit(availMask);
+        regMask             = genFindLowestBit(availMask);
         regNumber rPageSize = genRegNumFromMask(regMask);
 
         genStackProbe((ssize_t)frameSize, initReg, rLimit, rPageSize);
@@ -7976,16 +7975,16 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -totalFrameSize);
         compiler->unwindAllocStack(totalFrameSize);
 
-        JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
-                unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
+        JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; LclFrameSize=%d\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+                totalFrameSize, compiler->compLclFrameSize);
     }
     else
     {
         frameType = 2;
         // we have to adjust stack pointer; probably using add instead of addi
 
-        JITDUMP("Frame type 2. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
-                unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
+        JITDUMP("Frame type 2. #outsz=%d; #framesz=%d; LclFrameSize=%d\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+                totalFrameSize, compiler->compLclFrameSize);
 
         if ((offset + (compiler->compCalleeRegsPushed << 3)) >= 2040)
         {
@@ -8052,14 +8051,13 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int remainingSPSize    = totalFrameSize;
     int calleeSaveSPOffset = 0; // This will be the starting place for restoring
                                 // the callee-saved registers, in decreasing order.
-    int SPtoFPdelta        = 0;
+    int SPtoFPdelta = 0;
 
     // ensure offset of sd/ld
     if (totalFrameSize <= 2040)
     {
-        JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; localloc? %s\n",
-                unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                dspBool(compiler->compLocallocUsed));
+        JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; localloc? %s\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+                totalFrameSize, dspBool(compiler->compLocallocUsed));
 
         if (compiler->compLocallocUsed)
         {
