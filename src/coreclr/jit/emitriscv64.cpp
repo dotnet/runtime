@@ -2337,7 +2337,25 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
 
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, imm12));
+    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1 & 0x1f, imm12));
+}
+
+unsigned emitOutput_ITypeInstr_Shift(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int shamt) const
+{
+    unsigned insCode = emitInsCode(ins);
+
+#ifdef DEBUG
+    static constexpr unsigned kInstructionMask =
+        ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
+
+    assert((insCode & kInstructionMask) == 0);
+    assert(shamt < 32);
+#endif // DEBUG
+
+    unsigned opcode = insCode & kInstructionOpcodeMask;
+    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 20; // prepared for masking
+    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, shamt | funct7));
 }
 
 /*****************************************************************************
@@ -2884,10 +2902,11 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
     return dst;
 }
 
-void emitter::assertOptsReloc(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins) {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
-    size_t clock_of_clocks = 0;
+void emitter::assertOptsReloc(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins)
+{
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr        = mock_dst;
+    size_t      clock_of_clocks = 0;
     instruction ins;
 
     regNumber reg1 = id->idReg1();
@@ -2898,13 +2917,13 @@ void emitter::assertOptsReloc(BYTE* dst, size_t buf_size, const instrDesc* id, i
 
     if (id->idIsCnsReloc())
     {
-        ins             = INS_addi;
+        ins                = INS_addi;
         *(code_t*)mock_ptr = 0x00000013 | (code_t)(reg1 << 7) | (code_t)(reg1 << 15);
     }
     else
     {
         assert(id->idIsDspReloc());
-        ins             = INS_ld;
+        ins                = INS_ld;
         *(code_t*)mock_ptr = 0x00003003 | (code_t)(reg1 << 7) | (code_t)(reg1 << 15);
     }
 
@@ -2913,19 +2932,20 @@ void emitter::assertOptsReloc(BYTE* dst, size_t buf_size, const instrDesc* id, i
 
     assert(clock_of_clocks == buf_size);
     assert(ins == cur_ins);
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
 
 void emitter::assertOptsI(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins)
 {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr = mock_dst;
     instruction ins;
-    ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
-    regNumber reg1 = id->idReg1();
-    code_t code;
+    ssize_t     imm  = (ssize_t)(id->idAddr()->iiaAddr);
+    regNumber   reg1 = id->idReg1();
+    code_t      code;
 
     switch (id->idCodeSize())
     {
@@ -3034,17 +3054,18 @@ void emitter::assertOptsI(BYTE* dst, size_t buf_size, const instrDesc* id, instr
 
     assert((mock_ptr - mock_dst) == buf_size);
     assert(cur_ins == ins);
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
 
 void emitter::assertOptsRc(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins)
 {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr = mock_dst;
     instruction ins;
-    code_t code;
+    code_t      code;
 
     assert(id->idAddr()->iiaIsJitDataOffset());
     assert(id->idGCref() == GCT_NONE);
@@ -3076,7 +3097,7 @@ void emitter::assertOptsRc(BYTE* dst, size_t buf_size, const instrDesc* id, inst
         code = emitInsCode(INS_auipc);
         assert(code == 0x00000017);
 #endif
-        code            = 0x00000017 | (codeGen->rsGetRsvdReg() << 7);
+        code               = 0x00000017 | (codeGen->rsGetRsvdReg() << 7);
         *(code_t*)mock_ptr = code | ((code_t)((imm + 0x800) & 0xfffff000));
         mock_ptr += 4;
 
@@ -3088,7 +3109,7 @@ void emitter::assertOptsRc(BYTE* dst, size_t buf_size, const instrDesc* id, inst
             code = emitInsCode(INS_addi);
             assert(code == 0x00000013);
 #endif
-            code            = 0x00000013 | (codeGen->rsGetRsvdReg() << 15);
+            code               = 0x00000013 | (codeGen->rsGetRsvdReg() << 15);
             *(code_t*)mock_ptr = code | ((code_t)reg1 << 7) | (((code_t)doff & 0xfff) << 20);
         }
         else
@@ -3179,19 +3200,20 @@ void emitter::assertOptsRc(BYTE* dst, size_t buf_size, const instrDesc* id, inst
 
     assert((mock_ptr - mock_dst) == buf_size);
     assert(cur_ins == ins);
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
 
 void emitter::assertOptsRl(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins)
 {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr = mock_dst;
     instruction ins;
-    code_t code;
+    code_t      code;
 
-    insGroup* tgtIG          = (insGroup*)id->idAddr()->iiaIGlabel;
+    insGroup* tgtIG = (insGroup*)id->idAddr()->iiaIGlabel;
 
     regNumber reg1 = id->idReg1();
     assert(isGeneralRegister(reg1));
@@ -3205,7 +3227,7 @@ void emitter::assertOptsRl(BYTE* dst, size_t buf_size, const instrDesc* id, inst
         int doff = (int)(imm & 0xfff);
         assert(isValidSimm20((imm + 0x800) >> 12));
 
-        code            = 0x00000017;
+        code               = 0x00000017;
         *(code_t*)mock_ptr = code | (code_t)reg1 << 7 | ((imm + 0x800) & 0xfffff000);
         mock_ptr += 4;
 #ifdef DEBUG
@@ -3214,7 +3236,7 @@ void emitter::assertOptsRl(BYTE* dst, size_t buf_size, const instrDesc* id, inst
         code = emitInsCode(INS_addi);
         assert(code == 0x00000013);
 #endif
-        ins             = INS_addi;
+        ins                = INS_addi;
         *(code_t*)mock_ptr = 0x00000013 | ((code_t)reg1 << 7) | ((code_t)reg1 << 15) | ((doff & 0xfff) << 20);
     }
     else
@@ -3262,17 +3284,19 @@ void emitter::assertOptsRl(BYTE* dst, size_t buf_size, const instrDesc* id, inst
     assert((mock_ptr - mock_dst) == buf_size);
     assert(cur_ins == ins);
 
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
 
-void emitter::assertOptsJarl(BYTE* dst, size_t buf_size, instrDescJmp* jmp, const insGroup* ig, const instrDesc* id, instruction cur_ins)
+void emitter::assertOptsJarl(
+    BYTE* dst, size_t buf_size, instrDescJmp* jmp, const insGroup* ig, const instrDesc* id, instruction cur_ins)
 {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr = mock_dst;
     instruction ins;
-    code_t code;
+    code_t      code;
 
     regNumber reg1 = id->idReg1();
     {
@@ -3288,7 +3312,7 @@ void emitter::assertOptsJarl(BYTE* dst, size_t buf_size, instrDescJmp* jmp, cons
             case 8:
             {
                 assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) ||
-                        (INS_bnez == ins) || (INS_beqz == ins));
+                       (INS_bnez == ins) || (INS_beqz == ins));
                 assert(isValidSimm21(imm));
                 assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
                 assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
@@ -3369,7 +3393,7 @@ void emitter::assertOptsJarl(BYTE* dst, size_t buf_size, instrDescJmp* jmp, cons
             case 28:
             {
                 assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) ||
-                        (INS_bnez == ins) || (INS_beqz == ins));
+                       (INS_bnez == ins) || (INS_beqz == ins));
                 assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
                 assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
                 assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
@@ -3444,17 +3468,18 @@ void emitter::assertOptsJarl(BYTE* dst, size_t buf_size, instrDescJmp* jmp, cons
     assert((mock_ptr - mock_dst) == buf_size);
     assert(cur_ins == ins);
 
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
 
 void emitter::assertOptsJCond(BYTE* dst, size_t buf_size, const insGroup* ig, instrDesc* id, instruction cur_ins)
 {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr = mock_dst;
     instruction ins;
-    code_t code;
+    code_t      code;
 
     ssize_t imm = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
     assert(isValidSimm13(imm));
@@ -3473,17 +3498,18 @@ void emitter::assertOptsJCond(BYTE* dst, size_t buf_size, const insGroup* ig, in
 
     assert(cur_ins == ins);
 
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
 
 void emitter::assertOptsJ(BYTE* dst, size_t buf_size, const insGroup* ig, instrDesc* id, instruction cur_ins)
 {
-    BYTE mock_dst[1024];
-    BYTE* mock_ptr = mock_dst;
+    BYTE        mock_dst[1024];
+    BYTE*       mock_ptr = mock_dst;
     instruction ins;
-    code_t code;
+    code_t      code;
 
     ssize_t imm = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
     assert((imm & 3) == 0);
@@ -3543,7 +3569,8 @@ void emitter::assertOptsJ(BYTE* dst, size_t buf_size, const insGroup* ig, instrD
 
     assert(cur_ins == ins);
 
-    for (size_t i = 0;i < buf_size; ++i) {
+    for (size_t i = 0; i < buf_size; ++i)
+    {
         assert((dst + writeableOffset)[i] == mock_dst[i]);
     }
 }
@@ -3573,7 +3600,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_RELOC:
             dst = emitOutputInstr_OptsReloc(dst, id, &ins);
             assertOptsReloc(*dp, dst - *dp, id, ins);
-            sz  = sizeof(instrDesc);
+            sz = sizeof(instrDesc);
             break;
         case INS_OPTS_I:
             dst = emitOutputInstr_OptsI(dst, id);
@@ -3589,7 +3616,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_RL:
             dst = emitOutputInstr_OptsRl(dst, id, &ins);
             assertOptsRl(*dp, dst - *dp, id, ins);
-            sz  = sizeof(instrDesc);
+            sz = sizeof(instrDesc);
             break;
         case INS_OPTS_JALR:
             dst = emitOutputInstr_OptsJalr(dst, static_cast<instrDescJmp*>(id), ig, &ins);

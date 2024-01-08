@@ -104,6 +104,7 @@ static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21);
 
 unsigned emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const;
 unsigned emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, int imm12) const;
+unsigned emitOutput_ITypeInstr_Shift(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int shamt) const;
 unsigned emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm12) const;
 unsigned emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm20) const;
 unsigned emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const;
