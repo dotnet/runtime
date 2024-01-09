@@ -199,7 +199,7 @@ namespace System.Text.Json.Nodes
 
             if (dictionary is null)
             {
-                dictionary = new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive);
+                dictionary = new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive(Options));
 
                 if (jsonElement.HasValue)
                 {
@@ -224,7 +224,8 @@ namespace System.Text.Json.Nodes
             return dictionary;
         }
 
-        private bool IsCaseInsensitive => Options?.PropertyNameCaseInsensitive ?? false;
+        private static bool IsCaseInsensitive(JsonNodeOptions? options) =>
+            options?.PropertyNameCaseInsensitive ?? false;
 
         /// <summary>
         /// Provides a coherent view of the underlying representation of the current node.

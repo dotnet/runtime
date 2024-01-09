@@ -33,15 +33,17 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
+            bool isCaseInsensitive = IsCaseInsensitive(options);
+
             JsonPropertyDictionary<JsonNode?> dictionary =
                 properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection
-                    ? new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive, propertiesCollection.Count)
-                    : new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive);
+                    ? new JsonPropertyDictionary<JsonNode?>(isCaseInsensitive, propertiesCollection.Count)
+                    : new JsonPropertyDictionary<JsonNode?>(isCaseInsensitive);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
                 dictionary.Add(node.Key, node.Value);
-                node.Value?.AssignParent(this); // TODO: how to avoid copying this line from the `Add` existing method??
+                node.Value?.AssignParent(this);
             }
 
             _dictionary = dictionary;
