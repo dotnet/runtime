@@ -141,8 +141,10 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPow1Large2SmallInt_Threshold()
         {
+#if DEBUG
             // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, ModPow1Large2SmallInt);
+            BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.ReducerThreshold, 8, ModPow1Large2SmallInt);
+#endif
         }
 
         [Fact]
@@ -165,8 +167,10 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPow2Large1SmallInt_Threshold()
         {
+#if DEBUG
             // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, ModPow2Large1SmallInt);
+            BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.ReducerThreshold, 8, ModPow2Large1SmallInt);
+#endif
         }
 
         // InlineData randomly generated using a new Random(0) and the same logic as is used in MyBigIntImp
@@ -193,11 +197,13 @@ namespace System.Numerics.Tests
             // Once with default threshold
             Assert.Equal(resultInt, BigInteger.ModPow(valueInt, exponentInt, modulusInt));
 
+#if DEBUG
             // Once with reduced threshold
-            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.ReducerThreshold, 8, () =>
             {
                 Assert.Equal(resultInt, BigInteger.ModPow(valueInt, exponentInt, modulusInt));
             });
+#endif
         }
 
         [Fact]

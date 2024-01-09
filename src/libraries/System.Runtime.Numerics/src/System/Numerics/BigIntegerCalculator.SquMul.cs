@@ -12,9 +12,9 @@ namespace System.Numerics
     {
 #if DEBUG
         // Mutable for unit testing...
-        private static
+        internal static
 #else
-        private const
+        internal const
 #endif
         int SquareThreshold = 32;
 
