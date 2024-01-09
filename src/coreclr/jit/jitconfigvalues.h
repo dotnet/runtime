@@ -275,7 +275,7 @@ CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich
 #endif
 
 #if FEATURE_LOOP_ALIGN
-CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0) // If set, align inner loops
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
 #else
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
 #endif
