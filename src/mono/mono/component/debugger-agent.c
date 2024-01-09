@@ -11087,7 +11087,7 @@ bool mono_debugger_agent_receive_and_process_command (void)
 		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;
 	}
-	return !(command_set == CMD_SET_VM && command == CMD_VM_DISPOSE);
+	return (command_set == CMD_SET_VM && command == CMD_VM_DISPOSE);
 }
 
 static gboolean

@@ -33,6 +33,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <CrossCompileRid />
       <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(_hostArchitecture)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="'$(CrossCompileRid)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
@@ -120,10 +121,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="m" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ExtraLinkerArg Include="-segprot,__THUNKS,rx,rx" Condition="'$(_IsApplePlatform)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
