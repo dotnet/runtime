@@ -36,19 +36,17 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunMultiply_TwoLargeBigIntegers_Threshold()
         {
-#if DEBUG
             // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.MultiplyThreshold, 8, RunMultiply_TwoLargeBigIntegers)
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyThreshold, 8, RunMultiply_TwoLargeBigIntegers)
             );
 
             // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.MultiplyThreshold, 8, () =>
-                    BigIntTools.Utils.RunWithFakeThreshold(ref BigIntegerCalculator.StackAllocThreshold, 8, RunMultiply_TwoLargeBigIntegers)
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyThreshold, 8, () =>
+                    BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.StackAllocThreshold, 8, RunMultiply_TwoLargeBigIntegers)
                 )
             );
-#endif
         }
 
         [Fact]
