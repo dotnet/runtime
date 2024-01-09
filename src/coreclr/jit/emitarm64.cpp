@@ -13814,68 +13814,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the predicate type for the given SVE instruction's second register.
- */
-
-/*static*/ emitter::PredicateType emitter::insGetSveReg2PredicateType(instruction ins, insFormat fmt)
-{
-    switch (fmt)
-    {
-        case IF_SVE_CW_4A:
-            switch (ins)
-            {
-                case INS_sve_sel:
-                    return PREDICATE_NONE;
-
-                case INS_sve_mov:
-                    return PREDICATE_ZERO;
-
-                default:
-                    break;
-            }
-            break;
-
-        case IF_SVE_CZ_4A:
-            switch (ins)
-            {
-                case INS_sve_sel:
-                    return PREDICATE_NONE;
-
-                case INS_sve_mov:
-                case INS_sve_movs:
-                case INS_sve_and:
-                case INS_sve_bic:
-                case INS_sve_eor:
-                case INS_sve_orr:
-                case INS_sve_orn:
-                case INS_sve_not:
-                case INS_sve_ands:
-                case INS_sve_bics:
-                case INS_sve_eors:
-                case INS_sve_nand:
-                case INS_sve_nands:
-                case INS_sve_nor:
-                case INS_sve_nors:
-                case INS_sve_nots:
-                case INS_sve_orns:
-                case INS_sve_orrs:
-                    return PREDICATE_ZERO;
-
-                default:
-                    break;
-            }
-            break;
-
-        default:
-            break;
-    }
-
-    assert(!"Unexpected instruction and format");
-    return PREDICATE_NONE;
-}
-
-/*****************************************************************************
- *
  *  Returns true if the specified instruction can encode the 'dtype' field.
  */
 
@@ -13916,7 +13854,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             {
                 case INS_sve_ld1b:
                 case INS_sve_ldnf1b:
-                    return code & ~((1 << 22) | (1 << 21)); // Set bit '22' and '21' to 0.
+                    return code; // By default, the instruction already encodes 8-bit.
 
                 default:
                     assert(!"Invalid instruction for encoding dtype.");
@@ -13928,9 +13866,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
             {
                 case INS_sve_ld1b:
                 case INS_sve_ld1h:
-                case INS_sve_ldnf1h:
                 case INS_sve_ldnf1b:
-                    return code & ~(1 << 22); // Set bit '22' to 0.
+                case INS_sve_ldnf1h:
+                    return code | (1 << 21); // Set bit '21' to 1.
 
                 case INS_sve_ld1sb:
                 case INS_sve_ldnf1sb:
@@ -13945,17 +13883,23 @@ void emitter::emitIns_Call(EmitCallType          callType,
             switch (ins)
             {
                 case INS_sve_ld1w:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for S.
+                    return (code | (1 << 15)) | (1 << 22); // Set bit '22' and '15' to 1.
+
+                case INS_sve_ldnf1w:
+                    return code; // By default, the instruction already encodes 32-bit.
+
                 case INS_sve_ld1b:
                 case INS_sve_ld1h:
-                case INS_sve_ldnf1w:
-                case INS_sve_ldnf1h:
                 case INS_sve_ldnf1b:
-                    return code & ~(1 << 21); // Set bit '21' to 0.
+                case INS_sve_ldnf1h:
+                    return code | (1 << 22); // Set bit '22' to 1.
 
                 case INS_sve_ld1sb:
                 case INS_sve_ld1sh:
-                case INS_sve_ldnf1sh:
                 case INS_sve_ldnf1sb:
+                case INS_sve_ldnf1sh:
                     return code | (1 << 21); // Set bit '21' to 1.
 
                 default:
@@ -13964,16 +13908,38 @@ void emitter::emitIns_Call(EmitCallType          callType,
             return code;
 
         case EA_8BYTE:
-            return code; // By default, the instruction already encodes 64-bit.
+            switch (ins)
+            {
+                case INS_sve_ld1w:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for D.
+                    return ((code | (1 << 15)) | (1 << 22)) | (1 << 21); // Set bit '22', '21' and '15' to 1.
+
+                case INS_sve_ldnf1w:
+                    return code | (1 << 21); // Set bit '21' to 1. Set bit '15' to 1.
+
+                case INS_sve_ld1b:
+                case INS_sve_ld1h:
+                case INS_sve_ldnf1b:
+                case INS_sve_ldnf1h:
+                    return (code | (1 << 22)) | (1 << 21); // Set bit '22' and '21' to 1.
+
+                case INS_sve_ld1sb:
+                case INS_sve_ld1sh:
+                case INS_sve_ldnf1sb:
+                case INS_sve_ldnf1sh:
+                    return code; // By default, the instruction already encodes 64-bit.
+
+                default:
+                    assert(!"Invalid instruction for encoding dtype.");
+            }
+            return code;
 
         case EA_16BYTE:
             switch (ins)
             {
                 case INS_sve_ld1w:
-                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '0' to get the
-                    // proper encoding for Q.
-                    return (code & ~((1 << 22) | (1 << 21) | (1 << 15))) |
-                           (1 << 20); // Set bits '22', '21' and '15' to 0. Set bit '20' to 1.
+                    return code | (1 << 20); // Set bit '20' to 1.
 
                 default:
                     assert(!"Invalid instruction for encoding dtype.");

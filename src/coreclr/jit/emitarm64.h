@@ -488,9 +488,6 @@ static int insGetSveReg1ListSize(instruction ins);
 // Returns the predicate type for the given SVE instruction's second register.
 static PredicateType insGetSveReg2PredicateType(insFormat fmt);
 
-// Returns the predicate type for the given SVE instruction's second register.
-static PredicateType insGetSveReg2PredicateType(instruction ins, insFormat fmt);
-
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
 
