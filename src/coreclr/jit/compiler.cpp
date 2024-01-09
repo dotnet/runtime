@@ -4842,15 +4842,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Compute dominators and exceptional entry blocks
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
-
-        // The loop table is no longer valid.
-        optLoopTableValid = false;
-        optLoopTable      = nullptr;
-        optLoopCount      = 0;
-
-        // Old dominators and reachability sets are no longer valid.
-        fgDomsComputed         = false;
-        fgCompactRenumberQuirk = true;
     }
 
 #ifdef DEBUG
@@ -5039,7 +5030,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 
     optLoopsRequirePreHeaders = false;
-    fgCompactRenumberQuirk    = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5257,147 +5247,117 @@ static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 }
 
 //------------------------------------------------------------------------
-// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
+// shouldAlignLoop: Check if it is legal and profitable to align a loop.
 //
 // Parameters:
-//   loops       - Identified natural loops
-//   blockToLoop - Map from block back to its most-nested containing natural loop
+//   loop - The loop
+//   top  - First block of the loop that appears in lexical order
+//
+// Returns:
+//    True if it is legal and profitable to align this loop.
 //
 // Remarks:
 //   All innermost loops whose block weight meets a threshold are candidates for alignment.
-//   The `top` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
+//   The top block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
 //   (the loop table itself is not changed).
 //
 //   Depends on the loop table, and on block weights being set.
 //
-//   Sets `loopAlignCandidates` to the number of loop candidates for alignment.
-//
-void Compiler::optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop)
+bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
-    loopAlignCandidates = 0;
-
-    // TODO-Cleanup: We cannot currently renumber blocks after LSRA, so we need
-    // a side map for the lexically top most block here.
-    // Since placeLoopAlignInstructions already does a lexical visit we can
-    // merge it with the identification of candidates to make all of this
-    // cheaper.
-    BasicBlock** topMostBlocks = new (this, CMK_LoopOpt) BasicBlock*[loops->NumLoops()]{};
-    for (BasicBlock* block : Blocks())
+    // TODO-Quirk: Remove. When removing we will likely need to add some
+    // form of "lexicality" heuristic here: only align loops whose blocks
+    // are fairly tightly packed together physically.
+    if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
     {
-        FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
-        if (loop == nullptr)
-        {
-            continue;
-        }
-
-        if (topMostBlocks[loop->GetIndex()] == nullptr)
-        {
-            topMostBlocks[loop->GetIndex()] = block;
-        }
+        return false;
     }
 
-    for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
+    // TODO-Quirk: Switch to loop->GetChild() != nullptr
+    if (HasOldChildLoop(this, loop))
     {
-        // TODO-Quirk: Remove. When removing we will likely need to add some
-        // form of "lexicality" heuristic here: only align loops whose blocks
-        // are fairly tightly packed together physically.
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
+        JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
+        return false;
+    }
 
-        // TODO-Quirk: Switch to loop->GetChild() != nullptr
-        if (HasOldChildLoop(this, loop))
-        {
-            JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
-            continue;
-        }
+    if (top == fgFirstBB)
+    {
+        // Adding align instruction in prolog is not supported.
+        // TODO: Insert an empty block before the loop, if want to align it, so we have a place to put
+        // the align instruction.
+        JITDUMP("Skipping alignment for " FMT_LP "; loop starts in first block\n", loop->GetIndex());
+        return false;
+    }
 
-        BasicBlock* top = topMostBlocks[loop->GetIndex()];
-        if (top == fgFirstBB)
-        {
-            // Adding align instruction in prolog is not supported.
-            // TODO: Insert an empty block before the loop, if want to align it, so we have a place to put
-            // the align instruction.
-            JITDUMP("Skipping alignment for " FMT_LP "; loop starts in first block\n", loop->GetIndex());
-            continue;
-        }
+    if (top->HasFlag(BBF_COLD))
+    {
+        JITDUMP("Skipping alignment for cold loop " FMT_LP "\n", loop->GetIndex());
+        return false;
+    }
 
-        if (top->HasFlag(BBF_COLD))
+    bool hasCall = loop->VisitLoopBlocks([](BasicBlock* block) {
+        for (GenTree* tree : LIR::AsRange(block))
         {
-            JITDUMP("Skipping alignment for cold loop " FMT_LP "\n", loop->GetIndex());
-            continue;
-        }
-
-        bool hasCall = loop->VisitLoopBlocks([](BasicBlock* block) {
-            for (GenTree* tree : LIR::AsRange(block))
+            if (tree->IsCall())
             {
-                if (tree->IsCall())
-                {
-                    return BasicBlockVisit::Abort;
-                }
+                return BasicBlockVisit::Abort;
             }
-
-            return BasicBlockVisit::Continue;
-        }) == BasicBlockVisit::Abort;
-
-        if (hasCall)
-        {
-            // Heuristic: it is not valuable to align loops with calls.
-            JITDUMP("Skipping alignment for " FMT_LP "; loop contains call\n", loop->GetIndex());
-            continue;
         }
 
-        if (!top->IsFirst())
-        {
+        return BasicBlockVisit::Continue;
+    }) == BasicBlockVisit::Abort;
+
+    if (hasCall)
+    {
+        // Heuristic: it is not valuable to align loops with calls.
+        JITDUMP("Skipping alignment for " FMT_LP "; loop contains call\n", loop->GetIndex());
+        return false;
+    }
+
+    assert(!top->IsFirst());
+
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            if (top->Prev()->KindIs(BBJ_CALLFINALLY))
-            {
-                // It must be a retless BBJ_CALLFINALLY if we get here.
-                assert(!top->Prev()->isBBCallFinallyPair());
+    if (top->Prev()->KindIs(BBJ_CALLFINALLY))
+    {
+        // It must be a retless BBJ_CALLFINALLY if we get here.
+        assert(!top->Prev()->isBBCallFinallyPair());
 
-                // If the block before the loop start is a retless BBJ_CALLFINALLY
-                // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
-                // because it will affect reported EH region range. For x86 (where
-                // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
+        // If the block before the loop start is a retless BBJ_CALLFINALLY
+        // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
+        // because it will affect reported EH region range. For x86 (where
+        // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
 
-                JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n",
-                        loop->GetIndex());
-                continue;
-            }
+        JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n", loop->GetIndex());
+        return false;
+    }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            if (top->Prev()->isBBCallFinallyPairTail())
-            {
-                // If the previous block is the BBJ_CALLFINALLYRET of a
-                // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
-                // because we can't add instructions in that block. In the
-                // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
-                // reported EH, as above.
-                JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
-                        loop->GetIndex());
-                continue;
-            }
-        }
-
-        // Now we have an innerloop candidate that might need alignment
-
-        weight_t topWeight     = top->getBBWeight(this);
-        weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT;
-        if (topWeight >= compareWeight)
-        {
-            loopAlignCandidates++;
-            assert(!top->isLoopAlign());
-            top->SetFlags(BBF_LOOP_ALIGN);
-            JITDUMP("Aligning " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " >= " FMT_WT ".\n",
-                    loop->GetIndex(), top->bbNum, topWeight, compareWeight);
-        }
-        else
-        {
-            JITDUMP("Skipping alignment for " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " < " FMT_WT ".\n",
-                    loop->GetIndex(), top->bbNum, topWeight, compareWeight);
-        }
+    if (top->Prev()->isBBCallFinallyPairTail())
+    {
+        // If the previous block is the BBJ_ALWAYS of a
+        // BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we can't add alignment
+        // because we can't add instructions in that block. In the
+        // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
+        // reported EH, as above.
+        JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
+                loop->GetIndex());
+        return false;
     }
+
+    // Now we have an innerloop candidate that might need alignment
+
+    weight_t topWeight     = top->getBBWeight(this);
+    weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT;
+    if (topWeight < compareWeight)
+    {
+        JITDUMP("Skipping alignment for " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " < " FMT_WT ".\n",
+                loop->GetIndex(), top->bbNum, topWeight, compareWeight);
+        return false;
+    }
+
+    JITDUMP("Aligning " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " >= " FMT_WT ".\n", loop->GetIndex(),
+            top->bbNum, topWeight, compareWeight);
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5453,44 +5413,62 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
     BlockToNaturalLoopMap* blockToLoop = BlockToNaturalLoopMap::Build(loops);
 
-    optIdentifyLoopsForAlignment(loops, blockToLoop);
+    BitVecTraits loopTraits((unsigned)loops->NumLoops(), this);
+    BitVec       seenLoops(BitVecOps::MakeEmpty(&loopTraits));
+    BitVec       alignedLoops(BitVecOps::MakeEmpty(&loopTraits));
 
-    // Add align only if there were any loops that needed alignment
-    if (loopAlignCandidates == 0)
-    {
-        JITDUMP("Found no candidates for loop alignment\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    JITDUMP("Inside placeLoopAlignInstructions for %d loop candidates.\n", loopAlignCandidates);
-
-    bool                  madeChanges        = false;
-    weight_t              minBlockSoFar      = BB_MAX_WEIGHT;
-    BasicBlock*           bbHavingAlign      = nullptr;
-    FlowGraphNaturalLoop* currentAlignedLoop = nullptr;
-
-    int loopsToProcess = loopAlignCandidates;
+    bool        madeChanges   = false;
+    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
+    BasicBlock* bbHavingAlign = nullptr;
 
     for (BasicBlock* const block : Blocks())
     {
         FlowGraphNaturalLoop* loop = blockToLoop->GetLoop(block);
 
-        if (currentAlignedLoop != nullptr)
+        // If this is the first block of a loop then see if we should align it
+        if ((loop != nullptr) && BitVecOps::TryAddElemD(&loopTraits, seenLoops, loop->GetIndex()) &&
+            shouldAlignLoop(loop, block))
         {
-            // We've been processing blocks within an aligned loop. Are we out of that loop now?
-            if (currentAlignedLoop != loop)
+            block->SetFlags(BBF_LOOP_ALIGN);
+            BitVecOps::AddElemD(&loopTraits, alignedLoops, loop->GetIndex());
+            INDEBUG(loopAlignCandidates++);
+
+            BasicBlock* prev = block->Prev();
+            // shouldAlignLoop should have guaranteed these properties.
+            assert((prev != nullptr) && !prev->HasFlag(BBF_COLD));
+
+            if (bbHavingAlign == nullptr)
             {
-                currentAlignedLoop = nullptr;
+                // If jmp was not found, then block before the loop start is where align instruction will be added.
+
+                bbHavingAlign = prev;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", prev->bbNum,
+                        block->bbNum);
             }
+            else
+            {
+                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, block->bbNum);
+            }
+
+            madeChanges = true;
+            bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
+
+            minBlockSoFar = BB_MAX_WEIGHT;
+            bbHavingAlign = nullptr;
+
+            continue;
         }
 
+        // Otherwise check if this is a candidate block for placing alignment for a future loop.
         // If there is an unconditional jump that won't be removed
         if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->CanRemoveJumpToNext(this))
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                if (currentAlignedLoop == nullptr)
+                if ((loop == nullptr) || !BitVecOps::IsMember(&loopTraits, alignedLoops, loop->GetIndex()))
                 {
                     // Ok to insert align instruction in this block because it is not part of any aligned loop.
                     minBlockSoFar = block->bbWeight;
@@ -5500,47 +5478,13 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 }
             }
         }
-
-        if (!block->IsLast() && block->Next()->isLoopAlign())
-        {
-            // Loop alignment is disabled for cold blocks
-            assert(!block->HasFlag(BBF_COLD));
-            BasicBlock* const loopTop = block->Next();
-
-            if (bbHavingAlign == nullptr)
-            {
-                // If jmp was not found, then block before the loop start is where align instruction will be added.
-
-                bbHavingAlign = block;
-                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
-                        loopTop->bbNum);
-            }
-            else
-            {
-                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
-                        "\n",
-                        bbHavingAlign->bbNum, loopTop->bbNum);
-            }
-
-            madeChanges = true;
-            bbHavingAlign->SetFlags(BBF_HAS_ALIGN);
-
-            minBlockSoFar      = BB_MAX_WEIGHT;
-            bbHavingAlign      = nullptr;
-            currentAlignedLoop = blockToLoop->GetLoop(loopTop);
-            assert(currentAlignedLoop != nullptr);
-
-            if (--loopsToProcess == 0)
-            {
-                break;
-            }
-        }
     }
 
-    assert(loopsToProcess == 0);
+    JITDUMP("Found %u candidates for loop alignment\n", loopAlignCandidates);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
+
 #endif
 
 //------------------------------------------------------------------------

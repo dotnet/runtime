@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
@@ -15,12 +16,12 @@ using Internal.TypeSystem.TypesDebugInfo;
 using Internal.JitInterface;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
-namespace ILCompiler.DependencyAnalysis
+namespace ILCompiler.ObjectWriter
 {
     /// <summary>
     /// Object writer using src/Native/ObjWriter
     /// </summary>
-    public class ObjectWriter : IDisposable, ITypesDebugInfoWriter
+    internal sealed class LegacyObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         private readonly ObjectWritingOptions _options;
 
@@ -213,6 +214,7 @@ namespace ILCompiler.DependencyAnalysis
                                                     byte[] blobSymbolName);
         public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, byte[] blobSymbolName)
         {
+            _ = blobSize;
             EmitWinFrameInfo(_nativeObjectWriter, _currentNodeZeroTerminatedName.UnderlyingArray, startOffset, endOffset, blobSymbolName);
         }
 
@@ -616,7 +618,7 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        public void BuildCFIMap(NodeFactory factory, ObjectNode node)
+        public void BuildCFIMap(ObjectNode node)
         {
             _offsetToCfis.Clear();
             _offsetToCfiStart.Clear();
@@ -906,7 +908,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
-        public ObjectWriter(string objectFilePath, NodeFactory factory, ObjectWritingOptions options)
+        public LegacyObjectWriter(string objectFilePath, NodeFactory factory, ObjectWritingOptions options)
         {
             var triple = GetLLVMTripleFromTarget(factory.Target);
 
@@ -932,7 +934,7 @@ namespace ILCompiler.DependencyAnalysis
             Dispose(true);
         }
 
-        public virtual void Dispose(bool bDisposing)
+        public void Dispose(bool bDisposing)
         {
             if (_nativeObjectWriter != IntPtr.Zero)
             {
@@ -949,7 +951,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        ~ObjectWriter()
+        ~LegacyObjectWriter()
         {
             Dispose(false);
         }
@@ -1004,7 +1006,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
-            ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory, options);
+            LegacyObjectWriter objectWriter = new LegacyObjectWriter(objectFilePath, factory, options);
             bool succeeded = false;
 
             try
@@ -1088,7 +1090,7 @@ namespace ILCompiler.DependencyAnalysis
                     TargetArchitecture tarch = factory.Target.Architecture;
                     if (!factory.Target.IsWindows &&
                         (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARM || tarch == TargetArchitecture.ARM64))
-                        objectWriter.BuildCFIMap(factory, node);
+                        objectWriter.BuildCFIMap(node);
 
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);
@@ -1268,9 +1270,6 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
-
-            if (logger.IsVerbose)
-                logger.LogMessage($"Done writing object file");
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -1417,13 +1416,5 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
         }
-    }
-
-    [Flags]
-    public enum ObjectWritingOptions
-    {
-        GenerateDebugInfo = 0x01,
-        ControlFlowGuard = 0x02,
-        UseDwarf5 = 0x4,
     }
 }

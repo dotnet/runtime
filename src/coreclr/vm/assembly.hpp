@@ -416,8 +416,6 @@ private:
 
     //****************************************************************************************
 
-    void CacheManifestExportedTypes(AllocMemTracker *pamTracker);
-
     void CacheFriendAssemblyInfo();
 #ifndef DACCESS_COMPILE
     ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();

@@ -1727,7 +1727,7 @@ namespace System.IO.Packaging
             private bool _all;
             private readonly string _namespaceName;
             private readonly XmlCompatibilityReader _reader;
-            private Dictionary<string, object?>? _names;
+            private HashSet<string>? _names;
 
             public ProcessContentSet(string namespaceName, XmlCompatibilityReader reader)
             {
@@ -1737,7 +1737,7 @@ namespace System.IO.Packaging
 
             public bool ShouldProcessContent(string elementName)
             {
-                return _all || (_names != null && _names.ContainsKey(elementName));
+                return _all || (_names != null && _names.Contains(elementName));
             }
 
             public void Add(string elementName)
@@ -1767,8 +1767,8 @@ namespace System.IO.Packaging
                 }
                 else
                 {
-                    _names ??= new Dictionary<string, object?>();
-                    _names[elementName] = null; // we don't care about value, just key
+                    _names ??= new HashSet<string>();
+                    _names.Add(elementName);
                 }
             }
         }
@@ -1778,7 +1778,7 @@ namespace System.IO.Packaging
             private bool _all;
             private readonly string _namespaceName;
             private readonly XmlCompatibilityReader _reader;
-            private Dictionary<string, string>? _names;
+            private HashSet<string>? _names;
 
             public PreserveItemSet(string namespaceName, XmlCompatibilityReader reader)
             {
@@ -1788,7 +1788,7 @@ namespace System.IO.Packaging
 
             public bool ShouldPreserveItem(string itemName)
             {
-                return _all || (_names != null && _names.ContainsKey(itemName));
+                return _all || (_names != null && _names.Contains(itemName));
             }
 
             public void Add(string itemName)
@@ -1818,8 +1818,8 @@ namespace System.IO.Packaging
                 }
                 else
                 {
-                    _names ??= new Dictionary<string, string>();
-                    _names.Add(itemName, itemName);
+                    _names ??= new HashSet<string>();
+                    _names.Add(itemName);
                 }
             }
         }
