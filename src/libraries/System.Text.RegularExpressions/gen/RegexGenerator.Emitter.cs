@@ -105,9 +105,11 @@ namespace System.Text.RegularExpressions.Generator
             {
                 char c = pattern[i];
 
-                if (c == ' ')
+                if (c == ' ' || char.IsLetterOrDigit(c))
                 {
-                    writer.Write(' ');
+                    writer.Write(c);
+
+                    backslashes = 0;
                 }
                 else if (!Xml.XmlConvert.IsXmlChar(c) || EscapingHelpsPatternReadability(c))
                 {
@@ -123,7 +125,7 @@ namespace System.Text.RegularExpressions.Generator
                         // the first \ escapes the second \, instructs the regex engine to match a backslash.
                         // The third \ on the left becomes effectively nothing, because '\uFFFF' is not recognized as an escaped character.
 
-                        if (!inEscape())
+                        if (!inEscape(backslashes))
                         {
                             writer.Write('\\');
                         }
@@ -157,9 +159,13 @@ namespace System.Text.RegularExpressions.Generator
                         else
                         {
                             // Illegal whitespace char for xml, ignored anyways.
+                            // To avoid confusions, we just print normal spaces for them in the summary.
+
                             writer.Write(' ');
                         }
                     }
+
+                    backslashes = 0;
                 }
                 else
                 {
@@ -172,11 +178,11 @@ namespace System.Text.RegularExpressions.Generator
                         writer.Write(c);
                     }
 
-                    if (c == '[' && !inEscape() && !inCharClass)
+                    if (c == '[' && !inEscape(backslashes) && !inCharClass)
                     {
                         inCharClass = true;
                     }
-                    else if (c == ']' && !inEscape() && inCharClass)
+                    else if (c == ']' && !inEscape(backslashes) && inCharClass)
                     {
                         inCharClass = false;
                     }
@@ -193,7 +199,7 @@ namespace System.Text.RegularExpressions.Generator
 
             writer.WriteLine();
 
-            bool inEscape() => backslashes % 2 != 0;
+            static bool inEscape(int backslashes) => backslashes % 2 != 0;
         }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
