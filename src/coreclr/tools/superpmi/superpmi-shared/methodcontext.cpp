@@ -6925,8 +6925,14 @@ int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
     key.nameIndex    = (DWORD)nameIndex;
     key.defaultValue = defaultValue;
 
-    DWORD value = LookupByKeyOrMissNoMessage(GetIntConfigValue, key);
+    int index = GetIntConfigValue->GetIndex(key);
+    if (index == -1)
+    {
+        // default value has changed
+        return defaultValue;
+    }
 
+    DWORD value = GetIntConfigValue->GetItem(index);
     DEBUG_REP(dmpGetIntConfigValue(key, value));
     return (int)value;
 }

@@ -11,24 +11,54 @@ namespace System.Linq
     {
         public static TSource[] ToArray<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return source is IIListProvider<TSource> arrayProvider
-                ? arrayProvider.ToArray()
-                : EnumerableHelpers.ToArray(source);
+            if (source is IIListProvider<TSource> arrayProvider)
+            {
+                return arrayProvider.ToArray();
+            }
+
+            if (source is ICollection<TSource> collection)
+            {
+                int count = collection.Count;
+                if (count != 0)
+                {
+                    var result = new TSource[count];
+                    collection.CopyTo(result, 0);
+                    return result;
+                }
+
+                return [];
+            }
+            else
+            {
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
+
+                builder.AddNonICollectionRange(source);
+                TSource[] result = builder.ToArray();
+
+                builder.Dispose();
+                return result;
+            }
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return source is IIListProvider<TSource> listProvider ? listProvider.ToList() : new List<TSource>(source);
+            if (source is IIListProvider<TSource> listProvider)
+            {
+                return listProvider.ToList();
+            }
+
+            return new List<TSource>(source);
         }
 
         /// <summary>
@@ -99,12 +129,12 @@ namespace System.Linq
 
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
@@ -152,17 +182,17 @@ namespace System.Linq
 
         public static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            if (elementSelector == null)
+            if (elementSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
             }
@@ -209,7 +239,7 @@ namespace System.Linq
 
         public static HashSet<TSource> ToHashSet<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
