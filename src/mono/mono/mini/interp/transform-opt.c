@@ -527,29 +527,45 @@ interp_get_bb_links (InterpBasicBlock *bb)
 	return str;
 }
 
-static void
-dfs_visit (InterpBasicBlock *bb, int *pos, InterpBasicBlock **bb_array)
+static int
+dfs_visit (TransformData *td)
 {
-	int dfs_index = *pos;
+	int dfs_index = 0;
+	int next_stack_index = 0;
+	td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+	InterpBasicBlock **stack = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
 
-	bb_array [dfs_index] = bb;
-	bb->dfs_index = dfs_index;
-	*pos = dfs_index + 1;
-	for (int i = 0; i < bb->out_count; i++) {
-		InterpBasicBlock *out_bb = bb->out_bb [i];
-		if (out_bb->dfs_index == -1)
-			dfs_visit (out_bb, pos, bb_array);
+	g_assert (!td->entry_bb->in_count);
+	stack [next_stack_index++] = td->entry_bb;
+
+	while (next_stack_index > 0) {
+		// Pop last added element
+		next_stack_index--;
+		InterpBasicBlock *bb = stack [next_stack_index];
+
+		// Process current bblock
+		td->bblocks [dfs_index] = bb;
+		bb->dfs_index = dfs_index++;
+
+		// Push all nodes to process next
+		for (int i = 0; i < bb->out_count; i++) {
+			InterpBasicBlock *out_bb = bb->out_bb [i];
+			if (out_bb->dfs_index == -1) {
+				stack [next_stack_index++] = out_bb;
+				// Mark node as gray so it is not pushed again
+				out_bb->dfs_index = -2;
+			}
+		}
 	}
+
+	return dfs_index;
 }
 
 static void
 interp_compute_dfs_indexes (TransformData *td)
 {
-	int dfs_index = 0;
 	// Sort bblocks in reverse postorder
-	td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
-	g_assert (!td->entry_bb->in_count);
-	dfs_visit (td->entry_bb, &dfs_index, td->bblocks);
+	int dfs_index = dfs_visit (td);
 	td->bblocks_count = dfs_index;
 
 	// Visit also bblocks reachable from eh handlers. These bblocks are not linked
