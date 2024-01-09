@@ -2923,31 +2923,33 @@ class SuperPMIReplayThroughputDiff:
 
             with open(short_md_summary_file, "w") as write_fh:
                 self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, False)
-                logging.info("  Summary Markdown file: %s", short_md_summary_file)                
+                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
 
     def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, include_details):
-        if not base_jit_build_string_decoded:
-            write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
-        if not diff_jit_build_string_decoded:
-            write_fh.write("{} Could not decode diff JIT build string".format(html_color("red", "Warning:")))
-        if base_jit_build_string_decoded and diff_jit_build_string_decoded:
-            (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
-            (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
 
-            if base_jit_compiler_version != diff_jit_compiler_version:
-                write_fh.write("{} Different compilers used for base and diff JITs. Results may be misleading.\n".format(html_color("red", "Warning:")))
-                write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
-                write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+        def write_top_context_section():
+            if not base_jit_build_string_decoded:
+                write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
+            if not diff_jit_build_string_decoded:
+                write_fh.write("{} Could not decode diff JIT build string".format(html_color("red", "Warning:")))
+            if base_jit_build_string_decoded and diff_jit_build_string_decoded:
+                (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
+                (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
 
-            if base_jit_with_native_pgo:
-                write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
-            if diff_jit_with_native_pgo:
-                write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+                if base_jit_compiler_version != diff_jit_compiler_version:
+                    write_fh.write("{} Different compilers used for base and diff JITs. Results may be misleading.\n".format(html_color("red", "Warning:")))
+                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
 
-        write_jit_options(self.coreclr_args, write_fh)
+                if base_jit_with_native_pgo:
+                    write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+                if diff_jit_with_native_pgo:
+                    write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+
+            write_jit_options(self.coreclr_args, write_fh)
 
         # We write two tables, an overview one with just significantly
         # impacted collections and a detailed one that includes raw
@@ -2986,10 +2988,12 @@ class SuperPMIReplayThroughputDiff:
                                 mch_file,
                                 compute_and_format_pct(base_instructions, diff_instructions)))
 
+            write_top_context_section()
             write_pivot_section("Overall")
             write_pivot_section("MinOpts")
             write_pivot_section("FullOpts")
         elif include_details:
+            write_top_context_section()
             write_fh.write("No significant throughput differences found\n")
 
         if include_details:
