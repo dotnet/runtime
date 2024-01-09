@@ -602,6 +602,12 @@ namespace System
 
                 Debug.Assert(partialDigitCount == 0 && bufferPos == -1);
 
+                if (isNegative)
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(buffer);
+                }
+
+                // BigInteger requires leading zero blocks to be truncated.
                 buffer = buffer.TrimEnd(0u);
 
                 int sign;
@@ -612,26 +618,15 @@ namespace System
                     sign = 0;
                     bits = null;
                 }
-                else if (buffer.Length == 1)
+                else if (buffer.Length == 1 && buffer[0] <= int.MaxValue)
                 {
-                    sign = (int)buffer[0];
+                    sign = (int)buffer[0] * (isNegative ? -1 : 1);
                     bits = null;
-
-                    if ((!isNegative && sign < 0) || sign == int.MinValue)
-                    {
-                        bits = new[] { (uint)sign };
-                        sign = isNegative ? -1 : 1;
-                    }
                 }
                 else
                 {
                     sign = isNegative ? -1 : 1;
                     bits = buffer.ToArray();
-
-                    if (isNegative)
-                    {
-                        NumericsHelpers.DangerousMakeTwosComplement(bits);
-                    }
                 }
 
                 result = new BigInteger(sign, bits);
