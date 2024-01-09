@@ -545,7 +545,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"((a{1,2}){4}){3,7}", 0, 12, 56)]
         [InlineData(@"((a{1,2}){4}?){3,7}", 0, 12, 56)]
         [InlineData(@"\b\w{4}\b", 0, 4, 4)]
-        [InlineData(@"\b\w{4}\b", (int)RegexOptions.ECMAScript,  4, 4)]
+        [InlineData(@"\b\w{4}\b", (int)RegexOptions.ECMAScript, 4, 4)]
         [InlineData(@"abcd(?=efgh)efgh", 0, 8, 8)]
         [InlineData(@"abcd(?<=cd)efgh", 0, 8, 8)]
         [InlineData(@"abcd(?!ab)efgh", 0, 8, 8)]
@@ -601,12 +601,12 @@ namespace System.Text.RegularExpressions.Tests
             int minRequiredLength = tree.FindOptimizations.MinRequiredLength;
 
             Assert.True(
-                minRequiredLength == 1 /* successfully analyzed */ || minRequiredLength == 0 /* ran out of stack space to complete analysis */,
+                minRequiredLength is 1 /* successfully analyzed */ or 0 /* ran out of stack space to complete analysis */,
                 $"Expected 1 or 0, got {minRequiredLength}");
 
             int? maxPossibleLength = tree.FindOptimizations.MaxPossibleLength;
             Assert.True(
-                maxPossibleLength == 1 /* successfully analyzed */ || maxPossibleLength is null /* ran out of stack space to complete analysis */,
+                maxPossibleLength is 1 /* successfully analyzed */ or null /* ran out of stack space to complete analysis */,
                 $"Expected 1 or null, got {maxPossibleLength}");
         }
 

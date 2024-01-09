@@ -482,7 +482,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // We don't share small offset constants when they require a reloc
         // Also, we don't share non-null const gc handles
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && ((tree->IsIntegralConst(0)) || !varTypeIsGC(tree)))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && (tree->IsIntegralConst(0) || !varTypeIsGC(tree)))
         {
             // Here we make constants that have the same upper bits use the same key
             //

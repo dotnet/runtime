@@ -45,12 +45,12 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "browser" (
         if "%EMSDK_PATH%" == "" (
-            if not exist "%__repoRoot%\src\mono\wasm\emsdk" (
+            if not exist "%__repoRoot%\src\mono\browser\emsdk" (
                 echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
                 exit /B 1
             )
 
-            set "EMSDK_PATH=%__repoRoot%\src\mono\wasm\emsdk"
+            set "EMSDK_PATH=%__repoRoot%\src\mono\browser\emsdk"
         )
         :: replace backslash with forward slash and append last slash
         set "EMSDK_PATH=!EMSDK_PATH:\=/!"

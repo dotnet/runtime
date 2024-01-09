@@ -1285,6 +1285,7 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1728,6 +1729,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EndsWith_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -3216,7 +3218,8 @@ namespace System.Tests
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
-                Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                    Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
 
@@ -3224,7 +3227,8 @@ namespace System.Tests
 
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
-                Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                    Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
             }
@@ -4853,7 +4857,11 @@ namespace System.Tests
             yield return new object[] { "", "hello", StringComparison.CurrentCulture, false };
 
             if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
-                yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
+            {
+                // "https://github.com/dotnet/runtime/issues/95473"
+                if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+                    yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
+            }
 
             // CurrentCultureIgnoreCase
             yield return new object[] { "Hello", "Hel", StringComparison.CurrentCultureIgnoreCase, true };
@@ -4924,6 +4932,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StartsWith_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -5346,6 +5355,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToLower_Culture()
         {
             foreach (object[] testdata in ToLower_Culture_TestData())
@@ -5863,6 +5873,7 @@ namespace System.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
         [MemberData(nameof(ToUpper_Culture_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
@@ -5962,6 +5973,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
