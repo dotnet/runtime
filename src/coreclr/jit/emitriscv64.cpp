@@ -2537,6 +2537,35 @@ static void UTypeInstructionSanityCheck(instruction ins, regNumber rd)
     }
 }
 
+static void BTypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumber rs2)
+{
+    switch (ins)
+    {
+        case INS_beqz:
+            FALLTHROUGH;
+        case INS_bnez:
+            assert((rs1 == REG_ZERO) || (rs2 == REG_ZERO));
+            FALLTHROUGH;
+        case INS_beq:
+            FALLTHROUGH;
+        case INS_bne:
+            FALLTHROUGH;
+        case INS_blt:
+            FALLTHROUGH;
+        case INS_bge:
+            FALLTHROUGH;
+        case INS_bltu:
+            FALLTHROUGH;
+        case INS_bgeu:
+            assert(IsIntegralRegister(rs1));
+            assert(IsIntegralRegister(rs2));
+            break;
+        default:
+            NO_WAY("Illegal ins within emitOutput_BTypeInstr!");
+            break;
+    }
+}
+
 #endif // DEBUG
 
 /*****************************************************************************
@@ -2621,13 +2650,9 @@ unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd
 unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
 {
     unsigned insCode = emitInsCode(ins);
-
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
-
-    assert((insCode & kInstructionMask) == 0);
+    BTypeInstructionSanityCheck(ins, rs1, rs2);
 #endif // DEBUG
-
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13));
@@ -2640,8 +2665,8 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
  *
  *  Note: Replaces:
  *      - beqz with bnez and vice versa
- *      - beq with bne and vide versa
- *      - blt with bge and vide versa
+ *      - beq with bne and vice versa
+ *      - blt with bge and vice versa
  *      - bltu with bgeu and vice versa
  */
 
@@ -2649,13 +2674,9 @@ unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
     BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
 {
     unsigned insCode = emitInsCode(ins) ^ 0x1000;
-
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
-
-    assert((insCode & kInstructionMask) == 0);
+    BTypeInstructionSanityCheck(ins, rs1, rs2);
 #endif // DEBUG
-
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13));
