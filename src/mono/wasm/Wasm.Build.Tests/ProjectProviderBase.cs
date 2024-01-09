@@ -380,7 +380,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
-        AssertFilesOnDisk(expected, actual);
+        AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {
             string srcPath = assertOptions.PredefinedIcudt!;
@@ -473,7 +473,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return config;
     }
 
-    private void AssertFilesOnDisk(IEnumerable<string> expected, IEnumerable<string> actual)
+    private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));

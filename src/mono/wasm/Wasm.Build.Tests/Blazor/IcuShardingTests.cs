@@ -21,7 +21,7 @@ public class IcuShardingTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData("Debug", "icudt.dat")]
-    [InlineData("Release", "icudt.dat")]    
+    [InlineData("Release", "icudt.dat")]
     [InlineData("Debug", "icudt_CJK.dat")]
     [InlineData("Release", "icudt_CJK.dat")]
     public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
@@ -37,7 +37,7 @@ public class IcuShardingTests : BlazorWasmTestBase
             );
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(buildOptions);
@@ -55,7 +55,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         try
@@ -96,7 +96,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{IcuTestsBase.CustomIcuPath}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(
