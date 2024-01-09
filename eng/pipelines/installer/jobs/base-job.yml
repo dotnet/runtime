@@ -344,7 +344,7 @@ jobs:
       displayName: Clean up old artifacts owned by root
 
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-    - task: NuGetAuthenticate@0
+    - task: NuGetAuthenticate@1
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
