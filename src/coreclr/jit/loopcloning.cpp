@@ -2092,11 +2092,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
 
-        // Call CloneBlockState to make a copy of the block's statements (and attributes), and assert that it
-        // has a return value indicating success, because optCanOptimizeByLoopCloningVisitor has already
-        // checked them to guarantee they are clonable.
-        bool cloneOk = BasicBlock::CloneBlockState(this, newBlk, blk);
-        noway_assert(cloneOk);
+        BasicBlock::CloneBlockState(this, newBlk, blk);
 
         // We're going to create the preds below, which will set the bbRefs properly,
         // so clear out the cloned bbRefs field.
