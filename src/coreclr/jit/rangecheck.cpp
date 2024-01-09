@@ -1358,9 +1358,9 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
-    // GT_AND, GT_UMOD, GT_LSH and GT_RSH don't overflow
+    // These operators don't overflow.
     // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_NEG))
     {
         overflows = false;
     }
@@ -1457,6 +1457,12 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
+    }
+    else if (expr->OperIs(GT_NEG))
+    {
+        // Compute range for negation, e.g.: [0..8] -> [-8..0]
+        Range op1Range = GetRange(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
+        range          = RangeOps::Negate(op1Range);
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperIs(GT_PHI))

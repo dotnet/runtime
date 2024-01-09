@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
         public static void ThrowIfLegacyWorkerThread()
         {
-            if (Thread.CurrentThread.ManagedThreadId != 1)
+            if (Environment.CurrentManagedThreadId != 1)
             {
                 throw new PlatformNotSupportedException("Legacy interop is not supported with WebAssembly threads.");
             }

@@ -144,9 +144,9 @@ public:
     bool InteropValidatePinnedObjects()             const { LIMITED_METHOD_CONTRACT;  return m_fInteropValidatePinnedObjects; }
     bool InteropLogArguments()                      const { LIMITED_METHOD_CONTRACT;  return m_fInteropLogArguments; }
 
-#ifdef _DEBUG
-    bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
+    bool GenDebuggableCode(void)                    const { LIMITED_METHOD_CONTRACT;  return fDebuggable; }
 
+#ifdef _DEBUG
     static bool RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input);
 
     inline bool ShouldPrestubHalt(MethodDesc* pMethodInfo) const
@@ -495,12 +495,12 @@ private: //----------------------------------------------------------------
     bool   m_fInteropValidatePinnedObjects; // After returning from a M->U interop call, validate GC heap around objects pinned by IL stubs.
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
 
+    bool fDebuggable;
+
 #ifdef _DEBUG
     static HRESULT ParseMethList(_In_z_ LPWSTR str, MethodNamesList* * out);
     static void DestroyMethList(MethodNamesList* list);
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
-
-    bool fDebuggable;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub

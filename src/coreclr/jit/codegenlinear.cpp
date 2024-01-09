@@ -314,8 +314,8 @@ void CodeGen::genCodeForBBlist()
                 printf("\nThis is the start of the cold region of the method\n");
             }
 #endif
-            // We should never have a block that falls through into the Cold section
-            noway_assert(!block->Prev()->bbFallsThrough());
+            // We should never split call/finally pairs between hot/cold sections
+            noway_assert(!block->isBBCallFinallyPairTail());
 
             needLabel = true;
         }
@@ -2619,6 +2619,12 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(jcc->OperIs(GT_JCC));
 
     inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    {
+        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2666,12 +2672,13 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 /*****************************************************************************
- * Unit testing of the emitter: If JitDumpEmitUnitTests is set, generate
- * a bunch of instructions, then:
- * Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions as the same as we do.
- * Or, use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and dissassemble the output file.
+ * Unit testing of the emitter: If JitEmitUnitTests is set for this function, generate
+ * a bunch of instructions, then either:
+ * 1. Use DOTNET_JitLateDisasm=* to see if the late disassembler thinks the instructions are the same as we do. Or,
+ * 2. Use DOTNET_JitRawHexCode and DOTNET_JitRawHexCodeFile and disassemble the output file with an external
+ * disassembler.
  *
- * Possible values for JitDumpEmitUnitTests:
+ * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
  * Arm64: all, general, advsimd, sve
  */
@@ -2680,9 +2687,15 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 
 void CodeGen::genEmitterUnitTests()
 {
-    const WCHAR* unitTestSection = JitConfig.JitDumpEmitUnitTests();
+    if (!JitConfig.JitEmitUnitTests().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+                                               &compiler->info.compMethodInfo->args))
+    {
+        return;
+    }
 
-    if ((!verbose) || (unitTestSection == nullptr))
+    const WCHAR* unitTestSection = JitConfig.JitEmitUnitTestsSections();
+
+    if (unitTestSection == nullptr)
     {
         return;
     }

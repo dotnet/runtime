@@ -68,15 +68,15 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap) => unchecked(_end - _start);
+            public int GetCount(bool onlyIfCheap) => _end - _start;
 
             public int Count => _end - _start;
 
-            public IPartition<int> Skip(int count)
+            public IPartition<int>? Skip(int count)
             {
                 if (count >= _end - _start)
                 {
-                    return EmptyPartition<int>.Instance;
+                    return null;
                 }
 
                 return new RangeIterator(_start + count, _end - _start - count);
@@ -95,7 +95,7 @@ namespace System.Linq
 
             public int TryGetElementAt(int index, out bool found)
             {
-                if (unchecked((uint)index < (uint)(_end - _start)))
+                if ((uint)index < (uint)(_end - _start))
                 {
                     found = true;
                     return _start + index;
