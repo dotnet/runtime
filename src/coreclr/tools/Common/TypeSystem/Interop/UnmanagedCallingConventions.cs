@@ -135,6 +135,27 @@ namespace Internal.TypeSystem
             return result;
         }
 
+        public static UnmanagedCallingConventions GetDelegateCallingConventions(this TypeDesc delegateType)
+        {
+            Debug.Assert(delegateType.IsDelegate);
+
+            if (delegateType is not EcmaType ecmaDelegate)
+            {
+                return GetPlatformDefaultUnmanagedCallingConvention(delegateType.Context);
+            }
+
+            MethodSignatureFlags unmanagedCallConv = ecmaDelegate.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
+            if (unmanagedCallConv != MethodSignatureFlags.None)
+            {
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                return (UnmanagedCallingConventions)unmanagedCallConv;
+            }
+
+            return GetPlatformDefaultUnmanagedCallingConvention(delegateType.Context);
+        }
+
         private static UnmanagedCallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, TypeSystemContext context)
         {
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
