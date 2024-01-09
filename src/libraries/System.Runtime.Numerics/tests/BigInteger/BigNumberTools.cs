@@ -9,41 +9,20 @@ namespace BigNumberTools
 {
     public class Utils
     {
-        private static TypeInfo InternalNumber
+#if DEBUG
+        public static void RunWithFakeThreshold(ref int field, int value, Action action)
         {
-            get
-            {
-                if (s_lazyInternalNumber == null)
-                {
-                    Type t = typeof(BigInteger).Assembly.GetType("System.Numerics.BigNumber");
-                    if (t != null)
-                    {
-                        s_lazyInternalNumber = t.GetTypeInfo();
-                    }
-                }
-                return s_lazyInternalNumber;
-            }
-        }
-
-        private static volatile TypeInfo s_lazyInternalNumber;
-
-        public static void RunWithFakeThreshold(string name, int value, Action action)
-        {
-            TypeInfo internalNumber = InternalNumber;
-            if (internalNumber == null)
-                return; // Internal frame types are not reflectable on AoT platforms. Skip the test.
-
-            FieldInfo field = internalNumber.GetDeclaredField(name);
-            int lastValue = (int)field.GetValue(null);
-            field.SetValue(null, value);
+            int lastValue = field;
             try
             {
+                field = value;
                 action();
             }
             finally
             {
-                field.SetValue(null, lastValue);
+                field = lastValue;
             }
         }
+#endif
     }
 }
