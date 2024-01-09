@@ -196,7 +196,7 @@ namespace System.Numerics
                 float q2w = value1.W;
 
                 Vector3 q1V = new Vector3(value2.X, value2.Y, value2.Z);
-                Vector3 q2V = new Vector3(value1.X, value2.Y, value2.Z);
+                Vector3 q2V = new Vector3(value1.X, value1.Y, value1.Z);
 
                 return new Quaternion(
                     q1w * q2V + q2w * q1V + Vector3.Cross(q1V, q2V),
