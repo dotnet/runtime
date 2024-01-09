@@ -709,8 +709,16 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 
             if (block->TrueTargetIs(oldTarget))
             {
-                assert(!block->FalseTargetIs(oldTarget));
-                block->SetTrueTarget(newTarget);
+                if (block->FalseTargetIs(oldTarget))
+                {
+                    fgRemoveConditionalJump(block);
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    block->SetTarget(newTarget);
+                }
+                else
+                {
+                    block->SetTrueTarget(newTarget);
+                }
             }
             else
             {
