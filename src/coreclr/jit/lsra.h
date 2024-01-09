@@ -1162,13 +1162,6 @@ private:
                                 regMaskTP    mask,
                                 unsigned     multiRegIdx = 0);
 
-    // This creates a RefTypeUse at currentLoc. It sets the treeNode to nullptr if it is not a
-    // lclVar interval.
-    RefPosition* newUseRefPosition(Interval* theInterval,
-                                   GenTree*  theTreeNode,
-                                   regMaskTP mask,
-                                   unsigned  multiRegIdx = 0);
-
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
 
