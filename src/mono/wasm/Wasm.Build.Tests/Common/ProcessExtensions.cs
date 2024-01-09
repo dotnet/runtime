@@ -109,7 +109,9 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                process.Kill();
+                Console.WriteLine ($"process.WaitForExit timed out after {timeout} . Killing the process ..");
+                process.Kill(entireProcessTree: true);
+                Console.WriteLine ($"HasExited: {process.HasExited}");
             }
 
             return process.ExitCode;
