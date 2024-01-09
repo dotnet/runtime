@@ -2476,6 +2476,32 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
     }
 }
 
+static void ITypeShiftInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, unsigned shamt)
+{
+    assert(IsIntegralRegister(rd));
+    assert(IsIntegralRegister(rs1));
+    switch (ins)
+    {
+        case INS_slli:
+            FALLTHROUGH;
+        case INS_srli:
+            FALLTHROUGH;
+        case INS_srai:
+            assert(shamt < 64);
+            break;
+        case INS_slliw:
+            FALLTHROUGH;
+        case INS_srliw:
+            FALLTHROUGH;
+        case INS_sraiw:
+            assert(shamt < 32);
+            break;
+        default:
+            NO_WAY("Illegal ins within emitOutput_ITypeInstr_Shift!");
+            break;
+    }
+}
+
 #endif // DEBUG
 
 /*****************************************************************************
@@ -2518,46 +2544,13 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
 unsigned emitter::emitOutput_ITypeInstr_Shift(
     BYTE* dst, instruction ins, regNumber rd, regNumber rs1, unsigned shamt) const
 {
-    unsigned insCode = emitInsCode(ins);
-
 #ifdef DEBUG
-    switch (ins)
-    {
-        case INS_slli:
-            FALLTHROUGH;
-        case INS_srli:
-            FALLTHROUGH;
-        case INS_srai:
-        {
-            static constexpr unsigned kInstructionMask =
-                ~(kInstructionOpcodeMask | kInstructionFunct3Mask | (kInstructionFunct7Mask - 1));
-
-            assert((insCode & kInstructionMask) == 0);
-            assert(shamt < 64);
-        }
-        break;
-        case INS_slliw:
-            FALLTHROUGH;
-        case INS_srliw:
-            FALLTHROUGH;
-        case INS_sraiw:
-        {
-            static constexpr unsigned kInstructionMask =
-                ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
-
-            assert((insCode & kInstructionMask) == 0);
-            assert(shamt < 32);
-        }
-        break;
-        default:
-            NO_WAY("Illegal ins within emitOutput_ITypeInstr_Shift!");
-            break;
-    }
+    ITypeShiftInstructionSanityCheck(ins, rd, rs1, shamt);
 #endif // DEBUG
-
-    unsigned opcode = insCode & kInstructionOpcodeMask;
-    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
-    unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 20; // prepared for masking
+    unsigned insCode = emitInsCode(ins);
+    unsigned opcode  = insCode & kInstructionOpcodeMask;
+    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 20; // prepared for masking
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, shamt | funct7));
 }
 
