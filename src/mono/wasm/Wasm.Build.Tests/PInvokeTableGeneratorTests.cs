@@ -61,7 +61,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
+        public void DllImportWithFunctionPointersCompilesWithoutWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
@@ -87,8 +87,8 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                                                           id);
 
-            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -117,8 +117,8 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
                                                           id);
 
-            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -398,7 +398,7 @@ namespace Wasm.Build.Tests
                 id
             );
 
-            Assert.Matches("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
         }
 
         [Theory]
