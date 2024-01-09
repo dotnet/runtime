@@ -2426,7 +2426,7 @@ static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
     }
 }
 
-static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1)
+static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, int immediate, unsigned opcode)
 {
     switch (ins)
     {
@@ -2463,40 +2463,35 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
         case INS_fence_i:
             assert(IsIntegralRegister(rd));
             assert(IsIntegralRegister(rs1));
+            assert((opcode & kInstructionFunct7Mask) == 0);
             break;
         case INS_flw:
             FALLTHROUGH;
         case INS_fld:
-            assert((IsFloatRegister(rd) && IsIntegralRegister(rs1)));
+            assert(IsFloatRegister(rd));
+            assert(IsIntegralRegister(rs1));
+            assert((opcode & kInstructionFunct7Mask) == 0);
             break;
-        default:
-            NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
-            break;
-    }
-}
-
-static void ITypeShiftInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, unsigned shamt)
-{
-    assert(IsIntegralRegister(rd));
-    assert(IsIntegralRegister(rs1));
-    switch (ins)
-    {
         case INS_slli:
             FALLTHROUGH;
         case INS_srli:
             FALLTHROUGH;
         case INS_srai:
-            assert(shamt < 64);
+            assert(0 <= immediate < 64);
+            assert(IsIntegralRegister(rd));
+            assert(IsIntegralRegister(rs1));
             break;
         case INS_slliw:
             FALLTHROUGH;
         case INS_srliw:
             FALLTHROUGH;
         case INS_sraiw:
-            assert(shamt < 32);
+            assert(0 <= immediate < 32);
+            assert(IsIntegralRegister(rd));
+            assert(IsIntegralRegister(rs1));
             break;
         default:
-            NO_WAY("Illegal ins within emitOutput_ITypeInstr_Shift!");
+            NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
             break;
     }
 }
@@ -2505,7 +2500,9 @@ static void STypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
 {
     switch (ins)
     {
-        case INS_sb; FALLTHROUGH; case INS_sh:
+        case INS_sb:
+            FALLTHROUGH;
+        case INS_sh:
             FALLTHROUGH;
         case INS_sw:
             FALLTHROUGH;
@@ -2554,33 +2551,15 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
 
 unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, int imm12) const
 {
+    unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    ITypeInstructionSanityCheck(ins, rd, rs1);
+    ITypeInstructionSanityCheck(ins, rd, rs1, imm12, imm12, insCode);
 #endif // DEBUG
     unsigned insCode = emitInsCode(ins);
     unsigned opcode  = insCode & kInstructionOpcodeMask;
     unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1 & 0x1f, imm12));
-}
-
-/*****************************************************************************
- *
- *  Emit a 32-bit RISCV64 I-Type shift instruction to the given buffer. Returns a
- *  length of an encoded instruction opcode
- *
- */
-
-unsigned emitter::emitOutput_ITypeInstr_Shift(
-    BYTE* dst, instruction ins, regNumber rd, regNumber rs1, unsigned shamt) const
-{
-#ifdef DEBUG
-    ITypeShiftInstructionSanityCheck(ins, rd, rs1, shamt);
-#endif // DEBUG
-    unsigned insCode = emitInsCode(ins);
-    unsigned opcode  = insCode & kInstructionOpcodeMask;
-    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 20; // prepared for masking
-    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd, funct3, rs1, shamt | funct7));
+    unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 20; // only used by some of the immediate shifts
+    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1, imm12 | funct7));
 }
 
 /*****************************************************************************
@@ -2859,7 +2838,7 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
         // special for INT64_MAX or UINT32_MAX
         dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, 0xfff);
         ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
-        dst += emitOutput_ITypeInstr_Shift(dst, INS_srli, reg1, reg1, shiftValue);
+        dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
     }
     else
     {
@@ -2875,11 +2854,11 @@ BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber r
     dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
     ssize_t lowerWord = LowerWordOfDoubleWord(immediate);
-    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 11);
+    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
-    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 11);
+    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 10));
-    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 10);
+    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 10);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<10>(lowerWord));
     return dst;
 }
@@ -2939,7 +2918,7 @@ BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsign
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, rsvdReg, rsvdReg, 11);
+    dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
 }
@@ -2983,7 +2962,7 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_ZERO, LowerNBitsOfWord<12>(upperSignExt));
-    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, reg1, reg1, 32);
+    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 32);
     dst += emitOutput_RTypeInstr(dst, INS_add, reg1, reg1, rsvdReg);
     return dst;
 }
@@ -3031,7 +3010,7 @@ BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
-    dst += emitOutput_ITypeInstr_Shift(dst, INS_slli, REG_RA, REG_RA, 32);
+    dst += emitOutput_ITypeInstr(dst, INS_slli, REG_RA, REG_RA, 32);
 
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
     ssize_t   low     = LowerWordOfDoubleWord(immediate);
