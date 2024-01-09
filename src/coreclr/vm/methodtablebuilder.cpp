@@ -7751,7 +7751,7 @@ MethodTableBuilder::PlaceInterfaceMethods()
             }
 
             DeclaredMethodIterator methIt(*this);
-            DWORD nameHashItfMethod = pCurItfMethod->GetMethodSignature().GetNameHash();
+            UINT32 nameHashItfMethod = pCurItfMethod->GetMethodSignature().GetNameHash();
 
             for (DWORD iPublicVirtualNonStaticMethod = 0; iPublicVirtualNonStaticMethod < interfaceImplCandidateArraySize; ++iPublicVirtualNonStaticMethod)
             {
