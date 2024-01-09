@@ -11,7 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
 static NSString* GetNormalizedStringForForm(NormalizationForm normalizationForm, NSString* sourceString)
 {
     switch (normalizationForm)

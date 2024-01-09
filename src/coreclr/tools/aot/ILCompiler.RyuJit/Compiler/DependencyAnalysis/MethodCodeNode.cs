@@ -195,12 +195,23 @@ namespace ILCompiler.DependencyAnalysis
                 i++;
             }
 
-            var localNames = new string[_localTypes.Length];
-
-            foreach (var local in _debugInfo.GetLocalVariables())
+            string[] localNames;
+            if (_localTypes.Length > 0)
             {
-                if (!local.CompilerGenerated && local.Slot < localNames.Length)
-                    localNames[local.Slot] = local.Name;
+                localNames = new string[_localTypes.Length];
+                var localVariables = _debugInfo.GetLocalVariables();
+                if (localVariables != null)
+                {
+                    foreach (var local in localVariables)
+                    {
+                        if (!local.CompilerGenerated && local.Slot < localNames.Length)
+                            localNames[local.Slot] = local.Name;
+                    }
+                }
+            }
+            else
+            {
+                localNames = Array.Empty<string>();
             }
 
             foreach (var varInfo in _debugVarInfos)

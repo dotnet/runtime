@@ -4234,7 +4234,7 @@ void ThrowNew(OBJECTREF oref)
         }
     }
 
-    DispatchManagedException(oref);
+    DispatchManagedException(oref, /* preserveStackTrace */ false);
 }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -4301,14 +4301,11 @@ HCIMPLEND
 #ifdef FEATURE_EH_FUNCLETS
 void RethrowNew()
 {
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
 
-    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::None);
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -5809,6 +5806,46 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     *sampleIndex = static_cast<size_t>(x % S);
     return true;
 }
+
+HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
 
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {

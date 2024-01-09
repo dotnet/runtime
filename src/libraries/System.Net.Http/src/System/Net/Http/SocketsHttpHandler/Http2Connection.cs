@@ -260,10 +260,12 @@ namespace System.Net.Http
 
             if (!_shutdown)
             {
+                // InvalidateHttp2Connection may call back into Shutdown,
+                // so we set the flag early to prevent executing FinalTeardown twice.
+                _shutdown = true;
+
                 _pool.InvalidateHttp2Connection(this);
                 SignalAvailableStreamsWaiter(false);
-
-                _shutdown = true;
 
                 if (_streamsInUse == 0)
                 {
@@ -359,7 +361,7 @@ namespace System.Net.Http
 
             if (_availableStreamsWaiter is not null)
             {
-                Debug.Assert(!_shutdown);
+                Debug.Assert(_shutdown != result);
                 _availableStreamsWaiter.SetResult(result);
                 _availableStreamsWaiter = null;
             }
@@ -1850,7 +1852,8 @@ namespace System.Net.Http
             _stream.Dispose();
 
             _connectionWindow.Dispose();
-            _writeChannel.Writer.Complete();
+            bool completed = _writeChannel.Writer.TryComplete();
+            Debug.Assert(completed, "FinalTeardown was called twice");
 
             // We're not disposing the _incomingBuffer and _outgoingBuffer here as they may still be in use by
             // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
