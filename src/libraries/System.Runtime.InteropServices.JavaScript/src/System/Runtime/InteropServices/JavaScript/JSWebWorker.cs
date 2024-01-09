@@ -54,8 +54,9 @@ namespace System.Runtime.InteropServices.JavaScript
             // continuation should not be running synchronously in the JSWebWorker thread because we are about to kill it after we resolve/reject the Task.
             var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             var capturedContext = SynchronizationContext.Current;
-            var t = new Thread(() =>
+            var thread = new Thread(() =>
             {
+                CancellationTokenRegistration? reg = null;
                 try
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -64,7 +65,17 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(false);
+                    var synchronizationContext = JSHostImplementation.InstallWebWorkerInterop(false, cancellationToken);
+
+                    reg = cancellationToken.Register(() =>
+                    {
+                        synchronizationContext.Send(static o =>
+                        {
+                            JSHostImplementation.UninstallWebWorkerInterop();
+                        }, synchronizationContext);
+                        SendWhenException(parentContext, tcs, new OperationCanceledException(cancellationToken));
+                    });
+
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     Task<T> res = body();
                     // This code is exiting thread main() before all promises are resolved.
@@ -73,16 +84,18 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         SendWhenDone(parentContext, tcs, res);
                         JSHostImplementation.UninstallWebWorkerInterop();
+                        reg?.Dispose();
                     }, childScheduler);
                 }
                 catch (Exception ex)
                 {
                     SendWhenException(parentContext, tcs, ex);
+                    JSHostImplementation.UninstallWebWorkerInterop();
+                    reg?.Dispose();
                 }
-
             });
-            JSHostImplementation.SetHasExternalEventLoop(t);
-            t.Start();
+            JSHostImplementation.SetHasExternalEventLoop(thread);
+            thread.Start();
             return tcs.Task;
         }
 
@@ -92,8 +105,9 @@ namespace System.Runtime.InteropServices.JavaScript
             // continuation should not be running synchronously in the JSWebWorker thread because we are about to kill it after we resolve/reject the Task.
             var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var capturedContext = SynchronizationContext.Current;
-            var t = new Thread(() =>
+            var thread = new Thread(() =>
             {
+                CancellationTokenRegistration? reg = null;
                 try
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -102,7 +116,17 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
-                    JSHostImplementation.InstallWebWorkerInterop(false);
+                    var synchronizationContext = JSHostImplementation.InstallWebWorkerInterop(false, cancellationToken);
+
+                    reg = cancellationToken.Register(() =>
+                    {
+                        synchronizationContext.Send(static o =>
+                        {
+                            JSHostImplementation.UninstallWebWorkerInterop();
+                        }, synchronizationContext);
+                        SendWhenException(parentContext, tcs, new OperationCanceledException(cancellationToken));
+                    });
+
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     Task res = body();
                     // This code is exiting thread main() before all promises are resolved.
@@ -111,16 +135,19 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         SendWhenDone(parentContext, tcs, res);
                         JSHostImplementation.UninstallWebWorkerInterop();
+                        reg?.Dispose();
                     }, childScheduler);
                 }
                 catch (Exception ex)
                 {
                     SendWhenException(parentContext, tcs, ex);
+                    reg?.Dispose();
+                    JSHostImplementation.UninstallWebWorkerInterop();
                 }
 
             });
-            JSHostImplementation.SetHasExternalEventLoop(t);
-            t.Start();
+            JSHostImplementation.SetHasExternalEventLoop(thread);
+            thread.Start();
             return tcs.Task;
         }
 

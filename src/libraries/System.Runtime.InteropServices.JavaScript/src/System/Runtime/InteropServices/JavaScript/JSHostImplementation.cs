@@ -209,9 +209,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #if FEATURE_WASM_THREADS
-        public static void InstallWebWorkerInterop(bool isMainThread)
+        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
         {
-            var ctx = new JSSynchronizationContext(isMainThread);
+            var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
 
@@ -226,6 +226,8 @@ namespace System.Runtime.InteropServices.JavaScript
             ctx.AwaitNewData();
 
             Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
+
+            return ctx;
         }
 
         public static void UninstallWebWorkerInterop()

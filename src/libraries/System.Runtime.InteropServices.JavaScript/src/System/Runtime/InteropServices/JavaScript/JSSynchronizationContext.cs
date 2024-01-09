@@ -6,7 +6,6 @@
 using System.Threading;
 using System.Threading.Channels;
 using System.Runtime.CompilerServices;
-using System.Collections.Generic;
 using WorkItemQueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -26,6 +25,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal SynchronizationContext? previousSynchronizationContext;
         internal bool _isDisposed;
+        internal bool _isCancellationRequested;
+        private CancellationTokenRegistration _cancellationTokenRegistration;
 
         internal readonly struct WorkItem
         {
@@ -41,11 +42,16 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public JSSynchronizationContext(bool isMainThread)
+        public JSSynchronizationContext(bool isMainThread, CancellationToken cancellationToken)
         {
             ProxyContext = new JSProxyContext(isMainThread, this);
             Queue = Channel.CreateUnbounded<WorkItem>(new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true });
             _DataIsAvailable = DataIsAvailable;
+            _cancellationTokenRegistration = cancellationToken.Register(() =>
+            {
+                _isCancellationRequested=true;
+                Queue.Writer.TryComplete();
+            });
         }
 
         internal JSSynchronizationContext(JSProxyContext proxyContext, WorkItemQueueType queue, Action dataIsAvailable)
@@ -62,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal void AwaitNewData()
         {
-            if (_isDisposed)
+            if (_isDisposed || _isCancellationRequested)
             {
                 // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
                 // ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -70,6 +76,11 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             var vt = Queue.Reader.WaitToReadAsync();
+            if (_isCancellationRequested)
+            {
+                return;
+            }
+
             if (vt.IsCompleted)
             {
                 DataIsAvailable();
@@ -138,7 +149,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private void Pump()
         {
-            if (_isDisposed)
+            if (_isDisposed || _isCancellationRequested)
             {
                 // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
                 // ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -168,7 +179,7 @@ namespace System.Runtime.InteropServices.JavaScript
             finally
             {
                 // If an item throws, we want to ensure that the next pump gets scheduled appropriately regardless.
-                if (!_isDisposed) AwaitNewData();
+                if (!_isDisposed && !_isCancellationRequested) AwaitNewData();
             }
         }
 

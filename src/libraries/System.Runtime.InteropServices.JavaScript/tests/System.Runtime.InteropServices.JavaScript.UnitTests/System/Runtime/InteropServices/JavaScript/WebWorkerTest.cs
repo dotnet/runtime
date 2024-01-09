@@ -15,28 +15,26 @@ using System.Linq;
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     // TODO test:
-    // JSWebWorker.RunAsync with CancellationToken
     // JSExport 2x
     // JSExport async
-    // timer
     // GC + finalizer + dispose
     // lock
     // thread allocation, many threads
-    // TLS
     // ProxyContext flow, child thread, child task
     // use JSObject after JSWebWorker finished, especially HTTP
     // JSWebWorker JS setTimeout till after close
     // WS on JSWebWorker
     // Yield will hit event loop 3x
     // HTTP continue on TP
-    // WS continue on TP
     // event pipe
     // FS
     // unit test for problem **7)**
 
     public class WebWorkerTest
     {
-        #region executor threads
+        const int TimeoutMilliseconds = 300;
+
+        #region Executors
 
         public static IEnumerable<object[]> GetTargetThreads()
         {
@@ -56,36 +54,83 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     type2 => new object[] { new Executor(type1), new Executor(type2) }));
         }
 
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task Executor_Cancellation(Executor executor)
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            await Task.Delay(10);
+
+            TaskCompletionSource ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var canceledTask = executor.Execute(() =>
+            {
+                TaskCompletionSource never = new TaskCompletionSource();
+                ready.SetResult();
+                return never.Task;
+            }, cts.Token);
+
+            cts.Cancel();
+
+            switch (executor.Type)
+            {
+                case ExecutorType.Main:
+                case ExecutorType.NewThread:
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => canceledTask);
+                    break;
+                case ExecutorType.ThreadPool:
+                case ExecutorType.JSWebWorker:
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => canceledTask);
+                    break;
+
+            }
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task Executor_Propagates(Executor executor)
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
+            var canceledTask = executor.Execute(() =>
+            {
+                throw new InvalidOperationException("Test");
+            }, cts.Token);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => canceledTask);
+            Assert.Equal("Test", ex.Message);
+        }
+
         #endregion
 
-        #region Console, Yield, Delay
+        #region Console, Yield, Delay, Timer
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedConsole(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
                 return Task.CompletedTask;
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSConsole(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(() =>
             {
                 WebWorkerTestHelper.Log("JS Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
                 return Task.CompletedTask;
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task NativeThreadId(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
-                await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync());
+                await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
 
                 var jsTid = WebWorkerTestHelper.GetTid();
                 var csTid = WebWorkerTestHelper.NativeThreadId;
@@ -99,12 +144,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
 
                 await WebWorkerTestHelper.DisposeAsync();
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ThreadingTimer(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
@@ -118,41 +164,43 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }, null, 100, Timeout.Infinite);
 
                 await tcs.Task;
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ContinueWith(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
-                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay());
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
 
                 await WebWorkerTestHelper.Delay(1).ContinueWith(_ =>
                 {
                     // continue on the context of the target JS interop
                     executor.AssertInteropThread();
                 }, TaskContinuationOptions.ExecuteSynchronously);
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ConfigureAwait_True(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
-                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay());
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
 
                 await WebWorkerTestHelper.Delay(1).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96493")]
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
                 executor.AssertTargetThread();
@@ -161,14 +209,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     // continue on the context of the Timer's thread pool thread
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                 }, TaskContinuationOptions.ExecuteSynchronously);
-            });
+            }, cts.Token);
         }
 
 
         [Theory, MemberData(nameof(GetTargetThreads))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96628")]
         public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
                 executor.AssertTargetThread();
@@ -176,12 +224,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Task.Delay(1).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
-            });
+            }, cts.Token);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedYield(Executor executor)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
                 executor.AssertTargetThread();
@@ -189,14 +238,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Task.Yield();
 
                 executor.AssertAwaitCapturedContext();
-            });
+            }, cts.Token);
         }
 
         #endregion
 
-        #region affinity
+        #region Thread Affinity
 
-        private async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job)
+        private async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job, CancellationTokenSource cts)
         {
             TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>();
             TaskCompletionSource doneTCS = new TaskCompletionSource();
@@ -209,7 +258,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     readyTCS.SetResult(default);
                 }
                 await doneTCS.Task;
-            });
+            }, cts.Token);
 
             var r1 = await readyTCS.Task.ConfigureAwait(true);
 
@@ -221,15 +270,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await e2Job(r1);
 
                 doneTCS.SetResult();
-            });
+            }, cts.Token);
 
-            await e2;
-            await e1;
+            try
+            {
+                await e2;
+                await e1;
+            }
+            catch (Exception)
+            {
+                cts.Cancel();
+                throw;
+            }
         }
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public async Task JSObject_CapturesAffinity(Executor executor1, Executor executor2)
         {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
             var e1Job = async (Task e2done, TaskCompletionSource<JSObject> e1State) =>
             {
                 await WebWorkerTestHelper.InitializeAsync();
@@ -253,7 +312,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 Assert.True(valid);
             };
 
-            await ActionsInDifferentThreads<JSObject>(executor1, executor2, e1Job, e2Job);
+            await ActionsInDifferentThreads<JSObject>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         #endregion
