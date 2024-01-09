@@ -25,10 +25,10 @@ This section is a work in progress, but describes the current expected semantic 
 
 To specify that a method follows async2 rules, a custom modifier to either `System.Threading.Tasks.Task`, ``System.Threading.Tasks.Task`1``, `System.Threading.Tasks.ValueTask`, or ``System.Threading.Tasks.ValueTask`1`` shall be placed as the last custom modifier before the return type in the signature of a method.
 
-### Flowing `SyncronizationContext` and `ExecutionContext` and other behavior such as AsyncLocal
-Unlike traditional C# compiler generated async, async2 methods shall not save/restore `SyncronizationContext` and `ExecutionContext` at function boundaries. Instead, changes to them can be observed by their callers (as long as the caller is not a Task to async2 thunk).
+### Flowing `SynchronizationContext` and `ExecutionContext` and other behavior such as AsyncLocal
+Unlike traditional C# compiler generated async, async2 methods shall not save/restore `SynchronizationContext` and `ExecutionContext` at function boundaries. Instead, changes to them can be observed by their callers (as long as the caller is not a Task to async2 thunk).
 
-#### Integration with `SyncronizationContext` and resumption
+#### Integration with `SynchronizationContext` and resumption
 
 A new attribute `System.Runtime.CompilerServices.ConfigureAwaitAttribute` will be defined. It can be applied at the assembly/module/type/method level. It shall be defined as 
 ```
