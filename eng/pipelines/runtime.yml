@@ -1637,7 +1637,7 @@ extends:
       #       condition: eq(variables['isRollingBuild'], true)
 
       #
-      # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
+      # Mono CoreCLR runtime test executions using live libraries and mini Full AOT
       # Only when Mono is changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1648,7 +1648,6 @@ extends:
           runtimeFlavor: mono
           platforms:
             - linux_x64
-            # - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1656,16 +1655,15 @@ extends:
               value: 180
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
-            runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
+            nameSuffix: AllSubsets_Mono_MiniFullAot_RuntimeTests
+            runtimeVariant: minifullaot
+            buildArgs: -s mono+libs+clr.hosts -c Release
             timeoutInMinutes: 300
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
-                  llvmAotStepContainer: linux_x64_llvmaot
+                  llvmAotStepContainer: linux_x64
                   testRunNamePrefixSuffix: Mono_Release
-                  # testBuildArgs: tree baseservices
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
