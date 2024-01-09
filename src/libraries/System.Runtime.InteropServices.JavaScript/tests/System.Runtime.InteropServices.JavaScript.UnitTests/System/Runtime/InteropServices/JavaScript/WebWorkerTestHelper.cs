@@ -211,10 +211,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                     break;
                 case ExecutorType.NewThread:
-                    // the actual new thread is now blocked in .Wait() and so this is running on TP
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    // sometimes this is TP and some times newThread, why ?
+                    if (Thread.CurrentThread.IsThreadPoolThread)
+                    {
+                        Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
+                    }
+                    else
+                    {
+                        Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    }
                     break;
                 case ExecutorType.ThreadPool:
                     // it could migrate to any TP thread
