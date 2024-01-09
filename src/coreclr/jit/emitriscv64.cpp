@@ -2294,16 +2294,22 @@ static constexpr unsigned kInstructionOpcodeMask = 0x7f;
 static constexpr unsigned kInstructionFunct3Mask = 0x7000;
 static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 
-static bool IsIntegralRegister(regNumber reg) {
+#ifdef DEBUG
+
+static bool IsIntegralRegister(regNumber reg)
+{
     return (reg >= 0) && (reg <= 31);
 }
 
-static bool IsFloatRegister(regNumber reg) {
+static bool IsFloatRegister(regNumber reg)
+{
     return (reg >= FBASE) && (reg <= (FBASE + 31));
 }
 
-static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2) {
-    switch (ins) {
+static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
+{
+    switch (ins)
+    {
         case INS_add:
             FALLTHROUGH;
         case INS_sub:
@@ -2414,11 +2420,63 @@ static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
             assert(IsFloatRegister(rs1));
             assert(IsFloatRegister(rs2));
             break;
-    default:
-        NO_WAY("Illegal ins within emitOutput_RTypeInstr!");
-        break;
+        default:
+            NO_WAY("Illegal ins within emitOutput_RTypeInstr!");
+            break;
     }
 }
+
+static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1)
+{
+    switch (ins)
+    {
+        case INS_jalr:
+            FALLTHROUGH;
+        case INS_lb:
+            FALLTHROUGH;
+        case INS_lh:
+            FALLTHROUGH;
+        case INS_lw:
+            FALLTHROUGH;
+        case INS_lbu:
+            FALLTHROUGH;
+        case INS_lhu:
+            FALLTHROUGH;
+        case INS_addi:
+            FALLTHROUGH;
+        case INS_slti:
+            FALLTHROUGH;
+        case INS_sltiu:
+            FALLTHROUGH;
+        case INS_xori:
+            FALLTHROUGH;
+        case INS_ori:
+            FALLTHROUGH;
+        case INS_andi:
+            FALLTHROUGH;
+        case INS_lwu:
+            FALLTHROUGH;
+        case INS_ld:
+            FALLTHROUGH;
+        case INS_addiw:
+            FALLTHROUGH;
+        case INS_fence_i:
+            assert(IsIntegralRegister(rd));
+            assert(IsIntegralRegister(rs1));
+            break;
+        case INS_flw:
+            FALLTHROUGH;
+        case INS_fld:
+            assert(IsFloatRegister(rd));
+            assert(IsFloatRegister(rs1));
+            break;
+        default:
+            NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
+            break;
+    }
+}
+
+#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -2433,9 +2491,9 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
     RTypeInstructionSanityCheck(ins, rd, rs1, rs2);
 #endif // DEBUG
     unsigned insCode = emitInsCode(ins);
-    unsigned opcode = insCode & kInstructionOpcodeMask;
-    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
-    unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 25;
+    unsigned opcode  = insCode & kInstructionOpcodeMask;
+    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 25;
     return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7));
 }
 
@@ -2448,16 +2506,12 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
 
 unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, int imm12) const
 {
-    unsigned insCode = emitInsCode(ins);
-
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask = ~(kInstructionOpcodeMask | kInstructionFunct3Mask);
-
-    assert((insCode & kInstructionMask) == 0);
+    ITypeInstructionSanityCheck(ins, rd, rs1);
 #endif // DEBUG
-
-    unsigned opcode = insCode & kInstructionOpcodeMask;
-    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned insCode = emitInsCode(ins);
+    unsigned opcode  = insCode & kInstructionOpcodeMask;
+    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1 & 0x1f, imm12));
 }
 
