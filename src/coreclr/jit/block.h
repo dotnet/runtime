@@ -703,8 +703,11 @@ public:
 
     void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
+        // Switch lowering may temporarily set a block to a BBJ_COND
+        // with a null false target if it is the last block in the list.
+        // This invalid state is eventually fixed, so allow it in the below assert.
+        assert((falseTarget != nullptr) || (falseTarget == bbNext));
         assert(trueTarget != nullptr);
-        assert(falseTarget != nullptr);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
         bbFalseTarget = falseTarget;

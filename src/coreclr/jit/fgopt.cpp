@@ -4631,11 +4631,13 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             continue;
         }
 
-        bool        reorderBlock   = useProfile;
-        const bool  isRare         = block->isRunRarely();
-        BasicBlock* bDest          = nullptr;
-        bool        forwardBranch  = false;
-        bool        backwardBranch = false;
+        bool        reorderBlock       = useProfile;
+        const bool  isRare             = block->isRunRarely();
+        BasicBlock* bDest              = nullptr;
+        BasicBlock* bFalseDest         = nullptr;
+        bool        forwardBranch      = false;
+        bool        backwardBranch     = false;
+        bool        forwardFalseBranch = false;
 
         // Setup bDest
         if (bPrev->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
@@ -4646,14 +4648,13 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
         else if (bPrev->KindIs(BBJ_COND))
         {
-            if (!bPrev->FalseTargetIs(block))
-            {
-                continue;
-            }
-
-            bDest          = bPrev->GetTrueTarget();
-            forwardBranch  = fgIsForwardBranch(bPrev, bDest);
-            backwardBranch = !forwardBranch;
+            assert(bPrev->FalseTargetIs(block) || useProfile);
+            bDest      = bPrev->GetTrueTarget();
+            bFalseDest = bPrev->GetFalseTarget();
+            // TODO: Cheaper to call fgRenumberBlocks first and compare bbNums?
+            forwardBranch      = fgIsForwardBranch(bPrev, bDest);
+            backwardBranch     = !forwardBranch;
+            forwardFalseBranch = fgIsForwardBranch(bPrev, bFalseDest);
         }
 
         // We will look for bPrev as a non rarely run block followed by block as a rarely run block
@@ -4797,10 +4798,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         //                                                   V
                         //                  bDest --------------->   [BB08, weight 21]
                         //
-                        FlowEdge* edgeToDest  = fgGetPredForBlock(bDest, bPrev);
-                        FlowEdge* edgeToBlock = fgGetPredForBlock(block, bPrev);
-                        noway_assert(edgeToDest != nullptr);
-                        noway_assert(edgeToBlock != nullptr);
+                        FlowEdge* trueEdge  = fgGetPredForBlock(bDest, bPrev);
+                        FlowEdge* falseEdge = fgGetPredForBlock(bFalseDest, bPrev);
+                        noway_assert(trueEdge != nullptr);
+                        noway_assert(falseEdge != nullptr);
                         //
                         // Calculate the taken ratio
                         //   A takenRatio of 0.10 means taken 10% of the time, not taken 90% of the time
@@ -4808,21 +4809,33 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         //   A takenRatio of 0.90 means taken 90% of the time, not taken 10% of the time
                         //
                         double takenCount =
-                            ((double)edgeToDest->edgeWeightMin() + (double)edgeToDest->edgeWeightMax()) / 2.0;
+                            ((double)trueEdge->edgeWeightMin() + (double)trueEdge->edgeWeightMax()) / 2.0;
                         double notTakenCount =
-                            ((double)edgeToBlock->edgeWeightMin() + (double)edgeToBlock->edgeWeightMax()) / 2.0;
+                            ((double)falseEdge->edgeWeightMin() + (double)falseEdge->edgeWeightMax()) / 2.0;
                         double totalCount = takenCount + notTakenCount;
 
                         // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
                         // the branch
                         if (takenCount < (0.51 * totalCount))
                         {
-                            reorderBlock = false;
+                            // We take bFalseDest more often.
+                            // If bFalseDest is a backward branch, we should reverse the condition.
+                            // Else if both branches are forward, not much use in reversing the condition.
+                            reorderBlock = !forwardFalseBranch;
+                        }
+                        else if (bFalseDest == block)
+                        {
+                            // We take bDest more often, and we can fall into bFalseDest,
+                            // so it makes sense to reverse the condition.
+                            profHotWeight = (falseEdge->edgeWeightMin() + falseEdge->edgeWeightMax()) / 2 - 1;
                         }
                         else
                         {
-                            // set profHotWeight
-                            profHotWeight = (edgeToBlock->edgeWeightMin() + edgeToBlock->edgeWeightMax()) / 2 - 1;
+                            // We take bDest more often than bFalseDest, but bFalseDest isn't the next block,
+                            // so reversing the branch doesn't make sense since bDest is already a forward branch.
+                            assert(takenCount >= (0.51 * totalCount));
+                            assert(bFalseDest != block);
+                            reorderBlock = false;
                         }
                     }
                     else
@@ -4856,8 +4869,16 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         profHotWeight = (weightDest < weightPrev) ? weightDest : weightPrev;
 
                         // if the weight of block is greater (or equal) to profHotWeight then we don't reverse the cond
-                        if (block->bbWeight >= profHotWeight)
+                        if (bDest->bbWeight >= profHotWeight)
                         {
+                            // bFalseDest has a greater weight, so if it is a backward branch,
+                            // we should reverse the branch.
+                            reorderBlock = !forwardFalseBranch;
+                        }
+                        else if (bFalseDest != block)
+                        {
+                            // bFalseDest is taken less often, but it isn't the next block,
+                            // so it doesn't make sense to reverse the branch.
                             reorderBlock = false;
                         }
                     }
@@ -4919,7 +4940,9 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     }
 
                     const bool bTmpJumpsToNext = bTmp->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bTmp->JumpsToNext();
-                    if ((!bTmp->bbFallsThrough() && !bTmpJumpsToNext) || (bTmp->bbWeight == BB_ZERO_WEIGHT))
+                    const bool bTmpFallsThrough =
+                        bTmp->bbFallsThrough() && (!bTmp->KindIs(BBJ_COND) || bTmp->NextIs(bTmp->GetFalseTarget()));
+                    if ((!bTmpJumpsToNext && !bTmpFallsThrough) || (bTmp->bbWeight == BB_ZERO_WEIGHT))
                     {
                         lastNonFallThroughBlock = bTmp;
                     }
@@ -5111,7 +5134,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             }
 
             // Set connected_bDest to true if moving blocks [bStart .. bEnd]
-            //  connects with the jump dest of bPrev (i.e bDest) and
+            // connects with the jump dest of bPrev (i.e bDest) and
             // thus allows bPrev fall through instead of jump.
             if (bNext == bDest)
             {
@@ -5190,7 +5213,12 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     {
                         // Treat jumps to next block as fall-through
                     }
-                    else if (!bEnd2->KindIs(BBJ_COND) || !bEnd2->FalseTargetIs(bNext))
+                    else if (bEnd2->KindIs(BBJ_COND) && !bEnd2->FalseTargetIs(bNext))
+                    {
+                        // Block does not fall through into false target
+                        break;
+                    }
+                    else if (!bEnd2->bbFallsThrough())
                     {
                         break;
                     }
@@ -5382,13 +5410,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 // has funclets, we will insert at the end of the main method but before
                 // any of the funclets. Note that we create funclets before we call
                 // fgReorderBlocks().
-
-                // TODO-NoFallThrough: With JitStress, we sometimes try to move a BBJ_SWITCH
-                // to the end of the block list (?); remove this quirk eventually
-                if (bEnd->KindIs(BBJ_SWITCH))
-                {
-                    goto CANNOT_MOVE;
-                }
 
                 insertAfterBlk = fgLastBBInMainFunction();
                 noway_assert(insertAfterBlk != bPrev);
@@ -5639,7 +5660,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             noway_assert(condTest->gtOper == GT_JTRUE);
             condTest->AsOp()->gtOp1 = gtReverseCond(condTest->AsOp()->gtOp1);
 
-            bPrev->SetFalseTarget(bPrev->GetTrueTarget());
+            BasicBlock* trueTarget  = bPrev->GetTrueTarget();
+            BasicBlock* falseTarget = bPrev->GetFalseTarget();
+            bPrev->SetTrueTarget(falseTarget);
+            bPrev->SetFalseTarget(trueTarget);
 
             // may need to rethread
             //
@@ -5650,18 +5674,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 fgSetStmtSeq(condTestStmt);
             }
 
-            if (bStart2 == nullptr)
-            {
-                /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetTrueTarget(bStart);
-            }
-            else
+            if (bStart2 != nullptr)
             {
                 noway_assert(insertAfterBlk == bPrev);
                 noway_assert(insertAfterBlk->NextIs(block));
-
-                /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetTrueTarget(block);
             }
         }
 
