@@ -150,10 +150,15 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     else
                     {
-                        Debug.Assert(char.IsWhiteSpace(c));
-                        Debug.Assert(Xml.XmlConvert.IsXmlChar(c));
-
-                        writer.Write(c);
+                        if (Xml.XmlConvert.IsXmlChar(c))
+                        {
+                            writer.Write(c);
+                        }
+                        else
+                        {
+                            // Illegal whitespace char for xml, ignored anyways.
+                            writer.Write(' ');
+                        }
                     }
                 }
                 else
