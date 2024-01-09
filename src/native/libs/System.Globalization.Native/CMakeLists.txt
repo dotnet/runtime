@@ -114,13 +114,6 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-    if(CLR_CMAKE_TARGET_IOS)
-        add_definitions(-DTARGET_IOS)
-    elseif(CLR_CMAKE_TARGET_TVOS)
-        add_definitions(-DTARGET_TVOS)
-    elseif(CLR_CMAKE_TARGET_MACCATALYST)
-        add_definitions(-DTARGET_MACCATALYST)
-    endif()
     set(NATIVEGLOBALIZATION_SOURCES_OBJC
         pal_locale.m
         pal_collation.m
