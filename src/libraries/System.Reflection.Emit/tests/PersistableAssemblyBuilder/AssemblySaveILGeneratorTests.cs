@@ -441,7 +441,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal((byte)OpCodes.Ldloc_2.Value, bodyBytes[24]);
                 Assert.Equal(0xFE, bodyBytes[25]); // Ldloc = 0xfe0c
                 Assert.Equal(0x0C, bodyBytes[26]);
-                Assert.Equal(0, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
+                Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
                 Assert.Equal((byte)OpCodes.Add.Value, bodyBytes[31]);
                 Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[32]);
                 Assert.Equal((byte)OpCodes.Ldloca_S.Value, bodyBytes[33]);
@@ -655,7 +655,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
                 Assert.Equal(methodMultiply.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(35, 4)));
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[39]);
-                Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(40, 4)));
+                Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(40, 4)));
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
                 // Bytes 24, 46, 47, 48 are token for writeLineObj, but it is not same as the value before save
                 Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
