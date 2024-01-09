@@ -382,7 +382,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
         AssertFilesOnDisk(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
-            TestUtils.AssertSameFile(assertOptions.PredefinedIcudt!, actual.Single());
+        {
+            string srcPath = assertOptions.PredefinedIcudt!;
+            string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.TargetFramework, assertOptions.RuntimeType);
+            if (!Path.IsPathRooted(srcPath))
+                srcPath = Path.Combine(runtimePackDir, assertOptions.PredefinedIcudt!);
+            TestUtils.AssertSameFile(srcPath, actual.Single());
+        }
     }
 
     public void AssertBootJson(AssertBundleOptionsBase options)
