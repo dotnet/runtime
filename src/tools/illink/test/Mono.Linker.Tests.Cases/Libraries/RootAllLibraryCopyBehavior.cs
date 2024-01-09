@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 namespace Mono.Linker.Tests.Cases.Libraries
 {
 	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	// Keep this testcase setup identical to RootAllLibraryBehavior.cs.
 	// This test is designed to validate the behavior of the 'copy' action,
 	// compared to rooting an assembly via '-a' (tested in RootAllLibraryBehavior.cs).
