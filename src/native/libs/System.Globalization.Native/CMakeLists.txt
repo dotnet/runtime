@@ -115,6 +115,7 @@ if (CLR_CMAKE_TARGET_APPLE)
         add_definitions(-DTARGET_MACCATALYST)
     endif()
     set(NATIVEGLOBALIZATION_SOURCES_OBJC
+        pal_placeholders.c
         pal_locale.m
         pal_collation.m
         pal_casing.m

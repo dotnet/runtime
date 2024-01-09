@@ -80,6 +80,7 @@ endif()
 
   if (TARGET_DARWIN)
     set(icu_shim_darwin_sources_base
+        pal_placeholders.c
         pal_locale.m
         pal_collation.m
         pal_casing.m
