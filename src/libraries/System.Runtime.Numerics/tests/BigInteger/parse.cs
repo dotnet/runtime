@@ -129,6 +129,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void Parse_Hex32Bits()
         {
+            // SimpleNumbers - 0xF
+            for (int i = 1; i < 2 * BigInteger.kcbitUint + 2; i++)
+            {
+                VerifyParseToString(new string('F', i), NumberStyles.HexNumber, true);
+            }
+
             // Regression test for: https://github.com/dotnet/runtime/issues/54251
             BigInteger result;
 
@@ -341,6 +347,18 @@ namespace System.Numerics.Tests
             VerifyParseToString("000", ns, true);
             VerifyParseToString("1", ns, true);
             VerifyParseToString("001", ns, true);
+
+            // SimpleNumbers - Zero
+            for (int i = 1; i < 2 * BigInteger.kcbitUint + 2; i++)
+            {
+                VerifyParseToString(new string('0', i), ns, true);
+            }
+
+            // SimpleNumbers - One
+            for (int i = 1; i < 2 * BigInteger.kcbitUint + 2; i++)
+            {
+                VerifyParseToString(new string('1', i), ns, true);
+            }
 
             // SimpleNumbers - Small
             for (int i = 0; i < s_samples; i++)
