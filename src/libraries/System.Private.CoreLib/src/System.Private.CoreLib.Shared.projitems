@@ -2378,6 +2378,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PRead.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PRead.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadV.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ReadV.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PReadV.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PReadV.cs</Link>
     </Compile>
@@ -2389,6 +2392,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WriteV.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.WriteV.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ReadDir.cs</Link>

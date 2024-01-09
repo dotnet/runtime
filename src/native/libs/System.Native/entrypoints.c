@@ -265,6 +265,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_PWrite)
     DllImportEntry(SystemNative_PReadV)
     DllImportEntry(SystemNative_PWriteV)
+    DllImportEntry(SystemNative_ReadV)
+    DllImportEntry(SystemNative_WriteV)
     DllImportEntry(SystemNative_CreateThread)
     DllImportEntry(SystemNative_EnablePosixSignalHandling)
     DllImportEntry(SystemNative_DisablePosixSignalHandling)
