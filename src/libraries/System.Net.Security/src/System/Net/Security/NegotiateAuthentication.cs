@@ -365,6 +365,7 @@ namespace System.Net.Security
         /// it's important to carefully pair GetMIC and VerifyMIC calls on the both sides of the
         /// authenticated session.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
         public void ComputeIntegrityCheck(ReadOnlySpan<byte> message, IBufferWriter<byte> signatureWriter)
         {
             if (!IsAuthenticated || _isDisposed)
@@ -389,6 +390,7 @@ namespace System.Net.Security
         /// it's important to carefully pair GetMIC and VerifyMIC calls on the both sides of the
         /// authenticated session.
         /// </remarks>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
         public bool VerifyIntegrityCheck(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
         {
             if (!IsAuthenticated || _isDisposed)
