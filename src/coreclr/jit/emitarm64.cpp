@@ -16871,7 +16871,7 @@ void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts 
         }
         else
         {
-            // short-hand
+            // short-hand. example: { z0.s - z2.s }
             emitDispSveReg(currReg, opt, false);
             printf(" - ");
             emitDispSveReg((regNumber)(currReg + listSize - 1), opt, false);
