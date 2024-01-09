@@ -59,7 +59,6 @@ namespace ILCompiler.ObjectWriter
         private readonly HashSet<string> _referencedMethods = new();
 
         // Exception handling
-        private SectionWriter _xdataSectionWriter;
         private SectionWriter _pdataSectionWriter;
 
         // Debugging
@@ -563,8 +562,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void CreateEhSections()
         {
-            // Create .xdata and .pdata
-            _xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection);
+            // Create .pdata
             _pdataSectionWriter = GetOrCreateSection(PDataSection);
         }
 
