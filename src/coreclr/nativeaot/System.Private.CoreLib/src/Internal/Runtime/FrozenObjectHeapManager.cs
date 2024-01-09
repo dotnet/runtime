@@ -48,7 +48,7 @@ namespace Internal.Runtime
                 if (type->RequiresAlign8)
                 {
                     // Align8 objects are not supported yet
-                    return nullptr;
+                    return null;
                 }
 #endif
 

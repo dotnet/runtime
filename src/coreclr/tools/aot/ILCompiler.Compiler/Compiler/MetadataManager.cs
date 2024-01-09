@@ -548,7 +548,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to delegate targets.
         /// </summary>
-        public virtual void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
+        public virtual void GetDependenciesDueToDelegateCreation(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the construction
             // of a delegate to a method.

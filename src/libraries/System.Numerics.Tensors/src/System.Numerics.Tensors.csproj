@@ -9,16 +9,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System\Numerics\Tensors\TensorPrimitives.cs" />
+    <Compile Include="System\Numerics\Tensors\TensorPrimitives.Single.cs" />
+    <Compile Include="System\Numerics\Tensors\TensorPrimitives.Helpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Numerics\Tensors\TensorPrimitives.netcore.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Single.netcore.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.netcore.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\Numerics\Tensors\TensorPrimitives.netstandard.cs" />
+    <Compile Include="System\Numerics\Tensors\netstandard\TensorPrimitives.Single.netstandard.cs" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Numerics\src\Microsoft.Bcl.Numerics.csproj" />
   </ItemGroup>

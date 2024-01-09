@@ -106,9 +106,20 @@ namespace System
         public static bool IsReleaseLibrary(Assembly assembly) => !IsDebuggable(assembly);
         public static bool IsDebugLibrary(Assembly assembly) => IsDebuggable(assembly);
 
-        // For use as needed on tests that time out when run on a Debug runtime.
+        // For use as needed on tests that time out when run on a Debug or Checked runtime.
         // Not relevant for timeouts on external activities, such as network timeouts.
-        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+        public static int SlowRuntimeTimeoutModifier
+        {
+            get
+            {
+                if (IsReleaseRuntime)
+                    return 1;
+                if (IsRiscV64Process)
+                    return IsDebugRuntime? 10 : 2;
+                else
+                    return IsDebugRuntime? 5 : 1;
+            }
+        }
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
@@ -378,7 +389,7 @@ namespace System
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
-        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
 
         public static bool IsSubstAvailable
         {
@@ -413,6 +424,9 @@ namespace System
                     MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
                     if (methodInfo != null)
                     {
+                        // Ensure that ICU has been loaded
+                        GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
+
                         version = (int)methodInfo.Invoke(null, null);
                     }
                 }

@@ -32,22 +32,27 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static async Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
-            // TODO remove main thread condition later
-            if (Thread.CurrentThread.ManagedThreadId == 1) await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
+            if (JSProxyContext.MainThreadContext.IsCurrentThread())
+            {
+                await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
+            }
             return await RunAsyncImpl(body, cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
         {
-            // TODO remove main thread condition later
-            if (Thread.CurrentThread.ManagedThreadId == 1) await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
+            if (JSProxyContext.MainThreadContext.IsCurrentThread())
+            {
+                await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
+            }
             await RunAsyncImpl(body, cancellationToken).ConfigureAwait(false);
         }
 
         private static Task<T> RunAsyncImpl<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
             var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            var tcs = new TaskCompletionSource<T>();
+            // continuation should not be running synchronously in the JSWebWorker thread because we are about to kill it after we resolve/reject the Task.
+            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             var capturedContext = SynchronizationContext.Current;
             var t = new Thread(() =>
             {
@@ -84,7 +89,8 @@ namespace System.Runtime.InteropServices.JavaScript
         private static Task RunAsyncImpl(Func<Task> body, CancellationToken cancellationToken)
         {
             var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            var tcs = new TaskCompletionSource();
+            // continuation should not be running synchronously in the JSWebWorker thread because we are about to kill it after we resolve/reject the Task.
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var capturedContext = SynchronizationContext.Current;
             var t = new Thread(() =>
             {
