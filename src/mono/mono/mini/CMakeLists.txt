@@ -76,11 +76,17 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     )
 endif()
 
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
+      pal_placeholders.c
+    )
+endif()
+
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
   if (TARGET_DARWIN)
     set(icu_shim_darwin_sources_base
-        pal_placeholders.c
         pal_locale.m
         pal_collation.m
         pal_casing.m
