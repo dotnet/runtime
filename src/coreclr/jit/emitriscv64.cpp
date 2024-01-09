@@ -2830,8 +2830,8 @@ static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
 static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
 {
-    static constexpr size_t kLowerSignExtend = 1 << (31 - LowerMaskSize);
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
+    static constexpr size_t kLowerSignExtend = static_cast<size_t>(1) << (63 - LowerMaskSize);
+    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
 
     return doubleWord + (kLowerSignExtend | kUpperSignExtend);
 }
@@ -3018,7 +3018,7 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     assert((immediate >> (32 + 20)) == 0);
 
     regNumber rsvdReg      = codeGen->rsGetRsvdReg();
-    ssize_t   upperSignExt = UpperWordOfDoubleWordSignExtend<20, 12>(immediate);
+    ssize_t   upperSignExt = UpperWordOfDoubleWordSignExtend<32, 52>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
