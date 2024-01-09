@@ -203,7 +203,7 @@
           AfterTargets="GetFilesToPackage">
     <ItemGroup>
       <!-- ILC needs the symbols next to the binaries -->
-      <FilesToPackage Update="@(FilesToPackage)" Condition="'%(FilesToPackage.IsSymbolFile)' == 'true'">
+      <FilesToPackage Update="@(FilesToPackage->WithMetadataValue('IsSymbolFile', 'true'))">
         <IncludeAlways>true</IncludeAlways>
       </FilesToPackage>
     </ItemGroup>
