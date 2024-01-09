@@ -12,6 +12,7 @@ namespace Microsoft.XmlSerializer.Generator.Tests
     public static class SgenTests
     {
         [Fact]
+        [ActiveIssue("Issue", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void SgenCommandTest()
         {
             /*

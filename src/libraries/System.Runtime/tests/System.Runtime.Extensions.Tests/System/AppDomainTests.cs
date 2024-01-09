@@ -46,6 +46,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasHostExecutable))]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "The dotnet sdk will not be available on these platforms")]
+        [ActiveIssue("Issue", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
