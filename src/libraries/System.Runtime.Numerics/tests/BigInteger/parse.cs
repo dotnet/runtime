@@ -37,9 +37,8 @@ namespace System.Numerics.Tests
         public static void RunParseToStringTests(CultureInfo culture)
         {
             Test();
-#if DEBUG
-            BigNumberTools.Utils.RunWithFakeThreshold(ref Number.s_naiveThreshold, 0, Test);
-#endif
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 byte[] tempByteArray1 = new byte[0];
@@ -104,9 +103,8 @@ namespace System.Numerics.Tests
         {
             Test();
 
-#if DEBUG
-            BigNumberTools.Utils.RunWithFakeThreshold(ref Number.s_naiveThreshold, 0, Test);
-#endif
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
@@ -119,9 +117,8 @@ namespace System.Numerics.Tests
         public void Parse_EmptySubspan_Fails()
         {
             Test();
-#if DEBUG
-            BigNumberTools.Utils.RunWithFakeThreshold(ref Number.s_naiveThreshold, 0, Test);
-#endif
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
