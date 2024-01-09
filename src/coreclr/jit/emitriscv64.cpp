@@ -2302,15 +2302,35 @@ static bool IsFloatRegister(regNumber reg) {
     return (reg >= FBASE) && (reg <= (FBASE + 31));
 }
 
-static void CheckIfInstructionIsValidForRTypeInstr(instruction ins, regNumber rd, regNumber rs1, regNumber rs2) {
+static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2) {
     switch (ins) {
+        case INS_add:
+            FALLTHROUGH;
+        case INS_sub:
+            FALLTHROUGH;
+        case INS_sll:
+            FALLTHROUGH;
+        case INS_slt:
+            FALLTHROUGH;
+        case INS_sltu:
+            FALLTHROUGH;
+        case INS_xor:
+            FALLTHROUGH;
+        case INS_srl:
+            FALLTHROUGH;
+        case INS_sra:
+            FALLTHROUGH;
+        case INS_or:
+            FALLTHROUGH;
+        case INS_and:
+            FALLTHROUGH;
         case INS_addw:
             FALLTHROUGH;
         case INS_subw:
             FALLTHROUGH;
         case INS_sllw:
             FALLTHROUGH;
-        case INS_slrw:
+        case INS_srlw:
             FALLTHROUGH;
         case INS_sraw:
             FALLTHROUGH;
@@ -2351,11 +2371,11 @@ static void CheckIfInstructionIsValidForRTypeInstr(instruction ins, regNumber rd
             FALLTHROUGH;
         case INS_fdiv_s:
             FALLTHROUGH;
-        case INS_sgnj_s:
+        case INS_fsgnj_s:
             FALLTHROUGH;
-        case INS_sgnjn_s:
+        case INS_fsgnjn_s:
             FALLTHROUGH;
-        case INS_sgnjx_s:
+        case INS_fsgnjx_s:
             FALLTHROUGH;
         case INS_fmin_s:
             FALLTHROUGH;
@@ -2375,11 +2395,11 @@ static void CheckIfInstructionIsValidForRTypeInstr(instruction ins, regNumber rd
             FALLTHROUGH;
         case INS_fdiv_d:
             FALLTHROUGH;
-        case INS_sgnj_d:
+        case INS_fsgnj_d:
             FALLTHROUGH;
-        case INS_sgnjn_d:
+        case INS_fsgnjn_d:
             FALLTHROUGH;
-        case INS_sgnjx_d:
+        case INS_fsgnjx_d:
             FALLTHROUGH;
         case INS_fmin_d:
             FALLTHROUGH;
@@ -2409,17 +2429,10 @@ static void CheckIfInstructionIsValidForRTypeInstr(instruction ins, regNumber rd
 
 unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const
 {
-    unsigned insCode = emitInsCode(ins);
-
 #ifdef DEBUG
-    static constexpr unsigned kInstructionMask =
-        ~(kInstructionOpcodeMask | kInstructionFunct3Mask | kInstructionFunct7Mask);
-
-    assert((insCode & kInstructionMask) == 0);
-
-    CheckIfInstructionIsValidForRTypeInstr(ins, rd, rs1, rs2);
+    RTypeInstructionSanityCheck(ins, rd, rs1, rs2);
 #endif // DEBUG
-
+    unsigned insCode = emitInsCode(ins);
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
     unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 25;
@@ -2484,7 +2497,7 @@ unsigned emitter::emitOutput_ITypeInstr_Shift(
         break;
         default:
             NO_WAY("Illegal ins within emitOutput_ITypeInstr_Shift!");
-        return;
+            break;
     }
 #endif // DEBUG
 
