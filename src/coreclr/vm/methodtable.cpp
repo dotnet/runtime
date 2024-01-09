@@ -513,16 +513,13 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
         return TRUE;
 
     // optimize for the negative case where we expect RID mismatch
-    if (GetTypeDefRid() != pMT->GetTypeDefRid())
+    DWORD rid = GetTypeDefRid();
+    if (rid != pMT->GetTypeDefRid())
         return FALSE;
 
-    // Compare CanonicalMethodTables ahead of comparing Module
-    // Array MethodTables result of GetModule cannot be used for type comparison
-    // as the Rank is not part of the rid, and the Module may not
-    // match even if the MethodTable should return a match. So compare
-    // CanonicalMethodTable instead.
-    if (IsArray())
-        return GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable();
+    // Types without RIDs are unrelated to each other. This case is taken for arrays. 
+    if (rid == 0)
+        return FALSE;
 
     return (GetModule() == pMT->GetModule());
 }
