@@ -115,7 +115,7 @@ MethodTableBuilder::CreateClass( Module *pModule,
     }
     else
     {
-        pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) EEClass(sizeof(EEClass));
+        pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) EEClass();
     }
 
     DWORD dwAttrClass = 0;
@@ -1836,6 +1836,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
     if (bmtFP->NumRegularStaticGCBoxedFields != 0)
     {
         pMT->SetHasBoxedRegularStatics();
+    }
+
+    if (bmtFP->NumThreadStaticGCBoxedFields != 0)
+    {
+        pMT->SetHasBoxedThreadStatics();
     }
 
     if (bmtFP->fIsByRefLikeType)
@@ -7866,12 +7871,6 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     }
     SetNumHandleRegularStatics(static_cast<WORD>(dwNumHandleStatics));
 
-    if (!FitsIn<WORD>(bmtFP->NumRegularStaticGCBoxedFields))
-    {   // Overflow.
-        BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
-    }
-    SetNumBoxedRegularStatics(static_cast<WORD>(bmtFP->NumRegularStaticGCBoxedFields));
-
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
     DWORD dwNonGCOffset, dwGCOffset;
@@ -7985,13 +7984,6 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     }
 
     SetNumHandleThreadStatics(static_cast<WORD>(dwNumHandleStatics));
-
-    if (!FitsIn<WORD>(bmtFP->NumThreadStaticGCBoxedFields))
-    {   // Overflow.
-        BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
-    }
-
-    SetNumBoxedThreadStatics(static_cast<WORD>(bmtFP->NumThreadStaticGCBoxedFields));
 
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary

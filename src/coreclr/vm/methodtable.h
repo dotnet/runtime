@@ -2296,6 +2296,7 @@ public:
     inline void SetHasBoxedRegularStatics()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
         SetFlag(enum_flag_HasBoxedRegularStatics);
     }
 
@@ -2303,6 +2304,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return GetFlag(enum_flag_HasBoxedRegularStatics);
+    }
+
+    inline void SetHasBoxedThreadStatics()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!HasComponentSize());
+        SetFlag(enum_flag_HasBoxedThreadStatics);
+    }
+
+    inline DWORD HasBoxedThreadStatics()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetFlag(enum_flag_HasBoxedThreadStatics);
     }
 
     DWORD HasFixedAddressVTStatics();
@@ -2339,9 +2353,6 @@ public:
     PTR_Module GetGenericsStaticsModuleAndID(DWORD * pID);
 
     WORD GetNumHandleRegularStatics();
-
-    WORD GetNumBoxedRegularStatics ();
-    WORD GetNumBoxedThreadStatics ();
 
     //-------------------------------------------------------------------
     // DYNAMIC ID
@@ -3329,11 +3340,11 @@ private:
 
         enum_flag_IsByRefLike               = 0x00001000,
 
-        enum_flag_NotInPZM                  = 0x00002000,   // True if this type is not in its PreferredZapModule
+        enum_flag_HasBoxedRegularStatics    = 0x00002000,
+        enum_flag_HasBoxedThreadStatics     = 0x00004000,
 
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
 
 #define SET_FALSE(flag)     ((flag) & 0)
@@ -3346,7 +3357,8 @@ private:
         // case where this MethodTable is for a String or Array
         enum_flag_StringArrayValues = SET_FALSE(enum_flag_HasCriticalFinalizer) |
                                       SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
-                                      SET_FALSE(enum_flag_NotInPZM) |
+                                      SET_FALSE(enum_flag_HasBoxedRegularStatics) |
+                                      SET_FALSE(enum_flag_HasBoxedThreadStatics) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
                                       SET_FALSE(enum_flag_HasDefaultCtor) |
@@ -3461,7 +3473,6 @@ private:
         enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 #endif
 
-        enum_flag_HasBoxedRegularStatics    = 0x2000, // GetNumBoxedRegularStatics() != 0
 
         enum_flag_HasSingleNonVirtualSlot   = 0x4000,
 
