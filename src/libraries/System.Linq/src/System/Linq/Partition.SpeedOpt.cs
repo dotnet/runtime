@@ -26,14 +26,14 @@ namespace System.Linq
 
         public IPartition<TElement>? Skip(int count)
         {
-            int minIndex = unchecked(_minIndexInclusive + count);
-            return unchecked((uint)minIndex > (uint)_maxIndexInclusive) ? null : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
+            int minIndex = _minIndexInclusive + count;
+            return (uint)minIndex > (uint)_maxIndexInclusive ? null : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
         }
 
         public IPartition<TElement> Take(int count)
         {
-            int maxIndex = unchecked(_minIndexInclusive + count - 1);
-            if (unchecked((uint)maxIndex >= (uint)_maxIndexInclusive))
+            int maxIndex = _minIndexInclusive + count - 1;
+            if ((uint)maxIndex >= (uint)_maxIndexInclusive)
             {
                 return this;
             }
@@ -43,7 +43,7 @@ namespace System.Linq
 
         public TElement? TryGetElementAt(int index, out bool found)
         {
-            if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive)))
+            if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive))
             {
                 return _source.TryGetElementAt(index + _minIndexInclusive, out found);
             }
@@ -96,7 +96,7 @@ namespace System.Linq
                 // Having a separate field for the index would be more readable. However, we save it
                 // into _state with a bias to minimize field size of the iterator.
                 int index = _state - 1;
-                if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive))
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
                     _current = _source[_minIndexInclusive + index];
                     ++_state;
@@ -118,13 +118,13 @@ namespace System.Linq
 
             public IPartition<TSource> Take(int count)
             {
-                int maxIndex = unchecked(_minIndexInclusive + count - 1);
-                return unchecked((uint)maxIndex >= (uint)_maxIndexInclusive) ? this : new ListPartition<TSource>(_source, _minIndexInclusive, maxIndex);
+                int maxIndex = _minIndexInclusive + count - 1;
+                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new ListPartition<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
             public TSource? TryGetElementAt(int index, out bool found)
             {
-                if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive))
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
                     found = true;
                     return _source[_minIndexInclusive + index];
@@ -286,7 +286,7 @@ namespace System.Linq
             // on how many elements we can have.
             private bool HasLimit => _maxIndexInclusive != -1;
 
-            private int Limit => unchecked((_maxIndexInclusive + 1) - _minIndexInclusive); // This is that upper bound.
+            private int Limit => _maxIndexInclusive + 1 - _minIndexInclusive; // This is that upper bound.
 
             public override Iterator<TSource> Clone() =>
                 new EnumerablePartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
@@ -388,7 +388,7 @@ namespace System.Linq
 
             public IPartition<TSource>? Skip(int count)
             {
-                int minIndex = unchecked(_minIndexInclusive + count);
+                int minIndex = _minIndexInclusive + count;
 
                 if (!HasLimit)
                 {
@@ -414,7 +414,7 @@ namespace System.Linq
 
             public IPartition<TSource> Take(int count)
             {
-                int maxIndex = unchecked(_minIndexInclusive + count - 1);
+                int maxIndex = _minIndexInclusive + count - 1;
                 if (!HasLimit)
                 {
                     if (maxIndex < 0)
@@ -428,7 +428,7 @@ namespace System.Linq
                         return new EnumerablePartition<TSource>(this, 0, count - 1);
                     }
                 }
-                else if (unchecked((uint)maxIndex >= (uint)_maxIndexInclusive))
+                else if ((uint)maxIndex >= (uint)_maxIndexInclusive)
                 {
                     // If we don't know our max count, we can't go down this branch.
                     // It's always possible for us to contain more than count items, as the rest
