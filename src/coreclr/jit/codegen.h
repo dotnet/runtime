@@ -346,7 +346,6 @@ protected:
 #endif // TARGET_AMD64
 
 #if defined(TARGET_RISCV64)
-    void genSmallStackProbe(ssize_t probeOffset, regNumber rOffset);
     void genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize);
 #endif
 

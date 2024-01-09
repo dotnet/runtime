@@ -2009,6 +2009,9 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     const target_ssize_t pageSize = compiler->eeGetPageSize();
 
+    // According to RISC-V Privileged ISA page size is 4KiB
+    noway_assert(pageSize == 0x1000);
+
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
     if (size->IsCnsIntOrI())
@@ -2227,15 +2230,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
 
-        if (pageSize == ((pageSize >> 12) << 12))
-        {
-            GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
-        }
-        else
-        {
-            noway_assert(!(pageSize & 0xfff));
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, rPageSize, pageSize);
-        }
+        GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
 
         // genDefineTempLabel(loop);
 
@@ -7470,36 +7465,6 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 }
 
 //------------------------------------------------------------------------
-// genSmallStackProbe: Probe the stack without changing it
-//
-// Notes:
-//      This function is ment to be used only when frameSize < 3 * pageSize.
-//      In any other case it is better to use normal loop instead.
-//
-// Arguments:
-//    probeOffset - current probe offset
-//    rOffset - usually initial register number
-//
-void CodeGen::genSmallStackProbe(ssize_t probeOffset, regNumber rOffset)
-{
-    if (emitter::isValidSimm12(-probeOffset))
-    {
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rOffset, REG_SPBASE, -probeOffset);
-        regSet.verifyRegUsed(rOffset);
-        // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
-        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, rOffset, 0);
-    }
-    else
-    {
-        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, rOffset, -probeOffset);
-        regSet.verifyRegUsed(rOffset);
-        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rOffset, REG_SPBASE, rOffset);
-        // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
-        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, rOffset, 0);
-    }
-}
-
-//------------------------------------------------------------------------
 // genStackProbe: Probe the stack without changing it
 //
 // Notes:
@@ -7513,32 +7478,24 @@ void CodeGen::genSmallStackProbe(ssize_t probeOffset, regNumber rOffset)
 //
 void CodeGen::genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize)
 {
-    const ssize_t pageSize = (ssize_t)compiler->eeGetPageSize();
-
     // make sure frameSize safely fits within 4 bytes
     noway_assert((ssize_t)(int)frameSize == (ssize_t)frameSize);
 
-    if (pageSize == ((pageSize >> 12) << 12))
-    {
-        GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
-    }
-    else
-    {
-        noway_assert(!(pageSize & 0xfff));
-        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, rPageSize, pageSize);
-    }
-    regSet.verifyRegUsed(rPageSize);
+    // According to RISC-V Privileged ISA page size should be equal 4KiB
+    noway_assert(compiler->eeGetPageSize() == 0x1000);
 
     GetEmitter()->emitLoadImmediate(EA_PTRSIZE, rLimit, -frameSize);
     regSet.verifyRegUsed(rLimit);
 
-    GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, REG_SPBASE, rPageSize);
-    regSet.verifyRegUsed(rOffset);
+    GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, compiler->eeGetPageSize() >> 12);
+    regSet.verifyRegUsed(rPageSize);
+
+    GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rOffset, REG_SPBASE, 0);
 
     // Loop:
+    GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, rOffset, rPageSize);
     // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
     GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, rOffset, 0);
-    GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, rOffset, rPageSize);
 
     // each instr is 4 bytes
     // if (rOffset >= rLimit) goto Loop;
@@ -7577,6 +7534,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         return;
     }
 
+    // According to RISC-V Privileged ISA page size should be equal 4KiB
     const target_size_t pageSize = compiler->eeGetPageSize();
 
     assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
@@ -7601,7 +7559,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         for (target_size_t probeOffset = pageSize; probeOffset <= frameSize; probeOffset += pageSize)
         {
-            genSmallStackProbe((ssize_t)probeOffset, initReg);
+            GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, initReg, probeOffset >> 12);
+            regSet.verifyRegUsed(initReg);
+
+            GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, initReg, REG_SPBASE, initReg);
+            GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, initReg, 0);
+
             lastTouchDelta -= pageSize;
         }
 
@@ -7642,19 +7605,24 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         compiler->unwindPadding();
     }
 
+#if STACK_PROBE_BOUNDARY_THRESHOLD_BYTES != 0
     // if the last page was too far, we will make an extra probe at the bottom
-    target_size_t deltaSize = lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES;
-    if (deltaSize > pageSize)
+    if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
     {
-        assert(deltaSize < pageSize << 1);
+        assert(lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES < pageSize << 1);
 
-        genSmallStackProbe((ssize_t)frameSize, initReg);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, initReg, REG_R0, frameSize);
+        regSet.verifyRegUsed(initReg);
+
+        GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, initReg, REG_SPBASE, initReg);
+        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, initReg, 0);
 
         assert(pInitRegZeroed != nullptr);
         *pInitRegZeroed = false; // The initReg does not contain zero
 
         compiler->unwindPadding();
     }
+#endif
 }
 
 inline void CodeGen::genJumpToThrowHlpBlk_la(
@@ -8097,12 +8065,10 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         }
     }
 
-    emitter* emit = GetEmitter();
-
     if (compiler->compLocallocUsed)
     {
         // restore sp form fp: addi sp, -#callerSPtoFPdelta(fp)
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -callerSPtoFPdelta);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -callerSPtoFPdelta);
         compiler->unwindSetFrameReg(REG_FPBASE, callerSPtoFPdelta);
     }
 
@@ -8112,21 +8078,21 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     // restore ra/fp regs
     calleeSaveSPOffset += (compiler->compCalleeRegsPushed - 2) << 3;
 
-    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, calleeSaveSPOffset);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, calleeSaveSPOffset);
     compiler->unwindSaveReg(REG_RA, calleeSaveSPOffset);
 
-    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, calleeSaveSPOffset + 8);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, calleeSaveSPOffset + 8);
     compiler->unwindSaveReg(REG_FP, calleeSaveSPOffset + 8);
 
     if (emitter::isValidUimm11(remainingSPSize))
     {
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, remainingSPSize);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, remainingSPSize);
     }
     else
     {
         regNumber tempReg = rsGetRsvdReg();
-        emit->emitLoadImmediate(EA_PTRSIZE, tempReg, remainingSPSize);
-        emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
+        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, remainingSPSize);
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
     }
     compiler->unwindAllocStack(remainingSPSize);
 
@@ -8138,13 +8104,13 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
         if (emitter::isValidUimm11(tier0FrameSize))
         {
-            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tier0FrameSize);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tier0FrameSize);
         }
         else
         {
             regNumber tempReg = rsGetRsvdReg();
-            emit->emitLoadImmediate(EA_PTRSIZE, tempReg, tier0FrameSize);
-            emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, tier0FrameSize);
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
         }
         compiler->unwindAllocStack(tier0FrameSize);
     }
