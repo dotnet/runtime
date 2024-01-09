@@ -25,7 +25,8 @@ namespace System.Runtime.InteropServices.Swift
         /// Creates a new instance of the SwiftSelf struct with the specified pointer value.
         /// </summary>
         /// <param name="value">The pointer value representing the self context.</param>
-        public SwiftSelf(IntPtr value) {
+        public SwiftSelf(IntPtr value)
+        {
             Value = value;
         }
         /// <summary>
