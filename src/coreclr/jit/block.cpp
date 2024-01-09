@@ -801,7 +801,6 @@ bool BasicBlock::CloneBlockState(
     assert(to->bbStmtList == nullptr);
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
-    BlockSetOps::AssignAllowUninitRhs(compiler, to->bbReach, from->bbReach);
     to->copyEHRegion(from);
     to->bbCatchTyp    = from->bbCatchTyp;
     to->bbStkTempsIn  = from->bbStkTempsIn;

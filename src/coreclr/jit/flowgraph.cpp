@@ -4891,16 +4891,28 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 //   lclNum - The local.
 //
 // Returns:
-//   Tree that represents a def of the local; nullptr if no def was found.
+//   Tree that represents a def of the local, or a def of the parent local if
+//   the local is a field; nullptr if no def was found.
 //
 // Remarks:
-//   Does not take promotion into account.
+//   Does not support promoted struct locals, but does support fields of
+//   promoted structs.
 //
 GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 {
+    LclVarDsc* dsc = m_dfsTree->GetCompiler()->lvaGetDesc(lclNum);
+    assert(!dsc->lvPromoted);
+
+    unsigned lclNum2 = BAD_VAR_NUM;
+
+    if (dsc->lvIsStructField)
+    {
+        lclNum2 = dsc->lvParentLcl;
+    }
+
     GenTreeLclVarCommon* result = nullptr;
-    VisitDefs([&result, lclNum](GenTreeLclVarCommon* def) {
-        if (def->GetLclNum() == lclNum)
+    VisitDefs([&result, lclNum, lclNum2](GenTreeLclVarCommon* def) {
+        if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
         {
             result = def;
             return false;
@@ -4963,7 +4975,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    info->IterVar = comp->optIsLoopIncrTree(info->IterTree);
+    info->TestBlock = cond;
+    info->IterVar   = comp->optIsLoopIncrTree(info->IterTree);
 
     assert(info->IterVar != BAD_VAR_NUM);
     LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
@@ -5085,6 +5098,8 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 //
 bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 {
+    Compiler* comp = m_dfsTree->GetCompiler();
+
     // Obtain the relop from the "test" tree.
     GenTree* relop;
     if (test->OperIs(GT_JTRUE))
@@ -5140,8 +5155,14 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     }
     else if (limitOp->OperIs(GT_LCL_VAR))
     {
-        // See if limit var is a loop invariant
+        // See if limit var is loop invariant
         //
+        if (comp->lvaGetDesc(limitOp->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("  Limit var V%02u is address exposed\n", limitOp->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
         GenTreeLclVarCommon* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
@@ -5164,7 +5185,13 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
             return false;
         }
 
-        GenTreeLclVarCommon* def = FindDef(array->AsLclVar()->GetLclNum());
+        if (comp->lvaGetDesc(array->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("  Array base local V%02u is address exposed\n", array->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
+        GenTreeLclVarCommon* def = FindDef(array->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
             JITDUMP("  Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),

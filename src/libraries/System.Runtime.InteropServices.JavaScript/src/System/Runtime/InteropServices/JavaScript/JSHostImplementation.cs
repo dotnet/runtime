@@ -237,6 +237,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
             }
+            JSProxyContext.CurrentThreadContext = null;
+            JSProxyContext.ExecutionContext = null;
             ctx.Dispose();
         }
 
