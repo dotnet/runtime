@@ -35,10 +35,9 @@ namespace System.Text.Json.Nodes
         {
             bool isCaseInsensitive = IsCaseInsensitive(options);
 
-            JsonPropertyDictionary<JsonNode?> dictionary =
-                properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection
-                    ? new JsonPropertyDictionary<JsonNode?>(isCaseInsensitive, propertiesCollection.Count)
-                    : new JsonPropertyDictionary<JsonNode?>(isCaseInsensitive);
+            JsonPropertyDictionary<JsonNode?> dictionary = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection
+                ? new(isCaseInsensitive, propertiesCollection.Count)
+                : new(isCaseInsensitive);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
