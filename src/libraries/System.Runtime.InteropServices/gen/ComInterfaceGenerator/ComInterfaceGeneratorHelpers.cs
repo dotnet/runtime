@@ -10,12 +10,12 @@ namespace Microsoft.Interop
 {
     internal static class ComInterfaceGeneratorHelpers
     {
-        private static readonly IMarshallingGeneratorResolver s_managedToUnmanagedDisabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.DisableRuntimeMarshalling, MarshalDirection.ManagedToUnmanaged);
-        private static readonly IMarshallingGeneratorResolver s_unmanagedToManagedDisabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.DisableRuntimeMarshalling, MarshalDirection.UnmanagedToManaged);
-        private static readonly IMarshallingGeneratorResolver s_managedToUnmanagedEnabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.None, MarshalDirection.ManagedToUnmanaged);
-        private static readonly IMarshallingGeneratorResolver s_unmanagedToManagedEnabledMarshallingGeneratorFactory = CreateGeneratorFactory(EnvironmentFlags.None, MarshalDirection.UnmanagedToManaged);
+        private static readonly IMarshallingGeneratorResolver s_managedToUnmanagedDisabledMarshallingGeneratorResolver = CreateGeneratorResolver(EnvironmentFlags.DisableRuntimeMarshalling, MarshalDirection.ManagedToUnmanaged);
+        private static readonly IMarshallingGeneratorResolver s_unmanagedToManagedDisabledMarshallingGeneratorResolver = CreateGeneratorResolver(EnvironmentFlags.DisableRuntimeMarshalling, MarshalDirection.UnmanagedToManaged);
+        private static readonly IMarshallingGeneratorResolver s_managedToUnmanagedEnabledMarshallingGeneratorResolver = CreateGeneratorResolver(EnvironmentFlags.None, MarshalDirection.ManagedToUnmanaged);
+        private static readonly IMarshallingGeneratorResolver s_unmanagedToManagedEnabledMarshallingGeneratorResolver = CreateGeneratorResolver(EnvironmentFlags.None, MarshalDirection.UnmanagedToManaged);
 
-        private static IMarshallingGeneratorResolver CreateGeneratorFactory(EnvironmentFlags env, MarshalDirection direction)
+        private static IMarshallingGeneratorResolver CreateGeneratorResolver(EnvironmentFlags env, MarshalDirection direction)
             => DefaultMarshallingGeneratorResolver.Create(env, direction, TypeNames.GeneratedComInterfaceAttribute_ShortName,
                 [
                     new StructAsHResultMarshallerFactory(),
@@ -23,13 +23,13 @@ namespace Microsoft.Interop
                     new ComInterfaceDispatchMarshallingResolver(),
                 ]);
 
-        public static IMarshallingGeneratorResolver GetGeneratorFactory(EnvironmentFlags env, MarshalDirection direction)
+        public static IMarshallingGeneratorResolver GetGeneratorResolver(EnvironmentFlags env, MarshalDirection direction)
             => (env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), direction) switch
             {
-                (true, MarshalDirection.ManagedToUnmanaged) => s_managedToUnmanagedDisabledMarshallingGeneratorFactory,
-                (true, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedDisabledMarshallingGeneratorFactory,
-                (false, MarshalDirection.ManagedToUnmanaged) => s_managedToUnmanagedEnabledMarshallingGeneratorFactory,
-                (false, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedEnabledMarshallingGeneratorFactory,
+                (true, MarshalDirection.ManagedToUnmanaged) => s_managedToUnmanagedDisabledMarshallingGeneratorResolver,
+                (true, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedDisabledMarshallingGeneratorResolver,
+                (false, MarshalDirection.ManagedToUnmanaged) => s_managedToUnmanagedEnabledMarshallingGeneratorResolver,
+                (false, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedEnabledMarshallingGeneratorResolver,
                 _ => throw new UnreachableException(),
             };
     }

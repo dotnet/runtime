@@ -49,13 +49,13 @@ namespace Microsoft.Interop
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorResolver generatorFactory,
+            IMarshallingGeneratorResolver generatorResolver,
             CodeEmitOptions codeEmitOptions)
         {
             _setLastError = setLastError;
 
             _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 

@@ -61,13 +61,13 @@ namespace Microsoft.Interop
                     new BlittableTypeMarshallingInfoProvider(env.Compilation)));
         }
 
-        public static IMarshallingGeneratorResolver CreateGeneratorFactory(TargetFrameworkSettings tf, LibraryImportGeneratorOptions options, EnvironmentFlags env)
+        public static IMarshallingGeneratorResolver CreateGeneratorResolver(TargetFrameworkSettings tf, LibraryImportGeneratorOptions options, EnvironmentFlags env)
         {
-            IMarshallingGeneratorResolver generatorFactory;
+            IMarshallingGeneratorResolver generatorResolver;
 
             if (options.GenerateForwarders)
             {
-                generatorFactory = new ForwarderResolver();
+                generatorResolver = new ForwarderResolver();
             }
             else
             {
@@ -113,17 +113,17 @@ namespace Microsoft.Interop
                                 ResolveElementsFromSelf: false)));
                 }
 
-                generatorFactory = new ByValueContentsMarshalKindValidator(new CompositeMarshallingGeneratorResolver([
+                generatorResolver = new ByValueContentsMarshalKindValidator(new CompositeMarshallingGeneratorResolver([
                     .. coreResolvers,
                     // Since the char type can go into the P/Invoke signature here, we can only use it when
                     // runtime marshalling is disabled.
                     new CharMarshallingGeneratorResolver(useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.LibraryImportAttribute_ShortName),
                     fallbackResolver
                     ]));
-                generatorFactory = new BreakingChangeDetector(generatorFactory);
+                generatorResolver = new BreakingChangeDetector(generatorResolver);
             }
 
-            return generatorFactory;
+            return generatorResolver;
         }
     }
 }
