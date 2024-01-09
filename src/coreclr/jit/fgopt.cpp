@@ -5818,6 +5818,7 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
 //    isPhase - true if being run as the only thing in a phase
+//    layoutFinalized - true if being run post-block reordering in Compiler::optOptimizeLayout
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -5825,7 +5826,7 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase, bool layoutFinalized)
 {
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -5934,6 +5935,29 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             else if (block->KindIs(BBJ_COND))
             {
                 bDest = block->GetTrueTarget();
+
+                // Quirk: Running this optimization before Compiler::optOptimizeLayout affects loop cloning
+                if (layoutFinalized)
+                {
+                    BasicBlock* bFalseDest = block->GetFalseTarget();
+                    assert(bFalseDest != nullptr);
+                    if (bFalseDest->KindIs(BBJ_ALWAYS) && bFalseDest->TargetIs(bDest) && bFalseDest->isEmpty())
+                    {
+                        // Optimize bFalseDest -> BBJ_ALWAYS -> bDest
+                        block->SetFalseTarget(bDest);
+                        fgRemoveRefPred(bFalseDest, block);
+                        fgAddRefPred(bDest, block);
+                    }
+                    else if (bDest->KindIs(BBJ_ALWAYS) && bDest->TargetIs(bFalseDest) && bDest->isEmpty())
+                    {
+                        // Optimize bDest -> BBJ_ALWAYS -> bFalseDest
+                        block->SetTrueTarget(bFalseDest);
+                        fgRemoveRefPred(bDest, block);
+                        fgAddRefPred(bFalseDest, block);
+                        bDest = bFalseDest;
+                    }
+                }
+
                 if (block->FalseTargetIs(bDest))
                 {
                     fgRemoveConditionalJump(block);
@@ -5947,8 +5971,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             if (bDest != nullptr)
             {
                 // Do we have a JUMP to an empty unconditional JUMP block?
-                if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) &&
-                    !bDest->TargetIs(bDest)) // special case for self jumps
+                if (bDest->KindIs(BBJ_ALWAYS) && !bDest->TargetIs(bDest) && // special case for self jumps
+                    bDest->isEmpty())
                 {
                     // TODO: Allow optimizing branches to blocks that jump to the next block
                     const bool optimizeBranch = !bDest->JumpsToNext() || !bDest->HasFlag(BBF_NONE_QUIRK);

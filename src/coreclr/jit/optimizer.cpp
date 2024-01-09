@@ -5233,7 +5233,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph(/* doTailDuplication */ false);
+    fgUpdateFlowGraph();
     fgReorderBlocks(/* useProfile */ true);
     fgUpdateFlowGraph();
 
