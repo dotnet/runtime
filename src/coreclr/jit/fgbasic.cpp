@@ -68,8 +68,6 @@ void Compiler::fgInit()
 
     m_dfsTree         = nullptr;
     m_loops           = nullptr;
-    m_newToOldLoop    = nullptr;
-    m_oldToNewLoop    = nullptr;
     m_loopSideEffects = nullptr;
     m_blockToLoop     = nullptr;
 
@@ -183,6 +181,7 @@ void Compiler::fgInit()
     fgPgoInlineeNoPgoSingleBlock = 0;
     fgCountInstrumentor          = nullptr;
     fgHistogramInstrumentor      = nullptr;
+    fgValueInstrumentor          = nullptr;
     fgPredListSortVector         = nullptr;
     fgCanonicalizedFirstBB       = false;
 }
@@ -5144,17 +5143,15 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
             fgFirstBBScratch = nullptr;
         }
     }
+    else if (block->IsLast())
+    {
+        assert(fgLastBB == block);
+        fgLastBB = block->Prev();
+        fgLastBB->SetNextToNull();
+    }
     else
     {
-        if (block == fgLastBB)
-        {
-            fgLastBB = block->Prev();
-            fgLastBB->SetNextToNull();
-        }
-        else
-        {
-            block->Prev()->SetNext(block->Next());
-        }
+        block->Prev()->SetNext(block->Next());
     }
 }
 
@@ -5300,9 +5297,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
         noway_assert(!block->isBBCallFinallyPairTail());
-
-        /* This cannot be the last basic block */
-        noway_assert(block != fgLastBB);
 
 #ifdef DEBUG
         if (verbose)
