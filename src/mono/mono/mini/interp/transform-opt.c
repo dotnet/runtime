@@ -2491,7 +2491,7 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, InterpInst *i
 }
 
 static gboolean
-can_extend_var_liveness (TransformData *td, int var, InterpLivenessPosition cur_liveness)
+can_extend_ssa_var_liveness (TransformData *td, int var, InterpLivenessPosition cur_liveness)
 {
 	if (!td->vars [var].renamed_ssa_fixed)
 		return TRUE;
@@ -2516,6 +2516,41 @@ can_extend_var_liveness (TransformData *td, int var, InterpLivenessPosition cur_
 	}
 
 	return FALSE;
+}
+
+// We are attempting to extend liveness of var to cur_liveness (propagate its use).
+// We know that var was still alive at the point of original_liveness.
+// cur_liveness is in td->cbb
+static gboolean
+can_extend_var_liveness (TransformData *td, int var, InterpLivenessPosition original_liveness, InterpLivenessPosition cur_liveness)
+{
+	if (var_is_ssa_form (td, var)) {
+		// If var is fixed ssa, we can extend liveness if it doesn't overlap with other renamed
+		// vars. If var is normal ssa, we can extend its liveness with no constraints
+		return can_extend_ssa_var_liveness (td, var, cur_liveness);
+	} else {
+		gboolean original_in_curbb = original_liveness.bb_index == td->cbb->index;
+		if (!original_in_curbb) {
+			// var is not in ssa form and we only track its value within a single bblock.
+			// The original liveness information is not in cbb and, by the time we get to cbb,
+			// its value could be different so we can't use it.
+			return FALSE;
+		} else {
+			InterpVarValue *var_val = get_var_value (td, var);
+			if (!var_val) {
+				// We know that var is alive at original_liveness, which is in cbb, and that
+				// the var has not been defined yet in cbb, meaning its value was not overwritten
+				// and we can use it.
+				return TRUE;
+			} else {
+				// We know that var is alive at original_liveness, which is in cbb, and that
+				// the var has been redefined in cbb. We can extend its liveness to cur_liveness,
+				// only if it hasn't been redefined between original and cur liveness.
+				g_assert (var_val->liveness.bb_index == original_liveness.bb_index);
+				return var_val->liveness.ins_index < original_liveness.ins_index;
+			}
+		}
+	}
 }
 
 static void
@@ -2559,44 +2594,15 @@ cprop_svar (TransformData *td, InterpInst *ins, int *pvar, InterpLivenessPositio
 		if (td->vars [var].renamed_ssa_fixed && !td->vars [cprop_var].renamed_ssa_fixed) {
 			// ssa fixed vars are likely to live, keep using them
 			val->ref_count++;
+		} else if (can_extend_var_liveness (td, cprop_var, val->liveness, current_liveness)) {
+			if (td->verbose_level)
+				g_print ("cprop %d -> %d:\n\t", var, cprop_var);
+			td->var_values [cprop_var].ref_count++;
+			*pvar = cprop_var;
+			if (td->verbose_level)
+				interp_dump_ins (ins, td->data_items);
 		} else {
-			gboolean can_cprop = FALSE;
-			// If var is fixed ssa, we can extend liveness if it doesn't overlap with other renamed
-			// vars. If the var is not ssa, we do cprop only within the same bblock. 
-			if (var_is_ssa_form (td, cprop_var)) {
-				can_cprop = can_extend_var_liveness (td, cprop_var, current_liveness);
-			} else {
-				InterpVarValue *cprop_var_val = get_var_value (td, cprop_var);
-				gboolean var_def_in_cur_bb = val->liveness.bb_index == td->cbb->index;
-				if (!var_def_in_cur_bb) {
-					// var definition was not in current bblock so it might no longer contain
-					// the current value of cprop_var because cprop_var is not in ssa form and
-					// we don't keep track its value over multiple basic blocks
-					can_cprop = FALSE;
-				} else if (!cprop_var_val) {
-					// Previously in this bblock, var is recorded as having the value of cprop_var and
-					// cprop_var is not defined in the current bblock. This means that var will still
-					// contain the value of cprop_var
-					can_cprop = TRUE;
-				} else {
-					// Previously in this bblock, var is recorded as having the value of cprop_var and
-					// cprop_var is defined in the current bblock. This means that var will contain the
-					// value of cprop_var only if last known cprop_var redefinition was before the var definition.
-					g_assert (cprop_var_val->liveness.bb_index == val->liveness.bb_index);
-					can_cprop = cprop_var_val->liveness.ins_index < val->liveness.ins_index;
-				}
-			}
-
-			if (can_cprop) {
-				if (td->verbose_level)
-					g_print ("cprop %d -> %d:\n\t", var, cprop_var);
-				td->var_values [cprop_var].ref_count++;
-				*pvar = cprop_var;
-				if (td->verbose_level)
-					interp_dump_ins (ins, td->data_items);
-			} else {
-				val->ref_count++;
-			}
+			val->ref_count++;
 		}
 	} else {
 		td->var_values [var].ref_count++;
@@ -3232,6 +3238,39 @@ get_unop_condbr_sp (int opcode)
 	}
 }
 
+// We have the pattern of:
+//
+// var <- def (v1, v2, ..)
+// ...
+// use var
+//
+// We want to optimize out `var <- def` and replace `use var` with `use v1, v2, ...` in a super instruction.
+// This can be done only if var is used only once (otherwise `var <- def` will remain alive and in the
+// superinstruction we duplicate the calculation of var) and v1, v2, .. can have their liveness extended
+// to the current liveness
+static gboolean
+can_propagate_var_def (TransformData *td, int var, InterpLivenessPosition cur_liveness)
+{
+	InterpVarValue *val = get_var_value (td, var);
+	if (!val)
+		return FALSE;
+	if (val->ref_count != 1)
+		return FALSE;
+
+	InterpInst *def = val->def;
+	int num_sregs = mono_interp_op_sregs [def->opcode];
+
+	for (int i = 0; i < num_sregs; i++) {
+		int svar = def->sregs [i];
+		if (svar == MINT_CALL_ARGS_SREG)
+			return FALSE; // We don't care for these in super instructions
+
+		if (!can_extend_var_liveness (td, svar, val->liveness, cur_liveness))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 static void
 interp_super_instructions (TransformData *td)
 {
@@ -3244,8 +3283,13 @@ interp_super_instructions (TransformData *td)
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
 		int noe = bb->native_offset_estimate;
+		InterpLivenessPosition current_liveness;
+		current_liveness.bb_index = bb->index;
+		current_liveness.ins_index = 0;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
+			if (bb->dfs_index >= td->bblocks_count || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
+				current_liveness.ins_index++;
 			if (MINT_IS_NOP (opcode))
 				continue;
 
@@ -3253,7 +3297,7 @@ interp_super_instructions (TransformData *td)
 				InterpVarValue *dval = &td->var_values [ins->dreg];
 				dval->type = VAR_VALUE_NONE;
 				dval->def = ins;
-				dval->liveness.bb_index = bb->index; // only to check if defined in current bblock
+				dval->liveness = current_liveness;
 			}
 			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
@@ -3327,8 +3371,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (opcode == MINT_MUL_I4_IMM || opcode == MINT_MUL_I8_IMM) {
 				int sreg = ins->sregs [0];
-				InterpInst *def = get_var_value_def (td, sreg);
-				if (def != NULL && td->var_values [sreg].ref_count == 1) {
+				if (can_propagate_var_def (td, sreg, current_liveness)) {
+					InterpInst *def = get_var_value_def (td, sreg);
 					gboolean is_i4 = opcode == MINT_MUL_I4_IMM;
 					if ((is_i4 && def->opcode == MINT_ADD_I4_IMM) ||
 							(!is_i4 && def->opcode == MINT_ADD_I8_IMM)) {
@@ -3435,8 +3479,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_LDIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
-				InterpInst *def = get_var_value_def (td, sreg_base);
-				if (def != NULL && td->var_values [sreg_base].ref_count == 1) {
+				if (can_propagate_var_def (td, sreg_base, current_liveness)) {
+					InterpInst *def = get_var_value_def (td, sreg_base);
 					InterpInst *new_inst = NULL;
 					if (def->opcode == MINT_ADD_P) {
 						int ldind_offset_op = MINT_LDIND_OFFSET_I1 + (opcode - MINT_LDIND_I1);
@@ -3464,8 +3508,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_LDIND_OFFSET (opcode)) {
 				int sreg_off = ins->sregs [1];
-				InterpInst *def = get_var_value_def (td, sreg_off);
-				if (def != NULL && td->var_values [sreg_off].ref_count == 1) {
+				if (can_propagate_var_def (td, sreg_off, current_liveness)) {
+					InterpInst *def = get_var_value_def (td, sreg_off);
 					if (def->opcode == MINT_MUL_P_IMM || def->opcode == MINT_ADD_P_IMM || def->opcode == MINT_ADD_MUL_P_IMM) {
 						int ldind_offset_op = MINT_LDIND_OFFSET_ADD_MUL_IMM_I1 + (opcode - MINT_LDIND_OFFSET_I1);
 						InterpInst *new_inst = interp_insert_ins (td, ins, ldind_offset_op);
@@ -3501,8 +3545,8 @@ interp_super_instructions (TransformData *td)
 				}
 			} else if (MINT_IS_STIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
-				InterpInst *def = get_var_value_def (td, sreg_base);
-				if (def != NULL && td->var_values [sreg_base].ref_count == 1) {
+				if (can_propagate_var_def (td, sreg_base, current_liveness)) {
+					InterpInst *def = get_var_value_def (td, sreg_base);
 					InterpInst *new_inst = NULL;
 					if (def->opcode == MINT_ADD_P) {
 						int stind_offset_op = MINT_STIND_OFFSET_I1 + (opcode - MINT_STIND_I1);
@@ -3584,8 +3628,8 @@ interp_super_instructions (TransformData *td)
 				if (opcode == MINT_BRFALSE_I4 || opcode == MINT_BRTRUE_I4) {
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
-					InterpInst *def = get_var_value_def (td, cond_sreg);
-					if (def != NULL && td->var_values [cond_sreg].ref_count == 1) {
+					if (can_propagate_var_def (td, cond_sreg, current_liveness)) {
+						InterpInst *def = get_var_value_def (td, cond_sreg);
 						int replace_opcode = -1;
 						switch (def->opcode) {
 							case MINT_CEQ_I4: replace_opcode = negate ? MINT_BNE_UN_I4 : MINT_BEQ_I4; break;
