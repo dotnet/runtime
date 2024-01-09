@@ -2513,10 +2513,26 @@ static void STypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
         case INS_fsw:
             FALLTHROUGH;
         case INS_fsd:
-            assert((IsFloatRegister(rs1) && IsIntegralRegister(rs2)));
+            assert(IsFloatRegister(rs1));
+            assert(IsIntegralRegister(rs2));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_STypeInstr!");
+            break;
+    }
+}
+
+static void UTypeInstructionSanityCheck(instruction ins, regNumber rd)
+{
+    switch (ins)
+    {
+        case INS_lui:
+            FALLTHROUGH;
+        case INS_auipc:
+            assert(IsIntegralRegister(rd));
+            break;
+        default:
+            NO_WAY("Illegal ins within emitOutput_UTypeInstr!");
             break;
     }
 }
@@ -2532,13 +2548,13 @@ static void STypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
 
 unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const
 {
+    unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
     RTypeInstructionSanityCheck(ins, rd, rs1, rs2);
 #endif // DEBUG
-    unsigned insCode = emitInsCode(ins);
-    unsigned opcode  = insCode & kInstructionOpcodeMask;
-    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 25;
+    unsigned opcode = insCode & kInstructionOpcodeMask;
+    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 25;
     return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7));
 }
 
@@ -2553,12 +2569,11 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    ITypeInstructionSanityCheck(ins, rd, rs1, imm12, imm12, insCode);
+    ITypeInstructionSanityCheck(ins, rd, rs1, imm12, insCode);
 #endif // DEBUG
-    unsigned insCode = emitInsCode(ins);
-    unsigned opcode  = insCode & kInstructionOpcodeMask;
-    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    unsigned funct7  = (insCode & kInstructionFunct7Mask) >> 20; // only used by some of the immediate shifts
+    unsigned opcode = insCode & kInstructionOpcodeMask;
+    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+    unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 20; // only used by some of the immediate shifts
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1, imm12 | funct7));
 }
 
@@ -2571,13 +2586,13 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
 
 unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm12) const
 {
+    unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
     STypeInstructionSanityCheck(ins, rs1, rs2);
 #endif // DEBUG
-    unsigned insCode = emitInsCode(ins);
-    unsigned opcode  = insCode & kInstructionOpcodeMask;
-    unsigned funct3  = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2, imm12));
+    unsigned opcode = insCode & kInstructionOpcodeMask;
+    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2 & 0x1f, imm12));
 }
 
 /*****************************************************************************
@@ -2590,6 +2605,9 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs
 unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm20) const
 {
     unsigned insCode = emitInsCode(ins);
+#ifdef DEBUG
+    UTypeInstructionSanityCheck(ins, rd);
+#endif // DEBUG
     return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, rd, imm20));
 }
 
