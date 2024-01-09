@@ -211,7 +211,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - linux_x64
-      # - linux_arm64
+      - linux_arm64
     variables:
       - name: timeoutPerTestInMinutes
         value: 60
@@ -223,6 +223,7 @@ jobs:
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       timeoutInMinutes: 300
+
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -234,7 +235,6 @@ jobs:
             creator: dotnet-bot
             llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
-            testBuildArgs: tree baseservices
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
