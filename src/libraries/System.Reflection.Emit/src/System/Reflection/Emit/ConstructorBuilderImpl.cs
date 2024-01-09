@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override TypeBuilder DeclaringType => _methodBuilder.DeclaringType;
+        public override Type DeclaringType => _methodBuilder.DeclaringType!;
 
         public override Module Module => _methodBuilder.Module;
 

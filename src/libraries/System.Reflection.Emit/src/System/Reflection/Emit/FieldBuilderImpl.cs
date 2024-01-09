@@ -146,9 +146,9 @@ namespace System.Reflection.Emit
 
         public override string Name => _fieldName;
 
-        public override Type? DeclaringType => _typeBuilder;
+        public override Type? DeclaringType => _typeBuilder._isHiddenGlobalType ? null : _typeBuilder;
 
-        public override Type? ReflectedType => _typeBuilder;
+        public override Type? ReflectedType => DeclaringType;
 
         #endregion
 

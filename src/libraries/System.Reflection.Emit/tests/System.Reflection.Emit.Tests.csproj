@@ -69,6 +69,7 @@
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveEventBuilderTests.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveILGeneratorTests.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveMethodBuilderTests.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveModuleBuilderTests.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySavePropertyBuilderTests.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveTools.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveTypeBuilderTests.cs" />

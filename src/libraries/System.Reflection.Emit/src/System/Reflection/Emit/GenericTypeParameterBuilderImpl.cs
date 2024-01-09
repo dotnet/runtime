@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
             _name = name;
             _genParamPosition = genParamPosition;
             _methodBuilder = methodBuilder;
-            _type = methodBuilder.DeclaringType;
+            _type = (TypeBuilder)methodBuilder.DeclaringType!;
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)

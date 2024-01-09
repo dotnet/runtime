@@ -26,6 +26,7 @@ namespace System.Reflection.Emit
         private Type? _enumUnderlyingType;
         private bool _isCreated;
 
+        internal bool _isHiddenGlobalType;
         internal TypeDefinitionHandle _handle;
         internal int _firstFieldToken;
         internal int _firstMethodToken;
@@ -39,6 +40,14 @@ namespace System.Reflection.Emit
         internal readonly List<EventBuilderImpl> _eventDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _methodOverrides;
+
+        internal TypeBuilderImpl(ModuleBuilderImpl module)
+        {
+            _name = "<Module>";
+            _module = module;
+            _isHiddenGlobalType = true;
+            _handle = MetadataTokens.TypeDefinitionHandle(1);
+        }
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
@@ -94,6 +103,12 @@ namespace System.Reflection.Emit
                 return this;
             }
 
+            if (_isHiddenGlobalType)
+            {
+                _isCreated = true;
+                return null!;
+            }
+
             // Create a public default constructor if this class has no constructor. Except the type is Interface, ValueType, Enum, or a static class.
             // (TypeAttributes.Abstract | TypeAttributes.Sealed) determines if the type is static
             if (_constructorDefinitions.Count == 0 && (_attributes & TypeAttributes.Interface) == 0 && !IsValueType &&
@@ -114,7 +129,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        private void ValidateMethods()
+        internal void ValidateMethods()
         {
             for (int i = 0; i < _methodDefinitions.Count; i++)
             {
@@ -356,6 +371,7 @@ namespace System.Reflection.Emit
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             ThrowIfCreated();
+
 
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
                 returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);

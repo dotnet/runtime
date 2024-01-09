@@ -31,6 +31,7 @@ namespace System.Reflection.Emit
         private int _nextPropertyRowId = 1;
         private int _nextEventRowId = 1;
         private bool _coreTypesFullyPopulated;
+        private bool _hasGlobalBeenCreated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
@@ -42,8 +43,7 @@ namespace System.Reflection.Emit
             _metadataBuilder = builder;
             _assemblyBuilder = assemblyBuilder;
             _moduleVersionId = Guid.NewGuid();
-            _globalTypeBuilder = new TypeBuilderImpl("<Module>", TypeAttributes.NotPublic | TypeAttributes.Class,
-                null, this, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
+            _globalTypeBuilder = new TypeBuilderImpl(this);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit
                 encBaseId: default);
 
             // Create type definition for the special <Module> type that holds global functions
-            _globalTypeBuilder._handle = _metadataBuilder.AddTypeDefinition(
+            _metadataBuilder.AddTypeDefinition(
                 attributes: default,
                 @namespace: default,
                 name: _metadataBuilder.GetOrAddString("<Module>"),
@@ -132,6 +132,11 @@ namespace System.Reflection.Emit
 
             // All generic parameters for all types and methods should be written in specific order
             List<GenericTypeParameterBuilderImpl> genericParams = new();
+
+            // Add global members
+            WriteFields(_globalTypeBuilder);
+            WriteMethods(_globalTypeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
+
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
@@ -880,7 +885,16 @@ namespace System.Reflection.Emit
             return MetadataTokens.GetToken(GetTypeReferenceOrSpecificationHandle(type));
         }
 
-        protected override void CreateGlobalFunctionsCore() => throw new NotImplementedException();
+        protected override void CreateGlobalFunctionsCore()
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            _globalTypeBuilder.CreateTypeInfo();
+            _hasGlobalBeenCreated = true;
+        }
 
         protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
         {
@@ -888,10 +902,41 @@ namespace System.Reflection.Emit
             _typeDefinitions.Add(enumBuilder._typeBuilder);
             return enumBuilder;
         }
-        protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers) => throw new NotImplementedException();
-        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
+
+        protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention,
+            Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes,
+            Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
+            }
+
+            MethodBuilderImpl method = (MethodBuilderImpl)_globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
+                returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
+                parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
+            method._handle = MetadataTokens.MethodDefinitionHandle(_nextMethodDefRowId++);
+            return method;
+        }
+
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            return _globalTypeBuilder.DefineInitializedData(name, data, attributes);
+        }
+
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes,
+            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             // Global methods must be static.
             if ((attributes & MethodAttributes.Static) == 0)
@@ -899,7 +944,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
             }
 
-            return _globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
+            MethodBuilderImpl method = (MethodBuilderImpl)_globalTypeBuilder.DefinePInvokeMethod(
+                name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
+            method._handle = MetadataTokens.MethodDefinitionHandle(_nextMethodDefRowId++);
+            return method;
         }
 
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
@@ -916,6 +964,24 @@ namespace System.Reflection.Emit
         {
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
+
+        [RequiresUnreferencedCode("Methods might be removed")]
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
+            CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            if (types == null)
+            {
+                return _globalTypeBuilder.GetMethod(name, bindingAttr);
+            }
+
+            return _globalTypeBuilder.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
+        }
+
+        [RequiresUnreferencedCode("Methods might be removed")]
+        public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
+        {
+            return _globalTypeBuilder.GetMethods(bindingFlags);
         }
 
         public override int GetSignatureMetadataToken(SignatureHelper signature) =>
