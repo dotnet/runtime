@@ -5305,7 +5305,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        protected void EmitScan(RegexOptions options, DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
+        protected void EmitScan(RegexOptions options, MethodInfo tryFindNextStartingPositionMethod, MethodInfo tryMatchAtCurrentPositionMethod)
         {
             // As with the source generator, we can emit special code for common circumstances rather than always emitting
             // the most general purpose scan loop.  Unlike the source generator, however, code appearance isn't important

@@ -500,8 +500,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_NEG:
 #ifdef TARGET_ARM64
         {
-            GenTree* next = TryLowerNegToMulLongOp(node->AsOp());
-            if (next != nullptr)
+            GenTree* next;
+            if (TryLowerNegToMulLongOp(node->AsOp(), &next))
             {
                 return next;
             }
@@ -6384,14 +6384,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_ADD))
     {
-        GenTree* next = LowerAddForPossibleContainment(node);
-        if (next != nullptr)
+        GenTree* next;
+        if (TryLowerAddForPossibleContainment(node, &next))
         {
             return next;
         }
 
-        next = TryLowerAddSubToMulLongOp(node);
-        if (next != nullptr)
+        if (TryLowerAddSubToMulLongOp(node, &next))
         {
             return next;
         }

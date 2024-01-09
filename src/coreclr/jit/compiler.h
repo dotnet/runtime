@@ -4982,9 +4982,6 @@ public:
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
     FlowGraphNaturalLoops* m_loops;
-    struct LoopDsc;
-    LoopDsc** m_newToOldLoop;
-    FlowGraphNaturalLoop** m_oldToNewLoop;
     LoopSideEffects* m_loopSideEffects;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
@@ -6867,7 +6864,6 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
-    void optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);

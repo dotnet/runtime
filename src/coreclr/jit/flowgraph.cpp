@@ -4025,12 +4025,10 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 //
 void Compiler::fgInvalidateDfsTree()
 {
-    m_dfsTree      = nullptr;
-    m_loops        = nullptr;
-    m_domTree      = nullptr;
-    m_newToOldLoop = nullptr;
-    m_oldToNewLoop = nullptr;
-    fgSsaValid     = false;
+    m_dfsTree  = nullptr;
+    m_loops    = nullptr;
+    m_domTree  = nullptr;
+    fgSsaValid = false;
 }
 
 //------------------------------------------------------------------------
