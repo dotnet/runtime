@@ -19,20 +19,21 @@ namespace System.Runtime.InteropServices.Swift
     /// </code>
     /// </para>
     /// </remarks>
-    public readonly struct SwiftSelf
+    [CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftSelf
     {
         /// <summary>
         /// Creates a new instance of the SwiftSelf struct with the specified pointer value.
         /// </summary>
         /// <param name="value">The pointer value representing the self context.</param>
-        public SwiftSelf(IntPtr value)
+        public SwiftSelf(void* value)
         {
             Value = value;
         }
         /// <summary>
         /// Gets the pointer of the self context.
         /// </summary>
-        public IntPtr Value { get; }
+        public void* Value { get; }
     }
 
     /// <summary>
@@ -51,19 +52,20 @@ namespace System.Runtime.InteropServices.Swift
     /// </code>
     /// </para>
     /// </remarks>
-    public readonly struct SwiftError
+    [CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftError
     {
         /// <summary>
         /// Creates a new instance of the SwiftError struct with the specified pointer value.
         /// </summary>
         /// <param name="value">The pointer value representing the error context.</param>
-        public SwiftError(IntPtr value)
+        public SwiftError(void* value)
         {
             Value = value;
         }
         /// <summary>
         /// Gets the pointer of the error context.
         /// </summary>
-        public IntPtr Value { get; }
+        public void* Value { get; }
     }
 }

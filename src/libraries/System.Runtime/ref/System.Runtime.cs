@@ -13819,15 +13819,18 @@ namespace System.Runtime.InteropServices.Marshalling
 }
 namespace System.Runtime.InteropServices.Swift
 {
-    public readonly struct SwiftSelf
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftSelf
     {
-        public SwiftSelf(System.IntPtr value) { }
-        public System.IntPtr Value { get; }
+        public SwiftSelf(void* value) { }
+        public void* Value { get; }
     }
-    public readonly struct SwiftError
+
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftError
     {
-        public SwiftError(System.IntPtr value) { }
-        public System.IntPtr Value { get; }
+        public SwiftError(void* value) { }
+        public void* Value { get; }
     }
 }
 namespace System.Runtime.Remoting
