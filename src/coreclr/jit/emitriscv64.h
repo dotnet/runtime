@@ -102,6 +102,16 @@ static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, int imm20);
 static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13);
 static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21);
 
+#ifdef DEBUG
+static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
+static void emitOutput_ITypeInstr_SanityCheck(
+    instruction ins, regNumber rd, regNumber rs1, int immediate, unsigned opcode);
+static void emitOutput_STypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2);
+static void emitOutput_UTypeInstr_SanityCheck(instruction ins, regNumber rd);
+static void emitOutput_BTypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2);
+static void emitOutput_JTypeInstr_SanityCheck(instruction ins, regNumber rd);
+#endif // DEBUG
+
 unsigned emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const;
 unsigned emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, int imm12) const;
 unsigned emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm12) const;

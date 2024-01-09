@@ -2296,17 +2296,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 
 #ifdef DEBUG
 
-static bool IsIntegralRegister(regNumber reg)
-{
-    return (reg >= 0) && (reg <= 31);
-}
-
-static bool IsFloatRegister(regNumber reg)
-{
-    return (reg >= FBASE) && (reg <= (FBASE + 31));
-}
-
-static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
+/*static*/ void emitter::emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
 {
     switch (ins)
     {
@@ -2365,9 +2355,9 @@ static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
         case INS_remw:
             FALLTHROUGH;
         case INS_remuw:
-            assert(IsIntegralRegister(rd));
-            assert(IsIntegralRegister(rs1));
-            assert(IsIntegralRegister(rs2));
+            assert(isGeneralRegisterOrR0(rd));
+            assert(isGeneralRegisterOrR0(rs1));
+            assert(isGeneralRegisterOrR0(rs2));
             break;
         case INS_fadd_s:
             FALLTHROUGH;
@@ -2416,9 +2406,9 @@ static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
         case INS_flt_d:
             FALLTHROUGH;
         case INS_fle_d:
-            assert(IsFloatRegister(rd));
-            assert(IsFloatRegister(rs1));
-            assert(IsFloatRegister(rs2));
+            assert(isFloatReg(rd));
+            assert(isFloatReg(rs1));
+            assert(isFloatReg(rs2));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_RTypeInstr!");
@@ -2426,7 +2416,8 @@ static void RTypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
     }
 }
 
-static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber rs1, int immediate, unsigned opcode)
+/*static*/ void emitter::emitOutput_ITypeInstr_SanityCheck(
+    instruction ins, regNumber rd, regNumber rs1, int immediate, unsigned opcode)
 {
     switch (ins)
     {
@@ -2467,15 +2458,15 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
         case INS_csrrs:
             FALLTHROUGH;
         case INS_csrrc:
-            assert(IsIntegralRegister(rd));
-            assert(IsIntegralRegister(rs1));
+            assert(isGeneralRegisterOrR0(rd));
+            assert(isGeneralRegisterOrR0(rs1));
             assert((opcode & kInstructionFunct7Mask) == 0);
             break;
         case INS_flw:
             FALLTHROUGH;
         case INS_fld:
-            assert(IsFloatRegister(rd));
-            assert(IsIntegralRegister(rs1));
+            assert(isFloatReg(rd));
+            assert(isGeneralRegisterOrR0(rs1));
             assert((opcode & kInstructionFunct7Mask) == 0);
             break;
         case INS_slli:
@@ -2484,8 +2475,8 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
             FALLTHROUGH;
         case INS_srai:
             assert(0 <= immediate < 64);
-            assert(IsIntegralRegister(rd));
-            assert(IsIntegralRegister(rs1));
+            assert(isGeneralRegisterOrR0(rd));
+            assert(isGeneralRegisterOrR0(rs1));
             break;
         case INS_slliw:
             FALLTHROUGH;
@@ -2493,15 +2484,15 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
             FALLTHROUGH;
         case INS_sraiw:
             assert(0 <= immediate < 32);
-            assert(IsIntegralRegister(rd));
-            assert(IsIntegralRegister(rs1));
+            assert(isGeneralRegisterOrR0(rd));
+            assert(isGeneralRegisterOrR0(rs1));
             break;
         case INS_csrrwi:
             FALLTHROUGH;
         case INS_csrrsi:
             FALLTHROUGH;
         case INS_csrrci:
-            IsIntegralRegister(rd);
+            isGeneralRegisterOrR0(rd);
             assert(rs1 < 32);
             break;
         default:
@@ -2510,7 +2501,7 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
     }
 }
 
-static void STypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumber rs2)
+/*static*/ void emitter::emitOutput_STypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2)
 {
     switch (ins)
     {
@@ -2521,14 +2512,14 @@ static void STypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
         case INS_sw:
             FALLTHROUGH;
         case INS_sd:
-            assert(IsIntegralRegister(rs1));
-            assert(IsIntegralRegister(rs2));
+            assert(isGeneralRegisterOrR0(rs1));
+            assert(isGeneralRegisterOrR0(rs2));
             break;
         case INS_fsw:
             FALLTHROUGH;
         case INS_fsd:
-            assert(IsFloatRegister(rs1));
-            assert(IsIntegralRegister(rs2));
+            assert(isFloatReg(rs1));
+            assert(isGeneralRegisterOrR0(rs2));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_STypeInstr!");
@@ -2536,14 +2527,14 @@ static void STypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
     }
 }
 
-static void UTypeInstructionSanityCheck(instruction ins, regNumber rd)
+/*static*/ void emitter::emitOutput_UTypeInstr_SanityCheck(instruction ins, regNumber rd)
 {
     switch (ins)
     {
         case INS_lui:
             FALLTHROUGH;
         case INS_auipc:
-            assert(IsIntegralRegister(rd));
+            assert(isGeneralRegisterOrR0(rd));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_UTypeInstr!");
@@ -2551,7 +2542,7 @@ static void UTypeInstructionSanityCheck(instruction ins, regNumber rd)
     }
 }
 
-static void BTypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumber rs2)
+/*static*/ void emitter::emitOutput_BTypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2)
 {
     switch (ins)
     {
@@ -2571,8 +2562,8 @@ static void BTypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
         case INS_bltu:
             FALLTHROUGH;
         case INS_bgeu:
-            assert(IsIntegralRegister(rs1));
-            assert(IsIntegralRegister(rs2));
+            assert(isGeneralRegisterOrR0(rs1));
+            assert(isGeneralRegisterOrR0(rs2));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_BTypeInstr!");
@@ -2580,7 +2571,7 @@ static void BTypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
     }
 }
 
-static void JTypeInstructionSanityCheck(instruction ins, regNumber rd)
+/*static*/ void emitter::emitOutput_JTypeInstr_SanityCheck(instruction ins, regNumber rd)
 {
     switch (ins)
     {
@@ -2588,7 +2579,7 @@ static void JTypeInstructionSanityCheck(instruction ins, regNumber rd)
             assert(rd == REG_ZERO);
             break;
         case INS_jal:
-            assert(IsIntegralRegister(rd));
+            assert(isGeneralRegisterOrR0(rd));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_JTypeInstr!");
@@ -2609,7 +2600,7 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    RTypeInstructionSanityCheck(ins, rd, rs1, rs2);
+    emitOutput_RTypeInstr_SanityCheck(ins, rd, rs1, rs2);
 #endif // DEBUG
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
@@ -2628,7 +2619,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    ITypeInstructionSanityCheck(ins, rd, rs1, imm12, insCode);
+    emitOutput_ITypeInstr_SanityCheck(ins, rd, rs1, imm12, insCode);
 #endif // DEBUG
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
@@ -2647,7 +2638,7 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    STypeInstructionSanityCheck(ins, rs1, rs2);
+    emitOutput_STypeInstr_SanityCheck(ins, rs1, rs2);
 #endif // DEBUG
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
@@ -2665,7 +2656,7 @@ unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    UTypeInstructionSanityCheck(ins, rd);
+    emitOutput_UTypeInstr_SanityCheck(ins, rd);
 #endif // DEBUG
     return emitOutput_Instr(dst, insEncodeUTypeInstr(insCode, rd, imm20));
 }
@@ -2681,7 +2672,7 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    BTypeInstructionSanityCheck(ins, rs1, rs2);
+    emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
 #endif // DEBUG
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
@@ -2705,7 +2696,7 @@ unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
 {
     unsigned insCode = emitInsCode(ins) ^ 0x1000;
 #ifdef DEBUG
-    BTypeInstructionSanityCheck(ins, rs1, rs2);
+    emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
 #endif // DEBUG
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
@@ -2723,7 +2714,7 @@ unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
-    JTypeInstructionSanityCheck(ins, rd);
+    emitOutput_JTypeInstr_SanityCheck(ins, rd);
 #endif // JTypeInstructionSanityCheck
     return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21));
 }
