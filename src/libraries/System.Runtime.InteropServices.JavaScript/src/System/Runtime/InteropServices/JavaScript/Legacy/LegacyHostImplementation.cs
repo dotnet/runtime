@@ -18,12 +18,6 @@ namespace System.Runtime.InteropServices.JavaScript
             jsObj?.ReleaseInFlight();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RegisterCSOwnedObject(JSObject proxy)
-        {
-            JSHostImplementation.ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-        }
-
         public static MarshalType GetMarshalTypeFromType(Type type)
         {
             if (type is null)
@@ -222,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
         public static void ThrowIfLegacyWorkerThread()
         {
-            if (Thread.CurrentThread.ManagedThreadId != 1)
+            if (Environment.CurrentManagedThreadId != 1)
             {
                 throw new PlatformNotSupportedException("Legacy interop is not supported with WebAssembly threads.");
             }

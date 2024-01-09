@@ -187,11 +187,6 @@ public:
     void dmpProcessName(DWORD key, DWORD value);
     const char* repProcessName();
 
-    void recAddressMap(void* original_address, void* replay_address, unsigned int size);
-    void dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value);
-    void* repAddressMap(void* replay_address);
-    void* searchAddressMap(void* replay_address);
-
     void recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize);
     void dmpReserveUnwindInfo(DWORD key, const Agnostic_ReserveUnwindInfo& value);
 

@@ -19,6 +19,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "eventtrace_etw.h"
 #include "eventtracebase.h"
@@ -983,7 +984,7 @@ namespace
         ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
     }
 
-    void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+    void GcScanRootsForETW(ScanFunc* fn, int condemned, int max_gen, ScanContext* sc)
     {
         UNREFERENCED_PARAMETER(condemned);
         UNREFERENCED_PARAMETER(max_gen);
@@ -998,7 +999,7 @@ namespace
 
             sc->thread_under_crawl = pThread;
             sc->dwEtwRootKind = kEtwGCRootKindStack;
-            pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
+            pThread->GcScanRoots(fn, sc);
             sc->dwEtwRootKind = kEtwGCRootKindOther;
         }
         END_FOREACH_THREAD
