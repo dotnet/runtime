@@ -485,8 +485,8 @@ static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 // Returns the first register list size for the given SVE instruction.
 static int insGetSveReg1ListSize(instruction ins);
 
-// Returns the predicate type for the given SVE instruction's second register.
-static PredicateType insGetSveReg2PredicateType(insFormat fmt);
+// Returns the predicate type for the given SVE format.
+static PredicateType insGetPredicateType(insFormat fmt);
 
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);

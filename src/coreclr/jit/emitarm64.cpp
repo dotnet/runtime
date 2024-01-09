@@ -1308,6 +1308,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isScalableVectorSize(elemsize));
 
 #ifdef DEBUG
             switch (id->idIns())
@@ -1370,8 +1371,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                     break;
             }
 #endif // DEBUG
-
-            assert(isScalableVectorSize(elemsize));
             break;
 
         default:
@@ -13592,10 +13591,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the predicate type for the given SVE instruction's second register.
+ *  Returns the predicate type for the given SVE format.
  */
 
-/*static*/ emitter::PredicateType emitter::insGetSveReg2PredicateType(insFormat fmt)
+/*static*/ emitter::PredicateType emitter::insGetPredicateType(insFormat fmt)
 {
     switch (fmt)
     {
@@ -18864,7 +18863,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
             emitDispSveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true);        // ttttt
-            emitDispPredicateReg(id->idReg2(), insGetSveReg2PredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
             if (imm != 0)
