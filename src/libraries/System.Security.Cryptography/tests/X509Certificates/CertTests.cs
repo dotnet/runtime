@@ -137,6 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void PublicPrivateKey_IndependentLifetimes_DSA()
         {
             X509Certificate2 loaded;
