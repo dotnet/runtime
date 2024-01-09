@@ -16,4 +16,9 @@
   </PropertyGroup>
 
   <Import Project="..\..\..\libraries\Directory.Build.props" />
+  <PropertyGroup>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
 </Project>
