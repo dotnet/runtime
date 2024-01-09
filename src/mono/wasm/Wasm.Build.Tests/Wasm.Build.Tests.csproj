@@ -25,6 +25,7 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
