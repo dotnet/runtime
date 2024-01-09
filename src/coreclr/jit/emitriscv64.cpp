@@ -2722,7 +2722,7 @@ unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
 unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm21) const
 {
     unsigned insCode = emitInsCode(ins);
-#define DEBUG
+#ifdef DEBUG
     JTypeInstructionSanityCheck(ins, rd);
 #endif // JTypeInstructionSanityCheck
     return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21));
