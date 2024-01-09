@@ -25,6 +25,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
     private State _state;
     private ManualResetValueTaskSourceCore<bool> _valueTaskSource;
     private CancellationTokenRegistration _cancellationRegistration;
+    private Exception? _exception;
     private GCHandle _keepAlive;
 
     public ValueTaskSource()
@@ -32,6 +33,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
         _state = State.None;
         _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = true };
         _cancellationRegistration = default;
+        _exception = default;
         _keepAlive = default;
     }
 
@@ -75,7 +77,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
             State state = _state;
 
             // If we're the first here, we will return true.
-            if (state == State.None)
+            if (state == State.None && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Pending)
             {
                 // Keep alive the caller object until the result is read from the task.
                 // Used for keeping caller alive during async interop calls.
@@ -104,30 +106,42 @@ internal sealed class ValueTaskSource : IValueTaskSource
                 {
                     State state = _state;
 
-                    if (state != State.Completed)
+                    // Completed: nothing to do.
+                    if (state == State.Completed)
                     {
-                        _state = State.Completed;
+                        return false;
+                    }
 
-                        // Swap the cancellation registration so the one that's been registered gets eventually Disposed.
-                        // Ideally, we would dispose it here, but if the callbacks kicks in, it tries to take the lock held by this thread leading to deadlock.
-                        cancellationRegistration = _cancellationRegistration;
-                        _cancellationRegistration = default;
+                    // With cancellation, keep the state as-is so it can be restored after the OCE is consumed.
+                    _state = exception is OperationCanceledException ? state : State.Completed;
 
-                        if (exception is not null)
+                    // Swap the cancellation registration so the one that's been registered gets eventually Disposed.
+                    // Ideally, we would dispose it here, but if the callbacks kicks in, it tries to take the lock held by this thread leading to deadlock.
+                    cancellationRegistration = _cancellationRegistration;
+                    _cancellationRegistration = default;
+
+                    if (exception is not null)
+                    {
+                        // Set up the exception stack trace for the caller.
+                        exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
+                        if (_valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Pending)
                         {
-                            // Set up the exception stack trace for the caller.
-                            exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
                             _valueTaskSource.SetException(exception);
                         }
-                        else
+                        else if (exception is not OperationCanceledException)
+                        {
+                            _exception = exception;
+                        }
+                    }
+                    else
+                    {
+                        if (_valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Pending)
                         {
                             _valueTaskSource.SetResult(true);
                         }
-
-                        return true;
                     }
 
-                    return false;
+                    return true;
                 }
                 finally
                 {
@@ -173,5 +187,34 @@ internal sealed class ValueTaskSource : IValueTaskSource
         => _valueTaskSource.OnCompleted(continuation, state, token, flags);
 
     void IValueTaskSource.GetResult(short token)
-        => _valueTaskSource.GetResult(token);
+    {
+        try
+        {
+            _valueTaskSource.GetResult(token);
+        }
+        finally
+        {
+            lock (this)
+            {
+                State state = _state;
+
+                // In case of a cancellation, reset the task and set the stored results if necessary.
+                if (_valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Canceled)
+                {
+                    _valueTaskSource.Reset();
+                    if (state == State.Completed)
+                    {
+                        if (_exception is not null)
+                        {
+                            _valueTaskSource.SetException(_exception);
+                        }
+                        else
+                        {
+                            _valueTaskSource.SetResult(true);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

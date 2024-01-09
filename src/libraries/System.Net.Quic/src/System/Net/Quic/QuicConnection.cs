@@ -636,6 +636,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
                     (ulong)_defaultCloseErrorCode);
             }
         }
+        else if (!valueTask.IsCompletedSuccessfully)
+        {
+            unsafe
+            {
+                MsQuicApi.Api.ConnectionShutdown(
+                    _handle,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
+                    (ulong)_defaultCloseErrorCode);
+            }
+        }
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
