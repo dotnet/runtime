@@ -24,7 +24,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  */
 void CodeGen::genArm64EmitterUnitTestsGeneral()
 {
-    assert(verbose);
     emitter* theEmitter = GetEmitter();
 
     //
@@ -1824,7 +1823,6 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
  */
 void CodeGen::genArm64EmitterUnitTestsAdvSimd()
 {
-    assert(verbose);
     emitter* theEmitter = GetEmitter();
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -4557,7 +4555,6 @@ void CodeGen::genArm64EmitterUnitTestsAdvSimd()
  */
 void CodeGen::genArm64EmitterUnitTestsSve()
 {
-    assert(verbose);
     emitter* theEmitter = GetEmitter();
 
     //

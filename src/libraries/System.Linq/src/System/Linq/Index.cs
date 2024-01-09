@@ -18,6 +18,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return IndexIterator(source);
         }
 

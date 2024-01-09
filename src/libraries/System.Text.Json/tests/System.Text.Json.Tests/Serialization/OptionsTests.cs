@@ -330,6 +330,90 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(Environment.NewLine, json);
         }
 
+        [Theory]
+        [InlineData('\f')]
+        [InlineData('\n')]
+        [InlineData('\r')]
+        [InlineData('\0')]
+        [InlineData('a')]
+        public static void IndentCharacters_WithInvalidChartacters_ThrowsArgumentOutOfRangeException(char character)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentCharacter = character);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(128)]
+        [InlineData(int.MinValue)]
+        [InlineData(int.MaxValue)]
+        public static void IndentSize_WithInvalidSize_ThrowsArgumentOutOfRangeException(int size)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentSize = size);
+        }
+
+        [Fact]
+        public static void IndentCharacter()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            // Verify default value.
+            var defaultIndent = "  ";
+            string json = JsonSerializer.Serialize(obj);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Verify default value on options.
+            var options = new JsonSerializerOptions();
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Enable default indentation.
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(defaultIndent, json);
+
+            // Set custom indentCharacter without enabling indentation
+            var tab = '\t';
+            Assert.DoesNotContain(tab, json);
+            options = new JsonSerializerOptions();
+            options.IndentCharacter = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentCharacter with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentCharacter = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(tab, json);
+        }
+
+        [Fact]
+        public static void IndentSize()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            var tab = '\t';
+            // Set custom indentSize without enabling indentation
+            var options = new JsonSerializerOptions();
+            options.IndentCharacter = tab;
+            options.IndentSize = 1;
+            var json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentSize with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentCharacter = tab;
+            options.IndentSize = 4;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(new string(tab, 4), json);
+        }
+
         [Fact]
         public static void ExtensionDataUsesReaderOptions()
         {
@@ -1328,6 +1412,10 @@ namespace System.Text.Json.Serialization.Tests
                 if (propertyType == typeof(int))
                 {
                     property.SetValue(options, 32);
+                }
+                else if (propertyType == typeof(string))
+                {
+                    property.SetValue(options, "\t");
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {

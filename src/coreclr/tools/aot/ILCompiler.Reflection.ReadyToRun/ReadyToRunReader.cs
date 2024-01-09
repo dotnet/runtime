@@ -633,6 +633,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Amd64:
                 case Machine.Arm64:
                 case Machine.LoongArch64:
+                case (Machine)0x5064: /* TODO: update with RiscV64 */
                     _pointerSize = 8;
                     break;
 
@@ -1416,6 +1417,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         case Machine.Amd64:
                         case Machine.Arm64:
                         case Machine.LoongArch64:
+                        case (Machine)0x5064: /* TODO: update with RiscV64 */
                             entrySize = 8;
                             break;
 

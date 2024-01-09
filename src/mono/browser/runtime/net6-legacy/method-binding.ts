@@ -17,7 +17,7 @@ import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
 import { mono_log_warn } from "../logging";
-import { assert_bindings } from "../invoke-js";
+import { assert_js_interop } from "../invoke-js";
 
 
 const escapeRE = /[^A-Za-z0-9_$]/g;
@@ -678,5 +678,5 @@ export function assert_legacy_interop(): void {
     if (MonoWasmThreads) {
         mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
     }
-    assert_bindings();
+    assert_js_interop();
 }
