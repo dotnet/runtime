@@ -57,7 +57,8 @@ namespace System.Runtime.InteropServices.Swift
         /// Creates a new instance of the SwiftError struct with the specified pointer value.
         /// </summary>
         /// <param name="value">The pointer value representing the error context.</param>
-        public SwiftError(IntPtr value) {
+        public SwiftError(IntPtr value)
+        {
             Value = value;
         }
         /// <summary>
