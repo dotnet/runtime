@@ -38,15 +38,15 @@ steps:
       archType: ${{ parameters.archType }}
       buildConfig: ${{ parameters.buildConfig }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
-
+    variables:
+    - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+      - name: monoAotBuildshCommand
+        value: 'mono_aot'
+    - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
+      - name: monoAotBuildshCommand
+        value: 'mono_fullaot'
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), in(parameters.runtimeVariant, 'llvmaot', 'llvmfullaot', 'minifullaot')) }}:
-    - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - name: monoAotBuildshCommand
-          value: 'mono_aot'
-    - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
-        - name: monoAotBuildshCommand
-          value: 'mono_fullaot'
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'minifullaot') }}:
         - script: ./build.sh
