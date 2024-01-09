@@ -680,6 +680,11 @@ namespace System.Numerics
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
+            if (value is null)
+            {
+                result = 0;
+                return false;
+            }
             return TryParse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
