@@ -865,14 +865,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     int calleeSavedDelta = genFuncletInfo.fiSP_to_CalleeSaved_delta;
 
-    if (compiler->opts.IsOSR())
-    {
-        // With OSR we may see large values for fiSpDelta.
-        // We repurpose genAllocLclFram to do the necessary probing.
-        bool scratchRegIsZero = false;
-        genAllocLclFrame(-frameSize, REG_SCRATCH, &scratchRegIsZero, maskArgRegsLiveIn);
-    }
-
     if (calleeSavedDelta + regsSavedSize + genFuncletInfo.fiCalleeSavedPadding <= 2040)
     {
         calleeSavedDelta += genFuncletInfo.fiCalleeSavedPadding;
