@@ -3725,8 +3725,6 @@ RETRY_UNROLL:
 
                     newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
-                    newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-
                     // Block weight should no longer have the loop multiplier
                     //
                     // Note this is not quite right, as we may not have upscaled by this amount
