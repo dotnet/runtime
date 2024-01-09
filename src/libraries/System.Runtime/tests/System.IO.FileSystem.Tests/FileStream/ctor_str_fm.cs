@@ -62,7 +62,7 @@ namespace System.IO.Tests
                 TheoryData<string> data = new TheoryData<string>();
                 data.Add("");
 
-                if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore)
+                if (PlatformDetection.IsWindows)
                 {
                     data.Add("::$DATA");        // Same as default stream (e.g. main file)
                     data.Add(":bar");           // $DATA isn't necessary

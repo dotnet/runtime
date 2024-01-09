@@ -3346,18 +3346,15 @@ bool Compiler::optComputeLoopRep(int        constInit,
 // Loops handled are fully unrolled; there is no partial unrolling.
 //
 // Limitations: only the following loop types are handled:
-// 1. "while" loops (top entry)
-// 2. constant initializer, constant bound
-// 3. The entire loop must be in the same EH region.
-// 4. The loop iteration variable can't be address exposed.
-// 5. The loop iteration variable can't be a promoted struct field.
-// 6. We must be able to calculate the total constant iteration count.
-// 7. On x86, there is a limit to the number of return blocks. So if there are return blocks in the loop that
-//    would be unrolled, the unrolled code can't exceed that limit.
+// 1. constant initializer, constant bound
+// 2. The entire loop must be in the same EH region.
+// 3. The loop iteration variable can't be address exposed.
+// 4. The loop iteration variable can't be a promoted struct field.
+// 5. We must be able to calculate the total constant iteration count.
 //
 // Cost heuristics:
 // 1. there are cost metrics for maximum number of allowed iterations, and maximum unroll size
-// 2. single-iteration loops are always allowed (to eliminate the loop structure).
+// 2. constant trip count loops are always allowed, up to a limit of 4
 // 3. otherwise, only loops where the limit is Vector<T>.Length are currently allowed
 //
 // In stress modes, these heuristic limits are expanded, and loops aren't required to have the
@@ -3391,8 +3388,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
     bool change      = false;
     bool anyIRchange = false;
-    INDEBUG(int unrollCount = 0);    // count of loops unrolled
-    INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
+    INDEBUG(int unrollCount = 0); // count of loops unrolled
 
     static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
         10, // BLENDED_CODE
@@ -3675,11 +3671,10 @@ RETRY_UNROLL:
 
             BlockToBlockMap blockMap(getAllocator(CMK_LoopUnroll));
 
-            BasicBlock*       bottom        = loop->GetLexicallyBottomMostBlock();
-            BasicBlock*       insertAfter   = bottom;
-            BasicBlock* const tail          = bottom->Next();
-            BasicBlock*       prevTestBlock = nullptr;
-            unsigned          iterToUnroll  = totalIter; // The number of iterations left to unroll
+            BasicBlock* bottom        = loop->GetLexicallyBottomMostBlock();
+            BasicBlock* insertAfter   = bottom;
+            BasicBlock* prevTestBlock = nullptr;
+            unsigned    iterToUnroll  = totalIter; // The number of iterations left to unroll
 
             // Find the exit block of the IV test first. We need to do that
             // here since it may have implicit fallthrough that we'll change
@@ -3714,8 +3709,8 @@ RETRY_UNROLL:
 
             for (int lval = lbeg; iterToUnroll > 0; iterToUnroll--)
             {
-                BasicBlock*     testBlock = nullptr;
-                BasicBlockVisit result    = loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
+                BasicBlock* testBlock = nullptr;
+                loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
 
                     // Don't set a jump target for now.
                     // BasicBlock::CopyTarget() will fix the jump kind/target in the loop below.
@@ -3724,18 +3719,11 @@ RETRY_UNROLL:
 
                     blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
 
-                    if (!BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval))
-                    {
-                        // CloneBlockState (specifically, gtCloneExpr) doesn't handle everything. If it fails
-                        // to clone a block in the loop, splice out and forget all the blocks we cloned so far:
-                        // put the loop blocks back to how they were before we started cloning blocks,
-                        // and abort unrolling the loop.
-                        bottom->SetNext(tail);
-                        INDEBUG(++unrollFailures);
-                        JITDUMP("Failed to unroll loop " FMT_LP ": block cloning failed on " FMT_BB "\n",
-                                loop->GetIndex(), block->bbNum);
-                        return BasicBlockVisit::Abort;
-                    }
+                    // Now clone block state and statements from `from` block to `to` block.
+                    //
+                    BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
+
+                    newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
                     newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
@@ -3797,11 +3785,6 @@ RETRY_UNROLL:
 
                     return BasicBlockVisit::Continue;
                 });
-
-                if (result == BasicBlockVisit::Abort)
-                {
-                    goto DONE_LOOP;
-                }
 
                 assert(testBlock != nullptr);
 
@@ -3976,10 +3959,6 @@ RETRY_UNROLL:
         if (verbose)
         {
             printf("\nFinished unrolling %d loops", unrollCount);
-            if (unrollFailures > 0)
-            {
-                printf(", %d failures due to block cloning", unrollFailures);
-            }
             printf("\n");
         }
 #endif // DEBUG
@@ -3996,14 +3975,7 @@ RETRY_UNROLL:
     }
     else
     {
-#ifdef DEBUG
         assert(unrollCount == 0);
-
-        if (unrollFailures > 0)
-        {
-            printf("\nFinished loop unrolling, %d failures due to block cloning\n", unrollFailures);
-        }
-#endif // DEBUG
     }
 
 #ifdef DEBUG
