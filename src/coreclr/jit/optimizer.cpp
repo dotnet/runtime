@@ -5054,6 +5054,14 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// optSetPreheaderWeight: Set the weight of a newly created preheader, after it
+// has been added to the flowgraph.
+//
+// Parameters:
+//   loop      - The loop
+//   preheader - The new preheader block
+//
 void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
 {
     if (loop->EntryEdges().size() == 1)
