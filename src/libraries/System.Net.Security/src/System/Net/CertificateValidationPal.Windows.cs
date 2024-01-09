@@ -49,7 +49,21 @@ namespace System.Net
             SafeFreeCertContext? remoteContext = null;
             try
             {
-                SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                // SECPKG_ATTR_REMOTE_CERT_CONTEXT will not succeed before TLS handshake completes. Inside the handshake,
+                // we need to use (more expensive) SECPKG_ATTR_REMOTE_CERT_CHAIN. That one may be unsupported on older
+                // versions of windows. In that case, we have no option than to return null.
+                //
+                // We can use retrieveCollection to distinguish between in-handshake and after-handshake calls, because
+                // the collection is retrieved for cert validation purposes after the handshake completes.
+                if (retrieveCollection) // handshake completed
+                {
+                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                }
+                else // in handshake
+                {
+                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                }
+
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
