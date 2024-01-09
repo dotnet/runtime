@@ -13,6 +13,35 @@ namespace System.IO.Compression
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
 
+        [Fact]
+        public async Task EmptyWritesAreEquivalentToNoWrites()
+        {
+            var dest = new MemoryStream();
+
+            CreateStream(dest, CompressionMode.Compress, leaveOpen: true).Dispose();
+            long noWritesLength = dest.Length;
+
+            dest.Position = 0;
+            using (Stream compress = CreateStream(dest, CompressionMode.Compress, leaveOpen: true))
+            {
+                compress.Write(new byte[1], 0, 0);
+                compress.Write(ReadOnlySpan<byte>.Empty);
+                await compress.WriteAsync(new byte[1], 0, 0);
+                await compress.WriteAsync(ReadOnlyMemory<byte>.Empty);
+            }
+
+            Assert.Equal(noWritesLength, dest.Length);
+        }
+
+        [Fact]
+        public void EmptyStreamDecompresses()
+        {
+            using (Stream decompress = CreateStream(new MemoryStream(), CompressionMode.Decompress))
+            {
+                Assert.Equal(-1, decompress.ReadByte());
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {

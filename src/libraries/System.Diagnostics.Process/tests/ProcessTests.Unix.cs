@@ -914,7 +914,7 @@ namespace System.Diagnostics.Tests
                         Console.WriteLine("{0} Failed to kill process {1} started at {2}", now, nonChildProcess.Id, start);
                         Helpers.DumpAllProcesses();
 
-                        Assert.True(false, "test timed out");
+                        Assert.Fail("test timed out");
                     }
                 }
 

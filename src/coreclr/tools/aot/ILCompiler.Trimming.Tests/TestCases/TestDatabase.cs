@@ -34,6 +34,11 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName();
 		}
 
+        public static IEnumerable<object[]> Inheritance_Interaces()
+        {
+            return TestNamesBySuiteName("Inheritance.Interfaces");
+        }
+
         public static IEnumerable<object[]> Libraries()
         {
             return TestNamesBySuiteName();

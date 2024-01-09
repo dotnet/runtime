@@ -51,7 +51,7 @@ namespace System.Xml.XmlSchemaTests
             foreach (object obj in schema.Elements.Names)
                 if ((obj.ToString()).Equals(param2.ToString()))
                     return;
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ namespace System.Xml.XmlSchemaTests
                 CError.Compare(sc.IsCompiled, true, "IsCompiled");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -277,7 +277,7 @@ namespace System.Xml.XmlSchemaTests
             foreach (object obj in schema.Elements.Names)
                 if ((obj.ToString()).Equals(param2.ToString()))
                     return;
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -295,7 +295,7 @@ namespace System.Xml.XmlSchemaTests
             try
             {
                 sc.Reprocess(schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (ArgumentException) { }
             CError.Compare(sc.IsCompiled, false, "ReprocessIsCompiled");
@@ -318,14 +318,14 @@ namespace System.Xml.XmlSchemaTests
                 try
                 {
                     sc.Reprocess(schema);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (ArgumentException) { }
                 CError.Compare(sc.IsCompiled, true, "ReprocessIsCompiled");
                 CError.Compare(sc.Count, 1, "ReprocessCount");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -542,7 +542,7 @@ namespace System.Xml.XmlSchemaTests
             foreach (object obj in schema.Elements.Names)
                 if ((obj.ToString()).Equals(param2.ToString()))
                     return;
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -564,7 +564,7 @@ namespace System.Xml.XmlSchemaTests
             try
             {
                 sc.Reprocess(schema);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (ArgumentException) { }
             CError.Compare(sc.IsCompiled, true, "ReprocessIsCompiled");
@@ -583,14 +583,14 @@ namespace System.Xml.XmlSchemaTests
                 try
                 {
                     sc.Reprocess(schema);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (ArgumentException) { }
                 CError.Compare(sc.IsCompiled, true, "ReprocessIsCompiled");
                 CError.Compare(sc.Count, 1, "ReprocessCount");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------

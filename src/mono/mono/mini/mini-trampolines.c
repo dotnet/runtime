@@ -419,7 +419,7 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 	if (mono_llvm_only)
 		add_static_rgctx_tramp = FALSE;
 
-	if (add_static_rgctx_tramp)
+	if (add_static_rgctx_tramp && !(ji && ji->no_mrgctx))
 		addr = mono_create_static_rgctx_trampoline (m, addr);
 
 	return addr;

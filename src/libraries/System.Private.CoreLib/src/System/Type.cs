@@ -31,7 +31,7 @@ namespace System
         {
             get
             {
-#if CORECLR
+#if !MONO
                 if (this is RuntimeType rt)
                     return rt.IsInterface;
 #endif
@@ -125,7 +125,7 @@ namespace System
         public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
-        public bool IsPrimitive => IsPrimitiveImpl();
+        public bool IsPrimitive { [Intrinsic] get => IsPrimitiveImpl(); }
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
@@ -341,6 +341,9 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, DefaultLookup, null, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+        public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Type[] types) => GetMethod(name, genericParameterCount, bindingAttr, null, types, null);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, bindingAttr, binder, CallingConventions.Any, types, modifiers);

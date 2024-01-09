@@ -30,7 +30,7 @@ namespace NetClient
             try
             {
                 var tmp = (LicenseTesting)new LicenseTestingClass();
-                Assert.True(false, "Activation of licensed class should fail");
+                Assert.Fail("Activation of licensed class should fail");
             }
             catch (COMException e)
             {

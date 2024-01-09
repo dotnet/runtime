@@ -34,8 +34,8 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System
@@ -143,7 +143,7 @@ namespace System
         internal static Type GetGenericTypeDefinition(RuntimeType type)
         {
             Type? res = null;
-            GetGenericTypeDefinition_impl(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create (ref res));
+            GetGenericTypeDefinition_impl(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
             if (res == null)
                 // The icall returns null if TYPE is a gtd
                 return type;
@@ -231,7 +231,7 @@ namespace System
 
         internal static bool HasInstantiation(RuntimeType type)
         {
-            return HasInstantiation (new QCallTypeHandle(ref type));
+            return HasInstantiation(new QCallTypeHandle(ref type));
         }
 
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
@@ -264,7 +264,7 @@ namespace System
 
         internal static int GetArrayRank(RuntimeType type)
         {
-            return GetArrayRank(new QCallTypeHandle (ref type));
+            return GetArrayRank(new QCallTypeHandle(ref type));
         }
 
         internal static RuntimeAssembly GetAssembly(RuntimeType type)
@@ -379,7 +379,7 @@ namespace System
                 internal_from_name(
                                    namePtr.Value,
                                    ref stackMark,
-                                   ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
+                                   ObjectHandleOnStack.Create(ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
                     throw new TypeLoadException(SR.Arg_TypeLoadException);
             }

@@ -5,8 +5,8 @@
 // It replaces the C++ bits of the implementation with a faithful C# port.
 
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Reflection.Emit
 {

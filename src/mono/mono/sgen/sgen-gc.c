@@ -2740,7 +2740,7 @@ extern gboolean mono_wasm_enable_gc;
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#ifdef HOST_BROWSER
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
 	if (!mono_wasm_enable_gc) {
 		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
 		//we ignore forced_serial

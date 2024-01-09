@@ -10,12 +10,12 @@ set(COMMON_RUNTIME_SOURCES
     EHHelpers.cpp
     event.cpp
     FinalizerHelpers.cpp
+    GcEnum.cpp
     GCHelpers.cpp
     gctoclreventsink.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
-    gcrhenv.cpp
-    gcrhscan.cpp
+    gcenv.ee.cpp
     GcStressControl.cpp
     HandleTableHelpers.cpp
     MathHelpers.cpp
@@ -149,6 +149,10 @@ else()
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 
+  if(CLR_CMAKE_TARGET_HAIKU)
+    add_definitions(-DPT_GNU_EH_FRAME=PT_EH_FRAME)
+  endif()
+
   list(APPEND COMMON_RUNTIME_SOURCES
     unix/PalRedhawkUnix.cpp
     unix/PalCreateDump.cpp
@@ -232,15 +236,20 @@ endif()
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
-add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
+if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+  add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
+endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
 add_definitions(-DFEATURE_DYNAMIC_CODE)
-add_compile_definitions($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:FEATURE_GC_STRESS>)
+add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
+if(CLR_CMAKE_TARGET_ARCH_X86 OR CLR_CMAKE_TARGET_ARCH_ARM)
+  add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
+endif(CLR_CMAKE_TARGET_ARCH_X86 OR CLR_CMAKE_TARGET_ARCH_ARM)
 add_definitions(-D_LIB)
 
 # there is a problem with undefined symbols when this is set

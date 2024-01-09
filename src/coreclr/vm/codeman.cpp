@@ -26,7 +26,6 @@
 
 #include "shimload.h"
 #include "debuginfostore.h"
-#include "strsafe.h"
 
 #include "configuration.h"
 
@@ -1511,6 +1510,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Sha256);
     }
 
+    if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
+    {
+        CPUCompileFlags.Set(InstructionSet_Sve);
+    }
+
     // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).
     // DCZID_EL0<3:0> (BS) specifies Log2 of the block size in words.
     //
@@ -1978,7 +1982,7 @@ BOOL EEJitManager::LoadJIT()
             // We have some inconsistency all over the place with osx vs macos, let's handle both here
             if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
             {
-                targetOs = CORINFO_MACOS;
+                targetOs = CORINFO_APPLE;
             }
             else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
             {

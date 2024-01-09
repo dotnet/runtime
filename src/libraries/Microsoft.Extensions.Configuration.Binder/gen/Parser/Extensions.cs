@@ -15,7 +15,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly struct TypeParseInfo
             {
                 public ITypeSymbol TypeSymbol { get; private init; }
-                public string TypeName { get; private init; }
+
+                /// <summary>
+                /// <see cref="System.Type.FullName"/> like rendering of the symbol name.
+                /// </summary>
+                public string FullName { get; private init; }
                 public MethodsToGen BindingOverload { get; private init; }
                 public BinderInvocation BinderInvocation { get; private init; }
                 public ContainingTypeDiagnosticInfo? ContainingTypeDiagnosticInfo { get; private init; }
@@ -24,7 +28,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     new TypeParseInfo
                     {
                         TypeSymbol = typeSymbol,
-                        TypeName = typeSymbol.GetName(),
+                        FullName = typeSymbol.GetFullName(),
                         BindingOverload = overload,
                         BinderInvocation = invocation,
                         ContainingTypeDiagnosticInfo = containingTypeDiagInfo,
@@ -36,7 +40,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? null
                         : new()
                         {
-                            TypeName = TypeName,
+                            FullName = FullName,
                             Descriptor = diagDescriptor,
                             MemberName = memberName,
                             ContainingTypeInfo = ContainingTypeDiagnosticInfo,
@@ -48,7 +52,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private sealed class ContainingTypeDiagnosticInfo
             {
-                public required string TypeName { get; init; }
+                /// <summary>
+                /// <see cref="System.Type.FullName"/> like rendering of the symbol name.
+                /// </summary>
+                public required string FullName { get; init; }
                 public required string? MemberName { get; init; }
                 public required DiagnosticDescriptor Descriptor { get; init; }
                 public required ContainingTypeDiagnosticInfo? ContainingTypeInfo { get; init; }
@@ -113,14 +120,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return sb.ToString();
         }
 
-        public static (string? Namespace, string DisplayString, string Name) GetTypeName(this ITypeSymbol type)
+        public static (string DisplayString, string FullName) GetTypeNames(this ITypeSymbol type)
         {
             string? @namespace = type.ContainingNamespace is { IsGlobalNamespace: false } containingNamespace ? containingNamespace.ToDisplayString() : null;
             string displayString = type.ToDisplayString(s_minimalDisplayFormat);
-            string name = (@namespace is null ? string.Empty : @namespace + ".") + displayString.Replace(".", "+");
-            return (@namespace, displayString, name);
+            string fullname = (@namespace is null ? string.Empty : @namespace + ".") + displayString.Replace(".", "+");
+            return (displayString, fullname);
         }
 
-        public static string GetName(this ITypeSymbol type) => GetTypeName(type).Name;
+        public static string GetFullName(this ITypeSymbol type) => GetTypeNames(type).FullName;
     }
 }

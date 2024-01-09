@@ -526,7 +526,7 @@
     <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
-    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'.</value>
+    <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'. Custom converters can add support for dictionary key serialization by overriding the 'ReadAsPropertyName' and 'WriteAsPropertyName' methods.</value>
   </data>
   <data name="IgnoreConditionOnValueTypeInvalid" xml:space="preserve">
     <value>The ignore condition 'JsonIgnoreCondition.WhenWritingNull' is not valid on value-type member '{0}' on type '{1}'. Consider using 'JsonIgnoreCondition.WhenWritingDefault'.</value>
@@ -707,5 +707,11 @@
   </data>
   <data name="FormatHalf" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for a Half.</value>
+  </data>
+  <data name="InvalidIndentCharacter" xml:space="preserve">
+    <value>Supported indentation characters are space and horizontal tab.</value>
+  </data>
+  <data name="InvalidIndentSize" xml:space="preserve">
+    <value>Indentation size must be between {0} and {1}.</value>
   </data>
 </root>

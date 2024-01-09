@@ -153,6 +153,14 @@ namespace Internal.IL
                     {
                         _dependencies.Add(_factory.NecessaryTypeSymbol(method.OwningType), reason);
                     }
+
+                    if (_canonMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                    {
+                        _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetSyncFromClassHandle")), reason);
+
+                        if (_canonMethod.RequiresInstMethodDescArg())
+                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetClassFromMethodParam")), reason);
+                    }
                 }
                 else
                 {
@@ -1071,8 +1079,7 @@ namespace Internal.IL
 
         private void ImportLoadString(int token)
         {
-            // If we care, this can include allocating the frozen string node.
-            _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
+            _dependencies.Add(_factory.SerializedStringObject((string)_methodIL.GetObject(token)), "ldstr");
         }
 
         private void ImportBox(int token)

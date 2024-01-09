@@ -577,7 +577,7 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
     long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
     X509* cert = SSL_get1_peer_certificate(ssl);
 
-    if (len > 0 && cert != NULL)
+    if (len > 0 && cert != NULL && !X509_get_ex_data(cert, g_x509_ocsp_index))
     {
         OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
 

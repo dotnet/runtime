@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Metadata.NativeFormat;
 
@@ -49,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return GenericParameterHandle.GetHashCode();
         }

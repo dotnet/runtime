@@ -261,10 +261,6 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
 
-#if HYBRID_GLOBALIZATION
-    setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
-#endif
-
 #if ENABLE_RUNTIME_LOGGING
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);
@@ -272,7 +268,7 @@ mono_ios_runtime_init (void)
 
     // build using DiagnosticPorts property in AppleAppBuilder
     // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents=diagnostics_tracing
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
@@ -290,19 +286,17 @@ mono_ios_runtime_init (void)
 
     char icu_dat_path [1024];
     int res;
-#if defined(HYBRID_GLOBALIZATION)
-    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt_hybrid.dat");
-#else
+#if !defined(HYBRID_GLOBALIZATION)
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
-#endif
     assert (res > 0);
+#endif
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
     const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER",
         "APP_CONTEXT_BASE_DIRECTORY",
         "PINVOKE_OVERRIDE",
-#if !defined(INVARIANT_GLOBALIZATION)
+#if !defined(INVARIANT_GLOBALIZATION) && !defined(HYBRID_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
 #endif
     };
@@ -310,7 +304,7 @@ mono_ios_runtime_init (void)
         APPLE_RUNTIME_IDENTIFIER,
         bundle,
         pinvoke_override,
-#if !defined(INVARIANT_GLOBALIZATION)
+#if !defined(INVARIANT_GLOBALIZATION) && !defined(HYBRID_GLOBALIZATION)
         icu_dat_path
 #endif
     };

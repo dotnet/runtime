@@ -387,7 +387,7 @@ namespace ObjectiveCMarshalAPI
                 return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowException();
             }
 
-            Assert.True(false, "Unknown exception type");
+            Assert.Fail("Unknown exception type");
             throw new UnreachableException();
         }
 
@@ -438,6 +438,7 @@ namespace ObjectiveCMarshalAPI
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         public static int TestEntryPoint()
         {
             try

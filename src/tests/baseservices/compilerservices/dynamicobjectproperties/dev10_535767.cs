@@ -41,6 +41,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // How we assign nodes to dependent handles.
 enum TableStyle
@@ -357,10 +358,11 @@ class Node
 }
 
 // The test class itself.
-class DhTest1
+public class DhTest1
 {
     // Entry point.
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // The actual test runs are controlled from RunTest. True is returned if all succeeded, false
         // otherwise.

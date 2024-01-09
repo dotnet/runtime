@@ -298,8 +298,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// https://github.com/dotnet/linker/issues/2755
-		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2075", "GetFields")]
 		static void MakeGenericTypeWithKnowAndUnknownArray (Type[] unknownTypes = null, int p = 0)
 		{
 			Type[] types = p switch {

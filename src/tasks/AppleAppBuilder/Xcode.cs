@@ -188,7 +188,7 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents = null,
+        IEnumerable<string> runtimeComponents,
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false,
         bool isLibraryMode = false)
@@ -252,7 +252,7 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents = null,
+        IEnumerable<string> runtimeComponents,
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false,
         bool isLibraryMode = false)
@@ -271,7 +271,7 @@ internal sealed class Xcode
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
-            !(hybridGlobalization ? Path.GetFileName(f) == "icudt_hybrid.dat" : Path.GetFileName(f) == "icudt.dat"))))
+            !(!hybridGlobalization && Path.GetFileName(f) == "icudt.dat"))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -337,34 +337,19 @@ internal sealed class Xcode
         {
             string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
             string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
-            bool staticLinkAllComponents = false;
-            string[] staticLinkedComponents = Array.Empty<string>();
-
-            if (!string.IsNullOrEmpty(runtimeComponents) && runtimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                staticLinkAllComponents = true;
-            else if (!string.IsNullOrEmpty(runtimeComponents))
-                staticLinkedComponents = runtimeComponents.Split(";");
 
             // by default, component stubs will be linked and depending on how mono runtime has been build,
             // stubs can disable or dynamic load components.
             foreach (string staticComponentStubLib in staticComponentStubLibs)
             {
                 string componentLibToLink = staticComponentStubLib;
-                if (staticLinkAllComponents)
+                foreach (string runtimeComponent in runtimeComponents)
                 {
-                    // static link component.
-                    componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    foreach (string staticLinkedComponent in staticLinkedComponents)
+                    if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // static link component.
-                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                            break;
-                        }
+                        // static link component.
+                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                        break;
                     }
                 }
 

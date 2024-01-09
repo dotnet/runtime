@@ -1816,7 +1816,7 @@ static int (*zeroFunc)() = zeroFN;
  */
 
 typedef unsigned pasMaskType;
-#define BITS_IN_pasMask (BITS_IN_BYTE * sizeof(pasMaskType))
+#define BITS_IN_pasMask (BITS_PER_BYTE * sizeof(pasMaskType))
 #define HIGHEST_pasMask_BIT (((pasMaskType)0x1) << (BITS_IN_pasMask - 1))
 
 //-----------------------------------------------------------------------------

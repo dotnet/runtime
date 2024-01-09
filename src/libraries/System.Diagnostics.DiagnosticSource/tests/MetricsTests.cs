@@ -1664,7 +1664,7 @@ namespace System.Diagnostics.Metrics.Tests
             if (typeof(T) == typeof(double)) { return (T)(object)Convert.ToDouble(value); }
             if (typeof(T) == typeof(decimal)) { return (T)(object)Convert.ToDecimal(value);}
 
-            Assert.True(false, "We encountered unsupported type");
+            Assert.Fail("We encountered unsupported type");
             return default;
         }
     }

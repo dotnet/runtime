@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -30,15 +31,8 @@ namespace System
             // unifier's hash table.
             if (MethodTable.SupportsWritableData)
             {
-                ref UnsafeGCHandle handle = ref Unsafe.AsRef<UnsafeGCHandle>(pMT->WritableData);
-                if (handle.IsAllocated)
-                {
-                    return Unsafe.As<RuntimeType>(handle.Target);
-                }
-                else
-                {
-                    return GetTypeFromMethodTableSlow(pMT, ref handle);
-                }
+                ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                return type ?? GetTypeFromMethodTableSlow(pMT);
             }
             else
             {
@@ -46,41 +40,36 @@ namespace System
             }
         }
 
+        private static class AllocationLockHolder
+        {
+            public static LowLevelLock AllocationLock = new LowLevelLock();
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref UnsafeGCHandle handle)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
-            // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
-            // identity of MethodTable pointers). There is another unifier behind that cache
-            // that ensures this code is race-free.
-            Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(new EETypePtr(pMT));
-            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(result);
-
-            // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<UnsafeGCHandle, IntPtr>(ref handle), Unsafe.As<UnsafeGCHandle, IntPtr>(ref tempHandle), default) != default)
+            // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
+            AllocationLockHolder.AllocationLock.Acquire();
+            try
             {
-                tempHandle.Free();
+                ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                if (runtimeTypeCache != null)
+                    return runtimeTypeCache;
+
+                RuntimeType? type = FrozenObjectHeapManager.Instance.TryAllocateObject<RuntimeType>();
+                if (type == null)
+                    throw new OutOfMemoryException();
+
+                type.DangerousSetUnderlyingEEType(pMT);
+
+                runtimeTypeCache = type;
+
+                return type;
             }
-
-            return Unsafe.As<RuntimeType>(handle.Target);
-        }
-
-        internal EETypePtr GetEEType()
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            Debug.Assert(!typeHandle.IsNull);
-            return typeHandle.ToEETypePtr();
-        }
-
-        internal bool TryGetEEType(out EETypePtr eeType)
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            if (typeHandle.IsNull)
+            finally
             {
-                eeType = default(EETypePtr);
-                return false;
+                AllocationLockHolder.AllocationLock.Release();
             }
-            eeType = typeHandle.ToEETypePtr();
-            return true;
         }
 
         //

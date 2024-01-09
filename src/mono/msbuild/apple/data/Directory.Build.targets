@@ -14,6 +14,6 @@
       <AppleAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
   </Target>
-  <Import Project="$(_LibraryTargetsDir)LibraryBuilder.targets" Condition="Exists('$(_LibraryTargetsDir)LibraryBuilder.targets')" />
+  <Import Project="$(_CommonTargetsDir)LibraryBuilder.targets" Condition="Exists('$(_CommonTargetsDir)LibraryBuilder.targets')" />
   <Import Project="$(_AppleTargetsDir)AppleBuild.LocalBuild.targets" Condition="Exists('$(_AppleTargetsDir)AppleBuild.LocalBuild.targets')" />
 </Project>

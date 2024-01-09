@@ -4,8 +4,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -262,56 +260,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll))]
-			// ILLink/ILCompiler analysis hole: https://github.com/dotnet/runtime/issues/90335
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = Tool.Analyzer)]
-			static void TestArrayElementAssignment (bool b = true)
-			{
-				var arr1 = new Type[] { GetUnknownType () };
-				var arr2 = new Type[] { GetTypeWithPublicConstructors () };
-				(b ? arr1 : arr2)[0] = GetTypeWithPublicFields ();
-				arr1[0].RequiresAll ();
-				arr2[0].RequiresAll ();
-			}
-
-			[Kept]
-			[KeptAttributeAttribute (typeof (InlineArrayAttribute))]
-			[InlineArray (8)]
-			public struct InlineTypeArray
-			{
-				[Kept]
-				public Type t;
-			}
-
-			[Kept]
-			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
-			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
-			static void TestInlineArrayElementReferenceAssignment (bool b = true)
-			{
-				var arr1 = new InlineTypeArray ();
-				arr1[0] = GetUnknownType ();
-				var arr2 = new InlineTypeArray ();
-				arr2[0] = GetTypeWithPublicConstructors ();
-				(b ? ref arr1[0] : ref arr2[0]) = GetTypeWithPublicFields ();
-				arr1[0].RequiresAll ();
-				arr2[0].RequiresAll ();
-			}
-
-			// Inline array references are not allowed in conditionals, unlike array references.
-			// static void TestInlineArrayElementAssignment (bool b = true)
-			// {
-			// 	var arr1 = new InlineTypeArray ();
-			// 	arr1[0] = GetUnknownType ();
-			// 	var arr2 = new InlineTypeArray ();
-			// 	arr2[0] = GetTypeWithPublicConstructors ();
-			// 	(b ? arr1 : arr2)[0] = GetTypeWithPublicFields ();
-			// 	arr1[0].RequiresAll ();
-			// 	arr2[0].RequiresAll ();
-			// }
-
-			[Kept]
 			[ExpectedWarning ("IL2074", nameof (_publicMethodsField), nameof (GetUnknownType))]
 			[ExpectedWarning ("IL2074", nameof (_publicPropertiesField), nameof (GetUnknownType))]
 			static void TestNullCoalescingAssignment (bool b = true)
@@ -358,9 +306,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestParameterAssignment ();
 				TestLocalAssignment ();
 				TestArrayElementReferenceAssignment ();
-				TestArrayElementAssignment ();
-				TestInlineArrayElementReferenceAssignment ();
-				// TestInlineArrayElementAssignment ();
 				TestNullCoalescingAssignment ();
 				TestNullCoalescingAssignmentComplex ();
 				TestDataFlowOnRightHandOfAssignment ();

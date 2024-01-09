@@ -608,7 +608,7 @@ namespace System.IO.Tests
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
+            ~NativeMemoryManager() => Assert.Fail($"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 

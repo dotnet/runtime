@@ -18,6 +18,7 @@ namespace Sample
     public partial class Test
     {
         static bool JsonResults = false;
+        static List<Regex> exclusionPatterns = new();
 
         List<BenchTask> tasks = new()
         {
@@ -37,6 +38,15 @@ namespace Sample
         public static Task<string> RunBenchmark()
         {
             return Instance.RunTasks();
+        }
+
+        [JSExport]
+        public static void SetExclusions(string exclusions)
+        {
+            var patterns = exclusions.Split(',');
+            foreach(var def in patterns) {
+                exclusionPatterns.Add(new Regex(def));
+            }
         }
 
         // the constructors of the task we care about are already used when createing tasks field
@@ -126,6 +136,16 @@ namespace Sample
                 measurementIdx++;
 
                 if (!await Task.Measurements[measurementIdx].IsEnabled())
+                    continue;
+
+                bool excluded = false;
+                foreach(var exc in exclusionPatterns)
+                    if (exc.IsMatch($"{Task.Name}:{Task.Measurements[measurementIdx].Name}")) {
+                        excluded = true;
+                        break;
+                    }
+
+                if (excluded)
                     continue;
 
                 if (Task.pattern == null || Task.pattern.IsMatch(Task.Measurements[measurementIdx].Name))

@@ -24,7 +24,6 @@ public class SatelliteLoadingTests : AppTestBase
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/93387")]
     public async Task LoadSatelliteAssembly()
     {
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests");

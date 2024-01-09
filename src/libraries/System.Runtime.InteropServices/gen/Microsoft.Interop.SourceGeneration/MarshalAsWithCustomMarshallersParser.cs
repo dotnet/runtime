@@ -77,19 +77,17 @@ namespace Microsoft.Interop
                     elementMarshallingInfo = marshallingInfoCallback(elementType, useSiteAttributes, indirectionDepth + 1);
                 }
 
-                CountInfo countInfo = NoCountInfo.Instance;
-
-                if (useSiteAttributes.TryGetUseSiteAttributeInfo(indirectionDepth, out UseSiteAttributeData useSiteAttributeData))
-                {
-                    countInfo = useSiteAttributeData.CountInfo;
-                }
-
-                return ArrayMarshallingInfoProvider.CreateArrayMarshallingInfo(_compilation, type, elementType, countInfo, elementMarshallingInfo);
+                return ArrayMarshallingInfoProvider.CreateArrayMarshallingInfo(_compilation, type, elementType, arrayInfo.CountInfo, elementMarshallingInfo);
             }
 
             if (type.SpecialType == SpecialType.System_String)
             {
                 return CreateStringMarshallingInfo(type, marshalAsInfo);
+            }
+
+            if (type.SpecialType == SpecialType.System_Object && marshalAsInfo is MarshalAsScalarInfo(UnmanagedType.Struct, _))
+            {
+                return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.ComVariantMarshaller);
             }
 
             return marshalAsInfo;
@@ -113,7 +111,7 @@ namespace Microsoft.Interop
                 return marshalAsInfo;
             }
 
-            return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
+            return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, marshallerName);
         }
     }
 }

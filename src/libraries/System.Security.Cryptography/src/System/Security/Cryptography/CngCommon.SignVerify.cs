@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using ErrorCode = Interop.NCrypt.ErrorCode;
 using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
+using ErrorCode = Interop.NCrypt.ErrorCode;
 
 namespace System.Security.Cryptography
 {
@@ -20,22 +21,22 @@ namespace System.Security.Cryptography
 #endif
             byte[] signature = new byte[estimatedSize];
             int numBytesNeeded;
-            ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+            ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, signature, out numBytesNeeded, paddingMode);
 
             if (errorCode == ErrorCode.STATUS_UNSUCCESSFUL)
             {
-                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, signature, out numBytesNeeded, paddingMode);
             }
 
             if (errorCode.IsBufferTooSmall())
             {
                 signature = new byte[numBytesNeeded];
-                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, signature, out numBytesNeeded, paddingMode);
             }
 
             if (errorCode == ErrorCode.STATUS_UNSUCCESSFUL)
             {
-                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+                errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, signature, out numBytesNeeded, paddingMode);
             }
 
             if (errorCode != ErrorCode.ERROR_SUCCESS)
@@ -53,9 +54,7 @@ namespace System.Security.Cryptography
                     keyHandle,
                     pPaddingInfo,
                     hash,
-                    hash.Length,
                     signature,
-                    signature.Length,
                     out int numBytesNeeded,
                     paddingMode);
 
@@ -63,6 +62,7 @@ namespace System.Security.Cryptography
                 {
                     case ErrorCode.ERROR_SUCCESS:
                         bytesWritten = numBytesNeeded;
+                        Debug.Assert(bytesWritten <= signature.Length);
                         return true;
 
                     case ErrorCode code when code.IsBufferTooSmall():

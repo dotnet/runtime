@@ -801,7 +801,6 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_NATIVEAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
@@ -812,7 +811,6 @@ public:
     static void ChooseCPUGroupAffinity(GROUP_AFFINITY *gf);
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
     static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
-#endif
 };
 
 DWORD_PTR GetCurrentProcessCpuMask();
@@ -2837,27 +2835,6 @@ private:
 
 
 //*****************************************************************************
-//
-//********** String helper functions.
-//
-//*****************************************************************************
-
-//*****************************************************************************
-// Checks if string length exceeds the specified limit
-//*****************************************************************************
-inline BOOL IsStrLongerThan(_In_ _In_z_ char* pstr, unsigned N)
-{
-    LIMITED_METHOD_CONTRACT;
-    unsigned i = 0;
-    if(pstr)
-    {
-        for(i=0; (i < N)&&(pstr[i]); i++);
-    }
-    return (i >= N);
-}
-
-
-//*****************************************************************************
 // Class to parse a list of simple assembly names and then find a match
 //*****************************************************************************
 
@@ -3410,19 +3387,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // stackbase is the unique fiber identifier
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackBase()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackLimit()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackLimit;
+        return ((NT_TIB*)NtCurrentTeb())->StackLimit;
     }
 
     static void* GetOleReservedPtr()

@@ -114,7 +114,7 @@ namespace Microsoft.Interop.Analyzers
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
             SignatureContext targetSignatureContext = SignatureContext.Create(
                 method,
-                DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute),
+                LibraryImportGeneratorHelpers.CreateMarshallingInfoParser(env, tf, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute),
                 env,
                 new CodeEmitOptions(SkipInit: tf.TargetFramework == TargetFramework.Net),
                 typeof(ConvertToLibraryImportAnalyzer).Assembly);

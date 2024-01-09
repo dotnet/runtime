@@ -4,12 +4,11 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-
-using System.IO.Compression;
 
 namespace System.Reflection.PortableExecutable
 {

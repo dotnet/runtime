@@ -9,8 +9,8 @@ namespace System.Reflection.Emit
     {
         private readonly string? _name;
         private readonly int _position;
-        private readonly MethodBuilderImpl _methodBuilder;
-        private ParameterAttributes _attributes;
+        internal readonly MethodBuilderImpl _methodBuilder;
+        internal ParameterAttributes _attributes;
 
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal MarshallingData? _marshallingData;
@@ -59,5 +59,29 @@ namespace System.Reflection.Emit
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
+    }
+
+    internal sealed class ParameterInfoWrapper : ParameterInfo
+    {
+        private readonly ParameterBuilderImpl _pb;
+        private readonly Type _type
+;
+        public ParameterInfoWrapper(ParameterBuilderImpl pb, Type type)
+        {
+            _pb = pb;
+            _type = type;
+        }
+
+        public override ParameterAttributes Attributes => _pb._attributes;
+
+        public override string? Name => _pb.Name;
+
+        public override int Position => _pb.Position;
+
+        public override Type ParameterType => _type;
+
+        public override bool HasDefaultValue => _pb._defaultValue != DBNull.Value;
+
+        public override object? DefaultValue => HasDefaultValue ? _pb._defaultValue : null;
     }
 }

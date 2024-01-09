@@ -3,11 +3,13 @@
 using System;
 using System.Threading;
 using System.IO;
+using Xunit;
 
 public class UserExceptionThread : Exception {
         static int retVal = 100;
 
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		Thread mv_Thread;
 		String str = "Done";
 		UserExceptionThread ue = new UserExceptionThread();

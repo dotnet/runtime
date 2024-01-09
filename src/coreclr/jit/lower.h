@@ -88,14 +88,14 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #ifdef TARGET_ARM64
-    GenTree* TryLowerAndOrToCCMP(GenTreeOp* tree);
+    bool TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
     void TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
     void TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
-    GenTree* TryLowerAddSubToMulLongOp(GenTreeOp* op);
-    GenTree* TryLowerNegToMulLongOp(GenTreeOp* op);
+    bool TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
+    bool TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -118,6 +118,7 @@ private:
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
+    void TryCompressConstVecData(GenTreeStoreInd* node);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -333,6 +334,8 @@ private:
     void LowerLclHeap(GenTree* node);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
+    GenTree* LowerArrLength(GenTreeArrCommon* node);
+
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
@@ -383,9 +386,8 @@ private:
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     void LowerModPow2(GenTree* node);
-    GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
+    bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
                                                  CorInfoType simdBaseJitType,

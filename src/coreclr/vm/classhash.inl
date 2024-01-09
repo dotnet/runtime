@@ -38,7 +38,7 @@ inline PTR_VOID EEClassHashTable::CompressClassDef(mdToken cl)
     }
 }
 
-inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName)
+inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, DWORD hashEncloser)
 {
     CONTRACTL
     {
@@ -59,6 +59,11 @@ inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName)
 
     while ((dwChar = *pszClassName++) != 0)
         dwHash = ((dwHash << 5) + dwHash) ^ dwChar;
+
+    if (hashEncloser != 0)
+    {
+        dwHash = ((dwHash << 5) + dwHash) ^ hashEncloser;
+    }
 
     return  dwHash;
 }

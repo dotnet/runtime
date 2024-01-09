@@ -458,7 +458,6 @@ add_executable_clr(paltests
   locale_info/WideCharToMultiByte/test3/test3.cpp
   locale_info/WideCharToMultiByte/test4/test4.cpp
   locale_info/WideCharToMultiByte/test5/test5.cpp
-  miscellaneous/CGroup/test1/test.cpp
   miscellaneous/CloseHandle/test1/test.cpp
   miscellaneous/CloseHandle/test2/test.cpp
   miscellaneous/FlushInstructionCache/test1/test1.cpp

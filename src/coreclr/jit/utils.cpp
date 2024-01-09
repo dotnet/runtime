@@ -730,7 +730,7 @@ const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Contains: check if the range includes a particular hash
@@ -924,7 +924,7 @@ void ConfigMethodRange::Dump()
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
@@ -1319,28 +1319,19 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 #ifdef DEBUG
 
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size)
+void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
-    if (!size)
+    if (size == 0)
     {
         return;
     }
 
-    assert(addr);
+    assert(addr != nullptr);
 
-    fprintf(dmpf, "Hex dump of %s:\n", name);
-
-    for (unsigned i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
-        if ((i % 16) == 0)
-        {
-            fprintf(dmpf, "\n    %04X: ", i);
-        }
-
-        fprintf(dmpf, "%02X ", *addr++);
+        fprintf(dmpf, "%02X", *addr++);
     }
-
-    fprintf(dmpf, "\n\n");
 }
 
 #endif // DEBUG

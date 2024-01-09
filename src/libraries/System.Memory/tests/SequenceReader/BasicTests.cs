@@ -380,7 +380,7 @@ namespace System.Memory.Tests.SequenceReader
             try
             {
                 reader.Advance(6);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (Exception ex)
             {
@@ -448,7 +448,7 @@ namespace System.Memory.Tests.SequenceReader
             try
             {
                 reader.Advance(4);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (Exception ex)
             {

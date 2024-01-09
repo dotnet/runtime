@@ -257,7 +257,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/66232", TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(GetJsonSerializerOptions))]
         public static void JsonSerializerOptions_ReuseConverterCaches()
         {
             // This test uses reflection to:
@@ -372,6 +371,8 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.ReadCommentHandling)), JsonCommentHandling.Skip);
                 yield return (GetProp(nameof(JsonSerializerOptions.UnknownTypeHandling)), JsonUnknownTypeHandling.JsonNode);
                 yield return (GetProp(nameof(JsonSerializerOptions.WriteIndented)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentCharacter)), '\t');
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentSize)), 1);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
                 yield return (GetProp(nameof(JsonSerializerOptions.TypeInfoResolver)), new DefaultJsonTypeInfoResolver());
 

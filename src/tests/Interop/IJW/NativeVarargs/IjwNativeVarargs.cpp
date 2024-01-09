@@ -384,14 +384,14 @@ private:
     bool RunWidenedShortsTest(System::Random^ rng)
     {
         std::array<int, NumArgsPerCall / 2> intValues;
-        std::array<short, NumArgsPerCall - (NumArgsPerCall / 2)> shortValues;
+        std::array<int16_t, NumArgsPerCall - (NumArgsPerCall / 2)> shortValues;
         for (std::size_t i = 0; i < intValues.size(); ++i)
         {
             intValues[i] = rng->Next(System::Int32::MinValue, System::Int32::MaxValue);
         }
         for (std::size_t i = 0; i < shortValues.size(); ++i)
         {
-            shortValues[i] = (short)rng->Next(System::Int16::MinValue, System::Int16::MaxValue);
+            shortValues[i] = (int16_t)rng->Next(System::Int16::MinValue, System::Int16::MaxValue);
         }
 
         auto expected = std::accumulate(intValues.begin(), intValues.end(), 0, std::plus<>{}) + std::accumulate(shortValues.begin(), shortValues.end(), 0LL, std::plus<>{});

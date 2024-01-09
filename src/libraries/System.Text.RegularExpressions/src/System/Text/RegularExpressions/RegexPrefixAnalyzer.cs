@@ -389,7 +389,7 @@ namespace System.Text.RegularExpressions
                             int? sameDistance = null;
                             var combined = new Dictionary<int, (RegexCharClass Set, int Count)>();
 
-                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet> ();
+                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet>();
                             for (int i = 0; i < childCount; i++)
                             {
                                 localResults.Clear();
@@ -776,7 +776,7 @@ namespace System.Text.RegularExpressions
         /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
         /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
         /// </summary>
-        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
+        public static (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
         {
             if ((node.Options & RegexOptions.RightToLeft) != 0)
             {
@@ -804,6 +804,10 @@ namespace System.Text.RegularExpressions
             // could also be made to support Oneloopatomic and Notoneloopatomic, but the scenarios for that are rare.
             Debug.Assert(node.ChildCount() >= 2);
             RegexNode firstChild = node.Child(0);
+            while (firstChild.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
+            {
+                firstChild = firstChild.Child(0);
+            }
             if (firstChild.Kind is not (RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy) || firstChild.N != int.MaxValue)
             {
                 return null;
@@ -816,37 +820,84 @@ namespace System.Text.RegularExpressions
             {
                 if (node.ChildCount() == 2)
                 {
+                    // If the UpdateBumpalong is the last node, nothing meaningful follows the set loop.
                     return null;
                 }
                 nextChild = node.Child(2);
             }
 
-            // If the subsequent node is a literal, we need to ensure it doesn't overlap with the prior set.
-            // If there's no overlap, we have a winner.
-            switch (nextChild.Kind)
+            // Is the set loop followed by a case-sensitive string we can search for?
+            if (FindPrefix(nextChild) is { Length: >= 1 } prefix)
             {
-                case RegexNodeKind.One when !RegexCharClass.CharInClass(nextChild.Ch, firstChild.Str!):
-                    return (firstChild, (nextChild.Ch, null, null));
+                // The literal can be searched for as either a single char or as a string.
+                // But we need to make sure that its starting character isn't part of the preceding
+                // set, as then we can't know for certain where the set loop ends.
+                return
+                    RegexCharClass.CharInClass(prefix[0], firstChild.Str!) ? null :
+                    prefix.Length == 1 ? (firstChild, (prefix[0], null, StringComparison.Ordinal, null)) :
+                    (firstChild, ('\0', prefix, StringComparison.Ordinal, null));
+            }
 
-                case RegexNodeKind.Multi when !RegexCharClass.CharInClass(nextChild.Str![0], firstChild.Str!):
-                    return (firstChild, ('\0', nextChild.Str, null));
+            // Is the set loop followed by an ordinal case-insensitive string we can search for? We could
+            // search for a string with at least one char, but if it has only one, we're better off just
+            // searching as a set, so we look for strings with at least two chars.
+            if (FindPrefixOrdinalCaseInsensitive(nextChild) is { Length: >= 2 } ordinalCaseInsensitivePrefix)
+            {
+                // The literal can be searched for as a case-insensitive string. As with ordinal above,
+                // though, we need to make sure its starting character isn't part of the previous set.
+                // If that starting character participates in case conversion, then we need to test out
+                // both casings (FindPrefixOrdinalCaseInsensitive will only return strings composed of
+                // characters that either are ASCII or that don't participate in case conversion).
+                Debug.Assert(
+                    !RegexCharClass.ParticipatesInCaseConversion(ordinalCaseInsensitivePrefix[0]) ||
+                    ordinalCaseInsensitivePrefix[0] < 128);
 
-                case RegexNodeKind.Set when !RegexCharClass.IsNegated(nextChild.Str!):
-                    Span<char> chars = stackalloc char[5]; // maximum number of chars optimized by IndexOfAny
-                    chars = chars.Slice(0, RegexCharClass.GetSetChars(nextChild.Str!, chars));
-                    if (!chars.IsEmpty)
+                if (RegexCharClass.ParticipatesInCaseConversion(ordinalCaseInsensitivePrefix[0]))
+                {
+                    if (RegexCharClass.CharInClass((char)(ordinalCaseInsensitivePrefix[0] | 0x20), firstChild.Str!) ||
+                        RegexCharClass.CharInClass((char)(ordinalCaseInsensitivePrefix[0] & ~0x20), firstChild.Str!))
                     {
-                        foreach (char c in chars)
-                        {
-                            if (RegexCharClass.CharInClass(c, firstChild.Str!))
-                            {
-                                return null;
-                            }
-                        }
-
-                        return (firstChild, ('\0', null, chars.ToArray()));
+                        return null;
                     }
-                    break;
+                }
+                else if (RegexCharClass.CharInClass(ordinalCaseInsensitivePrefix[0], firstChild.Str!))
+                {
+                    return null;
+                }
+
+                return (firstChild, ('\0', ordinalCaseInsensitivePrefix, StringComparison.OrdinalIgnoreCase, null));
+            }
+
+            // Is the set loop followed by a set we can search for? Whereas the above helpers will drill down into
+            // children as is appropriate, to examine a set here, we need to drill in ourselves. We can drill through
+            // atomic and capture nodes, as they don't affect flow control, and into the left-most node of a concatenate,
+            // as the first child is guaranteed next. We can also drill into a loop or lazy loop that has a guaranteed
+            // iteration, for the same reason as with concatenate.
+            while ((nextChild.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture or RegexNodeKind.Concatenate) ||
+                   (nextChild.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop && nextChild.M >= 1))
+            {
+                nextChild = nextChild.Child(0);
+            }
+
+            // If the resulting node is a set with at least one iteration, we can search for it.
+            if (nextChild.IsSetFamily &&
+                !RegexCharClass.IsNegated(nextChild.Str!) &&
+                (nextChild.Kind is RegexNodeKind.Set || nextChild.M >= 1))
+            {
+                Span<char> chars = stackalloc char[5]; // maximum number of chars optimized by IndexOfAny
+                chars = chars.Slice(0, RegexCharClass.GetSetChars(nextChild.Str!, chars));
+                if (!chars.IsEmpty)
+                {
+                    foreach (char c in chars)
+                    {
+                        if (RegexCharClass.CharInClass(c, firstChild.Str!))
+                        {
+                            return null;
+                        }
+                    }
+
+                    return (firstChild, ('\0', null, StringComparison.Ordinal, chars.ToArray()));
+                }
             }
 
             // Otherwise, we couldn't find the pattern of an atomic set loop followed by a literal.

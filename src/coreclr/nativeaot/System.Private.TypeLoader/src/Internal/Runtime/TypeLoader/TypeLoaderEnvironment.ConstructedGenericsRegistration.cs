@@ -28,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal void RegisterDynamicGenericTypesAndMethods(DynamicGenericsRegistrationData registrationData)
         {
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 int registeredTypesCount = 0;
                 int registeredMethodsCount = 0;
@@ -130,7 +130,7 @@ namespace Internal.Runtime.TypeLoader
 
         public void RegisterConstructedLazyDictionaryForContext(IntPtr context, IntPtr signature, IntPtr dictionary)
         {
-            Debug.Assert(_typeLoaderLock.IsAcquired);
+            Debug.Assert(_typeLoaderLock.IsHeldByCurrentThread);
             _lazyGenericDictionaries.Add(new LazyDictionaryContext { _context = context, _signature = signature }, dictionary);
         }
     }
