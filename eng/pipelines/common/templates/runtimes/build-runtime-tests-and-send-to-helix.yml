@@ -38,14 +38,6 @@ steps:
       archType: ${{ parameters.archType }}
       buildConfig: ${{ parameters.buildConfig }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
-
-  - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-    - name: monoAotBuildshCommand
-      value: 'mono_aot'
-  - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
-    - name: monoAotBuildshCommand
-      value: 'mono_fullaot'
-
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), in(parameters.runtimeVariant, 'llvmaot', 'llvmfullaot', 'minifullaot')) }}:
     - ${{ if eq(parameters.archType, 'arm64') }}:
@@ -71,11 +63,22 @@ steps:
           displayName: "Build Mono LLVM AOT cross compiler"
 
     - ${{ if eq(parameters.archType, 'x64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot ${{ monoAotBuildshCommand }} ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }}
+      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }}
+          displayName: "AOT compile CoreCLR tests"
+          target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
+      - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }}
           displayName: "AOT compile CoreCLR tests"
           target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
     - ${{ if eq(parameters.archType, 'arm64') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot ${{ monoAotBuildshCommand }} ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
+      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
+          displayName: "AOT cross-compile CoreCLR tests"
+          env:
+            __MonoToolPrefix: aarch64-linux-gnu-
+      - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
           displayName: "AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
