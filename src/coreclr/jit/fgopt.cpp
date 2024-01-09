@@ -4787,13 +4787,13 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         // We will check that the min weight of the bPrev to bDest edge
                         //  is more than twice the max weight of the bPrev to block edge.
                         //
-                        //                  bPrev -->   [BB04, weight 31]
+                        //              bPrev --------> [BB04, weight 31]
                         //                                     |         \.
-                        //          edgeToBlock -------------> O          \.
+                        //          falseEdge ---------------> O          \.
                         //          [min=8,max=10]             V           \.
-                        //                  block -->   [BB05, weight 10]   \.
+                        //              bFalseDest ---> [BB05, weight 10]   \.
                         //                                                   \.
-                        //          edgeToDest ----------------------------> O
+                        //          trueEdge ------------------------------> O
                         //          [min=21,max=23]                          |
                         //                                                   V
                         //                  bDest --------------->   [BB08, weight 21]

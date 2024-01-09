@@ -5133,6 +5133,30 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
 
+    // If optimizations are enabled, we may remove throw blocks when setting stack levels.
+    // This can move a BBJ_COND's true target to its next block.
+    // In such cases, reverse the condition so we can remove a branch.
+    if (opts.OptimizationEnabled())
+    {
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
+            {
+                // Reverse the jump condition
+                GenTree* test = block->lastNode();
+                assert(test->OperIsConditionalJump());
+                GenTree* cond = gtReverseCond(test);
+                assert(cond == test); // Ensure `gtReverseCond` did not create a new node.
+
+                BasicBlock* newFalseTarget = block->GetTrueTarget();
+                BasicBlock* newTrueTarget  = block->GetFalseTarget();
+                block->SetTrueTarget(newTrueTarget);
+                block->SetFalseTarget(newFalseTarget);
+                assert(block->CanRemoveJumpToTarget(newFalseTarget, this));
+            }
+        }
+    }
+
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 

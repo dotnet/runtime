@@ -3922,9 +3922,10 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
 
     // If we cannot fall into the false target, emit a jump to it
-    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
-        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+        inst_JMP(EJ_jmp, falseTarget);
     }
 }
 

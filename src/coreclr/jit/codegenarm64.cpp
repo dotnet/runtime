@@ -4652,9 +4652,10 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->GetTrueTarget(), reg);
 
     // If we cannot fall into the false target, emit a jump to it
-    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
-        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+        inst_JMP(EJ_jmp, falseTarget);
     }
 }
 
@@ -4885,9 +4886,10 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     }
 
     // If we cannot fall into the false target, emit a jump to it
-    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
-        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+        inst_JMP(EJ_jmp, falseTarget);
     }
 }
 
