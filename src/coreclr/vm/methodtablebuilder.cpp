@@ -7531,8 +7531,10 @@ MethodTableBuilder::PlaceInterfaceMethods()
     DispatchMapTypeID * rgInterfaceDispatchMapTypeIDs = NULL;
 
     // Optimization for fast discovery of possible matches below
-    // Lazily initialied the first time we want to walk the list of methods
-    DWORD *pNameHashArray = NULL;
+    // Lazily initialized the first time we want to walk the list of methods
+    // The memory allocated for these pointers is on the StackingAllocator, which
+    // has the same lifetime as the MethodTableBuilder
+    uint32_t *pNameHashArray = NULL;
     bmtMDMethod **pMDMethodArray = NULL;
     DWORD interfaceImplCandidateArraySize = 0;
 
@@ -7727,9 +7729,11 @@ MethodTableBuilder::PlaceInterfaceMethods()
 
             if (pNameHashArray == NULL)
             {
-                S_SIZE_T cbAlloc = S_SIZE_T(NumDeclaredMethods()) * S_SIZE_T(sizeof(TADDR));
-                pNameHashArray = (DWORD *)GetStackingAllocator()->Alloc(cbAlloc);
-                pMDMethodArray = (bmtMDMethod **)GetStackingAllocator()->Alloc(cbAlloc);
+                S_SIZE_T cbAllocPointers = S_SIZE_T(NumDeclaredMethods()) * S_SIZE_T(sizeof(bmtMDMethod*));
+                S_SIZE_T cbAllocHashes = S_SIZE_T(NumDeclaredMethods()) * S_SIZE_T(sizeof(uint32_t));
+
+                pNameHashArray = (uint32_t *)GetStackingAllocator()->Alloc(cbAllocHashes);
+                pMDMethodArray = (bmtMDMethod **)GetStackingAllocator()->Alloc(cbAllocPointers);
 
                 DeclaredMethodIterator methIt(*this);
                 while (methIt.Next())
