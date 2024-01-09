@@ -2502,6 +2502,7 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
             FALLTHROUGH;
         case INS_csrrci:
             IsIntegralRegister(rd);
+            assert(rs1 < 32);
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
@@ -2575,6 +2576,22 @@ static void BTypeInstructionSanityCheck(instruction ins, regNumber rs1, regNumbe
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_BTypeInstr!");
+            break;
+    }
+}
+
+static void JTypeInstructionSanityCheck(instruction ins, regNumber rd)
+{
+    switch (ins)
+    {
+        case INS_j:
+            assert(rd == REG_ZERO);
+            break;
+        case INS_jal:
+            assert(IsIntegralRegister(rd));
+            break;
+        default:
+            NO_WAY("Illegal ins within emitOutput_JTypeInstr!");
             break;
     }
 }
@@ -2705,6 +2722,9 @@ unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
 unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm21) const
 {
     unsigned insCode = emitInsCode(ins);
+#define DEBUG
+    JTypeInstructionSanityCheck(ins, rd);
+#endif // JTypeInstructionSanityCheck
     return emitOutput_Instr(dst, insEncodeJTypeInstr(insCode, rd, imm21));
 }
 
@@ -2713,8 +2733,6 @@ void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                                 UNATIVE_OFFSET& dstOffs,
                                                 const BYTE*&    dstAddr) const
 {
-    // TODO-RISCV64-BUG: Currently the iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jump
-    // to label and an instruction-count based jumps impossible
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         assert(ig != nullptr);
