@@ -2541,6 +2541,13 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
     return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1 & 0x1f, imm12));
 }
 
+/*****************************************************************************
+ *
+ *  Emit a 32-bit RISCV64 I-Type shift instruction to the given buffer. Returns a
+ *  length of an encoded instruction opcode
+ *
+ */
+
 unsigned emitter::emitOutput_ITypeInstr_Shift(
     BYTE* dst, instruction ins, regNumber rd, regNumber rs1, unsigned shamt) const
 {
