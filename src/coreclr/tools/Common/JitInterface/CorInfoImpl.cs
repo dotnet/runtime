@@ -1590,6 +1590,9 @@ namespace Internal.JitInterface
                 case UnmanagedCallingConventions.Fastcall:
                     result = CorInfoCallConvExtension.Fastcall;
                     break;
+                case UnmanagedCallingConventions.Swift:
+                    result = CorInfoCallConvExtension.Swift;
+                    break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     result = CorInfoCallConvExtension.Managed; // unreachable

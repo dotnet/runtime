@@ -40,7 +40,7 @@ namespace Internal.TypeSystem
         // Unmanaged            = 0x00000009, - this one is always translated to cdecl/stdcall
 
         // The ones higher than 0xF are defined by the type system
-        // There are no such calling conventions yet.
+        Swift                   = 0x00000010
     }
 
     public static class CallingConventionExtensions
@@ -181,6 +181,7 @@ namespace Internal.TypeSystem
                 "CallConvThiscall" => UnmanagedCallingConventions.Thiscall,
                 "CallConvSuppressGCTransition" => UnmanagedCallingConventions.IsSuppressGcTransition,
                 "CallConvMemberFunction" => UnmanagedCallingConventions.IsMemberFunction,
+                "CallConvSwift" => UnmanagedCallingConventions.Swift,
                 _ => null
             };
 
