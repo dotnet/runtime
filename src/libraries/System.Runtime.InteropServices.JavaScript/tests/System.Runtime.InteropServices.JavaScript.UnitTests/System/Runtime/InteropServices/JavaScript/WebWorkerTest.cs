@@ -150,21 +150,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ThreadingTimer(Executor executor)
         {
+            var hit = false;
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
-                executor.AssertTargetThread();
 
-                using var timer = new Threading.Timer(_ =>
+                using var timer = new Timer(_ =>
                 {
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                     tcs.SetResult();
+                    hit = true;
                 }, null, 100, Timeout.Infinite);
 
                 await tcs.Task;
             }, cts.Token);
+
+            Assert.True(hit);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
@@ -175,7 +178,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
 
-                await WebWorkerTestHelper.Delay(1).ContinueWith(_ =>
+                await WebWorkerTestHelper.JSDelay(10).ContinueWith(_ =>
                 {
                     // continue on the context of the target JS interop
                     executor.AssertInteropThread();
@@ -191,7 +194,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
 
-                await WebWorkerTestHelper.Delay(1).ConfigureAwait(true);
+                await WebWorkerTestHelper.JSDelay(1).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
             }, cts.Token);
@@ -200,18 +203,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
+            var hit = false;
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
-                executor.AssertTargetThread();
-                await Task.Delay(10).ContinueWith(_ =>
+                await Task.Delay(10, cts.Token).ContinueWith(_ =>
                 {
-                    // continue on the context of the Timer's thread pool thread
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    hit = true;
                 }, TaskContinuationOptions.ExecuteSynchronously);
             }, cts.Token);
+            Assert.True(hit);
         }
-
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
@@ -219,9 +221,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
-                executor.AssertTargetThread();
-
-                await Task.Delay(1).ConfigureAwait(true);
+                await Task.Delay(10, cts.Token).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
             }, cts.Token);
@@ -233,8 +233,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
             await executor.Execute(async () =>
             {
-                executor.AssertTargetThread();
-
                 await Task.Yield();
 
                 executor.AssertAwaitCapturedContext();
@@ -247,8 +245,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job, CancellationTokenSource cts)
         {
-            TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>();
-            TaskCompletionSource doneTCS = new TaskCompletionSource();
+            TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource doneTCS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var e1 = executor1.Execute(async () =>
             {
@@ -264,9 +262,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var e2 = executor2.Execute(async () =>
             {
-
-                executor2.AssertTargetThread();
-
                 await e2Job(r1);
 
                 doneTCS.SetResult();

@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial void Log(string message);
 
         [JSImport("delay", "InlineTestHelper")]
-        public static partial Task Delay(int ms);
+        public static partial Task JSDelay(int ms);
 
         [JSImport("getTid", "WebWorkerTestHelper")]
         public static partial int GetTid();
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             else
             {
-                await Delay(1).ConfigureAwait(false);
+                await JSDelay(1).ConfigureAwait(false);
             }
         }
 
@@ -157,6 +157,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 ExecutorTID = Environment.CurrentManagedThreadId;
                 ExecutorSynchronizationContext = SynchronizationContext.Current ?? MainSynchronizationContext;
+                AssertTargetThread();
                 return job();
             }
 
