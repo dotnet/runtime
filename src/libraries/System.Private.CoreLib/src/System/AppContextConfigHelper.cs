@@ -15,11 +15,11 @@ namespace System
             string? str = Environment.GetEnvironmentVariable(envVariable);
             if (str != null)
             {
-                if (str.Equals("1", StringComparison.Ordinal) || bool.IsTrueStringIgnoreCase(str))
+                if (str == "1" || bool.IsTrueStringIgnoreCase(str))
                 {
                     return true;
                 }
-                if (str.Equals("0", StringComparison.Ordinal) || bool.IsFalseStringIgnoreCase(str))
+                if (str == "0" || bool.IsFalseStringIgnoreCase(str))
                 {
                     return false;
                 }

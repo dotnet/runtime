@@ -38,18 +38,16 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
+extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    struct
-    {
-        PTRARRAYREF     AsmArray;
-    } gc;
+    BEGIN_QCALL;
 
-    gc.AsmArray = NULL;
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    PTRARRAYREF asmArray = NULL;
+    GCPROTECT_BEGIN(asmArray);
 
     MethodTable * pAssemblyClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
 
@@ -60,8 +58,8 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
     //  that are still loading, and those won't be included in the array of
     //  loaded assemblies.  When that happens, the array will have some trailing
     //  NULL entries; those entries will need to be trimmed.
-    size_t nArrayElems = pApp->m_Assemblies.GetCount(pApp);
-    gc.AsmArray = (PTRARRAYREF) AllocateObjectArray(
+    size_t nArrayElems = pApp->GetAssemblyCount();
+    asmArray = (PTRARRAYREF) AllocateObjectArray(
         (DWORD)nArrayElems,
         pAssemblyClass);
 
@@ -84,7 +82,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
             {   // The assembly was collected and is not reachable from managed code anymore
                 continue;
             }
-            gc.AsmArray->SetAt(numAssemblies++, o);
+            asmArray->SetAt(numAssemblies++, o);
             // If it is a collectible assembly, it is now referenced from the managed world, so we can
             // release the native reference in the holder
         }
@@ -101,16 +99,18 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 
         for (size_t ix = 0; ix < numAssemblies; ++ix)
         {
-            AsmArray2->SetAt(ix, gc.AsmArray->GetAt(ix));
+            AsmArray2->SetAt(ix, asmArray->GetAt(ix));
         }
 
-        gc.AsmArray = AsmArray2;
+        asmArray = AsmArray2;
     }
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.AsmArray);
-} // AppDomainNative::GetAssemblies
-FCIMPLEND
+    retAssemblies.Set(asmArray);
+
+    GCPROTECT_END();
+
+    END_QCALL;
+}
 
 extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str)
 {

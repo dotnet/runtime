@@ -50,11 +50,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--<AdditionalSharedFrameworkToInstallArguments Include="-Version 8.0.0-rc.2.23457.7" />-->
     <!-- Required for running apps built with 9.0 sdk, but the sdk does
          not yet support *running* with 9.0 sdk -->
-    <AdditionalSharedFrameworkToInstallArguments Condition="!$([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -c 8.0 -q daily" />
-    <AdditionalSharedFrameworkToInstallArguments Condition=" $([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -Channel 8.0 -Quality daily" />
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 8.0 -Quality daily" />
 
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
@@ -213,6 +211,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     IntermediateOutputPath="$(ArtifactsObjDir)wasm"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

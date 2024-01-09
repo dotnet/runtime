@@ -33,7 +33,6 @@ void Compiler::fgInit()
     /* We haven't yet computed the dominator sets */
     fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
-    fgCompactRenumberQuirk = false;
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -184,6 +183,7 @@ void Compiler::fgInit()
     fgPgoInlineeNoPgoSingleBlock = 0;
     fgCountInstrumentor          = nullptr;
     fgHistogramInstrumentor      = nullptr;
+    fgValueInstrumentor          = nullptr;
     fgPredListSortVector         = nullptr;
     fgCanonicalizedFirstBB       = false;
 }
@@ -1359,6 +1359,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_get_IsEnum:
                             case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
+                            case NI_System_Type_get_IsPrimitive:
                             case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
@@ -2668,12 +2669,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
 
-        if (retBlocks == 0 && isInlining)
+        if ((retBlocks == 0) && isInlining &&
+            info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
         {
             // Mark the call node as "no return" as it can impact caller's code quality.
             impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
             // Mark root method as containing a noreturn call.
             impInlineRoot()->setMethodHasNoReturnCalls();
+
+            // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
+            // as "no-return" if its IL may change.
         }
 
         // If the inline is viable and discretionary, do the
@@ -3550,7 +3555,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         else
         {
             fgFirstBB = curBBdesc;
-            curBBdesc->SetPrev(nullptr);
+            assert(fgFirstBB->IsFirst());
         }
 
         fgLastBB = curBBdesc;
@@ -3684,14 +3689,6 @@ void Compiler::fgFindBasicBlocks()
 
     if (compIsForInlining())
     {
-
-#ifdef DEBUG
-        // If fgFindJumpTargets marked the call as "no return" there
-        // really should be no BBJ_RETURN blocks in the method.
-        bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
-        assert((markedNoReturn && (fgReturnCount == 0)) || (!markedNoReturn && (fgReturnCount >= 1)));
-#endif // DEBUG
-
         if (compInlineResult->IsFailure())
         {
             return;
@@ -4761,28 +4758,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 {
     // We'd like to use fgNewBBafter(), but we need to update the preds list before linking in the new block.
     // (We need the successors of 'curr' to be correct when we do this.)
-    BasicBlock* newBlock;
-
-    // For each successor of the original block, set the new block as their predecessor.
-    // Note we are using the "rational" version of the successor iterator that does not hide the finallyret arcs.
-    // Without these arcs, a block 'b' may not be a member of succs(preds(b))
-    switch (curr->GetKind())
-    {
-        case BBJ_COND:
-            newBlock = BasicBlock::New(this, BBJ_COND, curr->GetTrueTarget());
-            break;
-
-        case BBJ_EHFINALLYRET:
-            newBlock = BasicBlock::New(this, curr->GetEhfTargets());
-            break;
-
-        case BBJ_SWITCH:
-            newBlock = BasicBlock::New(this, curr->GetSwitchTargets());
-            break;
-
-        default:
-            newBlock = BasicBlock::New(this, curr->GetKind(), curr->GetTarget());
-    }
+    BasicBlock* newBlock = BasicBlock::New(this);
 
     // Start the new block with no refs. When we set the preds below, this will get updated correctly.
     newBlock->bbRefs = 0;
@@ -4795,6 +4771,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     }
     else
     {
+        // For each successor of the original block, set the new block as their predecessor.
+
         for (BasicBlock* const succ : curr->Succs(this))
         {
             if (succ != newBlock)
@@ -4834,11 +4812,17 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Remove flags from the old block that are no longer possible.
     curr->RemoveFlags(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
-    // Default to fallthru, and add the arc for that.
-    curr->SetFlags(BBF_NONE_QUIRK);
+    // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
+    // above code (and so newBlock->bbNext is valid, so SetCond() can initialize bbFalseTarget if newBlock is a
+    // BBJ_COND).
+    newBlock->TransferTarget(curr);
+
+    // Default to fallthrough, and add the arc for that.
     curr->SetKindAndTarget(BBJ_ALWAYS, newBlock);
-    fgAddRefPred(newBlock, curr);
+    curr->SetFlags(BBF_NONE_QUIRK);
     assert(curr->JumpsToNext());
+
+    fgAddRefPred(newBlock, curr);
 
     return newBlock;
 }
@@ -5092,6 +5076,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     if (curr->KindIs(BBJ_COND))
     {
+        curr->SetFalseTarget(curr->Next());
         fgReplacePred(succ, curr, newBlock);
         if (curr->TrueTargetIs(succ))
         {
@@ -5146,7 +5131,7 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
         assert((fgFirstBBScratch == nullptr) || (fgFirstBBScratch == fgFirstBB));
 
         fgFirstBB = block->Next();
-        fgFirstBB->SetPrev(nullptr);
+        fgFirstBB->SetPrevToNull();
 
         if (fgFirstBBScratch != nullptr)
         {
@@ -5160,13 +5145,15 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
             fgFirstBBScratch = nullptr;
         }
     }
+    else if (block->IsLast())
+    {
+        assert(fgLastBB == block);
+        fgLastBB = block->Prev();
+        fgLastBB->SetNextToNull();
+    }
     else
     {
         block->Prev()->SetNext(block->Next());
-        if (block == fgLastBB)
-        {
-            fgLastBB = block->Prev();
-        }
     }
 }
 
@@ -5198,13 +5185,15 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
-    bPrev->SetNext(bEnd->Next());
-
     /* If we removed the last block in the method then update fgLastBB */
     if (fgLastBB == bEnd)
     {
         fgLastBB = bPrev;
-        noway_assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
+    }
+    else
+    {
+        bPrev->SetNext(bEnd->Next());
     }
 
     // If bEnd was the first Cold basic block update fgFirstColdBlock
@@ -5310,9 +5299,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
         noway_assert(!block->isBBCallFinallyPairTail());
-
-        /* This cannot be the last basic block */
-        noway_assert(block != fgLastBB);
 
 #ifdef DEBUG
         if (verbose)
@@ -5467,6 +5453,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
+                bPrev->SetFalseTarget(block->Next());
+
                 /* Check if both sides of the BBJ_COND now jump to the same block */
                 if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
                 {
@@ -5526,7 +5514,7 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 // fgConnectFallThrough: fix flow from a block that previously had a fall through
 //
 // Arguments:
-//   bSrc - source of fall through (may be null?)
+//   bSrc - source of fall through
 //   bDst - target of fall through
 //
 // Returns:
@@ -5535,87 +5523,77 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 //
 BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
+    assert(bSrc != nullptr);
     assert(fgPredsComputed);
     BasicBlock* jmpBlk = nullptr;
 
-    /* If bSrc is non-NULL */
+    /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-    if (bSrc != nullptr)
+    if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
     {
-        /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
+        // Add a new block after bSrc which jumps to 'bDst'
+        jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
+        bSrc->SetFalseTarget(jmpBlk);
+        fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
 
-        if (bSrc->bbFallsThrough() && !bSrc->NextIs(bDst))
+        // Record the loop number in the new block
+        jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
+
+        // When adding a new jmpBlk we will set the bbWeight and bbFlags
+        //
+        if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
         {
-            switch (bSrc->GetKind())
+            FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
+
+            jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
+            if (bSrc->bbWeight == BB_ZERO_WEIGHT)
             {
-                case BBJ_CALLFINALLY:
-                case BBJ_COND:
+                jmpBlk->bbWeight = BB_ZERO_WEIGHT;
+            }
 
-                    // Add a new block after bSrc which jumps to 'bDst'
-                    jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
-                    fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
+            if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
+            {
+                jmpBlk->SetFlags(BBF_RUN_RARELY);
+            }
 
-                    // Record the loop number in the new block
-                    jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
-
-                    // When adding a new jmpBlk we will set the bbWeight and bbFlags
-                    //
-                    if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
-                    {
-                        FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
-
-                        jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
-                        if (bSrc->bbWeight == BB_ZERO_WEIGHT)
-                        {
-                            jmpBlk->bbWeight = BB_ZERO_WEIGHT;
-                        }
-
-                        if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
-                        {
-                            jmpBlk->SetFlags(BBF_RUN_RARELY);
-                        }
-
-                        weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
-                        weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
-                        //
-                        // If the [min/max] values for our edge weight is within the slop factor
-                        //  then we will set the BBF_PROF_WEIGHT flag for the block
-                        //
-                        if (weightDiff <= slop)
-                        {
-                            jmpBlk->SetFlags(BBF_PROF_WEIGHT);
-                        }
-                    }
-                    else
-                    {
-                        // We set the bbWeight to the smaller of bSrc->bbWeight or bDst->bbWeight
-                        if (bSrc->bbWeight < bDst->bbWeight)
-                        {
-                            jmpBlk->bbWeight = bSrc->bbWeight;
-                            jmpBlk->CopyFlags(bSrc, BBF_RUN_RARELY);
-                        }
-                        else
-                        {
-                            jmpBlk->bbWeight = bDst->bbWeight;
-                            jmpBlk->CopyFlags(bDst, BBF_RUN_RARELY);
-                        }
-                    }
-
-                    fgReplacePred(bDst, bSrc, jmpBlk);
-
-                    JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
-                            jmpBlk->GetTarget()->bbNum, bSrc->bbNum);
-                    break;
-
-                default:
-                    noway_assert(!"Unexpected bbKind");
-                    break;
+            weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
+            weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
+            //
+            // If the [min/max] values for our edge weight is within the slop factor
+            //  then we will set the BBF_PROF_WEIGHT flag for the block
+            //
+            if (weightDiff <= slop)
+            {
+                jmpBlk->SetFlags(BBF_PROF_WEIGHT);
             }
         }
-        else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
+        else
         {
-            bSrc->SetFlags(BBF_NONE_QUIRK);
+            // We set the bbWeight to the smaller of bSrc->bbWeight or bDst->bbWeight
+            if (bSrc->bbWeight < bDst->bbWeight)
+            {
+                jmpBlk->bbWeight = bSrc->bbWeight;
+                jmpBlk->CopyFlags(bSrc, BBF_RUN_RARELY);
+            }
+            else
+            {
+                jmpBlk->bbWeight = bDst->bbWeight;
+                jmpBlk->CopyFlags(bDst, BBF_RUN_RARELY);
+            }
         }
+
+        fgReplacePred(bDst, bSrc, jmpBlk);
+
+        JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
+                bSrc->bbNum);
+    }
+    else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
+    {
+        bSrc->SetFlags(BBF_NONE_QUIRK);
+    }
+    else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
+    {
+        bSrc->SetFalseTarget(bDst);
     }
 
     return jmpBlk;
@@ -5792,15 +5770,18 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 
     /* relink [bStart .. bEnd] into the flow graph */
 
-    bEnd->SetNext(insertAfterBlk->Next());
-    insertAfterBlk->SetNext(bStart);
-
     /* If insertAfterBlk was fgLastBB then update fgLastBB */
     if (insertAfterBlk == fgLastBB)
     {
         fgLastBB = bEnd;
-        noway_assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
     }
+    else
+    {
+        bEnd->SetNext(insertAfterBlk->Next());
+    }
+
+    insertAfterBlk->SetNext(bStart);
 }
 
 /*****************************************************************************
@@ -6337,7 +6318,7 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
         newBlk->SetNext(fgFirstBB);
 
         fgFirstBB = newBlk;
-        newBlk->SetPrev(nullptr);
+        assert(fgFirstBB->IsFirst());
     }
     else
     {
@@ -6364,14 +6345,17 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
  */
 void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 {
-    newBlk->SetNext(insertAfterBlk->Next());
-    insertAfterBlk->SetNext(newBlk);
-
     if (fgLastBB == insertAfterBlk)
     {
         fgLastBB = newBlk;
-        assert(fgLastBB->IsLast());
+        fgLastBB->SetNextToNull();
     }
+    else
+    {
+        newBlk->SetNext(insertAfterBlk->Next());
+    }
+
+    insertAfterBlk->SetNext(newBlk);
 }
 
 // We have two edges (bAlt => bCur) and (bCur => bNext).
@@ -6729,12 +6713,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         // something else. We keep updating it until we've reached the 'nearBlk', to push it as
         // close to endBlk as possible.
         //
-        // TODO-Quirk: we can't use isBBCallFinallyPair because this function is called during the importer
-        // before we've replaced BBJ_CALLFINALLY/BBJ_ALWAYS with BBJ_CALLFINALLY/BBJ_CALLFINALLYRET, which
-        // leads to asserts.
-        //
-        // if (!blk->isBBCallFinallyPair())
-        if (!blk->KindIs(BBJ_CALLFINALLY) || blk->HasFlag(BBF_RETLESS_CALL))
+        if (!blk->isBBCallFinallyPair())
         {
             if (goodBlk == nullptr)
             {

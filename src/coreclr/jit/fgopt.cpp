@@ -1766,7 +1766,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->SetCond(toBlock);
+                    fromBlock->SetCond(toBlock, newBlock);
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
 
@@ -2307,12 +2307,12 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_COND:
-            block->SetCond(bNext->GetTrueTarget());
+            block->SetCond(bNext->GetTrueTarget(), bNext->GetFalseTarget());
 
-            /* Update the predecessor list for 'bNext->bbTarget' */
+            /* Update the predecessor list for 'bNext->bbTrueTarget' */
             fgReplacePred(bNext->GetTrueTarget(), bNext, block);
 
-            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbTarget' */
+            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbTrueTarget' */
             if (!bNext->TrueTargetIs(bNext->GetFalseTarget()))
             {
                 fgReplacePred(bNext->GetFalseTarget(), bNext, block);
@@ -2356,54 +2356,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->RemoveFlags(BBF_NONE_QUIRK);
     }
 
-    // If we're collapsing a block created after the dominators are
-    // computed, copy block number the block and reuse dominator
-    // information from bNext to block.
-    //
-    // Note we have to do this renumbering after the full set of pred list
-    // updates above, since those updates rely on stable bbNums; if we renumber
-    // before the updates, we can create pred lists with duplicate m_block->bbNum
-    // values (though different m_blocks).
-    //
-    if ((fgDomsComputed || fgCompactRenumberQuirk) && (block->bbNum > fgDomBBcount))
-    {
-        if (fgDomsComputed)
-        {
-            assert(fgReachabilitySetsValid);
-            BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-            BlockSetOps::ClearD(this, bNext->bbReach);
-
-            block->bbIDom = bNext->bbIDom;
-            bNext->bbIDom = nullptr;
-
-            // In this case, there's no need to update the preorder and postorder numbering
-            // since we're changing the bbNum, this makes the basic block all set.
-            //
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
-                    bNext->bbNum);
-        }
-        else
-        {
-            // TODO-Quirk: Remove
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " for a quirk\n", block->bbNum, bNext->bbNum);
-        }
-
-        block->bbNum = bNext->bbNum;
-
-        // Because we may have reordered pred lists when we swapped in
-        // block for bNext above, we now need to re-reorder pred lists
-        // to reflect the bbNum update.
-        //
-        // This process of reordering and re-reordering could likely be avoided
-        // via a different update strategy. But because it's probably rare,
-        // and we avoid most of the work if pred lists are already in order,
-        // we'll just ensure everything is properly ordered.
-        //
-        for (BasicBlock* const checkBlock : Blocks())
-        {
-            checkBlock->ensurePredListOrder(this);
-        }
-    }
+    assert(!fgDomsComputed);
 
     if (optLoopTableValid)
     {
@@ -2586,7 +2539,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
                " is true or false)\n",
-               block->bbNum, block->GetFalseTarget()->bbNum);
+               block->bbNum, block->GetTarget()->bbNum);
     }
 #endif
 
@@ -2979,14 +2932,13 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
             }
 
-            /* special case if this is the last BB */
-            if (block == fgLastBB)
+            /* special case if this is the only BB */
+            if (block->IsFirst() && block->IsLast())
             {
-                if (!bPrev)
-                {
-                    break;
-                }
-                fgLastBB = bPrev;
+                assert(block == fgFirstBB);
+                assert(block == fgLastBB);
+                assert(bPrev == nullptr);
+                break;
             }
 
             // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile
@@ -3295,7 +3247,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetCond(block->GetSwitchTargets()->bbsDstTab[0]);
+        block->SetCond(block->GetSwitchTargets()->bbsDstTab[0], block->GetSwitchTargets()->bbsDstTab[1]);
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3703,16 +3655,16 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         fgInsertStmtAtEnd(block, cloneStmt);
     }
 
-    // Fix up block's flow
-    //
-    block->SetCond(target->GetTrueTarget());
-    fgAddRefPred(block->GetTrueTarget(), block);
-    fgRemoveRefPred(target, block);
-
     // add an unconditional block after this block to jump to the target block's fallthrough block
     //
     assert(!target->IsLast());
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
+
+    // Fix up block's flow
+    //
+    block->SetCond(target->GetTrueTarget(), next);
+    fgAddRefPred(block->GetTrueTarget(), block);
+    fgRemoveRefPred(target, block);
 
     // The new block 'next' will inherit its weight from 'block'
     //
@@ -4117,8 +4069,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
-    bJump->SetCond(bDestNormalTarget);
-    bJump->SetFalseTarget(bJump->Next());
+    bJump->SetCond(bDestNormalTarget, bJump->Next());
 
     /* Update bbRefs and bbPreds */
 
@@ -4278,7 +4229,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->SetCond(dominantTarget);
+        block->SetCond(dominantTarget, newBlock);
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
         assert(blockToNewBlockEdge->getSourceBlock() == block);
@@ -5991,6 +5942,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             {
                 if (bPrev)
                 {
+                    assert(!block->IsLast());
                     bPrev->SetNext(block->Next());
                 }
                 else
@@ -6199,13 +6151,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             if (bDest->KindIs(BBJ_COND))
                             {
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
+                                bDest->SetFalseTarget(bFixup);
                                 bFixup->inheritWeight(bDestNext);
 
                                 fgRemoveRefPred(bDestNext, bDest);
                                 fgAddRefPred(bFixup, bDest);
                                 fgAddRefPred(bDestNext, bFixup);
-
-                                bDest->SetFalseTarget(bDest->Next());
                             }
                         }
                     }
@@ -6234,6 +6185,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         // Optimize the Conditional JUMP to go to the new target
                         block->SetTrueTarget(bNext->GetTarget());
+                        block->SetFalseTarget(bNext->Next());
 
                         fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
 
