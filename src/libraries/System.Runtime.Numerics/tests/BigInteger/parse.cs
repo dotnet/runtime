@@ -154,6 +154,33 @@ namespace System.Numerics.Tests
             });
         }
 
+        public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData()
+        {
+            yield return new object[]
+            {
+                new string('9', 865),
+            };
+
+            yield return new object[]
+            {
+                new string('9', 20161),
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(RegressionIssueRuntime94610_TestData))]
+        public void RegressionIssueRuntime94610(string text)
+        {
+            // Regression test for: https://github.com/dotnet/runtime/issues/94610
+            Test();
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
+            void Test()
+            {
+                VerifyParseToString(text, NumberStyles.Integer, true);
+            }
+        }
+
         private static void RunFormatProviderParseStrings()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
