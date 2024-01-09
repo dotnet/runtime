@@ -150,19 +150,16 @@ namespace System.Text.RegularExpressions.Generator
                             writer.Write("/// ");
                         }
                     }
+                    else if (Xml.XmlConvert.IsXmlChar(c))
+                    {
+                        writer.Write(c);
+                    }
                     else
                     {
-                        if (Xml.XmlConvert.IsXmlChar(c))
-                        {
-                            writer.Write(c);
-                        }
-                        else
-                        {
-                            // Illegal whitespace char for xml, ignored anyways.
-                            // To avoid confusions, we just print normal spaces for them in the summary.
+                        // Illegal whitespace char for xml, ignored anyways.
+                        // To avoid confusions, we just print normal spaces for them in the summary.
 
-                            writer.Write(' ');
-                        }
+                        writer.Write(' ');
                     }
 
                     backslashes = 0;
