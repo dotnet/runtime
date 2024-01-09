@@ -6864,6 +6864,7 @@ public:
     void optFindNewLoops();
     bool optCanonicalizeLoops(FlowGraphNaturalLoops* loops);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
+    void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);

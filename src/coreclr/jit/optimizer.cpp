@@ -3946,7 +3946,7 @@ RETRY_UNROLL:
         fgDomsComputed = false;
         fgRenumberBlocks(); // For proper lexical visit
         m_dfsTree = fgComputeDfs();
-        optFindNewLoops();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         passes++;
         goto RETRY_UNROLL;
     }
@@ -3966,7 +3966,7 @@ RETRY_UNROLL:
         // We left the old loop unreachable as part of unrolling, so get rid of
         // those blocks now.
         fgDfsBlocksAndRemove();
-        optFindNewLoops();
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
         fgDomsComputed = false;
         fgRenumberBlocks();
@@ -4853,7 +4853,6 @@ void Compiler::optFindLoops()
     if (fgHasLoops)
     {
         optFindNaturalLoops();
-        optFindAndScaleGeneralLoopBlocks();
     }
 
     optLoopTableValid = true;
@@ -4868,6 +4867,11 @@ PhaseStatus Compiler::optFindLoopsPhase()
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    if (fgHasLoops)
+    {
+        optFindAndScaleGeneralLoopBlocks();
+    }
 
     // The old loop table is no longer valid.
     optLoopTableValid = false;
@@ -4889,9 +4893,7 @@ void Compiler::optFindNewLoops()
 
     if (optCanonicalizeLoops(m_loops))
     {
-        // TODO: Remove. Unrolling checks sequential bbNums, for some reason.
-        fgDomsComputed = false;
-        fgRenumberBlocks();
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
@@ -4927,6 +4929,12 @@ bool Compiler::optCanonicalizeLoops(FlowGraphNaturalLoops* loops)
     bool changed = false;
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
+        // TODO-Quirk: Remove
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+        {
+            continue;
+        }
+
         changed |= optCreatePreheader(loop);
     }
 
@@ -4982,6 +4990,13 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     preheader->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
     fgSetEHRegionForNewLoopHead(preheader, insertBefore);
 
+    if (preheader->NextIs(header))
+    {
+        preheader->SetFlags(BBF_NONE_QUIRK);
+    }
+
+    preheader->bbCodeOffs = insertBefore->bbCodeOffs;
+
     JITDUMP("Created new preheader " FMT_BB " for " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
 
     fgAddRefPred(header, preheader);
@@ -5036,7 +5051,101 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         fallthroughSource->SetFalseTarget(fallthroughSource->Next());
     }
 
+    optSetPreheaderWeight(loop, preheader);
+
     return true;
+}
+
+void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
+{
+    if (loop->EntryEdges().size() == 1)
+    {
+        // TODO-Quirk: If we have just one entry block then get the weight from there.
+        // This doesn't really make sense for BBJ_COND, but it's what old loop
+        // finding used to do.
+
+        BasicBlock* prevEntering = loop->EntryEdge(0)->getSourceBlock();
+        preheader->inheritWeight(prevEntering);
+        preheader->RemoveFlags(BBF_PROF_WEIGHT);
+
+        if (!fgIsUsingProfileWeights() || !prevEntering->KindIs(BBJ_COND))
+        {
+            return;
+        }
+
+        if ((prevEntering->bbWeight == BB_ZERO_WEIGHT) || (loop->GetHeader()->bbWeight == BB_ZERO_WEIGHT))
+        {
+            preheader->bbWeight = BB_ZERO_WEIGHT;
+            preheader->SetFlags(BBF_RUN_RARELY);
+            return;
+        }
+
+        // Allow for either the fall-through or branch to target entry.
+        BasicBlock* skipLoopBlock;
+        if (prevEntering->FalseTargetIs(preheader))
+        {
+            skipLoopBlock = prevEntering->GetTrueTarget();
+        }
+        else
+        {
+            skipLoopBlock = prevEntering->GetFalseTarget();
+        }
+        assert(skipLoopBlock != loop->GetHeader());
+
+        bool allValidProfileWeights = (prevEntering->hasProfileWeight() && skipLoopBlock->hasProfileWeight() &&
+                                       loop->GetHeader()->hasProfileWeight());
+
+        if (!allValidProfileWeights)
+        {
+            return;
+        }
+
+        weight_t loopEnteredCount = 0;
+        weight_t loopSkippedCount = 0;
+        bool     useEdgeWeights   = fgHaveValidEdgeWeights;
+
+        if (useEdgeWeights)
+        {
+            const FlowEdge* edgeToEntry    = fgGetPredForBlock(preheader, prevEntering);
+            const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, prevEntering);
+            assert(edgeToEntry != nullptr);
+            assert(edgeToSkipLoop != nullptr);
+
+            loopEnteredCount = (edgeToEntry->edgeWeightMin() + edgeToEntry->edgeWeightMax()) / 2.0;
+            loopSkippedCount = (edgeToSkipLoop->edgeWeightMin() + edgeToSkipLoop->edgeWeightMax()) / 2.0;
+
+            // Watch out for cases where edge weights were not properly maintained
+            // so that it appears no profile flow enters the loop.
+            //
+            useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
+        }
+
+        if (!useEdgeWeights)
+        {
+            loopEnteredCount = loop->GetHeader()->bbWeight;
+            loopSkippedCount = skipLoopBlock->bbWeight;
+        }
+
+        weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+
+        JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
+                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
+                loopSkippedCount, loopTakenRatio);
+
+        // Calculate a good approximation of the preHead's block weight
+        weight_t preheaderWeight = (prevEntering->bbWeight * loopTakenRatio);
+        preheader->setBBProfileWeight(preheaderWeight);
+        assert(!preheader->isRunRarely());
+
+        // Normalize edge weights
+        FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
+        assert(edgeToPreheader != nullptr);
+        edgeToPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, preheader);
+
+        FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
+        edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
+        return;
+    }
 }
 
 /*****************************************************************************
