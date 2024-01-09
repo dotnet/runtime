@@ -2461,6 +2461,12 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
         case INS_addiw:
             FALLTHROUGH;
         case INS_fence_i:
+            FALLTHROUGH;
+        case INS_csrrw:
+            FALLTHROUGH;
+        case INS_csrrs:
+            FALLTHROUGH;
+        case INS_csrrc:
             assert(IsIntegralRegister(rd));
             assert(IsIntegralRegister(rs1));
             assert((opcode & kInstructionFunct7Mask) == 0);
@@ -2489,6 +2495,13 @@ static void ITypeInstructionSanityCheck(instruction ins, regNumber rd, regNumber
             assert(0 <= immediate < 32);
             assert(IsIntegralRegister(rd));
             assert(IsIntegralRegister(rs1));
+            break;
+        case INS_csrrwi:
+            FALLTHROUGH;
+        case INS_csrrsi:
+            FALLTHROUGH;
+        case INS_csrrci:
+            IsIntegralRegister(rd);
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
