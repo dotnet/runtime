@@ -1364,8 +1364,8 @@ print_imt_entry (const char* message, MonoImtBuilderEntry *e, int num) {
 				message,
 				num,
 				method,
-				method->klass->name_space,
-				method->klass->name,
+				m_class_get_name_space (method->klass),
+				m_class_get_name (method->klass),
 				method->name);
 	} else {
 		printf ("  * %s: NULL\n", message);
@@ -1478,12 +1478,11 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
  *
 */
 static void
-build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interfaces, int slot_num)
+build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	int i;
-	GSList *list_item;
 	guint32 imt_collisions_bitmap = 0;
 	MonoImtBuilderEntry **imt_builder = (MonoImtBuilderEntry **)g_calloc (MONO_IMT_SIZE, sizeof (MonoImtBuilderEntry*));
 	int method_count = 0;
@@ -1528,8 +1527,10 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 			}
 			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
 			if (method->is_generic) {
-				has_generic_virtual = TRUE;
-				vt_slot ++;
+				if (m_method_is_virtual (method)) {
+					has_generic_virtual = TRUE;
+					vt_slot ++;
+				}
 				continue;
 			}
 
@@ -1540,23 +1541,6 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
 				vt_slot ++;
 			}
-		}
-	}
-	if (extra_interfaces) {
-		int interface_offset = m_class_get_vtable_size (klass);
-
-		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
-			MonoClass* iface = (MonoClass *)list_item->data;
-			int method_slot_in_interface;
-			int mcount = mono_class_get_method_count (iface);
-			for (method_slot_in_interface = 0; method_slot_in_interface < mcount; method_slot_in_interface++) {
-				MonoMethod *method = mono_class_get_method_by_index (iface, method_slot_in_interface);
-
-				if (method->is_generic)
-					has_generic_virtual = TRUE;
-				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
-			}
-			interface_offset += mcount;
 		}
 	}
 	for (i = 0; i < MONO_IMT_SIZE; ++i) {
@@ -1658,7 +1642,7 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	mono_loader_lock ();
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
 	if (!callbacks.imt_entry_inited (vtable, imt_slot))
-		build_imt_slots (vtable->klass, vtable, imt, NULL, imt_slot);
+		build_imt_slots (vtable->klass, vtable, imt, imt_slot);
 	mono_loader_unlock ();
 }
 

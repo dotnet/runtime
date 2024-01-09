@@ -27,7 +27,8 @@ if(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x64)
         zlib-intel/trees.c
         zlib-intel/x86.c
         zlib-intel/zutil.c
-)
+    )
+    add_definitions(-DINTERNAL_ZLIB_INTEL)
 else()
     set(NATIVECOMPRESSION_SOURCES
         zlib/adler32.c
@@ -42,9 +43,13 @@ else()
     )
 endif()
 
+# enable custom zlib allocator
+add_definitions(-DMY_ZCALLOC)
+
 set (NATIVECOMPRESSION_SOURCES
     ${NATIVECOMPRESSION_SOURCES}
     ../../AnyOS/zlib/pal_zlib.c
+    ../../AnyOS/zlib/zlib_allocator_win.c
     ../../AnyOS/brotli/common/constants.c
     ../../AnyOS/brotli/common/context.c
     ../../AnyOS/brotli/common/dictionary.c

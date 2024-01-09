@@ -787,15 +787,12 @@ namespace System.Net.Security
                         cachedCreds = _sslAuthenticationOptions.IsServer
                                         ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
-
-                        if (cachedCreds && _sslAuthenticationOptions.IsServer)
-                        {
-                            sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
-                        }
                     }
 
                     if (_sslAuthenticationOptions.IsServer)
                     {
+                        sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
+
                         status = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle!,
                                       ref _securityContext,

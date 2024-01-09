@@ -71,7 +71,7 @@ jobs:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
-          - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
+          - _runtimeOSArg: /p:RuntimeOS=ubuntu.22.04
 
         # force a value for OS when cross-building
         - ${{ if in(parameters.osGroup, 'Browser', 'iOS', 'tvOS', 'Android', 'FreeBSD') }}:
