@@ -11,7 +11,7 @@ using ILCompiler.DependencyAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 
 namespace ILCompiler
 {
@@ -325,6 +325,8 @@ namespace ILCompiler
                                 Value value = stack.PopIntoLocation(field.FieldType);
                                 if (value is IInternalModelingOnlyValue)
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
+                                if (value is { TargetSupportsWritingFieldData: false })
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Value cannot be written to target as it does not support writing field data and hence FrozenRuntimeTypeNode");
                                 _fieldValues[field] = value;
                             }
                         }
@@ -2144,7 +2146,8 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
-            void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory);
+            bool HasConditionalDependencies { get; }
+            void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -2216,6 +2219,8 @@ namespace ILCompiler
             public virtual float AsSingle() => ThrowInvalidProgram<float>();
             public virtual double AsDouble() => ThrowInvalidProgram<double>();
             public virtual Value Clone() => ThrowInvalidProgram<Value>();
+
+            public virtual bool TargetSupportsWritingFieldData => true;
         }
 
         private abstract class BaseValueTypeValue : Value
@@ -2398,8 +2403,14 @@ namespace ILCompiler
 
             public override bool GetRawData(NodeFactory factory, out object data)
             {
-                data = factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented);
-                return true;
+                if (TargetSupportsWritingFieldData)
+                {
+                    data = factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented);
+                    return true;
+                }
+
+                data = null;
+                return false;
             }
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext)
             {
@@ -2413,6 +2424,8 @@ namespace ILCompiler
             {
                 builder.EmitPointerReloc(factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented));
             }
+
+            public override bool TargetSupportsWritingFieldData => EETypeNode.SupportsFrozenRuntimeTypeInstances(Type.Context.Target);
         }
 
         private sealed class ReadOnlySpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
@@ -2694,7 +2707,9 @@ namespace ILCompiler
                 return false;
             }
 
-            public virtual void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+            public virtual bool HasConditionalDependencies => false;
+
+            public virtual void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory)
             {
             }
         }
@@ -2719,12 +2734,16 @@ namespace ILCompiler
                     factory,
                     followVirtualDispatch: false);
 
-            public override void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+            public override bool HasConditionalDependencies => true;
+
+            public override void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory)
             {
+                dependencies ??= new CombinedDependencyList();
+
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
                 MethodDesc targetMethod = creationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, creationInfo.DelegateType, targetMethod);
             }
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)

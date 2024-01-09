@@ -134,9 +134,17 @@ namespace System.Runtime.InteropServices.JavaScript
             var executionContext = ExecutionContext;
             if (executionContext != null)
             {
-                // we could will call JS on the current thread (or child task), if it has the JS interop installed
+                // we could will call JS on the task's AsyncLocal context, if it has the JS interop installed
                 return executionContext;
             }
+
+            var currentThreadContext = CurrentThreadContext;
+            if (currentThreadContext != null)
+            {
+                // we could will call JS on the current thread (or child task), if it has the JS interop installed
+                return currentThreadContext;
+            }
+
             // otherwise we will call JS on the main thread, which always has JS interop
             return MainThreadContext;
         }
@@ -150,13 +158,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 Environment.FailFast($"Method only allowed during JSImport capturing phase, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
             }
 
-            var capturedContext = _CapturedOperationContext;
+            var alreadyCapturedContext = _CapturedOperationContext;
 
-            if (capturedContext == null)
+            if (alreadyCapturedContext == null)
             {
-                _CapturedOperationContext = capturedContext;
+                _CapturedOperationContext = parameterContext;
             }
-            else if (parameterContext != capturedContext)
+            else if (parameterContext != alreadyCapturedContext)
             {
                 _CapturedOperationContext = null;
                 _CapturingState = JSImportOperationState.None;

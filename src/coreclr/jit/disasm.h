@@ -93,7 +93,12 @@ public:
     void disOpenForLateDisAsm(const char* curMethodName, const char* curClassName, PCCOR_SIGNATURE sig);
 
     // Disassemble a buffer: called after code for a method is generated.
-    void disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCodePtr, size_t coldCodeSize);
+    void disAsmCode(BYTE*  hotCodePtr,
+                    BYTE*  hotCodePtrRW,
+                    size_t hotCodeSize,
+                    BYTE*  coldCodePtr,
+                    BYTE*  coldCodePtrRW,
+                    size_t coldCodeSize);
 
     // Register an address to be associated with a method handle.
     void disSetMethod(size_t addr, CORINFO_METHOD_HANDLE methHnd);
