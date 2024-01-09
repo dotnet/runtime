@@ -37,18 +37,8 @@ namespace System.Linq
 
         /// <summary>Validates that source is not null and then tries to extract a span from the source.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // fast type checks that don't add a lot of overhead
-        private static bool TryGetSpan<TSource>(this IEnumerable<TSource> source, out ReadOnlySpan<TSource> span)
-            // This constraint isn't required, but the overheads involved here can be more substantial when TSource
-            // is a reference type and generic implementations are shared.  So for now we're protecting ourselves
-            // and forcing a conscious choice to remove this in the future, at which point it should be paired with
-            // sufficient performance testing.
-            where TSource : struct
+        internal static bool TryGetSpan<TSource>(this IEnumerable<TSource> source, out ReadOnlySpan<TSource> span)
         {
-            if (source is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
             // Use `GetType() == typeof(...)` rather than `is` to avoid cast helpers.  This is measurably cheaper
             // but does mean we could end up missing some rare cases where we could get a span but don't (e.g. a uint[]
             // masquerading as an int[]).  That's an acceptable tradeoff.  The Unsafe usage is only after we've
