@@ -2103,7 +2103,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
 
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWritableData));
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
                 pcsEmit->EmitADD();
 
                 pcsEmit->EmitLDIND_I();
@@ -5786,8 +5786,8 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    NDirectWritableData* pWritableData = GetWritableData();
-    pWritableData->m_pNDirectTarget = pTarget;
+    NDirectWriteableData* pWriteableData = GetWriteableData();
+    pWriteableData->m_pNDirectTarget = pTarget;
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
