@@ -64,8 +64,8 @@
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

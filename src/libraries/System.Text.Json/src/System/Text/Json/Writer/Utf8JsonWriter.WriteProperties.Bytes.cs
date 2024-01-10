@@ -280,7 +280,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
@@ -309,7 +309,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -330,7 +330,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
@@ -359,7 +359,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;

@@ -23,10 +23,6 @@
              Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.cs"
-             Link="Common\System\Collections\Generic\LargeArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
-             Link="Common\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
@@ -89,7 +85,6 @@
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
-    <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="Tests\System\Net\MultiArrayBufferTests.cs" />

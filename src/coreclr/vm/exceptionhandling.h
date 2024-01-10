@@ -55,8 +55,168 @@ enum class InlinedCallFrameMarker
     Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
 };
 
+typedef DPTR(struct ExceptionTrackerBase) PTR_ExceptionTrackerBase;
+
+struct ExceptionTrackerBase
+{
+    struct DAC_EXCEPTION_POINTERS
+    {
+        PTR_EXCEPTION_RECORD    ExceptionRecord;
+        PTR_CONTEXT             ContextRecord;
+    };
+
+    class StackRange
+    {
+    public:
+        StackRange();
+        void Reset();
+        bool IsEmpty();
+        bool IsSupersededBy(StackFrame sf);
+        void CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange);
+        bool Contains(StackFrame sf);
+        void ExtendUpperBound(StackFrame sf);
+        void ExtendLowerBound(StackFrame sf);
+        void TrimLowerBound(StackFrame sf);
+        StackFrame GetLowerBound();
+        StackFrame GetUpperBound();
+        INDEBUG(bool IsDisjointWithAndLowerThan(StackRange* pOtherRange));
+    private:
+        INDEBUG(bool IsConsistent());
+
+    private:
+        // <TODO> can we use a smaller encoding? </TODO>
+        StackFrame          m_sfLowBound;
+        StackFrame          m_sfHighBound;
+    };
+
+    // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
+    PTR_ExceptionTrackerBase m_pPrevNestedInfo;
+    // thrown exception object handle
+    OBJECTHANDLE    m_hThrowable;
+    // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
+    DAC_EXCEPTION_POINTERS m_ptrs;
+    // Stack trace of the current exception
+    StackTraceInfo m_StackTraceInfo;
+    // Information for the funclet we are calling
+    EHClauseInfo   m_EHClauseInfo;
+    // Flags representing exception handling state (exception is rethrown, unwind has started, various debugger notifications sent etc)
+    ExceptionFlags m_ExceptionFlags;
+    // Set to TRUE when the first chance notification was delivered for the current exception
+    BOOL           m_fDeliveredFirstChanceNotification;
+    // Code of the current exception
+    DWORD          m_ExceptionCode;
+#ifdef DEBUGGING_SUPPORTED
+    // Stores information necessary to intercept an exception
+    DebuggerExState m_DebuggerExState;
+#endif // DEBUGGING_SUPPORTED
+    // Low and high bounds of the stack unwound by the exception.
+    // In the new EH implementation, they are updated during 2nd pass only.
+    StackRange      m_ScannedStackRange;
+
+#ifndef TARGET_UNIX
+protected:
+    EHWatsonBucketTracker m_WatsonBucketTracker;
+public:
+    inline PTR_EHWatsonBucketTracker GetWatsonBucketTracker()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExceptionTrackerBase, this, m_WatsonBucketTracker));
+    }
+#endif // !TARGET_UNIX
+
+    ExceptionTrackerBase(PTR_EXCEPTION_RECORD pExceptionRecord, PTR_CONTEXT pExceptionContext, PTR_ExceptionTrackerBase pPrevNestedInfo) :
+        m_pPrevNestedInfo(pPrevNestedInfo),
+        m_hThrowable(NULL),
+        m_ptrs({pExceptionRecord, pExceptionContext}),
+        m_fDeliveredFirstChanceNotification(FALSE),
+        m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
+    {
+#ifndef DACCESS_COMPILE
+        m_StackTraceInfo.Init();
+#endif //  DACCESS_COMPILE
+#ifndef TARGET_UNIX
+        // Init the WatsonBucketTracker
+        m_WatsonBucketTracker.Init();
+#endif // !TARGET_UNIX
+    }
+
+    // Returns the exception tracker previous to the current
+    inline PTR_ExceptionTrackerBase GetPreviousExceptionTracker()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pPrevNestedInfo;
+    }
+
+    inline OBJECTREF GetThrowable()
+    {
+        CONTRACTL
+        {
+            MODE_COOPERATIVE;
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        if (NULL != m_hThrowable)
+        {
+            return ObjectFromHandle(m_hThrowable);
+        }
+
+        return NULL;
+    }
+
+    inline BOOL DeliveredFirstChanceNotification()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_fDeliveredFirstChanceNotification;
+    }
+
+    inline void SetFirstChanceNotificationStatus(BOOL fDelivered)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_fDeliveredFirstChanceNotification = fDelivered;
+    }
+
+    DWORD GetExceptionCode()
+    {
+        return m_ExceptionCode;
+    }
+
+    StackRange GetScannedStackRange()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_ScannedStackRange;
+    }
+
+    bool IsInFirstPass()
+    {
+        return !m_ExceptionFlags.UnwindHasStarted();
+    }
+
+#ifndef DACCESS_COMPILE
+    void DestroyExceptionHandle()
+    {
+        // Never, ever destroy a preallocated exception handle.
+        if ((m_hThrowable != NULL) && !CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
+        {
+            DestroyHandle(m_hThrowable);
+        }
+
+        m_hThrowable = NULL;
+    }
+#endif // !DACCESS_COMPILE
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif // DACCESS_COMPILE
+};
+
 typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
-class ExceptionTracker
+class ExceptionTracker : public ExceptionTrackerBase
 {
     friend class TrackerAllocator;
     friend class ThreadExceptionState;
@@ -67,27 +227,12 @@ class ExceptionTracker
 
     friend void FreeTrackerMemory(ExceptionTracker* pTracker, TrackerMemoryType mem);
 
-private:
-    class StackRange;
 public:
 
-    ExceptionTracker() :
-        m_pThread(NULL),
-        m_hThrowable(NULL)
+   ExceptionTracker() :
+        ExceptionTrackerBase(PTR_NULL, PTR_NULL, PTR_NULL),
+        m_pThread(NULL)
     {
-#ifndef DACCESS_COMPILE
-        m_StackTraceInfo.Init();
-#endif //  DACCESS_COMPILE
-
-#ifndef TARGET_UNIX
-        // Init the WatsonBucketTracker
-        m_WatsonBucketTracker.Init();
-#endif // !TARGET_UNIX
-
-        // By default, mark the tracker as not having delivered the first
-        // chance exception notification
-        m_fDeliveredFirstChanceNotification = FALSE;
-
         m_sfFirstPassTopmostFrame.Clear();
 
         m_dwIndexClauseForCatch = 0;
@@ -112,36 +257,20 @@ public:
     ExceptionTracker(DWORD_PTR             dwExceptionPc,
                      PTR_EXCEPTION_RECORD  pExceptionRecord,
                      PTR_CONTEXT           pContextRecord) :
-        m_pPrevNestedInfo((ExceptionTracker*)NULL),
+        ExceptionTrackerBase(pExceptionRecord, pContextRecord, PTR_NULL),
         m_pThread(GetThread()),
-        m_hThrowable(NULL),
         m_uCatchToCallPC(NULL),
         m_pSkipToParentFunctionMD(NULL),
 // these members were added for resume frame processing
-        m_pClauseForCatchToken(NULL),
+        m_pClauseForCatchToken(NULL)
 // end resume frame members
-        m_ExceptionCode(pExceptionRecord->ExceptionCode)
     {
-        m_ptrs.ExceptionRecord  = pExceptionRecord;
-        m_ptrs.ContextRecord    = pContextRecord;
-
         m_pLimitFrame = NULL;
 
         if (IsInstanceTaggedSEHCode(pExceptionRecord->ExceptionCode) && ::WasThrownByUs(pExceptionRecord, pExceptionRecord->ExceptionCode))
         {
             m_ExceptionFlags.SetWasThrownByUs();
         }
-
-        m_StackTraceInfo.Init();
-
-#ifndef TARGET_UNIX
-        // Init the WatsonBucketTracker
-        m_WatsonBucketTracker.Init();
-#endif // !TARGET_UNIX
-
-        // By default, mark the tracker as not having delivered the first
-        // chance exception notification
-        m_fDeliveredFirstChanceNotification = FALSE;
 
         m_dwIndexClauseForCatch = 0;
         m_sfEstablisherOfActualHandlerFrame.Clear();
@@ -231,35 +360,15 @@ public:
         BOOL bAsynchronousThreadStop
         );
 
-    DWORD                   GetExceptionCode()      { return m_ExceptionCode;       }
     INDEBUG(inline  bool    IsValid());
     INDEBUG(static UINT_PTR DebugComputeNestingLevel());
-
-    inline OBJECTREF GetThrowable()
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        if (NULL != m_hThrowable)
-        {
-            return ObjectFromHandle(m_hThrowable);
-        }
-
-        return NULL;
-    }
 
     // Return a StackFrame of the current frame for parent frame checking purposes.
     // Don't use this StackFrame in any way except to pass it back to the ExceptionTracker
     // via IsUnwoundToTargetParentFrame().
     static StackFrame GetStackFrameForParentCheck(CrawlFrame * pCF);
 
-    static bool IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExceptionTracker pExceptionTracker);
-    static bool IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExInfo pExInfo);
+    static bool IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExceptionTrackerBase pExceptionTracker);
     static bool IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF);
 
     static bool HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF);
@@ -371,10 +480,6 @@ public:
 
     void ResetLimitFrame();
 
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif // DACCESS_COMPILE
-
     static void DebugLogTrackerRanges(_In_z_ const char *pszTag);
 
     bool IsStackOverflowException();
@@ -404,19 +509,6 @@ private:
 
     static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-#ifndef DACCESS_COMPILE
-    void DestroyExceptionHandle()
-    {
-        // Never, ever destroy a preallocated exception handle.
-        if ((m_hThrowable != NULL) && !CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-
-        m_hThrowable = NULL;
-    }
-#endif // !DACCESS_COMPILE
 
     void SaveStackTrace();
 
@@ -492,13 +584,6 @@ public:
         return m_pLimitFrame;
     }
 
-    StackRange GetScannedStackRange()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_ScannedStackRange;
-    }
-
     UINT_PTR GetCatchToCallPC()
     {
         LIMITED_METHOD_CONTRACT;
@@ -570,42 +655,7 @@ public:
         return m_EnclosingClauseInfoOfCollapsedTracker.GetEnclosingClauseCallerSP();
     }
 
-#ifndef TARGET_UNIX
-private:
-    EHWatsonBucketTracker m_WatsonBucketTracker;
 public:
-    inline PTR_EHWatsonBucketTracker GetWatsonBucketTracker()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExceptionTracker, this, m_WatsonBucketTracker));
-    }
-#endif // !TARGET_UNIX
-
-private:
-    BOOL                    m_fDeliveredFirstChanceNotification;
-
-public:
-    inline BOOL DeliveredFirstChanceNotification()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fDeliveredFirstChanceNotification;
-    }
-
-    inline void SetFirstChanceNotificationStatus(BOOL fDelivered)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_fDeliveredFirstChanceNotification = fDelivered;
-    }
-
-    // Returns the exception tracker previous to the current
-    inline PTR_ExceptionTracker GetPreviousExceptionTracker()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pPrevNestedInfo;
-    }
 
     // Returns the throwble associated with the tracker as handle
     inline OBJECTHANDLE GetThrowableAsHandle()
@@ -613,11 +663,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         return m_hThrowable;
-    }
-
-    bool IsInFirstPass()
-    {
-        return !m_ExceptionFlags.UnwindHasStarted();
     }
 
     EHClauseInfo* GetEHClauseInfo()
@@ -632,30 +677,6 @@ private: ;
     void SetEnclosingClauseInfo(bool     fEnclosingClauseIsFunclet,
                                 DWORD    dwEnclosingClauseOffset,
                                 UINT_PTR uEnclosingClauseCallerSP);
-
-    class StackRange
-    {
-    public:
-        StackRange();
-        void Reset();
-        bool IsEmpty();
-        bool IsSupersededBy(StackFrame sf);
-        void CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange);
-        bool Contains(StackFrame sf);
-        void ExtendUpperBound(StackFrame sf);
-        void ExtendLowerBound(StackFrame sf);
-        void TrimLowerBound(StackFrame sf);
-        StackFrame GetLowerBound();
-        StackFrame GetUpperBound();
-        INDEBUG(bool IsDisjointWithAndLowerThan(StackRange* pOtherRange));
-    private:
-        INDEBUG(bool IsConsistent());
-
-    private:
-        // <TODO> can we use a smaller encoding? </TODO>
-        StackFrame          m_sfLowBound;
-        StackFrame          m_sfHighBound;
-    };
 
     struct EnclosingClauseInfo
     {
@@ -676,17 +697,12 @@ private: ;
         bool     m_fEnclosingClauseIsFunclet;
     };
 
-    PTR_ExceptionTracker    m_pPrevNestedInfo;
     Thread*                 m_pThread;          // this is used as an IsValid/IsFree field -- if it's NULL, the allocator can
                                                 // reuse its memory, if it's non-NULL, it better be a valid thread pointer
 
-    StackRange              m_ScannedStackRange;
-    DAC_EXCEPTION_POINTERS  m_ptrs;
 #ifdef TARGET_UNIX
     BOOL                    m_fOwnsExceptionPointers;
 #endif
-    OBJECTHANDLE            m_hThrowable;
-    StackTraceInfo          m_StackTraceInfo;
     UINT_PTR                m_uCatchToCallPC;
     BOOL           m_fResetEnclosingClauseSPForCatchFunclet;
 
@@ -709,22 +725,7 @@ private: ;
     StackFrame              m_sfEstablisherOfActualHandlerFrame;
     StackFrame              m_sfCallerOfActualHandlerFrame;
 
-    ExceptionFlags          m_ExceptionFlags;
-    DWORD                   m_ExceptionCode;
-
     PTR_Frame               m_pLimitFrame;
-
-#ifdef DEBUGGING_SUPPORTED
-    //
-    // DEBUGGER STATE
-    //
-    DebuggerExState         m_DebuggerExState;
-#endif // DEBUGGING_SUPPORTED
-
-    //
-    // Information for the funclet we are calling
-    //
-    EHClauseInfo            m_EHClauseInfo;
 
     // This flag indicates whether the SP we pass to a funclet is for an enclosing funclet.
     EnclosingClauseInfo     m_EnclosingClauseInfo;

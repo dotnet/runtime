@@ -59,6 +59,7 @@ export function init_managed_exports(): void {
             // because this is async, we could pre-allocate the promise
             let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
+            // NOTE: at the moment this is synchronous call on the same thread and therefore we could marshal (null) result synchronously
             invoke_method_and_handle_exception(call_entry_point, args);
 
             // in case the C# side returned synchronously

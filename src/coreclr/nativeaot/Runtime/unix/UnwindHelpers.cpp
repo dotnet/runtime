@@ -806,17 +806,7 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
 #endif
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    // If there is ARM EHABI unwind info, look there next.
-    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(pc, uwInfoSections))
-    {
-        return false;
-    }
-
-    int stepRet = uc.step();
-    if ((stepRet != UNW_STEP_SUCCESS) && (stepRet != UNW_STEP_END))
-    {
-        return false;
-    }
+    PORTABILITY_ASSERT("StepFrame");
 #else
     PORTABILITY_ASSERT("StepFrame");
 #endif
@@ -871,11 +861,7 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     }
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    // If there is ARM EHABI unwind info, look there next.
-    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(pc, uwInfoSections))
-    {
-        return false;
-    }
+    PORTABILITY_ASSERT("GetUnwindProcInfo");
 #else
     PORTABILITY_ASSERT("GetUnwindProcInfo");
 #endif

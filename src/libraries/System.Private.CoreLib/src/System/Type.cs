@@ -125,7 +125,7 @@ namespace System
         public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
-        public bool IsPrimitive => IsPrimitiveImpl();
+        public bool IsPrimitive { [Intrinsic] get => IsPrimitiveImpl(); }
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
