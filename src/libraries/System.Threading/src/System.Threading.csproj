@@ -22,6 +22,13 @@
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(MonoWasmBuildVariant)' == 'multithread'">
+    <!-- when wasm threading is enabled the implementation in CoreLib won't have the UnsupportedOSAttribute for browser,
+         but this contract still does since we only expose the wasm threading through System.Threading.WebAssembly.Threading
+         so we need to baseline the ApiCompat errors related to that. -->
+    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.Threading.xml" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
