@@ -2277,6 +2277,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
     assert(isValidSimm21(imm21));
+    assert((imm21 & 0x01) == 0);
 
     unsigned imm20          = imm21 >> 1;
     unsigned imm20HiSection = imm20 & kHiSectionMask;
