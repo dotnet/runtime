@@ -3187,7 +3187,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case INS_OPTS_RELOC:
             dst = emitOutputInstr_OptsReloc(dst, id, &ins);
-            sz = sizeof(instrDesc);
+            sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_I:
             dst = emitOutputInstr_OptsI(dst, id);
@@ -3200,7 +3200,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         case INS_OPTS_RL:
             dst = emitOutputInstr_OptsRl(dst, id, &ins);
-            sz = sizeof(instrDesc);
+            sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_JALR:
             dst = emitOutputInstr_OptsJalr(dst, static_cast<instrDescJmp*>(id), ig, &ins);
