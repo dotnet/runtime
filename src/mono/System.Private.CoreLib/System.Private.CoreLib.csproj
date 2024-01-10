@@ -25,10 +25,6 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
-    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.Threading.xml" Condition="'$(MonoWasmBuildVariant)' != 'multithread'" />
-  </ItemGroup>
-
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
