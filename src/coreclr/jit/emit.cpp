@@ -6612,19 +6612,23 @@ void emitter::emitComputeCodeSizes()
 }
 
 //------------------------------------------------------------------------
-// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+// emitEndCodeGen: called at end of code generation to create code, data, and GC info
 //
 // Arguments:
-//    comp - compiler instance
+//    comp           - compiler instance
 //    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
-//    fullInt - true if method has fully interruptible gc reporting
-//    fullPtrMap - true if gc reporting should use full register pointer map
-//    xcptnsCount - number of EH clauses to report for the method
-//    prologSize [OUT] - prolog size in bytes
-//    epilogSize [OUT] - epilog size in bytes (see notes)
-//    codeAddr [OUT] - address of the code buffer
-//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
-//    consAddr [OUT] - address of the read only constant buffer (if any)
+//    fullyInt       - true if method has fully interruptible GC reporting
+//    fullPtrMap     - true if gc reporting should use full register pointer map
+//    xcptnsCount    - number of EH clauses to report for the method
+//    prologSize     - [OUT] prolog size in bytes
+//    epilogSize     - [OUT] epilog size in bytes (see notes)
+//    codeAddr       - [OUT] address of the code buffer
+//    codeAddrRW     - [OUT] Read/write address of the code buffer
+//    coldCodeAddr   - [OUT] address of the cold code buffer (if any)
+//    coldCodeAddrRW - [OUT] Read/write address of the cold code buffer (if any)
+//    consAddr       - [OUT] address of the read only constant buffer (if any)
+//    consAddrRW     - [OUT] Read/write address of the read only constant buffer (if any)
+//    instrCount     - [OUT] [DEBUG ONLY] number of instructions generated.
 //
 // Notes:
 //    Currently, in methods with multiple epilogs, all epilogs must have the same
@@ -6642,8 +6646,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  unsigned* prologSize,
                                  unsigned* epilogSize,
                                  void**    codeAddr,
+                                 void**    codeAddrRW,
                                  void**    coldCodeAddr,
-                                 void** consAddr DEBUGARG(unsigned* instrCount))
+                                 void**    coldCodeAddrRW,
+                                 void**    consAddr,
+                                 void** consAddrRW DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -6900,8 +6907,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     /* Give the block addresses to the caller and other functions here */
 
     *codeAddr = emitCodeBlock = codeBlock;
+    *codeAddrRW               = codeBlockRW;
     *coldCodeAddr = emitColdCodeBlock = coldCodeBlock;
+    *coldCodeAddrRW                   = coldCodeBlockRW;
     *consAddr = emitConsBlock = consBlock;
+    *consAddrRW               = consBlockRW;
 
     /* Nothing has been pushed on the stack */
     CLANG_FORMAT_COMMENT_ANCHOR;

@@ -11,7 +11,6 @@ using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -1516,12 +1515,12 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         new CaptureData("209.25.0.111", 0, 12),
                         new CaptureData("209.25.0.111", 0, 12),
-                        new CaptureData(".111", 8, 4, new CaptureData[]
-                        {
+                        new CaptureData(".111", 8, 4,
+                        [
                             new CaptureData(".25", 3, 3),
                             new CaptureData(".0", 6, 2),
                             new CaptureData(".111", 8, 4),
-                        }),
+                        ]),
                     }
                 };
 
@@ -1658,12 +1657,12 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData[]
                         {
                             new CaptureData("aaaa", 0, 4),
-                            new CaptureData("a", 2, 1, new CaptureData[]
-                            {
+                            new CaptureData("a", 2, 1,
+                            [
                                 new CaptureData("a", 0, 1),
                                 new CaptureData("a", 1, 1),
                                 new CaptureData("a", 2, 1),
-                            }),
+                            ]),
                             new CaptureData("a", 3, 1)
                         }
                     };
@@ -2115,7 +2114,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Match_Count(RegexEngine engine, string pattern, string input, int expectedCount)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
-            Assert.Equal(expectedCount,r.Matches(input).Count);
+            Assert.Equal(expectedCount, r.Matches(input).Count);
         }
 
         public static IEnumerable<object[]> StressTestDeepNestingOfConcat_TestData()
@@ -2394,11 +2393,11 @@ namespace System.Text.RegularExpressions.Tests
 
                 //this will need a total of 2x70 + 2 parts in the partition of NonBacktracking
                 string pattern_orig = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>:;&@%!";
-                string pattern_WL = new String(Array.ConvertAll(pattern_orig.ToCharArray(), c => (char)((int)c + 0xFF00 - 32)));
+                string pattern_WL = new String(Array.ConvertAll(pattern_orig.ToCharArray(), c => (char)(c + 0xFF00 - 32)));
                 string pattern = "(" + pattern_orig + "===" + pattern_WL + ")+";
                 string input = "=====" + pattern_orig + "===" + pattern_WL + pattern_orig + "===" + pattern_WL + "===" + pattern_orig + "===" + pattern_orig;
                 int length = 2 * (pattern_orig.Length + 3 + pattern_WL.Length);
-                yield return new object[] { engine, pattern, RegexOptions.None, input, new (int, int, string)[]{(5, length, input.Substring(5, length)) } };
+                yield return new object[] { engine, pattern, RegexOptions.None, input, new (int, int, string)[] { (5, length, input.Substring(5, length)) } };
             }
         }
 
@@ -2542,7 +2541,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(MatchAmbiguousRegexes_TestData))]
-        public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int,int) expected_match)
+        public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int, int) expected_match)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             var match = r.Match(input);
