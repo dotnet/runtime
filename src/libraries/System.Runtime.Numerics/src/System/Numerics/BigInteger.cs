@@ -3046,7 +3046,7 @@ namespace System.Numerics
         /// Gets the number of bits required for shortest two's complement representation of the current instance without the sign bit.
         /// </summary>
         /// <returns>The minimum non-negative number of bits in two's complement notation without the sign bit.</returns>
-        /// <remarks>This method returns 0 iff the value of current object is equal to <see cref="Zero"/> or <see cref="MinusOne"/>. For positive integers the return value is equal to the ordinary binary representation string length.</remarks>
+        /// <remarks>This method returns 0 if the value of current object is equal to <see cref="Zero"/> or <see cref="MinusOne"/>. For positive integers the return value is equal to the ordinary binary representation string length.</remarks>
         public long GetBitLength()
         {
             AssertValid();
