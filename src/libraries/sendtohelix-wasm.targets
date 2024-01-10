@@ -2,7 +2,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
 
   <PropertyGroup>
-    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">00:10:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
 
     <BrowserBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'build'))</BrowserBuildTargetsDir>
