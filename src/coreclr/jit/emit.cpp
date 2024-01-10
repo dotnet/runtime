@@ -707,7 +707,7 @@ void emitLclVarAddr::initLclVarAddr(int varNum, unsigned offset)
 }
 
 // Returns the variable to access. Note that it returns a negative number for compiler spill temps.
-int emitLclVarAddr::lvaVarNum()
+int emitLclVarAddr::lvaVarNum() const
 {
     switch (_lvaTag)
     {
@@ -721,7 +721,7 @@ int emitLclVarAddr::lvaVarNum()
     }
 }
 
-unsigned emitLclVarAddr::lvaOffset() // returns the offset into the variable to access
+unsigned emitLclVarAddr::lvaOffset() const // returns the offset into the variable to access
 {
     switch (_lvaTag)
     {
