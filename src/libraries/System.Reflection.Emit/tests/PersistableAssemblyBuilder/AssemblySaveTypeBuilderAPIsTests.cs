@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblySaveMethodBuilderTests
+    public class AssemblySaveTypeBuilderAPIsTests
     {
         [Fact]
         public void DefineMethodOverride_InterfaceMethod()
@@ -354,6 +354,7 @@ namespace System.Reflection.Emit.Tests
             interfaceMethodHasDefaultImplementation.CreateType(); //succeeds
             Assert.Throws<TypeLoadException>(() => baseTypePartiallyImplemented.CreateType());
             Assert.Throws<TypeLoadException>(() => interfaceHasStaticAbstractMethod.CreateType());
+            Assert.Throws<InvalidOperationException>(() => interfaceMethodHasDefaultImplementation.DefineTypeInitializer());
         }
 
         [Fact]
@@ -434,24 +435,27 @@ namespace System.Reflection.Emit.Tests
                 Type createdType = type.CreateType();
                 saveMethod.Invoke(ab, [file.Path]);
 
-                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
-                MethodInfo allModMethod = typeFromDisk.GetMethod("AllModifiers");
-                Type[] returnReqMods = allModMethod.ReturnParameter.GetRequiredCustomModifiers();
-                Type[] returnOptMods = allModMethod.ReturnParameter.GetOptionalCustomModifiers();
-                Type[] par0RequiredMods = allModMethod.GetParameters()[0].GetRequiredCustomModifiers();
-                Type[] par0OptionalMods = allModMethod.GetParameters()[0].GetOptionalCustomModifiers();
-                Assert.Equal(2, returnReqMods.Length);
-                Assert.Equal(typeof(short).FullName, returnReqMods[0].FullName);
-                Assert.Equal(typeof(int).FullName, returnReqMods[1].FullName);
-                Assert.Equal(1, returnOptMods.Length);
-                Assert.Equal(typeof(Version).FullName, returnOptMods[0].FullName);
-                Assert.Equal(cmodsReq1.Length, par0RequiredMods.Length);
-                Assert.Equal(cmodsReq1[1].FullName, par0RequiredMods[0].FullName);
-                Assert.Equal(cmodsReq1[0].FullName, par0RequiredMods[1].FullName);
-                Assert.Equal(cmodsOpt1.Length, par0OptionalMods.Length);
-                Assert.Equal(cmodsOpt1[0].FullName, par0OptionalMods[0].FullName);
-                Assert.Equal(cmodsReq2.Length, allModMethod.GetParameters()[1].GetRequiredCustomModifiers().Length);
-                Assert.Equal(cmodsOpt2.Length, allModMethod.GetParameters()[1].GetOptionalCustomModifiers().Length);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                    MethodInfo allModMethod = typeFromDisk.GetMethod("AllModifiers");
+                    Type[] returnReqMods = allModMethod.ReturnParameter.GetRequiredCustomModifiers();
+                    Type[] returnOptMods = allModMethod.ReturnParameter.GetOptionalCustomModifiers();
+                    Type[] par0RequiredMods = allModMethod.GetParameters()[0].GetRequiredCustomModifiers();
+                    Type[] par0OptionalMods = allModMethod.GetParameters()[0].GetOptionalCustomModifiers();
+                    Assert.Equal(2, returnReqMods.Length);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(short).FullName), returnReqMods[0]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(int).FullName), returnReqMods[1]);
+                    Assert.Equal(1, returnOptMods.Length);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(Version).FullName), returnOptMods[0]);
+                    Assert.Equal(cmodsReq1.Length, par0RequiredMods.Length);
+                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsReq1[1].FullName), par0RequiredMods[0]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsReq1[0].FullName), par0RequiredMods[1]);
+                    Assert.Equal(cmodsOpt1.Length, par0OptionalMods.Length);
+                    Assert.Equal(mlc.CoreAssembly.GetType(cmodsOpt1[0].FullName), par0OptionalMods[0]);
+                    Assert.Equal(cmodsReq2.Length, allModMethod.GetParameters()[1].GetRequiredCustomModifiers().Length);
+                    Assert.Equal(cmodsOpt2.Length, allModMethod.GetParameters()[1].GetOptionalCustomModifiers().Length);
+                }
             }
         }
 
@@ -511,15 +515,20 @@ namespace System.Reflection.Emit.Tests
         {
             get
             {
-                yield return [new DpmParams() { MethodName = "A1", LibName = "Foo1.dll", EntrypointName = "A1", ReturnType = typeof(int), ParameterTypes = [typeof(string)] }];
-                yield return [new DpmParams() { MethodName = "A2", LibName = "Foo2.dll", EntrypointName = "Wha2", ReturnType = typeof(int), ParameterTypes = [typeof(int)],
+                yield return [new DpmParams() { MethodName = "A1", LibName = "Foo1.dll", EntrypointName = "A1",
+                    ReturnType = typeof(int), ParameterTypes = [typeof(string)] }];
+                yield return [new DpmParams() { MethodName = "A2", LibName = "Foo2.dll", EntrypointName = "Wha2",
+                    ReturnType = typeof(int), ParameterTypes = [typeof(int)],
                     NativeCallConv = CallingConvention.Cdecl}];
-                yield return [new DpmParams() { MethodName = "A3", LibName = "Foo3.dll", EntrypointName = "Wha3", ReturnType = typeof(double), ParameterTypes = [typeof(string)],
+                yield return [new DpmParams() { MethodName = "A3", LibName = "Foo3.dll", EntrypointName = "Wha3",
+                    ReturnType = typeof(double), ParameterTypes = [typeof(string)],
                     Charset = CharSet.Ansi, ReturnTypeOptMods = [typeof(short)]}];
-                yield return [new DpmParams() { MethodName = "A4", LibName = "Foo4.dll", EntrypointName = "Wha4", ReturnType = typeof(IntPtr), ParameterTypes = [typeof(string)],
+                yield return [new DpmParams() { MethodName = "A4", LibName = "Foo4.dll", EntrypointName = "Wha4",
+                    ReturnType = typeof(IntPtr), ParameterTypes = [typeof(string)],
                     Charset = CharSet.Auto, ReturnTypeReqMods = [typeof(bool)], NativeCallConv = CallingConvention.FastCall}];
-                yield return [new DpmParams() { MethodName = "C1", LibName = "Foo5.dll", EntrypointName = "Wha5", ReturnType = typeof(int), ParameterTypes = [typeof(string)],
-                    ReturnTypeReqMods = [typeof(int)], ReturnTypeOptMods = [typeof(short)], ParameterTypeOptMods = [[typeof(double)]], ParameterTypeReqMods = [[typeof(float)]]}];
+                yield return [new DpmParams() { MethodName = "C1", LibName = "Foo5.dll", EntrypointName = "Wha5",
+                    ReturnType = typeof(int), ParameterTypes = [typeof(string)], ReturnTypeReqMods = [typeof(int)],
+                    ReturnTypeOptMods = [typeof(short)], ParameterTypeOptMods = [[typeof(double)]], ParameterTypeReqMods = [[typeof(float)]]}];
             }
         }
 
@@ -654,6 +663,99 @@ namespace System.Reflection.Emit.Tests
                     Assert.Equal(coreAssembly.GetType(p.ParameterTypeReqMods[i][0].FullName), mods[0]);
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void DefineTypeInitializer()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                    FieldBuilder greetingField = tb.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
+                    ConstructorBuilder constructor = tb.DefineTypeInitializer();
+                    ILGenerator constructorIlGenerator = constructor.GetILGenerator();
+                    constructorIlGenerator.Emit(OpCodes.Ldstr, "hello");
+                    constructorIlGenerator.Emit(OpCodes.Stsfld, greetingField);
+                    constructorIlGenerator.Emit(OpCodes.Ret);
+
+                    tb.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
+
+                    Type typeFromDisk = Assembly.LoadFrom(file.Path).GetType("MyType");
+                    FieldInfo createdField = typeFromDisk.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
+                    Assert.Equal("hello", createdField.GetValue(null));
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+
+                    // Create static field data in a variety of orders that requires the runtime to actively apply alignment
+                    // RuntimeHelpers.CreateSpan requires data to be naturally aligned within the "PE" file. At this time CreateSpan only
+                    // requires alignments up to 8 bytes.
+                    FieldBuilder field1Byte = tb.DefineInitializedData("Field1Byte", new byte[] { 1 }, FieldAttributes.Public);
+                    byte[] field4Byte_1_data = [1, 2, 3, 4];
+                    byte[] field8Byte_1_data = [1, 2, 3, 4, 5, 6, 7, 8];
+                    byte[] field4Byte_2_data = [5, 6, 7, 8];
+                    byte[] field8Byte_2_data = [9, 10, 11, 12, 13, 14, 15, 16];
+                    FieldBuilder field4Byte_1 = tb.DefineInitializedData("Field4Bytes_1", field4Byte_1_data, FieldAttributes.Public);
+                    FieldBuilder field8Byte_1 = tb.DefineInitializedData("Field8Bytes_1", field8Byte_1_data, FieldAttributes.Public);
+                    FieldBuilder field4Byte_2 = tb.DefineInitializedData("Field4Bytes_2", field4Byte_2_data, FieldAttributes.Public);
+                    FieldBuilder field8Byte_2 = tb.DefineInitializedData("Field8Bytes_2", field8Byte_2_data, FieldAttributes.Public);
+                    tb.CreateType();
+
+                    var checkTypeBuilder = ab.GetDynamicModule("MyModule").DefineType("CheckType", TypeAttributes.Public);
+                    CreateLoadAddressMethod("LoadAddress1", field1Byte);
+                    CreateLoadAddressMethod("LoadAddress4_1", field4Byte_1);
+                    CreateLoadAddressMethod("LoadAddress4_2", field4Byte_2);
+                    CreateLoadAddressMethod("LoadAddress8_1", field8Byte_1);
+                    CreateLoadAddressMethod("LoadAddress8_2", field8Byte_2);
+
+                    void CreateLoadAddressMethod(string name, FieldBuilder fieldBuilder)
+                    {
+                        var loadAddressMethod = checkTypeBuilder.DefineMethod(name, MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
+                        var methodIL = loadAddressMethod.GetILGenerator();
+                        methodIL.Emit(OpCodes.Ldsflda, fieldBuilder);
+                        methodIL.Emit(OpCodes.Ret);
+                    }
+
+                    checkTypeBuilder.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
+
+                    Assembly assemblyFromDisk = Assembly.LoadFile(file.Path);
+                    Type checkType = assemblyFromDisk.GetType("CheckType");
+
+                    CheckMethod("LoadAddress4_1", 4, field4Byte_1_data);
+                    CheckMethod("LoadAddress4_2", 4, field4Byte_2_data);
+                    CheckMethod("LoadAddress8_1", 8, field8Byte_1_data);
+                    CheckMethod("LoadAddress8_2", 8, field8Byte_2_data);
+
+                    void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
+                    {
+                        var methodToCall = checkType.GetMethod(name);
+                        nint address = (nint)methodToCall.Invoke(null, null);
+
+                        for (int i = 0; i < dataToVerify.Length; i++)
+                        {
+                            Assert.Equal(dataToVerify[i], Marshal.ReadByte(address + (nint)i));
+                        }
+                        //Assert.Equal(name + "_0" + "_" + address.ToString(), name + "_" + (address % minAlignmentRequired).ToString() + "_" + address.ToString());
+                    }
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
     }
 }

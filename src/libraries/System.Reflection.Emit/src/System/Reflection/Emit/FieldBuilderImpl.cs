@@ -24,6 +24,8 @@ namespace System.Reflection.Emit
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
         internal FieldDefinitionHandle _handle;
+        internal int _rvaSize;
+        internal byte[]? _rvaData;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
@@ -41,6 +43,7 @@ namespace System.Reflection.Emit
             _typeBuilder.ThrowIfCreated();
             ValidateDefaultValueType(defaultValue, _fieldType);
             _defaultValue = defaultValue;
+            _attributes |= FieldAttributes.HasDefault;
         }
 
         internal static void ValidateDefaultValueType(object? defaultValue, Type destinationType)
@@ -102,6 +105,13 @@ namespace System.Reflection.Emit
                     }
                 }
             }
+        }
+
+        internal void SetData(byte[]? data, int size)
+        {
+            _rvaData = data ?? new byte[size];
+            _rvaSize = size;
+            _attributes |= FieldAttributes.HasFieldRVA;
         }
 
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)

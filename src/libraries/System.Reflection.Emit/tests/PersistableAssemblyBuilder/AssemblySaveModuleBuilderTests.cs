@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -105,9 +107,154 @@ namespace System.Reflection.Emit.Tests
                     Assert.Equal(1, moduleFromDisk.GetMethods().Length);
                     MethodInfo method = moduleFromDisk.GetMethod(p.MethodName);
                     Assert.NotNull(method);
-                    AssemblySaveMethodBuilderTests.VerifyPInvokeMethod(method.DeclaringType, method, p, mlc.CoreAssembly);
+                    AssemblySaveTypeBuilderAPIsTests.VerifyPInvokeMethod(method.DeclaringType, method, p, mlc.CoreAssembly);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(FieldAttributes.Static | FieldAttributes.Public)]
+        [InlineData(FieldAttributes.Private)]
+        [InlineData(FieldAttributes.FamANDAssem)]
+        [InlineData(FieldAttributes.Assembly | FieldAttributes.SpecialName)]
+        public void DefineUninitializedDataTest(FieldAttributes attributes)
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo _);
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+            foreach (int size in new int[] { 1, 2, 0x003f0000 - 1 })
+            {
+                FieldBuilder field = module.DefineUninitializedData(size.ToString(), size, attributes);
+
+                Assert.Equal(size.ToString(), field.Name);
+                Assert.True(field.IsStatic);
+                Assert.True((field.Attributes & FieldAttributes.HasFieldRVA) != 0);
+                Assert.Equal(attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA, field.Attributes);
+            }
+        }
+
+        [Fact]
+        public void DefineUninitializedData_Validations()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo _);
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineUninitializedData(null, 1, FieldAttributes.Family));
+            AssertExtensions.Throws<ArgumentException>("name", () => module.DefineUninitializedData("", 1, FieldAttributes.Public));
+
+            foreach (int size in new int[] { -1, 0, 0x003f0000, 0x003f0000 + 1 })
+            {
+                AssertExtensions.Throws<ArgumentException>("size", () => module.DefineUninitializedData("TestField", size, FieldAttributes.Private));
+            }
+
+            module.CreateGlobalFunctions();
+            Assert.Throws<InvalidOperationException>(() => module.DefineUninitializedData("TestField", 1, FieldAttributes.HasDefault));
+        }
+
+        [Theory]
+        [InlineData(FieldAttributes.Static | FieldAttributes.Public)]
+        [InlineData(FieldAttributes.Static | FieldAttributes.Private)]
+        [InlineData(FieldAttributes.Private)]
+        public void DefineInitializedDataTest(FieldAttributes attributes)
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo _);
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+            FieldBuilder field = module.DefineInitializedData("MyField", [01, 00, 01], attributes);
+
+            Assert.True(field.IsStatic);
+            Assert.Equal((attributes & FieldAttributes.Public) != 0, field.IsPublic);
+            Assert.Equal((attributes & FieldAttributes.Private) != 0, field.IsPrivate);
+            Assert.Equal("MyField", field.Name);
+        }
+
+        [Fact]
+        public void DefineInitializedData_Validations()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo _);
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineInitializedData(null, [1, 0, 1], FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>("name", () => module.DefineInitializedData("", [1, 0, 1], FieldAttributes.Private));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => module.DefineInitializedData("MyField", null, FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>("size", () => module.DefineInitializedData("MyField", [], FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>("size", () => module.DefineInitializedData("MyField", new byte[0x3f0000], FieldAttributes.Public));
+
+            FieldBuilder field = module.DefineInitializedData("MyField", [1, 0, 1], FieldAttributes.Public);
+            module.CreateGlobalFunctions();
+
+            Assert.Null(field.DeclaringType);
+            Assert.Throws<InvalidOperationException>(() => module.DefineInitializedData("MyField2", new byte[] { 1, 0, 1 }, FieldAttributes.Public));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo saveMethod);
+                    ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+
+                    // Create static field data in a variety of orders that requires the runtime to actively apply alignment
+                    // RuntimeHelpers.CreateSpan requires data to be naturally aligned within the "PE" file. At this time CreateSpan only
+                    // requires alignments up to 8 bytes.
+                    FieldBuilder field1Byte = module.DefineInitializedData("Field1Byte", new byte[] { 1 }, FieldAttributes.Public);
+                    byte[] field4Byte_1_data = new byte[] { 1, 2, 3, 4 };
+                    byte[] field8Byte_1_data = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+                    byte[] field4Byte_2_data = new byte[] { 5, 6, 7, 8 };
+                    byte[] field8Byte_2_data = new byte[] { 9, 10, 11, 12, 13, 14, 15, 16 };
+                    FieldBuilder field4Byte_1 = module.DefineInitializedData("Field4Bytes_1", field4Byte_1_data, FieldAttributes.Public);
+                    FieldBuilder field8Byte_1 = module.DefineInitializedData("Field8Bytes_1", field8Byte_1_data, FieldAttributes.Public);
+                    FieldBuilder field4Byte_2 = module.DefineInitializedData("Field4Bytes_2", field4Byte_2_data, FieldAttributes.Public);
+                    FieldBuilder field8Byte_2 = module.DefineInitializedData("Field8Bytes_2", field8Byte_2_data, FieldAttributes.Public);
+                    module.CreateGlobalFunctions();
+
+                    Assert.Null(field4Byte_1.DeclaringType);
+                    Assert.Null(field8Byte_1.DeclaringType);
+                    Assert.Null(field4Byte_2.DeclaringType);
+                    Assert.Null(field8Byte_2.DeclaringType);
+
+                    var checkTypeBuilder = module.DefineType("CheckType", TypeAttributes.Public);
+                    CreateLoadAddressMethod("LoadAddress1", field1Byte);
+                    CreateLoadAddressMethod("LoadAddress4_1", field4Byte_1);
+                    CreateLoadAddressMethod("LoadAddress4_2", field4Byte_2);
+                    CreateLoadAddressMethod("LoadAddress8_1", field8Byte_1);
+                    CreateLoadAddressMethod("LoadAddress8_2", field8Byte_2);
+
+                    void CreateLoadAddressMethod(string name, FieldBuilder fieldBuilder)
+                    {
+                        var loadAddressMethod = checkTypeBuilder.DefineMethod(name, MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
+                        var methodIL = loadAddressMethod.GetILGenerator();
+                        methodIL.Emit(OpCodes.Ldsflda, fieldBuilder);
+                        methodIL.Emit(OpCodes.Ret);
+                    }
+
+                    checkTypeBuilder.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
+
+                    Assembly assemblyFromDisk = Assembly.LoadFile(file.Path);
+                    Type checkType = assemblyFromDisk.GetType("CheckType");
+
+                    CheckMethod("LoadAddress4_1", 4, field4Byte_1_data);
+                    CheckMethod("LoadAddress4_2", 4, field4Byte_2_data);
+                    CheckMethod("LoadAddress8_1", 8, field8Byte_1_data);
+                    CheckMethod("LoadAddress8_2", 8, field8Byte_2_data);
+
+                    void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
+                    {
+                        var methodToCall = checkType.GetMethod(name);
+                        nint address = (nint)methodToCall.Invoke(null, null);
+
+                        for (int i = 0; i < dataToVerify.Length; i++)
+                        {
+                            Assert.Equal(dataToVerify[i], Marshal.ReadByte(address + (nint)i));
+                        }
+                        //Assert.Equal(name + "_0" + "_" + address.ToString(), name + "_" + (address % minAlignmentRequired).ToString() + "_" + address.ToString());
+                    }
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
     }
 }

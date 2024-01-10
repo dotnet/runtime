@@ -41,6 +41,7 @@ namespace System.Reflection.Emit
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _methodOverrides;
 
+        // Only for creating the global type
         internal TypeBuilderImpl(ModuleBuilderImpl module)
         {
             _name = "<Module>";
@@ -117,7 +118,6 @@ namespace System.Reflection.Emit
                 DefineDefaultConstructor(MethodAttributes.Public);
             }
 
-            _module.PopulateTypeAndItsMembersTokens(this);
             ValidateMethods();
             _isCreated = true;
 
@@ -129,7 +129,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        internal void ValidateMethods()
+        private void ValidateMethods()
         {
             for (int i = 0; i < _methodDefinitions.Count; i++)
             {
@@ -364,7 +364,13 @@ namespace System.Reflection.Emit
             return _typeParameters = typeParameters;
         }
 
-        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
+        {
+            // This method will define an initialized Data in .sdata.
+            // We will create a fake TypeDef to represent the data with size. This TypeDef
+            // will be the signature for the Field.
+            return DefineDataHelper(name, data, data.Length, attributes);
+        }
 
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
@@ -529,9 +535,58 @@ namespace System.Reflection.Emit
             return property;
         }
 
-        protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
-        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
+        protected override ConstructorBuilder DefineTypeInitializerCore()
+        {
+            ThrowIfCreated();
+
+            const MethodAttributes attr = MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
+
+            return new ConstructorBuilderImpl(ConstructorInfo.TypeConstructorName, attr, CallingConventions.Standard, null, null, null, _module, this);
+        }
+
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
+        {
+            // This method will define an uninitialized Data in .sdata.
+            // We will create a fake TypeDef to represent the data with size. This TypeDef
+            // will be the signature for the Field.
+            return DefineDataHelper(name, null, size, attributes);
+        }
+
+        private FieldBuilder DefineDataHelper(string name, byte[]? data, int size, FieldAttributes attributes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            if (size <= 0 || size >= 0x003f0000)
+            {
+                throw new ArgumentException(SR.Argument_BadSizeForData, nameof(size));
+            }
+
+            ThrowIfCreated();
+
+            // form the value class name
+            string strValueClassName = $"$ArrayType${size}";
+
+            // Is this already defined in this module?
+            TypeBuilderImpl? valueClassType = _module.FindTypeBuilderWithName(strValueClassName, false);
+
+            if (valueClassType == null)
+            {
+                TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
+
+                // Define the backing value class
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
+                valueClassType.CreateType();
+            }
+
+            FieldBuilder fdBuilder = DefineField(name, valueClassType, attributes | FieldAttributes.Static);
+
+            // now we need to set the RVA
+            ((FieldBuilderImpl)fdBuilder).SetData(data, size);
+            return fdBuilder;
+        }
+
         protected override bool IsCreatedCore() => _isCreated;
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes

@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder)
+        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
@@ -127,14 +127,11 @@ namespace System.Reflection.Emit
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
-
-            _typeDefinitions.Sort((x, y) => x.MetadataToken.CompareTo(y.MetadataToken));
-
             // All generic parameters for all types and methods should be written in specific order
             List<GenericTypeParameterBuilderImpl> genericParams = new();
-
+            PopulateTokensForTypesAndItsMembers();
             // Add global members
-            WriteFields(_globalTypeBuilder);
+            WriteFields(_globalTypeBuilder, fieldDataBuilder);
             WriteMethods(_globalTypeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
 
             // Add each type definition to metadata table.
@@ -173,7 +170,7 @@ namespace System.Reflection.Emit
                 WriteInterfaceImplementations(typeBuilder, typeHandle);
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
                 WriteProperties(typeBuilder);
-                WriteFields(typeBuilder);
+                WriteFields(typeBuilder, fieldDataBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
                 WriteEvents(typeBuilder);
             }
@@ -325,17 +322,20 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void PopulateTypeAndItsMembersTokens(TypeBuilderImpl typeBuilder)
+        private void PopulateTokensForTypesAndItsMembers()
         {
-            typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            typeBuilder._firstMethodToken = _nextMethodDefRowId;
-            typeBuilder._firstFieldToken = _nextFieldDefRowId;
-            typeBuilder._firstPropertyToken = _nextPropertyRowId;
-            typeBuilder._firstEventToken = _nextEventRowId;
-            PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
-            PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
-            PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
-            PopulateEventDefinitionHandles(typeBuilder._eventDefinitions);
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
+            {
+                typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+                typeBuilder._firstMethodToken = _nextMethodDefRowId;
+                typeBuilder._firstFieldToken = _nextFieldDefRowId;
+                typeBuilder._firstPropertyToken = _nextPropertyRowId;
+                typeBuilder._firstEventToken = _nextEventRowId;
+                PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
+                PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
+                PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
+                PopulateEventDefinitionHandles(typeBuilder._eventDefinitions);
+            }
         }
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
@@ -422,7 +422,7 @@ namespace System.Reflection.Emit
                 attributes: method.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None,
                 hasDynamicStackAllocation: il.HasDynamicStackAllocation);
 
-        private void WriteFields(TypeBuilderImpl typeBuilder)
+        private void WriteFields(TypeBuilderImpl typeBuilder, BlobBuilder fieldDataBuilder)
         {
             foreach (FieldBuilderImpl field in typeBuilder._fieldDefinitions)
             {
@@ -436,14 +436,20 @@ namespace System.Reflection.Emit
                     AddFieldLayout(handle, field._offset);
                 }
 
-                if (field._marshallingData != null)
+                if (field.Attributes.HasFlag(FieldAttributes.HasFieldMarshal) && field._marshallingData != null)
                 {
                     AddMarshalling(handle, field._marshallingData.SerializeMarshallingData());
                 }
 
-                if (field._defaultValue != DBNull.Value)
+                if (field.Attributes.HasFlag(FieldAttributes.HasDefault) && field._defaultValue != DBNull.Value)
                 {
                     AddDefaultValue(handle, field._defaultValue);
+                }
+
+                if (field.Attributes.HasFlag(FieldAttributes.HasFieldRVA) && field._rvaSize > 0)
+                {
+                    _metadataBuilder.AddFieldRelativeVirtualAddress(handle, fieldDataBuilder.Count);
+                    fieldDataBuilder.WriteBytes(field._rvaData!);
                 }
             }
         }
@@ -868,6 +874,21 @@ namespace System.Reflection.Emit
             return MetadataTokens.GetToken(GetMethodReference(method, optionalParameterTypes));
         }
 
+        internal TypeBuilderImpl? FindTypeBuilderWithName(string strTypeName, bool ignoreCase)
+        {
+            StringComparison casing = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+            foreach (TypeBuilderImpl type in _typeDefinitions)
+            {
+                if (string.Equals(type.Name, strTypeName, casing))
+                {
+                    return type;
+                }
+            }
+
+            return null;
+        }
+
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));
 
         public override int GetTypeMetadataToken(Type type)
@@ -931,7 +952,9 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
 
-            return _globalTypeBuilder.DefineInitializedData(name, data, attributes);
+            FieldBuilderImpl field = (FieldBuilderImpl)_globalTypeBuilder.DefineInitializedData(name, data, attributes);
+            field._handle = MetadataTokens.FieldDefinitionHandle(_nextFieldDefRowId++);
+            return field;
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
@@ -958,7 +981,18 @@ namespace System.Reflection.Emit
             return _type;
         }
 
-        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            FieldBuilderImpl field = (FieldBuilderImpl)_globalTypeBuilder.DefineUninitializedData(name, size, attributes);
+            field._handle = MetadataTokens.FieldDefinitionHandle(_nextFieldDefRowId++);
+            return field;
+        }
+
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {

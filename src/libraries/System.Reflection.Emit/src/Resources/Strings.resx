@@ -282,4 +282,7 @@
   <data name="InvalidOperation_GlobalsHaveBeenCreated" xml:space="preserve">
     <value>Type definition of the global function has been completed.</value>
   </data>
+  <data name="Argument_BadSizeForData" xml:space="preserve">
+    <value>Data size must be &amp;gt; 1 and &amp;lt; 0x3f0000</value>
+  </data>
 </root>

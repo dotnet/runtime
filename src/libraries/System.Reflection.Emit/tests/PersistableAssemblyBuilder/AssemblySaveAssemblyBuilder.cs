@@ -134,9 +134,9 @@ namespace System.Reflection.Emit.Tests
                 fb.SetCustomAttribute(cattrb);
                 tbFields.CreateType();
 
-                // Data TODO: not supported yet
-                //module.DefineUninitializedData("data1", 16, FieldAttributes.Public);
-                //module.DefineInitializedData("data2", new byte[] { 1, 2, 3, 4, 5, 6 }, FieldAttributes.Public);
+                // Data
+                module.DefineUninitializedData("Data1", 16, FieldAttributes.Public);
+                module.DefineInitializedData("Data2", new byte[] { 1, 2, 3, 4, 5, 6 }, FieldAttributes.Public);
 
                 // Methods and signatures
                 TypeBuilder tb5 = module.DefineType("TypeMethods", TypeAttributes.Public, typeof(object));
@@ -347,11 +347,11 @@ namespace System.Reflection.Emit.Tests
             field = type4.GetField("FieldCAttr");
             CheckCattr(field.GetCustomAttributesData());
 
-            // TODO: Global fields
-            /*field = a.ManifestModule.GetField("Data1");
+            // Global fields
+            field = a.ManifestModule.GetField("Data1");
             Assert.NotNull(field);
             field = a.ManifestModule.GetField("Data2");
-            Assert.NotNull(field);*/
+            Assert.NotNull(field);
 
             // Methods and signatures
             var typeMethods = a.GetType("TypeMethods");
