@@ -201,6 +201,28 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void Create_CustomizationStringNullIsEmpty()
+        {
+            int OutputLength = 32;
+            byte[] macWithNullCustomizationString;
+            byte[] macWithEmptyCustomizationString;
+
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, (byte[])null))
+            {
+                TKmacTrait.AppendData(kmac, "habaneros"u8);
+                macWithNullCustomizationString = TKmacTrait.GetHashAndReset(kmac, OutputLength);
+            }
+
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, Array.Empty<byte>()))
+            {
+                TKmacTrait.AppendData(kmac, "habaneros"u8);
+                macWithEmptyCustomizationString = TKmacTrait.GetHashAndReset(kmac, OutputLength);
+            }
+
+            Assert.Equal(macWithEmptyCustomizationString, macWithNullCustomizationString);
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void GetHashAndReset_PerformsReset_Span()
         {
             const int OutputLength = 32;
@@ -390,6 +412,29 @@ namespace System.Security.Cryptography.Tests
                 TKmacTrait.GetHashAndReset(kmac, mac);
                 AssertExtensions.SequenceEqual(expected, mac);
             }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task OneShot_HashData_CustomizationStringNullIsEmpty()
+        {
+            const int OutputLength = 32;
+            byte[] source = new byte[1];
+            byte[] customizationString = null;
+            byte[] expected = TKmacTrait.HashData(MinimalKey, source, OutputLength, customizationString: Array.Empty<byte>());
+
+            byte[] mac = TKmacTrait.HashData(MinimalKey, source, OutputLength, customizationString);
+            Assert.Equal(expected, mac);
+
+            mac = TKmacTrait.HashData(MinimalKey, new MemoryStream(source), OutputLength, customizationString);
+            Assert.Equal(expected, mac);
+
+            mac = await TKmacTrait.HashDataAsync(
+                MinimalKey,
+                new MemoryStream(source),
+                OutputLength,
+                customizationString,
+                default(CancellationToken));
+            Assert.Equal(expected, mac);
         }
 
         [ConditionalFact(nameof(IsSupported))]
