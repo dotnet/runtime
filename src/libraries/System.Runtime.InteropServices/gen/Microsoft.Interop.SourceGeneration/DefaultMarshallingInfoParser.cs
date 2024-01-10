@@ -6,11 +6,31 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal static class DefaultMarshallingInfoParser
+    /// <summary>
+    /// Factory class for creating a <see cref="MarshallingInfoParser"/> instance that can parse marshalling information supported by .NET interop source generators.
+    /// </summary>
+    public static class DefaultMarshallingInfoParser
     {
+        /// <summary>
+        /// Creates a <see cref="MarshallingInfoParser"/> instance for parsing marshalling information from attributes
+        /// with support for the marshalling support that is common to all SDK-provided source generators.
+        /// </summary>
+        /// <remarks>
+        /// Includes support for:
+        /// <list type="bullet">
+        /// <item>System.Runtime.InteropServices.MarshalAsAttribute</item>
+        /// <item>System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute</item>
+        /// <item>System.Runtime.InteropServices.Marshallling.NativeMarshallingAttribute-attributed types</item>
+        /// <item>System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute-attributed types</item>
+        /// <item>System.Runtime.InteropServices.SafeHandle-derived types</item>
+        /// <item>Arrays</item>
+        /// <item>System.String</item>
+        /// <item>Primitive types</item>
+        /// <item>User-defined unmanaged types.</item>
+        /// </list>
+        /// </remarks>
         public static MarshallingInfoParser Create(StubEnvironment env, GeneratorDiagnosticsBag diagnostics, IMethodSymbol method, InteropAttributeCompilationData interopAttributeData, AttributeData unparsedAttributeData)
         {
-
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
             if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))

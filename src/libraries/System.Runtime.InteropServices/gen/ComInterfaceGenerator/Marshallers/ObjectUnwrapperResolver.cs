@@ -12,16 +12,10 @@ namespace Microsoft.Interop
 {
     internal sealed record ObjectUnwrapperInfo(TypeSyntax UnwrapperType) : MarshallingInfo;
 
-    internal sealed class ObjectUnwrapperMarshallerFactory : IMarshallingGeneratorFactory
+    internal sealed class ObjectUnwrapperResolver : IMarshallingGeneratorResolver
     {
-        private readonly IMarshallingGeneratorFactory _inner;
-        public ObjectUnwrapperMarshallerFactory(IMarshallingGeneratorFactory inner)
-        {
-            _inner = inner;
-        }
-
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is ObjectUnwrapperInfo ? ResolvedGenerator.Resolved(new Marshaller()) : _inner.Create(info, context);
+            => info.MarshallingAttributeInfo is ObjectUnwrapperInfo ? ResolvedGenerator.Resolved(new Marshaller()) : ResolvedGenerator.UnresolvedGenerator;
 
         private sealed class Marshaller : IMarshallingGenerator
         {
