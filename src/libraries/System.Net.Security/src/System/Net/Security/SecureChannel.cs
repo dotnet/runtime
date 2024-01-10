@@ -76,7 +76,12 @@ namespace System.Net.Security
         {
             get
             {
-                return _selectedClientCertificate;
+                if (_selectedClientCertificate != null && CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
+                {
+                    return _selectedClientCertificate;
+                }
+
+                return null;
             }
         }
 
@@ -332,7 +337,7 @@ namespace System.Net.Security
 
         --*/
 
-        private bool AcquireClientCredentials(ref byte[]? thumbPrint)
+        private bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
         {
             // Acquire possible Client Certificate information and set it on the handle.
             X509Certificate? clientCertificate = null;        // This is a candidate that can come from the user callback or be guessed when targeting a session restart.
@@ -604,7 +609,7 @@ namespace System.Net.Security
                     }
 
                     _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext,
-                            _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+                            _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer, newCredentialsRequested);
 
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                     _selectedClientCertificate = clientCertificate;
@@ -711,7 +716,7 @@ namespace System.Net.Security
             else
             {
                 _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext, _sslAuthenticationOptions.EnabledSslProtocols,
-                        _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+                        _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer, newCredentialsRequested: false);
                 thumbPrint = guessedThumbPrint;
             }
 
@@ -804,6 +809,23 @@ namespace System.Net.Security
                                        inputBuffer,
                                        ref result,
                                        _sslAuthenticationOptions);
+
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
+                        {
+                            _refreshCredentialNeeded = true;
+                            cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
+
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Info(this, "InitializeSecurityContext() returned 'CredentialsNeeded'.");
+
+                            status = SslStreamPal.InitializeSecurityContext(
+                                       ref _credentialsHandle!,
+                                       ref _securityContext,
+                                       _sslAuthenticationOptions.TargetHost,
+                                       inputBuffer,
+                                       ref result,
+                                       _sslAuthenticationOptions);
+                         }
                     }
                 } while (cachedCreds && _credentialsHandle == null);
             }
