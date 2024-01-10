@@ -269,6 +269,7 @@ namespace System.Net.Security
                 ArrayPool<byte>.Shared.Return(rentedBytes);
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
                 GC.KeepAlive(TargetCertificate);
+                GC.KeepAlive(_privateIntermediateCertificates);
                 GC.KeepAlive(caCert);
                 return ret;
             }
