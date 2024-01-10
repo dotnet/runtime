@@ -3,6 +3,7 @@
 
 using System.IO.Pipes;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -96,7 +97,9 @@ namespace System.IO.Tests
 
                 Assert.Equal(0, RandomAccess.Read(readHandle, Array.Empty<byte>(), fileOffset: 0)); // what we test
                 byte[] buffer = new byte[content.Length * 2];
-                Assert.Equal(content.Length, RandomAccess.Read(readHandle, buffer, fileOffset: 0)); // what is required for the above write to succeed
+
+                ReadExactly(readHandle, buffer, content.Length); // what is required for the above write to succeed
+
                 Assert.Equal(content, buffer.AsSpan(0, content.Length).ToArray());
 
                 await write;
@@ -118,12 +121,11 @@ namespace System.IO.Tests
                 Assert.Equal(0, await readToEmpty);
 
                 byte[] buffer = new byte[content.Length * 2];
-                Task<int> readToNonEmpty = RandomAccess.ReadAsync(readHandle, buffer, fileOffset: 0).AsTask(); // what is required for the above write to succeed
+                Task readToNonEmpty = ReadExactlyAsync(readHandle, buffer, content.Length); // what is required for the above write to succeed
 
                 await Task.WhenAll(readToNonEmpty, write);
 
-                Assert.Equal(content.Length, readToNonEmpty.Result);
-                Assert.Equal(content, buffer.AsSpan(0, readToNonEmpty.Result).ToArray());
+                Assert.Equal(content, buffer.AsSpan(0, content.Length).ToArray());
             }
         }
 
@@ -146,7 +148,7 @@ namespace System.IO.Tests
             void ReadToStackAllocatedBuffer(SafeFileHandle handle, byte[] array)
             {
                 Span<byte> buffer = stackalloc byte[array.Length * 2];
-                Assert.Equal(array.Length, RandomAccess.Read(handle, buffer, fileOffset: 0));
+                ReadExactly(handle, buffer, array.Length);
                 Assert.Equal(array, buffer.Slice(0, array.Length).ToArray());
             }
         }
@@ -161,11 +163,11 @@ namespace System.IO.Tests
             {
                 byte[] content = RandomNumberGenerator.GetBytes(BufferSize);
                 byte[] buffer = new byte[content.Length * 2];
-                Task<int> read = RandomAccess.ReadAsync(readHandle, buffer, fileOffset: 0).AsTask();
+                Task read = ReadExactlyAsync(readHandle, buffer, content.Length);
 
                 WriteFromStackAllocatedBuffer(writeHandle, content);
 
-                Assert.Equal(content.Length, await read);
+                await read;
                 Assert.Equal(content, buffer.AsSpan(0, content.Length).ToArray());
             }
 
@@ -190,8 +192,8 @@ namespace System.IO.Tests
                 byte[] buffer = new byte[content.Length * 2];
                 int readFromOffset456 = RandomAccess.Read(readHandle, buffer, fileOffset: 456);
 
-                Assert.Equal(content.Length, readFromOffset456);
-                Assert.Equal(content, buffer.AsSpan(0, readFromOffset456).ToArray());
+                Assert.InRange(readFromOffset456, 1, content.Length);
+                Assert.Equal(content.Take(readFromOffset456), buffer.AsSpan(0, readFromOffset456).ToArray());
 
                 await writeToOffset123;
             }
@@ -211,8 +213,9 @@ namespace System.IO.Tests
 
                 RandomAccess.Write(writeHandle, content, fileOffset: 123);
 
-                Assert.Equal(content.Length, readFromOffset456.Result);
-                Assert.Equal(content, buffer.AsSpan(0, readFromOffset456.Result).ToArray());
+                int bytesRead = await readFromOffset456;
+                Assert.InRange(bytesRead, 1, content.Length);
+                Assert.Equal(content.Take(bytesRead), buffer.AsSpan(0, readFromOffset456.Result).ToArray());
             }
         }
 
@@ -231,8 +234,8 @@ namespace System.IO.Tests
 
                 await Task.WhenAll(readFromOffset456, writeToOffset123);
 
-                Assert.Equal(content.Length, readFromOffset456.Result);
-                Assert.Equal(content, buffer.AsSpan(0, readFromOffset456.Result).ToArray());
+                Assert.InRange(readFromOffset456.Result, 1, content.Length);
+                Assert.Equal(content.Take(readFromOffset456.Result), buffer.AsSpan(0, readFromOffset456.Result).ToArray());
             }
         }
 
@@ -247,13 +250,13 @@ namespace System.IO.Tests
                 byte[] content = RandomNumberGenerator.GetBytes(BufferSize);
                 ValueTask write = RandomAccess.WriteAsync(writeHandle, content, fileOffset: 0);
 
-                byte[] buffer = new byte[content.Length * 2];
+                byte[] buffer = new byte[BufferSize];
 
-                for (int i = 0; i < content.Length; i++)
+                for (int i = 0; i < BufferSize; i++)
                 {
                     Assert.Equal(1, RandomAccess.Read(readHandle, buffer.AsSpan(i, 1), fileOffset: 0));
                 }
-                Assert.Equal(content, buffer.AsSpan(0, content.Length).ToArray());
+                Assert.Equal(content, buffer);
 
                 await write;
             }
@@ -270,10 +273,13 @@ namespace System.IO.Tests
                 byte[] content = RandomNumberGenerator.GetBytes(BufferSize);
                 ValueTask write = RandomAccess.WriteAsync(writeHandle, content, fileOffset: 0);
 
-                byte[] buffer = new byte[content.Length * 2];
-                Assert.Equal(1, await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(0, 1), fileOffset: 0));
-                Assert.Equal(2, await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(1), fileOffset: 0));
-                Assert.Equal(content, buffer.AsSpan(0, 3).ToArray());
+                byte[] buffer = new byte[BufferSize];
+
+                for (int i = 0; i < BufferSize; i++)
+                {
+                    Assert.Equal(1, await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(i, 1), fileOffset: 0));
+                }
+                Assert.Equal(content, buffer);
             }
         }
 
@@ -289,14 +295,13 @@ namespace System.IO.Tests
                 Task write = RandomAccess.WriteAsync(writeHandle, vectors, fileOffset: 123).AsTask();
                 byte[] buffer = new byte[VectorsByteCount * 2];
 
-                int read = 0;
-
+                int bytesRead = 0;
                 do
                 {
-                    read += RandomAccess.Read(readHandle, buffer.AsSpan(read), fileOffset: 456);
-                } while (read != VectorsByteCount);
+                    bytesRead += RandomAccess.Read(readHandle, buffer.AsSpan(bytesRead), fileOffset: 456);
+                } while (bytesRead != VectorsByteCount);
 
-                Assert.Equal(vectors.SelectMany(vector => vector.ToArray()), buffer.AsSpan(0, read).ToArray());
+                Assert.Equal(vectors.SelectMany(vector => vector.ToArray()), buffer.AsSpan(0, bytesRead).ToArray());
 
                 await write;
             }
@@ -315,10 +320,10 @@ namespace System.IO.Tests
                 byte[] buffer = new byte[VectorsByteCount * 2];
 
                 Memory<byte>[] writableVectors = GenerateVectors(VectorCount, BufferSize);
-                long read = RandomAccess.Read(readHandle, writableVectors, fileOffset: 456);
+                int bytesRead = (int)RandomAccess.Read(readHandle, writableVectors, fileOffset: 456);
 
-                Assert.Equal(VectorsByteCount, read);
-                Assert.Equal(readOnlyVectors.SelectMany(vector => vector.ToArray()), writableVectors.SelectMany(vector => vector.ToArray()));
+                Assert.InRange(bytesRead, 1, VectorsByteCount);
+                AssertEqual(readOnlyVectors, writableVectors, bytesRead);
 
                 await write;
             }
@@ -338,8 +343,9 @@ namespace System.IO.Tests
 
                 Memory<byte>[] writableVectors = GenerateVectors(VectorCount, BufferSize);
 
-                Assert.Equal(VectorsByteCount, await RandomAccess.ReadAsync(readHandle, writableVectors, fileOffset: 456));
-                Assert.Equal(readOnlyVectors.SelectMany(vector => vector.ToArray()), writableVectors.SelectMany(vector => vector.ToArray()));
+                long bytesRead = await RandomAccess.ReadAsync(readHandle, writableVectors, fileOffset: 456);
+                Assert.InRange(bytesRead, 1, VectorsByteCount);
+                AssertEqual(readOnlyVectors, writableVectors, (int)bytesRead);
 
                 await write;
             }
@@ -359,8 +365,9 @@ namespace System.IO.Tests
                 byte[] content = RandomNumberGenerator.GetBytes(VectorsByteCount);
                 RandomAccess.Write(writeHandle, content, fileOffset: 123);
 
-                Assert.Equal(VectorsByteCount, await read);
-                Assert.Equal(content, writableVectors.SelectMany(vector => vector.ToArray()));
+                int bytesRead = (int)await read;
+                Assert.InRange(bytesRead, 1, VectorsByteCount);
+                Assert.Equal(content.Take(bytesRead), writableVectors.SelectMany(vector => vector.ToArray()).Take(bytesRead));
             }
         }
 
@@ -379,9 +386,7 @@ namespace System.IO.Tests
                 if (OperatingSystem.IsWindows() && isAsync)
                 {
                     // Currently it's impossible to duplicate an async safe handle that has already been bound to Thread Pool: https://github.com/dotnet/runtime/issues/28585
-                    // I am opened for ideas on how we could solve it without an ugly reflection hack..
-                    ThreadPoolBoundHandle threadPoolBinding = (ThreadPoolBoundHandle)typeof(PipeStream).GetField("_threadPoolBinding", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance).GetValue(pipeStream);
-                    typeof(SafeFileHandle).GetProperty("ThreadPoolBinding", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance).GetSetMethod(true).Invoke(serverHandle, new object[] { threadPoolBinding });
+                    FileThreadPoolBoundHandle(serverHandle) = PipeThreadPoolBoundHandle(pipeStream);
                 }
 
                 return serverHandle;
@@ -390,6 +395,35 @@ namespace System.IO.Tests
             {
                 pipeStream.SafePipeHandle.SetHandleAsInvalid();
             }
+
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_threadPoolBinding")]
+            extern static ref ThreadPoolBoundHandle PipeThreadPoolBoundHandle(PipeStream @this);
+
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "<ThreadPoolBinding>k__BackingField")]
+            extern static ref ThreadPoolBoundHandle FileThreadPoolBoundHandle(SafeFileHandle @this);
         }
+
+        private static void ReadExactly(SafeFileHandle readHandle, Span<byte> buffer, int expectedByteCount)
+        {
+            int bytesRead = 0;
+            do
+            {
+                bytesRead += RandomAccess.Read(readHandle, buffer.Slice(bytesRead), fileOffset: 0); // fileOffset NOT set to bytesRead on purpose
+            } while (bytesRead != expectedByteCount);
+        }
+
+        private static async Task ReadExactlyAsync(SafeFileHandle readHandle, byte[] buffer, int expectedByteCount)
+        {
+            int bytesRead = 0;
+            do
+            {
+                bytesRead += await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(bytesRead), fileOffset: 0); // fileOffset NOT set to bytesRead on purpose
+            } while (bytesRead != expectedByteCount);
+        }
+
+        private static void AssertEqual(ReadOnlyMemory<byte>[] readOnlyVectors, Memory<byte>[] writableVectors, int byteCount)
+            => Assert.Equal(
+                readOnlyVectors.SelectMany(vector => vector.ToArray()).Take(byteCount),
+                writableVectors.SelectMany(vector => vector.ToArray()).Take(byteCount));
     }
 }
