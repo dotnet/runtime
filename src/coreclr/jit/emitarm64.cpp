@@ -8665,7 +8665,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalable(opt));
-            assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SIMD_SCALAR);
+            assert(gopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
             fmt = IF_SVE_AF_3A;
             break;
 
@@ -8697,7 +8697,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableWide(opt));
-            assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SIMD_SCALAR);
+            assert(gopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
             fmt = IF_SVE_AI_3A;
             break;
 
@@ -8717,7 +8717,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalable(opt));
-            assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SIMD_SCALAR);
+            assert(gopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
             fmt = IF_SVE_AK_3A;
             break;
 
@@ -8756,7 +8756,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             }
             else
             {
-                assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WIDE);
+                assert(gopt == INS_SCALABLE_OPTS_WIDE);
                 assert(insOptsScalableWide(opt));
                 fmt = IF_SVE_AO_3A;
             }
@@ -8837,7 +8837,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isVectorRegister(reg1));
                 fmt = IF_SVE_CM_3A;
             }
-            else if (gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SIMD_SCALAR)
+            else if (gopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isFloatReg(reg1));
                 assert(isValidVectorElemsize(size));
@@ -8845,7 +8845,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             }
             else
             {
-                assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SCALAR);
+                assert(gopt == INS_SCALABLE_OPTS_WITH_SCALAR);
                 assert(isGeneralRegister(reg1));
                 assert(isValidScalarDatasize(size));
                 fmt = IF_SVE_CO_3A;
@@ -8857,14 +8857,14 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalable(opt));
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
-            if (gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SIMD_SCALAR)
+            if (gopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isVectorRegister(reg3));
                 fmt = IF_SVE_CP_3A;
             }
             else
             {
-                assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SCALAR);
+                assert(gopt == INS_SCALABLE_OPTS_WITH_SCALAR);
                 assert(isGeneralRegisterOrSP(reg3));
                 fmt  = IF_SVE_CQ_3A;
                 reg3 = encodingSPtoZR(reg3);
@@ -8878,14 +8878,14 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalable(opt));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            if (gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SIMD_SCALAR)
+            if (gopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isVectorRegister(reg1));
                 fmt = IF_SVE_CR_3A;
             }
             else
             {
-                assert(gopt == INS_SCALABLE_OPTS_SCALABLE_WITH_SCALAR);
+                assert(gopt == INS_SCALABLE_OPTS_WITH_SCALAR);
                 assert(isGeneralRegister(reg1));
                 fmt = IF_SVE_CS_3A;
             }
