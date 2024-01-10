@@ -4911,7 +4911,7 @@ void Compiler::optFindNewLoops()
 }
 
 //-----------------------------------------------------------------------------
-// optCanonocalizeLoops: Canoncalize natural loops.
+// optCanonicalizeLoops: Canonicalize natural loops.
 //
 // Parameters:
 //   loops - Structure containing loops
