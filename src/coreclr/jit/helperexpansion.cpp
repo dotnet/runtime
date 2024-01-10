@@ -553,6 +553,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
 
+        // This resolves to an offset which is TYP_INT
         GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
         tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
 
