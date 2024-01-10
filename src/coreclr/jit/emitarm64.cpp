@@ -16848,9 +16848,9 @@ void emitter::emitDispVectorElemList(
 }
 
 //------------------------------------------------------------------------
-// emitDispSveRegList: Display a SVE vector register list
+// emitDispSveConsecutiveRegList: Display a SVE consecutive vector register list
 //
-void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
+void emitter::emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
 {
     assert(isVectorRegister(firstReg));
 
@@ -18706,9 +18706,9 @@ void emitter::emitDispInsHelp(
 
         // <Zd>.H, { <Zn1>.S-<Zn2>.S }, #<const>
         case IF_SVE_GA_2A: // ............iiii ......nnnn.ddddd -- SME2 multi-vec shift narrow
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
-            emitDispSveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
-            emitDispImm(emitGetInsSC(id), false);                           // iiii
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                        // ddddd
+            emitDispSveConsecutiveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
+            emitDispImm(emitGetInsSC(id), false);                                      // iiii
             break;
 
         // <Xdn>, <Pm>.<T>
@@ -18858,8 +18858,8 @@ void emitter::emitDispInsHelp(
         // { <Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JO_3A: // ............iiii ...gggnnnnnttttt -- SVE store multiple structures (scalar plus immediate)
             imm = emitGetInsSC(id);
-            emitDispSveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true);        // ttttt
-            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
             if (imm != 0)
