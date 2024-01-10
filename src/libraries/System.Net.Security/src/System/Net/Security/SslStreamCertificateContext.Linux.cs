@@ -245,7 +245,6 @@ namespace System.Net.Security
                         _ocspResponse = ret;
                         _ocspExpiration = expiration;
                         _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
-                        _pendingDownload = null;
                         break;
                     }
                 }
@@ -254,6 +253,16 @@ namespace System.Net.Security
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
                 GC.KeepAlive(Certificate);
                 GC.KeepAlive(caCert);
+
+                _pendingDownload = null;
+                if (ret == null)
+                {
+                    // all download attempts failed, don't try again for 5 seconds.
+                    // Note that if server does not send OCSP staples, clients may still
+                    // contact OCSP responders directly.
+                    _nextDownload = DateTimeOffset.UtcNow.AddSeconds(5);
+                    _ocspExpiration = _nextDownload;
+                }
                 return ret;
             }
         }
