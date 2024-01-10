@@ -8848,10 +8848,11 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalable(opt));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            if (sopt == INS_SCALABLE_OPTS_NONE)
+            if (isGeneralRegister(reg1))
             {
-                assert(isVectorRegister(reg1));
-                fmt = IF_SVE_CM_3A;
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
+                assert(isValidScalarDatasize(size));
+                fmt = IF_SVE_CO_3A;
             }
             else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
@@ -8861,10 +8862,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
             }
             else
             {
-                assert(sopt == INS_SCALABLE_OPTS_WITH_SCALAR);
-                assert(isGeneralRegister(reg1));
-                assert(isValidScalarDatasize(size));
-                fmt = IF_SVE_CO_3A;
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_CM_3A;
             }
             break;
 
@@ -8873,18 +8873,19 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalable(opt));
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
-            if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
+            if (isGeneralRegisterOrSP(reg3))
             {
-                assert(isVectorRegister(reg3));
-                fmt = IF_SVE_CP_3A;
-            }
-            else
-            {
-                assert(sopt == INS_SCALABLE_OPTS_WITH_SCALAR);
-                assert(isGeneralRegisterOrSP(reg3));
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
                 fmt  = IF_SVE_CQ_3A;
                 reg3 = encodingSPtoZR(reg3);
             }
+            else
+            {
+                assert(sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                assert(isVectorRegister(reg3));
+                fmt = IF_SVE_CP_3A;
+            }
+
             // MOV is an alias for CPY, and is always the preferred disassembly.
             ins = INS_sve_mov;
             break;
@@ -8894,16 +8895,16 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalable(opt));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
+            if (isGeneralRegister(reg1))
+            {
+                assert(sopt == INS_SCALABLE_OPTS_NONE);
+                assert(isGeneralRegister(reg1));
+                fmt = IF_SVE_CS_3A;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
             {
                 assert(isVectorRegister(reg1));
                 fmt = IF_SVE_CR_3A;
-            }
-            else
-            {
-                assert(sopt == INS_SCALABLE_OPTS_WITH_SCALAR);
-                assert(isGeneralRegister(reg1));
-                fmt = IF_SVE_CS_3A;
             }
             break;
 
