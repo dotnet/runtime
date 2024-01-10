@@ -358,7 +358,7 @@
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
                                   $(ICULibDir)/libicudata.a;
-                                  $(MSBuildThisFileDirectory)runtime/hybrid-globalization/segmentation-rules.json" />
+                                  $(BrowserProjectRoot)runtime/hybrid-globalization/segmentation-rules.json" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -482,8 +482,7 @@
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm;
-                       $(NativeBinDir)segmentation-rules.json;"
+                       $(NativeBinDir)dotnet.native.wasm;"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
