@@ -14,16 +14,10 @@ namespace Microsoft.Interop
         public static readonly ComInterfaceDispatchMarshallingInfo Instance = new();
     }
 
-    internal sealed class ComInterfaceDispatchMarshallerFactory : IMarshallingGeneratorFactory
+    internal sealed class ComInterfaceDispatchMarshallingResolver : IMarshallingGeneratorResolver
     {
-        private readonly IMarshallingGeneratorFactory _inner;
-        public ComInterfaceDispatchMarshallerFactory(IMarshallingGeneratorFactory inner)
-        {
-            _inner = inner;
-        }
-
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo ? ResolvedGenerator.Resolved(new Marshaller()) : _inner.Create(info, context);
+            => info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo ? ResolvedGenerator.Resolved(new Marshaller()) : ResolvedGenerator.UnresolvedGenerator;
 
         private sealed class Marshaller : IMarshallingGenerator
         {

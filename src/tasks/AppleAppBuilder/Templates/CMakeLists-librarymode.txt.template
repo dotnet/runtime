@@ -5,21 +5,17 @@ enable_language(OBJC ASM)
 
 set(APP_RESOURCES
 %AppResources%
-lib%ProjectName%.dylib
 )
 
 add_executable(
     %ProjectName%
     %MainSource%
     ${APP_RESOURCES}
+    util.h
+    util.m
+    runtime-librarymode.h
+    runtime-librarymode.m
 )
-
-if(NOT %UseNativeAOTRuntime%)
-    target_sources(
-        %ProjectName%
-        PRIVATE
-        runtime.m)
-endif()
 
 %Defines%
 
@@ -36,6 +32,7 @@ set_target_properties(%ProjectName% PROPERTIES
     XCODE_EMBED_FRAMEWORKS "%DYLIB_PATH%"
     XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
     XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
+    XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY "YES"
     RESOURCE "${APP_RESOURCES}"
 )
 
