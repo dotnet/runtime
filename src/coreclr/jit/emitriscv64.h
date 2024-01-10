@@ -139,15 +139,6 @@ BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, in
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 
-void assertOptsReloc(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins);
-void assertOptsI(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins);
-void assertOptsRc(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins);
-void assertOptsRl(BYTE* dst, size_t buf_size, const instrDesc* id, instruction cur_ins);
-void assertOptsJarl(
-    BYTE* dst, size_t buf_size, instrDescJmp* jmp, const insGroup* ig, const instrDesc* id, instruction cur_ins);
-void assertOptsJCond(BYTE* dst, size_t buf_size, const insGroup* ig, instrDesc* id, instruction cur_ins);
-void assertOptsJ(BYTE* dst, size_t buf_size, const insGroup* ig, instrDesc* id, instruction cur_ins);
-
 /************************************************************************/
 /*           Public inline informational methods                        */
 /************************************************************************/
