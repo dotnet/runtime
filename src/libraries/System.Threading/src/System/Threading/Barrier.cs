@@ -284,6 +284,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public long AddParticipant()
         {
             try
@@ -312,6 +315,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public long AddParticipants(int participantCount)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -469,6 +475,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public void SignalAndWait()
         {
             SignalAndWait(CancellationToken.None);
@@ -489,6 +498,9 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public void SignalAndWait(CancellationToken cancellationToken)
         {
 #if DEBUG
@@ -518,6 +530,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(TimeSpan timeout)
         {
             return SignalAndWait(timeout, CancellationToken.None);
@@ -545,6 +560,9 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -572,6 +590,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout)
         {
             return SignalAndWait(millisecondsTimeout, CancellationToken.None);
@@ -598,6 +619,9 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -837,6 +861,9 @@ namespace System.Threading
         /// <param name="token">cancellation token passed to SignalAndWait</param>
         /// <param name="observedPhase">The current phase number for this thread</param>
         /// <returns>True if the event is set or the phase number changed, false if the timeout expired</returns>
+#if !FEATURE_WASM_THREADS
+        [UnsupportedOSPlatform("browser")]
+#endif
         private bool DiscontinuousWait(ManualResetEventSlim currentPhaseEvent, int totalTimeout, CancellationToken token, long observedPhase)
         {
             int maxWait = 100; // 100 ms
