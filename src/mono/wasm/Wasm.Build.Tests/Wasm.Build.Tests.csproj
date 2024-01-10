@@ -73,6 +73,9 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SHOW_BUILD_OUTPUT=1" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SHOW_BUILD_OUTPUT=1" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
     </ItemGroup>
