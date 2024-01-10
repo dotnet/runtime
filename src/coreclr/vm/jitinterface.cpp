@@ -9909,7 +9909,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     else
     {
         pLookup->accessType = IAT_PVALUE;
-        pLookup->addr = (LPVOID)&(pNMD->GetWriteableData()->m_pNDirectTarget);
+        pLookup->addr = (LPVOID)&(pNMD->GetWritableData()->m_pNDirectTarget);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13496,7 +13496,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             _ASSERTE(pMethod->IsNDirect());
             NDirectMethodDesc *pMD = (NDirectMethodDesc*)pMethod;
-            result = (size_t)(LPVOID)&(pMD->GetWriteableData()->m_pNDirectTarget);
+            result = (size_t)(LPVOID)&(pMD->GetWritableData()->m_pNDirectTarget);
         }
         break;
 

@@ -5601,7 +5601,7 @@
                         <map value="0x1" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.ModuleSection)"/>
                         <map value="0x2" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.EETableSection)"/>
                         <map value="0x3" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.WriteDataSection)"/>
-                        <map value="0x4" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.WriteableDataSection)"/>
+                        <map value="0x4" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.WritableDataSection)"/>
                         <map value="0x5" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.DataSection)"/>
                         <map value="0x6" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.RVAStaticsSection)"/>
                         <map value="0x7" message="$(string.PrivatePublisher.ModuleRangeSectionTypeMap.EEDataSection)"/>
@@ -9042,7 +9042,7 @@
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.ModuleSection" value="ModuleSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.EETableSection" value="EETableSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.WriteDataSection" value="WriteDataSection"/>
-                <string id="PrivatePublisher.ModuleRangeSectionTypeMap.WriteableDataSection" value="WriteableDataSection"/>
+                <string id="PrivatePublisher.ModuleRangeSectionTypeMap.WritableDataSection" value="WritableDataSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.DataSection" value="DataSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.RVAStaticsSection" value="RVAStaticsSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.EEDataSection" value="EEDataSection"/>
