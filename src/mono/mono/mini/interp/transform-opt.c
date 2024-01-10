@@ -1272,7 +1272,7 @@ rename_phi_args_in_out_bbs (TransformData *td, InterpBasicBlock *bb)
 }
 
 static void
-rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
+rename_vars_in_bb_start (TransformData *td, InterpBasicBlock *bb)
 {
 	InterpInst *ins;
 
@@ -1330,14 +1330,12 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 	}
 
 	rename_phi_args_in_out_bbs (td, bb);
+}
 
-	// Rename recursively every successor of bb in the dominator tree
-	GSList *dominated = bb->dominated;
-	while (dominated) {
-		InterpBasicBlock *dominated_bb = (InterpBasicBlock*)dominated->data;
-		rename_vars_in_bb (td, dominated_bb);
-		dominated = dominated->next;
-	}
+static void
+rename_vars_in_bb_end (TransformData *td, InterpBasicBlock *bb)
+{
+	InterpInst *ins;
 
 	// All vars currently on the ssa stack are live until the end of the bblock
 	for (unsigned int i = 0; i < td->renamable_vars_size; i++) {
@@ -1379,12 +1377,40 @@ rename_vars_in_bb (TransformData *td, InterpBasicBlock *bb)
 			interp_clear_ins (ins);
 		}
 	}
+
 }
 
 static void
 rename_vars (TransformData *td)
 {
-	rename_vars_in_bb (td, td->entry_bb);
+	int next_stack_index = 0;
+	InterpBasicBlock **stack = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
+	gboolean *bb_status = (gboolean*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
+
+	stack [next_stack_index++] = td->entry_bb;
+
+	while (next_stack_index > 0) {
+		next_stack_index--;
+		InterpBasicBlock *bb = stack [next_stack_index];
+
+		if (!bb_status [bb->dfs_index]) {
+			rename_vars_in_bb_start (td, bb);
+			bb_status [bb->dfs_index] = TRUE;
+			stack [next_stack_index++] = bb;
+
+			// Rename recursively every successor of bb in the dominator tree
+			GSList *dominated = bb->dominated;
+			while (dominated) {
+				InterpBasicBlock *dominated_bb = (InterpBasicBlock*)dominated->data;
+				g_assert (!bb_status [dominated_bb->dfs_index]);
+				stack [next_stack_index++] = dominated_bb;
+				dominated = dominated->next;
+			}
+		} else {
+			// We reach this entry after all the successors have been processed
+			rename_vars_in_bb_end (td, bb);
+		}
+	}
 
 	if (td->verbose_level) {
 		g_print ("\nFIXED SSA VARS LIVENESS LIMIT:\n");
