@@ -2621,6 +2621,16 @@ NO_MORE_LOOPS:
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
+    for (BasicBlock* block : Blocks())
+    {
+        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
+    for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        optLoopTable[loopInd].lpEntry->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+    }
+
     // Starting now, we require all loops to have pre-headers.
     optLoopsRequirePreHeaders = true;
 
@@ -3922,18 +3932,15 @@ bool Compiler::optComputeLoopRep(int        constInit,
 // Loops handled are fully unrolled; there is no partial unrolling.
 //
 // Limitations: only the following loop types are handled:
-// 1. "while" loops (top entry)
-// 2. constant initializer, constant bound
-// 3. The entire loop must be in the same EH region.
-// 4. The loop iteration variable can't be address exposed.
-// 5. The loop iteration variable can't be a promoted struct field.
-// 6. We must be able to calculate the total constant iteration count.
-// 7. On x86, there is a limit to the number of return blocks. So if there are return blocks in the loop that
-//    would be unrolled, the unrolled code can't exceed that limit.
+// 1. constant initializer, constant bound
+// 2. The entire loop must be in the same EH region.
+// 3. The loop iteration variable can't be address exposed.
+// 4. The loop iteration variable can't be a promoted struct field.
+// 5. We must be able to calculate the total constant iteration count.
 //
 // Cost heuristics:
 // 1. there are cost metrics for maximum number of allowed iterations, and maximum unroll size
-// 2. single-iteration loops are always allowed (to eliminate the loop structure).
+// 2. constant trip count loops are always allowed, up to a limit of 4
 // 3. otherwise, only loops where the limit is Vector<T>.Length are currently allowed
 //
 // In stress modes, these heuristic limits are expanded, and loops aren't required to have the
@@ -3967,8 +3974,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
     bool change      = false;
     bool anyIRchange = false;
-    INDEBUG(int unrollCount = 0);    // count of loops unrolled
-    INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
+    INDEBUG(int unrollCount = 0); // count of loops unrolled
 
     static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
         10, // BLENDED_CODE
@@ -4010,13 +4016,8 @@ RETRY_UNROLL:
     // Visit loops in post order (inner loops before outer loops).
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        LoopDsc* oldLoop = m_newToOldLoop[loop->GetIndex()];
         // TODO-Quirk: Remove
-        if (oldLoop == nullptr)
-        {
-            continue;
-        }
-        if ((oldLoop->lpFlags & (LPFLG_DONT_UNROLL | LPFLG_REMOVED)) != 0)
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
         {
             continue;
         }
@@ -4029,17 +4030,8 @@ RETRY_UNROLL:
         NaturalLoopIterInfo iterInfo;
         if (!loop->AnalyzeIteration(&iterInfo))
         {
-            assert((oldLoop->lpFlags & LPFLG_ITER) == 0);
             continue;
         }
-
-        // TODO-Quirk: Allow this
-        if ((oldLoop->lpFlags & LPFLG_ITER) == 0)
-        {
-            continue;
-        }
-
-        optCrossCheckIterInfo(iterInfo, *oldLoop);
 
         // Check for required flags:
         // HasConstInit  - required because this transform only handles full unrolls
@@ -4047,13 +4039,6 @@ RETRY_UNROLL:
         if (!iterInfo.HasConstInit || !iterInfo.HasConstLimit)
         {
             // Don't print to the JitDump about this common case.
-            continue;
-        }
-
-        // TODO-Quirk: Unnecessary
-        if (!oldLoop->lpIsTopEntry())
-        {
-            JITDUMP("Failed to unroll loop " FMT_LP ": not top entry\n", loop->GetIndex());
             continue;
         }
 
@@ -4165,7 +4150,6 @@ RETRY_UNROLL:
             (incr->AsOp()->gtOp2->gtOper != GT_CNS_INT) ||
             (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
 
-            // TODO-Quirk: This check shouldn't be needed.
             (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
         {
             noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
@@ -4273,12 +4257,10 @@ RETRY_UNROLL:
 
             BlockToBlockMap blockMap(getAllocator(CMK_LoopUnroll));
 
-            BasicBlock*            bottom        = loop->GetLexicallyBottomMostBlock();
-            BasicBlock*            insertAfter   = bottom;
-            BasicBlock* const      tail          = bottom->Next();
-            BasicBlock*            prevTestBlock = nullptr;
-            BasicBlock::loopNumber newLoopNum    = oldLoop->lpParent;
-            unsigned               iterToUnroll  = totalIter; // The number of iterations left to unroll
+            BasicBlock* bottom        = loop->GetLexicallyBottomMostBlock();
+            BasicBlock* insertAfter   = bottom;
+            BasicBlock* prevTestBlock = nullptr;
+            unsigned    iterToUnroll  = totalIter; // The number of iterations left to unroll
 
             // Find the exit block of the IV test first. We need to do that
             // here since it may have implicit fallthrough that we'll change
@@ -4289,8 +4271,9 @@ RETRY_UNROLL:
             BasicBlock* exit =
                 loop->ContainsBlock(exiting->GetTrueTarget()) ? exiting->GetFalseTarget() : exiting->GetTrueTarget();
 
-            // If the bottom block falls out of the loop, then insert explicit block to branch around unrolled
-            // iterations.
+            // If the bottom block falls out of the loop, then insert an
+            // explicit block to branch around the unrolled iterations we are
+            // going to create.
             if (bottom->KindIs(BBJ_COND))
             {
                 // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
@@ -4312,8 +4295,8 @@ RETRY_UNROLL:
 
             for (int lval = lbeg; iterToUnroll > 0; iterToUnroll--)
             {
-                BasicBlock*     testBlock = nullptr;
-                BasicBlockVisit result    = loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
+                BasicBlock* testBlock = nullptr;
+                loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
 
                     // Don't set a jump target for now.
                     // BasicBlock::CopyTarget() will fix the jump kind/target in the loop below.
@@ -4322,28 +4305,11 @@ RETRY_UNROLL:
 
                     blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
 
-                    if (!BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval))
-                    {
-                        // CloneBlockState (specifically, gtCloneExpr) doesn't handle everything. If it fails
-                        // to clone a block in the loop, splice out and forget all the blocks we cloned so far:
-                        // put the loop blocks back to how they were before we started cloning blocks,
-                        // and abort unrolling the loop.
-                        bottom->SetNext(tail);
-                        oldLoop->lpFlags |= LPFLG_DONT_UNROLL; // Mark it so we don't try to unroll it again.
-                        INDEBUG(++unrollFailures);
-                        JITDUMP("Failed to unroll loop " FMT_LP ": block cloning failed on " FMT_BB "\n",
-                                loop->GetIndex(), block->bbNum);
-                        return BasicBlockVisit::Abort;
-                    }
+                    // Now clone block state and statements from `from` block to `to` block.
+                    //
+                    BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
 
-                    // All blocks in the unrolled loop will now be marked with the parent loop number. Note that
-                    // if the loop being unrolled contains nested (child) loops, we will notice this below (when
-                    // we set anyNestedLoopsUnrolledThisLoop), and that will cause us to rebuild the entire loop
-                    // table and all loop annotations on blocks. However, if the loop contains no nested loops,
-                    // setting the block `bbNatLoopNum` here is sufficient to incrementally update the block's
-                    // loop info.
-
-                    newBlock->bbNatLoopNum = newLoopNum;
+                    newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
                     // Block weight should no longer have the loop multiplier
                     //
@@ -4374,9 +4340,10 @@ RETRY_UNROLL:
                             testCopyStmt->SetRootNode(sideEffList);
                         }
 
-                        // Save the block so we can special case it when
-                        // redirecting the blocks below; we don't want this one
-                        // to become BBJ_COND, it should stay as BBJ_ALWAYS.
+                        // Save the test block of the previously unrolled
+                        // iteration, so that we can redirect it when we create
+                        // the next iteration (or to the exit for the last
+                        // iteration).
                         assert(testBlock == nullptr);
                         testBlock = newBlock;
                     }
@@ -4392,8 +4359,7 @@ RETRY_UNROLL:
                         BasicBlock* newRedirBlk =
                             fgNewBBafter(BBJ_ALWAYS, insertAfter, /* extendRegion */ true, targetBlk);
                         newRedirBlk->copyEHRegion(insertAfter);
-                        newRedirBlk->bbNatLoopNum = newLoopNum;
-                        newRedirBlk->bbWeight     = block->Next()->bbWeight;
+                        newRedirBlk->bbWeight = block->Next()->bbWeight;
                         newRedirBlk->CopyFlags(block->Next(), BBF_RUN_RARELY | BBF_PROF_WEIGHT);
                         newRedirBlk->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
@@ -4403,11 +4369,6 @@ RETRY_UNROLL:
 
                     return BasicBlockVisit::Continue;
                 });
-
-                if (result == BasicBlockVisit::Abort)
-                {
-                    goto DONE_LOOP;
-                }
 
                 assert(testBlock != nullptr);
 
@@ -4550,10 +4511,6 @@ RETRY_UNROLL:
             }
 #endif // DEBUG
 
-            // TODO: Remove
-            // Update loop table.
-            optMarkLoopRemoved((unsigned)(oldLoop - optLoopTable));
-
             // Remember that something has changed.
             INDEBUG(++unrollCount);
             change = true;
@@ -4586,10 +4543,6 @@ RETRY_UNROLL:
         if (verbose)
         {
             printf("\nFinished unrolling %d loops", unrollCount);
-            if (unrollFailures > 0)
-            {
-                printf(", %d failures due to block cloning", unrollFailures);
-            }
             printf("\n");
         }
 #endif // DEBUG
@@ -4606,28 +4559,12 @@ RETRY_UNROLL:
     }
     else
     {
-#ifdef DEBUG
         assert(unrollCount == 0);
-
-        if (unrollFailures > 0)
-        {
-            printf("\nFinished loop unrolling, %d failures due to block cloning\n", unrollFailures);
-        }
-#endif // DEBUG
     }
 
 #ifdef DEBUG
     fgDebugCheckBBlist(true);
 #endif // DEBUG
-
-    // The loop table is no longer valid.
-    optLoopTableValid = false;
-    optLoopTable      = nullptr;
-    optLoopCount      = 0;
-
-    // Old dominators and reachability sets are no longer valid.
-    fgDomsComputed         = false;
-    fgCompactRenumberQuirk = true;
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -5517,6 +5454,14 @@ PhaseStatus Compiler::optFindLoopsPhase()
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
+    // The old loop table is no longer valid.
+    optLoopTableValid = false;
+    optLoopTable      = nullptr;
+    optLoopCount      = 0;
+
+    // Old dominators and reachability sets are no longer valid.
+    fgDomsComputed = false;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -5527,9 +5472,6 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    m_newToOldLoop = (m_loops->NumLoops() == 0) ? nullptr : (new (this, CMK_Loops) LoopDsc*[m_loops->NumLoops()]{});
-    m_oldToNewLoop = new (this, CMK_Loops) FlowGraphNaturalLoop*[BasicBlock::MAX_LOOP_NUM]{};
-
     // Leave a bread crumb for future phases like loop alignment about whether
     // looking for loops makes sense. We generally do not expect phases to
     // introduce new cycles/loops in the flow graph; if they do, they should
@@ -5539,50 +5481,6 @@ void Compiler::optFindNewLoops()
     // loops by removing edges.
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
-
-    for (BasicBlock* block : Blocks())
-    {
-        block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-    }
-
-    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
-    {
-        BasicBlock* head = loop->GetHeader();
-        if (head->bbNatLoopNum == BasicBlock::NOT_IN_LOOP)
-            continue;
-
-        LoopDsc* dsc = &optLoopTable[head->bbNatLoopNum];
-        if (dsc->lpEntry != head)
-            continue;
-
-        assert(m_oldToNewLoop[head->bbNatLoopNum] == nullptr);
-        assert(m_newToOldLoop[loop->GetIndex()] == nullptr);
-        m_oldToNewLoop[head->bbNatLoopNum] = loop;
-        m_newToOldLoop[loop->GetIndex()]   = dsc;
-        head->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-    }
-}
-
-//-----------------------------------------------------------------------------
-// optCrossCheckIterInfo: Validate that new IV analysis matches the old one.
-//
-// Parameters:
-//   iterInfo - New IV information
-//   dsc      - Old loop structure containing IV analysis information
-//
-void Compiler::optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc)
-{
-    assert(iterInfo.HasConstInit == ((dsc.lpFlags & LPFLG_CONST_INIT) != 0));
-    assert(iterInfo.HasConstLimit == ((dsc.lpFlags & LPFLG_CONST_LIMIT) != 0));
-    assert(iterInfo.HasSimdLimit == ((dsc.lpFlags & LPFLG_SIMD_LIMIT) != 0));
-    assert(iterInfo.HasInvariantLocalLimit == ((dsc.lpFlags & LPFLG_VAR_LIMIT) != 0));
-    assert(iterInfo.HasArrayLengthLimit == ((dsc.lpFlags & LPFLG_ARRLEN_LIMIT) != 0));
-    if (iterInfo.HasConstInit)
-    {
-        assert(iterInfo.ConstInitValue == dsc.lpConstInit);
-        assert(iterInfo.InitBlock == dsc.lpInitBlock);
-    }
-    assert(iterInfo.TestTree == dsc.lpTestTree);
 }
 
 /*****************************************************************************
@@ -6573,7 +6471,7 @@ PhaseStatus Compiler::optHoistLoopCode()
     LoopHoistContext hoistCtxt(this);
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        if (m_newToOldLoop[loop->GetIndex()] == nullptr)
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
         {
             continue;
         }
@@ -6778,7 +6676,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     for (FlowGraphNaturalLoop* childLoop = loop->GetChild(); childLoop != nullptr; childLoop = childLoop->GetSibling())
     {
-        if (m_newToOldLoop[childLoop->GetIndex()] == nullptr)
+        if (!childLoop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
         {
             continue;
         }

@@ -1411,7 +1411,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() => MaxMagnitude(ReadOnlySpan<T>.Empty));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MaxMagnitude_Tensor()
         {
@@ -1483,7 +1482,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(ConvertFromSingle(1), MaxMagnitude( [ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(0f), ConvertFromSingle(1)]));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MaxMagnitude_TwoTensors()
         {
@@ -1502,7 +1500,6 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MaxMagnitude_TwoTensors_InPlace()
         {
@@ -1531,7 +1528,6 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MaxMagnitude_TwoTensors_SpecialValues()
         {
@@ -1789,7 +1785,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() => MinMagnitude(ReadOnlySpan<T>.Empty));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MinMagnitude_Tensor()
         {
@@ -1859,7 +1854,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(ConvertFromSingle(0), MinMagnitude([ConvertFromSingle(-1), ConvertFromSingle(-0f), ConvertFromSingle(1)]));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MinMagnitude_TwoTensors()
         {
@@ -1878,7 +1872,6 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MinMagnitude_TwoTensors_InPlace()
         {
@@ -1907,7 +1900,6 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96443", TestRuntimes.Mono)]
         [Fact]
         public void MinMagnitude_TwoTensors_SpecialValues()
         {
