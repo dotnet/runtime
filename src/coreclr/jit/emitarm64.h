@@ -899,7 +899,7 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
-    return insOptsScalableSimple(opt) || insOptsScalableWithPredicateMerge(opt);
+    return insOptsScalableSimple(opt);
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -931,13 +931,6 @@ inline static bool insOptsScalableWide(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for widening to size D.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
-}
-
-inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
-{
-    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
 }
 
 static bool isValidImmCond(ssize_t imm);
