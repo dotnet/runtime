@@ -6282,12 +6282,8 @@ void emitter::emitIns_Mov(
  *  Add an instruction referencing two registers
  */
 
-void emitter::emitIns_R_R(instruction     ins,
-                          emitAttr        attr,
-                          regNumber       reg1,
-                          regNumber       reg2,
-                          insOpts         opt /* = INS_OPTS_NONE */,
-                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+void emitter::emitIns_R_R(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt /* = INS_OPTS_NONE */)
 {
     if (IsMovInstruction(ins))
     {
