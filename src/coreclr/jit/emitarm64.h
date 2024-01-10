@@ -896,8 +896,7 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
-    return ((insOptsScalableSimple(opt)) || (insOptsScalableWithSimdVector(opt)) ||
-            insOptsScalableWithPredicateMerge(opt));
+    return insOptsScalableSimple(opt) || insOptsScalableWithSimdVector(opt) || insOptsScalableWithPredicateMerge(opt);
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)

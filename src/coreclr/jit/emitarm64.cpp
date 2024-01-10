@@ -7921,13 +7921,13 @@ void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, re
  *  Add an instruction referencing three registers.
  */
 
-void emitter::emitIns_R_R_R(instruction                        ins,
-                            emitAttr                           attr,
-                            regNumber                          reg1,
-                            regNumber                          reg2,
-                            regNumber                          reg3,
-                            insOpts                            opt,
-                            /* = INS_OPTS_NONE */ insGroupOpts gopt /* = INS_GROUP_OPTS_NONE */)
+void emitter::emitIns_R_R_R(instruction  ins,
+                            emitAttr     attr,
+                            regNumber    reg1,
+                            regNumber    reg2,
+                            regNumber    reg3,
+                            insOpts      opt /* = INS_OPTS_NONE */,
+                            insGroupOpts gopt /* = INS_GROUP_OPTS_NONE */)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
