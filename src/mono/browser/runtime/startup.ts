@@ -23,12 +23,12 @@ import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_name } from "./logging";
 
 // threads
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
-import { getBrowserThreadID } from "./pthreads/shared";
+import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 
 // legacy
@@ -360,8 +360,9 @@ async function mono_wasm_init_threads() {
     if (!MonoWasmThreads) {
         return;
     }
-    const tid = getBrowserThreadID();
-    mono_set_thread_id(`0x${tid.toString(16)}-main`);
+    const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
+    mono_set_thread_name(threadName);
+    loaderHelpers.mono_set_thread_name(threadName);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
 }
@@ -664,8 +665,8 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 export async function configureWorkerStartup(module: DotnetModuleInternal): Promise<void> {
     initWorkerThreadEvents();
-    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev) => {
-        mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));
+    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, () => {
+        // mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));
     });
 
     // these are the only events which are called on worker

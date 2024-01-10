@@ -47,7 +47,6 @@ namespace System.Text.Json
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
 
-        public const int SpacesPerIndent = 2;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
@@ -110,5 +109,13 @@ namespace System.Text.Json
         // The maximum number of parameters a constructor can have where it can be considered
         // for a path on deserialization where we don't box the constructor arguments.
         public const int UnboxedParameterCountThreshold = 4;
+
+        // Two space characters is the default indentation.
+        public const char DefaultIndentCharacter = ' ';
+        public const char TabIndentCharacter = '\t';
+        public const int DefaultIndentSize = 2;
+        public const int MinimumIndentSize = 0;
+        public const int MaximumIndentSize = 127; // If this value is changed, the impact on the options masking used in the JsonWriterOptions struct must be checked carefully.
+
     }
 }
