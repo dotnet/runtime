@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "pal_icushim_internal.h"
 #include "pal_icushim.h"
