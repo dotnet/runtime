@@ -4980,7 +4980,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 
     BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
     preheader->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
-    fgSetEHRegionForNewLoopHead(preheader, insertBefore);
+    fgSetEHRegionForNewPreheader(preheader);
 
     if (preheader->NextIs(header))
     {
@@ -5132,7 +5132,7 @@ void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* pre
                 fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
                 loopSkippedCount, loopTakenRatio);
 
-        // Calculate a good approximation of the preHead's block weight
+        // Calculate a good approximation of the preheader's block weight
         weight_t preheaderWeight = (prevEntering->bbWeight * loopTakenRatio);
         preheader->setBBProfileWeight(preheaderWeight);
         assert(!preheader->isRunRarely());
@@ -7421,70 +7421,65 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
 }
 
 //------------------------------------------------------------------------------
-// fgSetEHRegionForNewLoopHead: When a new loop HEAD block is created, this sets the EH region properly for
-// the new block.
+// fgSetPreheaderEHRegionForTryBeginLoopHeader: Set the EH region correctly for a
+// preheader inserted before a header that is the start of a try-region.
 //
 // In which EH region should the header live?
 //
-// The header block is added immediately before `top`.
+// The preheader block is expected to have been added immediately before a
+// block `next` in the loop that is also in the same EH region as the header.
+// This is usually the lexically first block of the loop, but may also be the
+// header itself.
 //
-// The `top` block cannot be the first block of a filter or handler: `top` must have a back-edge from a
-// BBJ_COND or BBJ_ALWAYS within the loop, and a filter or handler cannot be branched to like that.
+// If the `next` block is NOT the first block of a `try` region, the preheader
+// can simply extend the header's block region.
 //
-// The `top` block can be the first block of a `try` region, and you can fall into or branch to the
-// first block of a `try` region. (For top-entry loops, `top` will both be the target of a back-edge
-// and a fall-through from the previous block.)
+// If the `next` block IS the first block of a `try`, we find its parent region
+// and use that. For mutual-protect regions, we need to find the actual parent,
+// as the block stores the most "nested" mutual region. For non-mutual-protect
+// regions, due to EH canonicalization, we are guaranteed that no other EH
+// regions begin on the same block, so looking to just the parent is
+// sufficient. Note that we can't just extend the EH region of the header to
+// the preheader, because the header will still be the target of backward
+// branches from within the loop. If those backward branches come from outside
+// the `try` (say, only the top half of the loop is a `try` region), then we
+// can't branch to a non-first `try` region block (you always must enter the
+// `try` in the first block).
 //
-// If the `top` block is NOT the first block of a `try` region, the header can simply extend the
-// `top` block region.
-//
-// If the `top` block IS the first block of a `try`, we find its parent region and use that. For mutual-protect
-// regions, we need to find the actual parent, as the block stores the most "nested" mutual region. For
-// non-mutual-protect regions, due to EH canonicalization, we are guaranteed that no other EH regions begin
-// on the same block, so looking to just the parent is sufficient. Note that we can't just extend the EH
-// region of `top` to the header, because `top` will still be the target of backward branches from
-// within the loop. If those backward branches come from outside the `try` (say, only the top half of the loop
-// is a `try` region), then we can't branch to a non-first `try` region block (you always must entry the `try`
-// in the first block).
-//
-// Note that hoisting any code out of a try region, for example, to a pre-header block in a different
-// EH region, needs to ensure that no exceptions will be thrown.
+// Note that hoisting any code out of a try region, for example, to a preheader
+// block in a different EH region, needs to ensure that no exceptions will be
+// thrown.
 //
 // Arguments:
-//    newHead - the new `head` block, which has already been added to the block list ahead of the loop `top`
-//    top     - the loop `top` block
+//    preheader - the new preheader block, which has already been added to the
+//                block list before a block inside the loop that shares EH
+//                region with the header.
 //
-void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
+void Compiler::fgSetEHRegionForNewPreheader(BasicBlock* preheader)
 {
-    assert(newHead->NextIs(top));
-    assert(!fgIsFirstBlockOfFilterOrHandler(top));
+    BasicBlock* next = preheader->Next();
 
-    if (bbIsTryBeg(top))
+    if (bbIsTryBeg(next))
     {
-        // `top` is the beginning of a try block. Figure out the EH region to use.
-        assert(top->hasTryIndex());
-        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(top->getTryIndex());
+        // `next` is the beginning of a try block. Figure out the EH region to use.
+        assert(next->hasTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(next->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.
-            newHead->clearTryIndex();
+            preheader->clearTryIndex();
         }
         else
         {
-            newHead->setTryIndex(newTryIndex);
+            preheader->setTryIndex(newTryIndex);
         }
 
-        // What handler region to use? Use the same handler region as `top`.
-        newHead->copyHndIndex(top);
+        // What handler region to use? Use the same handler region as `next`.
+        preheader->copyHndIndex(next);
     }
     else
     {
-        // `top` is not the beginning of a try block. Just extend the EH region to the pre-header.
-        // We don't need to call `fgExtendEHRegionBefore()` because all the special handling that function
-        // does it to account for `top` being the first block of a `try` or handler region, which we know
-        // is not true.
-
-        newHead->copyEHRegion(top);
+        fgExtendEHRegionBefore(next);
     }
 }
 
