@@ -106,15 +106,14 @@ namespace Wasm.Build.Tests
             if (process.WaitForExit((int)timeout.TotalMilliseconds))
             {
                 stdout = process.StandardOutput.ReadToEnd();
-            }
-            else
-            {
-                Console.WriteLine ($"process.WaitForExit timed out after {timeout} . Killing the process ..");
-                process.Kill(entireProcessTree: true);
-                Console.WriteLine ($"HasExited: {process.HasExited}");
+                return process.ExitCode;
             }
 
-            return process.ExitCode;
+            Console.WriteLine ($"process.WaitForExit timed out after {timeout} . Killing the process ..");
+            process.Kill(entireProcessTree: true);
+            Console.WriteLine ($"HasExited: {process.HasExited}");
+            // sigkill - 128+9(sigkill)
+            return 137;
         }
 
         public static Task StartAndWaitForExitAsync(this Process subject)
