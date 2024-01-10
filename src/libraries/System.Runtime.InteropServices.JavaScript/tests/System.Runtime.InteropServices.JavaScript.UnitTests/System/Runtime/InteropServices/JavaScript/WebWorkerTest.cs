@@ -58,7 +58,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task Executor_Cancellation(Executor executor)
         {
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
-            await Task.Delay(10);
 
             TaskCompletionSource ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var canceledTask = executor.Execute(() =>
@@ -68,33 +67,178 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return never.Task;
             }, cts.Token);
 
+            await ready.Task;
+
             cts.Cancel();
 
-            switch (executor.Type)
-            {
-                case ExecutorType.Main:
-                case ExecutorType.NewThread:
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => canceledTask);
-                    break;
-                case ExecutorType.ThreadPool:
-                case ExecutorType.JSWebWorker:
-                    await Assert.ThrowsAsync<TaskCanceledException>(() => canceledTask);
-                    break;
-
-            }
+            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledTask);
         }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task JSDelay_Cancellation(Executor executor)
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            TaskCompletionSource ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var canceledTask = executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
+
+                var never = WebWorkerTestHelper.JSDelay(TimeoutMilliseconds * 1000);
+                ready.SetResult();
+                await never;
+            }, cts.Token);
+
+            await ready.Task;
+
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledTask);
+        }
+
+        [Fact]
+        public async Task JSSynchronizationContext_Send_Post_Items_Cancellation()
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
+            ManualResetEventSlim blocker=new ManualResetEventSlim(false);
+            TaskCompletionSource never = new TaskCompletionSource();
+            SynchronizationContext capturedSynchronizationContext = null;
+            TaskCompletionSource jswReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource sendReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource postReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var canceledTask = JSWebWorker.RunAsync(() =>
+            {
+                capturedSynchronizationContext = SynchronizationContext.Current;
+                jswReady.SetResult();
+
+                // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
+                blocker.Wait();
+
+                return never.Task;
+            }, cts.Token);
+
+            await jswReady.Task;
+            Assert.Equal("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext", capturedSynchronizationContext!.GetType().FullName);
+
+            var shouldNotHitSend = false;
+            var shouldNotHitPost = false;
+            var hitAfterPost = false;
+
+            var canceledSend = Task.Run(() =>
+            {
+                // this will be blocked until blocker.Set()
+                sendReady.SetResult();
+                capturedSynchronizationContext.Send(_ =>
+                {
+                    // then it should get canceled and not executed
+                    shouldNotHitSend = true;
+                }, null);
+                return Task.CompletedTask;
+            });
+
+            var canceledPost = Task.Run(() =>
+            {
+                postReady.SetResult();
+                capturedSynchronizationContext.Post(_ =>
+                {
+                    // then it should get canceled and not executed
+                    shouldNotHitPost = true;
+                }, null);
+                hitAfterPost = true;
+                return Task.CompletedTask;
+            });
+
+            // make sure that jobs got the chance to enqueue
+            await sendReady.Task;
+            await postReady.Task;
+            await Task.Delay(100);
+
+            // this could should be delivered immediately
+            cts.Cancel();
+
+            // this will unblock the current pending work item
+            blocker.Set();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledSend);
+            await canceledPost; // this shouldn't throw
+
+            Assert.False(shouldNotHitSend);
+            Assert.False(shouldNotHitPost);
+            Assert.True(hitAfterPost);
+        }
+
+        [Fact]
+        public async Task JSSynchronizationContext_Send_Post_To_Canceled()
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
+            TaskCompletionSource never = new TaskCompletionSource();
+            SynchronizationContext capturedSynchronizationContext = null;
+            TaskCompletionSource jswReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            JSObject capturedGlobalThis=null;
+
+            var canceledTask = JSWebWorker.RunAsync(() =>
+            {
+                capturedSynchronizationContext = SynchronizationContext.Current;
+                capturedGlobalThis = JSHost.GlobalThis;
+                jswReady.SetResult();
+                return never.Task;
+            }, cts.Token);
+
+            await jswReady.Task;
+            Assert.Equal("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext", capturedSynchronizationContext!.GetType().FullName);
+
+            cts.Cancel();
+
+            // give it chance to dispose the thread
+            await Task.Delay(100);
+
+            Assert.True(capturedGlobalThis.IsDisposed);
+
+            var shouldNotHitSend = false;
+            var shouldNotHitPost = false;
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                capturedGlobalThis.HasProperty("document");
+            });
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                capturedSynchronizationContext.Send(_ =>
+                {
+                    // then it should get canceled and not executed
+                    shouldNotHitSend = true;
+                }, null);
+            });
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                capturedSynchronizationContext.Post(_ =>
+                {
+                    // then it should get canceled and not executed
+                    shouldNotHitPost = true;
+                }, null);
+            });
+
+            Assert.False(shouldNotHitSend);
+            Assert.False(shouldNotHitPost);
+        }
+
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)
         {
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
-
-            var canceledTask = executor.Execute(() =>
+            bool hit = false;
+            var failedTask = executor.Execute(() =>
             {
+                hit = true;
                 throw new InvalidOperationException("Test");
             }, cts.Token);
 
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => canceledTask);
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => failedTask);
+            Assert.True(hit);
             Assert.Equal("Test", ex.Message);
         }
 
@@ -264,12 +408,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 await e2Job(r1);
 
-                doneTCS.SetResult();
             }, cts.Token);
 
             try
             {
                 await e2;
+                doneTCS.SetResult();
                 await e1;
             }
             catch (Exception)

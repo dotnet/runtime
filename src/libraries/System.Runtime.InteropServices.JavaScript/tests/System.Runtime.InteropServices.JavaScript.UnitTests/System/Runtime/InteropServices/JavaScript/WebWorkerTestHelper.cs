@@ -166,7 +166,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 case ExecutorType.Main:
                     return RunOnTargetAsync(MainSynchronizationContext, wrapExecute, cancellationToken);
                 case ExecutorType.ThreadPool:
-                    return Task.Run(wrapExecute, cancellationToken);
+                    return RunOnThreadPool(wrapExecute, cancellationToken);
                 case ExecutorType.NewThread:
                     return RunOnNewThread(wrapExecute, cancellationToken);
                 case ExecutorType.JSWebWorker:
@@ -273,6 +273,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await task.ConfigureAwait(true);
             }
             AssertTargetThread();
+        }
+
+        public static Task RunOnThreadPool(Func<Task> job, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource done = new TaskCompletionSource();
+            var reg = cancellationToken.Register(() =>
+            {
+                done.TrySetException(new OperationCanceledException(cancellationToken));
+            });
+            Task.Run(job, cancellationToken).ContinueWith(result =>
+            {
+                if (result.IsFaulted)
+                {
+                    if (result.Exception is AggregateException ag && ag.InnerException != null)
+                    {
+                        done.TrySetException(ag.InnerException);
+                    }
+                    else
+                    {
+                        done.TrySetException(result.Exception);
+                    }
+                }
+                else if (result.IsCanceled)
+                {
+                    done.TrySetCanceled(cancellationToken);
+                }
+                else
+                {
+                    done.TrySetResult();
+                }
+            }, TaskContinuationOptions.ExecuteSynchronously);
+            return done.Task;
         }
 
         public static Task RunOnNewThread(Func<Task> job, CancellationToken cancellationToken)

@@ -30,247 +30,204 @@ namespace System.Runtime.InteropServices.JavaScript
             return RunAsync(body, CancellationToken.None);
         }
 
-        public static async Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
+        public static Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
-            if (JSProxyContext.MainThreadContext.IsCurrentThread())
-            {
-                await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
-            }
-            return await RunAsyncImpl(body, cancellationToken).ConfigureAwait(false);
+            var instance = new JSWebWorkerInstance<T>(body, null, cancellationToken);
+            return instance.Start();
         }
 
-        public static async Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
+        public static Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
         {
-            if (JSProxyContext.MainThreadContext.IsCurrentThread())
-            {
-                await JavaScriptImports.ThreadAvailable().ConfigureAwait(false);
-            }
-            await RunAsyncImpl(body, cancellationToken).ConfigureAwait(false);
+            var instance = new JSWebWorkerInstance<int>(null, body, cancellationToken);
+            return instance.Start();
         }
 
-        private static Task<T> RunAsyncImpl<T>(Func<Task<T>> body, CancellationToken cancellationToken)
+        internal sealed class JSWebWorkerInstance<T> : IDisposable
         {
-            var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            // continuation should not be running synchronously in the JSWebWorker thread because we are about to kill it after we resolve/reject the Task.
-            var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var capturedContext = SynchronizationContext.Current;
-            var thread = new Thread(() =>
+            private JSSynchronizationContext? _jsSynchronizationContext;
+            private TaskCompletionSource<T> _taskCompletionSource;
+            private Thread _thread;
+            private CancellationToken _cancellationToken;
+            private CancellationTokenRegistration? _cancellationRegistration;
+            private Func<Task<T>>? _bodyRes;
+            private Func<Task>? _bodyVoid;
+            private Task? _result;
+            private bool _isDisposed;
+
+            public JSWebWorkerInstance(Func<Task<T>>? bodyRes, Func<Task>? bodyVoid, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration? reg = null;
-                try
+                _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _thread = new Thread(ThreadMain);
+                _result = null;
+                _cancellationToken = cancellationToken;
+                _cancellationRegistration = null;
+                _bodyRes = bodyRes;
+                _bodyVoid = bodyVoid;
+                JSHostImplementation.SetHasExternalEventLoop(_thread);
+            }
+
+            public Task<T> Start()
+            {
+                if (JSProxyContext.MainThreadContext.IsCurrentThread())
                 {
-                    if (cancellationToken.IsCancellationRequested)
+                    // give browser chance to load more threads
+                    JavaScriptImports.ThreadAvailable().ContinueWith(_ =>
                     {
-                        PostWhenCancellation(parentContext, tcs);
-                        return;
-                    }
-
-                    var synchronizationContext = JSHostImplementation.InstallWebWorkerInterop(false, cancellationToken);
-
-                    reg = cancellationToken.Register(() =>
-                    {
-                        synchronizationContext.Send(static o =>
-                        {
-                            JSHostImplementation.UninstallWebWorkerInterop();
-                        }, synchronizationContext);
-                        SendWhenException(parentContext, tcs, new OperationCanceledException(cancellationToken));
-                    });
-
-                    var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-                    Task<T> res = body();
-                    // This code is exiting thread main() before all promises are resolved.
-                    // the continuation is executed by setTimeout() callback of the thread.
-                    res.ContinueWith(t =>
-                    {
-                        SendWhenDone(parentContext, tcs, res);
-                        JSHostImplementation.UninstallWebWorkerInterop();
-                        reg?.Dispose();
-                    }, childScheduler);
-                }
-                catch (Exception ex)
-                {
-                    SendWhenException(parentContext, tcs, ex);
-                    JSHostImplementation.UninstallWebWorkerInterop();
-                    reg?.Dispose();
-                }
-            });
-            JSHostImplementation.SetHasExternalEventLoop(thread);
-            thread.Start();
-            return tcs.Task;
-        }
-
-        private static Task RunAsyncImpl(Func<Task> body, CancellationToken cancellationToken)
-        {
-            var parentContext = SynchronizationContext.Current ?? new SynchronizationContext();
-            // continuation should not be running synchronously in the JSWebWorker thread because we are about to kill it after we resolve/reject the Task.
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var capturedContext = SynchronizationContext.Current;
-            var thread = new Thread(() =>
-            {
-                CancellationTokenRegistration? reg = null;
-                try
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        PostWhenCancellation(parentContext, tcs);
-                        return;
-                    }
-
-                    var synchronizationContext = JSHostImplementation.InstallWebWorkerInterop(false, cancellationToken);
-
-                    reg = cancellationToken.Register(() =>
-                    {
-                        synchronizationContext.Send(static o =>
-                        {
-                            JSHostImplementation.UninstallWebWorkerInterop();
-                        }, synchronizationContext);
-                        SendWhenException(parentContext, tcs, new OperationCanceledException(cancellationToken));
-                    });
-
-                    var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-                    Task res = body();
-                    // This code is exiting thread main() before all promises are resolved.
-                    // the continuation is executed by setTimeout() callback of the thread.
-                    res.ContinueWith(t =>
-                    {
-                        SendWhenDone(parentContext, tcs, res);
-                        JSHostImplementation.UninstallWebWorkerInterop();
-                        reg?.Dispose();
-                    }, childScheduler);
-                }
-                catch (Exception ex)
-                {
-                    SendWhenException(parentContext, tcs, ex);
-                    reg?.Dispose();
-                    JSHostImplementation.UninstallWebWorkerInterop();
-                }
-
-            });
-            JSHostImplementation.SetHasExternalEventLoop(thread);
-            thread.Start();
-            return tcs.Task;
-        }
-
-        #region posting result to the original thread when handling exception
-
-        private static void PostWhenCancellation(SynchronizationContext ctx, TaskCompletionSource tcs)
-        {
-            try
-            {
-                ctx.Send((_) => tcs.SetCanceled(), null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("JSWebWorker.RunAsync failed", e);
-            }
-        }
-
-        private static void PostWhenCancellation<T>(SynchronizationContext ctx, TaskCompletionSource<T> tcs)
-        {
-            try
-            {
-                ctx.Send((_) => tcs.SetCanceled(), null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("JSWebWorker.RunAsync failed", e);
-            }
-        }
-
-        private static void SendWhenDone(SynchronizationContext ctx, TaskCompletionSource tcs, Task done)
-        {
-            try
-            {
-                ctx.Send((_) =>
-                {
-                    PropagateCompletion(tcs, done);
-                }, null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("JSWebWorker.RunAsync failed", e);
-            }
-        }
-
-        private static void SendWhenException(SynchronizationContext ctx, TaskCompletionSource tcs, Exception ex)
-        {
-            try
-            {
-                ctx.Send((_) => tcs.SetException(ex), null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("JSWebWorker.RunAsync failed", e);
-            }
-        }
-
-        private static void SendWhenException<T>(SynchronizationContext ctx, TaskCompletionSource<T> tcs, Exception ex)
-        {
-            try
-            {
-                ctx.Send((_) => tcs.SetException(ex), null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("JSWebWorker.RunAsync failed", e);
-            }
-        }
-
-        private static void SendWhenDone<T>(SynchronizationContext ctx, TaskCompletionSource<T> tcs, Task<T> done)
-        {
-            try
-            {
-                ctx.Send((_) =>
-                {
-                    PropagateCompletion(tcs, done);
-                }, null);
-            }
-            catch (Exception e)
-            {
-                Environment.FailFast("JSWebWorker.RunAsync failed", e);
-            }
-        }
-
-        internal static void PropagateCompletion<T>(TaskCompletionSource<T> tcs, Task<T> done)
-        {
-            if (done.IsFaulted)
-            {
-                if (done.Exception is AggregateException ag && ag.InnerException != null)
-                {
-                    tcs.SetException(ag.InnerException);
+                        _thread.Start();
+                    }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
                 }
                 else
                 {
-                    tcs.SetException(done.Exception);
+                    _thread.Start();
+                }
+                return _taskCompletionSource.Task;
+            }
+
+            private void ThreadMain()
+            {
+                try
+                {
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        PropagateCompletionAndDispose(Task.FromException<T>(new OperationCanceledException(_cancellationToken)));
+                        return;
+                    }
+
+                    // receive callback when the cancellation is requested
+                    _cancellationRegistration = _cancellationToken.Register(() =>
+                    {
+                        // this could be executing on any thread
+                        PropagateCompletionAndDispose(Task.FromException<T>(new OperationCanceledException(_cancellationToken)));
+                    });
+
+                    // JSSynchronizationContext also registers to _cancellationToken
+                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
+
+                    var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+                    if (_bodyRes != null)
+                    {
+                        _result = _bodyRes();
+                    }
+                    else
+                    {
+                        _result = _bodyVoid!();
+                    }
+                    // This code is exiting thread ThreadMain() before all promises are resolved.
+                    // the continuation is executed by setTimeout() callback of the WebWorker thread.
+                    _result.ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
+                }
+                catch (Exception ex)
+                {
+                    PropagateCompletionAndDispose(Task.FromException<T>(ex));
                 }
             }
-            else if (done.IsCanceled)
-                tcs.SetCanceled();
-            else
-                tcs.SetResult(done.Result);
-        }
 
-        internal static void PropagateCompletion(TaskCompletionSource tcs, Task done)
-        {
-            if (done.IsFaulted)
+            // run actions on correct thread
+            private void PropagateCompletionAndDispose(Task result)
             {
-                if (done.Exception is AggregateException ag && ag.InnerException != null)
+                _result = result;
+
+                _cancellationRegistration?.Dispose();
+                _cancellationRegistration = null;
+
+                if (Thread.CurrentThread == _thread)
                 {
-                    tcs.SetException(ag.InnerException);
+                    // if cancelation was requested, the JSSynchronizationContext will stop the thread
+                    if (_jsSynchronizationContext != null && !_cancellationToken.IsCancellationRequested)
+                    {
+                        // this will lead to __emscripten_thread_exit() later
+                        _jsSynchronizationContext.UninstallWebWorkerInterop();
+                    }
+                    _jsSynchronizationContext = null;
+
+                    // propagate the result on thread pool, rather than the JSWebWorker
+                    Task.Run(PropagateCompletion);
                 }
                 else
                 {
-                    tcs.SetException(done.Exception);
+                    // if cancelation was requested, the JSSynchronizationContext will stop the thread
+                    if (_jsSynchronizationContext != null && !_cancellationToken.IsCancellationRequested)
+                    {
+                        // we can only uninstall JS interop on it's own thread
+                        _jsSynchronizationContext.Post(static o =>
+                        {
+                            var jsSynchronizationContext = (JSSynchronizationContext)o!;
+                            // this will lead to __emscripten_thread_exit() later
+                            jsSynchronizationContext?.UninstallWebWorkerInterop();
+                        }, _jsSynchronizationContext);
+                    }
+                    _jsSynchronizationContext = null;
+
+                    PropagateCompletion();
+                }
+
+                Dispose();
+            }
+
+            private void PropagateCompletion()
+            {
+                if (_result!.IsFaulted)
+                {
+                    if (_result.Exception is AggregateException ag && ag.InnerException != null)
+                    {
+                        _taskCompletionSource.TrySetException(ag.InnerException);
+                    }
+                    else
+                    {
+                        _taskCompletionSource.TrySetException(_result.Exception);
+                    }
+                }
+                else if (_result.IsCanceled)
+                {
+                    _taskCompletionSource.TrySetCanceled();
+                }
+                else
+                {
+                    if (_bodyRes != null)
+                    {
+                        _taskCompletionSource.TrySetResult(((Task<T>)_result).Result);
+                    }
+                    else
+                    {
+                        _taskCompletionSource.TrySetResult(default!);
+                    }
                 }
             }
-            else if (done.IsCanceled)
-                tcs.SetCanceled();
-            else
-                tcs.SetResult();
+
+            private void Dispose(bool disposing)
+            {
+                lock (this)
+                {
+                    if (_isDisposed)
+                    {
+                        return;
+                    }
+                    _isDisposed = true;
+                }
+
+                if (disposing)
+                {
+                    _cancellationRegistration?.Dispose();
+                    _cancellationRegistration = null;
+                }
+
+                if (_jsSynchronizationContext != null)
+                {
+                    Environment.FailFast("expected the thread to be disposed");
+                }
+            }
+
+            ~JSWebWorkerInstance()
+            {
+                Dispose(disposing: false);
+            }
+
+            public void Dispose()
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
         }
-
-        #endregion
-
     }
 }
 

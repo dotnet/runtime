@@ -209,41 +209,6 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #if FEATURE_WASM_THREADS
-        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
-        {
-            var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
-            ctx.previousSynchronizationContext = SynchronizationContext.Current;
-            SynchronizationContext.SetSynchronizationContext(ctx);
-
-            var proxyContext = ctx.ProxyContext;
-            JSProxyContext.CurrentThreadContext = proxyContext;
-            JSProxyContext.ExecutionContext = proxyContext;
-            if (isMainThread)
-            {
-                JSProxyContext.MainThreadContext = proxyContext;
-            }
-
-            ctx.AwaitNewData();
-
-            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
-
-            return ctx;
-        }
-
-        public static void UninstallWebWorkerInterop()
-        {
-            var ctx = JSProxyContext.CurrentThreadContext;
-            if (ctx == null) throw new InvalidOperationException();
-            var syncContext = ctx.SynchronizationContext;
-            if (SynchronizationContext.Current == syncContext)
-            {
-                SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
-            }
-            JSProxyContext.CurrentThreadContext = null;
-            JSProxyContext.ExecutionContext = null;
-            ctx.Dispose();
-        }
-
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
         private static extern ref bool GetThreadExternalEventloop(Thread @this);
 
