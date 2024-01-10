@@ -5448,6 +5448,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 
+    // By default, we assume it's 50/50 with the slow path.
+    unsigned fastPathLikelihood = 50;
+
     // Legality check.
     //
     // Not all classclass/isinst operations can be inline expanded.
@@ -5507,6 +5510,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             if (likelyClassCount > 0)
             {
 #ifdef DEBUG
+                for (UINT32 i = 0; i < likelyClassCount; i++)
+                {
+                    const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+                    printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                        likelyClasses[i].likelihood);
+                }
+
                 // Optional stress mode to pick a random known class, rather than
                 // the most likely known class.
                 if (JitConfig.JitRandomGuardedDevirtualization() != 0)
@@ -5525,8 +5535,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 LikelyClassMethodRecord likelyClass = likelyClasses[0];
                 CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
 
-                if ((likelyCls != NO_CLASS_HANDLE) &&
-                    (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
+                // if there is a dominating candidate with >= 40% likelihood, use it
+                const unsigned likelihoodMinThreshold = 40;
+                if ((likelyCls != NO_CLASS_HANDLE) && (likelyClass.likelihood > likelihoodMinThreshold))
                 {
                     TypeCompareState castResult =
                         info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass);
@@ -5552,6 +5563,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                             canExpandInline = true;
                             partialExpand   = true;
                             exactCls        = likelyCls;
+                            fastPathLikelihood= likelyClass.likelihood;
                         }
                     }
                 }
@@ -5664,7 +5676,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         condTrue = gtNewIconNode(0, TYP_REF);
     }
 
-    GenTree* qmarkMT;
+    GenTreeQmark* qmarkMT;
     //
     // Generate first QMARK - COLON tree
     //
@@ -5676,6 +5688,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
     temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
     qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp->AsColon());
+    qmarkMT->SetThenNodeLikelihood(fastPathLikelihood);
 
     if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
     {
