@@ -464,13 +464,27 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                        : fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
 
+//------------------------------------------------------------------------------
+// fgExpandThreadLocalAccessForCallNativeAOT : Expand the access of tlsRoot needed
+//  to access fields marked with [ThreadLocal].
+//
+// Arguments:
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
+//
+//
+// Returns:
+//    true if we expanded any field access, false otherwise.
+//
 bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
     BasicBlock*     block  = *pBlock;
     CorInfoHelpFunc helper = call->GetHelperNum();
 
-    bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR);
+    const bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR);
     if (!call->IsHelperCall() || !isExpTLSFieldAccess)
     {
         return false;
@@ -639,7 +653,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
         JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
 #else
-        assert(!"Unsupported scenario\n");
+        unreached();
 
 #endif // TARGET_64BIT
 
@@ -647,7 +661,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     }
     else
     {
-        assert(!"Unsupported scenario\n");
+        unreached();
     }
     return false;
 }
@@ -664,7 +678,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 //
 //
 // Returns:
-//    PhaseStatus indicating what, if anything, was changed.
+//    true if we expanded any field access, false otherwise.
 //
 // Notes:
 //    A cache is stored in thread local storage (TLS) of coreclr. It maps the typeIndex (embedded in
