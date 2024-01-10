@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
                 T[] items = list._items;
                 Debug.Assert(items is not null, "Implementation depends on List<T> always having an array.");
 
-                if ((uint)size >= (uint)items.Length)
+                if ((uint)size > (uint)items.Length)
                 {
                     // List<T> was erroneously mutated concurrently with this call, leading to a count larger than its array.
                     ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
