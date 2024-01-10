@@ -26,13 +26,21 @@ namespace System.Net.Security
         private byte[]? _ocspResponse;
         private DateTimeOffset _ocspExpiration;
         private DateTimeOffset _nextDownload;
+        // Private copy of the intermediate certificates, in case the user decides to dispose the
+        // instances reachable through IntermediateCertificates property.
+        private X509Certificate2[] _privateIntermediateCertificates;
         private Task<byte[]?>? _pendingDownload;
         private List<string>? _ocspUrls;
-        private X509Certificate2? _ca;
 
         private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
             IntermediateCertificates = intermediates;
+            _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
+            for (int i = 0; i < intermediates.Count; i++)
+            {
+                _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
+            }
+
             TargetCertificate = target;
             Trust = trust;
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
@@ -76,14 +84,10 @@ namespace System.Net.Security
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership)
         {
-            if (IntermediateCertificates.Count == 0)
+            if (_privateIntermediateCertificates.Length == 0 && rootCertificate != null)
             {
-                _ca = rootCertificate;
+                _privateIntermediateCertificates = new[] { rootCertificate };
                 transferredOwnership = true;
-            }
-            else
-            {
-                _ca = IntermediateCertificates[0];
             }
 
             if (!_staplingForbidden)
@@ -149,7 +153,7 @@ namespace System.Net.Security
                 return new ValueTask<byte[]?>(pending);
             }
 
-            if (_ocspUrls is null && _ca is not null)
+            if (_ocspUrls is null && _privateIntermediateCertificates.Length > 0)
             {
                 foreach (X509Extension ext in TargetCertificate.Extensions)
                 {
@@ -192,7 +196,9 @@ namespace System.Net.Security
 
         private async Task<byte[]?> FetchOcspAsync()
         {
-            X509Certificate2? caCert = _ca;
+            Debug.Assert(_privateIntermediateCertificates.Length > 0);
+            X509Certificate2? caCert = _privateIntermediateCertificates[0];
+
             Debug.Assert(_ocspUrls is not null);
             Debug.Assert(_ocspUrls.Count > 0);
             Debug.Assert(caCert is not null);
@@ -211,18 +217,10 @@ namespace System.Net.Security
                 return null;
             }
 
-            // see logic in AddRootCertificate for why this is necessary
-            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(IntermediateCertificates.Count == 0 ? 1 : IntermediateCertificates.Count);
-            if (IntermediateCertificates.Count == 0)
+            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(_privateIntermediateCertificates.Length);
+            for (int i = 0; i < _privateIntermediateCertificates.Length; i++)
             {
-                issuerHandles[0] = issuer;
-            }
-            else
-            {
-                for (int i = 0; i < IntermediateCertificates.Count; i++)
-                {
-                    issuerHandles[i] = IntermediateCertificates[i].Handle;
-                }
+                issuerHandles[i] = _privateIntermediateCertificates[i].Handle;
             }
 
             using (SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer))
@@ -241,7 +239,7 @@ namespace System.Net.Security
 
                     if (ret is not null)
                     {
-                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles, out DateTimeOffset expiration))
+                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles.AsSpan(0, _privateIntermediateCertificates.Length), out DateTimeOffset expiration))
                         {
                             ret = null;
                             continue;
