@@ -307,7 +307,7 @@ enum insOpts : unsigned
 // to distinguish those that can't be determined soley by register usage.
 enum insScalableOpts : unsigned
 {
-    INS_SCALABLE_OPTS_NONE,
+    INS_SCALABLE_OPTS_NONE,              // No Variants exist
 
     INS_SCALABLE_OPTS_WIDE,              // Variants with wide elements (eg asr)
     INS_SCALABLE_OPTS_WITH_SIMD_SCALAR,  // Variants with a NEON SIMD register (eg clasta)
