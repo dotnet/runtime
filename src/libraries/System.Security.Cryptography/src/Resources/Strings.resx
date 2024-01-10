@@ -825,4 +825,7 @@
   <data name="Cryptography_X509_PfxWithoutPassword" xml:space="preserve">
     <value>PKCS12 (PFX) without a supplied password has exceeded maximum allowed iterations. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
   </data>
+  <data name="Cryptography_X509_ChainBuildingFailed" xml:space="preserve">
+    <value>An unknown chain building error occurred.</value>
+  </data>
 </root>
