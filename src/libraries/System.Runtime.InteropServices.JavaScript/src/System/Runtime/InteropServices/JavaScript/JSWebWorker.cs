@@ -213,7 +213,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (_jsSynchronizationContext != null)
                 {
-                    Environment.FailFast("expected the thread to be disposed");
+                    // this should not happen
+                    Environment.FailFast($"JSWebWorker was disposed while running, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
             }
 

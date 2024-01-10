@@ -17,18 +17,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     // TODO test:
     // JSExport 2x
     // JSExport async
-    // GC + finalizer + dispose
     // lock
     // thread allocation, many threads
     // ProxyContext flow, child thread, child task
     // use JSObject after JSWebWorker finished, especially HTTP
-    // JSWebWorker JS setTimeout till after close
     // WS on JSWebWorker
-    // Yield will hit event loop 3x
     // HTTP continue on TP
     // event pipe
     // FS
-    // unit test for problem **7)**
+    // JS setTimeout till after JSWebWorker close
+    // synchronous .Wait for JS setTimeout on the same thread -> deadlock problem **7)**
 
     public class WebWorkerTest
     {
@@ -83,7 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
 
-                var never = WebWorkerTestHelper.JSDelay(TimeoutMilliseconds * 1000);
+                var never = WebWorkerTestHelper.JSDelay(int.MaxValue);
                 ready.SetResult();
                 await never;
             }, cts.Token);
@@ -225,6 +223,56 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.False(shouldNotHitPost);
         }
 
+        [Fact]
+        public async Task JSWebWorker_Abandon_Running()
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
+            TaskCompletionSource never = new TaskCompletionSource();
+            TaskCompletionSource ready = new TaskCompletionSource();
+
+#pragma warning disable CS4014
+            // intentionally not awaiting it
+            JSWebWorker.RunAsync(() =>
+            {
+                ready.SetResult();
+                return never.Task;
+            }, cts.Token);
+#pragma warning restore CS4014
+
+            await ready.Task;
+
+            // it should not get collected
+            GC.Collect();
+
+            // it should not prevent mono and the test suite from exiting
+        }
+
+        [Fact]
+        public async Task JSWebWorker_Abandon_Running_JS()
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
+            TaskCompletionSource ready = new TaskCompletionSource();
+
+#pragma warning disable CS4014
+            // intentionally not awaiting it
+            JSWebWorker.RunAsync(async () =>
+            {
+                await WebWorkerTestHelper.CreateDelay();
+                var never = WebWorkerTestHelper.JSDelay(int.MaxValue);
+                ready.SetResult();
+                await never;
+            }, cts.Token);
+#pragma warning restore CS4014
+
+            await ready.Task;
+
+            // it should not get collected
+            GC.Collect();
+
+            // it should not prevent mono and the test suite from exiting
+        }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)
@@ -338,7 +386,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
 
-                await WebWorkerTestHelper.JSDelay(1).ConfigureAwait(true);
+                await WebWorkerTestHelper.JSDelay(10).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
             }, cts.Token);
