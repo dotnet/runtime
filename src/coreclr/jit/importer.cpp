@@ -5514,7 +5514,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 {
                     const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
                     JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
-                           likelyClasses[i].likelihood);
+                            likelyClasses[i].likelihood);
                 }
 
                 // Optional stress mode to pick a random known class, rather than
