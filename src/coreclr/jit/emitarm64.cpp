@@ -16856,26 +16856,25 @@ void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts 
 
     regNumber currReg = firstReg;
 
+    assert(listSize > 0);
+
     printf("{ ");
-    if (listSize >= 1)
+    // We do not want the short-hand for list size of 1 or 2.
+    if ((listSize <= 2) || (((unsigned)currReg + listSize - 1) > (unsigned)REG_V31))
     {
-        // We do not want the short-hand for list size of 1 or 2.
-        if ((listSize <= 2) || (((unsigned)currReg + listSize - 1) > (unsigned)REG_V31))
+        for (unsigned i = 0; i < listSize; i++)
         {
-            for (unsigned i = 0; i < listSize; i++)
-            {
-                const bool notLastRegister = (i != listSize - 1);
-                emitDispSveReg(currReg, opt, notLastRegister);
-                currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
-            }
+            const bool notLastRegister = (i != listSize - 1);
+            emitDispSveReg(currReg, opt, notLastRegister);
+            currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
         }
-        else
-        {
-            // short-hand. example: { z0.s - z2.s } which is the same as { z0.s, z1.s, z2.s }
-            emitDispSveReg(currReg, opt, false);
-            printf(" - ");
-            emitDispSveReg((regNumber)(currReg + listSize - 1), opt, false);
-        }
+    }
+    else
+    {
+        // short-hand. example: { z0.s - z2.s } which is the same as { z0.s, z1.s, z2.s }
+        emitDispSveReg(currReg, opt, false);
+        printf(" - ");
+        emitDispSveReg((regNumber)(currReg + listSize - 1), opt, false);
     }
     printf(" }");
 
