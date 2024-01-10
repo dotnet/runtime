@@ -971,7 +971,7 @@ void emitIns_R_R(instruction     ins,
                  regNumber       reg1,
                  regNumber       reg2,
                  insOpts         opt  = INS_OPTS_NONE,
-                 insScalableOpts gopt = INS_SCALABLE_OPTS_NONE);
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
 {
@@ -998,7 +998,7 @@ void emitIns_R_R_R(instruction     ins,
                    regNumber       reg2,
                    regNumber       reg3,
                    insOpts         opt  = INS_OPTS_NONE,
-                   insScalableOpts gopt = INS_SCALABLE_OPTS_NONE);
+                   insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I(instruction ins,
                      emitAttr    attr,
