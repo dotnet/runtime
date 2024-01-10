@@ -1008,7 +1008,6 @@ PhaseStatus Compiler::fgCloneFinally()
         const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
         BasicBlock*     insertAfter     = nullptr;
         BlockToBlockMap blockMap(getAllocator());
-        bool            clonedOk       = true;
         unsigned        cloneBBCount   = 0;
         weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
@@ -1046,12 +1045,7 @@ PhaseStatus Compiler::fgCloneFinally()
             insertAfter = newBlock;
             blockMap.Set(block, newBlock);
 
-            clonedOk = BasicBlock::CloneBlockState(this, newBlock, block);
-
-            if (!clonedOk)
-            {
-                break;
-            }
+            BasicBlock::CloneBlockState(this, newBlock, block);
 
             // Update block flags. Note a block can be both first and last.
             if (block == firstBlock)
@@ -1075,13 +1069,6 @@ PhaseStatus Compiler::fgCloneFinally()
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
             assert(newBlock->KindIs(BBJ_ALWAYS));
             assert(!newBlock->HasInitializedTarget());
-        }
-
-        if (!clonedOk)
-        {
-            // TODO: cleanup the partial clone?
-            JITDUMP("Unable to clone the finally; skipping.\n");
-            continue;
         }
 
         // We should have cloned all the finally region blocks.
