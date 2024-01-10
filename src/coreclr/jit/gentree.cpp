@@ -18556,6 +18556,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     bool isExactObj   = false;
                     bool isNonNullObj = false;
                     fldOwnerCls       = gtGetClassHandle(base->gtGetOp1(), &isExactObj, &isNonNullObj);
+                    if ((fldOwnerCls != NO_CLASS_HANDLE) &&
+                        ((info.compCompHnd->getClassAttribs(fldOwnerCls) & CORINFO_FLG_SHAREDINST) == 0))
+                    {
+                        // If we can't get the class handle from the instance, use the field's class.
+                        fldOwnerCls = info.compCompHnd->getFieldClass(fldHandle);
+                    }
+                    else
+                    {
+                        fldOwnerCls = NO_CLASS_HANDLE;
+                    }
                 }
 
                 objClass = gtGetFieldClassHandle(fldHandle, fldOwnerCls, pIsExact, pIsNonNull);
