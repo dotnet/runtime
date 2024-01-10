@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication.ExtendedProtection;
 using Microsoft.Win32.SafeHandles;
 
@@ -310,10 +311,15 @@ namespace System.Net.Security
 
     internal sealed class SafeFreeCredential_SECURITY : SafeFreeCredentials
     {
+#pragma warning disable 0649
+        // This is used only by SslStream but it is included elsewhere
+        public X509Certificate? LocalCertificate;
+#pragma warning restore 0649
         public SafeFreeCredential_SECURITY() : base() { }
 
         protected override bool ReleaseHandle()
         {
+            LocalCertificate?.Dispose();
             return Interop.SspiCli.FreeCredentialsHandle(ref _handle) == 0;
         }
     }
