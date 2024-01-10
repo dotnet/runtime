@@ -431,6 +431,7 @@ enum BasicBlockFlags : unsigned __int64
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
     BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42), // Block was the header ('entry') of a loop recognized by old loop finding
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(43), // Block has a node that needs a value probing
 
     // The following are sets of flags.
 
@@ -460,7 +461,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -565,11 +566,14 @@ public:
 
     void SetPrev(BasicBlock* prev)
     {
-        bbPrev = prev;
-        if (prev)
-        {
-            prev->bbNext = this;
-        }
+        assert(prev != nullptr);
+        bbPrev       = prev;
+        prev->bbNext = this;
+    }
+
+    void SetPrevToNull()
+    {
+        bbPrev = nullptr;
     }
 
     BasicBlock* Next() const
@@ -579,11 +583,14 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
-        if (next)
-        {
-            next->bbPrev = this;
-        }
+        assert(next != nullptr);
+        bbNext       = next;
+        next->bbPrev = this;
+    }
+
+    void SetNextToNull()
+    {
+        bbNext = nullptr;
     }
 
     bool IsFirst() const
@@ -610,7 +617,9 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
-    bool CanRemoveJumpToNext(Compiler* compiler);
+    bool CanRemoveJumpToNext(Compiler* compiler) const;
+
+    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
@@ -694,12 +703,14 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCond(BasicBlock* trueTarget)
+    void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
         assert(trueTarget != nullptr);
+        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
+        assert(falseTarget == bbNext);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
-        bbFalseTarget = bbNext;
+        bbFalseTarget = falseTarget;
     }
 
     // Set both the block kind and target. This can clear `bbTarget` when setting
@@ -1650,10 +1661,9 @@ public:
         return BBCompilerSuccList(comp, this);
     }
 
-    // Try to clone block state and statements from `from` block to `to` block (which must be new/empty),
-    // optionally replacing uses of local `varNum` with IntCns `varVal`.  Return true if all statements
-    // in the block are cloned successfully, false (with partially-populated `to` block) if one fails.
-    static bool CloneBlockState(
+    // Clone block state and statements from `from` block to `to` block (which must be new/empty),
+    // optionally replacing uses of local `varNum` with IntCns `varVal`.
+    static void CloneBlockState(
         Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
 
     // Copy the block kind and targets. The `from` block is untouched.

@@ -11,7 +11,7 @@ namespace System.Globalization.Tests
 {
     public class GetCultureInfoTests
     {
-        public static bool PlatformSupportsFakeCulture => (!PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsNetFramework)) && PlatformDetection.IsNotBrowser;
+        public static bool PlatformSupportsFakeCulture => (!PlatformDetection.IsWindows || PlatformDetection.WindowsVersion >= 10) && PlatformDetection.IsNotBrowser;
         public static bool PlatformSupportsFakeCultureAndRemoteExecutor => PlatformSupportsFakeCulture && RemoteExecutor.IsSupported;
 
         public static IEnumerable<object[]> GetCultureInfoTestData()
