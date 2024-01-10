@@ -5250,7 +5250,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
-    // TODO-Quirk: Switch to loop->GetChild() != nullptr
     if (loop->GetChild() != nullptr)
     {
         JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
