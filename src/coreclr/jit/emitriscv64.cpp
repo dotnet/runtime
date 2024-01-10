@@ -2764,6 +2764,34 @@ static ssize_t UpperWordOfDoubleWordSignExtend(ssize_t doubleWord)
     return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
 
+/*static*/ unsigned emitter::TrimSignedToImm12(int imm12)
+{
+    assert(isValidSimm12(imm12));
+
+    return static_cast<unsigned>(LowerNBitsOfWord<12>(imm12));
+}
+
+/*static*/ unsigned emitter::TrimSignedToImm13(int imm13)
+{
+    assert(isValidSimm13(imm13));
+
+    return static_cast<unsigned>(LowerNBitsOfWord<13>(imm13));
+}
+
+/*static*/ unsigned emitter::TrimSignedToImm20(int imm20)
+{
+    assert(isValidSimm20(imm20));
+
+    return static_cast<unsigned>(LowerNBitsOfWord<20>(imm20));
+}
+
+/*static*/ unsigned emitter::TrimSignedToImm21(int imm21)
+{
+    assert(isValidSimm21(imm21));
+
+    return static_cast<unsigned>(LowerNBitsOfWord<21>(imm21));
+}
+
 BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
     BYTE* const     dstBase = dst;
