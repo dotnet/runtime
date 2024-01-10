@@ -93,9 +93,12 @@ namespace Wasm.Build.Tests
 
         public virtual void Dispose()
         {
+            _testOutput.WriteLine("ToolCommand.Dispose ENTER");
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
+                _testOutput.WriteLine("ToolCommand.Dispose calling Kill");
                 CurrentProcess.Kill(entireProcessTree: true);
+                _testOutput.WriteLine("ToolCommand.Dispose back from calling Kill");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
