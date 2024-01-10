@@ -188,20 +188,16 @@ namespace System.Numerics
         /// <remarks>The <see cref="Quaternion.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Quaternion" /> objects.</remarks>
         public static Quaternion operator *(Quaternion value1, Quaternion value2)
         {
-            if (Vector.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated)
             {
-                // Concatenate rotation is actually q2 * q1 instead of q1 * q2.
-                // So that's why value2 goes q1 and value1 goes q2.
-                float q1w = value2.W;
-                float q2w = value1.W;
+                var left = value1.AsVector128();
+                var right = value2.AsVector128();
 
-                Vector3 q1V = new Vector3(value2.X, value2.Y, value2.Z);
-                Vector3 q2V = new Vector3(value1.X, value1.Y, value1.Z);
-
-                return new Quaternion(
-                    q1w * q2V + q2w * q1V + Vector3.Cross(q1V, q2V),
-                    q1w * q2w - Vector3.Dot(q1V, q2V)
-                );
+                var result = right * left.GetElementUnsafe(3);
+                result += (Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElementUnsafe(0)) * Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f);
+                result += (Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElementUnsafe(1)) * Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f);
+                result += (Vector128.Shuffle(right, Vector128.Create(1, 0, 3, 2)) * left.GetElementUnsafe(2)) * Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f);
+                return result.AsQuaternion();
             }
             else
             {
