@@ -5821,6 +5821,18 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                         printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount:
+                    printf("V %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount:
+                    printf("V %" PRIu64 "", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogram:
+                    for (unsigned int j = 0; j < pBuf[i].Count; j++)
+                    {
+                        printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
+                    }
+                    break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
@@ -6955,8 +6967,14 @@ int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
     key.nameIndex    = (DWORD)nameIndex;
     key.defaultValue = defaultValue;
 
-    DWORD value = LookupByKeyOrMissNoMessage(GetIntConfigValue, key);
+    int index = GetIntConfigValue->GetIndex(key);
+    if (index == -1)
+    {
+        // default value has changed
+        return defaultValue;
+    }
 
+    DWORD value = GetIntConfigValue->GetItem(index);
     DEBUG_REP(dmpGetIntConfigValue(key, value));
     return (int)value;
 }

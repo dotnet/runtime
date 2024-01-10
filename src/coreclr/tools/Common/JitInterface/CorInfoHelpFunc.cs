@@ -301,6 +301,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
         CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
         CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
+        CORINFO_HELP_VALUEPROFILE32,            // Update 32-bit value profile
+        CORINFO_HELP_VALUEPROFILE64,            // Update 64-bit value profile
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer

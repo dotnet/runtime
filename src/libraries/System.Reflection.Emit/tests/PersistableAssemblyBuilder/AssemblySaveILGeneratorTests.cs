@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -441,7 +442,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal((byte)OpCodes.Ldloc_2.Value, bodyBytes[24]);
                 Assert.Equal(0xFE, bodyBytes[25]); // Ldloc = 0xfe0c
                 Assert.Equal(0x0C, bodyBytes[26]);
-                Assert.Equal(0, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
+                Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
                 Assert.Equal((byte)OpCodes.Add.Value, bodyBytes[31]);
                 Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[32]);
                 Assert.Equal((byte)OpCodes.Ldloca_S.Value, bodyBytes[33]);
@@ -649,13 +650,13 @@ namespace System.Reflection.Emit.Tests
                 int intTypeToken = BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(22, 4));
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[26]);
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[27]);
-                Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(28, 4)));
+                Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(28, 4)));
                 Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[32]);
                 Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[33]);
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
                 Assert.Equal(methodMultiply.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(35, 4)));
                 Assert.Equal(OpCodes.Box.Value, bodyBytes[39]);
-                Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(40, 4)));
+                Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(40, 4)));
                 Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
                 // Bytes 24, 46, 47, 48 are token for writeLineObj, but it is not same as the value before save
                 Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
@@ -1591,67 +1592,75 @@ internal class Dummy
 
         private static int Int32Sum(int a, int b) => a + b;
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EmitCalliBlittable()
         {
-            int a = 1, b = 1, result = 2;
-            using (TempFile file = TempFile.Create())
+            RemoteExecutor.Invoke(() =>
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliBlittable"), out MethodInfo saveMethod);
-                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
-                Type returnType = typeof(int);
-                MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
-                methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
-                ILGenerator il = methodBuilder.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Ldarg_0);
-                il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, returnType, [typeof(int), typeof(int)]);
-                il.Emit(OpCodes.Ret);
-                tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                int a = 1, b = 1, result = 2;
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliBlittable"), out MethodInfo saveMethod);
+                    TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                    Type returnType = typeof(int);
+                    MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
+                    methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                    ILGenerator il = methodBuilder.GetILGenerator();
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Ldarg_2);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, returnType, [typeof(int), typeof(int)]);
+                    il.Emit(OpCodes.Ret);
+                    tb.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
 
-                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
-                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
-                var del = new Int32SumStdCall(Int32Sum);
-                IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
-                object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, a, b]);
-                GC.KeepAlive(del);
+                    Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    var del = new Int32SumStdCall(Int32Sum);
+                    IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+                    object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, a, b]);
+                    GC.KeepAlive(del);
 
-                Assert.IsType(returnType, resultValue);
-                Assert.Equal(result, resultValue);
-            }
+                    Assert.IsType(returnType, resultValue);
+                    Assert.Equal(result, resultValue);
+                }
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EmitCalliManagedBlittable()
         {
-            int a = 1, b = 1, result = 2;
-            using (TempFile file = TempFile.Create())
+            RemoteExecutor.Invoke(() =>
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliManagedBlittable"), out MethodInfo saveMethod);
-                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
-                Type returnType = typeof(int);
-                MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
-                methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
-                MethodInfo method = typeof(AssemblySaveILGeneratorTests).GetMethod(nameof(Int32Sum), BindingFlags.NonPublic | BindingFlags.Static)!;
-                IntPtr funcPtr = method.MethodHandle.GetFunctionPointer();
-                ILGenerator il = methodBuilder.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Ldarg_0);
-                il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, returnType, [typeof(int), typeof(int)], null);
-                il.Emit(OpCodes.Ret);
-                tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                int a = 1, b = 1, result = 2;
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliManagedBlittable"), out MethodInfo saveMethod);
+                    TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                    Type returnType = typeof(int);
+                    MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
+                    methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                    MethodInfo method = typeof(AssemblySaveILGeneratorTests).GetMethod(nameof(Int32Sum), BindingFlags.NonPublic | BindingFlags.Static)!;
+                    IntPtr funcPtr = method.MethodHandle.GetFunctionPointer();
+                    ILGenerator il = methodBuilder.GetILGenerator();
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Ldarg_2);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, returnType, [typeof(int), typeof(int)], null);
+                    il.Emit(OpCodes.Ret);
+                    tb.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
 
-                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
-                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
-                object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, a, b]);
+                    Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, a, b]);
 
-                Assert.IsType(returnType, resultValue);
-                Assert.Equal(result, resultValue);
-            }
+                    Assert.IsType(returnType, resultValue);
+                    Assert.Equal(result, resultValue);
+                }
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1659,35 +1668,39 @@ internal class Dummy
 
         private static string StringReverse(string a) => string.Join("", a.Reverse());
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EmitCalliNonBlittable()
         {
-            string input = "Test string!", result = "!gnirts tseT";
-            using (TempFile file = TempFile.Create())
+            RemoteExecutor.Invoke(() =>
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliNonBlittable"), out MethodInfo saveMethod);
-                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
-                Type returnType = typeof(string);
-                MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(string)]);
-                methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
-                ILGenerator il = methodBuilder.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldarg_0);
-                il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, returnType, [typeof(string)]);
-                il.Emit(OpCodes.Ret);
-                tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                string input = "Test string!", result = "!gnirts tseT";
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliNonBlittable"), out MethodInfo saveMethod);
+                    TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                    Type returnType = typeof(string);
+                    MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(string)]);
+                    methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+                    ILGenerator il = methodBuilder.GetILGenerator();
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, returnType, [typeof(string)]);
+                    il.Emit(OpCodes.Ret);
+                    tb.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
 
-                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
-                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
-                var del = new StringReverseCdecl(StringReverse);
-                IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
-                object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, input]);
-                GC.KeepAlive(del);
+                    Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    var del = new StringReverseCdecl(StringReverse);
+                    IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+                    object resultValue = typeFromDisk.GetMethod("F", BindingFlags.Public | BindingFlags.Static).Invoke(null, [funcPtr, input]);
+                    GC.KeepAlive(del);
 
-                Assert.IsType(returnType, resultValue);
-                Assert.Equal(result, resultValue);
-            }
+                    Assert.IsType(returnType, resultValue);
+                    Assert.Equal(result, resultValue);
+                }
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
@@ -2093,86 +2106,131 @@ internal class Dummy
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SimpleForLoopTest()
         {
-            using (TempFile file = TempFile.Create())
+            RemoteExecutor.Invoke(() =>
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder mb2 = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
-                ILGenerator il = mb2.GetILGenerator();
-                LocalBuilder sum = il.DeclareLocal(typeof(int));
-                LocalBuilder i = il.DeclareLocal(typeof(int));
-                Label loopEnd = il.DefineLabel();
-                Label loopStart = il.DefineLabel();
-                il.Emit(OpCodes.Ldc_I4_0);
-                il.Emit(OpCodes.Stloc_0);
-                il.Emit(OpCodes.Ldc_I4_1);
-                il.Emit(OpCodes.Stloc_1);
-                il.MarkLabel(loopStart);
-                il.Emit(OpCodes.Ldloc_1);
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Bgt, loopEnd);
-                il.Emit(OpCodes.Ldloc_0);
-                il.Emit(OpCodes.Ldloc_1);
-                il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Stloc_0);
-                il.Emit(OpCodes.Ldloc_1);
-                il.Emit(OpCodes.Ldc_I4_1);
-                il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Stloc_1);
-                il.Emit(OpCodes.Br, loopStart);
-                il.MarkLabel(loopEnd);
-                il.Emit(OpCodes.Ldloc_0);
-                il.Emit(OpCodes.Ret);
-                tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                    MethodBuilder mb2 = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
+                    ILGenerator il = mb2.GetILGenerator();
+                    LocalBuilder sum = il.DeclareLocal(typeof(int));
+                    LocalBuilder i = il.DeclareLocal(typeof(int));
+                    Label loopEnd = il.DefineLabel();
+                    Label loopStart = il.DefineLabel();
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    il.Emit(OpCodes.Stloc_0);
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    il.Emit(OpCodes.Stloc_1);
+                    il.MarkLabel(loopStart);
+                    il.Emit(OpCodes.Ldloc_1);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Bgt, loopEnd);
+                    il.Emit(OpCodes.Ldloc_0);
+                    il.Emit(OpCodes.Ldloc_1);
+                    il.Emit(OpCodes.Add);
+                    il.Emit(OpCodes.Stloc_0);
+                    il.Emit(OpCodes.Ldloc_1);
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    il.Emit(OpCodes.Add);
+                    il.Emit(OpCodes.Stloc_1);
+                    il.Emit(OpCodes.Br, loopStart);
+                    il.MarkLabel(loopEnd);
+                    il.Emit(OpCodes.Ldloc_0);
+                    il.Emit(OpCodes.Ret);
+                    tb.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
 
-                MethodInfo getMaxStackMethod = GetMaxStackMethod();
-                Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
+                    MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                    Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
 
-                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
-                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
-                MethodInfo sumMethodFromDisk = typeFromDisk.GetMethod("SumMethod");
-                Assert.Equal(55, sumMethodFromDisk.Invoke(null, [10]));
-            }
+                    Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    MethodInfo sumMethodFromDisk = typeFromDisk.GetMethod("SumMethod");
+                    Assert.Equal(55, sumMethodFromDisk.Invoke(null, [10]));
+                }
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RecursiveSumTest()
         {
-            using (TempFile file = TempFile.Create())
+            RemoteExecutor.Invoke(() =>
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("RecursiveSumTest"), out MethodInfo saveMethod);
-                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
-                MethodBuilder mb2 = tb.DefineMethod("RecursiveMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
-                ILGenerator il = mb2.GetILGenerator();
-                Label loopEnd = il.DefineLabel();
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldc_I4_0);
-                il.Emit(OpCodes.Ble, loopEnd); // if (value1 <= value2)
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldc_I4_1);
-                il.Emit(OpCodes.Sub);
-                il.Emit(OpCodes.Call, mb2);
-                il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Ret);
-                il.MarkLabel(loopEnd);
-                il.Emit(OpCodes.Ldc_I4_0);
-                il.Emit(OpCodes.Ret);
-                tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("RecursiveSumTest"), out MethodInfo saveMethod);
+                    TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                    MethodBuilder mb2 = tb.DefineMethod("RecursiveMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
+                    ILGenerator il = mb2.GetILGenerator();
+                    Label loopEnd = il.DefineLabel();
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    il.Emit(OpCodes.Ble, loopEnd); // if (value1 <= value2)
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    il.Emit(OpCodes.Sub);
+                    il.Emit(OpCodes.Call, mb2);
+                    il.Emit(OpCodes.Add);
+                    il.Emit(OpCodes.Ret);
+                    il.MarkLabel(loopEnd);
+                    il.Emit(OpCodes.Ldc_I4_0);
+                    il.Emit(OpCodes.Ret);
+                    tb.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
 
-                MethodInfo getMaxStackMethod = GetMaxStackMethod();
-                Assert.Equal(3, getMaxStackMethod.Invoke(il, null));
+                    MethodInfo getMaxStackMethod = GetMaxStackMethod();
+                    Assert.Equal(3, getMaxStackMethod.Invoke(il, null));
 
-                Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
-                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
-                MethodInfo recursiveMethodFromDisk = typeFromDisk.GetMethod("RecursiveMethod");
-                Assert.NotNull(recursiveMethodFromDisk);
-                Assert.Equal(55, recursiveMethodFromDisk.Invoke(null, [10]));
-            }
+                    Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    MethodInfo recursiveMethodFromDisk = typeFromDisk.GetMethod("RecursiveMethod");
+                    Assert.NotNull(recursiveMethodFromDisk);
+                    Assert.Equal(55, recursiveMethodFromDisk.Invoke(null, [10]));
+                }
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CallOpenGenericMembersFromConstructedGenericType()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (TempFile file = TempFile.Create())
+                {
+                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                    MethodBuilder method = type.DefineMethod("M1", MethodAttributes.Public, typeof(string), null);
+
+                    ILGenerator ilGenerator = method.GetILGenerator();
+                    LocalBuilder span = ilGenerator.DeclareLocal(typeof(ReadOnlySpan<char>));
+                    LocalBuilder str = ilGenerator.DeclareLocal(typeof(string));
+
+                    ilGenerator.Emit(OpCodes.Ldstr, "hello");
+                    ilGenerator.Emit(OpCodes.Call, typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!);
+                    ilGenerator.Emit(OpCodes.Stloc, span);
+                    ilGenerator.Emit(OpCodes.Ldloca_S, span);
+                    ilGenerator.Emit(OpCodes.Ldc_I4_1);
+                    ilGenerator.Emit(OpCodes.Call, typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int)])!);
+                    ilGenerator.Emit(OpCodes.Stloc, span);
+                    ilGenerator.Emit(OpCodes.Ldloca_S, span);
+                    ilGenerator.Emit(OpCodes.Constrained, typeof(ReadOnlySpan<char>));
+                    ilGenerator.Emit(OpCodes.Callvirt, typeof(object).GetMethod("ToString"));
+                    ilGenerator.Emit(OpCodes.Ret);
+
+                    type.CreateType();
+                    saveMethod.Invoke(ab, [file.Path]);
+
+                    Type typeFromDisk = Assembly.LoadFile(file.Path).GetType("MyType");
+                    string result = (string)typeFromDisk.GetMethod("M1").Invoke(Activator.CreateInstance(typeFromDisk), null);
+                    Assert.Equal("ello", result);
+                }
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
     }
 }

@@ -827,7 +827,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    result = Vectorized512Small(ref xRef, remainder);
+                    result = VectorizedSmall(ref xRef, remainder);
                 }
 
                 return result;
@@ -847,7 +847,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    result = Vectorized256Small(ref xRef, remainder);
+                    result = VectorizedSmall(ref xRef, remainder);
                 }
 
                 return result;
@@ -867,7 +867,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    result = Vectorized128Small(ref xRef, remainder);
+                    result = VectorizedSmall(ref xRef, remainder);
                 }
 
                 return result;
@@ -1060,40 +1060,6 @@ namespace System.Numerics.Tensors
                 return TAggregationOperator.Invoke(vresult);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static T Vectorized128Small(ref T xRef, nuint remainder)
-            {
-                T result = TAggregationOperator.IdentityValue;
-
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-
-                return result;
-            }
-
             static T Vectorized256(ref T xRef, nuint remainder)
             {
                 Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
@@ -1261,71 +1227,6 @@ namespace System.Numerics.Tensors
                 }
 
                 return TAggregationOperator.Invoke(vresult);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static T Vectorized256Small(ref T xRef, nuint remainder)
-            {
-                T result = TAggregationOperator.IdentityValue;
-
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
-
-                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
-
-                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
-
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
-
-                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-
-                        result = TAggregationOperator.Invoke(vresult);
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-
-                return result;
             }
 
             static T Vectorized512(ref T xRef, nuint remainder)
@@ -1498,8 +1399,23 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static T Vectorized512Small(ref T xRef, nuint remainder)
+            static T VectorizedSmall(ref T xRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    return VectorizedSmall4(ref xRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    return VectorizedSmall8(ref xRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall4(ref T xRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
                 T result = TAggregationOperator.IdentityValue;
 
                 switch (remainder)
@@ -1596,6 +1512,89 @@ namespace System.Numerics.Tensors
 
                 return result;
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall8(ref T xRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+                T result = TAggregationOperator.IdentityValue;
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Performs an aggregation over all pair-wise elements in <paramref name="x"/> and <paramref name="y"/> to produce a single-precision floating-point value.</summary>
@@ -1639,7 +1638,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    result = Vectorized512Small(ref xRef, ref yRef, remainder);
+                    result = VectorizedSmall(ref xRef, ref yRef, remainder);
                 }
 
                 return result;
@@ -1659,7 +1658,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    result = Vectorized256Small(ref xRef, ref yRef, remainder);
+                    result = VectorizedSmall(ref xRef, ref yRef, remainder);
                 }
 
                 return result;
@@ -1679,7 +1678,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    result = Vectorized128Small(ref xRef, ref yRef, remainder);
+                    result = VectorizedSmall(ref xRef, ref yRef, remainder);
                 }
 
                 return result;
@@ -1895,42 +1894,6 @@ namespace System.Numerics.Tensors
                 return TAggregationOperator.Invoke(vresult);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static T Vectorized128Small(ref T xRef, ref T yRef, nuint remainder)
-            {
-                T result = TAggregationOperator.IdentityValue;
-
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                                            Unsafe.Add(ref yRef, 2)));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                                            Unsafe.Add(ref yRef, 1)));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-
-                return result;
-            }
-
             static T Vectorized256(ref T xRef, ref T yRef, nuint remainder)
             {
                 Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
@@ -2120,76 +2083,6 @@ namespace System.Numerics.Tensors
                 }
 
                 return TAggregationOperator.Invoke(vresult);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static T Vectorized256Small(ref T xRef, ref T yRef, nuint remainder)
-            {
-                T result = TAggregationOperator.IdentityValue;
-
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
-
-                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                  Vector128.LoadUnsafe(ref yRef));
-                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
-
-                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
-
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
-
-                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                  Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-
-                        result = TAggregationOperator.Invoke(vresult);
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                                            Unsafe.Add(ref yRef, 2)));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                                            Unsafe.Add(ref yRef, 1)));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-
-                return result;
             }
 
             static T Vectorized512(ref T xRef, ref T yRef, nuint remainder)
@@ -2384,8 +2277,23 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static T Vectorized512Small(ref T xRef, ref T yRef, nuint remainder)
+            static T VectorizedSmall(ref T xRef, ref T yRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    return VectorizedSmall4(ref xRef, ref yRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    return VectorizedSmall8(ref xRef, ref yRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall4(ref T xRef, ref T yRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
                 T result = TAggregationOperator.IdentityValue;
 
                 switch (remainder)
@@ -2474,6 +2382,95 @@ namespace System.Numerics.Tensors
                         result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
                                                                                             Unsafe.Add(ref yRef, 1)));
                         goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall8(ref T xRef, ref T yRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+                T result = TAggregationOperator.IdentityValue;
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
                     }
 
                     case 1:
@@ -2988,7 +2985,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized512Small(ref xRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref dRef, remainder);
                 }
 
                 return;
@@ -3006,7 +3003,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized256Small(ref xRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref dRef, remainder);
                 }
 
                 return;
@@ -3024,7 +3021,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized128Small(ref xRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref dRef, remainder);
                 }
 
                 return;
@@ -3255,36 +3252,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized128Small(ref T xRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TUnaryOperator.Invoke(xRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-            }
-
             static void Vectorized256(ref T xRef, ref T dRef, nuint remainder)
             {
                 ref T dRefBeg = ref dRef;
@@ -3491,61 +3458,6 @@ namespace System.Numerics.Tensors
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
-                        break;
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized256Small(ref T xRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        Vector128<T> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
-
-                        beg.StoreUnsafe(ref dRef);
-                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
-
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        beg.StoreUnsafe(ref dRef);
-
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TUnaryOperator.Invoke(xRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
                         break;
                     }
                 }
@@ -3763,8 +3675,24 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized512Small(ref T xRef, ref T dRef, nuint remainder)
+            static void VectorizedSmall(ref T xRef, ref T dRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, ref dRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
                 switch (remainder)
                 {
                     case 15:
@@ -3845,6 +3773,74 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        dRef = TUnaryOperator.Invoke(xRef);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -3895,7 +3891,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized512Small(ref xRef, ref yRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, ref dRef, remainder);
                 }
 
                 return;
@@ -3913,7 +3909,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized256Small(ref xRef, ref yRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, ref dRef, remainder);
                 }
 
                 return;
@@ -3931,7 +3927,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized128Small(ref xRef, ref yRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, ref dRef, remainder);
                 }
 
                 return;
@@ -4194,38 +4190,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized128Small(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                         Unsafe.Add(ref yRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                         Unsafe.Add(ref yRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TBinaryOperator.Invoke(xRef, yRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-            }
-
             static void Vectorized256(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
             {
                 ref T dRefBeg = ref dRef;
@@ -4463,66 +4427,6 @@ namespace System.Numerics.Tensors
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
-                        break;
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized256Small(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                  Vector128.LoadUnsafe(ref yRef));
-                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
-
-                        beg.StoreUnsafe(ref dRef);
-                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
-
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                  Vector128.LoadUnsafe(ref yRef));
-                        beg.StoreUnsafe(ref dRef);
-
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                         Unsafe.Add(ref yRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                         Unsafe.Add(ref yRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TBinaryOperator.Invoke(xRef, yRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
                         break;
                     }
                 }
@@ -4771,8 +4675,24 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized512Small(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
+            static void VectorizedSmall(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, ref yRef, ref dRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, ref yRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
                 switch (remainder)
                 {
                     case 15:
@@ -4861,6 +4781,80 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        dRef = TBinaryOperator.Invoke(xRef, yRef);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -4922,7 +4916,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized512Small(ref xRef, y, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, y, ref dRef, remainder);
                 }
 
                 return;
@@ -4940,7 +4934,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized256Small(ref xRef, y, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, y, ref dRef, remainder);
                 }
 
                 return;
@@ -4958,7 +4952,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized128Small(ref xRef, y, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, y, ref dRef, remainder);
                 }
 
                 return;
@@ -5217,38 +5211,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized128Small(ref T xRef, T y, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)),
-                                                                         y);
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
-                                                                         y);
-                            goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-            }
-
             static void Vectorized256(ref T xRef, T y, ref T dRef, nuint remainder)
             {
                 ref T dRefBeg = ref dRef;
@@ -5482,68 +5444,6 @@ namespace System.Numerics.Tensors
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
-                        break;
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized256Small(ref T xRef, T y, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> yVec = Vector128.Create(y);
-
-                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
-                                                                                            yVec);
-                        Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
-                                                                                            yVec);
-
-                        beg.StoreUnsafe(ref dRef);
-                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
-
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
-                                                                                            Vector128.Create(y));
-                        beg.StoreUnsafe(ref dRef);
-
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)),
-                                                                         y);
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
-                                                                         y);
-                            goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
                         break;
                     }
                 }
@@ -5788,8 +5688,24 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized512Small(ref T xRef, T y, ref T dRef, nuint remainder)
+            static void VectorizedSmall(ref T xRef, T y, ref T dRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, y, ref dRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, y, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, T y, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
                 switch (remainder)
                 {
                     case 15:
@@ -5867,7 +5783,85 @@ namespace System.Numerics.Tensors
                     {
                         Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
                                                                          y);
-                            goto case 1;
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, T y, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> yVec = Vector256.Create(y);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  yVec);
+                        Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
+                                                                  yVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  Vector256.Create(y));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> yVec = Vector128.Create(y);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            yVec);
+                        Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
+                                                                                            yVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            Vector128.Create(y));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
                     }
 
                     case 1:
@@ -5935,7 +5929,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized512Small(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
                 }
 
                 return;
@@ -5953,7 +5947,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized256Small(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
                 }
 
                 return;
@@ -5971,7 +5965,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized128Small(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
                 }
 
                 return;
@@ -6266,40 +6260,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized128Small(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                          Unsafe.Add(ref yRef, 2),
-                                                                          Unsafe.Add(ref zRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                          Unsafe.Add(ref yRef, 1),
-                                                                          Unsafe.Add(ref zRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-            }
-
             static void Vectorized256(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
             {
                 ref T dRefBeg = ref dRef;
@@ -6568,71 +6528,6 @@ namespace System.Numerics.Tensors
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
-                        break;
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized256Small(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                   Vector128.LoadUnsafe(ref yRef),
-                                                                   Vector128.LoadUnsafe(ref zRef));
-                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
-                                                                   Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
-
-                        beg.StoreUnsafe(ref dRef);
-                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
-
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                   Vector128.LoadUnsafe(ref yRef),
-                                                                   Vector128.LoadUnsafe(ref zRef));
-                        beg.StoreUnsafe(ref dRef);
-
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                          Unsafe.Add(ref yRef, 2),
-                                                                          Unsafe.Add(ref zRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                          Unsafe.Add(ref yRef, 1),
-                                                                          Unsafe.Add(ref zRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
                         break;
                     }
                 }
@@ -6912,8 +6807,24 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized512Small(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
+            static void VectorizedSmall(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
                 switch (remainder)
                 {
                     case 15:
@@ -7010,6 +6921,86 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.LoadUnsafe(ref yRef),
+                                                                       Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -7061,7 +7052,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized512Small(ref xRef, ref yRef, z, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, z, ref dRef, remainder);
                 }
 
                 return;
@@ -7079,7 +7070,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized256Small(ref xRef, ref yRef, z, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, z, ref dRef, remainder);
                 }
 
                 return;
@@ -7097,7 +7088,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized128Small(ref xRef, ref yRef, z, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, ref yRef, z, ref dRef, remainder);
                 }
 
                 return;
@@ -7388,40 +7379,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized128Small(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                          Unsafe.Add(ref yRef, 2),
-                                                                          z);
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                          Unsafe.Add(ref yRef, 1),
-                                                                          z);
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-            }
-
             static void Vectorized256(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
             {
                 ref T dRefBeg = ref dRef;
@@ -7686,73 +7643,6 @@ namespace System.Numerics.Tensors
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
-                        break;
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized256Small(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> zVec = Vector128.Create(z);
-
-                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                   Vector128.LoadUnsafe(ref yRef),
-                                                                   zVec);
-                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
-                                                                   zVec);
-
-                        beg.StoreUnsafe(ref dRef);
-                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
-
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                   Vector128.LoadUnsafe(ref yRef),
-                                                                   Vector128.Create(z));
-                        beg.StoreUnsafe(ref dRef);
-
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                          Unsafe.Add(ref yRef, 2),
-                                                                          z);
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                          Unsafe.Add(ref yRef, 1),
-                                                                          z);
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
                         break;
                     }
                 }
@@ -8028,8 +7918,24 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized512Small(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
+            static void VectorizedSmall(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
                 switch (remainder)
                 {
                     case 15:
@@ -8130,6 +8036,90 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> zVec = Vector256.Create(z);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.LoadUnsafe(ref yRef),
+                                                                       zVec);
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                       Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                       zVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.LoadUnsafe(ref yRef),
+                                                                       Vector256.Create(z));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> zVec = Vector128.Create(z);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       zVec);
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                       zVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.Create(z));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 1:
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -8181,7 +8171,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized512Small(ref xRef, y, ref zRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, y, ref zRef, ref dRef, remainder);
                 }
 
                 return;
@@ -8199,7 +8189,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized256Small(ref xRef, y, ref zRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, y, ref zRef, ref dRef, remainder);
                 }
 
                 return;
@@ -8217,7 +8207,7 @@ namespace System.Numerics.Tensors
                     // efficiently, we simply have a small jump table and fallthrough. So we get a simple
                     // length check, single jump, and then linear execution.
 
-                    Vectorized128Small(ref xRef, y, ref zRef, ref dRef, remainder);
+                    VectorizedSmall(ref xRef, y, ref zRef, ref dRef, remainder);
                 }
 
                 return;
@@ -8508,40 +8498,6 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized128Small(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                          y,
-                                                                          Unsafe.Add(ref zRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                          y,
-                                                                          Unsafe.Add(ref zRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
-                        break;
-                    }
-                }
-            }
-
             static void Vectorized256(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
             {
                 ref T dRefBeg = ref dRef;
@@ -8806,73 +8762,6 @@ namespace System.Numerics.Tensors
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
-                        break;
-                    }
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized256Small(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
-            {
-                switch (remainder)
-                {
-                    case 7:
-                    case 6:
-                    case 5:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> yVec = Vector128.Create(y);
-
-                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                       yVec,
-                                                                       Vector128.LoadUnsafe(ref zRef));
-                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                       yVec,
-                                                                       Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
-
-                        beg.StoreUnsafe(ref dRef);
-                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
-
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        Debug.Assert(Vector128.IsHardwareAccelerated);
-
-                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                       Vector128.Create(y),
-                                                                       Vector128.LoadUnsafe(ref zRef));
-                        beg.StoreUnsafe(ref dRef);
-
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                          y,
-                                                                          Unsafe.Add(ref zRef, 2));
-                        goto case 2;
-                    }
-
-                    case 2:
-                    {
-                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                          y,
-                                                                          Unsafe.Add(ref zRef, 1));
-                        goto case 1;
-                    }
-
-                    case 1:
-                    {
-                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                        goto case 0;
-                    }
-
-                    case 0:
-                    {
                         break;
                     }
                 }
@@ -9148,8 +9037,24 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static void Vectorized512Small(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
+            static void VectorizedSmall(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
             {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, y, ref zRef, ref dRef, remainder);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, y, ref zRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
                 switch (remainder)
                 {
                     case 15:
@@ -9236,6 +9141,90 @@ namespace System.Numerics.Tensors
                                                                           y,
                                                                           Unsafe.Add(ref zRef, 1));
                         goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
+                        goto case 0;
+                    }
+
+                    case 0:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> yVec = Vector256.Create(y);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       yVec,
+                                                                       Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                       yVec,
+                                                                       Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.Create(y),
+                                                                       Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    case 3:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> yVec = Vector128.Create(y);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       yVec,
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                       yVec,
+                                                                       Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.Create(y),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
                     }
 
                     case 1:

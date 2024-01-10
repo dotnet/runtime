@@ -1321,14 +1321,14 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
-    if (!size)
+    if (size == 0)
     {
         return;
     }
 
-    assert(addr);
+    assert(addr != nullptr);
 
-    for (unsigned i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         fprintf(dmpf, "%02X", *addr++);
     }

@@ -304,6 +304,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method);
             });
 
+            _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
+            {
+                return new ReflectedDelegateNode(type);
+            });
+
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
                 return new ReflectedMethodNode(method);
@@ -994,6 +999,16 @@ namespace ILCompiler.DependencyAnalysis
         public DelegateTargetVirtualMethodNode DelegateTargetVirtualMethod(MethodDesc method)
         {
             return _delegateTargetMethods.GetOrAdd(method);
+        }
+
+        private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
+        private NodeCache<TypeDesc, ReflectedDelegateNode> _reflectedDelegates;
+        public ReflectedDelegateNode ReflectedDelegate(TypeDesc type)
+        {
+            if (type == null)
+                return _unknownReflectedDelegate;
+
+            return _reflectedDelegates.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;

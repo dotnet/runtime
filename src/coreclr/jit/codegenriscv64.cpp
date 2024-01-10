@@ -6030,6 +6030,61 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, dstReg, 0);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+
+        const regNumber tempReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, size - TARGET_POINTER_SIZE);
+
+        // tempReg = dstReg + tempReg (a new interior pointer, but in a nongc region)
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, tempReg, dstReg, tempReg);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+        GetEmitter()->emitDisableGC(); // TODO: add gcinfo to tempReg and remove nogc
+
+        // *tempReg = 0
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, tempReg, 0);
+        // tempReg = tempReg - 8
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -8);
+        // if (tempReg != dstReg) goto loop;
+        GetEmitter()->emitIns_J(INS_bne, loop, (int)tempReg | ((int)dstReg << 5));
+        GetEmitter()->emitEnableGC();
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
 //
 // Arguments:
@@ -6916,6 +6971,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindCpObjUnroll:
             assert(!blkOp->gtBlkOpGcUnsafe);
             genCodeForCpObj(blkOp->AsBlk());
+            break;
+
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
             break;
 
         case GenTreeBlk::BlkOpKindHelper:

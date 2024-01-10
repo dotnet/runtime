@@ -19,10 +19,12 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_ARM64_BRANCH26       = 0x15,   // Arm64: B, BL
         IMAGE_REL_BASED_LOONGARCH64_PC       = 0x16,   // LoongArch64: pcaddu12i+imm12
         IMAGE_REL_BASED_LOONGARCH64_JIR      = 0x17,   // LoongArch64: pcaddu18i+jirl
+        IMAGE_REL_BASED_RISCV64_PC           = 0x18,   // RiscV64: auipc
         IMAGE_REL_BASED_RELPTR32             = 0x7C,   // 32-bit relative address from byte starting reloc
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
                                                        // section smaller)
+        IMAGE_REL_SECTION                    = 0x79,   // 16 bit section index containing target
 
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
@@ -411,6 +413,47 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetLoongArch64JIR(pCode) == imm38);
         }
 
+        private static unsafe int GetRiscV64PC(uint* pCode)
+        {
+            uint auipcInstr = *pCode;
+            Debug.Assert((auipcInstr & 0x7f) == 0x00000017);
+            // first get the high 20 bits,
+            int imm = (int)((auipcInstr & 0xfffff000));
+            // then get the low 12 bits,
+            uint addiInstr = *(pCode + 1);
+            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
+            imm += ((int)(addiInstr)) >> 20;
+
+            return imm;
+        }
+
+        // INS_OPTS_RELOC: placeholders.  2-ins:
+        //  case:EA_HANDLE_CNS_RELOC
+        //   auipc  reg, off-hi-20bits
+        //   addi   reg, reg, off-lo-12bits
+        //  case:EA_PTR_DSP_RELOC
+        //   auipc  reg, off-hi-20bits
+        //   ld     reg, reg, off-lo-12bits
+        private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert((int)imm32 == imm32);
+
+            int doff = (int)(imm32 & 0xfff);
+            uint auipcInstr = *pCode;
+            Debug.Assert((auipcInstr & 0x7f) == 0x00000017);
+
+            auipcInstr |= (uint)((imm32 + 0x800) & 0xfffff000);
+            *pCode = auipcInstr;
+
+            uint addiInstr = *(pCode + 1);
+            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
+            addiInstr |= (uint)((doff & 0xfff) << 20);
+            *(pCode + 1) = addiInstr;
+
+            Debug.Assert(GetRiscV64PC(pCode) == imm32);
+        }
+
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
             RelocType = relocType;
@@ -423,9 +466,13 @@ namespace ILCompiler.DependencyAnalysis
             switch (relocType)
             {
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
                 case RelocType.IMAGE_REL_BASED_REL32:
-                case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                case RelocType.IMAGE_REL_BASED_RELPTR32:
+                case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_TLSGD:
+                case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SECREL:
@@ -456,6 +503,9 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     PutLoongArch64JIR((uint*)location, value);
                     break;
+                case RelocType.IMAGE_REL_BASED_RISCV64_PC:
+                    PutRiscV64PC((uint*)location, value);
+                    break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
@@ -467,6 +517,7 @@ namespace ILCompiler.DependencyAnalysis
             return relocType switch
             {
                 RelocType.IMAGE_REL_BASED_DIR64 => 8,
+                RelocType.IMAGE_REL_BASED_HIGHLOW => 4,
                 RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
                 _ => throw new NotSupportedException(),
             };
@@ -518,6 +569,8 @@ namespace ILCompiler.DependencyAnalysis
                     return (long)GetLoongArch64PC12((uint*)location);
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     return (long)GetLoongArch64JIR((uint*)location);
+                case RelocType.IMAGE_REL_BASED_RISCV64_PC:
+                    return (long)GetRiscV64PC((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;

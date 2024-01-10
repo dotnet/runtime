@@ -5592,13 +5592,20 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+
+        // Instrument this castclass/isinst
         if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
         {
-            HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-            pInfo->ilOffset                             = ilOffset;
-            pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
-            call->gtHandleHistogramProfileCandidateInfo = pInfo;
-            compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+            // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
+            if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
+            {
+                HandleHistogramProfileCandidateInfo* pInfo =
+                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                pInfo->ilOffset                             = ilOffset;
+                pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
+                call->gtHandleHistogramProfileCandidateInfo = pInfo;
+                compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+            }
         }
         return call;
     }

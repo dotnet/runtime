@@ -5353,6 +5353,10 @@ struct GenTreeCall final : public GenTree
     {
         return IsVirtualStub() && (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
 
     bool IsR2RRelativeIndir() const
     {
@@ -5643,6 +5647,8 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
+
+    bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
 
     CorInfoHelpFunc GetHelperNum() const;
 
@@ -7331,6 +7337,7 @@ public:
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
 #endif
+        BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
@@ -7339,12 +7346,20 @@ public:
     bool gtBlkOpGcUnsafe;
 #endif
 
-#ifdef TARGET_XARCH
+    bool ContainsReferences()
+    {
+        return (m_layout != nullptr) && m_layout->HasGCPtr();
+    }
+
     bool IsOnHeapAndContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIs(GT_LCL_ADDR);
+        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR);
     }
-#endif
+
+    bool IsZeroingGcPointersOnHeap()
+    {
+        return OperIs(GT_STORE_BLK) && Data()->IsIntegralConst(0) && IsOnHeapAndContainsReferences();
+    }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
@@ -7355,6 +7370,10 @@ public:
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, data)
     {
+        if (data->IsIntegralConst(0))
+        {
+            data->gtFlags |= GTF_DONT_CSE;
+        }
         Initialize(layout);
     }
 
