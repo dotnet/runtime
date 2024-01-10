@@ -19,8 +19,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public sealed class KmacXof128 : IDisposable
     {
-        // Some platforms have a mutable struct for LiteKmac, do not mark this field as readonly.
-        private LiteKmac _kmacProvider;
+        private readonly LiteKmac _kmacProvider;
         private bool _disposed;
 
         /// <summary>
@@ -31,6 +30,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="key"/> is <see langword="null"/>.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred creating an instance of the algorithm.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -45,6 +45,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="key">The KMAC key.</param>
         /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <exception cref="CryptographicException">An error has occurred creating an instance of the algorithm.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -93,6 +94,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="outputLength" /> is negative.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         /// <seealso cref="GetCurrentHash(int)" />
         public byte[] GetHashAndReset(int outputLength)
@@ -112,6 +114,7 @@ namespace System.Security.Cryptography
         ///   and resets the object to its initial state.
         /// </summary>
         /// <param name="destination">The buffer to fill with the hash.</param>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         /// <seealso cref="GetCurrentHash(Span{byte})" />
         public void GetHashAndReset(Span<byte> destination)
@@ -132,6 +135,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="outputLength" /> is negative.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         /// <seealso cref="GetHashAndReset(int)" />
         public byte[] GetCurrentHash(int outputLength)
@@ -150,6 +154,7 @@ namespace System.Security.Cryptography
         ///   without resetting the object to its initial state.
         /// </summary>
         /// <param name="destination">The buffer to fill with the hash.</param>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         /// <seealso cref="GetHashAndReset(Span{byte})" />
         public void GetCurrentHash(Span<byte> destination)
@@ -188,6 +193,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -215,6 +221,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="outputLength" /> is negative.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -240,6 +247,7 @@ namespace System.Security.Cryptography
         /// <param name="source">The data to hash.</param>
         /// <param name="destination">The buffer to fill with the hash.</param>
         /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -271,6 +279,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -307,6 +316,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -338,6 +348,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMACXOF128.
@@ -378,6 +389,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="outputLength" /> is negative.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
@@ -424,6 +436,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="outputLength" /> is negative.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
@@ -464,6 +477,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
         /// <exception cref="OperationCanceledException">
         ///   <paramref name="cancellationToken"/> has been canceled.
         /// </exception>
