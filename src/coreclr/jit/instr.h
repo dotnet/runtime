@@ -303,13 +303,15 @@ enum insOpts : unsigned
 #endif
 };
 
+// When a single instruction has different encodings variants, this is used
+// to distinguish those that can't be determined soley by register usage.
 enum insScalableOpts : unsigned
 {
     INS_SCALABLE_OPTS_NONE,
 
-    INS_SCALABLE_OPTS_WIDE,
-    INS_SCALABLE_OPTS_WITH_SIMD_SCALAR,
-    INS_SCALABLE_OPTS_PREDICATE_MERGE,
+    INS_SCALABLE_OPTS_WIDE,              // Variants with wide elements (eg asr)
+    INS_SCALABLE_OPTS_WITH_SIMD_SCALAR,  // Variants with a NEON SIMD register (eg clasta)
+    INS_SCALABLE_OPTS_PREDICATE_MERGE,   // Variants with a Pg/M predicate (eg brka)
 };
 
 enum insCond : unsigned
