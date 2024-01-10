@@ -137,11 +137,15 @@ namespace Wasm.Build.Tests
             var completionTask = CurrentProcess.StartAndWaitForExitAsync(_testOutput);
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
-            _testOutput.WriteLine("Waiting on the task returned from .. StartAndWaitForExitAsync");
-            await completionTask;
+            _testOutput.WriteLine($"Waiting on the task returned from .. StartAndWaitForExitAsync, on process: {CurrentProcess.HasExited}");
+            if (!completionTask.Wait(TimeSpan.FromMinutes(5)))
+            {
+                throw new Exception($"** process task timed out, hasexited: {CurrentProcess.HasExited}");
+            }
             _testOutput.WriteLine("back from waiting on the task returned from .. StartAndWaitForExitAsync");
 
             RemoveNullTerminator(output);
+            await Task.CompletedTask;
 
             return new CommandResult(
                 CurrentProcess.StartInfo,

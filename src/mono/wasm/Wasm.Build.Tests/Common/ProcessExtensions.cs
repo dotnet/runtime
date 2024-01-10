@@ -22,6 +22,7 @@ namespace Wasm.Build.Tests
 
             subject.Exited += (s, a) =>
             {
+                Console.WriteLine ($"** ProcessExtensions.StartAndWaitForExitAsync: Got exited");
                 taskCompletionSource.SetResult(null);
             };
 
