@@ -38,6 +38,7 @@ internal class BrowserRunner : IAsyncDisposable
         ToolCommand cmd,
         string args
     ) {
+        _testOutput.WriteLine("BrowserRunner.StartServerAndGetUrlAsync ENTER");
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
         {
@@ -70,6 +71,7 @@ internal class BrowserRunner : IAsyncDisposable
         cmd.WithErrorDataReceived(outputHandler).WithOutputDataReceived(outputHandler);
         var runTask = cmd.ExecuteAsync(args);
 
+        _testOutput.WriteLine("BrowserRunner.StartAndWaitForExitAsync: calling WhenAny now with a 30s timeout");
         await Task.WhenAny(runTask, urlAvailable.Task, Task.Delay(TimeSpan.FromSeconds(30)));
         if (runTask.IsCompleted)
         {
@@ -109,6 +111,7 @@ internal class BrowserRunner : IAsyncDisposable
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
+        _testOutput.WriteLine("BrowserRunner.RunAsync ENTER");
         var urlString = await StartServerAndGetUrlAsync(cmd, args);
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();

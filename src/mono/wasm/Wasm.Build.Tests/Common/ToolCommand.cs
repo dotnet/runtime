@@ -105,6 +105,7 @@ namespace Wasm.Build.Tests
 
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
+            _testOutput.WriteLine("ToolCommand.ExecuteAsyncInternal ENTER");
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
             CurrentProcess.ErrorDataReceived += (s, e) =>
@@ -129,10 +130,13 @@ namespace Wasm.Build.Tests
                 OutputDataReceived?.Invoke(s, e);
             };
 
-            var completionTask = CurrentProcess.StartAndWaitForExitAsync();
+            _testOutput.WriteLine("Calling StartAndWaitForExitAsync");
+            var completionTask = CurrentProcess.StartAndWaitForExitAsync(_testOutput);
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
+            _testOutput.WriteLine("Waiting on the task returned from .. StartAndWaitForExitAsync");
             await completionTask;
+            _testOutput.WriteLine("back from waiting on the task returned from .. StartAndWaitForExitAsync");
 
             RemoveNullTerminator(output);
 

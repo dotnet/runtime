@@ -7,13 +7,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
     internal static class ProcessExtensions
     {
-        public static Task StartAndWaitForExitAsync(this Process subject)
+        public static Task StartAndWaitForExitAsync(this Process subject, ITestOutputHelper testOutput)
         {
+            testOutput.WriteLine ("ProcessExtensions.StartAndWaitForExitAsync ENTER");
             var taskCompletionSource = new TaskCompletionSource<object>();
 
             subject.EnableRaisingEvents = true;
