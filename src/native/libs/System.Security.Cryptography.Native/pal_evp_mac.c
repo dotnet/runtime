@@ -210,11 +210,12 @@ int32_t CryptoNative_EvpMacFinal(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLeng
 
         ERR_clear_error();
 
-        OSSL_PARAM params[2] = { 0 };
-
         size_t macLengthT = Int32ToSizeT(macLength);
-        params[0] = OSSL_PARAM_construct_int32(OSSL_MAC_PARAM_SIZE, &macLength);
-        params[1] = OSSL_PARAM_construct_end();
+        OSSL_PARAM params[] =
+        {
+            OSSL_PARAM_construct_int32(OSSL_MAC_PARAM_SIZE, &macLength),
+            OSSL_PARAM_construct_end(),
+        };
 
         if (!EVP_MAC_CTX_set_params(ctx, params))
         {
@@ -244,7 +245,7 @@ int32_t CryptoNative_EvpMacFinal(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLeng
 int32_t CryptoNative_EvpMacCurrent(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLength)
 {
     // CryptoNative_EvpMacFinal will perform parameter validation. These are invariants
-    // so its okay to validate them after allocations since this is not expected to
+    // so it's okay to validate them after allocations since this is not expected to
     // ever occur.
 
 #ifdef NEED_OPENSSL_3_0
