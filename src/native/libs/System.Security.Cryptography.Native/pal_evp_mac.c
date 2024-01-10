@@ -12,11 +12,26 @@ EVP_MAC* CryptoNative_EvpMacFetch(const char* algorithm, int32_t* haveFeature)
     assert(haveFeature);
 
 #ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_MAC_free))
+    if (API_EXISTS(EVP_MAC_fetch))
     {
-        *haveFeature = 1;
         ERR_clear_error();
-        return EVP_MAC_fetch(NULL, algorithm, NULL);
+        EVP_MAC* mac = EVP_MAC_fetch(NULL, algorithm, NULL);
+
+        if (mac)
+        {
+            *haveFeature = 1;
+            return mac;
+        }
+        else
+        {
+            unsigned long error = ERR_peek_error();
+
+            // If the fetch failed because the algorithm is unsupported, then set
+            // haveFeature to 0. Otherwise, assume the algorithm exists and the
+            // fetch failed for another reason, and set haveFeature to 1.
+            *haveFeature = ERR_GET_REASON(error) == ERR_R_UNSUPPORTED ? 0 : 1;
+            return NULL;
+        }
     }
 #else
     (void)algorithm;

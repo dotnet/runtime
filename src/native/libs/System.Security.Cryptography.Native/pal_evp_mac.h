@@ -11,12 +11,13 @@ Shims the EVP_MAC_fetch function.
 algorithm: The name of the algorithm to fetch.
 haveFeature: A pointer to an int32_t. When this function returns, the value will
              contain an integer to determine if the platform supports EVP_MAC_fetch.
-             0 indicates that the platform does not support EVP_MAC_fetch.
-             1 indicates that the platform does support EVP_MAC_fetch.
+             0 indicates that the platform does not support EVP_MAC_fetch or the algorithm.
+             1 indicates that the platform does support EVP_MAC_fetch and the algorithm.
 
 return: A pointer to an EVP_MAC. This pointer may be NULL if OpenSSL failed to allocate internally,
-        or, if the platform does not support EVP_MAC_fetch. Use the haveFeature value to determine
-        if the NULL value is due to allocation failure or lack of platform support.
+        or, if the platform does not support EVP_MAC_fetch or the algorithm.
+        Use the haveFeature value to determine if the NULL value is due to allocation failure
+        or lack of platform support.
 */
 PALEXPORT EVP_MAC* CryptoNative_EvpMacFetch(const char* algorithm, int32_t* haveFeature);
 
