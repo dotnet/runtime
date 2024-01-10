@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Interop
 {
-    public interface IMarshallingGeneratorFactory
+    public interface IMarshallingGeneratorResolver
     {
         /// <summary>
         /// Create an <see cref="IMarshallingGenerator"/> instance for marshalling the supplied type in the given position and collect any diagnostics from generator resolution.

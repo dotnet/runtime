@@ -233,7 +233,9 @@ if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
 
 fi
 
-if [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
+if [[ -z "$HELIX_CORRELATION_PAYLOAD" ]]; then
+  : # Skip XUnitLogChecker execution
+elif [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
   echo "The '__IsXUnitLogCheckerSupported' env var is not set."
 elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
   echo "XUnitLogChecker not supported for this test case. Skipping."
