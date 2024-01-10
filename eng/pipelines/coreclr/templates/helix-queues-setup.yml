@@ -44,7 +44,7 @@ jobs:
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
-      - Windows.10.Amd64.Android.Open
+      - Windows.11.Amd64.Android.Open
 
     # Android x64
     - ${{ if in(parameters.platform, 'android_x64') }}:
