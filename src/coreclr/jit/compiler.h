@@ -3593,7 +3593,7 @@ public:
     // Get a class handle from a helper call argument
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
     // Get the class handle for a field
-    CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
+    CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, CORINFO_CLASS_HANDLE fieldOwnerCls, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 

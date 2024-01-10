@@ -18541,12 +18541,24 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                 {
                     CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
-                    objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
+                    objClass = gtGetFieldClassHandle(fldHandle, NO_CLASS_HANDLE, pIsExact, pIsNonNull);
                 }
             }
             else if (base->OperIs(GT_FIELD_ADDR))
             {
-                objClass = gtGetFieldClassHandle(base->AsFieldAddr()->gtFldHnd, pIsExact, pIsNonNull);
+                CORINFO_FIELD_HANDLE fldHandle   = base->AsFieldAddr()->gtFldHnd;
+                CORINFO_CLASS_HANDLE fldOwnerCls = NO_CLASS_HANDLE;
+
+                if (base->gtGetOp1() != nullptr)
+                {
+                    // If it's an instance field, try to grab the class handle from the instance.
+                    // we're going to use it as a hint for getFieldType
+                    bool isExactObj   = false;
+                    bool isNonNullObj = false;
+                    fldOwnerCls       = gtGetClassHandle(base->gtGetOp1(), &isExactObj, &isNonNullObj);
+                }
+
+                objClass = gtGetFieldClassHandle(fldHandle, fldOwnerCls, pIsExact, pIsNonNull);
             }
             break;
         }
@@ -18777,6 +18789,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 //
 // Arguments:
 //    fieldHnd - field handle for field in question
+//    fieldOwnerCls - class handle for class containing the field, can be nullptr
 //    pIsExact - [OUT] true if type is known exactly
 //    pIsNonNull - [OUT] true if field value is not null
 //
@@ -18786,10 +18799,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 //
 //    May examine runtime state of static field instances.
 
-CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull)
+CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd,
+                                                     CORINFO_CLASS_HANDLE fieldOwnerCls,
+                                                     bool*                pIsExact,
+                                                     bool*                pIsNonNull)
 {
     CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
+    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass, fieldOwnerCls);
 
     if (fieldCorType == CORINFO_TYPE_CLASS)
     {
