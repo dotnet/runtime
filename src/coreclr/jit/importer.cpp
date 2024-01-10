@@ -5513,7 +5513,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 for (UINT32 i = 0; i < likelyClassCount; i++)
                 {
                     const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-                    printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
                            likelyClasses[i].likelihood);
                 }
 
