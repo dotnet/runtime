@@ -3,7 +3,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <array>
 #include <internal/dnmd_platform.hpp>
+#include <internal/span.hpp>
 
 namespace pal
 {
@@ -107,6 +109,10 @@ namespace pal
             return _ptr;
         }
     };
+
+    constexpr size_t SHA1_HASH_SIZE = 20;
+
+    bool ComputeSha1Hash(span<uint8_t const> data, std::array<uint8_t, SHA1_HASH_SIZE>& hashDestination);
 }
 
 // Implementations for missing bounds checking APIs.

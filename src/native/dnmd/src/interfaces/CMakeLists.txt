@@ -5,6 +5,7 @@ set(SOURCES
   ./hcorenum.cpp
   ./pal.cpp
   ./signatures.cpp
+  ./importhelpers.cpp
 )
 
 set(HEADERS
@@ -17,6 +18,7 @@ set(HEADERS
   ./pal.hpp
   ./dnmdowner.hpp
   ./signatures.hpp
+  ./importhelpers.hpp
 )
 
 if(NOT MSVC)
@@ -78,6 +80,25 @@ if (NOT WIN32)
   include(FindICU)
   target_link_libraries(dnmd_interfaces_static PUBLIC ${ICU_TARGET_NAME})
   target_link_libraries(dnmd_interfaces PRIVATE ${ICU_TARGET_NAME})
+endif()
+
+if (WIN32)
+  target_link_libraries(dnmd_interfaces_static PUBLIC bcrypt)
+  target_link_libraries(dnmd_interfaces PRIVATE bcrypt)
+elseif(UNIX)
+  include(FindOpenSSL)
+  target_link_libraries(dnmd_interfaces_static PUBLIC OpenSSL::Crypto)
+  target_link_libraries(dnmd_interfaces PRIVATE OpenSSL::Crypto)
+elseif(APPLE)
+  find_library(SECURITY_LIBRARY Security REQUIRED)
+  target_link_libraries(dnmd_interfaces_static PUBLIC ${SECURITY_LIBRARY})
+  target_link_libraries(dnmd_interfaces PRIVATE ${SECURITY_LIBRARY})
+
+  include(CheckIncludeFile)
+  check_include_file("CommonCrypto/CommonDigest.h" HAVE_COMMON_DIGEST_H)
+  if (NOT HAVE_COMMON_DIGEST_H)
+    message(FATAL_ERROR "CommonCrypto/CommonDigest.h not found")
+  endif()
 endif()
 
 set_target_properties(dnmd_interfaces PROPERTIES

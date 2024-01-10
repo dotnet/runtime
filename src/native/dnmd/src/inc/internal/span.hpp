@@ -47,6 +47,31 @@ public:
             throw std::out_of_range{ "Out of bounds access" };
         return _ptr[idx];
     }
+
+    operator span<T const>() const
+    {
+        return { _ptr, _size };
+    }
+
+    T* begin() noexcept
+    {
+        return _ptr;
+    }
+
+    T const* cbegin() const noexcept
+    {
+        return _ptr;
+    }
+
+    T* end() noexcept
+    {
+        return _ptr + _size;
+    }
+
+    T const* cend() const noexcept
+    {
+        return _ptr + _size;
+    }
 };
 
 template<typename T, typename Deleter>
@@ -88,6 +113,11 @@ public:
         T* tmp = this->_ptr;
         this->_ptr = {};
         return tmp;
+    }
+
+    operator owning_span<T const, Deleter>() const
+    {
+        return { this->_ptr, this->_size };
     }
 };
 
