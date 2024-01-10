@@ -118,13 +118,6 @@ namespace System.Runtime.InteropServices.JavaScript
             });
         }
 
-        internal JSSynchronizationContext(JSProxyContext proxyContext, WorkItemQueueType queue, Action dataIsAvailable)
-        {
-            ProxyContext = proxyContext;
-            Queue = queue;
-            _ScheduleJSPump = dataIsAvailable;
-        }
-
         public override SynchronizationContext CreateCopy()
         {
             return this;
