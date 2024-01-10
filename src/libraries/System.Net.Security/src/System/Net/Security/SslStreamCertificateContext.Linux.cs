@@ -29,17 +29,18 @@ namespace System.Net.Security
         // Private copy of the intermediate certificates, in case the user decides to dispose the
         // instances reachable through IntermediateCertificates property.
         private X509Certificate2[] _privateIntermediateCertificates;
+        private X509Certificate2? _rootCertificate;
         private Task<byte[]?>? _pendingDownload;
         private List<string>? _ocspUrls;
 
         private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
             IntermediateCertificates = intermediates;
-            if (intermediates.Length > 0)
+            if (intermediates.Count > 0)
             {
-                _privateIntermediateCertificates = new X509Certificate2[intermediates.Length];
+                _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
 
-                for (int i = 0; i < intermediates.Length; i++)
+                for (int i = 0; i < intermediates.Count; i++)
                 {
                     _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
                 }
@@ -92,11 +93,8 @@ namespace System.Net.Security
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership)
         {
-            if (_privateIntermediateCertificates.Length == 0 && rootCertificate != null)
-            {
-                _privateIntermediateCertificates = new[] { rootCertificate };
-                transferredOwnership = true;
-            }
+            _rootCertificate = rootCertificate;
+            transferredOwnership = rootCertificate != null;
 
             if (!_staplingForbidden)
             {
@@ -161,7 +159,7 @@ namespace System.Net.Security
                 return new ValueTask<byte[]?>(pending);
             }
 
-            if (_ocspUrls is null && _privateIntermediateCertificates.Length > 0)
+            if (_ocspUrls is null && _rootCertificate is not null)
             {
                 foreach (X509Extension ext in TargetCertificate.Extensions)
                 {
@@ -204,8 +202,8 @@ namespace System.Net.Security
 
         private async Task<byte[]?> FetchOcspAsync()
         {
-            Debug.Assert(_privateIntermediateCertificates.Length > 0);
-            X509Certificate2? caCert = _privateIntermediateCertificates[0];
+            Debug.Assert(_rootCertificate != null);
+            X509Certificate2? caCert = _privateIntermediateCertificates.Length > 0 ? _privateIntermediateCertificates[0] : _rootCertificate;
 
             Debug.Assert(_ocspUrls is not null);
             Debug.Assert(_ocspUrls.Count > 0);
@@ -225,11 +223,12 @@ namespace System.Net.Security
                 return null;
             }
 
-            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(_privateIntermediateCertificates.Length);
+            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(_privateIntermediateCertificates.Length + 1);
             for (int i = 0; i < _privateIntermediateCertificates.Length; i++)
             {
                 issuerHandles[i] = _privateIntermediateCertificates[i].Handle;
             }
+            issuerHandles[_privateIntermediateCertificates.Length] = _rootCertificate.Handle;
 
             using (SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer))
             {
@@ -247,7 +246,7 @@ namespace System.Net.Security
 
                     if (ret is not null)
                     {
-                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles.AsSpan(0, _privateIntermediateCertificates.Length), out DateTimeOffset expiration))
+                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles.AsSpan(0, _privateIntermediateCertificates.Length + 1), out DateTimeOffset expiration))
                         {
                             ret = null;
                             continue;
@@ -278,6 +277,7 @@ namespace System.Net.Security
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
                 GC.KeepAlive(TargetCertificate);
                 GC.KeepAlive(_privateIntermediateCertificates);
+                GC.KeepAlive(_rootCertificate);
                 GC.KeepAlive(caCert);
                 return ret;
             }
