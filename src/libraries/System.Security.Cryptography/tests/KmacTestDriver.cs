@@ -201,6 +201,56 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void GetHashAndReset_PerformsReset_Span()
+        {
+            const int OutputLength = 32;
+            ReadOnlySpan<byte> customizationString = [];
+            ReadOnlySpan<byte> data = "habaneros"u8;
+            ReadOnlySpan<byte> noData = [];
+            ReadOnlySpan<byte> expected = TKmacTrait.HashData(MinimalKey, data, OutputLength, customizationString);
+            ReadOnlySpan<byte> expectedNoData = TKmacTrait.HashData(MinimalKey, noData, OutputLength, customizationString);
+
+            using (TKmac kmac = TKmacTrait.Create(new ReadOnlySpan<byte>(MinimalKey), customizationString))
+            {
+                Span<byte> mac = stackalloc byte[OutputLength];
+                TKmacTrait.AppendData(kmac, data);
+                TKmacTrait.GetHashAndReset(kmac, mac);
+                AssertExtensions.SequenceEqual(expected, mac);
+
+                TKmacTrait.GetCurrentHash(kmac, mac);
+                AssertExtensions.SequenceEqual(expectedNoData, mac);
+
+                TKmacTrait.GetHashAndReset(kmac, mac);
+                AssertExtensions.SequenceEqual(expectedNoData, mac);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void GetHashAndReset_PerformsReset_Array()
+        {
+            const int OutputLength = 32;
+            byte[] customizationString = [];
+            byte[] data = "habaneros"u8.ToArray();
+            byte[] noData = [];
+            byte[] expected = TKmacTrait.HashData(MinimalKey, data, OutputLength, customizationString);
+            byte[] expectedNoData = TKmacTrait.HashData(MinimalKey, noData, OutputLength, customizationString);
+
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString))
+            {
+                byte[] mac;
+                TKmacTrait.AppendData(kmac, data);
+                mac = TKmacTrait.GetHashAndReset(kmac, OutputLength);
+                Assert.Equal(expected, mac);
+
+                mac = TKmacTrait.GetCurrentHash(kmac, OutputLength);
+                Assert.Equal(expectedNoData, mac);
+
+                mac = TKmacTrait.GetHashAndReset(kmac, OutputLength);
+                Assert.Equal(expectedNoData, mac);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void GetCurrentHash_Minimal_Bytes()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -221,6 +271,63 @@ namespace System.Security.Cryptography.Tests
 
                 // Assert.NoThrow
                 TKmacTrait.GetCurrentHash(kmac, mac);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void GetCurrentHash_ExistingStatePreserved_Span()
+        {
+            const int OutputLength = 32;
+            ReadOnlySpan<byte> customizationString = [];
+            ReadOnlySpan<byte> data = "habaneros"u8;
+            ReadOnlySpan<byte> expected = TKmacTrait.HashData(MinimalKey, data, OutputLength, customizationString);
+
+            using (TKmac kmac = TKmacTrait.Create(new ReadOnlySpan<byte>(MinimalKey), customizationString))
+            {
+                Span<byte> mac = stackalloc byte[OutputLength];
+
+                int i = 0;
+                for (; i < data.Length - 1; i++)
+                {
+                    TKmacTrait.AppendData(kmac, data.Slice(i, 1));
+                    TKmacTrait.GetCurrentHash(kmac, mac);
+                    Assert.False(expected.SequenceEqual(mac), "expected.SequenceEqual(mac)");
+                }
+
+                TKmacTrait.AppendData(kmac, data.Slice(i, 1));
+                TKmacTrait.GetCurrentHash(kmac, mac);
+                AssertExtensions.SequenceEqual(expected, mac);
+
+                TKmacTrait.GetHashAndReset(kmac, mac);
+                AssertExtensions.SequenceEqual(expected, mac);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void GetCurrentHash_ExistingStatePreserved_Bytes()
+        {
+            int OutputLength = 32;
+            byte[] customizationString = [];
+            byte[] data = "habaneros"u8.ToArray();
+            byte[] expected = TKmacTrait.HashData(MinimalKey, data, OutputLength, customizationString);
+
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString))
+            {
+                byte[] mac;
+                int i = 0;
+                for (; i < data.Length - 1; i++)
+                {
+                    TKmacTrait.AppendData(kmac, data.AsSpan(i, 1).ToArray());
+                    mac = TKmacTrait.GetCurrentHash(kmac, OutputLength);
+                    Assert.NotEqual(expected, mac);
+                }
+
+                TKmacTrait.AppendData(kmac, data.AsSpan(i, 1).ToArray());
+                mac = TKmacTrait.GetCurrentHash(kmac, OutputLength);
+                Assert.Equal(expected, mac);
+
+                mac = TKmacTrait.GetHashAndReset(kmac, OutputLength);
+                Assert.Equal(expected, mac);
             }
         }
 
