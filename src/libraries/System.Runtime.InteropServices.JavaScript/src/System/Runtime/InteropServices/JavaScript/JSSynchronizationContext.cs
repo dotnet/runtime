@@ -112,6 +112,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 while (Queue.Reader.TryRead(out var item))
                 {
+                    // the Post is checking _isCancellationRequested after .Wait()
                     item.Signal?.Set();
                 }
             });
@@ -126,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override SynchronizationContext CreateCopy()
         {
-            return new JSSynchronizationContext(ProxyContext, Queue, _ScheduleJSPump);
+            return this;
         }
 
         // this must be called from the worker thread
