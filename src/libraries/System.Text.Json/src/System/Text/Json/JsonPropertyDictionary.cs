@@ -35,7 +35,7 @@ namespace System.Text.Json
                 _propertyDictionary = new(capacity, _stringComparer);
             }
 
-            _propertyList = new (capacity);
+            _propertyList = new(capacity);
         }
 
         // Enable direct access to the List for performance reasons.
