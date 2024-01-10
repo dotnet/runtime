@@ -542,19 +542,19 @@ namespace System.Reflection.Emit
             return typeList;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             lock (SyncRoot)

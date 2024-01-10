@@ -205,11 +205,11 @@ get_method_image (MonoMethod *method)
 // must be extern "C".
 #ifndef DISABLE_JIT
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), #func))
 #else
 /* No need for the name/C symbol */
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (no_wrapper), NULL))
 #endif
 
 MonoMethodSignature*
@@ -5409,7 +5409,7 @@ ptr_to_structure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureHelper (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
 {
 	MonoType *t;
 	MonoClass *klass;
@@ -5573,7 +5573,7 @@ mono_get_addr_compiled_method (gpointer arg, MonoDelegate *del)
 	if (m_type_is_byref (invoke_sig->params [0])) {
 		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
 	} else {
-		MonoObject *object = (MonoObject*)arg;
+		MonoObject *object = *(MonoObject**)arg;
 		arg_class = object->vtable->klass;
 	}
 
@@ -5598,10 +5598,10 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionTypeHandle type, MonoError *error)
 {
 	MONO_CHECK_ARG_NULL_NAMED (src, "ptr",);
-	MONO_CHECK_ARG_NULL_HANDLE_NAMED (type, "structureType",);
+	MONO_CHECK_ARG_NULL_HANDLE_NAMED (type, "structuretype",);
 
 	if (!m_class_is_runtime_type (MONO_HANDLE_GET_CLASS (type))) {
-		mono_error_set_argument (error, "structureType", "");
+		mono_error_set_argument (error, "structuretype", "");
 		return;
 	}
 
@@ -5610,7 +5610,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 		return;
 
 	if (m_class_is_auto_layout (klass)) {
-		mono_error_set_argument (error, "structureType", "The specified structure must be blittable or have layout information.");
+		mono_error_set_argument (error, "structuretype", "The specified structure must be blittable or have layout information.");
 		return;
 	}
 

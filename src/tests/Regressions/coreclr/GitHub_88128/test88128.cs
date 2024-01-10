@@ -3,10 +3,12 @@
 
 using System;
 using System.Reflection;
+using Xunit;
 
 public class test88113
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -24,7 +26,5 @@ public class test88113
                 Console.WriteLine($"2: {ex3}");
             }
         }
-
-        return 100;
     }
 }

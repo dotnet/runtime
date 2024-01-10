@@ -18,8 +18,9 @@ namespace System.Xml
     {
         private static volatile Type?[] s_tokenTypeMap = null!;
 
-        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
-        // length scale
+        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => // 8
+        [
+            // length scale
             3, // 0
             3, // 1
             3, // 2
@@ -28,7 +29,7 @@ namespace System.Xml
             5, // 5
             5, // 6
             5, // 7
-        };
+        ];
 
         private enum ScanState
         {

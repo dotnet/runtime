@@ -30,7 +30,7 @@ namespace System.Net.Http.Functional.Tests
             public const string ConnectionDuration = "http.client.connection.duration";
             public const string TimeInQueue = "http.client.request.time_in_queue";
         }
-        
+
         protected HttpMetricsTestBase(ITestOutputHelper output) : base(output)
         {
         }
@@ -47,9 +47,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void VerifySocketAddress(KeyValuePair<string, object?>[] tags)
+        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags)
         {
-            string ipString = (string)tags.Single(t => t.Key == "server.socket.address").Value;
+            string ipString = (string)tags.Single(t => t.Key == "network.peer.address").Value;
             IPAddress ip = IPAddress.Parse(ipString);
             Assert.True(ip.Equals(IPAddress.Loopback.MapToIPv6()) ||
                     ip.Equals(IPAddress.Loopback) ||
@@ -122,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
-            VerifySocketAddress(tags);
+            VerifyPeerAddress(tags);
         }
 
         protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
@@ -132,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
-            VerifySocketAddress(tags);
+            VerifyPeerAddress(tags);
         }
 
         protected static void VerifyTimeInQueue(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, string method = "GET")
@@ -347,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ctx.AddCustomTag("route", "/test");
                 });
-                
+
                 using HttpResponseMessage response = await SendAsync(client, request);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
@@ -455,6 +455,21 @@ namespace System.Net.Http.Functional.Tests
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                 using HttpResponseMessage response = await client.SendAsync(TestAsync, request, completionOption);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                if (responseContentType == ResponseContentType.ContentLength)
+                {
+                    Assert.NotNull(response.Content.Headers.ContentLength);
+                }
+                else if (responseContentType == ResponseContentType.TransferEncodingChunked)
+                {
+                    Assert.NotNull(response.Headers.TransferEncodingChunked);
+                }
+                else
+                {
+                    // Empty
+                    Assert.Empty(responseContent);
+                }
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200); ;
@@ -655,8 +670,8 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine($"Client exception: {clientException}");
 
                 string[] expectedExceptionTypes = TestAsync
-                    ? [nameof(TaskCanceledException)]
-                    : [nameof(TaskCanceledException), nameof(OperationCanceledException)];
+                    ? [typeof(TaskCanceledException).FullName]
+                    : [typeof(TaskCanceledException).FullName, typeof(OperationCanceledException).FullName];
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, acceptedErrorTypes: expectedExceptionTypes);
@@ -717,10 +732,17 @@ namespace System.Net.Http.Functional.Tests
             base.Dispose(disposing);
         }
 
-        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default) =>
-            TestHttpMessageInvoker ?
-            invoker.SendAsync(request, cancellationToken) :
-            ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
+        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default)
+        {
+            if (TestHttpMessageInvoker)
+            {
+                return TestAsync
+                    ? invoker.SendAsync(request, cancellationToken)
+                    : Task.Run(() => invoker.Send(request, cancellationToken));
+            }
+
+            return ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
+        }
 
         protected HttpMessageInvoker CreateHttpMessageInvoker(HttpMessageHandler? handler = null) =>
             TestHttpMessageInvoker ?
@@ -783,7 +805,7 @@ namespace System.Net.Http.Functional.Tests
                         using HttpResponseMessage response = await SendAsync(client, request);
                     });
                 }
-                
+
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200);
                 Assert.Equal("before!", m.Tags.ToArray().Single(t => t.Key == "before").Value);
@@ -837,7 +859,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(ex is HttpRequestException or TaskCanceledException);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, acceptedErrorTypes: [nameof(TaskCanceledException), "response_ended"]);
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"]);
             }, async server =>
             {
                 try
@@ -853,6 +875,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/93754", TestPlatforms.Browser)]
     public class HttpMetricsTest_Http11_Async : HttpMetricsTest_Http11
     {
         public HttpMetricsTest_Http11_Async(ITestOutputHelper output) : base(output)

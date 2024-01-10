@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
             else
             {
-                Assert.True(false, $"Unknown value AiaResponseKind.`{kind}`.");
+                Assert.Fail($"Unknown value AiaResponseKind.`{kind}`.");
                 return null;
             }
         }
@@ -345,7 +345,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
             else
             {
-                Assert.True(false, $"Unknown value AiaResponseKind.`{kind}`.");
+                Assert.Fail($"Unknown value AiaResponseKind.`{kind}`.");
                 return null;
             }
         }

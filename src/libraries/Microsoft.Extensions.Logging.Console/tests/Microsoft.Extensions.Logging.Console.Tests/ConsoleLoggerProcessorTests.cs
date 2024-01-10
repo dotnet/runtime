@@ -15,7 +15,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         private const string _loggerName = "test";
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void LogAfterDisposeWritesLog()
         {
             // Arrange
@@ -64,7 +63,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         public static void MaxQueueLength_SetInvalid_Throws(int invalidMaxQueueLength)

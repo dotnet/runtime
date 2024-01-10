@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -192,6 +195,30 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(expectedValue.Offset, result.Offset);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ReadDateTimeOffset_IsCultureInvariant()
+        {
+            // Regression test for https://github.com/dotnet/runtime/pull/92539
+            RemoteExecutor.Invoke(static () =>
+            {
+                DateTimeOffset expectedValue = DateTimeOffset.Parse("2020-04-09T14:31:21.3535941+01:00", CultureInfo.InvariantCulture);
+                byte[] data = "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030".HexToByteArray();
+
+                // Install a non-Gregorian calendar
+                var culture = new CultureInfo("he-IL");
+                culture.DateTimeFormat.Calendar = new HebrewCalendar();
+                Thread.CurrentThread.CurrentCulture = culture;
+
+                var reader = new CborReader(data);
+
+                DateTimeOffset result = reader.ReadDateTimeOffset();
+
+                Assert.Equal(CborReaderState.Finished, reader.PeekState());
+                Assert.Equal(expectedValue, result);
+                Assert.Equal(expectedValue.Offset, result.Offset);
+            }).Dispose();
+        }
+
         [Theory]
         [InlineData("c01a514b67b0")] // string datetime tag with unix time payload
         public static void ReadDateTimeOffset_InvalidTagPayload_ShouldThrowCborContentException(string hexEncoding)
@@ -206,6 +233,7 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData("c07330392f30342f323032302031393a35313a3530")] // 0("09/04/2020 19:51:50")
         [InlineData("c06e4c617374204368726973746d6173")] // 0("Last Christmas")
+        [InlineData("c07828d7aad7a922d7a42dd796272dd79822d7955431343a33313a32312e333533353934312b30313a3030")] // Non-Gregorian calendar date.
         public static void ReadDateTimeOffset_InvalidDateString_ShouldThrowCborContentException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();

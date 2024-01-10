@@ -144,9 +144,9 @@ public:
     bool InteropValidatePinnedObjects()             const { LIMITED_METHOD_CONTRACT;  return m_fInteropValidatePinnedObjects; }
     bool InteropLogArguments()                      const { LIMITED_METHOD_CONTRACT;  return m_fInteropLogArguments; }
 
-#ifdef _DEBUG
-    bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
+    bool GenDebuggableCode(void)                    const { LIMITED_METHOD_CONTRACT;  return fDebuggable; }
 
+#ifdef _DEBUG
     static bool RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input);
 
     inline bool ShouldPrestubHalt(MethodDesc* pMethodInfo) const
@@ -374,8 +374,6 @@ public:
 #endif
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
-    void    SetGCStressLevel(int val)             {LIMITED_METHOD_CONTRACT;  iGCStress = val;  }
-
     enum  GCStressFlags {
         GCSTRESS_NONE               = 0,
         GCSTRESS_ALLOC              = 1,    // GC on all allocs and 'easy' places
@@ -391,9 +389,7 @@ public:
     bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT; return fGCBreakOnOOM; }
 
     int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT; return iGCconcurrent; }
-    void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT; iGCconcurrent = val;  }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
-    DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
@@ -499,12 +495,12 @@ private: //----------------------------------------------------------------
     bool   m_fInteropValidatePinnedObjects; // After returning from a M->U interop call, validate GC heap around objects pinned by IL stubs.
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
 
+    bool fDebuggable;
+
 #ifdef _DEBUG
     static HRESULT ParseMethList(_In_z_ LPWSTR str, MethodNamesList* * out);
     static void DestroyMethList(MethodNamesList* list);
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
-
-    bool fDebuggable;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub
@@ -584,7 +580,6 @@ private: //----------------------------------------------------------------
 
     int  iGCconcurrent;
     int  iGCHoardVM;
-    DWORD iGCLOHThreshold;
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool iGCConservative;

@@ -83,8 +83,36 @@ namespace System.Collections.Tests
             Assert.Equal(comparer, dictionary.Comparer);
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Dictionary_CreateWithCapacity_CapacityAtLeastPassedValue(int capacity)
+        {
+            Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>(capacity);
+            Assert.True(capacity <= dict.Capacity);
+        }
+
         #endregion
 
+        #region Properties
+
+        public void DictResized_CapacityChanged()
+        {
+            var dict = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(1);
+            int initialCapacity = dict.Capacity;
+
+            int seed = 85877;
+            for (int i = 0; i < dict.Capacity; i++)
+            {
+                dict.Add(CreateTKey(seed++), CreateTValue(seed++));
+            }
+
+            int afterCapacity = dict.Capacity;
+
+            Assert.True(afterCapacity > initialCapacity);
+        }
+
+        #endregion
         #region ContainsValue
 
         [Theory]

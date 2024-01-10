@@ -660,7 +660,9 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	inst->backend.is_pinvoke = 0;
 	inst->dreg = vreg;
 
-	if (mono_class_has_failure (inst->klass))
+	// In AOT, we do not set the exception so that the compilation can succeed. To indicate
+	// the error, an exception is thrown in run-time.
+	if (!cfg->compile_aot && mono_class_has_failure (inst->klass))
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 	if (cfg->compute_gc_maps) {
@@ -1351,7 +1353,10 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			size = mini_type_stack_size (t, &ialign);
 			align = ialign;
 
-			if (mono_class_has_failure (mono_class_from_mono_type_internal (t)))
+			// In AOT, we do not set the exception but allow the compilation to succeed. The error will be
+			// indicated in runtime by throwing an exception when an operation with the invalid object is
+			// attempted.
+			if (!cfg->compile_aot && mono_class_has_failure (mono_class_from_mono_type_internal (t)))
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
@@ -2305,6 +2310,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->gshared)
 		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
+	if (cfg->init_method_rgctx_elim)
+		flags |= JIT_INFO_NO_MRGCTX;
 
 	if (cfg->arch_eh_jit_info) {
 		MonoJitArgumentInfo *arg_info;
@@ -3016,9 +3023,6 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_EXPLICIT_NULL_CHECKS
 	backend->explicit_null_checks = 1;
 #endif
-#ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
-	backend->optimized_div = 1;
-#endif
 #ifdef MONO_ARCH_HAVE_INIT_MRGCTX
 	backend->have_init_mrgctx = 1;
 #endif
@@ -3546,7 +3550,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
 
-		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
@@ -3792,6 +3795,18 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
 		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
+		if (cfg->init_method_rgctx_ins_load) {
+			cfg->init_method_rgctx_ins_load->opcode = OP_PCONST;
+			cfg->init_method_rgctx_ins_load->inst_p0 = GINT_TO_POINTER (0x1);
+			MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_load);
+		}
+
+		/*
+		 * Avoid creating rgctx trampolines when calling this method.
+		 * Static/vtype etc. methods still need an rgctx arg for EH.
+		 */
+		if (!mono_method_needs_mrgctx_arg_for_eh (cfg->method))
+			cfg->init_method_rgctx_elim = TRUE;
 	}
 
 	if (cfg->got_var) {

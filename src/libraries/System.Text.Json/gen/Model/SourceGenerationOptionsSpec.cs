@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -50,6 +51,10 @@ namespace System.Text.Json.SourceGeneration
         public required bool? UseStringEnumConverter { get; init; }
 
         public required bool? WriteIndented { get; init; }
+
+        public required char? IndentCharacter { get; init; }
+
+        public required int? IndentSize { get; init; }
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);

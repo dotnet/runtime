@@ -62,9 +62,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
-      <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
       <Link>Runtime.Base\src\RhBaseName.cs</Link>
     </Compile>

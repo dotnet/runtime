@@ -14,10 +14,10 @@ namespace System.Net.Http.Metrics
         private readonly object _schemeTag;
         private readonly object _hostTag;
         private readonly object? _portTag;
-        private readonly object? _socketAddressTag;
+        private readonly object? _peerAddressTag;
         private bool _currentlyIdle;
 
-        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int? port, string? socketAddress)
+        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int? port, string? peerAddress)
         {
             _metrics = metrics;
             _openConnectionsEnabled = _metrics.OpenConnections.Enabled;
@@ -25,7 +25,7 @@ namespace System.Net.Http.Metrics
             _schemeTag = scheme;
             _hostTag = host;
             _portTag = port;
-            _socketAddressTag = socketAddress;
+            _peerAddressTag = peerAddress;
         }
 
         // TagList is a huge struct, so we avoid storing it in a field to reduce the amount we allocate on the heap.
@@ -42,9 +42,9 @@ namespace System.Net.Http.Metrics
                 tags.Add("server.port", _portTag);
             }
 
-            if (_socketAddressTag is not null)
+            if (_peerAddressTag is not null)
             {
-                tags.Add("server.socket.address", _socketAddressTag);
+                tags.Add("network.peer.address", _peerAddressTag);
             }
 
             return tags;

@@ -35,6 +35,8 @@ schedules:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -64,13 +66,14 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libs
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
             timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
 
       #
       # CoreCLR NativeAOT release build (checked runtime) and libraries tests
@@ -88,13 +91,14 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
             timeoutInMinutes: 360
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SizeOpt and libraries tests
@@ -112,13 +116,14 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SizeOpt
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false
             timeoutInMinutes: 240
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SpeedOpt and libraries tests
@@ -136,13 +141,14 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SpeedOpt
-            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false
             timeoutInMinutes: 240
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
 
       #
       # CoreCLR NativeAOT checked build and Pri0 tests
@@ -165,11 +171,12 @@ extends:
             timeoutInMinutes: 240
             nameSuffix: NativeAOT_Pri0
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
-              liveLibrariesBuildConfig: Release
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
+                  liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_Pri0_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

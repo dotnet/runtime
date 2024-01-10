@@ -166,7 +166,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { new NetworkCredential("rightusername", "rightpassword") };
             yield return new object[] { new NetworkCredential("rightusername", "rightpassword", "rightdomain") };
             yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
-        } 
+        }
 
         [ConditionalTheory(nameof(IsNtlmAvailable))]
         [MemberData(nameof(TestCredentials))]

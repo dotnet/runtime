@@ -168,51 +168,6 @@ namespace SdtEventSources
         public void WriteString(string msg)
         { WriteEvent(1, msg); }
     }
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    public sealed class TooManyChannelsEventSource : EventSource
-    {
-        [Event(1, Channel = Channels.Analytic, Level = EventLevel.Informational)]
-        public void WriteInteger(int n)
-        {
-            WriteEvent(1, n);
-        }
-
-    #region Keywords / Tasks /Opcodes / Channels
-        /// <summary>
-        /// The Channels definition for the ETW manifest
-        /// </summary>
-        public static class Channels
-        {
-            [Channel(Enabled = true, ChannelType = ChannelType.Admin)]
-            public const EventChannel Admin = (EventChannel)16;
-
-            [Channel(Enabled = true, ChannelType = ChannelType.Operational)]
-            public const EventChannel Operational = (EventChannel)17;
-
-            [Channel(Enabled = false, ChannelType = ChannelType.Analytic)]
-            public const EventChannel Analytic = (EventChannel)18;
-
-            [Channel(Enabled = false, ChannelType = ChannelType.Debug)]
-            public const EventChannel Debug = (EventChannel)19;
-
-            [Channel(Enabled = true, ChannelType = ChannelType.Admin)]
-            public const EventChannel Admin2 = (EventChannel)20;
-
-            [Channel(Enabled = true, ChannelType = ChannelType.Operational)]
-            public const EventChannel Operational2 = (EventChannel)21;
-
-            [Channel(Enabled = false, ChannelType = ChannelType.Analytic)]
-            public const EventChannel Analytic2 = (EventChannel)22;
-
-            [Channel(Enabled = false, ChannelType = ChannelType.Debug)]
-            public const EventChannel Debug2 = (EventChannel)23;
-
-            [Channel(Enabled = false, ChannelType = ChannelType.Debug)]
-            public const EventChannel BrokeCamelsBack = (EventChannel)24;
-        }
-    #endregion
-    }
-#endif
 
     public sealed class EventWithAdminChannelNoMessageEventSource : EventSource
     {
@@ -221,19 +176,6 @@ namespace SdtEventSources
         {
             WriteEvent(1, n);
         }
-
-        #region Keywords / Tasks /Opcodes / Channels
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-        /// <summary>
-        /// The Channels definition for the ETW manifest
-        /// </summary>
-        public static class Channels
-        {
-            [Channel(Enabled = true, ChannelType = ChannelType.Admin)]
-            public const EventChannel Admin = (EventChannel)16;
-        }
-#endif
-        #endregion
     }
 
     public abstract class AbstractWithKwdTaskOpcodeEventSource : EventSource

@@ -17,7 +17,7 @@
     </GetChromeVersions>
 
     <GetChromeVersions
-                OSIdentifier="win"
+                OSIdentifier="Windows"
                 OSPrefix="Win_x64"
                 Channel="$(ChromeChannel)"
                 MaxMajorVersionsToCheck="1"

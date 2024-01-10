@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.DeveloperExperience;
-using Internal.Runtime.Augments;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
+
+using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -138,7 +136,7 @@ namespace System
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
-        [RuntimeExport("FailFast")]
+        [RuntimeExport("RuntimeFailFast")]
         internal static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
         {
             if (!SafeToPerformRichExceptionSupport)
@@ -245,7 +243,7 @@ namespace System
                 errorCode = exception != null ? exception.HResult : reason switch
                 {
                     RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
-                    RhFailFastReason.InternalError  => HResults.COR_E_EXECUTIONENGINE,
+                    RhFailFastReason.InternalError => HResults.COR_E_EXECUTIONENGINE,
                     // Error code for unhandled exceptions is expected to come from the exception object above
                     // RhFailFastReason.UnhandledException or
                     // RhFailFastReason.UnhandledExceptionFromPInvoke
@@ -297,9 +295,7 @@ namespace System
             get
             {
                 // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                if (RuntimeAugments.CallbacksIfAvailable == null)
-                    return false;
-                return true;
+                return ReflectionAugments.IsInitialized;
             }
         }
     }

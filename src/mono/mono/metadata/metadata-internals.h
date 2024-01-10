@@ -467,11 +467,6 @@ struct _MonoImage {
 	 */
 	void *user_info;
 
-#ifndef DISABLE_DLLMAP
-	/* dll map entries */
-	MonoDllMap *dll_map;
-#endif
-
 	/* interfaces IDs from this image */
 	/* protected by the classes lock */
 	MonoBitSet *interface_bitset;

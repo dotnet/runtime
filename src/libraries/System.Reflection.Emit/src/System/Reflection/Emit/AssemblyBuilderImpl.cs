@@ -40,20 +40,22 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal static AssemblyBuilderImpl DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        internal static AssemblyBuilderImpl DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
                 => new AssemblyBuilderImpl(name, coreAssembly, assemblyAttributes);
 
         private void WritePEImage(Stream peStream, BlobBuilder ilBuilder)
         {
-            // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
-                imageCharacteristics: Characteristics.Dll // Start off with a simple DLL
-                );
+                // For now only support DLL, DLL files are considered executable files
+                // for almost all purposes, although they cannot be directly run.
+                imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
 
             var peBuilder = new ManagedPEBuilder(
-                peHeaderBuilder,
-                new MetadataRootBuilder(_metadataBuilder),
-                ilBuilder);
+                header: peHeaderBuilder,
+                metadataRootBuilder: new MetadataRootBuilder(_metadataBuilder),
+                ilStream: ilBuilder,
+                strongNameSignatureSize: 0);
 
             // Write executable into the specified stream.
             var peBlob = new BlobBuilder();
@@ -86,12 +88,12 @@ namespace System.Reflection.Emit
                hashAlgorithm: (AssemblyHashAlgorithm)_assemblyName.HashAlgorithm
 #pragma warning restore SYSLIB0037
                );
-
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
-            // Add module's metadata
-            _module.AppendMetadata();
 
             var ilBuilder = new BlobBuilder();
+            MethodBodyStreamEncoder methodBodyEncoder = new MethodBodyStreamEncoder(ilBuilder);
+            _module.AppendMetadata(methodBodyEncoder);
+
             WritePEImage(stream, ilBuilder);
             _previouslySaved = true;
         }
@@ -114,7 +116,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder);
+            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder, this);
             return _module;
         }
 
@@ -133,5 +135,7 @@ namespace System.Reflection.Emit
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
+
+        public override string? FullName => _assemblyName.FullName;
     }
 }

@@ -66,7 +66,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 
 			if (message.Length > 0) {
-				Assert.True (false, message);
+				Assert.Fail(message);
 			}
 		}
 
@@ -318,7 +318,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			Assert.False (args.ContainsKey ("#1"));
 			_ = LinkerTestBase.GetStringFromExpression (arg, _semanticModel);
 			if (LogContains (attribute, diagnosticMessages, out var matchIndex, out var findText)) {
-				Assert.True (false, $"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
+				Assert.Fail($"LogDoesNotContain failure: Text\n\"{findText}\"\nfound in diagnostic:\n {diagnosticMessages[(int) matchIndex]}");
 			}
 		}
 

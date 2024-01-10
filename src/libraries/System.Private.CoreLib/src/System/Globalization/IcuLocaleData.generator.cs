@@ -27,8 +27,8 @@ namespace System.Globalization
         // NameIndexToNumericData is mapping from index in s_localeNamesIndices to locale data.
         // each row in the table will have the following data:
         //      Lcid, Ansi codepage, Oem codepage, MAC codepage, EBCDIC codepage, Geo Id, Digit Substitution | ListSeparator, specific locale index, Console locale index
-        private static ReadOnlySpan<int> NameIndexToNumericData => new int[CulturesCount * NUMERIC_LOCALE_DATA_COUNT_PER_ROW]
-        {
+        private static ReadOnlySpan<int> NameIndexToNumericData => // CulturesCount * NUMERIC_LOCALE_DATA_COUNT_PER_ROW
+        [
             // Lcid,  Ansi CP, Oem CP, MAC CP, EBCDIC CP, Geo Id, digit substitution | ListSeparator, Specific culture index, Console locale index  // index - locale name
             0x1000 , 0x0   , 0x1   , 0x2   , 0x1f4 , 0x49  , 1 | SemicolonSep      , 3   , 240 , // 0    - aa
             0x1000 , 0x0   , 0x1   , 0x2   , 0x1f4 , 0x3e  , 1 | SemicolonSep      , 1   , 240 , // 1    - aa-dj
@@ -894,10 +894,10 @@ namespace System.Globalization
             0x40404, 0x3b6 , 0x3b6 , 0x2712, 0x1f4 , 0xed  , 1 | CommaSep          , 859 , 859 , // 861  - zh-tw_radstr
             0x35   , 0x4e4 , 0x352 , 0x2710, 0x1f4 , 0xd1  , 1 | SemicolonSep      , 863 , 863 , // 862  - zu
             0x435  , 0x4e4 , 0x352 , 0x2710, 0x1f4 , 0xd1  , 1 | SemicolonSep      , 863 , 863 , // 863  - zu-za
-        };
+        ];
 
-        static (string, string)[] s_lcids = new (string, string)[]
-        {
+        static (string, string)[] s_lcids =
+        [
             ("0x1","ar"), ("0x2","bg"), ("0x3","ca"), ("0x4","zh-chs"), ("0x5","cs"),
             ("0x6","da"), ("0x7","de"), ("0x8","el"), ("0x9","en"), ("0xa","es"),
             ("0xb","fi"), ("0xc","fr"), ("0xd","he"), ("0xe","hu"), ("0xf","is"),
@@ -995,10 +995,10 @@ namespace System.Globalization
             ("0x40404","zh-tw_radstr"), ("0x40411","ja-jp_radstr"), ("0x40c04","zh-hk_radstr"), ("0x41404","zh-mo_radstr"),
             // Sort 0x5
             ("0x50804","zh-cn_phoneb"), ("0x51004","zh-sg_phoneb")
-        };
+        ];
 
-        static string[] s_cultures = new string[]
-        {
+        static readonly string[] s_cultures =
+        [
             "aa", "aa-dj", "aa-er", "aa-et",
             "af", "af-na", "af-za",
             "agq", "agq-cm",
@@ -1197,7 +1197,7 @@ namespace System.Globalization
             "zgh", "zgh-tfng", "zgh-tfng-ma",
             "zh", "zh-chs", "zh-cht", "zh-cn", "zh-cn_phoneb", "zh-cn_stroke", "zh-hans", "zh-hans-hk", "zh-hans-mo", "zh-hant", "zh-hk", "zh-hk_radstr", "zh-mo", "zh-mo_radstr", "zh-mo_stroke", "zh-sg", "zh-sg_phoneb", "zh-sg_stroke", "zh-tw", "zh-tw_pronun", "zh-tw_radstr",
             "zu", "zu-za",
-        };
+        ];
 
         static void GenerateData(string[] cultures, (string lcid, string culture)[] lcids)
         {
@@ -1248,8 +1248,8 @@ namespace System.Globalization
             Console.WriteLine($"private const int CulturesCount = {indexes.Count};");
             Console.WriteLine();
 
-            Console.WriteLine("private static ReadOnlySpan<byte> LocalesNamesIndexes => new byte[CulturesCount * 2]");
-            Console.WriteLine("{");
+            Console.WriteLine("private static ReadOnlySpan<byte> LocalesNamesIndexes =>");
+            Console.WriteLine("[");
 
             int max_length = 0;
             foreach (var entry in indexes)
@@ -1271,7 +1271,7 @@ namespace System.Globalization
                 max_length = Math.Max(max_length, entry.length);
             }
 
-            Console.WriteLine("};");
+            Console.WriteLine("];");
 
             Console.WriteLine();
             Console.WriteLine($"private const int LocaleLongestName = {max_length};");
@@ -1281,8 +1281,8 @@ namespace System.Globalization
             int lastSort = 0;
             List<(int sort, int index)> sortList = new List<(int sort, int index)>();
 
-            Console.WriteLine("private static ReadOnlySpan<byte> LcidToCultureNameIndices => new byte[LcidCount * 4]");
-            Console.WriteLine("{");
+            Console.WriteLine("private static ReadOnlySpan<byte> LcidToCultureNameIndices =>");
+            Console.WriteLine("[");
             int sortIndex = 0;
             foreach (var entry in lcids)
             {
@@ -1314,7 +1314,7 @@ namespace System.Globalization
                 Console.WriteLine($"    0x{((lcid >> 8) & 0xff):x2}, 0x{(lcid & 0xff):x2}, 0x{((positionLength >> 8) & 0xff):x2}, 0x{(positionLength & 0xff):x2},  // {cultureName}");
                 sortIndex++;
             }
-            Console.WriteLine("};");
+            Console.WriteLine("];");
 
             foreach (var item in sortList)
             {
@@ -1324,8 +1324,8 @@ namespace System.Globalization
             Console.WriteLine();
             Console.WriteLine("private const int NumericLocaleDataBytesPerRow = 18;");
             Console.WriteLine();
-            Console.WriteLine("private static ReadOnlySpan<byte> LcidToCultureNameIndices => new byte[CulturesCount * NumericLocaleDataBytesPerRow]");
-            Console.WriteLine("{");
+            Console.WriteLine("private static ReadOnlySpan<byte> LcidToCultureNameIndices =>");
+            Console.WriteLine("[");
 
             for (int i = 0; i < NameIndexToNumericData.Length; i += NUMERIC_LOCALE_DATA_COUNT_PER_ROW)
             {
@@ -1370,7 +1370,7 @@ namespace System.Globalization
                 Console.Write($" // {i / NUMERIC_LOCALE_DATA_COUNT_PER_ROW,-4} - {cultures[i / NUMERIC_LOCALE_DATA_COUNT_PER_ROW]}");
                 Console.WriteLine();
             }
-            Console.WriteLine("};");
+            Console.WriteLine("];");
         }
         */
     }

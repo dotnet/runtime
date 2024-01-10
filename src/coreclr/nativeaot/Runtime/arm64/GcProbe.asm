@@ -229,7 +229,7 @@ ThrowThreadAbort
     NESTED_ENTRY RhpGcStressProbe
         PUSH_PROBE_FRAME x2, x3, x12
 
-        bl          $REDHAWKGCINTERFACE__STRESSGC
+        bl          RhpStressGc
 
         POP_PROBE_FRAME
         EPILOG_RETURN

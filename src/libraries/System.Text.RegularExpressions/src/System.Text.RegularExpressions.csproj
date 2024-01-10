@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SYSTEM_TEXT_REGULAREXPRESSIONS</DefineConstants>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
@@ -25,6 +28,7 @@
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.EnumerateMatches.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexAssemblyCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseBehavior.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.cs" />
@@ -95,6 +99,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Common\System\Collections\Generic\ValueListBuilder.Pop.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -108,4 +113,5 @@
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
   </ItemGroup>
+
 </Project>

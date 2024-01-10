@@ -18,6 +18,7 @@ class D<T> : C<T> {virtual methods}
 */
 
 using System;
+using Xunit;
 
 
 
@@ -250,7 +251,8 @@ public class Test_Class2_ImplicitOverrideVirtual
 
 
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		TestNonGenInterface_NonGenType();

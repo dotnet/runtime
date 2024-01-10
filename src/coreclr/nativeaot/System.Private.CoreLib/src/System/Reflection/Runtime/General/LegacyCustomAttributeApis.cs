@@ -14,9 +14,9 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 
 using Internal.LowLevelLinq;
@@ -211,20 +211,20 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
-        public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this, inherit).ToArray();
+        public IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this.ToType(), inherit).ToArray();
 
-        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            IEnumerable<CustomAttributeData> cads = this.GetMatchingCustomAttributes(attributeType, inherit: inherit, skipTypeValidation: true);
+            IEnumerable<CustomAttributeData> cads = this.ToType().GetMatchingCustomAttributes(attributeType, inherit: inherit, skipTypeValidation: true);
             return cads.InstantiateAsArray(attributeType);
         }
 
-        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        public bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            IEnumerable<CustomAttributeData> cads = this.GetMatchingCustomAttributes(attributeType, inherit: inherit, skipTypeValidation: true);
+            IEnumerable<CustomAttributeData> cads = this.ToType().GetMatchingCustomAttributes(attributeType, inherit: inherit, skipTypeValidation: true);
             return cads.Any();
         }
     }

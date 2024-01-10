@@ -25,9 +25,10 @@ jobs:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           nameSuffix: wasm
           isOfficialBuild: false
-          extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
-          extraStepsParameters:
-            configForBuild: Release
+          postBuildSteps:
+            - template: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
+              parameters:
+                configForBuild: Release
 
   #run mono wasm microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -92,9 +93,10 @@ jobs:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           nameSuffix: wasm
           isOfficialBuild: false
-          extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
-          extraStepsParameters:
-            configForBuild: Release
+          postBuildSteps:
+            - template: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
+              parameters:
+                configForBuild: Release
 
   # run mono wasm interpreter (default) microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -116,7 +118,7 @@ jobs:
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        additionalSetupParameters: '--dotnet-versions 8.0.0'
+        #additionalSetupParameters: '--dotnet-versions 8.0.0'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -124,31 +126,33 @@ jobs:
         perfForkToUse: ${{ parameters.perfForkToUse }}
 
   #run mono wasm aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildconfig: release
-      runtimeflavor: wasm
-      platforms:
-      - linux_x64
-      jobparameters:
-        testgroup: perf
-        livelibrariesbuildconfig: Release
-        skipLiveLibrariesDownload: true
-        runtimetype: wasm
-        codegentype: 'aot'
-        projectfile: microbenchmarks.proj
-        runkind: micro
-        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptEngine: 'v8'
-        # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
-        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
-        compare: ${{ parameters.compare }}
-        onlySanityCheck: ${{ parameters.onlySanityCheck }}
-        downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
+  # Disabled for runtime-wasm-perf on PRs due to https://github.com/dotnet/runtime/issues/95101
+  - ${{if not(in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
+        buildconfig: release
+        runtimeflavor: wasm
+        platforms:
+        - linux_x64
+        jobparameters:
+          testgroup: perf
+          livelibrariesbuildconfig: Release
+          skipLiveLibrariesDownload: true
+          runtimetype: wasm
+          codegentype: 'aot'
+          projectfile: microbenchmarks.proj
+          runkind: micro
+          runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          javascriptEngine: 'v8'
+          # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
+          #additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
+          collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
+          compare: ${{ parameters.compare }}
+          onlySanityCheck: ${{ parameters.onlySanityCheck }}
+          downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+          perfForkToUse: ${{ parameters.perfForkToUse }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -167,7 +171,31 @@ jobs:
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
+        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+
+- ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
+  # run mono wasm blazor perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: wasm
+      platforms:
+      - linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        skipLiveLibrariesDownload: true
+        runtimeType: wasm
+        projectFile: blazor_perf.proj
+        runKind: blazor_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
+        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
+        logicalmachine: 'perftiger'
+        downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
+        hybridGlobalization: True

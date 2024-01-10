@@ -462,7 +462,7 @@ namespace System.Text.Json.Tests
                             Assert.Equal(3 + (4 * 2) + (payload.Length * 2), writer.BytesCommitted);
                             break;
                         default:
-                            Assert.True(false, "Unexpected test configuration");
+                            Assert.Fail("Unexpected test configuration");
                             break;
                     }
                 }

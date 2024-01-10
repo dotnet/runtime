@@ -109,8 +109,12 @@ GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 MethodTable* g_pCastHelpers;
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_IMPL(MethodTable,      g_pEHClass);
+GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
+GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
 GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
+
+GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 

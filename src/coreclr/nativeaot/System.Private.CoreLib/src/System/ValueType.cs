@@ -138,7 +138,7 @@ namespace System
                 int fieldOffset = __GetFieldHelper(i, out MethodTable* fieldType);
                 ref byte fieldData = ref Unsafe.Add(ref data, fieldOffset);
 
-                Debug.Assert(!fieldType->IsPointerType && !fieldType->IsFunctionPointerType);
+                Debug.Assert(!fieldType->IsPointer && !fieldType->IsFunctionPointer);
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {

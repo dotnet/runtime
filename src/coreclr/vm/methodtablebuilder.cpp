@@ -18,7 +18,6 @@
 #include "dllimport.h"
 #include "fieldmarshaler.h"
 #include "encee.h"
-#include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
 
@@ -2752,7 +2751,7 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
             }
-            if(IsStrLongerThan(strMethodName,MAX_CLASS_NAME))
+            if (strnlen(strMethodName, MAX_CLASS_NAME) >= MAX_CLASS_NAME)
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
@@ -2972,7 +2971,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 if(IsMiInternalCall(dwImplFlags))
                 {
-                    BuildMethodTableThrowException(BFA_INTERNAL_METHOD_WITH_RVA);
+                    bmtError->resIDWhy = BFA_INTERNAL_METHOD_WITH_RVA;
+                    bmtError->dMethodDefInError = tok;
+                    bmtError->szMethodNameForError = NULL;
+                    bmtError->cl = GetCl();
+                    BuildMethodTableThrowException(BFA_INTERNAL_METHOD_WITH_RVA, *bmtError);
                 }
             }
 
@@ -3906,11 +3909,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 IfFailThrow(COR_E_TYPELOAD);
             }
-
-            if (bmtFP->fHasFixedAddressValueTypes && GetAssembly()->IsCollectible())
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR);
-            }
         }
 
 
@@ -4059,8 +4057,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        if (IsStrLongerThan((char *)pszClassName, MAX_CLASS_NAME)
-                            || IsStrLongerThan((char *)pszNameSpace, MAX_CLASS_NAME)
+                        if (strnlen((char *)pszClassName, MAX_CLASS_NAME) >= MAX_CLASS_NAME
+                            || strnlen((char *)pszNameSpace, MAX_CLASS_NAME) >= MAX_CLASS_NAME
                             || (strlen(pszClassName) + strlen(pszNameSpace) + 1 >= MAX_CLASS_NAME))
                         {
                             BuildMethodTableThrowException(BFA_TYPEREG_NAME_TOO_LONG, mdMethodDefNil);

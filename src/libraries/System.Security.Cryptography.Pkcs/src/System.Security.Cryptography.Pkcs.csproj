@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-	<DefineConstants>$(DefineConstants);BUILDING_PKCS</DefineConstants>
-	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);BUILDING_PKCS</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
 
@@ -666,4 +669,5 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
+
 </Project>

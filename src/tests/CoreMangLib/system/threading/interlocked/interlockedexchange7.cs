@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 // Tests that Exchange<object>(object, object) works on variety 
 // of casted types:  It just casts a bunch of different types to 
@@ -12,7 +13,8 @@ public class InterlockedExchange7
     private const int c_MIN_STRING_LEN = 5;
     private const int c_MAX_STRING_LEN = 128;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedExchange7 test = new InterlockedExchange7();
 

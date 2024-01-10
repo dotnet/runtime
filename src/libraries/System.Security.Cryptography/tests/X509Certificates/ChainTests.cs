@@ -1302,7 +1302,7 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
             }
             else
             {
-                Assert.True(false, "Could not configure chain policy to handle unknown certificate authority");
+                Assert.Fail("Could not configure chain policy to handle unknown certificate authority");
             }
         }
     }

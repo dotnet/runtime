@@ -105,53 +105,27 @@ g_file_error_from_errno (gint err_no)
 	}
 }
 
-#ifdef G_OS_WIN32
-#define TMP_FILE_FORMAT "%.*s%s.tmp"
-#else
-#define TMP_FILE_FORMAT "%.*s.%s~"
-#endif
-
-gboolean
-g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **err)
+FILE *
+g_fopen (const char *path, const char *mode)
 {
-	const char *name;
-	char *path;
 	FILE *fp;
 
-	if (!(name = strrchr (filename, G_DIR_SEPARATOR)))
-		name = filename;
-	else
-		name++;
+	if (!path)
+		return NULL;
 
-	path = g_strdup_printf (TMP_FILE_FORMAT, (int)(name - filename), filename, name);
-	if (!(fp = fopen (path, "wb"))) {
-		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
-		g_free (path);
-		return FALSE;
-	}
+#ifndef HOST_WIN32
+	fp = fopen (path, mode);
+#else
+	gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+	gunichar2 *wMode = g_utf8_to_utf16 (mode, -1, 0, 0, 0);
 
-	if (length < 0)
-		length = strlen (contents);
+	if (!wPath || !wMode)
+		return NULL;
 
-	if (fwrite (contents, 1, length, fp) < GSSIZE_TO_SIZE(length)) {
-		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (ferror (fp)), "%s", g_strerror (ferror (fp)));
-		g_unlink (path);
-		g_free (path);
-		fclose (fp);
+	fp = _wfopen ((wchar_t *) wPath, (wchar_t *) wMode);
+	g_free (wPath);
+	g_free (wMode);
+#endif
 
-		return FALSE;
-	}
-
-	fclose (fp);
-
-	if (g_rename (path, filename) != 0) {
-		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
-		g_unlink (path);
-		g_free (path);
-		return FALSE;
-	}
-
-	g_free (path);
-
-	return TRUE;
+	return fp;
 }

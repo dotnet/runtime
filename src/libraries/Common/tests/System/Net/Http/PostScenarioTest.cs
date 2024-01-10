@@ -165,11 +165,9 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            if (remoteServer.HttpVersion == new Version(2, 0))
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
             {
-                // This is occasionally timing out in CI with SocketsHttpHandler and HTTP2, particularly on Linux
-                // Likely this is just a very slow test and not a product issue, so just increasing the timeout may be the right fix.
-                // Disable until we can investigate further.
                 return;
             }
 

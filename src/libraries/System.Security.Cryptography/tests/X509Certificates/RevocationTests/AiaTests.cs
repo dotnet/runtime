@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -176,6 +177,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     }
                 });
             }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void AiaIgnoresCertOverLimit()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppContext.SetData("System.Security.Cryptography.AiaDownloadLimit", 100);
+                CertificateAuthority.BuildPrivatePki(
+                    PkiOptions.AllRevocation,
+                    out RevocationResponder responder,
+                    out CertificateAuthority root,
+                    out CertificateAuthority intermediate,
+                    out X509Certificate2 endEntity,
+                    pkiOptionsInSubject: false,
+                    testName: Guid.NewGuid().ToString());
+                using (responder)
+                using (root)
+                using (intermediate)
+                using (endEntity)
+                using (X509Certificate2 rootCert = root.CloneIssuerCert())
+                {
+                    responder.AiaResponseKind = AiaResponseKind.Cert;
+                    using (ChainHolder holder = new ChainHolder())
+                    {
+                        X509Chain chain = holder.Chain;
+                        chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                        chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+                        Assert.False(chain.Build(endEntity));
+                    }
+                }
+            }).Dispose();
         }
     }
 }

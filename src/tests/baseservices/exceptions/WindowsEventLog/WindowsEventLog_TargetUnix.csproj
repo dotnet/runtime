@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Platform-specific test with explicit Main -->
+    <!-- Needed for CLRTestTargetUnsupported, UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <!-- There is a Windows and a non-Windows version of this test to allow it to be compiled for all targets -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">true</CLRTestTargetUnsupported>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>

@@ -1929,6 +1929,12 @@ dotnet_diagnostic.xUnit1025.severity = warning
 # xUnit1026: Theory methods should use all of their parameters
 dotnet_diagnostic.xUnit1026.severity = warning
 
+# xUnit1030: Test methods should not call ConfigureAwait(), as it may bypass parallelization limits.
+dotnet_diagnostic.xUnit1030.severity = none
+
+# xUnit1031: Test methods must not use blocking task operations, as they can cause deadlocks. Use an async test method and await instead.
+dotnet_diagnostic.xUnit1031.severity = none
+
 # xUnit2000: Constants and literals should be the expected argument
 dotnet_diagnostic.xUnit2000.severity = warning
 

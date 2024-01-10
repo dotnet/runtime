@@ -67,10 +67,28 @@ namespace System.Buffers.Text
 
                 if (maxSrcLength >= 16)
                 {
-                    byte* end = srcMax - 32;
+                    byte* end = srcMax - 64;
+                    if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
+                    {
+                        Avx512Encode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                            goto DoneExit;
+                    }
+
+                    end = srcMax - 64;
                     if (Avx2.IsSupported && (end >= src))
                     {
                         Avx2Encode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                            goto DoneExit;
+                    }
+
+                    end = srcMax - 48;
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
+                    {
+                        AdvSimdEncode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                             goto DoneExit;
@@ -224,6 +242,80 @@ namespace System.Buffers.Text
                 bytesWritten = 0;
                 return OperationStatus.DestinationTooSmall;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static unsafe void Avx512Encode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/encode
+            // If we have AVX512 support, pick off 48 bytes at a time for as long as we can.
+            // But because we read 64 bytes at a time, ensure we have enough room to do a
+            // full 64-byte read without segfaulting.
+
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+
+            // The JIT won't hoist these "constants", so help it
+            Vector512<sbyte> shuffleVecVbmi = Vector512.Create(
+                0x01020001, 0x04050304, 0x07080607, 0x0a0b090a,
+                0x0d0e0c0d, 0x10110f10, 0x13141213, 0x16171516,
+                0x191a1819, 0x1c1d1b1c, 0x1f201e1f, 0x22232122,
+                0x25262425, 0x28292728, 0x2b2c2a2b, 0x2e2f2d2e).AsSByte();
+            Vector512<sbyte> vbmiLookup = Vector512.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8).AsSByte();
+
+            Vector512<ushort> maskAC = Vector512.Create((uint)0x0fc0fc00).AsUInt16();
+            Vector512<uint> maskBB = Vector512.Create((uint)0x3f003f00);
+            Vector512<ushort> shiftAC = Vector512.Create((uint)0x0006000a).AsUInt16();
+            Vector512<ushort> shiftBB = Vector512.Create((uint)0x00080004).AsUInt16();
+
+            AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
+
+            // This algorithm requires AVX512VBMI support.
+            // Vbmi was first introduced in CannonLake and is avaialable from IceLake on.
+
+            // str = [...|PONM|LKJI|HGFE|DCBA]
+            Vector512<sbyte> str = Vector512.Load(src).AsSByte();
+
+            while (true)
+            {
+                // Step 1 : Split 48 bytes into 64 bytes with each byte using 6-bits from input
+                // str = [...|KLJK|HIGH|EFDE|BCAB]
+                str = Avx512Vbmi.PermuteVar64x8(str, shuffleVecVbmi);
+
+                // TO-DO- This can be achieved faster with multishift
+                // Consider the first 4 bytes - BCAB
+                // temp1    = [...|0000cccc|cc000000|aaaaaa00|00000000]
+                Vector512<ushort> temp1 = (str.AsUInt16() & maskAC);
+
+                // temp2    = [...|00000000|00cccccc|00000000|00aaaaaa]
+                Vector512<ushort> temp2 = Avx512BW.ShiftRightLogicalVariable(temp1, shiftAC).AsUInt16();
+
+                // temp3    = [...|ccdddddd|00000000|aabbbbbb|cccc0000]
+                Vector512<ushort> temp3 = Avx512BW.ShiftLeftLogicalVariable(str.AsUInt16(), shiftBB).AsUInt16();
+
+                // str      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
+                str = Vector512.ConditionalSelect(maskBB, temp3.AsUInt32(), temp2.AsUInt32()).AsSByte();
+
+                // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
+                str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
+
+                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
+                str.Store((sbyte*)dest);
+
+                src += 48;
+                dest += 64;
+
+                if (src > srcEnd)
+                    break;
+
+                AssertRead<Vector512<sbyte>>(src, srcStart, sourceLength);
+                str = Vector512.Load(src).AsSByte();
+            }
+
+            srcBytes = src;
+            destBytes = dest;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -394,6 +486,64 @@ namespace System.Buffers.Text
             }
 
             srcBytes = src + 4;
+            destBytes = dest;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        private static unsafe void AdvSimdEncode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // C# implementatino of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/enc_loop.c
+            Vector128<byte> str1;
+            Vector128<byte> str2;
+            Vector128<byte> str3;
+            Vector128<byte> res1;
+            Vector128<byte> res2;
+            Vector128<byte> res3;
+            Vector128<byte> res4;
+            Vector128<byte> tblEnc1 = Vector128.Create("ABCDEFGHIJKLMNOP"u8).AsByte();
+            Vector128<byte> tblEnc2 = Vector128.Create("QRSTUVWXYZabcdef"u8).AsByte();
+            Vector128<byte> tblEnc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
+            Vector128<byte> tblEnc4 = Vector128.Create("wxyz0123456789+/"u8).AsByte();
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+
+            // If we have Neon support, pick off 48 bytes at a time for as long as we can.
+            do
+            {
+                // Load 48 bytes and deinterleave:
+                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
+                (str1, str2, str3) = AdvSimd.Arm64.LoadVector128x3AndUnzip(src);
+
+                // Divide bits of three input bytes over four output bytes:
+                res1 = AdvSimd.ShiftRightLogical(str1, 2);
+                res2 = AdvSimd.ShiftRightLogical(str2, 4);
+                res3 = AdvSimd.ShiftRightLogical(str3, 6);
+                res2 = AdvSimd.ShiftLeftAndInsert(res2, str1, 4);
+                res3 = AdvSimd.ShiftLeftAndInsert(res3, str2, 2);
+
+                // Clear top two bits:
+                res2 &= AdvSimd.DuplicateToVector128((byte)0x3F);
+                res3 &= AdvSimd.DuplicateToVector128((byte)0x3F);
+                res4 = str3 & AdvSimd.DuplicateToVector128((byte)0x3F);
+
+                // The bits have now been shifted to the right locations;
+                // translate their values 0..63 to the Base64 alphabet.
+                // Use a 64-byte table lookup:
+                res1 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res1);
+                res2 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res2);
+                res3 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res3);
+                res4 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res4);
+
+                // Interleave and store result:
+                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
+
+                src += 48;
+                dest += 64;
+            } while (src <= srcEnd);
+
+            srcBytes = src;
             destBytes = dest;
         }
 

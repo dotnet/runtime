@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "opcode.h"
+#include "jitstd/algorithm.h"
 
 /*****************************************************************************/
 
@@ -578,7 +579,7 @@ DECODE_OPCODE:
                     break;
 
                 case ShortInlineR:
-                    dOp = getR4LittleEndian(opcodePtr);
+                    dOp = FloatingPointUtils::convertToDouble(getR4LittleEndian(opcodePtr));
                     goto FLT_OP;
                 case InlineR:
                     dOp = getR8LittleEndian(opcodePtr);
@@ -729,7 +730,7 @@ const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Contains: check if the range includes a particular hash
@@ -923,7 +924,7 @@ void ConfigMethodRange::Dump()
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
@@ -979,9 +980,9 @@ void Histogram::dump(FILE* output)
             fprintf(output, "%7u", m_sizeTable[i]);
         }
 
-        c += m_counts[i];
+        c += static_cast<unsigned>(m_counts[i]);
 
-        fprintf(output, " ===> %7u count (%3u%% of total)\n", m_counts[i], (int)(100.0 * c / t));
+        fprintf(output, " ===> %7u count (%3u%% of total)\n", static_cast<unsigned>(m_counts[i]), (int)(100.0 * c / t));
     }
 }
 
@@ -996,7 +997,93 @@ void Histogram::record(unsigned size)
         }
     }
 
-    m_counts[i]++;
+    InterlockedAdd(&m_counts[i], 1);
+}
+
+void NodeCounts::dump(FILE* output)
+{
+    struct Entry
+    {
+        genTreeOps oper;
+        unsigned   count;
+    };
+
+    Entry sorted[GT_COUNT];
+    for (int i = 0; i < GT_COUNT; i++)
+    {
+        sorted[i].oper  = static_cast<genTreeOps>(i);
+        sorted[i].count = static_cast<unsigned>(m_counts[i]);
+    }
+
+    jitstd::sort(sorted, sorted + ArrLen(sorted), [](const Entry& lhs, const Entry& rhs) {
+        if (lhs.count > rhs.count)
+        {
+            return true;
+        }
+
+        if (lhs.count < rhs.count)
+        {
+            return false;
+        }
+
+        return static_cast<unsigned>(lhs.oper) < static_cast<unsigned>(rhs.oper);
+    });
+
+    for (const Entry& entry : sorted)
+    {
+        if (entry.count == 0)
+        {
+            break;
+        }
+
+        fprintf(output, "%-20s : %7u\n", GenTree::OpName(entry.oper), entry.count);
+    }
+}
+
+void NodeCounts::record(genTreeOps oper)
+{
+    assert(oper < GT_COUNT);
+    InterlockedAdd(&m_counts[oper], 1);
+}
+
+struct DumpOnShutdownEntry
+{
+    const char* Name;
+    Dumpable*   Dumpable;
+};
+
+static DumpOnShutdownEntry s_dumpOnShutdown[16];
+
+DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
+{
+    for (DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if ((entry.Name == nullptr) && (entry.Dumpable == nullptr))
+        {
+            entry.Name     = name;
+            entry.Dumpable = dumpable;
+            return;
+        }
+    }
+
+    assert(!"No space left in table");
+}
+
+void DumpOnShutdown::DumpAll()
+{
+    for (const DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if (entry.Name != nullptr)
+        {
+            jitprintf("%s\n", entry.Name);
+        }
+
+        if (entry.Dumpable != nullptr)
+        {
+            entry.Dumpable->dump(jitstdout());
+            jitprintf("\n");
+        }
+    }
 }
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
@@ -1232,28 +1319,19 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 #ifdef DEBUG
 
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size)
+void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
-    if (!size)
+    if (size == 0)
     {
         return;
     }
 
-    assert(addr);
+    assert(addr != nullptr);
 
-    fprintf(dmpf, "Hex dump of %s:\n", name);
-
-    for (unsigned i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
-        if ((i % 16) == 0)
-        {
-            fprintf(dmpf, "\n    %04X: ", i);
-        }
-
-        fprintf(dmpf, "%02X ", *addr++);
+        fprintf(dmpf, "%02X", *addr++);
     }
-
-    fprintf(dmpf, "\n\n");
 }
 
 #endif // DEBUG

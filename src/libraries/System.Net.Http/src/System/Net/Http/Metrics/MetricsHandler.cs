@@ -29,7 +29,7 @@ namespace System.Net.Http.Metrics
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
                 unit: "s",
-                description: "The duration of outbound HTTP requests.");
+                description: "Duration of HTTP client requests.");
         }
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
@@ -169,7 +169,7 @@ namespace System.Net.Http.Metrics
                 HttpRequestError.ConfigurationLimitExceeded => "configuration_limit_exceeded",
 
                 // Fall back to the exception type name in case of HttpRequestError.Unknown or when exception is not an HttpRequestException.
-                _ => exception.GetType().Name
+                _ => exception.GetType().FullName!
             };
             return true;
         }

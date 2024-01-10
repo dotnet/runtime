@@ -422,6 +422,15 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsDefType
+        {
+            get
+            {
+                EETypeKind kind = Kind;
+                return kind == EETypeKind.CanonicalEEType || kind == EETypeKind.GenericTypeDefEEType;
+            }
+        }
+
         internal bool IsCanonical
         {
             get
@@ -593,7 +602,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsPointerType
+        internal bool IsPointer
         {
             get
             {
@@ -601,7 +610,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsByRefType
+        internal bool IsByRef
         {
             get
             {
@@ -641,7 +650,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsFunctionPointerType
+        internal bool IsFunctionPointer
         {
             get
             {
@@ -673,13 +682,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return _uBaseSize & ~FunctionPointerFlags.FlagsMask;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 _uBaseSize = value | (_uBaseSize & FunctionPointerFlags.FlagsMask);
             }
 #endif
@@ -689,13 +698,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return (_uBaseSize & FunctionPointerFlags.IsUnmanaged) != 0;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 if (value)
                     _uBaseSize |= FunctionPointerFlags.IsUnmanaged;
                 else
@@ -719,13 +728,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return _relatedType._pRelatedParameterType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsDynamicType && IsFunctionPointerType);
+                Debug.Assert(IsDynamicType && IsFunctionPointer);
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
@@ -834,7 +843,7 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsValueType);
-                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
+                // BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(MethodTable*) + ValueTypeFieldPadding);
@@ -924,7 +933,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
-                Debug.Assert(!IsFunctionPointerType);
+                Debug.Assert(!IsFunctionPointer);
                 Debug.Assert(IsCanonical);
                 _relatedType._pBaseType = value;
             }
@@ -1332,10 +1341,10 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_FunctionPointerParameters)
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return cbOffset;
             }
-            if (IsFunctionPointerType)
+            if (IsFunctionPointer)
             {
                 cbOffset += NumFunctionPointerParameters * relativeOrFullPointerOffset;
             }
@@ -1411,7 +1420,7 @@ namespace Internal.Runtime
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 cFunctionPointerTypeParameters * sizeof(IntPtr) +
-                (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
+                (fHasGenericInfo ? sizeof(IntPtr) * 2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell

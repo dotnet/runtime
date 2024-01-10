@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+
+    <!-- Both needed to work around https://github.com/dotnet/runtime/issues/80602 -->
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

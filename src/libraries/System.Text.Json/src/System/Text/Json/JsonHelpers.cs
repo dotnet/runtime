@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace System.Text.Json
 {
@@ -173,6 +174,20 @@ namespace System.Text.Json
 
             return true;
         }
+#endif
+
+        /// <summary>
+        /// Gets a Regex instance for recognizing integer representations of enums.
+        /// </summary>
+        public static readonly Regex IntegerRegex = CreateIntegerRegex();
+        private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private const int IntegerRegexTimeoutMs = 200;
+
+#if NETCOREAPP
+        [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
+        private static partial Regex CreateIntegerRegex();
+#else
+        private static Regex CreateIntegerRegex() => new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
 #endif
     }
 }

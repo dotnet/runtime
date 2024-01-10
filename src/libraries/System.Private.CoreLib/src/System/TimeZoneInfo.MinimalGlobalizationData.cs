@@ -37,7 +37,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate,  out string? ianaId)
+        private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate, out string? ianaId)
         {
             ianaId = null;
             return false;

@@ -1,0 +1,63 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Internal toolchain package not meant for direct consumption. Please do not reference directly.</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <Error Condition="'$(SdkBandVersionForWorkload_FromRuntimeVersions)' == ''"
+           Text="%24(SdkBandVersionForWorkload_FromRuntimeVersions) is not set" />
+
+    <!-- Override the id to include the sdk band as per the workload installer spec -->
+    <PropertyGroup>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.net8.Manifest-$(SdkBandVersionForWorkload_FromRuntimeVersions)</Id>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
+      <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
+      <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <File Include="localize/**/*">
+        <TargetPath>data/localize</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <!-- Running this target ensures we have the fully evaluated PackageVersion -->
+  <Target Name="_WriteManifestValues" AfterTargets="CalculatePackageVersion">
+    <PropertyGroup>
+      <PackagePathVersion>PackageVersion=$(PackageVersion);</PackagePathVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" Condition="'$(PackageVersionNet8)' != ''" />
+      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersion)" Condition="'$(PackageVersionNet8)' == ''" />
+      <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
+      <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
+    </ItemGroup>
+
+    <Error Condition="'%(_WorkloadManifestValues.Value)' == ''"
+           Text="No version specified for template variable '%(_WorkloadManifestValues.Identity)'" />
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.json.in"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
+      OutputPath="$(WorkloadManifestPath)" />
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.targets.in"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
+      OutputPath="$(WorkloadManifestTargetsPath)" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

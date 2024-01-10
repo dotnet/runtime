@@ -10,6 +10,7 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// Meter is the class responsible for creating and tracking the Instruments.
     /// </summary>
+    [DebuggerDisplay("Name = {Name}, Instruments = {_instruments.Count}")]
     public class Meter : IDisposable
     {
         private static readonly List<Meter> s_allMeters = new List<Meter>();
@@ -43,14 +44,14 @@ namespace System.Diagnostics.Metrics
         /// Initializes a new instance of the Meter using the meter name.
         /// </summary>
         /// <param name="name">The Meter name.</param>
-        public Meter(string name) : this (name, null, null, null) {}
+        public Meter(string name) : this(name, null, null, null) { }
 
         /// <summary>
         /// Initializes a new instance of the Meter using the meter name and version.
         /// </summary>
         /// <param name="name">The Meter name.</param>
         /// <param name="version">The optional Meter version.</param>
-        public Meter(string name, string? version) : this (name, version, null, null) {}
+        public Meter(string name, string? version) : this(name, version, null, null) { }
 
         /// <summary>
         /// Initializes a new instance of the Meter using the meter name and version.

@@ -11,7 +11,6 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
-  dependsOnGlobalBuild: false
   dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
@@ -290,32 +289,7 @@ jobs:
           parameters.liveLibrariesBuildConfig) }}
     steps:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - powershell: |
-            schtasks /change /tn "\Microsoft\VisualStudio\VSIX Auto Update" /disable
-
-            $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-            if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
-            {
-                Write-Error "Couldn't locate vswhere at $vswhere"
-                exit 1
-            }
-
-            $vsdir = &"$vswhere" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-            $vsregedit = "$vsdir\Common7\IDE\VsRegEdit.exe"
-
-            if (-not (Test-Path -Path "$vsregedit" ))
-            {
-                Write-Error "VSWhere returned path: $vsdir, but regedit $vsregedit doesn't exist."
-                exit 1
-            }
-
-            Write-Output "VSWhere returned path: $vsdir, using regedit $vsregedit"
-            Write-Output "Disabling updates through VS Registry:"
-
-            &"$vsdir\Common7\IDE\VsRegEdit.exe" set local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword 0
-            &"$vsdir\Common7\IDE\VsRegEdit.exe" read local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword
-          displayName: Disable VSIX updates
-          condition: always()
+        - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
       - checkout: self
         clean: true
         fetchDepth: $(checkoutFetchDepth)
@@ -364,38 +338,14 @@ jobs:
             df -h
           displayName: Disk Usage before Build
 
-    # Build the default subset non-MacOS platforms
-      - ${{ if ne(parameters.osGroup, 'osx') }}:
-        - script: $(BaseJobBuildCommand)
-          displayName: Build
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
-
-      # Build corehost, sign and add entitlements to MacOS binaries
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - script: $(BaseJobBuildCommand) -subset host.native
-          displayName: Build CoreHost
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
-
-        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-            parameters:
-              filesToSign:
-              - name: dotnet
-                path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-              - name: apphost
-                path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-
-        - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.pretest+host.tests+packs
-          displayName: Build and Package
-          continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
+      - script: $(BaseJobBuildCommand)
+        displayName: Build
+        continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
-
 
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |

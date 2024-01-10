@@ -1216,7 +1216,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #ifdef FEATURE_EH_FUNCLETS
     if (g_isNewExceptionHandlingEnabled)
     {
-        m_pNextExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+        m_pNextExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1623,12 +1623,23 @@ StackWalkAction StackFrameIterator::Filter(void)
         fSkippingFunclet = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
-        ExceptionTracker* pTracker = m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        ExInfo* pExInfo = m_crawl.pThread->GetExceptionState()->GetCurrentExInfo();
+        ExceptionTracker* pTracker = NULL;
+        ExInfo* pExInfo = NULL;
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            pExInfo = (PTR_ExInfo)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        }
+        else
+        {
+            pTracker = (PTR_ExceptionTracker)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        }
+
         fRecheckCurrentFrame = false;
         fSkipFuncletCallback = true;
 
-        if ((m_flags & GC_FUNCLET_REFERENCE_REPORTING) && (pExInfo != NULL) && (m_crawl.GetRegisterSet()->SP > (SIZE_T)pExInfo))
+        SIZE_T frameSP = (m_frameState == SFITER_FRAME_FUNCTION) ? (SIZE_T)dac_cast<TADDR>(m_crawl.pFrame) : m_crawl.GetRegisterSet()->SP;
+
+        if ((m_flags & GC_FUNCLET_REFERENCE_REPORTING) && (pExInfo != NULL) && (frameSP > (SIZE_T)pExInfo))
         {
             if (!m_movedPastFirstExInfo)
             {
@@ -1778,7 +1789,7 @@ ProcessFuncletsForGCReporting:
                                 // since the current tracker was created due to an exception in the funclet belonging to
                                 // the previous tracker.
                                 hasFuncletStarted = true;
-                                pCurrTracker = pCurrTracker->GetPreviousExceptionTracker();
+                                pCurrTracker = (PTR_ExceptionTracker)pCurrTracker->GetPreviousExceptionTracker();
                             }
 
                             if (pCurrTracker != NULL)
@@ -2231,7 +2242,7 @@ ProcessFuncletsForGCReporting:
                             {
                                 STRESS_LOG3(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: Force callback for skipped function m_crawl.pFunc = %pM (%s.%s)\n", m_crawl.pFunc, m_crawl.pFunc->m_pszDebugClassName, m_crawl.pFunc->m_pszDebugMethodName);
-                                _ASSERTE((m_crawl.pFunc->GetMethodTable() == g_pEHClass) || (strcmp(m_crawl.pFunc->m_pszDebugClassName, "ILStubClass") == 0) || (strcmp(m_crawl.pFunc->m_pszDebugMethodName, "CallFinallyFunclet") == 0));
+                                _ASSERTE((m_crawl.pFunc->GetMethodTable() == g_pEHClass) || (strcmp(m_crawl.pFunc->m_pszDebugClassName, "ILStubClass") == 0) || (strcmp(m_crawl.pFunc->m_pszDebugMethodName, "CallFinallyFunclet") == 0) || (m_crawl.pFunc->GetMethodTable() == g_pExceptionServicesInternalCallsClass));
                             }
 #endif                                                                
                         }
@@ -2398,7 +2409,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         // make sure we're not skipping a different transition
         if (m_crawl.pFrame->NeedsUpdateRegDisplay())
         {
-            CONSISTENCY_CHECK(m_crawl.pFrame->IsTransitionToNativeFrame());
             if (m_crawl.pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
             {
                 // ControlPC may be different as the InlinedCallFrame stays active throughout
@@ -3356,7 +3366,7 @@ void StackFrameIterator::ResetNextExInfoForSP(TADDR SP)
 {
     while (m_pNextExInfo && (SP > (TADDR)(m_pNextExInfo)))
     {
-        m_pNextExInfo = m_pNextExInfo->m_pPrevExInfo;
+        m_pNextExInfo = (PTR_ExInfo)m_pNextExInfo->m_pPrevNestedInfo;
     }
 }
 #endif // FEATURE_EH_FUNCLETS

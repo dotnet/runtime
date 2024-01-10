@@ -15,7 +15,7 @@ namespace System.Net.Http
         // WINHTTP_AUTH_SCHEME_DIGEST = 0x00000008;
         // WINHTTP_AUTH_SCHEME_NEGOTIATE = 0x00000010;
         private static readonly string?[] s_authSchemeStringMapping =
-        {
+        [
             null,
             "Basic",
             "NTLM",
@@ -33,15 +33,15 @@ namespace System.Net.Http
             null,
             null,
             "Negotiate"
-        };
+        ];
 
-        private static ReadOnlySpan<uint> AuthSchemePriorityOrder => new uint[]
-        {
+        private static ReadOnlySpan<uint> AuthSchemePriorityOrder =>
+        [
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_NEGOTIATE,
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_NTLM,
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_DIGEST,
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_BASIC
-        };
+        ];
 
         private readonly CredentialCache _credentialCache = new CredentialCache();
         private readonly object _credentialCacheLock = new object();

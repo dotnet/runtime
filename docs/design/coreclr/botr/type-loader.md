@@ -54,7 +54,7 @@ Runtime][generics-design]
 
 [generics-design]: http://research.microsoft.com/apps/pubs/default.aspx?id=64031
 
-[3] [ECMA Standard for the Common Language Infrastructure (CLI)](http://www.ecma-international.org/publications/standards/Ecma-335.htm)
+[3] [ECMA Standard for the Common Language Infrastructure (CLI)](https://www.ecma-international.org/publications-and-standards/standards/ecma-335)
 
 ## 1.2 Design Goals
 

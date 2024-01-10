@@ -18,6 +18,8 @@ namespace System.Security.Cryptography.Tests
             public static int HashSizeInBytes => HMACSHA3_256.HashSizeInBytes;
         }
 
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA3_256;
+
         protected override int BlockSize => 136;
         protected override int MacSize => HMACSHA3_256.HashSizeInBytes;
 

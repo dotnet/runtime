@@ -199,9 +199,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
 
-    if (!m_pModule->IsReadyToRun())
-        CacheManifestExportedTypes(pamTracker);
-
     // We'll load the friend assembly information lazily.  For the ngen case we should avoid
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
@@ -396,14 +393,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
     if (pAssemblyNameParts->_pName == NULL || pAssemblyNameParts->_pName[0] == '\0')
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
-
-    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0])
-        || u16_strchr(pAssemblyNameParts->_pName, '\\') != NULL
-        || u16_strchr(pAssemblyNameParts->_pName, ':') != NULL
-        || u16_strchr(pAssemblyNameParts->_pName, '/') != NULL)
-    {
-        COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
-    }
 
     // Set up the assembly manifest metadata
     // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
@@ -960,24 +949,6 @@ Module * Assembly::FindModuleByTypeRef(
 
 #ifndef DACCESS_COMPILE
 
-void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    mdToken mdExportedType;
-
-    HENUMInternalHolder phEnum(GetMDImport());
-    phEnum.EnumInit(mdtExportedType,
-                    mdTokenNil);
-
-    ClassLoader::AvailableClasses_LockHolder lh(m_pClassLoader);
-
-    for(int i = 0; GetMDImport()->EnumNext(&phEnum, &mdExportedType); i++)
-        m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
-                                                mdExportedType,
-                                                pamTracker);
-}
-
 void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
@@ -1132,7 +1103,7 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
     size_t cchDiagnosticStartupHookPathsLocal = 0;
     if (nullptr != wszDiagnosticStartupHookPathsLocal)
     {
-        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal); 
+        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal);
         // Add 1 for the path separator
         cchDiagnosticStartupHookPathsNew += cchDiagnosticStartupHookPathsLocal + 1;
     }

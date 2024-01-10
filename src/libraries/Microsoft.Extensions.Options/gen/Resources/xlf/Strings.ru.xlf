@@ -4,162 +4,172 @@
     <body>
       <trans-unit id="AlreadyImplementsValidateMethodMessage">
         <source>Type {0} already implements the Validate method.</source>
-        <target state="new">Type {0} already implements the Validate method.</target>
+        <target state="translated">Тип {0} уже реализует метод Validate.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateMethodTitle">
         <source>A type already includes an implementation of the 'Validate' method.</source>
-        <target state="new">A type already includes an implementation of the 'Validate' method.</target>
+        <target state="translated">Тип уже содержит реализацию метода Validate.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassMessage">
         <source>[OptionsValidator] cannot be applied to static class {0}.</source>
-        <target state="new">[OptionsValidator] cannot be applied to static class {0}.</target>
+        <target state="translated">[OptionsValidator] невозможно применить к статическому классу {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantBeStaticClassTitle">
         <source>'OptionsValidatorAttribute' can't be applied to a static class.</source>
-        <target state="new">'OptionsValidatorAttribute' can't be applied to a static class.</target>
+        <target state="translated">Параметр OptionsValidatorAttribute не может быть применен к статическому классу.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantUseWithGenericTypesMessage">
         <source>Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</source>
-        <target state="new">Can't use [ValidateObjectMembers] or [ValidateEnumeratedItems] on fields or properties with open generic type {0}.</target>
+        <target state="translated">Нельзя использовать [ValidateObjectMembers] или [ValidateEnumeratedItems] для полей или свойств с открытыми универсальными типами {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantUseWithGenericTypesTitle">
         <source>Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</source>
-        <target state="new">Can't use 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' on fields or properties with open generic types.</target>
+        <target state="translated">Нельзя использовать "ValidateObjectMembersAttribute" или "ValidateEnumeratedItemsAttribute" для полей или свойств с открытыми универсальными типами.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">Не удалось применить атрибуты проверки к константе или статическому элементу {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">Не удалось проверить константы, статические поля или свойства.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
-        <target state="new">There is a circular type reference involving type {0} preventing it from being used for static validation.</target>
+        <target state="translated">Существует циклическая ссылка на тип, включающая тип {0}, предотвращающий его использование для статической проверки.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesTitle">
         <source>Unsupported circular references in model types.</source>
-        <target state="new">Unsupported circular references in model types.</target>
+        <target state="translated">Неподдерживаемые циклические ссылки в типах моделей.</target>
         <note />
       </trans-unit>
       <trans-unit id="DoesntImplementIValidateOptionsMessage">
         <source>Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</source>
-        <target state="new">Type {0} does not implement the required IValidateOptions&lt;{1}&gt; interface.</target>
+        <target state="translated">Тип {0} не реализует требуемый интерфейс IValidateOptions&lt;{1}&gt;.</target>
         <note />
       </trans-unit>
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
-        <target state="new">A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</target>
+        <target state="translated">Тип с аннотацией OptionsValidatorAttribute не реализует необходимый интерфейс.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
-        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <target state="translated">Атрибут проверки "{0}" элемента "{1}" недоступен из типа средства проверки "{2}".</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeTitle">
         <source>Validation attribute on the member is inaccessible from the validator type..</source>
-        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <target state="translated">Атрибут проверки элемента недоступен из типа средства проверки.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">
         <source>Can't apply validation attributes to private field or property {0}.</source>
-        <target state="new">Can't apply validation attributes to private field or property {0}.</target>
+        <target state="translated">Не удается применить атрибуты проверки к закрытому полю или свойству {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleTitle">
         <source>Can't validate private fields or properties.</source>
-        <target state="new">Can't validate private fields or properties.</target>
+        <target state="translated">Не удается проверить частные поля или свойства.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberMessage">
         <source>Type {0} has no fields or properties to validate, referenced from member {1}.</source>
-        <target state="new">Type {0} has no fields or properties to validate, referenced from member {1}.</target>
+        <target state="translated">Тип {0} не содержит полей или свойств для проверки, на которые ссылается из элемента {1}.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMemberTitle">
         <source>A member type has no fields or properties to validate.</source>
-        <target state="new">A member type has no fields or properties to validate.</target>
+        <target state="translated">Тип элемента не имеет полей или свойств для проверки.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMembersFromValidatorMessage">
         <source>Type {0} has no fields or properties to validate, referenced by type {1}.</source>
-        <target state="new">Type {0} has no fields or properties to validate, referenced by type {1}.</target>
+        <target state="translated">Тип {0} не содержит полей или свойств для проверки, на которые ссылается тип {1}.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoEligibleMembersFromValidatorTitle">
         <source>A type has no fields or properties to validate.</source>
-        <target state="new">A type has no fields or properties to validate.</target>
+        <target state="translated">Тип не имеет полей или свойств для проверки.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotEnumerableTypeMessage">
         <source>[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</source>
-        <target state="new">[ValidateEnumeratedItems] cannot be used on members of type {0} as it doesn't implement IEnumerable&lt;T&gt;.</target>
+        <target state="translated">[ValidateEnumeratedItems] не может использоваться для элементов типа {0}, так как он не реализует IEnumerable&lt;T&gt;.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotEnumerableTypeTitle">
         <source>Member type is not enumerable.</source>
-        <target state="new">Member type is not enumerable.</target>
+        <target state="translated">Тип элемента не является перечисляемым.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullValidatorTypeMessage">
         <source>Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</source>
-        <target state="new">Null validator type specified in [ValidateObjectMembers] or [ValidateEnumeratedItems] attributes.</target>
+        <target state="translated">Тип проверяющего элемента управления, указанный в [ValidateObjectMembers] или [ValidateEnumeratedItems] атрибутах, имеет значение NULL.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullValidatorTypeTitle">
         <source>Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</source>
-        <target state="new">Null validator type specified for the 'ValidateObjectMembersAttribute' or 'ValidateEnumeratedItemsAttribute' attributes.</target>
+        <target state="translated">Для атрибутов ValidateObjectMembersAttribute или ValidateEnumeratedItemsAttribute указан тип проверяющего элемента управления NULL.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
         <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Генератор исходного кода проверки параметров недоступен в C# {0}. Используйте языковую версию {1} или более позднюю.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">Версия языка C# не поддерживается генератором исходного кода.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
-        <target state="new">Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</target>
+        <target state="translated">Тип {0} содержит примечания проверки, но элемент {1} не указывает [ValidateEnumeratedItems], который может быть задан.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationTitle">
         <source>Member potentially missing enumerable validation.</source>
-        <target state="new">Member potentially missing enumerable validation.</target>
+        <target state="translated">Элемент потенциально пропускает перечисляемую проверку.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingTransitiveValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</source>
-        <target state="new">Type {0} has validation annotations, but member {1} doesn't specify [ValidateObjectMembers] which could be an oversight.</target>
+        <target state="translated">Тип {0} содержит примечания проверки, но элемент {1} не указывает [ValidateObjectMembers], который может быть задан.</target>
         <note />
       </trans-unit>
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
-        <target state="new">Member potentially missing transitive validation.</target>
+        <target state="translated">Возможно, в элементе отсутствует транзитивная проверка.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">Атрибут проверки {0} следует применять только к свойствам строки типа, массива или ICollection. Использование его с типом {1} может привести к сбоям во время выполнения.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">Атрибут проверки применим только к свойствам строки типа, массива или ICollection; его нельзя использовать с другими типами.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
         <source>Validator type {0} doesn't have a parameterless constructor.</source>
-        <target state="new">Validator type {0} doesn't have a parameterless constructor.</target>
+        <target state="translated">Тип проверяющего элемента управления {0} не имеет конструктора без параметров.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorTitle">
         <source>Validators used for transitive or enumerable validation must have a constructor with no parameters.</source>
-        <target state="new">Validators used for transitive or enumerable validation must have a constructor with no parameters.</target>
+        <target state="translated">У проверяющих элементов управления, используемых для транзитивной или перечисляемой проверки, должен быть конструктор без параметров.</target>
         <note />
       </trans-unit>
     </body>

@@ -9,9 +9,10 @@ using Xunit;
 
 namespace FixupCallsHostWhenLoaded
 {
-    class FixupCallsHostWhenLoaded
+    public class FixupCallsHostWhenLoaded
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Disable running on Windows 7 until IJW activation work is complete.
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)

@@ -15,6 +15,9 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 schedules:
 - cron: "0 17 * * 0"
   displayName: Sun at 9:00 AM (UTC-8:00)

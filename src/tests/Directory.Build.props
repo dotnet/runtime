@@ -2,8 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
-    <!-- NativeAot tests rely on presence of ILLink targets, but don't actually run ILLink. -->
-    <UsingToolMicrosoftNetILLinkTasks Condition="'$(UsingToolMicrosoftNetILLinkTasks)' == ''">true</UsingToolMicrosoftNetILLinkTasks>
+    <InstallV8ForTests>false</InstallV8ForTests>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
@@ -126,6 +125,12 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
     <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8981</NoWarn>
+    <!--
+      Disable xunit warnings that aren't relevant with our custom runner.
+      xUnit1028: Use supported test return types. We support test methods that return int where 100 is passing and everything else is failure.
+      xUnit1031: Don't use task blocking operations. Our runner doesn't set up a synchronization context, so we can use the blocking operations without issue.
+      -->
+    <NoWarn>$(NoWarn);xUnit1028;xUnit1031</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
@@ -148,7 +153,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'freebsd' AND '$(TargetOS)' != 'linux' AND '$(TargetOS)' != 'netbsd' AND '$(TargetOS)' != 'osx' AND '$(TargetOS)' != 'maccatalyst' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.fsproj'">F#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
@@ -219,6 +223,7 @@
     <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
     <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
+    <HybridGlobalization Condition="'$(_IsApplePlatform)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />

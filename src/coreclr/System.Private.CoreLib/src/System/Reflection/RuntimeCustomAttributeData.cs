@@ -114,7 +114,7 @@ namespace System.Reflection
             if (type == typeof(int))
                 return CustomAttributeEncoding.Int32;
 
-            if (type.IsEnum)
+            if (type.IsActualEnum)
                 return CustomAttributeEncoding.Enum;
 
             if (type == typeof(string))
@@ -172,7 +172,7 @@ namespace System.Reflection
             if (type.IsInterface)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsValueType)
+            if (type.IsActualValueType)
                 return CustomAttributeEncoding.Undefined;
 
             throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA, nameof(type));
@@ -1477,7 +1477,7 @@ namespace System.Reflection
             {
                 useAttributeArray = true;
             }
-            else if (caType.IsValueType)
+            else if (caType.IsActualValueType)
             {
                 useObjectArray = true;
             }

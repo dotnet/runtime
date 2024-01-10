@@ -1771,8 +1771,9 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             }
             else
             {
+            #ifdef FEATURE_TIERED_COMPILATION
                 _ASSERTE(!config->ShouldCountCalls());
-
+            #endif
                 // The thread that generated or loaded the new code will publish the code and backpatch if necessary
                 doPublish = false;
             }

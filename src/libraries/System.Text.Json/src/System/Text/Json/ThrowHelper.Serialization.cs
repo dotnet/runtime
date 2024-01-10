@@ -100,6 +100,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors()
+        {
+            throw new NotSupportedException(SR.ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors);
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_SerializationConverterRead(JsonConverter? converter)
         {
             throw new JsonException(SR.Format(SR.SerializationConverterRead, converter)) { AppendPathInformation = true };

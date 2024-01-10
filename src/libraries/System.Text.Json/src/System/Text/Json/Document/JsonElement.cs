@@ -1316,6 +1316,13 @@ namespace System.Text.Json
             _parent.WriteElementTo(_idx, writer);
         }
 
+        internal void WritePropertyNameTo(Utf8JsonWriter writer)
+        {
+            CheckValidInstance();
+
+            _parent.WritePropertyName(_idx, writer);
+        }
+
         /// <summary>
         ///   Get an enumerator to enumerate the values in the JSON array represented by this JsonElement.
         /// </summary>

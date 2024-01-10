@@ -24,21 +24,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
 
-		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
+		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
 		new ReferenceAssemblies (
 				"net8.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-alpha.1.23060.19"),
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0"),
 				Path.Combine ("ref", "net8.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
-		private static ImmutableArray<MetadataReference> s_net6Refs;
-		public static async ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
+		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
+		public static async ValueTask<ImmutableArray<MetadataReference>> GetDotNetReferences ()
 		{
-			if (s_net6Refs.IsDefault) {
-				var refs = await Net6PreviewAssemblies.ResolveAsync (null, default);
-				ImmutableInterlocked.InterlockedInitialize (ref s_net6Refs, refs);
+			if (s_netcoreappRefs.IsDefault) {
+				var refs = await NetCoreAppReferencessemblies.ResolveAsync (null, default);
+				ImmutableInterlocked.InterlockedInitialize (ref s_netcoreappRefs, refs);
 			}
-			return s_net6Refs;
+			return s_netcoreappRefs;
 		}
 
 		public static string FindTestSuiteDir (string rootDir, string suiteName)
@@ -206,7 +206,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return token.ValueText;
 
 			default:
-				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
+				Assert.Fail("Unsupported expr kind " + expr.Kind ());
 				return null!;
 			}
 		}

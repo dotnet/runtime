@@ -2,13 +2,13 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
     <PlatformPackageType>AppHostPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-apphost-pack</ArchiveName>
     <InstallerName>dotnet-apphost-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
-    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
+    <IsPackable Condition="'$(PgoInstrument)' != ''">false</IsPackable>
   </PropertyGroup>
 
   <!--

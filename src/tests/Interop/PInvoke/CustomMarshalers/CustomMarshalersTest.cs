@@ -26,7 +26,12 @@ namespace PInvokeTests
 
     public static class CustomMarshalersTests
     {
-        public static int Main()
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnMono("These custom marshallers were never built-in to the runtime on Mono")]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        public static int TestEntryPoint()
         {
             try
             {

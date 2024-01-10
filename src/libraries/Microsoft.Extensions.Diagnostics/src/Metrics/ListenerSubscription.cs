@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly Dictionary<Instrument, object?> _instruments = new();
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
+        private bool _disposing;
 
         internal ListenerSubscription(IMetricsListener metricsListener, IMeterFactory meterFactory)
         {
@@ -65,7 +66,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         {
             lock (_instruments)
             {
-                if (_disposed)
+                if (_disposed && !_disposing)
                 {
                     return;
                 }
@@ -285,8 +286,10 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public void Dispose()
         {
+            _disposing = true;
             _disposed = true;
             _meterListener.Dispose();
+            _disposing = false;
         }
     }
 }

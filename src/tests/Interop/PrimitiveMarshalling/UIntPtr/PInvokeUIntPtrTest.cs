@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-class Test
+public class Test
 {
     [DllImport(@"UIntPtrNative", CallingConvention = CallingConvention.StdCall)]
     private static extern UIntPtr Marshal_In([In]UIntPtr uintPtr);
@@ -28,7 +28,9 @@ class Test
     private static extern UIntPtr MarshalPointer_Out(out UIntPtr puintPtr);
 
 
-    public static int Main()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static void TestEntryPoint()
     {
         UIntPtr uintPtrManaged = (UIntPtr)1000;
         UIntPtr uintPtrNative = (UIntPtr)2000;
@@ -56,7 +58,5 @@ class Test
         UIntPtr uintPtr6 = uintPtrManaged;
         Assert.Equal(uintPtrReturn, MarshalPointer_Out(out uintPtr6));
         Assert.Equal(uintPtrNative, uintPtr6);
-
-        return 100;
     }
 }

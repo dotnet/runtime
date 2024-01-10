@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
   <ItemGroup>

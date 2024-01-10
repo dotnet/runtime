@@ -599,7 +599,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    if (RuntimeTypeHandle.IsInterface(declaringType))
+                    if (declaringType.IsInterface)
                     {
                         #region IsInterface
 
@@ -653,7 +653,7 @@ namespace System
                         bool* overrides = stackalloc bool[numVirtuals];
                         new Span<bool>(overrides, numVirtuals).Clear();
 
-                        bool isValueType = declaringType.IsValueType;
+                        bool isValueType = declaringType.IsActualValueType;
 
                         do
                         {
@@ -1144,7 +1144,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     ListBuilder<RuntimeEventInfo> list = default;
 
-                    if (!RuntimeTypeHandle.IsInterface(declaringType))
+                    if (!declaringType.IsInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1234,7 +1234,7 @@ namespace System
 
                     ListBuilder<RuntimePropertyInfo> list = default;
 
-                    if (!RuntimeTypeHandle.IsInterface(declaringType))
+                    if (!declaringType.IsInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -3382,6 +3382,19 @@ namespace System
             return isValueType;
         }
 
+        // This returns true for actual value types only, ignoring generic parameter constraints.
+        internal unsafe bool IsActualValueType
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isValueType = !th.IsTypeDesc && th.AsMethodTable()->IsValueType;
+                GC.KeepAlive(this);
+                return isValueType;
+            }
+        }
+
         public override unsafe bool IsEnum
         {
             get
@@ -3398,7 +3411,7 @@ namespace System
             }
         }
 
-        // This returns true for actual enum types only.
+        // This returns true for actual enum types only, ignoring generic parameter constraints.
         internal unsafe bool IsActualEnum
         {
             [Intrinsic]
@@ -3409,6 +3422,30 @@ namespace System
                 bool isEnum = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
                 GC.KeepAlive(this);
                 return isEnum;
+            }
+        }
+
+        internal new unsafe bool IsInterface
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isInterface = !th.IsTypeDesc && th.AsMethodTable()->IsInterface;
+                GC.KeepAlive(this);
+                return isInterface;
+            }
+        }
+
+        public override unsafe bool IsByRefLike
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isByRefLike = !th.IsTypeDesc && th.AsMethodTable()->IsByRefLike;
+                GC.KeepAlive(this);
+                return isByRefLike;
             }
         }
 

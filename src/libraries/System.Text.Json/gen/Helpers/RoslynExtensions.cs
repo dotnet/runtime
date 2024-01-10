@@ -25,8 +25,6 @@ namespace System.Text.Json.SourceGeneration
             return compilation.GetBestTypeByMetadataName(type.FullName);
         }
 
-        public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
         public static Location? GetLocation(this ISymbol typeSymbol)
             => typeSymbol.Locations.Length > 0 ? typeSymbol.Locations[0] : null;
 
@@ -35,12 +33,6 @@ namespace System.Text.Json.SourceGeneration
             SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
             return reference?.SyntaxTree.GetLocation(reference.Span);
         }
-
-        /// <summary>
-        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
-        /// </summary>
-        public static Location GetTrimmedLocation(this Location location)
-            => Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
 
         /// <summary>
         /// Returns true if the specified location is contained in one of the syntax trees in the compilation.

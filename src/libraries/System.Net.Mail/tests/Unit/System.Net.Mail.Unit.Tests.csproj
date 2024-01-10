@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base64EncodingTest.cs" />
@@ -141,8 +140,10 @@
              Link="Common\System\Net\NegotiationInfoClass.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" 
+             Link="Common\System\Text\ValueStringBuilder.cs" /> 
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">

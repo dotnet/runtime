@@ -1171,6 +1171,40 @@ struct MSLAYOUT DebuggerREGDISPLAY
     SIZE_T  S7;
     SIZE_T  S8;
     SIZE_T  PC;
+#elif defined(TARGET_RISCV64)
+    #define DebuggerIPCE_FloatCount 32
+    SIZE_T  RA;
+    SIZE_T  SP;
+    SIZE_T  GP;
+    SIZE_T  TP;
+    SIZE_T  T0;
+    SIZE_T  T1;
+    SIZE_T  T2;
+    SIZE_T  FP;
+    SIZE_T  S1;
+    SIZE_T  A0;
+    SIZE_T  A1;
+    SIZE_T  A2;
+    SIZE_T  A3;
+    SIZE_T  A4;
+    SIZE_T  A5;
+    SIZE_T  A6;
+    SIZE_T  A7;
+    SIZE_T  S2;
+    SIZE_T  S3;
+    SIZE_T  S4;
+    SIZE_T  S5;
+    SIZE_T  S6;
+    SIZE_T  S7;
+    SIZE_T  S8;
+    SIZE_T  S9;
+    SIZE_T  S10;
+    SIZE_T  S11;
+    SIZE_T  T3;
+    SIZE_T  T4;
+    SIZE_T  T5;
+    SIZE_T  T6;
+    SIZE_T  PC;
 #else
     #define DebuggerIPCE_FloatCount 1
 

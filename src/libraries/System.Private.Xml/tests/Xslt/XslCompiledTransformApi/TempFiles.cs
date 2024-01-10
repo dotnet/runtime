@@ -64,7 +64,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
 
             try
@@ -78,7 +78,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -97,7 +97,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
             catch (System.Xml.XmlException)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -122,7 +122,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                     if (!r.Read())
                     {
                         _output.WriteLine("There is no 'stylesheet' element in the file");
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                 }
 
@@ -133,7 +133,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("The following exception should not have been thrown");
                 _output.WriteLine(exception.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;
@@ -153,7 +153,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("No exception should not have been thrown");
                 _output.WriteLine(exception.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

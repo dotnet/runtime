@@ -27,5 +27,11 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 			return RunTest (allowMissingWarnings: true);
 		}
 
+		[Fact]
+		public Task InterfaceWithoutNewSlot ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
 	}
 }

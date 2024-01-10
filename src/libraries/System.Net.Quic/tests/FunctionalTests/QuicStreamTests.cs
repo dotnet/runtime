@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -1509,7 +1509,16 @@ namespace System.Net.Quic.Tests
                 {
                     // Writes must be closed, but whether successfully or not depends on the timing.
                     // Peer might have aborted reading side before receiving all the data.
-                    Assert.True(stream.WritesClosed.IsCompleted);
+                    try
+                    {
+                        await stream.WritesClosed.WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch (Exception ex)
+                    {
+                        QuicException qe = Assert.IsType<QuicException>(ex);
+                        Assert.Equal(QuicError.StreamAborted, qe.QuicError);
+                        Assert.Equal(errorCode, qe.ApplicationErrorCode);
+                    }
                 }
             }
         }

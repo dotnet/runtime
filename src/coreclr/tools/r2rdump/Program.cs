@@ -500,8 +500,7 @@ namespace R2RDump
         public static int Main(string[] args) =>
             new CliConfiguration(new R2RDumpRootCommand().UseVersion())
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
     }
 }
