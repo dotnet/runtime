@@ -564,6 +564,8 @@ dfs_visit (TransformData *td)
 static void
 interp_compute_dfs_indexes (TransformData *td)
 {
+	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb)
+		bb->dfs_index = -1;
 	// Sort bblocks in reverse postorder
 	int dfs_index = dfs_visit (td);
 	td->bblocks_count = dfs_index;
@@ -620,7 +622,7 @@ is_bblock_ssa_cfg (TransformData *td, InterpBasicBlock *bb)
 static void
 interp_compute_dominators (TransformData *td)
 {
-	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
 
 	idoms [0] = td->entry_bb;
 	gboolean changed = TRUE;
@@ -695,11 +697,11 @@ interp_compute_dominators (TransformData *td)
 static void
 interp_compute_dominance_frontier (TransformData *td)
 {
-	int bitsize = mono_bitset_alloc_size (td->bb_count, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bb_count);
+	int bitsize = mono_bitset_alloc_size (td->bblocks_count, 0);
+	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bblocks_count);
 
 	for (int i = 0; i < td->bblocks_count; i++) {
-		td->bblocks [i]->dfrontier = mono_bitset_mem_new (mem, td->bb_count, 0);
+		td->bblocks [i]->dfrontier = mono_bitset_mem_new (mem, td->bblocks_count, 0);
 		mem += bitsize;
 	}
 
@@ -857,7 +859,7 @@ get_var_value (TransformData *td, int var)
 
 	// No ssa var, check if we have a def set for the current bblock
 	if (td->var_values [var].def) {
-		if (td->var_values [var].liveness.bb_index == td->cbb->index)
+		if (td->var_values [var].liveness.bb_dfs_index == td->cbb->dfs_index)
 			return &td->var_values [var];
 	}
 	return NULL;
@@ -973,7 +975,7 @@ static void
 compute_gen_kill_sets (TransformData *td)
 {
 	int bitsize = mono_bitset_alloc_size (td->renamable_vars_size, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bb_count * 4);
+	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bblocks_count * 4);
 
 	for (int i = 0; i < td->bblocks_count; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
@@ -1294,7 +1296,7 @@ rename_vars_in_bb_start (TransformData *td, InterpBasicBlock *bb)
 	}
 
 	InterpLivenessPosition current_liveness;
-	current_liveness.bb_index = bb->index;
+	current_liveness.bb_dfs_index = bb->dfs_index;
 	current_liveness.ins_index = 0;
 
 	// Use renamed definition for sources
@@ -1345,11 +1347,11 @@ rename_vars_in_bb_end (TransformData *td, InterpBasicBlock *bb)
 				g_assert (td->vars [renamed_var].renamed_ssa_fixed);
 				int renamed_var_ext = td->vars [renamed_var].ext_index;
 				if (!td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks) {
-					gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (td->bb_count, 0));
-					td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks = mono_bitset_mem_new (mem, td->bb_count, 0);
+					gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (td->bblocks_count, 0));
+					td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks = mono_bitset_mem_new (mem, td->bblocks_count, 0);
 				}
 
-				mono_bitset_set_fast (td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks, bb->index);
+				mono_bitset_set_fast (td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks, bb->dfs_index);
 			}
 		}
 	}
@@ -1419,8 +1421,8 @@ rename_vars (TransformData *td)
 			MonoBitSet *live_out_bblocks = td->renamed_fixed_vars [i].live_out_bblocks;
 			if (live_out_bblocks) {
 				int j;
-				mono_bitset_foreach_bit (live_out_bblocks, j, td->bb_count) {
-					g_print (" BB%d", j);
+				mono_bitset_foreach_bit (live_out_bblocks, j, td->bblocks_count) {
+					g_print (" BB%d", td->bblocks [j]->index);
 				}
 			}
 			g_print (" }\n");
@@ -1428,7 +1430,7 @@ rename_vars (TransformData *td)
 			GSList *live_limit_bblocks = td->renamed_fixed_vars [i].live_limit_bblocks;
 			while (live_limit_bblocks) {
 				InterpLivenessPosition *live_limit = (InterpLivenessPosition*)live_limit_bblocks->data;
-				g_print (" (BB%d, %d)", live_limit->bb_index, live_limit->ins_index);
+				g_print (" (BB%d, %d)", td->bblocks [live_limit->bb_dfs_index]->index, live_limit->ins_index);
 				live_limit_bblocks = live_limit_bblocks->next;
 			}
 			g_print (" }\n");
@@ -1517,7 +1519,6 @@ interp_exit_ssa (TransformData *td)
 			g_slist_free (bb->dominated);
 			bb->dominated = NULL;
 		}
-		bb->dfs_index = -1;
 		bb->gen_set = NULL;
 		bb->kill_set = NULL;
 		bb->live_in_set = NULL;
@@ -2541,13 +2542,13 @@ can_extend_ssa_var_liveness (TransformData *td, int var, InterpLivenessPosition 
 	InterpRenamedFixedVar *fixed_var_ext = &td->renamed_fixed_vars [td->vars [var].ext_index];
 
 	// If var was already live at the end of this bblocks, there is no liveness extension happening
-	if (fixed_var_ext->live_out_bblocks && mono_bitset_test_fast (fixed_var_ext->live_out_bblocks, cur_liveness.bb_index))
+	if (fixed_var_ext->live_out_bblocks && mono_bitset_test_fast (fixed_var_ext->live_out_bblocks, cur_liveness.bb_dfs_index))
 		return TRUE;
 
 	GSList *bb_liveness = fixed_var_ext->live_limit_bblocks;
 	while (bb_liveness) {
 		InterpLivenessPosition *liveness_limit = (InterpLivenessPosition*)bb_liveness->data;
-		if (cur_liveness.bb_index == liveness_limit->bb_index) {
+		if (cur_liveness.bb_dfs_index == liveness_limit->bb_dfs_index) {
 			if (cur_liveness.ins_index <= liveness_limit->ins_index)
 				return TRUE;
 			else
@@ -2571,7 +2572,7 @@ can_extend_var_liveness (TransformData *td, int var, InterpLivenessPosition orig
 		// vars. If var is normal ssa, we can extend its liveness with no constraints
 		return can_extend_ssa_var_liveness (td, var, cur_liveness);
 	} else {
-		gboolean original_in_curbb = original_liveness.bb_index == td->cbb->index;
+		gboolean original_in_curbb = original_liveness.bb_dfs_index == td->cbb->dfs_index;
 		if (!original_in_curbb) {
 			// var is not in ssa form and we only track its value within a single bblock.
 			// The original liveness information is not in cbb and, by the time we get to cbb,
@@ -2588,7 +2589,7 @@ can_extend_var_liveness (TransformData *td, int var, InterpLivenessPosition orig
 				// We know that var is alive at original_liveness, which is in cbb, and that
 				// the var has been redefined in cbb. We can extend its liveness to cur_liveness,
 				// only if it hasn't been redefined between original and cur liveness.
-				g_assert (var_val->liveness.bb_index == original_liveness.bb_index);
+				g_assert (var_val->liveness.bb_dfs_index == original_liveness.bb_dfs_index);
 				return var_val->liveness.ins_index < original_liveness.ins_index;
 			}
 		}
@@ -2671,7 +2672,7 @@ can_cprop_dreg (TransformData *td, InterpInst *mov_ins)
 	if (!sreg_val)
 		return FALSE;
 	// We only apply this optimization if the definition is in the same bblock as this use
-	if (sreg_val->liveness.bb_index != td->cbb->index)
+	if (sreg_val->liveness.bb_dfs_index != td->cbb->dfs_index)
 		return FALSE;
 	if (td->var_values [sreg].def->opcode == MINT_DEF_ARG)
 		return FALSE;
@@ -2685,7 +2686,7 @@ can_cprop_dreg (TransformData *td, InterpInst *mov_ins)
 		// check if dreg is a renamed ssa fixed var (likely to remain alive)
 		if (td->vars [dreg].renamed_ssa_fixed && !td->vars [sreg].renamed_ssa_fixed) {
 			InterpLivenessPosition last_use_liveness = td->renamable_vars [td->renamed_fixed_vars [td->vars [dreg].ext_index].renamable_var_ext_index].last_use_liveness;
-			if (last_use_liveness.bb_index != td->cbb->index ||
+			if (last_use_liveness.bb_dfs_index != td->cbb->dfs_index ||
 					sreg_val->liveness.ins_index >= last_use_liveness.ins_index) {
 				// No other conflicting renamed fixed vars (of dreg) are used in this bblock, or their
 				// last use predates the definition. This means we can tweak def of sreg to store directly
@@ -2728,7 +2729,7 @@ interp_cprop (TransformData *td)
 		}
 
 		InterpLivenessPosition current_liveness;
-		current_liveness.bb_index = bb->index;
+		current_liveness.bb_dfs_index = bb->dfs_index;
 		current_liveness.ins_index = 0;
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
@@ -3326,7 +3327,7 @@ interp_super_instructions (TransformData *td)
 		td->cbb = bb;
 		int noe = bb->native_offset_estimate;
 		InterpLivenessPosition current_liveness;
-		current_liveness.bb_index = bb->index;
+		current_liveness.bb_dfs_index = bb->dfs_index;
 		current_liveness.ins_index = 0;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
@@ -3795,6 +3796,7 @@ interp_prepare_no_ssa_opt (TransformData *td)
 	int i = 0;
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		td->bblocks [i] = bb;
+		bb->dfs_index = i;
 		i++;
 	}
 	td->bblocks_count = 0;

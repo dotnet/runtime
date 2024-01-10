@@ -47,7 +47,7 @@ typedef struct
 #define VAR_VALUE_COUNT 6
 
 typedef struct {
-	guint32 bb_index;
+	guint32 bb_dfs_index;
 	guint32 ins_index;
 } InterpLivenessPosition;
 

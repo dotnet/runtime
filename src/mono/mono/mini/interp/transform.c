@@ -3881,7 +3881,6 @@ interp_alloc_bb (TransformData *td)
 	bb->native_offset = -1;
 	bb->stack_height = -1;
 	bb->index = td->bb_count++;
-	bb->dfs_index = -1;
 
 	return bb;
 }
