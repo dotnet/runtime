@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Tests
         public class Traits : IKmacTrait<Kmac128>
         {
             public static Kmac128 Create(byte[] key, byte[] customizationString) =>
-                new Kmac128(key,customizationString);
+                new Kmac128(key, customizationString);
 
             public static Kmac128 Create(ReadOnlySpan<byte> key, ReadOnlySpan<byte> customizationString) =>
                 new Kmac128(key, customizationString);
@@ -47,16 +47,15 @@ namespace System.Security.Cryptography.Tests
             public static void HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination, ReadOnlySpan<byte> customizationString) =>
                 Kmac128.HashData(key, source, destination, customizationString);
 
-
             public static ValueTask HashDataAsync(
-                    ReadOnlyMemory<byte> key,
-                    Stream source,
-                    Memory<byte> destination,
-                    ReadOnlyMemory<byte> customizationString,
-                    CancellationToken cancellationToken)
-                {
-                    return Kmac128.HashDataAsync(key, source, destination, customizationString, cancellationToken);
-                }
+                ReadOnlyMemory<byte> key,
+                Stream source,
+                Memory<byte> destination,
+                ReadOnlyMemory<byte> customizationString,
+                CancellationToken cancellationToken)
+            {
+                return Kmac128.HashDataAsync(key, source, destination, customizationString, cancellationToken);
+            }
 
             public static ValueTask<byte[]> HashDataAsync(
                 ReadOnlyMemory<byte> key,

@@ -101,7 +101,6 @@ namespace System.Security.Cryptography.Tests
         public static byte[] MinimalKey { get; } =
             PlatformKeySizeRequirements?.MinSize is int min ? new byte[min] : Array.Empty<byte>();
 
-
         [ConditionalFact(nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_AllAtOnce()
         {
@@ -204,7 +203,6 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public void GetCurrentHash_Minimal_Bytes()
         {
-
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
             {
                 TKmacTrait.AppendData(kmac, Array.Empty<byte>());
@@ -220,6 +218,8 @@ namespace System.Security.Cryptography.Tests
             {
                 TKmacTrait.AppendData(kmac, default(ReadOnlySpan<byte>));
                 Span<byte> mac = Span<byte>.Empty;
+
+                // Assert.NoThrow
                 TKmacTrait.GetCurrentHash(kmac, mac);
             }
         }
@@ -242,6 +242,8 @@ namespace System.Security.Cryptography.Tests
             {
                 TKmacTrait.AppendData(kmac, default(ReadOnlySpan<byte>));
                 Span<byte> mac = Span<byte>.Empty;
+
+                // Assert.NoThrow
                 TKmacTrait.GetHashAndReset(kmac, mac);
             }
         }
@@ -923,7 +925,6 @@ namespace System.Security.Cryptography.Tests
             byte[] destination = new byte[outputSize];
             byte[] customizationString = new byte[customizationStringSize.GetValueOrDefault()];
 
-
             Assert.ThrowsAny<TException>(
                 () => TKmacTrait.HashData(key, source, outputSize, customizationString));
 
@@ -1001,7 +1002,8 @@ namespace System.Security.Cryptography.Tests
 
             if (PlatformDetection.IsOpenSslSupported && PlatformDetection.OpenSslVersion.Major >= 3)
             {
-                // KMAC on OpenSSL was introduced in OpenSSL 3.KMAC on macOS is not supported with an OpenSSL fallback.
+                // KMAC on OpenSSL was introduced in OpenSSL 3
+                // KMAC on macOS is not supported with an OpenSSL fallback.
                 return true;
             }
 

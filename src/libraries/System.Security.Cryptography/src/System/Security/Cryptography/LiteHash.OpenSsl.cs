@@ -21,7 +21,8 @@ namespace System.Security.Cryptography
 
             if (mac is null)
             {
-                throw new PlatformNotSupportedException();
+                Debug.Fail("Platform should have previously checked support for algorithm.");
+                throw new UnreachableException();
             }
 
             return new LiteKmac(mac, key, customizationString, xof);

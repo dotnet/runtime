@@ -27,6 +27,9 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="key">The KMAC key.</param>
         /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support KMAC256. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports KMAC256.
@@ -496,7 +499,6 @@ namespace System.Security.Cryptography
                 xof: false);
         }
 
-
         private void CheckDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
         private static void CheckPlatformSupport()
@@ -504,7 +506,6 @@ namespace System.Security.Cryptography
             if (!IsSupported)
             {
                 throw new PlatformNotSupportedException();
-
             }
         }
 
