@@ -3621,7 +3621,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 			if (m_type_is_byref (t)) {
 				args [pindex ++] = &params [i];
-			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
+			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
 				args [pindex ++] = &params [i];
 			} else {
 				args [pindex ++] = params [i];

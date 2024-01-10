@@ -2751,7 +2751,7 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
             }
-            if(IsStrLongerThan(strMethodName,MAX_CLASS_NAME))
+            if (strnlen(strMethodName, MAX_CLASS_NAME) >= MAX_CLASS_NAME)
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
@@ -2971,7 +2971,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 if(IsMiInternalCall(dwImplFlags))
                 {
-                    BuildMethodTableThrowException(BFA_INTERNAL_METHOD_WITH_RVA);
+                    bmtError->resIDWhy = BFA_INTERNAL_METHOD_WITH_RVA;
+                    bmtError->dMethodDefInError = tok;
+                    bmtError->szMethodNameForError = NULL;
+                    bmtError->cl = GetCl();
+                    BuildMethodTableThrowException(BFA_INTERNAL_METHOD_WITH_RVA, *bmtError);
                 }
             }
 
@@ -4053,8 +4057,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        if (IsStrLongerThan((char *)pszClassName, MAX_CLASS_NAME)
-                            || IsStrLongerThan((char *)pszNameSpace, MAX_CLASS_NAME)
+                        if (strnlen((char *)pszClassName, MAX_CLASS_NAME) >= MAX_CLASS_NAME
+                            || strnlen((char *)pszNameSpace, MAX_CLASS_NAME) >= MAX_CLASS_NAME
                             || (strlen(pszClassName) + strlen(pszNameSpace) + 1 >= MAX_CLASS_NAME))
                         {
                             BuildMethodTableThrowException(BFA_TYPEREG_NAME_TOO_LONG, mdMethodDefNil);
@@ -7526,6 +7530,14 @@ MethodTableBuilder::PlaceInterfaceMethods()
     BOOL fParentInterface;
     DispatchMapTypeID * rgInterfaceDispatchMapTypeIDs = NULL;
 
+    // Optimization for fast discovery of possible matches below
+    // Lazily initialized the first time we want to walk the list of methods
+    // The memory allocated for these pointers is on the StackingAllocator, which
+    // has the same lifetime as the MethodTableBuilder
+    uint32_t *pNameHashArray = NULL;
+    bmtMDMethod **pMDMethodArray = NULL;
+    DWORD interfaceImplCandidateArraySize = 0;
+
     for (DWORD dwCurInterface = 0;
          dwCurInterface < bmtInterface->dwInterfaceMapSize;
          dwCurInterface++)
@@ -7715,33 +7727,58 @@ MethodTableBuilder::PlaceInterfaceMethods()
             // First, try to find the method explicitly declared in our class
             //
 
-            DeclaredMethodIterator methIt(*this);
-            while (methIt.Next())
+            if (pNameHashArray == NULL)
             {
-                // Note that non-publics can legally be exposed via an interface, but only
-                // through methodImpls.
-                if (IsMdVirtual(methIt.Attrs()) && IsMdPublic(methIt.Attrs()))
+                S_SIZE_T cbAllocPointers = S_SIZE_T(NumDeclaredMethods()) * S_SIZE_T(sizeof(bmtMDMethod*));
+                S_SIZE_T cbAllocHashes = S_SIZE_T(NumDeclaredMethods()) * S_SIZE_T(sizeof(uint32_t));
+
+                pNameHashArray = (uint32_t *)GetStackingAllocator()->Alloc(cbAllocHashes);
+                pMDMethodArray = (bmtMDMethod **)GetStackingAllocator()->Alloc(cbAllocPointers);
+
+                DeclaredMethodIterator methIt(*this);
+                while (methIt.Next())
                 {
+                    // Note that non-publics and statics can legally be exposed via an interface, but only
+                    // through methodImpls.
+                    bmtMDMethod* mdMethod = methIt.GetMDMethod();
+                    DWORD attrs = mdMethod->GetDeclAttrs();
+                    if (IsMdVirtual(attrs) && IsMdPublic(attrs))
+                    {
+                        pNameHashArray[interfaceImplCandidateArraySize] = mdMethod->GetMethodSignature().GetNameHash();
+                        pMDMethodArray[interfaceImplCandidateArraySize++] = mdMethod;
+                    }
+                }
+            }
+
+            DeclaredMethodIterator methIt(*this);
+            UINT32 nameHashItfMethod = pCurItfMethod->GetMethodSignature().GetNameHash();
+
+            for (DWORD iPublicVirtualNonStaticMethod = 0; iPublicVirtualNonStaticMethod < interfaceImplCandidateArraySize; ++iPublicVirtualNonStaticMethod)
+            {
+                if (pNameHashArray[iPublicVirtualNonStaticMethod] != nameHashItfMethod)
+                    continue;
+
+                bmtMDMethod* declaredMethod = pMDMethodArray[iPublicVirtualNonStaticMethod];
+                const MethodSignature& declaredMethodSig = declaredMethod->GetMethodSignature();
 #ifdef _DEBUG
-                    if(GetHalfBakedClass()->m_fDebuggingClass && g_pConfig->ShouldBreakOnMethod(methIt.Name()))
-                        CONSISTENCY_CHECK_MSGF(false, ("BreakOnMethodName: '%s' ", methIt.Name()));
+                if(GetHalfBakedClass()->m_fDebuggingClass && g_pConfig->ShouldBreakOnMethod(declaredMethodSig.GetName()))
+                    CONSISTENCY_CHECK_MSGF(false, ("BreakOnMethodName: '%s' ", declaredMethodSig.GetName()));
 #endif // _DEBUG
 
-                    if (pCurItfMethod->GetMethodSignature().Equivalent(methIt->GetMethodSignature()))
-                    {
-                        fFoundMatchInBuildingClass = TRUE;
-                        curItfSlot.Impl() = methIt->GetSlotIndex();
+                if (pCurItfMethod->GetMethodSignature().Equivalent(declaredMethodSig))
+                {
+                    fFoundMatchInBuildingClass = TRUE;
+                    curItfSlot.Impl() = declaredMethod->GetSlotIndex();
 
-                        DispatchMapTypeID dispatchMapTypeID =
-                            DispatchMapTypeID::InterfaceClassID(dwCurInterface);
-                        bmtVT->pDispatchMapBuilder->InsertMDMapping(
-                            dispatchMapTypeID,
-                            static_cast<UINT32>(itfSlotIt.CurrentIndex()),
-                            methIt->GetMethodDesc(),
-                            FALSE);
+                    DispatchMapTypeID dispatchMapTypeID =
+                        DispatchMapTypeID::InterfaceClassID(dwCurInterface);
+                    bmtVT->pDispatchMapBuilder->InsertMDMapping(
+                        dispatchMapTypeID,
+                        static_cast<UINT32>(itfSlotIt.CurrentIndex()),
+                        declaredMethod->GetMethodDesc(),
+                        FALSE);
 
-                        break;
-                    }
+                    break;
                 }
             } // end ... try to find method
 

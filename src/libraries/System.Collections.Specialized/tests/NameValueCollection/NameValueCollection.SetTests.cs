@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionSetTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void Set()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();
@@ -23,7 +23,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void Set_OvewriteExistingValue()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();
@@ -36,7 +36,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(new string[] { value }, nameValueCollection.GetValues(name));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(5)]
         public void Set_NullName(int count)
@@ -54,7 +54,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(newNullNameValue, nameValueCollection.Get(null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(5)]
         public void Set_NullValue(int count)
@@ -75,7 +75,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Null(nameValueCollection.Get(nullValueName));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void Set_IsCaseSensitive()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();

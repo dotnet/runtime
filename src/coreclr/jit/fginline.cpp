@@ -675,14 +675,14 @@ private:
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, block->Next());
+                    m_compiler->fgRemoveRefPred(block->GetTrueTarget(), block);
+                    block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
                     block->SetFlags(BBF_NONE_QUIRK);
                 }
                 else
                 {
-                    block->SetJumpKind(BBJ_ALWAYS);
-                    m_compiler->fgRemoveRefPred(block->Next(), block);
+                    m_compiler->fgRemoveRefPred(block->GetFalseTarget(), block);
+                    block->SetKind(BBJ_ALWAYS);
                 }
             }
         }
@@ -1530,10 +1530,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
-                block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
+                block->SetKindAndTarget(BBJ_ALWAYS, bottomBlock);
                 fgAddRefPred(bottomBlock, block);
 
                 if (block == InlineeCompiler->fgLastBB)
@@ -1549,9 +1549,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
-        assert(topBlock->HasJumpTo(bottomBlock));
+        assert(topBlock->TargetIs(bottomBlock));
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetJumpDest(topBlock->Next());
+        topBlock->SetTarget(topBlock->Next());
         topBlock->SetFlags(BBF_NONE_QUIRK);
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);

@@ -15,6 +15,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return new ReverseIterator<TSource>(source);
         }
 
@@ -54,9 +59,9 @@ namespace System.Linq
                         // Iteration has just started. Capture the source into an array and set _state to 2 + the count.
                         // Having an extra field for the count would be more readable, but we save it into _state with a
                         // bias instead to minimize field size of the iterator.
-                        Buffer<TSource> buffer = new Buffer<TSource>(_source);
-                        _buffer = buffer._items;
-                        _state = buffer._count + 2;
+                        TSource[] buffer = _source.ToArray();
+                        _buffer = buffer;
+                        _state = buffer.Length + 2;
                         goto default;
                     default:
                         // At this stage, _state starts from 2 + the count. _state - 3 represents the current index into the

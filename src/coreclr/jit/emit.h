@@ -936,7 +936,7 @@ protected:
 // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
 // about reading what we think is here, to avoid unexpected corruption issues.
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock* iiaBBlabel;
@@ -990,7 +990,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
@@ -1021,7 +1021,23 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64)
+            struct
+            {
+                regNumber    _idReg3 : REGNUM_BITS;
+                regNumber    _idReg4 : REGNUM_BITS;
+                unsigned int iiaEncodedInstr; // instruction's binary encoding.
+            };
+
+            void iiaSetInstrEncode(unsigned int encode)
+            {
+                iiaEncodedInstr = encode;
+            }
+            unsigned int iiaGetInstrEncode() const
+            {
+                return iiaEncodedInstr;
+            }
+#endif // defined(TARGET_RISCV64)
 
         } _idAddrUnion;
 
@@ -1123,7 +1139,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned  idCodeSize() const
+        unsigned idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -2122,7 +2138,7 @@ protected:
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
-    void emitDispInsAddr(BYTE* code);
+    void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
@@ -2202,8 +2218,8 @@ public:
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(insGroup* ig, instrDesc* id);
-    UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum);
+    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
 /************************************************************************/
 /*        Members and methods used to issue (encode) instructions.      */
@@ -2222,7 +2238,7 @@ public:
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
 
-    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst)
+    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst) const
     {
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
@@ -2241,7 +2257,7 @@ public:
         return (UNATIVE_OFFSET)distance;
     }
 
-    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset)
+    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset) const
     {
         if (offset < emitTotalHotCodeSize)
         {
@@ -2297,8 +2313,8 @@ public:
     unsigned int emitCounts_INS_OPTS_J;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-    instrDesc* emitFirstInstrDesc(BYTE* idData);
-    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
+    instrDesc* emitFirstInstrDesc(BYTE* idData) const;
+    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
@@ -2712,8 +2728,8 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(insGroup* ig);
-    const char* emitLabelString(insGroup* ig);
+    void emitPrintLabel(const insGroup* ig) const;
+    const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 

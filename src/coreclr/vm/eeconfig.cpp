@@ -96,7 +96,6 @@ HRESULT EEConfig::Init()
     fGCBreakOnOOM = false;
     iGCconcurrent = 0;
     iGCHoardVM = 0;
-    iGCLOHThreshold = 0;
 
     dwSpinInitialDuration = 0x32;
     dwSpinBackoffFactor = 0x3;
@@ -121,9 +120,10 @@ HRESULT EEConfig::Init()
 
     INDEBUG(fStressLog = true;)
 
+    fDebuggable = false;
+
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
-    fDebuggable = false;
     pPrestubHalt = 0;
     pPrestubGC = 0;
     pszBreakOnClassLoad = 0;
@@ -439,12 +439,6 @@ HRESULT EEConfig::sync()
     else
         iGCHoardVM = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCRetainVM);
 
-    if (!iGCLOHThreshold)
-    {
-        iGCLOHThreshold = Configuration::GetKnobDWORDValue(W("System.GC.LOHThreshold"), CLRConfig::EXTERNAL_GCLOHThreshold);
-        iGCLOHThreshold = max (iGCLOHThreshold, LARGE_OBJECT_SIZE);
-    }
-
 #ifdef FEATURE_CONSERVATIVE_GC
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
@@ -554,9 +548,9 @@ HRESULT EEConfig::sync()
 #endif
 
 
-#ifdef _DEBUG
-    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitDebuggable) != 0);
+    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitDebuggable) != 0);
 
+#ifdef _DEBUG
     LPWSTR wszPreStubStuff = NULL;
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PrestubHalt, &wszPreStubStuff));

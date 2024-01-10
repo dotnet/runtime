@@ -53,20 +53,10 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new DisplayNameAttribute("name"), true };
             yield return new object[] { attribute, new DisplayNameAttribute("name2"), false };
             yield return new object[] { attribute, new DisplayNameAttribute(""), false };
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { attribute, new DisplayNameAttribute(null), false };
-            }
-
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
-                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(""), false };
-                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute("name"), false };
-            }
-
+            yield return new object[] { attribute, new DisplayNameAttribute(null), false };
+            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
+            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(""), false };
+            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute("name"), false };
             yield return new object[] { new DisplayNameAttribute("name"), new object(), false };
             yield return new object[] { new DisplayNameAttribute("name"), null, false };
             yield return new object[] { new DisplayNameAttribute(null), new object(), false };
