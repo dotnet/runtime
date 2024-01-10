@@ -2492,6 +2492,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
         case INS_csrrci:
             assert(isGeneralRegisterOrR0(rd));
             assert(rs1 < 32);
+            assert((opcode & kInstructionFunct7Mask) == 0);
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
