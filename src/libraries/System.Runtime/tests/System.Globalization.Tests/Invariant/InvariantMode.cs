@@ -559,7 +559,6 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "We are using the system icu and not loading it directly on these platforms")]
         public static void IcuShouldNotBeLoaded()
         {
             Assert.False(PlatformDetection.IsIcuGlobalization);
