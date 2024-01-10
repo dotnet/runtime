@@ -5498,6 +5498,9 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_ld2q, EA_SCALABLE, REG_V0, REG_P1, REG_R2, -16,
                                 INS_OPTS_SCALABLE_Q); // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
                                                       // VL}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld2q, EA_SCALABLE, REG_V31, REG_P1, REG_R2, -16,
+                                INS_OPTS_SCALABLE_Q); // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
+                                                      // VL}]
     theEmitter->emitIns_R_R_R_I(INS_sve_ld2q, EA_SCALABLE, REG_V0, REG_P1, REG_R2, 14,
                                 INS_OPTS_SCALABLE_Q); // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL
                                                       // VL}]

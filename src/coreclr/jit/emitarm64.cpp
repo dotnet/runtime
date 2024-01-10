@@ -16859,6 +16859,7 @@ void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts 
     printf("{ ");
     if (listSize > 1)
     {
+        // We do not want the short-hand for list size of 2.
         if ((listSize == 2) || (((unsigned)currReg + listSize - 1) > (unsigned)REG_V31))
         {
             for (unsigned i = 0; i < listSize; i++)
