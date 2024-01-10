@@ -211,6 +211,20 @@ namespace System.Net.Security
                 return null;
             }
 
+            // see logic in AddRootCertificate for why this is necessary
+            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(IntermediateCertificates.Count == 0 ? 1 : IntermediateCertificates.Count);
+            if (IntermediateCertificates.Count == 0)
+            {
+                issuerHandles[0] = issuer;
+            }
+            else
+            {
+                for (int i = 0; i < IntermediateCertificates.Count; i++)
+                {
+                    issuerHandles[i] = IntermediateCertificates[i].Handle;
+                }
+            }
+
             using (SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer))
             {
                 byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(Interop.Crypto.GetOcspRequestDerSize(ocspRequest));
@@ -227,7 +241,7 @@ namespace System.Net.Security
 
                     if (ret is not null)
                     {
-                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuer, out DateTimeOffset expiration))
+                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles, out DateTimeOffset expiration))
                         {
                             ret = null;
                             continue;
@@ -252,6 +266,8 @@ namespace System.Net.Security
                     }
                 }
 
+                issuerHandles.AsSpan().Clear();
+                ArrayPool<IntPtr>.Shared.Return(issuerHandles);
                 ArrayPool<byte>.Shared.Return(rentedBytes);
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
                 GC.KeepAlive(TargetCertificate);
