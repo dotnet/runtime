@@ -36,11 +36,11 @@ namespace System.Net.Security
         {
             Certificate = target;
             IntermediateCertificates = intermediates;
-            if (intermediates.Count > 0)
+            if (intermediates.Length > 0)
             {
-                _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
+                _privateIntermediateCertificates = new X509Certificate2[intermediates.Length];
 
-                for (int i = 0; i < intermediates.Count; i++)
+                for (int i = 0; i < intermediates.Length; i++)
                 {
                     _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
                 }
