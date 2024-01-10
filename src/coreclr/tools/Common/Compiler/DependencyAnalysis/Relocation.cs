@@ -475,7 +475,6 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
-                case RelocType.IMAGE_REL_SECREL:
                     *(int*)location = (int)value;
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:

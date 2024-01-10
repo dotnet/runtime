@@ -1021,7 +1021,6 @@ protected:
             {
                 return iiaJmpOffset;
             }
-            bool isSecRel;
 
 #elif defined(TARGET_RISCV64)
             struct
@@ -1041,6 +1040,7 @@ protected:
             }
 #endif // defined(TARGET_RISCV64)
 
+            bool isSecRel;
 
         } _idAddrUnion;
 
