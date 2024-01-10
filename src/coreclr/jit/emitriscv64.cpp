@@ -2169,7 +2169,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(rd, 5);
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
-    isValidSimm12(imm12);
+    assert(isValidSimm12(imm12));
 
     return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (imm12 << 20);
 }
@@ -2195,7 +2195,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
-    isValidSimm12(imm12);
+    assert(isValidSimm12(imm12));
 
     unsigned imm12Lo = imm12 & kLoMask;
     unsigned imm12Hi = (imm12 >> 5) & kHiMask;
@@ -2218,7 +2218,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
 {
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
-    isValidSimm20(imm20);
+    assert(isValidSimm20(imm20));
 
     return opcode | (rd << 7) | (imm20 << 12);
 }
@@ -2245,7 +2245,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
-    isValidSimm13(imm13);
+    assert(isValidSimm13(imm13));
 
     unsigned imm12          = imm13 >> 1;
     unsigned imm12LoSection = imm12 & kLoSectionMask;
@@ -2276,7 +2276,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
 
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
-    isValidSimm21(imm21);
+    assert(isValidSimm21(imm21));
 
     unsigned imm20          = imm21 >> 1;
     unsigned imm20HiSection = imm20 & kHiSectionMask;
@@ -2490,7 +2490,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
         case INS_csrrsi:
             FALLTHROUGH;
         case INS_csrrci:
-            isGeneralRegisterOrR0(rd);
+            assert(isGeneralRegisterOrR0(rd));
             assert(rs1 < 32);
             break;
         default:
