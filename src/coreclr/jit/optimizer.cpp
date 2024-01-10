@@ -4927,12 +4927,6 @@ bool Compiler::optCanonicalizeLoops(FlowGraphNaturalLoops* loops)
     bool changed = false;
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         changed |= optCreatePreheader(loop);
     }
 
