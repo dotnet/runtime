@@ -16857,10 +16857,10 @@ void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts 
     regNumber currReg = firstReg;
 
     printf("{ ");
-    if (listSize > 1)
+    if (listSize >= 1)
     {
-        // We do not want the short-hand for list size of 2.
-        if ((listSize == 2) || (((unsigned)currReg + listSize - 1) > (unsigned)REG_V31))
+        // We do not want the short-hand for list size of 1 or 2.
+        if ((listSize <= 2) || (((unsigned)currReg + listSize - 1) > (unsigned)REG_V31))
         {
             for (unsigned i = 0; i < listSize; i++)
             {
@@ -16871,15 +16871,11 @@ void emitter::emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts 
         }
         else
         {
-            // short-hand. example: { z0.s - z2.s }
+            // short-hand. example: { z0.s - z2.s } which is the same as { z0.s, z1.s, z2.s }
             emitDispSveReg(currReg, opt, false);
             printf(" - ");
             emitDispSveReg((regNumber)(currReg + listSize - 1), opt, false);
         }
-    }
-    else if (listSize == 1)
-    {
-        emitDispSveReg(currReg, opt, false);
     }
     printf(" }");
 
