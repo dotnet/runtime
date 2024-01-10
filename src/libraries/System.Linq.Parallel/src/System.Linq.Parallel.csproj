@@ -157,7 +157,8 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading" Condition="'$(MonoWasmBuildVariant)' != 'multithread'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj" Condition="'$(MonoWasmBuildVariant)' == 'multithread'" />
   </ItemGroup>
 
 </Project>
