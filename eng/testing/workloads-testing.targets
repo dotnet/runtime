@@ -9,11 +9,17 @@
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
+
+    <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), 'dotnet'))</_DotNetPath>
+    <_DotNetPath Condition="$([MSBuild]::IsOSPlatform('windows'))">$(_DotNetPath).exe</_DotNetPath>
+
     <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
       _ProvisionDotNetForWorkloadTesting;
+      _InstallSharedFrameworksForWorkloadTesting;
       _GetDotNetVersion;
+      _FirstDotNetRun;
       _SetPackageVersionForWorkloadsTesting;
       GetNuGetsToBuildForWorkloadTesting;
       _PreparePackagesForWorkloadInstall;
@@ -22,10 +28,31 @@
     </InstallWorkloadUsingArtifactsDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
+    <_DotNetInstallScriptName Condition=" $([MSBuild]::IsOSPlatform('windows'))">dotnet-install.ps1</_DotNetInstallScriptName>
+
+    <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
+    <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+    <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
+    <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
+    <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Required for running apps built with 9.0 sdk, but the sdk does
          not yet support *running* with 9.0 sdk -->
-    <AdditionalSharedFrameworkToInstall Include="8.0.0-rc.2.23457.7" />
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 8.0 -Quality daily" />
 
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
@@ -49,27 +76,6 @@
     <RemoveDir Directories="$(_SdkWithNoWorkloadPath)" />
     <MakeDir Directories="$(_SdkWithNoWorkloadPath)" />
 
-    <PropertyGroup>
-      <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
-      <_DotNetInstallScriptName Condition=" $([MSBuild]::IsOSPlatform('windows'))">dotnet-install.ps1</_DotNetInstallScriptName>
-
-      <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
-      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
-      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
-      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
-      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
-    </PropertyGroup>
-
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
                   DestinationFolder="$(ArtifactsObjDir)"
                   Retries="3"
@@ -83,24 +89,21 @@
           IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
 
-    <!-- Install additional shared frameworks -->
-    <PropertyGroup>
-      <_DotNetInstallCommand>$(_DotNetInstallScriptPath) -Version %(AdditionalSharedFrameworkToInstall.Identity) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles</_DotNetInstallCommand>
-    </PropertyGroup>
-    <Message Text="Installing shared frameworks for @(AdditionalSharedFrameworkToInstall)" Importance="High" />
-    <Exec Condition="'%(AdditionalSharedFrameworkToInstall.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
-          IgnoreStandardErrorWarningFormat="true"
-          Command="$(_DotNetInstallCommand)" />
+  </Target>
 
-    <Exec Condition="'%(AdditionalSharedFrameworkToInstall.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
+  <!-- TODO: stamps -->
+  <Target Name="_InstallSharedFrameworksForWorkloadTesting">
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+          Command="$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)" />
+
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)"' />
   </Target>
 
   <Target Name="_GetDotNetVersion">
     <PropertyGroup>
-      <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), 'dotnet'))</_DotNetPath>
-      <_DotNetPath Condition="$([MSBuild]::IsOSPlatform('windows'))">$(_DotNetPath).exe</_DotNetPath>
       <_DotNetVersionCommand>$(_DotNetPath) --version</_DotNetVersionCommand>
     </PropertyGroup>
 
@@ -128,6 +131,11 @@
       ********************"
              Condition="$(SdkBandVersionForWorkload_ComputedFromInstaller) != $(SdkBandVersionForWorkload_FromRuntimeVersions)"
              Importance="High" />
+  </Target>
+
+  <Target Name="_FirstDotNetRun">
+    <!-- info`, or version don't trigger workload integrity check -->
+    <Exec Command="$(_DotNetPath) workload list" ConsoleToMsBuild="true" StandardOutputImportance="Low" />
   </Target>
 
   <Target Name="_SetPackageVersionForWorkloadsTesting">
@@ -159,10 +167,6 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
-  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
-             TaskName="GenerateFileFromTemplate"
-             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
-
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
@@ -183,7 +187,7 @@
       " />
 
     <MSBuild Projects="%(_NuGetsToBuild.Project)"
-             Properties="%(_NuGetsToBuild.Properties)"
+             Properties="%(_NuGetsToBuild.Properties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />
     <MSBuild Projects="%(_NuGetsToBuild.Project)"
              Properties="%(_NuGetsToBuild.Properties)"
@@ -207,7 +211,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
-                     SkipUpdateAppRefPack="true"
+                     IntermediateOutputPath="$(ArtifactsObjDir)wasm"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

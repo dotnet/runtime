@@ -617,7 +617,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
         internal bool IsConfigurationStarted => _configurationState is not ConfigurationState.NotConfigured;
         private volatile ConfigurationState _configurationState;
-        private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
+        private enum ConfigurationState : byte
+        {
+            NotConfigured = 0,
+            Configuring = 1,
+            Configured = 2
+        };
 
         private ExceptionDispatchInfo? _cachedConfigureError;
 
@@ -992,10 +997,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
 
-        internal ref struct PropertyHierarchyResolutionState
+        internal ref struct PropertyHierarchyResolutionState(JsonSerializerOptions options)
         {
-            public PropertyHierarchyResolutionState() { }
-            public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new();
+            public Dictionary<string, (JsonPropertyInfo, int index)> AddedProperties = new(options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             public Dictionary<string, JsonPropertyInfo>? IgnoredProperties;
             public bool IsPropertyOrderSpecified;
         }

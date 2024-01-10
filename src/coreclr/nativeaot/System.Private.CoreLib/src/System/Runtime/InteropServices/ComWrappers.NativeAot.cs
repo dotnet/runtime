@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
             }
 
             wrapperId = wrapper._comWrappers.id;
-            return Marshal.QueryInterface(wrapper._externalComObject, in iid, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper._externalComObject, iid, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, in IID_IUnknown, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper._externalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -424,7 +424,7 @@ namespace System.Runtime.InteropServices
             }
 
             [UnmanagedCallersOnly]
-            static bool IsRootedCallback(IntPtr pObj)
+            private static bool IsRootedCallback(IntPtr pObj)
             {
                 // We are paused in the GC, so this is safe.
 #pragma warning disable CS8500 // Takes a pointer to a managed type
@@ -512,7 +512,7 @@ namespace System.Runtime.InteropServices
             public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
             {
                 if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
-                    Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                    Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
                 {
                     return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
                 }
@@ -854,7 +854,7 @@ namespace System.Runtime.InteropServices
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.
-                if (0 != Marshal.QueryInterface(comObject, in IID_TaggedImpl, out nint implMaybe))
+                if (0 != Marshal.QueryInterface(comObject, IID_TaggedImpl, out nint implMaybe))
                 {
                     return null;
                 }
@@ -888,7 +888,7 @@ namespace System.Runtime.InteropServices
             bool refTrackerInnerScenario = flags.HasFlag(CreateObjectFlags.TrackerObject)
                 && flags.HasFlag(CreateObjectFlags.Aggregation);
             if (refTrackerInnerScenario &&
-                Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
+                Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
             {
                 // We are checking the supplied external value
                 // for IReferenceTracker since in .NET 5 API usage scenarios
@@ -900,11 +900,11 @@ namespace System.Runtime.InteropServices
                 // be the true identity.
                 using ComHolder referenceTracker = new ComHolder(referenceTrackerPtr);
                 checkForIdentity = referenceTrackerPtr;
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, in IID_IUnknown, out identity));
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, IID_IUnknown, out identity));
             }
             else
             {
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, in IID_IUnknown, out identity));
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, IID_IUnknown, out identity));
             }
 
             // Set the inner if scenario dictates an update.
@@ -951,7 +951,7 @@ namespace System.Runtime.InteropServices
 
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (_rcwCache.TryGetValue(identity, out GCHandle handle))
                     {
@@ -1047,7 +1047,7 @@ namespace System.Runtime.InteropServices
                 return true;
             }
 
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 object? cachedWrapper = null;
                 if (_rcwCache.TryGetValue(identity, out var existingHandle))
@@ -1092,7 +1092,7 @@ namespace System.Runtime.InteropServices
 
         private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the
@@ -1463,7 +1463,7 @@ namespace System.Runtime.InteropServices
                 return HResults.E_INVALIDARG;
             }
 
-            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
+            if (Marshal.QueryInterface(punk, IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
             {
                 return HResults.COR_E_INVALIDCAST;
             }
@@ -1472,7 +1472,7 @@ namespace System.Runtime.InteropServices
             {
                 using ComHolder identity = new ComHolder(ppv);
                 using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
-                return Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out *ppNewReference);
+                return Marshal.QueryInterface(trackerTarget.Ptr, IID_IReferenceTrackerTarget, out *ppNewReference);
             }
             catch (Exception e)
             {
@@ -1594,7 +1594,7 @@ namespace System.Runtime.InteropServices
                 targetPtr != IntPtr.Zero)
             {
                 using ComHolder target = new ComHolder(targetPtr);
-                if (Marshal.QueryInterface(target.Ptr, in IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
+                if (Marshal.QueryInterface(target.Ptr, IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
                 {
                     using ComHolder targetIdentity = new ComHolder(targetIdentityPtr);
                     return GetOrCreateObjectFromWrapper(wrapperId, targetIdentity.Ptr);

@@ -12,6 +12,13 @@ namespace System.Reflection.Emit
         {
         }
 
+        /// <summary>
+        /// Creates a <see cref="Label"/> with the given id.
+        /// </summary>
+        /// <param name="id">The unique id for the label.</param>
+        /// <returns>The <see cref="Label"/> created.</returns>
+        protected static Label CreateLabel(int id) => new Label(id);
+
         #region Public Members
 
         #region Emit

@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ObjectWriter;
 using ILLink.Shared;
 
 using Internal.IL;
@@ -79,6 +81,16 @@ namespace ILCompiler
             return _nodeFactory.NecessaryTypeSymbol(type);
         }
 
+        public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
+        {
+            bool canPotentiallyConstruct = _devirtualizationManager == null
+                ? true : _devirtualizationManager.CanConstructType(type);
+            if (canPotentiallyConstruct)
+                return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
+
+            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
+        }
+
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _dependencyGraph.ComputeMarkedNodes();
@@ -96,7 +108,7 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
-            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

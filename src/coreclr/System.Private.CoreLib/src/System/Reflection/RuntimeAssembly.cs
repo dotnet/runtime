@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration.Assemblies;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using CultureInfo = System.Globalization.CultureInfo;
 using System.IO;
-using System.Configuration.Assemblies;
-using StackCrawlMark = System.Threading.StackCrawlMark;
-using System.Runtime.Loader;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization;
-using System.Threading;
 using System.Security;
+using System.Threading;
+using CultureInfo = System.Globalization.CultureInfo;
+using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Reflection
 {
@@ -268,23 +268,7 @@ namespace System.Reflection
         public override IEnumerable<TypeInfo> DefinedTypes
         {
             [RequiresUnreferencedCode("Types might be removed")]
-            get
-            {
-                RuntimeModule[] modules = GetModulesInternal(true, false);
-                if (modules.Length == 1)
-                {
-                    return modules[0].GetDefinedTypes();
-                }
-
-                List<RuntimeType> rtTypes = new List<RuntimeType>();
-
-                for (int i = 0; i < modules.Length; i++)
-                {
-                    rtTypes.AddRange(modules[i].GetDefinedTypes());
-                }
-
-                return rtTypes.ToArray();
-            }
+            get => GetManifestModule(GetNativeHandle()).GetDefinedTypes();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
@@ -494,23 +478,29 @@ namespace System.Reflection
         }
 
         // Returns the names of all the resources
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetManifestResourceNames(RuntimeAssembly assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceNames")]
+        private static partial void GetManifestResourceNames(QCallAssembly assembly, ObjectHandleOnStack retResourceNames);
 
         // Returns the names of all the resources
         public override string[] GetManifestResourceNames()
         {
-            return GetManifestResourceNames(GetNativeHandle());
+            string[]? resourceNames = null;
+            RuntimeAssembly runtimeAssembly = this;
+            GetManifestResourceNames(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref resourceNames));
+            return resourceNames!;
         }
 
         // Returns the names of all the resources
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetReferencedAssemblies")]
+        private static partial void GetReferencedAssemblies(QCallAssembly assembly, ObjectHandleOnStack retReferencedAssemblies);
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
-            return GetReferencedAssemblies(GetNativeHandle());
+            AssemblyName[]? referencedAssemblies = null;
+            RuntimeAssembly runtimeAssembly = this;
+            GetReferencedAssemblies(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref referencedAssemblies));
+            return referencedAssemblies!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceInfo", StringMarshalling = StringMarshalling.Utf16)]

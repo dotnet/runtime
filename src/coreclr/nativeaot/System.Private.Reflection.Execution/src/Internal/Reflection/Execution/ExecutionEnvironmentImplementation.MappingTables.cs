@@ -1,30 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
-
-using global::Internal.Runtime.Augments;
-using global::Internal.Runtime.CompilerServices;
-using global::Internal.Runtime.TypeLoader;
-
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Execution.MethodInvokers;
-using global::Internal.Reflection.Execution.FieldAccessors;
-
-using global::Internal.Metadata.NativeFormat;
-
-using global::System.Runtime.InteropServices;
-
-using global::Internal.Runtime;
-using global::Internal.NativeFormat;
-
 using System.Reflection.Runtime.General;
 using System.Threading;
 
-using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
+using global::Internal.Metadata.NativeFormat;
+using global::Internal.NativeFormat;
+using global::Internal.Reflection.Core.Execution;
+using global::Internal.Reflection.Execution.FieldAccessors;
+using global::Internal.Reflection.Execution.MethodInvokers;
+using global::Internal.Runtime;
+using global::Internal.Runtime.Augments;
+using global::Internal.Runtime.CompilerServices;
+using global::Internal.Runtime.TypeLoader;
+using global::System;
+using global::System.Collections.Generic;
+using global::System.Reflection;
+using global::System.Runtime.InteropServices;
 
+using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
@@ -40,17 +34,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        private static RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
-        {
-            if (RuntimeAugments.IsGenericType(typeHandle))
-            {
-                return RuntimeAugments.GetGenericInstantiation(typeHandle, out typeArgumentsHandles);
-            }
-
-            typeArgumentsHandles = null;
-            return typeHandle;
-        }
-
         private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
@@ -254,7 +237,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            MethodBase methodInfo = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
             // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
             // inputs to reach the type loader (we don't have support to e.g. represent pointer types within the type loader)
@@ -428,7 +411,7 @@ namespace Internal.Reflection.Execution
 
                 if (!dstTypeDef.IsNull() && RuntimeAugments.IsGenericType(srcType))
                 {
-                    RuntimeTypeHandle srcTypeDef = GetTypeDefinition(srcType);;
+                    RuntimeTypeHandle srcTypeDef = GetTypeDefinition(srcType);
 
                     // Compare TypeDefs. We don't look at the generic components. We already know that the right type
                     // to return must be somewhere in the inheritance chain.
@@ -523,7 +506,7 @@ namespace Internal.Reflection.Execution
             KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
             if (ldFtnReverseLookup == null)
             {
-                var ldFtnReverseLookupBuilder = new ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>();
+                var ldFtnReverseLookupBuilder = default(ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>);
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
                     ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module)));
@@ -611,7 +594,7 @@ namespace Internal.Reflection.Execution
 
         private static FunctionPointersToOffsets ComputeLdftnReverseLookup_InvokeMap(NativeFormatModuleInfo mappingTableModule)
         {
-            FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = new FunctionPointersToOffsets();
+            FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = default;
 
             NativeReader invokeMapReader;
             if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.InvokeMap, out invokeMapReader))
@@ -870,7 +853,7 @@ namespace Internal.Reflection.Execution
                             }
                         }
 
-                        IntPtr cctorContext = TryGetStaticClassConstructionContext(declaringTypeHandle);
+                        IntPtr cctorContext = TypeLoaderEnvironment.GetStaticClassConstructionContext(declaringTypeHandle);
 
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, fieldAccessMetadata.Flags, fieldTypeHandle) :
@@ -943,15 +926,6 @@ namespace Internal.Reflection.Execution
         public sealed override bool TryGetFieldFromHandleAndType(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
             return TryGetFieldFromHandle(runtimeFieldHandle, out _, out fieldHandle);
-        }
-
-        /// <summary>
-        /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
-        /// </summary>
-        /// <param name="typeHandle">MethodTable of the type to look up</param>
-        internal static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
-        {
-            return TypeLoaderEnvironment.TryGetStaticClassConstructionContext(typeHandle);
         }
 
         private struct MethodParametersInfo

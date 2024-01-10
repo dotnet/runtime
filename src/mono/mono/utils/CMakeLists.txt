@@ -176,6 +176,8 @@ set(utils_common_sources
     ftnptr.h
     wasm-module-reader.h
     wasm-module-reader.c
+    mono-bitutils.h
+    mono-bitutils.c
   )
 
 if(MONO_CROSS_COMPILE)

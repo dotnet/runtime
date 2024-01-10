@@ -15,9 +15,9 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 ?
-                Empty<TSource>() :
-                TakeIterator<TSource>(source, count);
+            return count <= 0 || IsEmptyArray(source) ?
+                [] :
+                TakeIterator(source, count);
         }
 
         /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
@@ -37,6 +37,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             Index start = range.Start;
             Index end = range.End;
             bool isStartIndexFromEnd = start.IsFromEnd;
@@ -50,14 +55,14 @@ namespace System.Linq
             {
                 if (startIndex == 0 || (isEndIndexFromEnd && endIndex >= startIndex))
                 {
-                    return Empty<TSource>();
+                    return [];
                 }
             }
             else if (!isEndIndexFromEnd)
             {
-                return startIndex >= endIndex
-                    ? Empty<TSource>()
-                    : TakeRangeIterator(source, startIndex, endIndex);
+                return startIndex >= endIndex ?
+                    [] :
+                    TakeRangeIterator(source, startIndex, endIndex);
             }
 
             return TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
@@ -194,6 +199,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return TakeWhileIterator(source, predicate);
         }
 
@@ -220,6 +230,11 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return TakeWhileIterator(source, predicate);
@@ -251,8 +266,8 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 ?
-                Empty<TSource>() :
+            return count <= 0 || IsEmptyArray(source) ?
+                [] :
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: true, startIndex: count,
                     isEndIndexFromEnd: true, endIndex: 0);

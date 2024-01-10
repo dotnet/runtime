@@ -1842,6 +1842,17 @@ namespace System.Text
         public StringBuilder Replace(string oldValue, string? newValue) => Replace(oldValue, newValue, 0, Length);
 
         /// <summary>
+        /// Replaces all instances of one read-only character span with another in this builder.
+        /// </summary>
+        /// <param name="oldValue">The read-only character span to replace.</param>
+        /// <param name="newValue">The read-only character span to replace <paramref name="oldValue"/> with.</param>
+        /// <remarks>
+        /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
+        /// are removed from this builder.
+        /// </remarks>
+        public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) => Replace(oldValue, newValue, 0, Length);
+
+        /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
         /// </summary>
         /// <param name="sb">The other builder.</param>
@@ -1951,6 +1962,23 @@ namespace System.Text
         /// </remarks>
         public StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count)
         {
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
+            return Replace(oldValue.AsSpan(), newValue.AsSpan(), startIndex, count);
+        }
+
+        /// <summary>
+        /// Replaces all instances of one read-only character span with another in part of this builder.
+        /// </summary>
+        /// <param name="oldValue">The read-only character span to replace.</param>
+        /// <param name="newValue">The read-only character span to replace <paramref name="oldValue"/> with.</param>
+        /// <param name="startIndex">The index to start in this builder.</param>
+        /// <param name="count">The number of characters to read in this builder.</param>
+        /// <remarks>
+        /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
+        /// are removed from this builder.
+        /// </remarks>
+        public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
+        {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
@@ -1960,9 +1988,10 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
-            ArgumentException.ThrowIfNullOrEmpty(oldValue);
-
-            newValue ??= string.Empty;
+            if (oldValue.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(oldValue));
+            }
 
             var replacements = new ValueListBuilder<int>(stackalloc int[128]); // A list of replacement positions in a chunk to apply
 
@@ -2225,7 +2254,7 @@ namespace System.Text
         /// <remarks>
         /// This routine is very efficient because it does replacements in bulk.
         /// </remarks>
-        private void ReplaceAllInChunk(ReadOnlySpan<int> replacements, StringBuilder sourceChunk, int removeCount, string value)
+        private void ReplaceAllInChunk(ReadOnlySpan<int> replacements, StringBuilder sourceChunk, int removeCount, ReadOnlySpan<char> value)
         {
             Debug.Assert(!replacements.IsEmpty);
 
@@ -2251,7 +2280,7 @@ namespace System.Text
             while (true)
             {
                 // Copy in the new string for the ith replacement
-                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, ref value.GetRawStringData(), value.Length);
+                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, ref MemoryMarshal.GetReference<char>(value), value.Length);
                 int gapStart = replacements[i] + removeCount;
                 i++;
                 if ((uint)i >= replacements.Length)
@@ -2289,7 +2318,7 @@ namespace System.Text
         /// <param name="indexInChunk">The index in <paramref name="chunk"/> at which the substring starts.</param>
         /// <param name="count">The logical count of the substring.</param>
         /// <param name="value">The prefix.</param>
-        private bool StartsWith(StringBuilder chunk, int indexInChunk, int count, string value)
+        private bool StartsWith(StringBuilder chunk, int indexInChunk, int count, ReadOnlySpan<char> value)
         {
             for (int i = 0; i < value.Length; i++)
             {

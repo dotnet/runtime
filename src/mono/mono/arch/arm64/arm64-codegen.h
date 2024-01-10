@@ -523,18 +523,19 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* Logical (immediate) */
 
 // FIXME: imm
+
+#define arm_format_and(p, sf, opc, rd, rn, n, immr, imms) arm_emit ((p), 0b00010010000000000000000000000000 | ((sf) << 31) | ((opc) << 29) | ((n) << 22) | ((immr) << 16) | ((imms) << 10) | ((rn) << 5) | ((rd) << 0))
+
+#define arm_andw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b00, (rd), (rn), 0b0, (immr), (imms))
+#define arm_andx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b00, (rd), (rn), (n), (immr), (imms))
+#define arm_andsw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b11, (rd), (rn), 0b0, (immr), (imms))
+#define arm_andsx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b11, (rd), (rn), (n), (immr), (imms))
+#define arm_eorw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b10, (rd), (rn), 0b0, (immr), (imms))
+#define arm_eorx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b10, (rd), (rn), (n), (immr), (imms))
+#define arm_orrw_imm(p, rd, rn, immr, imms) arm_format_and ((p), 0b0, 0b01, (rd), (rn), 0b0, (immr), (imms))
+#define arm_orrx_imm(p, rd, rn, n, immr, imms) arm_format_and ((p), 0b1, 0b01, (rd), (rn), (n), (immr), (imms))
+
 #if 0
-#define arm_format_and(p, sf, opc, rd, rn, imm) arm_emit ((p), ((sf) << 31) | ((opc) << 29) | (0x24 << 23) | ((0) << 22) | ((imm) << 10) | ((rn) << 5) | ((rd) << 0))
-
-#define arm_andx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x0, (rd), (rn), (imm))
-#define arm_andw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x0, (rd), (rn), (imm))
-#define arm_andsx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x3, (rd), (rn), (imm))
-#define arm_andsw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x3, (rd), (rn), (imm))
-#define arm_eorx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x2, (rd), (rn), (imm))
-#define arm_eorw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x2, (rd), (rn), (imm))
-#define arm_orrx_imm(p, rd, rn, imm) arm_format_and ((p), 0x1, 0x1, (rd), (rn), (imm))
-#define arm_orrw_imm(p, rd, rn, imm) arm_format_and ((p), 0x0, 0x1, (rd), (rn), (imm))
-
 #define arm_tstx_imm(p, rn, imm) arm_andsx_imm ((p), ARMREG_RZR, (rn), (imm))
 #define arm_tstw_imm(p, rn, imm) arm_andsw_imm ((p), ARMREG_RZR, (rn), (imm))
 #endif

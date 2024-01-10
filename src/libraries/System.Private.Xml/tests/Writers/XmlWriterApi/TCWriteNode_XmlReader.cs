@@ -29,7 +29,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -55,7 +55,7 @@ namespace System.Xml.XmlWriterApiTests
                         CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                         xr.Dispose();
                         w.Dispose();
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     w.WriteStartElement("Root");
                     w.WriteNode(xr, false);
@@ -474,7 +474,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return; }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -513,7 +513,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return; }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -554,7 +554,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
             using (XmlWriter w = utils.CreateWriter())
             {
@@ -589,7 +589,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
             using (XmlWriter w = utils.CreateWriter())
             {
@@ -619,7 +619,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
             using (XmlWriter w = utils.CreateWriter())
             {
@@ -648,7 +648,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
             using (XmlWriter w = utils.CreateWriter())
             {
@@ -921,7 +921,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             catch (XmlException e) { CError.WriteLine(e); return; }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]

@@ -63,7 +63,7 @@ public class MiscTests3 : BlazorWasmTestBase
                 public static extern int cpp_add(int a, int b);
             }}";
 
-        File.WriteAllText(Path.Combine(_projectDir!, "Components", "Pages", "MyDllImport.cs"), myDllImportCs);
+        File.WriteAllText(Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"), myDllImportCs);
 
         AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""mylib.cpp"" />");
         BlazorAddRazorButton("cpp_add", """
@@ -144,7 +144,7 @@ public class MiscTests3 : BlazorWasmTestBase
         Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
-    private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Components/Pages/Counter.razor")
+    private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
     {
         string additionalCode = $$"""
             <p role="{{methodName}}">Output: @outputText</p>

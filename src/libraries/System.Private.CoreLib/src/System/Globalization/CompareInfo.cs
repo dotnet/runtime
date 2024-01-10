@@ -1450,7 +1450,7 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1493,7 +1493,7 @@ namespace System.Globalization
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetSortKey(source, destination, options) :
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1530,9 +1530,9 @@ namespace System.Globalization
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
-                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+              throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
               IcuGetSortKeyLength(source, options);
 
@@ -1607,7 +1607,7 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
 #endif

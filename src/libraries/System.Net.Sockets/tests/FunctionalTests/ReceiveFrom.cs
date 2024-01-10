@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+ // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
@@ -96,7 +96,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
-            if (ipv6 && PlatformDetection.IsOSXLike)
+            if (ipv6 && PlatformDetection.IsApplePlatform)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/47335")]
                 // accept() will create a (seemingly) DualMode socket on Mac,
@@ -182,7 +182,7 @@ namespace System.Net.Sockets.Tests
             using Socket sender = new Socket(SocketType.Dgram, ProtocolType.Udp);
             if (receiver.DualMode != true || sender.DualMode != true)
             {
-                throw new SkipException("DualMode not available");
+                throw SkipException.ForSkip("DualMode not available");
             }
 
             ConfigureNonBlocking(sender);

@@ -178,7 +178,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 val.ValidateElement("bar", "", null, "t:type1", null, "uri:tempuri " + Path.Combine(TestData, XSDFILE_TARGET_NAMESPACE), null);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaValidationException e)
             {
@@ -186,7 +186,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -227,7 +227,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     break;
 
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
 
@@ -243,7 +243,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 val.ValidateElement("bar2", "", info);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaValidationException e)
             {
@@ -319,7 +319,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             {
                 r.ReadStartElement("foo");
                 val.ValidateElement("bar", "", info);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaValidationException e)
             {
@@ -370,7 +370,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 val.ValidateElement("bar", "", info);
-                Assert.True(false, "Validation Error - XmlSchemaValidationException wasn't thrown!");
+                Assert.Fail("Validation Error - XmlSchemaValidationException wasn't thrown!");
             }
             catch (XmlSchemaValidationException e)
             {
@@ -406,7 +406,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             try
             {
                 val.ValidateElement("bar2", "", info);
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (XmlSchemaValidationException e)
             {
@@ -471,7 +471,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     break;
 
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
 

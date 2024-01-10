@@ -240,6 +240,49 @@ struct alloc_context : gc_alloc_context
     {
         gc_reserved_2 = heap;
     }
+
+    // How the alloc_count field is organized -
+    // 
+    // high 16-bits are for the handle info, out of which
+    // high 10 bits store the cpu index. 
+    // low 6 bits store the number of handles allocated so far (before the next reset).
+    // 
+    // low 16-bits are for the actual alloc_count used by balance_heaps
+    inline void init_alloc_count()
+    {
+        alloc_count &= 0xffff0000;
+    }
+
+    inline uint16_t get_alloc_count()
+    {
+        return (uint16_t)alloc_count;
+    }
+
+    inline void inc_alloc_count()
+    {
+        int high_16_bits = (uint32_t)alloc_count >> 16;
+        int low_16_bits = alloc_count & 0xffff;
+        // When we overflow we don't start from 0 because we would't want to go through the init logic again
+        // in balance_heaps.
+        low_16_bits = (low_16_bits == 0xffff) ? 16 : (low_16_bits + 1);
+
+        alloc_count = (high_16_bits << 16) | low_16_bits;
+    }
+
+    inline void init_handle_info()
+    {
+        // Start the handle table index based on the AC value to make it random. There may have been handles
+        // already allocated before this and that's fine.
+        int cpu_index = ((size_t)this >> 4) % g_num_processors;
+        int handle_info = cpu_index << 6;
+        alloc_count = handle_info << 16;
+    }
+
+    inline void set_handle_info (int handle_info)
+    {
+        int low_16_bits = alloc_count & 0xffff;
+        alloc_count = low_16_bits | (handle_info << 16);
+    }
 #endif // FEATURE_SVR_GC
 };
 
@@ -297,5 +340,57 @@ inline bool IsServerHeap()
     return false;
 #endif // FEATURE_SVR_GC
 }
+
+#ifndef MAX_LONGPATH
+#define MAX_LONGPATH 1024
+#endif // MAX_LONGPATH
+
+// #define TRACE_GC
+// #define SIMPLE_DPRINTF
+
+#ifdef TRACE_GC
+#define MIN_CUSTOM_LOG_LEVEL 7
+#define SEG_REUSE_LOG_0 (MIN_CUSTOM_LOG_LEVEL)
+#define SEG_REUSE_LOG_1 (MIN_CUSTOM_LOG_LEVEL + 1)
+#define DT_LOG_0 (MIN_CUSTOM_LOG_LEVEL + 2)
+#define BGC_TUNING_LOG (MIN_CUSTOM_LOG_LEVEL + 3)
+#define GTC_LOG (MIN_CUSTOM_LOG_LEVEL + 4)
+#define GC_TABLE_LOG (MIN_CUSTOM_LOG_LEVEL + 5)
+#define JOIN_LOG (MIN_CUSTOM_LOG_LEVEL + 6)
+#define SPINLOCK_LOG (MIN_CUSTOM_LOG_LEVEL + 7)
+#define SNOOP_LOG (MIN_CUSTOM_LOG_LEVEL + 8)
+#define REGIONS_LOG (MIN_CUSTOM_LOG_LEVEL + 9)
+
+// NOTE! This is for HEAP_BALANCE_INSTRUMENTATION
+// This particular one is special and needs to be well formatted because we
+// do post processing on it with tools\GCLogParser. If you need to add some
+// detail to help with investigation that's not 't processed by tooling
+// prefix it with TEMP so that line will be written to the results as is in
+// the result. I have some already logged with HEAP_BALANCE_TEMP_LOG.
+#define HEAP_BALANCE_LOG (MIN_CUSTOM_LOG_LEVEL + 10)
+#define HEAP_BALANCE_TEMP_LOG (MIN_CUSTOM_LOG_LEVEL + 11)
+
+#ifdef SIMPLE_DPRINTF
+
+HRESULT initialize_log_file();
+void flush_gc_log (bool);
+void GCLog (const char *fmt, ... );
+#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
+#else //SIMPLE_DPRINTF
+#ifdef HOST_64BIT
+#define dprintf(l,x) STRESS_LOG_VA(l,x);
+//#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
+#else //HOST_64BIT
+#error Logging dprintf to stress log on 32 bits platforms is not supported.
+#endif //HOST_64BIT
+#endif //SIMPLE_DPRINTF
+
+#else //TRACE_GC
+#define dprintf(l,x)
+#endif //TRACE_GC
+
+#if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
+FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_config);
+#endif //TRACE_GC || GC_CONFIG_DRIVEN
 
 #endif // __GC_H

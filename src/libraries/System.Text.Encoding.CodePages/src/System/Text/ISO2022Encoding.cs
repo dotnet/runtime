@@ -31,13 +31,13 @@
 // Note: I think that IsAlwaysNormalized should probably return true for form C for Chinese 20936 based CPs.
 //
 
-using System.Globalization;
-using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
 using System;
-using System.Security;
+using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
 
 namespace System.Text
 {

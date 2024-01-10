@@ -46,7 +46,7 @@ public:
 private:
     BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
     BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
-    BasicBlock* m_b3; // m_b1->bbJumpDest. Null if m_b2 is not a return block.
+    BasicBlock* m_b3; // m_b1->bbTarget. Null if m_b2 is not a return block.
 
     Compiler* m_comp; // The pointer to the Compiler instance
 
@@ -81,7 +81,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-//  optOptimizeBoolsCondBlock:  Optimize boolean when bbJumpKind of both m_b1 and m_b2 are BBJ_COND
+//  optOptimizeBoolsCondBlock:  Optimize boolean when bbKind of both m_b1 and m_b2 are BBJ_COND
 //
 //  Returns:
 //      true if boolean optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
@@ -89,7 +89,7 @@ private:
 //  Notes:
 //      m_b1 and m_b2 are set on entry.
 //
-//      Case 1: if b1.bbJumpDest == b2.bbJumpDest, it transforms
+//      Case 1: if b1.bbTarget == b2.bbTarget, it transforms
 //          B1 : brtrue(t1, Bx)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -107,7 +107,7 @@ private:
 //              B3: GT_RETURN (BBJ_RETURN)
 //              B4: GT_RETURN (BBJ_RETURN)
 //
-//      Case 2: if B2->NextIs(B1.bbJumpDest), it transforms
+//      Case 2: if B2->FalseTargetIs(B1.bbTarget), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -123,9 +123,9 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     m_t3 = nullptr;
 
-    // Check if m_b1 and m_b2 have the same bbJumpDest
+    // Check if m_b1 and m_b2 have the same bbTarget
 
-    if (m_b1->HasJumpTo(m_b2->GetJumpDest()))
+    if (m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -137,7 +137,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
         m_sameTarget = true;
     }
-    else if (m_b2->NextIs(m_b1->GetJumpDest()))
+    else if (m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, B3)
@@ -185,7 +185,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     genTreeOps foldOp;
     genTreeOps cmpOp;
-    var_types  foldType = m_c1->TypeGet();
+    var_types  foldType = genActualType(m_c1);
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -533,6 +533,96 @@ bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cns
 }
 
 //------------------------------------------------------------------------------
+// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) where cmp1 is X >= 0
+//    and cmp2 is X < NN (NeverNegative), try to fold the range test into a single
+//    X u< NN (unsigned) compare node.
+//
+// Arguments:
+//    compiler       - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
+bool FoldNeverNegativeRangeTest(
+    Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    GenTree*       var1Node;
+    GenTreeIntCon* cns1Node;
+    genTreeOps     cmp1Op;
+
+    // First cmp has to be "X >= 0" (or "0 <= X")
+    // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
+    // It seems to be a rare case, so we don't handle it for now.
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    {
+        return false;
+    }
+
+    // Now, reverse the comparison if necessary depending on cmp1IsReversed and cmp2IsReversed
+    // so we'll get a canonical form of "X >= 0 && X </<= NN"
+    cmp1Op            = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+    genTreeOps cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
+
+    if ((cmp1Op != GT_GE) || (!cns1Node->IsIntegralConst(0)))
+    {
+        // Lower bound check has to be "X >= 0".
+        // We already re-ordered the comparison so that the constant is always on the right side.
+        return false;
+    }
+
+    // Upper bound check has to be "X relop NN" or "NN relop X" (NN = NeverNegative)
+    // We allow var1Node to be a GT_COMMA node, so we need to call gtEffectiveVal() to get the actual variable
+    // since it's guaranteed to be evaluated first.
+    GenTree* upperBound;
+    if (cmp2->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+        GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp1()))
+    {
+        // "X relop NN"
+        upperBound = cmp2->gtGetOp2();
+    }
+    else if (cmp2->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+             GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp2()))
+    {
+        // "NN relop X"
+        upperBound = cmp2->gtGetOp1();
+        // Normalize to "X relop NN"
+        cmp2Op = GenTree::SwapRelop(cmp2Op);
+    }
+    else
+    {
+        return false;
+    }
+
+    // Check that our upper bound is known to be never negative (e.g. GT_ARR_LENGTH or Span.Length, etc.)
+    if (!upperBound->IsNeverNegative(comp) || !upperBound->TypeIs(var1Node->TypeGet()))
+    {
+        return false;
+    }
+
+    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        return false;
+    }
+
+    if ((cmp2Op != GT_LT) && (cmp2Op != GT_LE))
+    {
+        // Upper bound check has to be "X < NN" or "X <= NN" (normalized form).
+        return false;
+    }
+
+    cmp1->gtOp1 = var1Node;
+    cmp1->gtOp2 = upperBound;
+    cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op);
+    cmp1->SetUnsigned();
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
 //    fold them into a single compare node if possible, e.g.:
 //      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
@@ -560,12 +650,11 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
     genTreeOps     cmp2Op;
 
     // Make sure both conditions are constant range checks, e.g. "X > CNS"
-    // TODO: support more cases, e.g. "X >= 0 && X < array.Length" -> "(uint)X < array.Length"
-    // Basically, we can use GenTree::IsNeverNegative() for it.
     if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
         !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
     {
-        return false;
+        // Give FoldNeverNegativeRangeTest a try if both conditions are not constant range checks.
+        return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
     }
 
     // Reverse the comparisons if necessary so we'll get a canonical form "cond1 == true && cond2 == true" -> InRange.
@@ -637,7 +726,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 {
     // At this point we have two consecutive conditional blocks (BBJ_COND): m_b1 and m_b2
     assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
-    assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->NextIs(m_b2));
+    assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->FalseTargetIs(m_b2));
 
     if (m_b2->isRunRarely())
     {
@@ -646,13 +735,13 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || ((m_b2->bbFlags & BBF_DONT_REMOVE) != 0))
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->HasFlag(BBF_DONT_REMOVE))
     {
         // Conditions aren't in the same EH region or m_b2 can't be removed
         return false;
     }
 
-    if (m_b1->HasJumpTo(m_b1) || m_b1->HasJumpTo(m_b2) || m_b2->HasJumpTo(m_b2) || m_b2->HasJumpTo(m_b1))
+    if (m_b1->TrueTargetIs(m_b1) || m_b1->TrueTargetIs(m_b2) || m_b2->TrueTargetIs(m_b2) || m_b2->TrueTargetIs(m_b1))
     {
         // Ignoring weird cases like a condition jumping to itself or when JumpDest == Next
         return false;
@@ -660,9 +749,9 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 
     // We're interested in just two shapes for e.g. "X > 10 && X < 100" range test:
     //
-    BasicBlock* notInRangeBb = m_b1->GetJumpDest();
+    BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
     BasicBlock* inRangeBb;
-    if (notInRangeBb == m_b2->GetJumpDest())
+    if (notInRangeBb == m_b2->GetTrueTarget())
     {
         // Shape 1: both conditions jump to NotInRange
         //
@@ -674,9 +763,9 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         //
         // InRange:
         // ...
-        inRangeBb = m_b2->Next();
+        inRangeBb = m_b2->GetFalseTarget();
     }
-    else if (notInRangeBb == m_b2->Next())
+    else if (notInRangeBb == m_b2->GetFalseTarget())
     {
         // Shape 2: 2nd block jumps to InRange
         //
@@ -688,7 +777,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         //
         // NotInRange:
         // ...
-        inRangeBb = m_b2->GetJumpDest();
+        inRangeBb = m_b2->GetTrueTarget();
     }
     else
     {
@@ -711,7 +800,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     const bool cmp1IsReversed = true;
 
     // cmp2 can be either reversed or not
-    const bool cmp2IsReversed = m_b2->HasJumpTo(notInRangeBb);
+    const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
 
     if (!FoldRangeTests(m_comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
     {
@@ -722,7 +811,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     if (!cmp2IsReversed)
     {
         // Re-direct firstBlock to jump to inRangeBb
-        m_b1->SetJumpDest(inRangeBb);
+        m_b1->SetTrueTarget(inRangeBb);
     }
 
     // Remove the 2nd condition block as we no longer need it
@@ -737,7 +826,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 }
 
 //-----------------------------------------------------------------------------
-//  optOptimizeCompareChainCondBlock:  Create a chain when when both m_b1 and m_b2 are BBJ_COND.
+//  optOptimizeCompareChainCondBlock:  Create a chain when both m_b1 and m_b2 are BBJ_COND.
 //
 //  Returns:
 //      true if chain optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
@@ -812,13 +901,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if (m_b1->NextIs(m_b2) && m_b2->NextIs(m_b1->GetJumpDest()))
+    if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (m_b1->NextIs(m_b2) && m_b1->HasJumpTo(m_b2->GetJumpDest()))
+    else if (m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
         // Found two conditions connected together.
     }
@@ -918,11 +1007,12 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
-    m_b1->SetJumpKind(BBJ_NONE DEBUG_ARG(m_comp));
+    m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
+    m_b1->SetKindAndTarget(BBJ_ALWAYS, m_b1->GetFalseTarget());
+    m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
-    m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
+    m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
     if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
@@ -1171,22 +1261,22 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetJumpDest(), m_b1);
+        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetTrueTarget(), m_b1);
         FlowEdge* edge2;
 
         if (m_sameTarget)
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetJumpDest(), m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetTrueTarget(), m_b2);
         }
         else
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->Next(), m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetFalseTarget(), m_b2);
 
-            m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
+            m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
 
-            m_b1->SetJumpDest(m_b2->GetJumpDest());
+            m_b1->SetTrueTarget(m_b2->GetTrueTarget());
 
-            m_comp->fgAddRefPred(m_b2->GetJumpDest(), m_b1);
+            m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
         }
 
         assert(edge1 != nullptr);
@@ -1196,11 +1286,11 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetJumpDest());
+            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetTrueTarget());
         }
         else
         {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetJumpDest());
+            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetTrueTarget());
         }
     }
 
@@ -1208,21 +1298,18 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
-        m_b1->SetJumpDest(nullptr);
-        m_b1->SetJumpKind(BBJ_RETURN DEBUG_ARG(m_comp));
-#ifdef DEBUG
-        m_b1->SetJumpSwt(m_b2->GetJumpSwt());
-#endif
+        assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_RETURN));
-        assert(m_b1->NextIs(m_b2));
+        assert(m_b1->FalseTargetIs(m_b2));
         assert(m_b3 != nullptr);
+        m_b1->SetKindAndTarget(BBJ_RETURN);
     }
     else
     {
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
-        assert(m_b1->HasJumpTo(m_b2->GetJumpDest()));
-        assert(m_b1->NextIs(m_b2));
+        assert(m_b1->TrueTargetIs(m_b2->GetTrueTarget()));
+        assert(m_b1->FalseTargetIs(m_b2));
         assert(!m_b2->IsLast());
     }
 
@@ -1230,33 +1317,37 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
-        m_comp->fgReplacePred(m_b2->Next(), m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->GetJumpDest(), m_b2);
+        // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
+        // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
+        m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
+        m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
+        m_b1->SetFalseTarget(m_b2->GetFalseTarget());
     }
 
     // Get rid of the second block
 
-    m_comp->fgUnlinkBlock(m_b2);
-    m_b2->bbFlags |= BBF_REMOVED;
+    m_comp->fgUnlinkBlockForRemoval(m_b2);
+    m_b2->SetFlags(BBF_REMOVED);
     // If m_b2 was the last block of a try or handler, update the EH table.
     m_comp->ehUpdateForDeletedBlock(m_b2);
 
     if (optReturnBlock)
     {
         // Get rid of the third block
-        m_comp->fgUnlinkBlock(m_b3);
-        m_b3->bbFlags |= BBF_REMOVED;
+        m_comp->fgUnlinkBlockForRemoval(m_b3);
+        m_b3->SetFlags(BBF_REMOVED);
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
     }
 
     // Update loop table
-    m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-    if (optReturnBlock)
+    if (m_comp->optLoopTableValid)
     {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
+        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
+        if (optReturnBlock)
+        {
+            m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
+        }
     }
 
     // Update IL range of first block
@@ -1275,7 +1366,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //  Notes:
 //      m_b1, m_b2 and m_b3 of OptBoolsDsc are set on entry.
 //
-//      if B1.bbJumpDest == b3, it transforms
+//      if B1.bbTarget == b3, it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : ret(t2)
 //          B3 : ret(0)
@@ -1327,7 +1418,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
     // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
-    var_types foldType = m_c1->TypeGet();
+    var_types foldType = genActualType(m_c1->TypeGet());
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -1808,14 +1899,14 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // If there is no next block, we're done
 
-            BasicBlock* b2 = b1->Next();
+            BasicBlock* b2 = b1->GetFalseTarget();
             if (b2 == nullptr)
             {
                 break;
             }
 
             // The next block must not be marked as BBF_DONT_REMOVE
-            if (b2->bbFlags & BBF_DONT_REMOVE)
+            if (b2->HasFlag(BBF_DONT_REMOVE))
             {
                 continue;
             }
@@ -1826,7 +1917,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if (!b1->HasJumpTo(b2->GetJumpDest()) && !b2->NextIs(b1->GetJumpDest()))
+                if (!b1->TrueTargetIs(b2->GetTrueTarget()) && !b2->FalseTargetIs(b1->GetTrueTarget()))
                 {
                     continue;
                 }
@@ -1858,11 +1949,11 @@ PhaseStatus Compiler::optOptimizeBools()
             else if (b2->KindIs(BBJ_RETURN))
             {
                 // Set b3 to b1 jump destination
-                BasicBlock* b3 = b1->GetJumpDest();
+                BasicBlock* b3 = b1->GetTrueTarget();
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 
-                if (b3->bbFlags & BBF_DONT_REMOVE)
+                if (b3->HasFlag(BBF_DONT_REMOVE))
                 {
                     continue;
                 }

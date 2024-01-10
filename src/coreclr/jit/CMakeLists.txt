@@ -230,6 +230,7 @@ set( JIT_I386_SOURCES
 set( JIT_ARM64_SOURCES
   codegenarmarch.cpp
   codegenarm64.cpp
+  codegenarm64test.cpp
   emitarm64.cpp
   lowerarmarch.cpp
   lsraarmarch.cpp
@@ -346,6 +347,7 @@ set( JIT_HEADERS
   namedintrinsiclist.h
   objectalloc.h
   opcode.h
+  optcse.h
   phase.h
   promotion.h
   rangecheck.h
@@ -398,8 +400,10 @@ set( JIT_I386_HEADERS ${JIT_AMD64_HEADERS} )
 set( JIT_ARM64_HEADERS
     emitarm64.h
     emitfmtsarm64.h
+    emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
     instrsarm64.h
+    instrsarm64sve.h
     registerarm64.h
     simdashwintrinsiclistarm64.h
 )
@@ -508,7 +512,7 @@ else()
 
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
-    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:LINKER:-Bsymbolic>)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
   endif()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})

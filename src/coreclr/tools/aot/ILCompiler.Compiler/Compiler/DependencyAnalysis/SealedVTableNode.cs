@@ -140,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int interfaceIndex = 0; interfaceIndex < declTypeRuntimeInterfaces.Length; interfaceIndex++)
             {
                 var interfaceType = declTypeRuntimeInterfaces[interfaceIndex];
-                var interfaceDefinitionType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
+                var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
                 virtualSlots = factory.VTable(interfaceType).Slots;
 
@@ -152,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis
                         continue;
 
                     if  (!interfaceType.IsTypeDefinition)
-                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                     var implMethod = declMethod.Signature.IsStatic ?
                         declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(declMethod) :
@@ -216,9 +216,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
             {
+                DefType defType = _type.GetClosestDefType();
+
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
-                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, _type);
+                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, defType);
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);

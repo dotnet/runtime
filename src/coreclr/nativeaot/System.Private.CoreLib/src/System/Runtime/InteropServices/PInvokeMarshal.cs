@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security;
-using Debug = System.Diagnostics.Debug;
+using System.Buffers;
 using System.Collections.Generic;
-using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Security;
+using System.Text;
+using System.Threading;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
-using System.Text;
-using System.Buffers;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace System.Runtime.InteropServices
 {
@@ -50,8 +51,10 @@ namespace System.Runtime.InteropServices
             if (del == null)
                 return IntPtr.Zero;
 
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
             if (del.GetEETypePtr().IsGeneric)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "delegate");
+#pragma warning restore CA2208
 
             NativeFunctionPointerWrapper? fpWrapper = del.Target as NativeFunctionPointerWrapper;
             if (fpWrapper != null)
@@ -230,8 +233,10 @@ namespace System.Runtime.InteropServices
             // We need to create the delegate that points to the invoke method of a
             // NativeFunctionPointerWrapper derived class
             //
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
             if (delegateType.ToEETypePtr().BaseType != EETypePtr.EETypePtrOf<MulticastDelegate>())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, "t");
+#pragma warning restore CA2208
 
             IntPtr pDelegateCreationStub = RuntimeInteropData.GetForwardDelegateCreationStub(delegateType);
             Debug.Assert(pDelegateCreationStub != IntPtr.Zero);

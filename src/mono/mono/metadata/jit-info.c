@@ -860,6 +860,8 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 		ji->has_thunk_info = 1;
 	if (flags & JIT_INFO_HAS_UNWIND_INFO)
 		ji->has_unwind_info = 1;
+	if (flags & JIT_INFO_NO_MRGCTX)
+		ji->no_mrgctx = 1;
 }
 
 /**

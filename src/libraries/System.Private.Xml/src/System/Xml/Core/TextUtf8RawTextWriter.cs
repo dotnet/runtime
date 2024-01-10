@@ -5,11 +5,11 @@
 // Instead, modify TextRawTextWriterGenerator.ttinclude
 
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
-using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Xml
 {

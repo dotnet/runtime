@@ -653,7 +653,7 @@ namespace Microsoft.Win32
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtArchiveExportedLog(
                             EventLogHandle session,
-                            [MarshalAs(UnmanagedType.LPWStr)]string logFilePath,
+                            [MarshalAs(UnmanagedType.LPWStr)] string logFilePath,
                             int locale,
                             int flags);
 
@@ -661,8 +661,8 @@ namespace Microsoft.Win32
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtClearLog(
                             EventLogHandle session,
-                            [MarshalAs(UnmanagedType.LPWStr)]string channelPath,
-                            [MarshalAs(UnmanagedType.LPWStr)]string targetFilePath,
+                            [MarshalAs(UnmanagedType.LPWStr)] string channelPath,
+                            [MarshalAs(UnmanagedType.LPWStr)] string targetFilePath,
                             int flags);
 
         // RENDERING

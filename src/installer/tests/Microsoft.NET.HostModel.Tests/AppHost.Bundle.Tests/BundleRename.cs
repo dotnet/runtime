@@ -12,7 +12,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleRename : BundleTestBase, IClassFixture<BundleRename.SharedTestState>
+    public class BundleRename : IClassFixture<BundleRename.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -27,9 +27,7 @@ namespace AppHost.Bundle.Tests
         [InlineData(false)] // Test renaming the single-exe when contents are not extracted 
         private void Bundle_can_be_renamed_while_running(bool testExtraction)
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            BundleOptions options = testExtraction ? BundleOptions.BundleAllContent : BundleOptions.None;
-            string singleFile = BundleSelfContainedApp(fixture, options);
+            string singleFile = sharedTestState.App.Bundle(testExtraction ? BundleOptions.BundleAllContent : BundleOptions.None);
             string outputDir = Path.GetDirectoryName(singleFile);
             string renameFile = Path.Combine(outputDir, Path.GetRandomFileName());
             string waitFile = Path.Combine(outputDir, "wait");
@@ -59,18 +57,18 @@ namespace AppHost.Bundle.Tests
                 .And.HaveStdOutContaining("Hello World!");
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
+            public SingleFileTestApp App { get; set; }
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("AppWithWait");
+                App = SingleFileTestApp.CreateSelfContained("AppWithWait");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                App?.Dispose();
             }
         }
     }

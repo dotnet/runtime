@@ -47,7 +47,7 @@ namespace System.IO.Pipelines.Tests
             try
             {
                 writer.Write(new Span<byte>(array, offset, length));
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (Exception ex)
             {

@@ -1,6 +1,6 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
@@ -68,7 +68,7 @@
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="..\..\..\..\simple-server\bin\$(Configuration)\net6.0\HttpServer" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="$(_Dotnet) run --configuration $(Configuration) --project ..\..\..\..\simple-server\HttpServer.csproj -s &quot;$(SimpleServerURLSuffix)&quot;" />
   </Target>
 
   <Target Name="TriggerGenerateRunScript"

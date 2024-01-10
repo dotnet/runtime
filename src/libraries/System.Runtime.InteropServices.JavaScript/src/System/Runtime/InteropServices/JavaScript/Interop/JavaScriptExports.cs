@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -25,13 +26,18 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // initialized and set by caller
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we are on the thread which owns the proxies
+                arg_exc.AssertCurrentThreadContext();
+#endif
+
                 arg_1.ToManaged(out IntPtr entrypointPtr);
                 if (entrypointPtr == IntPtr.Zero)
                 {
                     throw new MissingMethodException(SR.MissingManagedEntrypointHandle);
                 }
 
-                RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
+                RuntimeMethodHandle methodHandle = GetMethodHandleFromIntPtr(entrypointPtr);
                 // this would not work for generic types. But Main() could not be generic, so we are fine.
                 MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
@@ -102,6 +108,10 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we are on the thread which owns the proxies
+                arg_exc.AssertCurrentThreadContext();
+#endif
                 arg_1.ToManaged(out byte[]? dllBytes);
                 arg_2.ToManaged(out byte[]? pdbBytes);
 
@@ -120,6 +130,10 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we are on the thread which owns the proxies
+                arg_exc.AssertCurrentThreadContext();
+#endif
                 arg_1.ToManaged(out byte[]? dllBytes);
 
                 if (dllBytes != null)
@@ -139,34 +153,12 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2]; // initialized and set by caller
+
             try
             {
-                GCHandle handle = (GCHandle)arg_1.slot.GCHandle;
-
-                JSHostImplementation.ThreadJsOwnedObjects.Remove(handle.Target!);
-                handle.Free();
-            }
-            catch (Exception ex)
-            {
-                arg_exc.ToJS(ex);
-            }
-        }
-
-        // the marshaled signature is:
-        // GCHandle CreateTaskCallback()
-        public static void CreateTaskCallback(JSMarshalerArgument* arguments_buffer)
-        {
-            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
-            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return value
-            try
-            {
-                JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
-#if FEATURE_WASM_THREADS
-                holder.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
-                holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
-#endif
-                arg_return.slot.Type = MarshalerType.Object;
-                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
+                // when we arrive here, we are on the thread which owns the proxies
+                var ctx = arg_exc.AssertCurrentThreadContext();
+                ctx.ReleaseJSOwnedObjectByGCHandle(arg_1.slot.GCHandle);
             }
             catch (Exception ex)
             {
@@ -186,8 +178,13 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_4 set by JS caller when there are arguments
             try
             {
+#if FEATURE_WASM_THREADS
+                // when we arrive here, we are on the thread which owns the proxies
+                arg_exc.AssertCurrentThreadContext();
+#endif
+
                 GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
-                if (callback_gc_handle.Target is JSHostImplementation.ToManagedCallback callback)
+                if (callback_gc_handle.Target is ToManagedCallback callback)
                 {
                     // arg_2, arg_3, arg_4, arg_res are processed by the callback
                     callback(arguments_buffer);
@@ -211,18 +208,34 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
             // arg_2 set by caller when this is SetException call
             // arg_3 set by caller when this is SetResult call
+
             try
             {
-                GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
-                if (callback_gc_handle.Target is JSHostImplementation.TaskCallback holder && holder.Callback is not null)
+                // when we arrive here, we are on the thread which owns the proxies
+                var ctx = arg_exc.AssertCurrentThreadContext();
+                var holder = ctx.GetPromiseHolder(arg_1.slot.GCHandle);
+
+#if FEATURE_WASM_THREADS
+                lock (ctx)
                 {
-                    // arg_2, arg_3 are processed by the callback
-                    holder.Callback(arguments_buffer);
+                    if (holder.Callback == null)
+                    {
+                        holder.CallbackReady = new ManualResetEventSlim(false);
+                    }
                 }
-                else
+                if (holder.CallbackReady != null)
                 {
-                    throw new InvalidOperationException(SR.NullTaskCallback);
+#pragma warning disable CA1416 // Validate platform compatibility
+                    holder.CallbackReady?.Wait();
+#pragma warning restore CA1416 // Validate platform compatibility
                 }
+#endif
+                var callback = holder.Callback!;
+                ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+
+                // arg_2, arg_3 are processed by the callback
+                // JSProxyContext.PopOperation() is called by the callback
+                callback!(arguments_buffer);
             }
             catch (Exception ex)
             {
@@ -239,6 +252,9 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
             try
             {
+                // when we arrive here, we are on the thread which owns the proxies
+                arg_exc.AssertCurrentThreadContext();
+
                 GCHandle exception_gc_handle = (GCHandle)arg_1.slot.GCHandle;
                 if (exception_gc_handle.Target is Exception exception)
                 {
@@ -257,19 +273,13 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_THREADS
 
+        // this is here temporarily, until JSWebWorker becomes public API
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]
         // the marshaled signature is:
-        // void InstallSynchronizationContext()
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.WebWorker", "System.Runtime.InteropServices.JavaScript")]
-        public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
-            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
-            try
-            {
-                JSHostImplementation.InstallWebWorkerInterop(true, true);
-            }
-            catch (Exception ex)
-            {
-                arg_exc.ToJS(ex);
-            }
+        // void InstallMainSynchronizationContext()
+        public static void InstallMainSynchronizationContext()
+        {
+            InstallWebWorkerInterop(true);
         }
 
 #endif

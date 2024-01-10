@@ -34,6 +34,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.LoongArch64:
                     return LoongArch64TransitionBlock.Instance;
 
+                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                    return RiscV64TransitionBlock.Instance;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -169,5 +172,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             public override int OffsetOfFirstGCRefMapSlot => SizeOfCalleeSavedRegisters;
             public override int OffsetOfArgumentRegisters => OffsetOfFirstGCRefMapSlot;
         }
+
+        private sealed class RiscV64TransitionBlock : TransitionBlock
+        {
+            public static readonly TransitionBlock Instance = new RiscV64TransitionBlock();
+
+            public override int PointerSize => 8;
+            // a0 .. a7
+            public override int NumArgumentRegisters => 8;
+            // fp=x8, ra=x1, s1-s11(R9,R18-R27), tp=x3, gp=x4
+            public override int NumCalleeSavedRegisters => 15;
+            // Callee-saves, argument registers
+            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
+            public override int OffsetOfFirstGCRefMapSlot => SizeOfCalleeSavedRegisters;
+            public override int OffsetOfArgumentRegisters => OffsetOfFirstGCRefMapSlot;
+        }
+        
     }
 }

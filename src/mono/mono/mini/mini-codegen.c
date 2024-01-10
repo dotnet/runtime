@@ -548,6 +548,9 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
+	case OP_XCALL:
+	case OP_XCALL_REG:
+	case OP_XCALL_MEMBASE:
 	case OP_VCALL2:
 	case OP_VCALL2_REG:
 	case OP_VCALL2_MEMBASE:

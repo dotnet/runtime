@@ -930,7 +930,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options1 = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = new SimpleSnakeCasePolicy()
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
             };
 
             string json = @"{""x_VaLUE"":1,""Y_vALue"":2}";
@@ -942,7 +942,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options2 = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = new SimpleSnakeCasePolicy(),
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
                 PropertyNameCaseInsensitive = true,
             };
 

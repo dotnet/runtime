@@ -237,7 +237,6 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 
         if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
-            ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
             ThrowOutOfMemory();
         }
         m_SizeCommitted += FOH_COMMIT_SIZE;

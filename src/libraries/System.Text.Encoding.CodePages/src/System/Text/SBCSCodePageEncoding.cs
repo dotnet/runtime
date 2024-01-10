@@ -3,13 +3,13 @@
 
 using System;
 using System.Buffers.Binary;
-using System.IO;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Globalization;
-using System.Security;
-using System.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -37,11 +37,11 @@ namespace System.Text
         {
             if (BitConverter.IsLittleEndian)
             {
-              return *(ushort*)pByte;
+                return *(ushort*)pByte;
             }
             else
             {
-              return BinaryPrimitives.ReverseEndianness(*(ushort*)pByte);
+                return BinaryPrimitives.ReverseEndianness(*(ushort*)pByte);
             }
         }
 

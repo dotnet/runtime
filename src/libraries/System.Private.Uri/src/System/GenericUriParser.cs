@@ -52,7 +52,7 @@ namespace System
         IriParsing = 0x400
     }
 
-    public class GenericUriParser: UriParser
+    public class GenericUriParser : UriParser
     {
         public GenericUriParser(GenericUriParserOptions options) : base(MapGenericParserOptions(options))
         {

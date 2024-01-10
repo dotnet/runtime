@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using global::System;
-using global::System.Reflection;
-
-using global::Internal.Runtime.Augments;
-using global::Internal.Reflection.Core.Execution;
+using System.Reflection.Runtime.General;
 
 using global::Internal.Metadata.NativeFormat;
-using System.Reflection.Runtime.General;
+using global::Internal.Reflection.Core.Execution;
+using global::Internal.Runtime.Augments;
+using global::System;
+using global::System.Reflection;
 
 namespace Internal.Reflection.Execution.MethodInvokers
 {
