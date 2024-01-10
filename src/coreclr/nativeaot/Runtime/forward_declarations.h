@@ -34,16 +34,6 @@ FWD_DECL(SyncState)
 FWD_DECL(Thread)
 FWD_DECL(ThreadStore)
 
-#ifdef FEATURE_RWX_MEMORY
-namespace rh {
-    namespace util {
-        FWD_DECL(MemRange)
-        FWD_DECL(MemAccessMgr)
-        FWD_DECL(WriteAccessHolder)
-    }
-}
-#endif // FEATURE_RWX_MEMORY
-
 // inc
 FWD_DECL(MethodTable)
 

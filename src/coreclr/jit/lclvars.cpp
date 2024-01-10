@@ -1230,10 +1230,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #else
             unsigned argAlignment = eeGetArgSizeAlignment(origArgType, (hfaType == TYP_FLOAT));
             // We expect the following rounding operation to be a noop on all
-            // ABIs except ARM (where we have 8-byte aligned args) and macOS
+            // ABIs except ARM (where we have 8-byte aligned args) and Apple
             // ARM64 (that allows to pack multiple smaller parameters in a
             // single stack slot).
-            assert(compMacOsArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
+            assert(compAppleArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
 #endif
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
 
@@ -3909,14 +3909,14 @@ var_types LclVarDsc::GetRegisterType() const
 //   when moving locals between register and stack. Because of this the
 //   returned type is usually at least one 4-byte stack slot. However, there
 //   are certain exceptions for promoted fields in OSR methods (that may refer
-//   back to the original frame) and due to macOS arm64 where subsequent small
+//   back to the original frame) and due to Apple arm64 where subsequent small
 //   parameters can be packed into the same stack slot.
 //
 var_types LclVarDsc::GetStackSlotHomeType() const
 {
     if (varTypeIsSmall(TypeGet()))
     {
-        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
+        if (compAppleArm64Abi() && lvIsParam && !lvIsRegArg)
         {
             // Allocated by caller and potentially only takes up a small slot
             return GetRegisterType();
@@ -5443,7 +5443,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+    noway_assert(compAppleArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
     if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
@@ -5597,7 +5597,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-        assert(compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
+        assert(compAppleArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5986,7 +5986,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             argOffs = roundUp(argOffs, argAlignment);
         }

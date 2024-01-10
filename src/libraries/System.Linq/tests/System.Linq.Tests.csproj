@@ -26,7 +26,6 @@
     <Compile Include="ElementAtOrDefaultTests.cs" />
     <Compile Include="ElementAtTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
-    <Compile Include="EmptyPartitionTests.cs" />
     <Compile Include="EnumerableTests.cs" />
     <Compile Include="ExceptTests.cs" />
     <Compile Include="FirstOrDefaultTests.cs" />

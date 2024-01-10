@@ -1970,11 +1970,15 @@ class FlowGraphDfsTree
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
 
+    // Whether the DFS that produced the tree found any backedges.
+    bool m_hasCycle;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
+        , m_hasCycle(hasCycle)
     {
     }
 
@@ -2004,6 +2008,11 @@ public:
         return BitVecTraits(m_postOrderCount, m_comp);
     }
 
+    bool HasCycle() const
+    {
+        return m_hasCycle;
+    }
+
     bool Contains(BasicBlock* block) const;
     bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
 };
@@ -2020,11 +2029,14 @@ struct NaturalLoopIterInfo
     int ConstInitValue = 0;
 
     // Block outside the loop that initializes the induction variable. Only
-    // value if HasConstInit is true.
+    // valid if HasConstInit is true.
     BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
+
+    // Block that has the loop test.
+    BasicBlock* TestBlock = nullptr;
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
@@ -2141,6 +2153,7 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
+
 public:
     BasicBlock* GetHeader() const
     {
@@ -2230,6 +2243,10 @@ public:
     bool AnalyzeIteration(NaturalLoopIterInfo* info);
 
     bool HasDef(unsigned lclNum);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoop* loop);
+#endif // DEBUG
 };
 
 // Represents a collection of the natural loops in the flow graph. See
@@ -2246,13 +2263,10 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
-    // Whether or not we saw any non-natural loop cycles, also known as
-    // irreducible loops.
-    unsigned m_improperLoopHeaders = 0;
-
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
@@ -2262,11 +2276,6 @@ public:
     size_t NumLoops()
     {
         return m_loops.size();
-    }
-
-    bool HaveNonNaturalLoopCycles()
-    {
-        return m_improperLoopHeaders > 0;
     }
 
     FlowGraphNaturalLoop* GetLoopByIndex(unsigned index);
@@ -2330,6 +2339,10 @@ public:
     }
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoops* loops);
+#endif // DEBUG
 };
 
 // Represents the dominator tree of the flow graph.
@@ -2956,7 +2969,7 @@ public:
 
     GenTree* gtNewJmpTableNode();
 
-    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, GenTreeFlags iconFlags, bool isInvariant);
+    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant);
 
     GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
 
@@ -4149,7 +4162,7 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
 
 #if defined(TARGET_64BIT)
-        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
+        assert(compAppleArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
@@ -4375,6 +4388,8 @@ protected:
 
     GenTree* impFixupStructReturnType(GenTree* op);
 
+    GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
@@ -4460,7 +4475,7 @@ protected:
                                 bool                  isMax,
                                 bool                  isMagnitude,
                                 bool                  isNumber);
-    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
@@ -4545,6 +4560,7 @@ public:
     static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
+    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -4966,9 +4982,6 @@ public:
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
     FlowGraphNaturalLoops* m_loops;
-    struct LoopDsc;
-    LoopDsc** m_newToOldLoop;
-    FlowGraphNaturalLoop** m_oldToNewLoop;
     LoopSideEffects* m_loopSideEffects;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
@@ -5111,7 +5124,6 @@ public:
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
     bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
-    bool fgCompactRenumberQuirk; // TODO-Quirk: Should fgCompactBlocks renumber BBs above fgDomBBcount?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
@@ -5197,8 +5209,6 @@ public:
     void fgInit();
 
     PhaseStatus fgImport();
-
-    PhaseStatus fgUpdateCallFinally();
 
     PhaseStatus fgTransformIndirectCalls();
 
@@ -5364,7 +5374,7 @@ public:
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
 #if FEATURE_LOOP_ALIGN
-    void optIdentifyLoopsForAlignment(FlowGraphNaturalLoops* loops, BlockToNaturalLoopMap* blockToLoop);
+    bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
@@ -5671,9 +5681,10 @@ public:
     // memory yields an unknown value.
     ValueNum fgCurMemoryVN[MemoryKindCount];
 
-    // Return a "pseudo"-class handle for an array element type.  If "elemType" is TYP_STRUCT,
-    // requires "elemStructType" to be non-null (and to have a low-order zero).  Otherwise, low order bit
-    // is 1, and the rest is an encoding of "elemTyp".
+    // Return a "pseudo"-class handle for an array element type. If `elemType` is TYP_STRUCT,
+    // `elemStructType` is the struct handle (it must be non-null and have a low-order zero bit).
+    // Otherwise, `elemTyp` is encoded by left-shifting by 1 and setting the low-order bit to 1.
+    // Decode the result by calling `DecodeElemType`.
     static CORINFO_CLASS_HANDLE EncodeElemType(var_types elemTyp, CORINFO_CLASS_HANDLE elemStructType)
     {
         if (elemStructType != nullptr)
@@ -5690,9 +5701,10 @@ public:
             return CORINFO_CLASS_HANDLE(size_t(elemTyp) << 1 | 0x1);
         }
     }
-    // If "clsHnd" is the result of an "EncodePrim" call, returns true and sets "*pPrimType" to the
-    // var_types it represents.  Otherwise, returns TYP_STRUCT (on the assumption that "clsHnd" is
-    // the struct type of the element).
+
+    // Decodes a pseudo-class handle encoded by `EncodeElemType`. Returns TYP_STRUCT if `clsHnd` represents
+    // a struct (in which case `clsHnd` is the struct handle). Otherwise, returns the primitive var_types
+    // value it represents.
     static var_types DecodeElemType(CORINFO_CLASS_HANDLE clsHnd)
     {
         size_t clsHndVal = size_t(clsHnd);
@@ -6076,8 +6088,8 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
-    template<typename TFuncAssignPreorder, typename TFuncAssignPostorder>
-    unsigned fgRunDfs(TFuncAssignPreorder assignPreorder, TFuncAssignPostorder assignPostorder);
+    template<typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
 
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
@@ -6115,7 +6127,7 @@ public:
     void fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth = 0);
     void fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees);
     void fgDispBasicBlocks(bool dumpTrees = false);
-    void fgDumpStmtTree(Statement* stmt, unsigned bbNum);
+    void fgDumpStmtTree(const BasicBlock* block, Statement* stmt);
     void fgDumpBlock(BasicBlock* block);
     void fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock);
 
@@ -6258,6 +6270,7 @@ protected:
 
     Instrumentor* fgCountInstrumentor;
     Instrumentor* fgHistogramInstrumentor;
+    Instrumentor* fgValueInstrumentor;
 
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
@@ -6396,7 +6409,7 @@ private:
     bool fgIsThrow(GenTree* tree);
 
 public:
-    bool fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2);
+    bool fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const;
 
 private:
     bool fgIsBlockCold(BasicBlock* block);
@@ -6851,7 +6864,6 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
-    void optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
@@ -7091,7 +7103,6 @@ public:
     bool          optLoopTableValid;         // info in loop table should be valid
     bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
     unsigned char optLoopCount;              // number of tracked loops
-    unsigned      loopAlignCandidates;       // number of loops identified for alignment
 
     // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
     // loop table pointers from the previous epoch are invalid.
@@ -7105,7 +7116,8 @@ public:
     }
 
 #ifdef DEBUG
-    unsigned char loopsAligned; // number of loops actually aligned
+    unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
+    unsigned loopsAligned;        // number of loops actually aligned
 #endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
@@ -9499,7 +9511,9 @@ public:
     {
         Memset,
         Memcpy,
-        Memmove
+        Memmove,
+        ProfiledMemmove,
+        ProfiledMemcmp
     };
 
     //------------------------------------------------------------------------
@@ -9571,6 +9585,13 @@ public:
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
+        }
+
+        // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
+        // and it works better for small sizes.
+        if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
+        {
+            threshold = maxRegSize * 2;
         }
 
         return threshold;
@@ -10035,6 +10056,11 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
         }
 
+        bool IsOptimizedWithProfile() const
+        {
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+        }
+
         bool IsInstrumentedAndOptimized() const
         {
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
@@ -10383,6 +10409,7 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
+        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
