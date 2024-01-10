@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <stdio.h>
+
 #include "pal_icushim_internal.h"
 #include "pal_icushim.h"
 #include "pal_calendarData.h"
@@ -11,6 +13,29 @@
 #include "pal_localeStringData.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
+
+#ifdef DEBUG
+#define assert_err(cond, msg, err) do \
+{ \
+  if(!(cond)) \
+  { \
+    fprintf(stderr, "%s (%d): error %d: %s. %s (%s failed)\n", __FILE__, __LINE__, err, msg, strerror(err), #cond); \
+    assert(false && "assert_err failed"); \
+  } \
+} while(0)
+#define assert_msg(cond, msg, val) do \
+{ \
+  if(!(cond)) \
+  { \
+    fprintf(stderr, "%s (%d): error %d: %s (%s failed)\n", __FILE__, __LINE__, val, msg, #cond); \
+    assert(false && "assert_msg failed"); \
+  } \
+} while(0)
+#else // DEBUG
+#define assert_err(cond, msg, err)
+#define assert_msg(cond, msg, val)
+#endif // DEBUG
+
 
 // Placeholder for calendar data
 int32_t GlobalizationNative_GetCalendars(
