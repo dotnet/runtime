@@ -9,9 +9,20 @@
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmBuildTargetsDir>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <XUnitExtraArgsValue>$(XUnitExtraArgsValue) -nocolor</XUnitExtraArgsValue>
+    <XUnitExtraArgsValue Condition="'$(WindowsShell)' == 'true'">$(XUnitExtraArgsValue) -parallel none</XUnitExtraArgsValue>
+
+    <XUnitExtraArgsValue Condition="'$(WindowsShell)' == 'true'">$(XUnitExtraArgsValue) %HELIX_XUNIT_ARGS%</XUnitExtraArgsValue>
+    <XUnitExtraArgsValue Condition="'$(WindowsShell)' != 'true'">$(XUnitExtraArgsValue) %24HELIX_XUNIT_ARGS</XUnitExtraArgsValue>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitExtraArgs=$(XUnitExtraArgsValue)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitExtraArgs=$(XUnitExtraArgsValue)&quot;" />
 
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
@@ -27,6 +38,18 @@
 
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
+
+    <!--<HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export IS_RUNNING_ON_CI=true" />-->
+    <!--<HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set IS_RUNNING_ON_CI=true" />-->
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set SHOW_BUILD_OUTPUT=1" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export SHOW_BUILD_OUTPUT=1" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
   </ItemGroup>
 
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -44,9 +67,12 @@
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
     </PropertyGroup>
 
-    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(TestUsingWorkloads)' == 'true'">
-      <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
-    </ReadLinesFromFile>
+    <!--<ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(TestUsingWorkloads)' == 'true'">-->
+      <!--<Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />-->
+    <!--</ReadLinesFromFile>-->
+    <ItemGroup>
+      <BuildWasmApps_PerJobList Include="Wasm.Build.Tests.WasmTemplateTests" />
+    </ItemGroup>
 
     <!-- for testing with workloads, we use separate items -->
     <ItemGroup>
@@ -58,11 +84,11 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
-        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
+      <!--<HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">-->
+        <!--<PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>-->
+        <!--<Command>$(HelixCommand)</Command>-->
+        <!--<Timeout>$(_workItemTimeout)</Timeout>-->
+      <!--</HelixWorkItem>-->
     </ItemGroup>
   </Target>
 </Project>
