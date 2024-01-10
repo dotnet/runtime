@@ -313,7 +313,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
             return NULL;
     }
 
-    return dac_cast<PTR_DispatchMap>((pMT->GetWriteableData() + 1));
+    return dac_cast<PTR_DispatchMap>((pMT->GetAuxiliaryData() + 1));
 }
 
 #include <optdefault.h>
@@ -428,7 +428,7 @@ void MethodTable::SetIsRestored()
 
     PRECONDITION(!IsFullyLoaded());
 
-    InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
+    InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_Unrestored);
 
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -703,9 +703,9 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
-void MethodTable::AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
+void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
 {
-    S_SIZE_T cbWriteableData = S_SIZE_T(sizeof(MethodTableWriteableData));
+    S_SIZE_T cbAuxiliaryData = S_SIZE_T(sizeof(MethodTableAuxiliaryData));
 
     size_t prependedAllocationSpace = 0;
 
@@ -714,19 +714,19 @@ void MethodTable::AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLo
     if (hasGenericStatics)
         prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
     
-    cbWriteableData = cbWriteableData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
-    if (cbWriteableData.IsOverflow())
+    cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
+    if (cbAuxiliaryData.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    BYTE* pWriteableDataRegion = (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbWriteableData));
+    BYTE* pAuxiliaryDataRegion = (BYTE *)
+        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbAuxiliaryData));
     
-    MethodTableWriteableData * pMTWriteableData;
-    pMTWriteableData = (MethodTableWriteableData *)(pWriteableDataRegion + prependedAllocationSpace);
+    MethodTableAuxiliaryData * pMTAuxiliaryData;
+    pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
 
-    pMTWriteableData->SetLoaderModule(pLoaderModule);
-    pMTWriteableData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -(int16_t)sizeof(GenericsStaticsInfo) : 0);
-    m_pWriteableData = pMTWriteableData;
+    pMTAuxiliaryData->SetLoaderModule(pLoaderModule);
+    pMTAuxiliaryData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -(int16_t)sizeof(GenericsStaticsInfo) : 0);
+    m_pAuxiliaryData = pMTAuxiliaryData;
 }
 
 
@@ -756,7 +756,7 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     // memset(pMT, 0, sizeof(MethodTable));
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateWriteableData(pLoaderAllocator, pContainingModule, pamTracker);
+    pMT->AllocateAuxiliaryData(pLoaderAllocator, pContainingModule, pamTracker);
     pMT->SetModule(pContainingModule);
     pMT->SetLoaderAllocator(pLoaderAllocator);
 
@@ -4831,7 +4831,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
+        POSTCONDITION(GetAuxiliaryData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
     CONTRACT_END;
@@ -4841,11 +4841,11 @@ OBJECTREF MethodTable::GetManagedClassObject()
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
-    if (GetWriteableData()->m_hExposedClassObject == NULL)
+    if (GetAuxiliaryData()->m_hExposedClassObject == NULL)
     {
         // Make sure that we have been restored
         CheckRestore();
-        TypeHandle(this).AllocateManagedClassObject(&GetWriteableDataForWrite()->m_hExposedClassObject);
+        TypeHandle(this).AllocateManagedClassObject(&GetAuxiliaryDataForWrite()->m_hExposedClassObject);
     }
     RETURN(GetManagedClassObjectIfExists());
 }
@@ -7185,7 +7185,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
 
     // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
     // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData()->IsParentMethodTablePointerValid())
+    if (!GetAuxiliaryData()->IsParentMethodTablePointerValid())
         return FALSE;
 
     return TRUE;
@@ -8387,7 +8387,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (HasNonVirtualSlots())
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableWriteableData::GetNonVirtualSlotsArray(GetWriteableData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
     }
 
     if (HasGenericsStaticsInfo())
@@ -8425,10 +8425,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
-    if (pWriteableData.IsValid())
+    PTR_MethodTableAuxiliaryData pAuxiliaryData = m_pAuxiliaryData;
+    if (pAuxiliaryData.IsValid())
     {
-        pWriteableData.EnumMem();
+        pAuxiliaryData.EnumMem();
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
@@ -9273,10 +9273,10 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(m_pWriteableData != NULL);
+    ASSERT_AND_CHECK(m_pAuxiliaryData != NULL);
 
-    MethodTableWriteableData *pWriteableData = m_pWriteableData;
-    DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
+    MethodTableAuxiliaryData *pAuxiliaryData = m_pAuxiliaryData;
+    DWORD dwLastVerifiedGCCnt = pAuxiliaryData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having
     // m_dwLastVerifedGCCnt is just to only verify the same method table once for each GC
@@ -9302,7 +9302,7 @@ BOOL MethodTable::Validate()
     }
 
 #ifdef _DEBUG
-    pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    pAuxiliaryData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;

@@ -278,12 +278,12 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     memcpy((BYTE*)pMT - cbGC, (BYTE*) pOldMT - cbGC, cbGC);
 
     // Allocate the private data block
-    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
     pMT->SetModule(pOldMT->GetModule());
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
-    pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // <TODO> this is incredibly fragile.  We should just construct the MT all over agin. </TODO>
     pMT->CopyFlags(pOldMT);
@@ -482,7 +482,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
-    pMT->GetWriteableDataForWrite()->SetIsRestoredForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
 
     RETURN(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation

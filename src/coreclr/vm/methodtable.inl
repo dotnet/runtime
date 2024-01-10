@@ -82,7 +82,7 @@ inline BOOL MethodTable::IsClassPointerValid()
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetWriteableData()->GetLoaderModule();
+    return GetAuxiliaryData()->GetLoaderModule();
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
@@ -1311,11 +1311,11 @@ FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
 
     _ASSERTE(HasGenericsStaticsInfo());
 
-    PTR_MethodTableWriteableData writeableData = GetWriteableDataForWrite();
-    PTR_GenericsStaticsInfo staticsInfo = MethodTableWriteableData::GetGenericStaticsInfo(writeableData);
+    PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
+    PTR_GenericsStaticsInfo staticsInfo = MethodTableAuxiliaryData::GetGenericStaticsInfo(AuxiliaryData);
     _ASSERTE(FitsIn<DWORD>(staticsInfo->m_DynamicTypeID) || staticsInfo->m_DynamicTypeID == (SIZE_T)-1);
     *pID = (DWORD)staticsInfo->m_DynamicTypeID;
-    return writeableData->GetLoaderModule();
+    return AuxiliaryData->GetLoaderModule();
 }
 
 //==========================================================================================
@@ -1331,7 +1331,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    const RUNTIMETYPEHANDLE handle = GetWriteableData()->m_hExposedClassObject;
+    const RUNTIMETYPEHANDLE handle = GetAuxiliaryData()->m_hExposedClassObject;
 
     OBJECTREF retVal;
     if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&

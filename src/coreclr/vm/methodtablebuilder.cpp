@@ -10266,7 +10266,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
             &pbDispatchMapTemp,
             &cbDispatchMapTemp);
 
-        // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableWriteableData
+        // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableAuxiliaryData
         dispatchMapAllocationSize = S_SIZE_T((size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp));
     }
 
@@ -10329,18 +10329,18 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
         pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
-    pMT->AllocateWriteableData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), dispatchMapAllocationSize);
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), dispatchMapAllocationSize);
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
-    pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
     {
         DispatchMap                 *pDispatchMap        = NULL;
-        BYTE* pAllocatedSpaceAfterMethodTableWriteableData = (BYTE *)(pMT->GetWriteableDataForWrite() + 1);
+        BYTE* pAllocatedSpaceAfterMethodTableAuxiliaryData = (BYTE *)(pMT->GetAuxiliaryDataForWrite() + 1);
         // Use placement new
-        pDispatchMap = new (pAllocatedSpaceAfterMethodTableWriteableData) DispatchMap(pbDispatchMapTemp, cbDispatchMapTemp);
+        pDispatchMap = new (pAllocatedSpaceAfterMethodTableAuxiliaryData) DispatchMap(pbDispatchMapTemp, cbDispatchMapTemp);
 
 #ifdef LOGGING
         if (dispatchMapAllocationSize.IsOverflow())
@@ -10446,7 +10446,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     }
 
 #ifdef _DEBUG
-    pMT->m_pWriteableData->m_dwLastVerifedGCCnt = (DWORD)-1;
+    pMT->m_pAuxiliaryData->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
     RETURN(pMT);
@@ -10787,7 +10787,7 @@ MethodTableBuilder::SetupMethodTable2(
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
-    pMT->GetWriteableDataForWrite()->SetIsRestoredForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG
     // Store status if we tried to inject duplicate interfaces

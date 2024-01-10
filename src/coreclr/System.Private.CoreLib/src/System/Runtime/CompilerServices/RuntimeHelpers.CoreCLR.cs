@@ -464,7 +464,7 @@ namespace System.Runtime.CompilerServices
 
         // Additional conditional fields (see methodtable.h).
         // m_pModule
-        // m_pWriteableData
+        // m_pAuxiliaryData
         // union {
         //   m_pEEClass (pointer to the EE class)
         //   m_pCanonMT (pointer to the canonical method table)

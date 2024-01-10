@@ -63,10 +63,10 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
-struct MethodTableWriteableData;
+struct MethodTableAuxiliaryData;
 
-typedef DPTR(MethodTableWriteableData) PTR_MethodTableWriteableData;
-typedef DPTR(MethodTableWriteableData const) PTR_Const_MethodTableWriteableData;
+typedef DPTR(MethodTableAuxiliaryData) PTR_MethodTableAuxiliaryData;
+typedef DPTR(MethodTableAuxiliaryData const) PTR_Const_MethodTableAuxiliaryData;
 
 enum class ResolveVirtualStaticMethodFlags
 {
@@ -283,11 +283,12 @@ struct GenericsStaticsInfo
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
 //
-// This struct consolidates the writeable parts of the MethodTable
-// so that we can layout a read-only MethodTable with a pointer
-// to the writeable parts of the MethodTable in an ngen image
+// This struct consolidates the auxiliary parts of the MethodTable
+// so that we can layout a variety of variable sized structures and
+// access them from the MethodTable with a very small and simple set of
+// indirections.
 //
-struct MethodTableWriteableData
+struct MethodTableAuxiliaryData
 {
     friend class MethodTable;
 #if defined(DACCESS_COMPILE)
@@ -391,10 +392,10 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags |= (MethodTableWriteableData::enum_flag_UnrestoredTypeKey |
-                      MethodTableWriteableData::enum_flag_Unrestored |
-                      MethodTableWriteableData::enum_flag_IsNotFullyLoaded |
-                      MethodTableWriteableData::enum_flag_HasApproxParent);
+        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey |
+                      MethodTableAuxiliaryData::enum_flag_Unrestored |
+                      MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded |
+                      MethodTableAuxiliaryData::enum_flag_HasApproxParent);
     }
 
     void SetIsRestoredForBuildMethodTable()
@@ -402,8 +403,8 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags &= ~(MethodTableWriteableData::enum_flag_UnrestoredTypeKey |
-                       MethodTableWriteableData::enum_flag_Unrestored);
+        m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey |
+                       MethodTableAuxiliaryData::enum_flag_Unrestored);
     }
 
     void SetIsRestoredForBuildArrayMethodTable()
@@ -414,16 +415,16 @@ public:
         SetIsRestoredForBuildMethodTable();
 
         // Array's parent is always precise
-        m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
+        m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_HasApproxParent);
 
     }
 
     // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
-    // To access, use a construct like... GetNonVirtualSlotsArray(pWriteableData)[-(1 + index)]
-    static inline PTR_PCODE GetNonVirtualSlotsArray(PTR_Const_MethodTableWriteableData pWriteableData)
+    // To access, use a construct like... GetNonVirtualSlotsArray(pAuxiliaryData)[-(1 + index)]
+    static inline PTR_PCODE GetNonVirtualSlotsArray(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<PTR_PCODE>(dac_cast<TADDR>(pWriteableData) + pWriteableData->GetOffsetToNonVirtualSlots());
+        return dac_cast<PTR_PCODE>(dac_cast<TADDR>(pAuxiliaryData) + pAuxiliaryData->GetOffsetToNonVirtualSlots());
     }
 
     inline int16_t GetOffsetToNonVirtualSlots() const
@@ -436,11 +437,11 @@ public:
         m_offsetToNonVirtualSlots = offset;
     }
 
-    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableWriteableData pWriteableData)
+    static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
     {
-        return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pWriteableData) - sizeof(GenericsStaticsInfo));
+        return dac_cast<PTR_GenericsStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(GenericsStaticsInfo));
     }
-};  // struct MethodTableWriteableData
+};  // struct MethodTableAuxiliaryData
 
 #ifdef UNIX_AMD64_ABI_ITF
 inline
@@ -923,7 +924,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey) != 0;
+        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey) != 0;
     }
 
     // Actually do the restore actions on the method table
@@ -935,7 +936,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
+        return !(GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_Unrestored);
     }
 
     //-------------------------------------------------------------------
@@ -963,7 +964,7 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored());
 
-        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_IsNotFullyLoaded);
+        InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded);
     }
 
     // Equivalent to GetLoadLevel() == CLASS_LOADED
@@ -971,13 +972,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
+        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -988,8 +989,8 @@ public:
         if (canCompare)
         {
             // Set checked and canCompare flags in one interlocked operation.
-            InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags,
-                MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+            InterlockedOr((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags,
+                MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
         }
         else
         {
@@ -1000,13 +1001,13 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        InterlockedOr((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -1022,27 +1023,27 @@ public:
         PRECONDITION(!HasApproxParent());
         PRECONDITION(IsRestored());
 
-        InterlockedOr((LONG*)&GetWriteableDataForWrite()->m_dwFlags, MethodTableWriteableData::enum_flag_DependenciesLoaded);
+        InterlockedOr((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, MethodTableAuxiliaryData::enum_flag_DependenciesLoaded);
     }
 
     inline ClassLoadLevel GetLoadLevel()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        DWORD dwFlags = GetWriteableData()->m_dwFlags;
+        DWORD dwFlags = GetAuxiliaryData()->m_dwFlags;
 
-        if (dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded)
+        if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
-            if (dwFlags & MethodTableWriteableData::enum_flag_UnrestoredTypeKey)
+            if (dwFlags & MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey)
                 return CLASS_LOAD_UNRESTOREDTYPEKEY;
 
-            if (dwFlags & MethodTableWriteableData::enum_flag_Unrestored)
+            if (dwFlags & MethodTableAuxiliaryData::enum_flag_Unrestored)
                 return CLASS_LOAD_UNRESTORED;
 
-            if (dwFlags & MethodTableWriteableData::enum_flag_HasApproxParent)
+            if (dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent)
                 return CLASS_LOAD_APPROXPARENTS;
 
-            if (!(dwFlags & MethodTableWriteableData::enum_flag_DependenciesLoaded))
+            if (!(dwFlags & MethodTableAuxiliaryData::enum_flag_DependenciesLoaded))
                 return CLASS_LOAD_EXACTPARENTS;
 
             return CLASS_DEPENDENCIES_LOADED;
@@ -1276,9 +1277,9 @@ public:
         }
         else
         {
-            // Non-virtual slots < GetNumVtableSlots live before the MethodTableWriteableData. The array grows backwards
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
             _ASSERTE(HasNonVirtualSlots());
-            return MethodTableWriteableData::GetNonVirtualSlotsArray(GetWriteableDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
+            return MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
         }
     }
 
@@ -1761,12 +1762,12 @@ public:
     BOOL HasApproxParent()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasApproxParent) != 0;
+        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent) != 0;
     }
     inline void SetHasExactParent()
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_HasApproxParent);
+        InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_HasApproxParent);
     }
 
 
@@ -1805,7 +1806,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_pParentMethodTable = pParentMethodTable;
 #ifdef _DEBUG
-        GetWriteableDataForWrite()->SetParentMethodTablePointerValid();
+        GetAuxiliaryDataForWrite()->SetParentMethodTablePointerValid();
 #endif
     }
 #endif // !DACCESS_COMPILE
@@ -2708,19 +2709,19 @@ public:
     // ------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    void AllocateWriteableData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics = false, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
+    void AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics = false, WORD nonVirtualSlots = 0, S_SIZE_T extraAllocation = S_SIZE_T(0));
 #endif
 
-    inline PTR_Const_MethodTableWriteableData GetWriteableData() const
+    inline PTR_Const_MethodTableAuxiliaryData GetAuxiliaryData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return MethodTable::m_pWriteableData;
+        return MethodTable::m_pAuxiliaryData;
     }
 
-    inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
+    inline PTR_MethodTableAuxiliaryData GetAuxiliaryDataForWrite()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return MethodTable::m_pWriteableData;
+        return MethodTable::m_pAuxiliaryData;
     }
 
     //-------------------------------------------------------------------
@@ -2769,12 +2770,12 @@ public :
     inline BOOL Debug_HasInjectedInterfaceDuplicates() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_HasInjectedInterfaceDuplicates) != 0;
+        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates) != 0;
     }
     inline void Debug_SetHasInjectedInterfaceDuplicates()
     {
         LIMITED_METHOD_CONTRACT;
-        GetWriteableDataForWrite()->m_dwFlags |= MethodTableWriteableData::enum_flag_HasInjectedInterfaceDuplicates;
+        GetAuxiliaryDataForWrite()->m_dwFlags |= MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates;
     }
 #endif // _DEBUG
 
@@ -3521,7 +3522,7 @@ private:
 
     PTR_Module      m_pModule;
 
-    PTR_MethodTableWriteableData m_pWriteableData;
+    PTR_MethodTableAuxiliaryData m_pAuxiliaryData;
 
     // The value of lowest two bits describe what the union contains
     enum LowBits {
@@ -3578,8 +3579,8 @@ private:
 
     PTR_GenericsStaticsInfo GetGenericsStaticsInfo()
     {
-        PTR_MethodTableWriteableData writeableData = GetWriteableDataForWrite();
-        return MethodTableWriteableData::GetGenericStaticsInfo(writeableData);
+        PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
+        return MethodTableAuxiliaryData::GetGenericStaticsInfo(AuxiliaryData);
     }
 
     // Optional members.  These are used for fields in the data structure where

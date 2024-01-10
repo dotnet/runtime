@@ -334,13 +334,13 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     MethodTable* pMT = (MethodTable *) pMTHead;
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateWriteableData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
+    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
-    pMT->GetWriteableDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // Fill in pClass
     if (pClass != NULL)
@@ -441,7 +441,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
-    pMT->GetWriteableDataForWrite()->SetIsRestoredForBuildArrayMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildArrayMethodTable();
 
     {
         // Fill out the vtable indirection slots
