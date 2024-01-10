@@ -5570,7 +5570,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
