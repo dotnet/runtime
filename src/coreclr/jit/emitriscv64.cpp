@@ -2300,110 +2300,60 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
     switch (ins)
     {
         case INS_add:
-            FALLTHROUGH;
         case INS_sub:
-            FALLTHROUGH;
         case INS_sll:
-            FALLTHROUGH;
         case INS_slt:
-            FALLTHROUGH;
         case INS_sltu:
-            FALLTHROUGH;
         case INS_xor:
-            FALLTHROUGH;
         case INS_srl:
-            FALLTHROUGH;
         case INS_sra:
-            FALLTHROUGH;
         case INS_or:
-            FALLTHROUGH;
         case INS_and:
-            FALLTHROUGH;
         case INS_addw:
-            FALLTHROUGH;
         case INS_subw:
-            FALLTHROUGH;
         case INS_sllw:
-            FALLTHROUGH;
         case INS_srlw:
-            FALLTHROUGH;
         case INS_sraw:
-            FALLTHROUGH;
         case INS_mul:
-            FALLTHROUGH;
         case INS_mulh:
-            FALLTHROUGH;
         case INS_mulhsu:
-            FALLTHROUGH;
         case INS_mulhu:
-            FALLTHROUGH;
         case INS_div:
-            FALLTHROUGH;
         case INS_divu:
-            FALLTHROUGH;
         case INS_rem:
-            FALLTHROUGH;
         case INS_remu:
-            FALLTHROUGH;
         case INS_mulw:
-            FALLTHROUGH;
         case INS_divw:
-            FALLTHROUGH;
         case INS_divuw:
-            FALLTHROUGH;
         case INS_remw:
-            FALLTHROUGH;
         case INS_remuw:
             assert(isGeneralRegisterOrR0(rd));
             assert(isGeneralRegisterOrR0(rs1));
             assert(isGeneralRegisterOrR0(rs2));
             break;
         case INS_fadd_s:
-            FALLTHROUGH;
         case INS_fsub_s:
-            FALLTHROUGH;
         case INS_fmul_s:
-            FALLTHROUGH;
         case INS_fdiv_s:
-            FALLTHROUGH;
         case INS_fsgnj_s:
-            FALLTHROUGH;
         case INS_fsgnjn_s:
-            FALLTHROUGH;
         case INS_fsgnjx_s:
-            FALLTHROUGH;
         case INS_fmin_s:
-            FALLTHROUGH;
         case INS_fmax_s:
-            FALLTHROUGH;
         case INS_feq_s:
-            FALLTHROUGH;
         case INS_flt_s:
-            FALLTHROUGH;
         case INS_fle_s:
-            FALLTHROUGH;
         case INS_fadd_d:
-            FALLTHROUGH;
         case INS_fsub_d:
-            FALLTHROUGH;
         case INS_fmul_d:
-            FALLTHROUGH;
         case INS_fdiv_d:
-            FALLTHROUGH;
         case INS_fsgnj_d:
-            FALLTHROUGH;
         case INS_fsgnjn_d:
-            FALLTHROUGH;
         case INS_fsgnjx_d:
-            FALLTHROUGH;
         case INS_fmin_d:
-            FALLTHROUGH;
         case INS_fmax_d:
-            FALLTHROUGH;
         case INS_feq_d:
-            FALLTHROUGH;
         case INS_flt_d:
-            FALLTHROUGH;
         case INS_fle_d:
             assert(isFloatReg(rd));
             assert(isFloatReg(rs1));
@@ -2421,75 +2371,50 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
     switch (ins)
     {
         case INS_jalr:
-            FALLTHROUGH;
         case INS_lb:
-            FALLTHROUGH;
         case INS_lh:
-            FALLTHROUGH;
         case INS_lw:
-            FALLTHROUGH;
         case INS_lbu:
-            FALLTHROUGH;
         case INS_lhu:
-            FALLTHROUGH;
         case INS_addi:
-            FALLTHROUGH;
         case INS_slti:
-            FALLTHROUGH;
         case INS_sltiu:
-            FALLTHROUGH;
         case INS_xori:
-            FALLTHROUGH;
         case INS_ori:
-            FALLTHROUGH;
         case INS_andi:
-            FALLTHROUGH;
         case INS_lwu:
-            FALLTHROUGH;
         case INS_ld:
-            FALLTHROUGH;
         case INS_addiw:
-            FALLTHROUGH;
         case INS_fence_i:
-            FALLTHROUGH;
         case INS_csrrw:
-            FALLTHROUGH;
         case INS_csrrs:
-            FALLTHROUGH;
         case INS_csrrc:
             assert(isGeneralRegisterOrR0(rd));
             assert(isGeneralRegisterOrR0(rs1));
             assert((opcode & kInstructionFunct7Mask) == 0);
             break;
         case INS_flw:
-            FALLTHROUGH;
         case INS_fld:
             assert(isFloatReg(rd));
             assert(isGeneralRegisterOrR0(rs1));
             assert((opcode & kInstructionFunct7Mask) == 0);
             break;
         case INS_slli:
-            FALLTHROUGH;
         case INS_srli:
-            FALLTHROUGH;
         case INS_srai:
             assert(0 <= immediate < 64);
             assert(isGeneralRegisterOrR0(rd));
             assert(isGeneralRegisterOrR0(rs1));
             break;
         case INS_slliw:
-            FALLTHROUGH;
         case INS_srliw:
-            FALLTHROUGH;
         case INS_sraiw:
             assert(0 <= immediate < 32);
             assert(isGeneralRegisterOrR0(rd));
             assert(isGeneralRegisterOrR0(rs1));
             break;
         case INS_csrrwi:
-            FALLTHROUGH;
         case INS_csrrsi:
-            FALLTHROUGH;
         case INS_csrrci:
             assert(isGeneralRegisterOrR0(rd));
             assert(rs1 < 32);
@@ -2506,17 +2431,13 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
     switch (ins)
     {
         case INS_sb:
-            FALLTHROUGH;
         case INS_sh:
-            FALLTHROUGH;
         case INS_sw:
-            FALLTHROUGH;
         case INS_sd:
             assert(isGeneralRegisterOrR0(rs1));
             assert(isGeneralRegisterOrR0(rs2));
             break;
         case INS_fsw:
-            FALLTHROUGH;
         case INS_fsd:
             assert(isFloatReg(rs1));
             assert(isGeneralRegisterOrR0(rs2));
@@ -2532,7 +2453,6 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
     switch (ins)
     {
         case INS_lui:
-            FALLTHROUGH;
         case INS_auipc:
             assert(isGeneralRegisterOrR0(rd));
             break;
@@ -2547,20 +2467,14 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
     switch (ins)
     {
         case INS_beqz:
-            FALLTHROUGH;
         case INS_bnez:
             assert((rs1 == REG_ZERO) || (rs2 == REG_ZERO));
             FALLTHROUGH;
         case INS_beq:
-            FALLTHROUGH;
         case INS_bne:
-            FALLTHROUGH;
         case INS_blt:
-            FALLTHROUGH;
         case INS_bge:
-            FALLTHROUGH;
         case INS_bltu:
-            FALLTHROUGH;
         case INS_bgeu:
             assert(isGeneralRegisterOrR0(rs1));
             assert(isGeneralRegisterOrR0(rs2));
@@ -3124,20 +3038,14 @@ BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* i
             dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg1(), id->idReg2(), immediate);
             break;
         case INS_bnez:
-            FALLTHROUGH;
         case INS_beqz:
             dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), REG_ZERO, immediate);
             break;
         case INS_beq:
-            FALLTHROUGH;
         case INS_bne:
-            FALLTHROUGH;
         case INS_blt:
-            FALLTHROUGH;
         case INS_bge:
-            FALLTHROUGH;
         case INS_bltu:
-            FALLTHROUGH;
         case INS_bgeu:
             dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), immediate);
             break;
