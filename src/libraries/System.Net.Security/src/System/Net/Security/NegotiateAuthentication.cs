@@ -353,7 +353,7 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Computes the message integrity check of a given message.
+        /// Computes the integrity check of a given message.
         /// </summary>
         /// <param name="message">Input message for MIC calculation.</param>
         /// <param name="signatureWriter">Buffer writer where the MIC is written.</param>
