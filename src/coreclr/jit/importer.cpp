@@ -5514,7 +5514,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 {
                     const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
                     printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
-                        likelyClasses[i].likelihood);
+                           likelyClasses[i].likelihood);
                 }
 
                 // Optional stress mode to pick a random known class, rather than
@@ -5559,11 +5559,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                             JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
                                     eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
-                            reversedMTCheck = castResult == TypeCompareState::MustNot;
-                            canExpandInline = true;
-                            partialExpand   = true;
-                            exactCls        = likelyCls;
-                            fastPathLikelihood= likelyClass.likelihood;
+                            reversedMTCheck    = castResult == TypeCompareState::MustNot;
+                            canExpandInline    = true;
+                            partialExpand      = true;
+                            exactCls           = likelyCls;
+                            fastPathLikelihood = likelyClass.likelihood;
                         }
                     }
                 }
