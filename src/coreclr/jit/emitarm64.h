@@ -898,12 +898,6 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 
 inline static bool insOptsScalable(insOpts opt)
 {
-    // Opt is any of the scalable types.
-    return insOptsScalableSimple(opt);
-}
-
-inline static bool insOptsScalableSimple(insOpts opt)
-{
     // `opt` is any of the standard scalable types.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
             (opt == INS_OPTS_SCALABLE_D));
