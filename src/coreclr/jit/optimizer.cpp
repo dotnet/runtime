@@ -7421,8 +7421,8 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
 }
 
 //------------------------------------------------------------------------------
-// fgSetPreheaderEHRegionForTryBeginLoopHeader: Set the EH region correctly for a
-// preheader inserted before a header that is the start of a try-region.
+// fgSetEHRegionForNewPreheader: Set the EH region for a newly inserted
+// preheader.
 //
 // In which EH region should the header live?
 //
@@ -7432,7 +7432,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
 // header itself.
 //
 // If the `next` block is NOT the first block of a `try` region, the preheader
-// can simply extend the header's block region.
+// can simply extend the header block's EH region.
 //
 // If the `next` block IS the first block of a `try`, we find its parent region
 // and use that. For mutual-protect regions, we need to find the actual parent,
