@@ -1082,12 +1082,21 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_AG_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (quadwords)
         case IF_SVE_AJ_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (quadwords)
         case IF_SVE_AL_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (quadwords)
+            datasize = id->idOpSize();
+            assert(insOptsScalableSimple(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));        // ddddd
+            assert(isLowPredicateRegister(id->idReg2()));  // ggg
+            assert(isVectorRegister(id->idReg3()));        // mmmmm
+            assert(datasize == EA_8BYTE);
+            break;
+
+        // Scalable FP to Simd Vector.
         case IF_SVE_GS_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point recursive reduction (quadwords)
             datasize = id->idOpSize();
-            assert(insOptsScalableWithSimdVector(id->idInsOpt())); // xx
-            assert(isVectorRegister(id->idReg1()));                // ddddd
-            assert(isLowPredicateRegister(id->idReg2()));          // ggg
-            assert(isVectorRegister(id->idReg3()));                // mmmmm
+            assert(insOptsScalableFloat(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));       // ddddd
+            assert(isLowPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg3()));       // mmmmm
             assert(datasize == EA_8BYTE);
             break;
 
@@ -5352,22 +5361,18 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     switch (arrangement)
     {
         case INS_OPTS_SCALABLE_B:
-        case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE:
             return EA_1BYTE;
 
         case INS_OPTS_SCALABLE_H:
-        case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE:
             return EA_2BYTE;
 
         case INS_OPTS_SCALABLE_S:
-        case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE:
             return EA_4BYTE;
 
         case INS_OPTS_SCALABLE_D:
-        case INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR:
         case INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE:
             return EA_8BYTE;
 
@@ -5410,6 +5415,28 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
 
         case INS_OPTS_SCALABLE_S:
             return INS_OPTS_SCALABLE_D;
+
+        default:
+            assert(!" invalid 'arrangement' value");
+            return INS_OPTS_NONE;
+    }
+}
+
+/*static*/ insOpts emitter::optSveToQuadwordElemsizeArrangement(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+            return INS_OPTS_16B;
+
+        case INS_OPTS_SCALABLE_H:
+            return INS_OPTS_8H;
+
+        case INS_OPTS_SCALABLE_S:
+            return INS_OPTS_4S;
+
+        case INS_OPTS_SCALABLE_D:
+            return INS_OPTS_2D;
 
         default:
             assert(!" invalid 'arrangement' value");
@@ -8648,11 +8675,10 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_andqv:
         case INS_sve_eorqv:
         case INS_sve_orqv:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsScalableWithSimdVector(opt));
+            assert(insOptsScalableSimple(opt));
             fmt = IF_SVE_AG_3A;
             break;
 
@@ -8675,11 +8701,10 @@ void emitter::emitIns_R_R_R(instruction     ins,
             break;
 
         case INS_sve_addqv:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsScalableWithSimdVector(opt));
+            assert(insOptsScalableSimple(opt));
             fmt = IF_SVE_AJ_3A;
             break;
 
@@ -8699,11 +8724,10 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_sminqv:
         case INS_sve_umaxqv:
         case INS_sve_uminqv:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsScalableWithSimdVector(opt));
+            assert(insOptsScalableSimple(opt));
             fmt = IF_SVE_AL_3A;
             break;
 
@@ -9003,11 +9027,10 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_fminnmqv:
         case INS_sve_fmaxqv:
         case INS_sve_fminqv:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(insOptsScalableWithSimdVector(opt));
+            assert(insOptsScalableFloat(opt));
             fmt = IF_SVE_GS_3A;
             break;
 
@@ -9055,7 +9078,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
 
         case INS_sve_famax:
         case INS_sve_famin:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -15665,7 +15687,6 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "8b";
             break;
         case INS_OPTS_16B:
-        case INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR:
             str = "16b";
             break;
         case INS_OPTS_SCALABLE_B:
@@ -15676,7 +15697,6 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "4h";
             break;
         case INS_OPTS_8H:
-        case INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR:
             str = "8h";
             break;
         case INS_OPTS_SCALABLE_H:
@@ -15687,7 +15707,6 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "2s";
             break;
         case INS_OPTS_4S:
-        case INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR:
             str = "4s";
             break;
         case INS_OPTS_SCALABLE_S:
@@ -15698,7 +15717,6 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "1d";
             break;
         case INS_OPTS_2D:
-        case INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR:
             str = "2d";
             break;
         case INS_OPTS_SCALABLE_D:
@@ -17362,9 +17380,9 @@ void emitter::emitDispInsHelp(
         case IF_SVE_AJ_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer add reduction (quadwords)
         case IF_SVE_AL_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (quadwords)
         case IF_SVE_GS_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point recursive reduction (quadwords)
-            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                    // ddddd
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true); // ggg
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                      // mmmmm
+            emitDispVectorReg(id->idReg1(), optSveToQuadwordElemsizeArrangement(id->idInsOpt()), true); // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);                   // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                        // mmmmm
             break;
 
         // <Dd>, <Pg>, <Zn>.<T>

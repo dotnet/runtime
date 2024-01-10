@@ -599,6 +599,9 @@ static insOpts optWidenElemsizeArrangement(insOpts arrangement);
 //  element.
 static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
+//  For the given SVE 'arrangement', return the one when reduced to a quadword vector.
+static insOpts optSveToQuadwordElemsizeArrangement(insOpts arrangement);
+
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
 
@@ -896,7 +899,7 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 inline static bool insOptsScalable(insOpts opt)
 {
     // Opt is any of the scalable types.
-    return insOptsScalableSimple(opt) || insOptsScalableWithSimdVector(opt) || insOptsScalableWithPredicateMerge(opt);
+    return insOptsScalableSimple(opt) || insOptsScalableWithPredicateMerge(opt);
 }
 
 inline static bool insOptsScalableSimple(insOpts opt)
@@ -928,13 +931,6 @@ inline static bool insOptsScalableWide(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for widening to size D.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
-}
-
-inline static bool insOptsScalableWithSimdVector(insOpts opt)
-{
-    // `opt` is any of the scalable types that are valid for conversion to an Advsimd SIMD Vector.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR));
 }
 
 inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
