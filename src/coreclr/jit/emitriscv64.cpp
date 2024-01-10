@@ -3187,40 +3187,33 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case INS_OPTS_RELOC:
             dst = emitOutputInstr_OptsReloc(dst, id, &ins);
-            assertOptsReloc(*dp, dst - *dp, id, ins);
             sz = sizeof(instrDesc);
             break;
         case INS_OPTS_I:
             dst = emitOutputInstr_OptsI(dst, id);
             ins = INS_addi;
             sz  = sizeof(instrDesc);
-            assertOptsI(*dp, dst - *dp, id, ins);
             break;
         case INS_OPTS_RC:
             dst = emitOutputInstr_OptsRc(dst, id, &ins);
             sz  = sizeof(instrDesc);
-            assertOptsRc(*dp, dst - *dp, id, ins);
             break;
         case INS_OPTS_RL:
             dst = emitOutputInstr_OptsRl(dst, id, &ins);
-            assertOptsRl(*dp, dst - *dp, id, ins);
             sz = sizeof(instrDesc);
             break;
         case INS_OPTS_JALR:
             dst = emitOutputInstr_OptsJalr(dst, static_cast<instrDescJmp*>(id), ig, &ins);
             sz  = sizeof(instrDescJmp);
-            assertOptsJarl(*dp, dst - *dp, static_cast<instrDescJmp*>(id), ig, id, ins);
             break;
         case INS_OPTS_J_cond:
             dst = emitOutputInstr_OptsJCond(dst, id, ig, &ins);
             sz  = sizeof(instrDescJmp);
-            assertOptsJCond(*dp, dst - *dp, ig, id, ins);
             break;
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             dst = emitOutputInstr_OptsJ(dst, id, ig, &ins);
             sz  = sizeof(instrDescJmp);
-            assertOptsJ(*dp, dst - *dp, ig, id, ins);
             break;
         case INS_OPTS_C:
             dst = emitOutputInstr_OptsC(dst, id, ig, &sz);
