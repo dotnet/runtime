@@ -35,10 +35,18 @@ namespace System.Net.Security
         private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
             IntermediateCertificates = intermediates;
-            _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
-            for (int i = 0; i < intermediates.Count; i++)
+            if (intermediates.Count > 0)
             {
-                _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
+                _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
+
+                for (int i = 0; i < intermediates.Count; i++)
+                {
+                    _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
+                }
+            }
+            else
+            {
+                _privateIntermediateCertificates = Array.Empty<X509Certificate2>();
             }
 
             TargetCertificate = target;
