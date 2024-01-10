@@ -15,12 +15,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
   </ItemGroup>
