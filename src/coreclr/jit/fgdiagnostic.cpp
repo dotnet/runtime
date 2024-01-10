@@ -1810,17 +1810,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*ssubgraph cluster_%d {\n", m_indent, "", m_loopIndex++);
             m_indent += 4;
 
-            fprintf(m_file, "%*slabel = \"" FMT_LP, m_indent, "", loop->GetIndex());
-            if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
-            {
-                fprintf(m_file, " (old: " FMT_LP ")\";\n",
-                        (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
-            }
-            else
-            {
-                fprintf(m_file, "\";\n");
-            }
-
+            fprintf(m_file, "%*slabel = \"" FMT_LP "\";\n", m_indent, "", loop->GetIndex());
             fprintf(m_file, "%*scolor = blue;\n", m_indent, "");
             fprintf(m_file, "%*s", m_indent, "");
 
@@ -4793,6 +4783,21 @@ void Compiler::fgDebugCheckSsa()
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+    if ((m_loops != nullptr) && optLoopsRequirePreHeaders)
+    {
+        for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+        {
+            // TODO-Quirk: Remove
+            if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+            {
+                continue;
+            }
+
+            assert(loop->EntryEdges().size() == 1);
+            assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+        }
+    }
+
 #ifdef DEBUG
     if (!optLoopTableValid)
     {

@@ -74,6 +74,13 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     )
 endif()
 
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(NATIVEGLOBALIZATION_SOURCES
+        ${NATIVEGLOBALIZATION_SOURCES}
+        pal_placeholders.c
+    )
+endif()
+
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND DEFINED CMAKE_ICU_DIR)
     include_directories(${CMAKE_ICU_DIR}/include)
     link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
@@ -107,13 +114,6 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-    if(CLR_CMAKE_TARGET_IOS)
-        add_definitions(-DTARGET_IOS)
-    elseif(CLR_CMAKE_TARGET_TVOS)
-        add_definitions(-DTARGET_TVOS)
-    elseif(CLR_CMAKE_TARGET_MACCATALYST)
-        add_definitions(-DTARGET_MACCATALYST)
-    endif()
     set(NATIVEGLOBALIZATION_SOURCES_OBJC
         pal_locale.m
         pal_collation.m
