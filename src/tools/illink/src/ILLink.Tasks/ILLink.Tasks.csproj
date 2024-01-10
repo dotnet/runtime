@@ -12,8 +12,10 @@
     <Nullable>disable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.NET.ILLink.Tasks</PackageId>
-    <!-- Don't generate a package in runtime til preview 2 -->
+    <!-- Must always build the linker tasks during servicing. The SDK assumes the runtime revs in unison with this. Generate it only on the allConfigs leg for now.
+         Ensure that it's set to false except in AllConfigurations, otherwise rid-agnostic publishing would pick up the package too. -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' == true">true</GeneratePackageOnBuild>
     <!-- TODO: Enable when the package shipped stable with .NET 8. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- NU5128: This package doesn't contain any lib or ref assemblies because it's a tooling package.
