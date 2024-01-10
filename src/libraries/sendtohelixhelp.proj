@@ -115,14 +115,6 @@
        setting up the per-scenario environment.
   -->
 
-  <ItemGroup Condition=" '$(TargetOS)' == 'windows' and '$(IsXUnitLogCheckerSupported)' == 'true' ">
-    <HelixPreCommand Include="set __IsXUnitLogCheckerSupported=1" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetOS)' != 'windows' and '$(IsXUnitLogCheckerSupported)' == 'true' ">
-    <HelixPreCommand Include="export __IsXUnitLogCheckerSupported=1" />
-  </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetOS)' == 'windows' ">
     <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
   </ItemGroup>
