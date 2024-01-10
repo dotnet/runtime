@@ -24,6 +24,9 @@
 
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
   </ItemGroup>
 
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
