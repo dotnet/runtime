@@ -81,8 +81,8 @@ namespace Microsoft.Interop.Analyzers
                             new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
-                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorFactory(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged);
-                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorFactory(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged);
+                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged);
+                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged);
 
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
@@ -92,7 +92,7 @@ namespace Microsoft.Interop.Analyzers
 
                         var forwarder = new Forwarder();
                         // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-                        BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
+                        BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorResolver((info, context) =>
                         {
                             if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                             {
@@ -186,11 +186,11 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        private sealed class CallbackGeneratorResolver : IMarshallingGeneratorResolver
         {
             private readonly Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> _func;
 
-            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> func)
+            public CallbackGeneratorResolver(Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> func)
             {
                 _func = func;
             }
