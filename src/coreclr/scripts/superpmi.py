@@ -2590,12 +2590,12 @@ class SuperPMIReplayAsmDiffs:
                         with open(jit_analyze_summary_file, "r") as read_fh:
                             with DetailsSection(write_fh, mch_file):
                                 write_fh.write("""\
-    To reproduce these diffs on Windows {0}:
-    ```
-    superpmi.py asmdiffs -target_os {1} -target_arch {2} -arch {0}
-    ```
+To reproduce these diffs on Windows {0}:
+```
+superpmi.py asmdiffs -target_os {1} -target_arch {2} -arch {0}
+```
 
-    """.format(self.coreclr_args.arch, self.coreclr_args.target_os, self.coreclr_args.target_arch))
+""".format(self.coreclr_args.arch, self.coreclr_args.target_os, self.coreclr_args.target_arch))
 
                                 shutil.copyfileobj(read_fh, write_fh)
 
