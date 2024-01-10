@@ -5982,7 +5982,7 @@ public:
 
     PhaseStatus fgCanonicalizeFirstBB();
 
-    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
