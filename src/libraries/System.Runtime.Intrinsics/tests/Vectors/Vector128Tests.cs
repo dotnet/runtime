@@ -4545,6 +4545,13 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector128NuintGreaterThan_MaxValue()
+        {
+            Vector128<nuint> vector = Vector128.Create(nuint.MaxValue);
+            Assert.True(Vector128.EqualsAll(Vector128.GreaterThan(vector, Vector128<nuint>.Zero), vector));
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]

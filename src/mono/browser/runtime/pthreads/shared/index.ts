@@ -20,18 +20,10 @@ export interface PThreadInfo {
 
 export const MainThread: PThreadInfo = {
     get pthreadId(): pthreadPtr {
-        return getBrowserThreadID();
+        return mono_wasm_main_thread_ptr();
     },
     isBrowserThread: true
 };
-
-let browserThreadIdLazy: pthreadPtr | undefined;
-export function getBrowserThreadID(): pthreadPtr {
-    if (browserThreadIdLazy === undefined) {
-        browserThreadIdLazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthreadPtr;
-    }
-    return browserThreadIdLazy;
-}
 
 const enum WorkerMonoCommandType {
     enabledInterop = "notify_enabled_interop",
@@ -195,12 +187,6 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
     set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, false, false);
 }
 
-export function assert_synchronization_context(): void {
-    if (MonoWasmThreads) {
-        mono_assert(runtimeHelpers.proxy_context_gc_handle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
-    }
-}
-
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInterop: boolean, hasSynchronization: boolean): void {
     if (MonoWasmThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
@@ -211,4 +197,14 @@ export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInt
             runtimeHelpers.cspPolicy = true;
         }
     }
+}
+
+export function mono_wasm_pthread_ptr(): number {
+    if (!MonoWasmThreads) return 0;
+    return (<any>Module)["_pthread_self"]();
+}
+
+export function mono_wasm_main_thread_ptr(): number {
+    if (!MonoWasmThreads) return 0;
+    return (<any>Module)["_emscripten_main_runtime_thread_id"]();
 }

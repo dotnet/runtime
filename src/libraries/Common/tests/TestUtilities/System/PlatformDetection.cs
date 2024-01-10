@@ -424,6 +424,9 @@ namespace System
                     MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
                     if (methodInfo != null)
                     {
+                        // Ensure that ICU has been loaded
+                        GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
+
                         version = (int)methodInfo.Invoke(null, null);
                     }
                 }

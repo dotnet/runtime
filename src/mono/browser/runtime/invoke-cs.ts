@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-
 import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js, end_marshal_task_to_js } from "./marshal-to-js";
@@ -17,13 +17,12 @@ import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMar
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
-import { assert_bindings, wrap_error_root, wrap_no_error_root } from "./invoke-js";
+import { assert_c_interop, assert_js_interop, wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { mono_log_debug } from "./logging";
-import { assert_synchronization_context } from "./pthreads/shared";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    assert_bindings();
+    assert_js_interop();
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     const mark = startMeasure();
     try {
@@ -55,9 +54,6 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         for (let index = 0; index < args_count; index++) {
             const sig = get_sig(signature, index + 2);
             const marshaler_type = get_signature_type(sig);
-            if (marshaler_type == MarshalerType.Task) {
-                assert_synchronization_context();
-            }
             const arg_marshaler = bind_arg_marshal_to_cs(sig, marshaler_type, index + 2);
             mono_assert(arg_marshaler, "ERR43: argument marshaler must be resolved");
             arg_marshalers[index] = arg_marshaler;
@@ -67,7 +63,6 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         let res_marshaler_type = get_signature_type(res_sig);
         const is_async = res_marshaler_type == MarshalerType.Task;
         if (is_async) {
-            assert_synchronization_context();
             res_marshaler_type = MarshalerType.TaskPreCreated;
         }
         const res_converter = bind_arg_marshal_to_js(res_sig, res_marshaler_type, 1);
@@ -353,7 +348,7 @@ type BindingClosure = {
 }
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
-    assert_bindings();
+    assert_js_interop();
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
         set_args_context(args);
@@ -370,7 +365,7 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
 }
 
 export function invoke_method_raw(method: MonoMethod): void {
-    assert_bindings();
+    assert_c_interop();
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
         const fail = cwraps.mono_wasm_invoke_method_raw(method, fail_root.address);
@@ -412,7 +407,7 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
 }
 
 export async function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
-    assert_bindings();
+    assert_js_interop();
     const result = exportsByAssembly.get(assembly);
     if (!result) {
         const mark = startMeasure();

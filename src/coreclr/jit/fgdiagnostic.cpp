@@ -76,7 +76,7 @@ void Compiler::fgDebugCheckUpdate()
      * no unreachable blocks  -> no blocks have countOfInEdges() = 0
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
      * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
-     *                           kind of redundand with the above, but to make sure)
+     *                           kind of redundant with the above, but to make sure)
      * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
      */
 
@@ -132,21 +132,11 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        // Check for an unnecessary jumps to the next block
-        bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
-
-        if (block->KindIs(BBJ_COND))
+        // Check for an unnecessary jumps to the next block.
+        // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
+        if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
-            doAssertOnJumpToNextBlock = true;
-        }
-
-        if (doAssertOnJumpToNextBlock)
-        {
-            if (block->JumpsToNext())
-            {
-                noway_assert(!"Unnecessary jump to the next block!");
-            }
+            noway_assert(!"Unnecessary jump to the next block!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
@@ -1820,17 +1810,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*ssubgraph cluster_%d {\n", m_indent, "", m_loopIndex++);
             m_indent += 4;
 
-            fprintf(m_file, "%*slabel = \"" FMT_LP, m_indent, "", loop->GetIndex());
-            if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
-            {
-                fprintf(m_file, " (old: " FMT_LP ")\";\n",
-                        (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
-            }
-            else
-            {
-                fprintf(m_file, "\";\n");
-            }
-
+            fprintf(m_file, "%*slabel = \"" FMT_LP "\";\n", m_indent, "", loop->GetIndex());
             fprintf(m_file, "%*scolor = blue;\n", m_indent, "");
             fprintf(m_file, "%*s", m_indent, "");
 
@@ -2492,12 +2472,12 @@ void Compiler::fgDispBasicBlocks(bool dumpTrees)
 // fgDumpStmtTree: dump the statement and the basic block number.
 //
 // Arguments:
-//    stmt  - the statement to dump;
-//    bbNum - the basic block number to dump.
+//    block - the basic block that contains the statement to dump.
+//    stmt  - the statement to dump.
 //
-void Compiler::fgDumpStmtTree(Statement* stmt, unsigned bbNum)
+void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 {
-    printf("\n***** " FMT_BB "\n", bbNum);
+    printf("\n***** %s\n", block->dspToString());
     gtDispStmt(stmt);
 }
 
@@ -2521,7 +2501,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     {
         for (Statement* const stmt : block->Statements())
         {
-            fgDumpStmtTree(stmt, block->bbNum);
+            fgDumpStmtTree(block, stmt);
         }
     }
     else
@@ -2582,6 +2562,10 @@ void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
         if (block->bbMemorySsaPhiFunc[memoryKind] == nullptr)
         {
             printf(" = m:%u\n", block->bbMemorySsaNumIn[memoryKind]);
+        }
+        else if (block->bbMemorySsaPhiFunc[memoryKind] == BasicBlock::EmptyMemoryPhiDef)
+        {
+            printf(" = phi([not filled])\n");
         }
         else
         {
@@ -4799,6 +4783,21 @@ void Compiler::fgDebugCheckSsa()
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+    if ((m_loops != nullptr) && optLoopsRequirePreHeaders)
+    {
+        for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+        {
+            // TODO-Quirk: Remove
+            if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+            {
+                continue;
+            }
+
+            assert(loop->EntryEdges().size() == 1);
+            assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+        }
+    }
+
 #ifdef DEBUG
     if (!optLoopTableValid)
     {

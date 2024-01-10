@@ -5572,13 +5572,20 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+
+        // Instrument this castclass/isinst
         if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
         {
-            HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-            pInfo->ilOffset                             = ilOffset;
-            pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
-            call->gtHandleHistogramProfileCandidateInfo = pInfo;
-            compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+            // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
+            if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
+            {
+                HandleHistogramProfileCandidateInfo* pInfo =
+                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                pInfo->ilOffset                             = ilOffset;
+                pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
+                call->gtHandleHistogramProfileCandidateInfo = pInfo;
+                compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+            }
         }
         return call;
     }
@@ -7340,11 +7347,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("invalid type for brtrue/brfalse");
                 }
 
-                if (opts.OptimizationEnabled() && block->JumpsToNext())
+                if (opts.OptimizationEnabled())
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
-                    if (block->KindIs(BBJ_COND))
+                    bool jumpToNextOptimization = false;
+                    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
@@ -7354,20 +7362,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
+
+                        jumpToNextOptimization = true;
                     }
-                    else
+                    else if (block->KindIs(BBJ_ALWAYS) && block->JumpsToNext())
                     {
-                        assert(block->KindIs(BBJ_ALWAYS));
+                        jumpToNextOptimization = true;
                     }
 
-                    if (op1->gtFlags & GTF_GLOB_EFFECT)
+                    if (jumpToNextOptimization)
                     {
-                        op1 = gtUnusedValNode(op1);
-                        goto SPILL_APPEND;
-                    }
-                    else
-                    {
-                        break;
+                        if (op1->gtFlags & GTF_GLOB_EFFECT)
+                        {
+                            op1 = gtUnusedValNode(op1);
+                            goto SPILL_APPEND;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -7596,11 +7609,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                if (opts.OptimizationEnabled() && block->JumpsToNext())
+                if (opts.OptimizationEnabled())
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
-                    if (block->KindIs(BBJ_COND))
+                    bool jumpToNextOptimization = false;
+                    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
@@ -7610,33 +7624,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, it may not make sense to
                         // set BBF_NONE_QUIRK
                         block->SetFlags(BBF_NONE_QUIRK);
+
+                        jumpToNextOptimization = true;
                     }
-                    else
+                    else if (block->KindIs(BBJ_ALWAYS) && block->JumpsToNext())
                     {
-                        assert(block->KindIs(BBJ_ALWAYS));
-                        assert(block->JumpsToNext());
+                        jumpToNextOptimization = true;
                     }
 
-                    if (op1->gtFlags & GTF_GLOB_EFFECT)
+                    if (jumpToNextOptimization)
                     {
-                        impSpillSideEffects(false,
-                                            CHECK_SPILL_ALL DEBUGARG("Branch to next Optimization, op1 side effect"));
-                        impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_NONE, impCurStmtDI);
-                    }
-                    if (op2->gtFlags & GTF_GLOB_EFFECT)
-                    {
-                        impSpillSideEffects(false,
-                                            CHECK_SPILL_ALL DEBUGARG("Branch to next Optimization, op2 side effect"));
-                        impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_NONE, impCurStmtDI);
-                    }
+                        if (op1->gtFlags & GTF_GLOB_EFFECT)
+                        {
+                            impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                                           "Branch to next Optimization, op1 side effect"));
+                            impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_NONE, impCurStmtDI);
+                        }
+                        if (op2->gtFlags & GTF_GLOB_EFFECT)
+                        {
+                            impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                                           "Branch to next Optimization, op2 side effect"));
+                            impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_NONE, impCurStmtDI);
+                        }
 
 #ifdef DEBUG
-                    if ((op1->gtFlags | op2->gtFlags) & GTF_GLOB_EFFECT)
-                    {
-                        impNoteLastILoffs();
-                    }
+                        if ((op1->gtFlags | op2->gtFlags) & GTF_GLOB_EFFECT)
+                        {
+                            impNoteLastILoffs();
+                        }
 #endif
-                    break;
+                        break;
+                    }
                 }
 
                 // We can generate an compare of different sized floating point op1 and op2.
