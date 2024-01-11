@@ -119,7 +119,6 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
-    // [ActiveIssue("Issue", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
     public static void LargestWindowHeight_UnixGet_ReturnsExpected()
     {
         Helpers.RunInNonRedirectedOutput((data) => Assert.Equal(Console.WindowHeight, Console.LargestWindowHeight));
