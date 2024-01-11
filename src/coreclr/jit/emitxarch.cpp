@@ -5702,7 +5702,15 @@ void emitter::emitIns_R_I(instruction ins,
             break;
     }
 
-    id = emitNewInstrSC(attr, val);
+    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(attr))
+    {
+        id                      = emitNewInstrCns(attr, val);
+        id->idAddr()->iiaSecRel = true;
+    }
+    else
+    {
+        id = emitNewInstrSC(attr, val);
+    }
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(reg);
@@ -5711,12 +5719,6 @@ void emitter::emitIns_R_I(instruction ins,
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
 #endif
-
-    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(attr))
-    {
-        assert(!id->idIsSmallDsc());
-        id->idAddr()->iiaSecRel = true;
-    }
 
     if (isSimdInsAndValInByte)
     {
