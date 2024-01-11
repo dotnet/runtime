@@ -49,11 +49,11 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            return OffsetOfHelper(rtField);
+            return OffsetOfInternal(ObjectHandleOnStack.Create(ref rtField));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr OffsetOfHelper(IRuntimeFieldInfo f);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOfInternal")]
+        private static partial nint OffsetOfInternal(ObjectHandleOnStack f);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]

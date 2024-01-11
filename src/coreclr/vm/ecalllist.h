@@ -451,8 +451,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
 
-    FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
-
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("AreComObjectsAvailableForCleanup", MarshalNative::AreComObjectsAvailableForCleanup)
 #endif // FEATURE_COMINTEROP

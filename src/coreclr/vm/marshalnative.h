@@ -17,7 +17,6 @@
 class MarshalNative
 {
 public:
-    static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
     static FCDECL0(int, GetLastPInvokeError);
     static FCDECL1(void, SetLastPInvokeError, int error);
 
@@ -34,6 +33,8 @@ public:
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
 #endif // FEATURE_COMINTEROP
 };
+
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOfInternal(QCall::ObjectHandleOnStack pField);
 
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();

@@ -176,68 +176,64 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
     return rv;
 }
 
-
-/************************************************************************
- * PInvoke.OffsetOfHelper(Class, Field)
- */
-FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOfInternal(QCall::ObjectHandleOnStack field)
 {
-    CONTRACTL
+    QCALL_CONTRACT;
+
+    SIZE_T offset = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    REFLECTFIELDREF refField = NULL;
+    GCPROTECT_BEGIN(refField);
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFieldUNSAFE));
-    }
-    CONTRACTL_END;
+        refField = (REFLECTFIELDREF)field.Get();
 
-    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+        FieldDesc* pField = refField->GetField();
+        TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());
 
-    FieldDesc *pField = refField->GetField();
-    TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());
-
-    if (th.IsBlittable())
-    {
-        return pField->GetOffset();
-    }
-
-    UINT32 externalOffset = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
-    {
-        GCX_PREEMP();
-        // Determine if the type is marshalable.
-        if (!IsStructMarshalable(th))
+        if (th.IsBlittable())
         {
-            // It isn't marshalable so throw an ArgumentException.
-            StackSString strTypeName;
-            TypeString::AppendType(strTypeName, th);
-            COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
+            offset = pField->GetOffset();
         }
-        EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
-
-        NativeFieldDescriptor const*pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
-        UINT  numReferenceFields = pNativeLayoutInfo->GetNumFields();
-
-#ifdef _DEBUG
-        bool foundField = false;
-#endif
-        while (numReferenceFields--)
+        else
         {
-            if (pNFD->GetFieldDesc() == pField)
+            GCX_PREEMP();
+
+            // Verify the type can be marshalled.
+            if (!IsStructMarshalable(th))
             {
-                externalOffset = pNFD->GetExternalOffset();
-                INDEBUG(foundField = true);
-                break;
+                StackSString strTypeName;
+                TypeString::AppendType(strTypeName, th);
+                COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
             }
-            pNFD++;
+
+            EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
+            NativeFieldDescriptor const* pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
+            UINT numReferenceFields = pNativeLayoutInfo->GetNumFields();
+
+            INDEBUG(bool foundField = false;)
+            while (numReferenceFields--)
+            {
+                if (pNFD->GetFieldDesc() == pField)
+                {
+                    offset = pNFD->GetExternalOffset();
+                    INDEBUG(foundField = true);
+                    break;
+                }
+                pNFD++;
+            }
+            CONSISTENCY_CHECK_MSG(foundField, "We should never hit this point since we already verified that the requested field was present from managed code");
         }
-
-        CONSISTENCY_CHECK_MSG(foundField, "We should never hit this point since we already verified that the requested field was present from managed code");
     }
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
 
-    return externalOffset;
+    END_QCALL;
+
+    return offset;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate)
 {
