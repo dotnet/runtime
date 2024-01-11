@@ -15,7 +15,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(Vector64<float> expected, Vector64<float> actual, Vector64<float> variance)
+        internal static void AssertEqual(Vector64<float> expected, Vector64<float> actual, Vector64<float> variance)
         {
             for (int i = 0; i < Vector64<float>.Count; i++)
             {
@@ -28,7 +28,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(Vector64<double> expected, Vector64<double> actual, Vector64<double> variance)
+        internal static void AssertEqual(Vector64<double> expected, Vector64<double> actual, Vector64<double> variance)
         {
             for (int i = 0; i < Vector64<double>.Count; i++)
             {

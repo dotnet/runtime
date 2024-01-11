@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(Vector128<float> expected, Vector128<float> actual, Vector128<float> variance)
+        internal static void AssertEqual(Vector128<float> expected, Vector128<float> actual, Vector128<float> variance)
         {
             Vector64Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
             Vector64Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
@@ -27,7 +27,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(Vector128<double> expected, Vector128<double> actual, Vector128<double> variance)
+        internal static void AssertEqual(Vector128<double> expected, Vector128<double> actual, Vector128<double> variance)
         {
             Vector64Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
             Vector64Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());

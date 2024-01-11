@@ -14,7 +14,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(Vector512<float> expected, Vector512<float> actual, Vector512<float> variance)
+        internal static void AssertEqual(Vector512<float> expected, Vector512<float> actual, Vector512<float> variance)
         {
             Vector256Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
             Vector256Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
@@ -25,7 +25,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(Vector512<double> expected, Vector512<double> actual, Vector512<double> variance)
+        internal static void AssertEqual(Vector512<double> expected, Vector512<double> actual, Vector512<double> variance)
         {
             Vector256Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
             Vector256Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
