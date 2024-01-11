@@ -3169,7 +3169,7 @@ PhaseStatus Compiler::optCloneLoops()
         fgRenumberBlocks();
 
         m_dfsTree = fgComputeDfs();
-        optFindNewLoops();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
 
 #ifdef DEBUG

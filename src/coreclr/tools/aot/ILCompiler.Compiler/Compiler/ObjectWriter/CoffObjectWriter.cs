@@ -59,7 +59,6 @@ namespace ILCompiler.ObjectWriter
         private readonly HashSet<string> _referencedMethods = new();
 
         // Exception handling
-        private SectionWriter _xdataSectionWriter;
         private SectionWriter _pdataSectionWriter;
 
         // Debugging
@@ -386,17 +385,15 @@ namespace ILCompiler.ObjectWriter
 
                     if (shareSymbol)
                     {
-                        // Ideally we would use `currentSymbolName` here and produce an
-                        // associative COMDAT symbol but link.exe cannot always handle that
-                        // and produces errors about duplicate symbols that point into the
-                        // associative section, so we are stuck with one section per each
-                        // unwind symbol.
+                        // Produce an associative COMDAT symbol.
                         xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, currentSymbolName, unwindSymbolName);
                         pdataSectionWriter = GetOrCreateSection(PDataSection, currentSymbolName, null);
                     }
                     else
                     {
-                        xdataSectionWriter = _xdataSectionWriter;
+                        // Produce a COMDAT section for each unwind symbol and let linker
+                        // do the deduplication across the ones with identical content.
+                        xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, unwindSymbolName, unwindSymbolName);
                         pdataSectionWriter = _pdataSectionWriter;
                     }
 
@@ -565,8 +562,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void CreateEhSections()
         {
-            // Create .xdata and .pdata
-            _xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection);
+            // Create .pdata
             _pdataSectionWriter = GetOrCreateSection(PDataSection);
         }
 

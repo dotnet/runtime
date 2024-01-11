@@ -5366,7 +5366,7 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
-    GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
+    GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
@@ -5981,9 +5981,7 @@ public:
 
     PhaseStatus fgCanonicalizeFirstBB();
 
-    bool fgCreateLoopPreHeader(unsigned lnum);
-
-    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -6864,6 +6862,9 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
+    bool optCanonicalizeLoops(FlowGraphNaturalLoops* loops);
+    bool optCreatePreheader(FlowGraphNaturalLoop* loop);
+    void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
@@ -7164,22 +7165,6 @@ protected:
         BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
     void optFindNaturalLoops();
-
-    // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
-    // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
-    bool optCanonicalizeLoopNest(unsigned char loopInd);
-
-    // Ensures that the loop "loopInd" (an index into the loop table) is 'canonical' -- it has a unique "top,"
-    // unshared with any other loop.  Returns "true" iff the flowgraph has been modified
-    bool optCanonicalizeLoop(unsigned char loopInd);
-
-    enum class LoopCanonicalizationOption
-    {
-        Outer,
-        Current
-    };
-
-    bool optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizationOption option);
 
     // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".
     // Requires "l2" to be a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".
