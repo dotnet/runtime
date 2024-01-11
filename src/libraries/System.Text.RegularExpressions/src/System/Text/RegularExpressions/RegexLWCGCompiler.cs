@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         private static readonly bool s_includePatternInName = Environment.GetEnvironmentVariable(IncludePatternInNamesEnvVar) == "1";
 
-        /// <summary>Parameter types for the generated Go and FindFirstChar methods.</summary>
+        /// <summary>Parameter types for the generated TryFindNextPossibleStartingPosition and TryMatchAtCurrentPosition methods.</summary>
         private static readonly Type[] s_paramTypes = [typeof(RegexRunner), typeof(ReadOnlySpan<char>)];
 
         /// <summary>Id number to use for the next compiled regex.</summary>
