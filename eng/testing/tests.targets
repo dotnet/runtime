@@ -72,10 +72,7 @@
   <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and
                         '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                          $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
-    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __TestArchitecture=$(TargetArchitecture)" />
     <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __IsXUnitLogCheckerSupported=1" />
-
-    <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export __TestArchitecture=$(TargetArchitecture)" />
     <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export __IsXUnitLogCheckerSupported=1" />
   </ItemGroup>
 

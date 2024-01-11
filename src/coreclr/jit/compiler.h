@@ -5366,7 +5366,7 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
-    GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
+    GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
@@ -5981,7 +5981,7 @@ public:
 
     PhaseStatus fgCanonicalizeFirstBB();
 
-    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
