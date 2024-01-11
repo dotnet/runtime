@@ -5712,9 +5712,10 @@ void emitter::emitIns_R_I(instruction ins,
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
 #endif
 
-    if (emitComp->opts.IsReadyToRun() && EA_IS_CNS_SEC_RELOC(attr))
+    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(attr))
     {
-        id->idAddr()->isSecRel = true;
+        assert(!id->idIsSmallDsc());
+        id->idAddr()->iiaSecRel = true;
     }
 
     if (isSimdInsAndValInByte)
@@ -15103,8 +15104,9 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            if (emitComp->opts.IsReadyToRun() && id->idAddr()->isSecRel)
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
             {
+                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
                 emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
             }
             else

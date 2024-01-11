@@ -1040,7 +1040,8 @@ protected:
             }
 #endif // defined(TARGET_RISCV64)
 
-            bool isSecRel;
+            // Used for instrDesc that has relocatable immediate offset
+            bool iiaSecRel;
 
         } _idAddrUnion;
 
