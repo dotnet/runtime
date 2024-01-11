@@ -3417,7 +3417,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
 }
 
 //
-// GetPropertyInfoForMethodDef wraps the metadata function of the same name,
+// GetPropertyInfoForMethodDef wraps the metadata function of the same name.
 //
 
 HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic)

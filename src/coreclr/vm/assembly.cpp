@@ -136,10 +136,7 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembl
     m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET),
 #endif
     m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE),
-#if FEATURE_READYTORUN
-    m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
-#endif // FEATURE_READYTORUN
+    m_fTerminated(FALSE)
 {
     STANDARD_VM_CONTRACT;
 }

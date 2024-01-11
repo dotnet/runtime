@@ -764,21 +764,15 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
     }
     CONTRACT_END
 
-    TypeHandle typeHnd;
-    ClassLoadLevel existingLoadLevel = CLASS_LOAD_BEGIN;
-
     // Lookup in the classes that this class loader knows about
-
-    typeHnd = LookupTypeHandleForTypeKey(pKey);
+    TypeHandle typeHnd = LookupTypeHandleForTypeKey(pKey);
     if (!typeHnd.IsNull())
     {
-        existingLoadLevel = typeHnd.GetLoadLevel();
-    }
-
-    // If something has been published in the tables, and it's at the right level, just return it
-    if (!typeHnd.IsNull() && existingLoadLevel >= level)
-    {
-        RETURN typeHnd;
+        if (typeHnd.GetLoadLevel() >= level)
+        {
+            // If something has been published in the tables, and it's at the right level, just return it
+            RETURN typeHnd;
+        }
     }
 
 #ifndef DACCESS_COMPILE

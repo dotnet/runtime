@@ -1246,9 +1246,8 @@ BOOL ZapSig::EncodeMethod(
 
         if (pTypeHandleModule != pInfoModule)
         {
-        // During multicorejit this calls
-        //     code:MulticoreJitManager.EncodeModuleHelper
-            //
+            // During multicorejit this calls
+            //     code:MulticoreJitManager.EncodeModuleHelper
             DWORD index = (*((EncodeModuleCallback) pfnEncodeModule))(pEncodeModuleContext, pTypeHandleModule);
 
             if (index == ENCODE_MODULE_FAILED)
