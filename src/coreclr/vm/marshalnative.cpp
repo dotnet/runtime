@@ -420,22 +420,20 @@ FCIMPLEND
 // *** Interop Helpers ***
 //====================================================================
 
-FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID errorInfo)
+extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOID errorInfo, QCall::ObjectHandleOnStack retVal)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(FAILED(errorCode));
         PRECONDITION(CheckPointer(errorInfo, NULL_OK));
     }
     CONTRACTL_END;
 
-    OBJECTREF RetExceptionObj = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(RetExceptionObj);
+    BEGIN_QCALL;
 
     // Retrieve the IErrorInfo to use.
-    IErrorInfo *pErrorInfo = (IErrorInfo*)errorInfo;
+    IErrorInfo* pErrorInfo = (IErrorInfo*)errorInfo;
 #ifdef FEATURE_COMINTEROP
     if (pErrorInfo == (IErrorInfo*)(-1))
     {
@@ -446,42 +444,52 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
         if (SafeGetErrorInfo(&pErrorInfo) != S_OK)
             pErrorInfo = NULL;
     }
-
 #endif // FEATURE_COMINTEROP
-    ::GetExceptionForHR(errorCode, pErrorInfo, &RetExceptionObj);
 
-    HELPER_METHOD_FRAME_END();
+    GCX_COOP();
 
-    return OBJECTREFToObject(RetExceptionObj);
+    OBJECTREF exceptObj = NULL;
+    GCPROTECT_BEGIN(exceptObj);
+    ::GetExceptionForHR(errorCode, pErrorInfo, &exceptObj);
+    retVal.Set(exceptObj);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
+extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandleOnStack obj)
 {
-    CONTRACTL {
-       NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
-       DISABLED(GC_TRIGGERS); // FCALLS with HELPER frames have issues with GC_TRIGGERS
-       MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
+    }
+    CONTRACTL_END;
 
-    int retVal = 0;
-    OBJECTREF e = (OBJECTREF) eUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOTHROW_1({ retVal = COR_E_STACKOVERFLOW; }, e);
+    int32_t hr = E_FAIL;
 
-    retVal = SetupErrorInfo(e);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_END_NOTHROW();
-    return retVal;
+    GCX_COOP();
+
+    OBJECTREF exceptObj = NULL;
+    GCPROTECT_BEGIN(exceptObj);
+    exceptObj = obj.Get();
+    hr = SetupErrorInfo(exceptObj);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return hr;
 }
-FCIMPLEND
 
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
 extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     IUnknown* retVal = NULL;
 

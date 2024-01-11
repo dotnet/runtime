@@ -361,17 +361,26 @@ namespace System.Runtime.InteropServices
 
 #endif // TARGET_WINDOWS
 
+        internal static Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        {
+            Exception? exception = null;
+            GetExceptionForHRWorker(errorCode, errorInfo, ObjectHandleOnStack.Create(ref exception));
+            return exception!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetExceptionForHR")]
+        private static partial void GetExceptionForHRWorker(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception);
 
 #if FEATURE_COMINTEROP
         /// <summary>
         /// Converts the CLR exception to an HRESULT. This function also sets
         /// up an IErrorInfo for the exception.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHRForException(Exception? e);
+        public static int GetHRForException(Exception? e)
+            => GetHRForExceptionInternal(ObjectHandleOnStack.Create(ref e));
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHRForException")]
+        private static partial int GetHRForExceptionInternal(ObjectHandleOnStack exception);
 
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
