@@ -32,7 +32,6 @@ EXPORTS
         ; mono
         coreclr_image_get_custom_attribute_data
         coreclr_unity_profiler_register
-        mono_add_internal_call
         mono_array_element_size
         mono_assembly_get_assemblyref
         mono_assembly_get_image
@@ -58,8 +57,6 @@ EXPORTS
         mono_debug_lookup_source_location
         mono_debugger_install_attach_detach_callback
         mono_debugger_set_generate_debug_info
-        mono_enter_internal_call
-        mono_exit_internal_call
         mono_field_get_name
         mono_field_get_offset
         mono_field_get_parent

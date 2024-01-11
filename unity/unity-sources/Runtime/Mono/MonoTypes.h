@@ -61,13 +61,6 @@ struct MonoString
     gunichar2 firstCharacter;
 };
 
-struct MonoInternalCallFrameOpaque
-{
-    // in release builds, this is only 280 bytes (macOS arm64) - but it does not matter if we make it
-    // larger, that just means some extra unused bytes on the stack.
-    char data[290]; // Debug
-};
-
 struct MonoMethod
 {
     UInt16 flags;
