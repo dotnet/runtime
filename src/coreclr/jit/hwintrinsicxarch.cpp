@@ -1460,7 +1460,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ConvertToUInt32:
         {
             assert(sig->numArgs == 1);
-#ifdef TARGET_XARCH
+#ifdef TARGET_AMD64
             assert(varTypeIsFloating(simdBaseType));
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
@@ -1504,7 +1504,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
 
             }
-#endif // TARGET_XARCH
+#endif // TARGET_AMD64
             break;
         }
 
@@ -1513,7 +1513,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
-            assert(varTypeIsFloating(simdBaseType));
+            assert(simdBaseType == TYP_DOUBLE);
 #ifdef TARGET_AMD64
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
@@ -1589,42 +1589,50 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
+                CorInfoType fieldType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
+
                 var_types simdType = getSIMDTypeForSize(simdSize);
                 // Generate the control table for VFIXUPIMMSD
                 // The behavior we want is to saturate negative values to 0.
                 GenTreeVecCon* tbl = gtNewVconNode(simdType);
 
-                // QNAN: 0b0000:
-                // SNAN: 0b0000
-                // ZERO: 0b0000:
+                // QNAN: 0b1000: Saturate to Zero
+                // SNAN: 0b1000: Saturate to Zero
+                // ZERO: 0b0000
                 // +ONE: 0b0000
                 // -INF: 0b0000
                 // +INF: 0b0000
-                // -VAL: 0b1000: Saturate to Zero
+                // -VAL: 0b0000
                 // +VAL: 0b0000
-                for ( int i = 0; i < 8; i++ )
+                for ( int i = 0; i < 16; i++ )
                 {
-                    tbl->gtSimdVal.i64[i] = 0x08000088;
+                    tbl->gtSimdVal.i32[i] = 0x00000088;
                 }
 
                 // Generate first operand
                 // The logic is that first and second operand are basically the same because we want 
                 // the output to be in the same xmm register
                 // Hence we clone the first operand
-                GenTree* op2Clone;
-                op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
-                                    nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+                GenTree* op2Clone = fgMakeMultiUse(&op1);
+                // GenTree* op2Clone;
+                // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
+                //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
                 
                 //run vfixupimmsd base on table and no flags reporting
                 GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
                                                             NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation
-                                             : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation
-                                                                : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                GenTree* min_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MIN)), fieldType, simdSize);
+                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)), fieldType, simdSize);
+                GenTree* saturate_min = gtNewSimdMaxNode(simdType, min_val, retNode1, fieldType, simdSize);
+                GenTree* saturate_val = gtNewSimdMinNode(simdType, saturate_min, max_val, fieldType, simdSize);
 
-                retNode = gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+                intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32
+                                             : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32
+                                             : NI_AVX512F_ConvertToVector512Int32;
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, saturate_val, intrinsic, simdBaseJitType, simdSize);
+
             }
 #endif // TARGET_AMD64
             break;
