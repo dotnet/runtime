@@ -75,7 +75,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/ppc64le
 
     - container: linux_riscv64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64-20240110235310-34800da
       env:
         ROOTFS_DIR: /crossrootfs/riscv64
 
