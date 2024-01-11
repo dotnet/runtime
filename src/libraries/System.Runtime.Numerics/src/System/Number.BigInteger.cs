@@ -1342,7 +1342,7 @@ namespace System
             Debug.Assert(destiniation.Length * TParser.DigitsPerBlock == input.Length);
             ref TChar lastWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(input), input.Length - TParser.DigitsPerBlock);
 
-            for (int i = 0; i < destiniation.Length - 1; i++)
+            for (int i = 0; i < destiniation.Length; i++)
             {
                 if (!TParser.TryParseSingleBlock(
                     MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Subtract(ref lastWholeBlockStart, i * TParser.DigitsPerBlock), TParser.DigitsPerBlock),
