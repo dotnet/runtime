@@ -18556,18 +18556,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     bool isExactObj   = false;
                     bool isNonNullObj = false;
                     fldOwnerCls       = gtGetClassHandle(base->gtGetOp1(), &isExactObj, &isNonNullObj);
-                    if ((fldOwnerCls != NO_CLASS_HANDLE) &&
-                        ((info.compCompHnd->getClassAttribs(fldOwnerCls) & CORINFO_FLG_SHAREDINST) == 0))
-                    {
-                        // If we can't get the class handle from the instance, use the field's class.
-                        fldOwnerCls = info.compCompHnd->getFieldClass(fldHandle);
-                    }
-                    else
-                    {
-                        fldOwnerCls = NO_CLASS_HANDLE;
-                    }
                 }
-
                 objClass = gtGetFieldClassHandle(fldHandle, fldOwnerCls, pIsExact, pIsNonNull);
             }
             break;
@@ -18799,7 +18788,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 //
 // Arguments:
 //    fieldHnd - field handle for field in question
-//    fieldOwnerCls - class handle for class containing the field, can be nullptr
+//    fieldOwnerCls - field's owner class handle, if known.
 //    pIsExact - [OUT] true if type is known exactly
 //    pIsNonNull - [OUT] true if field value is not null
 //
@@ -18815,10 +18804,20 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
                                                      bool*                pIsNonNull)
 {
     CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass, fieldOwnerCls);
+    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
 
     if (fieldCorType == CORINFO_TYPE_CLASS)
     {
+        // Now let's see if the fieldOwnerCls is more specific than the fieldClass we just got.
+        // e.g. List<_Canon> is less specific than List<String>.
+        // We can't use fieldOwnerCls in the first place because it could be e.g. System.Object
+        // and getFieldType won't like it.
+        if ((fieldOwnerCls != NO_CLASS_HANDLE) && (fieldClass != fieldOwnerCls) &&
+            (info.compCompHnd->isMoreSpecificType(fieldClass, fieldOwnerCls)))
+        {
+            info.compCompHnd->getFieldType(fieldHnd, &fieldClass, fieldOwnerCls);
+        }
+
         // Optionally, look at the actual type of the field's value
         bool queryForCurrentClass = true;
         INDEBUG(queryForCurrentClass = (JitConfig.JitQueryCurrentStaticFieldClass() > 0););
