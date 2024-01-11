@@ -12628,10 +12628,6 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvThiscall() { }
     }
-    public partial class CallConvSwift
-    {
-        public CallConvSwift() { }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
     public sealed partial class CallerArgumentExpressionAttribute : System.Attribute
     {

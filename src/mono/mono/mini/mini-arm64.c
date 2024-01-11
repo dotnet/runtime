@@ -3771,7 +3771,6 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		g_assert_not_reached ();
 		break;
 	}
-
 	return code;
 }
 

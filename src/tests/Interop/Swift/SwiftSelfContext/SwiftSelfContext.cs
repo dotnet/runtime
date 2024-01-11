@@ -12,18 +12,18 @@ public class SelfContextTests
     private const string SwiftLib = "libSwiftSelfContext.dylib";
 
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC11getInstanceSvyFZ")]
-    public static extern IntPtr getInstance();
+    public unsafe static extern void* getInstance();
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC14getMagicNumberSiyF")]
     public static extern nint getMagicNumber(SwiftSelf self);
 
     [Fact]
-    public static void TestSwiftSelfContext()
+    public unsafe static void TestSwiftSelfContext()
     {
-        IntPtr pointer = getInstance();
+        void* pointer = getInstance();
         SwiftSelf self = new SwiftSelf(pointer);
-        Assert.True(self.Value != IntPtr.Zero, "Failed to obtain an instance of SwiftSelf from the Swift library.");
+        Assert.True(self.Value != null, "Failed to obtain an instance of SwiftSelf from the Swift library.");
 
         int result = (int)getMagicNumber(self);
         Assert.True(result == 42, "The result from Swift does not match the expected value.");

@@ -20,7 +20,7 @@ public class ErrorHandlingTests
     public unsafe static extern nint conditionallyThrowError(bool willThrow, SwiftError* error);
 
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4from13messageLengthSPys6UInt16VGSgs0B0_p_s5Int32VztF")]
-    public static extern IntPtr GetErrorMessage(IntPtr handle, out int length);
+    public unsafe static extern void* GetErrorMessage(void* handle, out int length);
 
     [Fact]
     public unsafe static void TestSwiftErrorThrown()
@@ -32,7 +32,7 @@ public class ErrorHandlingTests
 
         // This will throw an error
         conditionallyThrowError(true, &error);
-        Assert.True(error.Value != IntPtr.Zero, "A Swift error was expected to be thrown.");
+        Assert.True(error.Value != null, "A Swift error was expected to be thrown.");
 
         string errorMessage = GetErrorMessageFromSwift(error);
         Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: {0}, Actual: {1}", expectedErrorMessage, errorMessage));
@@ -49,7 +49,7 @@ public class ErrorHandlingTests
         // This will not throw an error
         int result = (int)conditionallyThrowError(false, &error);
 
-        Assert.True(error.Value == IntPtr.Zero, "No Swift error was expected to be thrown.");
+        Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
         Assert.True(result == 42, "The result from Swift does not match the expected value.");
     }
     
@@ -60,8 +60,8 @@ public class ErrorHandlingTests
 
     private unsafe static string GetErrorMessageFromSwift(SwiftError error)
     {
-        IntPtr pointer = GetErrorMessage(error.Value, out int messageLength);
-        string errorMessage = Marshal.PtrToStringUni(pointer, messageLength);
+        void* pointer = GetErrorMessage(error.Value, out int messageLength);
+        string errorMessage = Marshal.PtrToStringUni((IntPtr)pointer, messageLength);
         NativeMemory.Free((void*)pointer);
         return errorMessage;
     }
