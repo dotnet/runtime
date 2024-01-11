@@ -22,6 +22,7 @@
 
   <Import Project="$(MSBuildThisFileDirectory)ChromeVersions.props" />
 
+
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
     <FirefoxRevision>108.0.1</FirefoxRevision>
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
@@ -88,6 +89,14 @@
     <FirefoxRevision>108.0.1</FirefoxRevision>
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_WasmBrowserPathForTests Condition="'$(BROWSER_PATH_FOR_TESTS)' != ''">$(BROWSER_PATH_FOR_TESTS)</_WasmBrowserPathForTests>
+    <_WasmBrowserPathForTests Condition="'$(_WasmBrowserPathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmBrowserPathForTests>
+
+    <_WasmJSEnginePathForTests Condition="'$(V8_PATH_FOR_TESTS)' != ''">$(V8_PATH_FOR_TESTS)</_WasmJSEnginePathForTests>
+    <_WasmJSEnginePathForTests Condition="'$(_WasmJSEnginePathForTests)' == '' and '$(InstallV8ForTests)' == 'true'">$(V8BinaryPath)</_WasmJSEnginePathForTests>
   </PropertyGroup>
 
   <Target Name="DownloadAndInstallChrome"

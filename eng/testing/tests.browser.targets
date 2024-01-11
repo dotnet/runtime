@@ -64,16 +64,7 @@
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
-  <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
-          Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(IsBrowserWasmProject)' != 'true'" />
-
-  <PropertyGroup>
-    <_WasmBrowserPathForTests Condition="'$(BROWSER_PATH_FOR_TESTS)' != ''">$(BROWSER_PATH_FOR_TESTS)</_WasmBrowserPathForTests>
-    <_WasmBrowserPathForTests Condition="'$(_WasmBrowserPathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmBrowserPathForTests>
-
-    <_WasmJSEnginePathForTests Condition="'$(V8_PATH_FOR_TESTS)' != ''">$(V8_PATH_FOR_TESTS)</_WasmJSEnginePathForTests>
-    <_WasmJSEnginePathForTests Condition="'$(_WasmJSEnginePathForTests)' == '' and '$(InstallV8ForTests)' == 'true'">$(V8BinaryPath)</_WasmJSEnginePathForTests>
-  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets" />
 
   <!--
     This is running during compile time and therefore $(Scenario) is empty, unless the specific project sets it.
