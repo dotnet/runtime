@@ -464,11 +464,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             PTR_VOID pExactGenericArgsToken = data.pElements[i].pExactGenericArgsToken;
             if (pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
             {
-                if (pExactGenericArgsToken != NULL)
+                TypeHandle th;
+                MethodDesc* pConstructedFunc = NULL;
+                if (pExactGenericArgsToken != NULL && Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pConstructedFunc))
                 {
-                    TypeHandle th;
-                    // TODO: an AV can happen here, not sure how to fix.
-                    Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pFunc);
+                    pFunc = pConstructedFunc;
                 }
             }
 
@@ -1099,21 +1099,9 @@ PTR_VOID DebugStackTrace::GetExactGenericArgsToken(PTR_MethodDesc pFunc, PREGDIS
 
     if (pFunc->AcquiresInstMethodTableFromThis())
     {
+        // objects could be in invalid state at this time
+        // trying to get this here could result in invalid objects
         return NULL;
-        
-        // TODO: how to avoid the possible GC hole here?
-
-        //if (pFrame == NULL)
-        //{
-        //    OBJECTREF oRef = pCodeInfo->GetCodeManager()->GetInstance(pRD, pCodeInfo);
-        //    if (oRef != NULL)
-        //        return oRef->GetMethodTable();
-        //    return NULL;
-        //}
-        //else
-        //{
-        //    return NULL;
-        //}
     }
     else
     {
