@@ -274,6 +274,7 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_H,
     INS_OPTS_SCALABLE_S,
     INS_OPTS_SCALABLE_D,
+    INS_OPTS_SCALABLE_Q,
 
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 
