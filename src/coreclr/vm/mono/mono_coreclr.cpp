@@ -320,43 +320,6 @@ extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_field_from_name(M
 
 thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
 
-extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_fields(MonoClass* klass, gpointer *iter)
-{
-    TRACE_API("%p, %p", klass, iter);
-
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!iter)
-    {
-        return NULL;
-    }
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-
-    ApproxFieldDescIterator* iterator = (ApproxFieldDescIterator*)*iter;
-    if (iterator == nullptr)
-    {
-        iterator = g_ApproxFieldDescIteratorAlloc.Alloc();
-        iterator->Init(klass_clr, ApproxFieldDescIterator::INSTANCE_FIELDS | ApproxFieldDescIterator::STATIC_FIELDS);
-        *iter = iterator;
-    }
-
-    auto nextField = iterator->Next();
-    if (nextField == nullptr)
-    {
-        *iter = nullptr;
-        g_ApproxFieldDescIteratorAlloc.Free(iterator);
-        return nullptr;
-    }
-
-    return (MonoClassField*)nextField;
-}
-
 extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_flags(MonoClass *klass)
 {
     MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
