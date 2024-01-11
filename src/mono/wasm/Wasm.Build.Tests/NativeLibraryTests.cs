@@ -37,7 +37,7 @@ namespace Wasm.Build.Tests
                 File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
             }
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(DotnetWasmFromRuntimePack: false));
 
@@ -78,7 +78,7 @@ public class Test
     }
 }";
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
@@ -120,7 +120,7 @@ public class Test
     }
 }";
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),

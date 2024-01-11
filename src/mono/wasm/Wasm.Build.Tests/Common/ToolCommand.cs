@@ -83,12 +83,12 @@ namespace Wasm.Build.Tests
             return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
-        public virtual CommandResult ExecuteWithCapturedOutput(params string[] args)
+        public virtual Task<CommandResult> ExecuteWithCapturedOutputAsync(params string[] args)
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
             _testOutput.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
-            return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
+            return ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
         public virtual void Dispose()

@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests
 
             string programText = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),

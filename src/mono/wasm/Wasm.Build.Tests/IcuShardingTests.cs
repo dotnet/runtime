@@ -54,7 +54,7 @@ public class IcuShardingTests : IcuTestsBase
 
         string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
+        (_, string output) = await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),

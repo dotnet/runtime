@@ -54,13 +54,13 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack))]
-    public void WorkloadRequiredForBuild(string config, string extraProperties, bool workloadNeeded)
-        => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: false);
+    public Task WorkloadRequiredForBuild(string config, string extraProperties, bool workloadNeeded)
+        => CheckWorkloadRequiredAsync(config, extraProperties, workloadNeeded, publish: false);
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack))]
-    public void WorkloadRequiredForPublish(string config, string extraProperties, bool workloadNeeded)
-        => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
+    public Task WorkloadRequiredForPublish(string config, string extraProperties, bool workloadNeeded)
+        => CheckWorkloadRequiredAsync(config, extraProperties, workloadNeeded, publish: true);
 
     public static TheoryData<string, bool, bool> InvariantGlobalizationTestData(bool publish)
     {
@@ -79,7 +79,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     public async Task WorkloadNotRequiredForInvariantGlobalization(string config, bool invariant, bool publish)
     {
         string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
 
         if (invariant)
             AddItemsPropertiesToProject(projectFile, extraProperties: "<InvariantGlobalization>true</InvariantGlobalization>");
@@ -99,7 +99,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         GlobalizationMode mode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
         if (publish)
         {
-            (result, _) = BlazorPublish(
+            (result, _) = await BlazorPublishAsync(
                             new BlazorBuildOptions(
                                 id,
                                 config,
@@ -108,7 +108,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         }
         else
         {
-            (result, _) = BlazorBuild(
+            (result, _) = await BlazorBuildAsync(
                             new BlazorBuildOptions(
                                 id,
                                config,
@@ -151,10 +151,10 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         }
     }
 
-    private void CheckWorkloadRequired(string config, string extraProperties, bool workloadNeeded, bool publish)
+    private async Task CheckWorkloadRequiredAsync(string config, string extraProperties, bool workloadNeeded, bool publish)
     {
         string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
         AddItemsPropertiesToProject(projectFile, extraProperties,
             atTheEnd: @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
                     <Error Text=""Stopping the build"" />
@@ -162,9 +162,9 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
         CommandResult result;
         if (publish)
-            (result, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+            (result, _) = await BlazorPublishAsync(new BlazorBuildOptions(id, config, ExpectSuccess: false));
         else
-            (result, _) = BlazorBuild(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+            (result, _) = await BlazorBuildAsync(new BlazorBuildOptions(id, config, ExpectSuccess: false));
 
         if (workloadNeeded)
         {

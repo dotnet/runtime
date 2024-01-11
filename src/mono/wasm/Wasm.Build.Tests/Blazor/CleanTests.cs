@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.NativeRebuild.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -23,28 +24,28 @@ public class CleanTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void Blazor_BuildThenClean_NativeRelinking(string config)
+    public async Task Blazor_BuildThenClean_NativeRelinkingAsync(string config)
     {
         string id = GetRandomId();
 
         InitBlazorWasmProjectDir(id);
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
 
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>
                                     <WasmBuildNative>true</WasmBuildNative>";
 
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+        await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
         string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv, _testOutput)
+        CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}");
+        res.EnsureSuccessful();
 
         AssertEmptyOrNonExistentDirectory(relinkDir);
     }
@@ -52,28 +53,28 @@ public class CleanTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
-        => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
+    public Task Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
+        => Blazor_BuildNativeNonNative_ThenCleanTestAsync(config, firstBuildNative: false);
 
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
-        => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
+    public Task Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
+        => Blazor_BuildNativeNonNative_ThenCleanTestAsync(config, firstBuildNative: true);
 
-    private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
+    private async Task Blazor_BuildNativeNonNative_ThenCleanTestAsync(string config, bool firstBuildNative)
     {
         string id = GetRandomId();
 
         InitBlazorWasmProjectDir(id);
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
 
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
 
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         bool relink = firstBuildNative;
-        BlazorBuildInternal(id, config, publish: false,
+        await BlazorBuildInternalAsync(id, config, publish: false,
                         extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
         string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
@@ -81,18 +82,18 @@ public class CleanTests : BlazorWasmTestBase
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         relink = !firstBuildNative;
-        BlazorBuildInternal(id, config, publish: false,
+        await BlazorBuildInternalAsync(id, config, publish: false,
                         extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv, _testOutput)
+        CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
-                .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}");
+        res.EnsureSuccessful();
 
         AssertEmptyOrNonExistentDirectory(relinkDir);
     }

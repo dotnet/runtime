@@ -23,7 +23,7 @@ public class ConfigSrcTests : TestMainJsTestBase
         buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };
         buildArgs = ExpandBuildArgs(buildArgs);
 
-        BuildProject(buildArgs,
+        await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),

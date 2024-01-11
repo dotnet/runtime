@@ -43,24 +43,24 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
     }
 
-    public string CreateBlazorWasmTemplateProject(string id)
+    public async Task<string> CreateBlazorWasmTemplateProjectAsync(string id)
     {
         InitBlazorWasmProjectDir(id);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+        CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new blazorwasm")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync("new blazorwasm");
+        res.EnsureSuccessful();
 
         return Path.Combine(_projectDir!, $"{id}.csproj");
     }
 
-    protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
+    protected async Task<(CommandResult, string)> BlazorBuildAsync(BlazorBuildOptions options, params string[] extraArgs)
     {
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = await BlazorBuildInternalAsync(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
             AssertBundle(res.Output, options with { IsPublish = false });
@@ -68,12 +68,12 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         return (res, logPath);
     }
 
-    protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
+    protected async Task<(CommandResult, string)> BlazorPublishAsync(BlazorBuildOptions options, params string[] extraArgs)
     {
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = await BlazorBuildInternalAsync(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -83,7 +83,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         return (res, logPath);
     }
 
-    protected (CommandResult res, string logPath) BlazorBuildInternal(
+    protected async Task<(CommandResult res, string logPath)> BlazorBuildInternalAsync(
         string id,
         string config,
         bool publish = false,
@@ -93,7 +93,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     {
         try
         {
-            return BuildProjectWithoutAssert(
+            return await BuildProjectWithoutAssertAsync(
                         id,
                         config,
                         new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess),
@@ -144,9 +144,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected `emcc-link.rsp` in {objBuildDir}, which gets created when relinking during Build.");
     }
 
-    protected string CreateProjectWithNativeReference(string id)
+    protected async Task<string> CreateProjectWithNativeReferenceAsync(string id)
     {
-        CreateBlazorWasmTemplateProject(id);
+        await CreateBlazorWasmTemplateProjectAsync(id);
 
         string extraItems = @$"
             {GetSkiaSharpReferenceItems()}

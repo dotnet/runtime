@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -21,15 +22,15 @@ namespace Wasm.Build.Tests.Blazor
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void BlazorNoopRebuild(string config)
+        public async Task BlazorNoopRebuildAsync(string config)
         {
             string id = $"blz_rebuild_{config}_{GetRandomId()}";
-            string projectFile = CreateBlazorWasmTemplateProject(id);
+            string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
             string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
 
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
 
@@ -38,7 +39,7 @@ namespace Wasm.Build.Tests.Blazor
             var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // build again
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
             var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
@@ -48,15 +49,15 @@ namespace Wasm.Build.Tests.Blazor
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void BlazorOnlyLinkRebuild(string config)
+        public async Task BlazorOnlyLinkRebuildAsync(string config)
         {
             string id = $"blz_relink_{config}_{GetRandomId()}";
-            string projectFile = CreateBlazorWasmTemplateProject(id);
+            string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
             string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
 
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
+            await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
 
@@ -67,7 +68,7 @@ namespace Wasm.Build.Tests.Blazor
             var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // build again
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O1");
+            await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O1");
             var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);

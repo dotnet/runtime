@@ -45,12 +45,12 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
         string id = $"blazor_mt_{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
         AddItemsPropertiesToProject(projectFile, "<WasmEnableThreads>true</WasmEnableThreads>");
         // if (aot)
             // AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        BlazorPublish(new BlazorBuildOptions(
+        await BlazorPublishAsync(new BlazorBuildOptions(
             id,
             config,
             aot ? NativeFilesType.AOT

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,10 +23,10 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData("Debug", false)]
     [InlineData("Release", true)]
     [InlineData("Release", false)]
-    public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
+    public async Task NativeBuild_WithDeployOnBuild_UsedByVSAsync(string config, bool nativeRelink)
     {
         string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{GetRandomId()}";
-        string projectFile = CreateProjectWithNativeReference(id);
+        string projectFile = await CreateProjectWithNativeReferenceAsync(id);
         string extraProperties = config == "Debug"
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
@@ -35,7 +36,7 @@ public class MiscTests : BlazorWasmTestBase
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
-        (CommandResult res, _) = BlazorBuild(new BlazorBuildOptions(
+        (CommandResult res, _) = await BlazorBuildAsync(new BlazorBuildOptions(
                                         Id: id,
                                         Config: config,
                                         ExpectedFileType: nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT,
@@ -55,10 +56,10 @@ public class MiscTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void DefaultTemplate_AOT_InProjectFile(string config)
+    public async Task DefaultTemplate_AOT_InProjectFileAsync(string config)
     {
         string id = $"blz_aot_prj_file_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
 
         string extraProperties = config == "Debug"
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
@@ -67,12 +68,12 @@ public class MiscTests : BlazorWasmTestBase
         AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
 
         // No relinking, no AOT
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will aot
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
+        await BlazorPublishAsync(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
 
         // build again
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
     }
 }

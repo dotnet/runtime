@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -20,7 +21,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
         _provider = GetProvider<TestMainJsProjectProvider>();
     }
 
-    public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,
+    public async Task<(string projectDir, string buildOutput)> BuildProjectAsync(BuildArgs buildArgs,
                               string id,
                               BuildProjectOptions options)
     {
@@ -68,7 +69,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
 
         try
         {
-            (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id,
+            (CommandResult res, string logFilePath) = await BuildProjectWithoutAssertAsync(id,
                                                                                 buildArgs.Config,
                                                                                 options,
                                                                                 string.Join(" ", buildArgs.ExtraBuildArgs));

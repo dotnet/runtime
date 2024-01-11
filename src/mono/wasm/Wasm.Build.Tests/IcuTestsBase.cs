@@ -103,7 +103,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         public record Locale(string Code, string? SundayName);
         ";
 
-    protected Task TestIcuShardsAsync(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
+    protected async Task TestIcuShardsAsync(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
     {
         string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
@@ -117,7 +117,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
 
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
+        (_, string output) = await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
@@ -125,6 +125,6 @@ public abstract class IcuTestsBase : TestMainJsTestBase
                             GlobalizationMode: GlobalizationMode.PredefinedIcu,
                             PredefinedIcudt: shardName));
 
-        return RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+        await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
     }
 }

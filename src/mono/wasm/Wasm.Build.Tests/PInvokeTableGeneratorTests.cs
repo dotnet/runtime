@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
                     [DllImport(""variadic"", EntryPoint=""sum"")] public static extern int sum_three(int a, int b, int c);
                 }";
 
-            (buildArgs, string output) = BuildForVariadicFunctionTests(code,
+            (buildArgs, string output) = await BuildForVariadicFunctionTestsAsync(code,
                                                           buildArgs with { ProjectName = $"variadic_{buildArgs.Config}_{id}" },
                                                           id);
             Assert.Matches("warning.*native function.*sum.*varargs", output);
@@ -81,7 +81,7 @@ namespace Wasm.Build.Tests
                 }
                 """;
 
-            (buildArgs, string output) = BuildForVariadicFunctionTests(code,
+            (buildArgs, string output) = await BuildForVariadicFunctionTestsAsync(code,
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                                                           id);
 
@@ -111,7 +111,7 @@ namespace Wasm.Build.Tests
                     public unsafe static extern int using_sum_one(delegate* unmanaged<char*, IntPtr, void> callback);
                 }";
 
-            (buildArgs, string output) = BuildForVariadicFunctionTests(code,
+            (buildArgs, string output) = await BuildForVariadicFunctionTestsAsync(code,
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
                                                           id);
 
@@ -124,10 +124,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None)]
-        public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
+        public async Task UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittableAsync
                         (BuildArgs buildArgs, string id)
         {
-            (_, string output) = SingleProjectForDisabledRuntimeMarshallingTest(
+            (_, string output) = await SingleProjectForDisabledRuntimeMarshallingTestAsync(
                 withDisabledRuntimeMarshallingAttribute: false,
                 expectSuccess: false,
                 buildArgs,
@@ -142,7 +142,7 @@ namespace Wasm.Build.Tests
         public async Task UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittableAsync
                         (BuildArgs buildArgs, RunHost host, string id)
         {
-            (buildArgs, _) = SingleProjectForDisabledRuntimeMarshallingTest(
+            (buildArgs, _) = await SingleProjectForDisabledRuntimeMarshallingTestAsync(
                 withDisabledRuntimeMarshallingAttribute: true,
                 expectSuccess: true,
                 buildArgs,
@@ -153,7 +153,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("Main running 5", output);
         }
 
-        private (BuildArgs buildArgs ,string output) SingleProjectForDisabledRuntimeMarshallingTest(bool withDisabledRuntimeMarshallingAttribute, bool expectSuccess, BuildArgs buildArgs, string id)
+        private async Task<(BuildArgs buildArgs, string output)> SingleProjectForDisabledRuntimeMarshallingTestAsync(bool withDisabledRuntimeMarshallingAttribute, bool expectSuccess, BuildArgs buildArgs, string id)
         {
             string code =
             """
@@ -187,7 +187,7 @@ namespace Wasm.Build.Tests
                     : "<WasmBuildNative>true</WasmBuildNative>"
             );
 
-            (_, string output) = BuildProject(
+            (_, string output) = await BuildProjectAsync(
                 buildArgs,
                 id: id,
                 new BuildProjectOptions(
@@ -238,7 +238,7 @@ namespace Wasm.Build.Tests
                 extraProperties: "<OutputType>Library</OutputType><RuntimeIdentifier />"
             );
 
-            (string libraryDir, string output) = BuildProject(
+            (string libraryDir, string output) = await BuildProjectAsync(
                 libraryBuildArgs,
                 id: id + "_library",
                 new BuildProjectOptions(
@@ -286,7 +286,7 @@ namespace Wasm.Build.Tests
 
             _projectDir = null;
 
-            (_, output) = BuildProject(
+            (_, output) = await BuildProjectAsync(
                 buildArgs,
                 id: id,
                 new BuildProjectOptions(
@@ -332,7 +332,7 @@ namespace Wasm.Build.Tests
                 }
                 """;
 
-            (buildArgs, string output) = BuildForVariadicFunctionTests(
+            (buildArgs, string output) = await BuildForVariadicFunctionTestsAsync(
                 code,
                 buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                 id,
@@ -348,7 +348,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None)]
-        public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(BuildArgs buildArgs, string id)
+        public async Task UnmanagedCallback_WithFunctionPointers_CompilesWithWarningsAsync(BuildArgs buildArgs, string id)
         {
             string code =
                 """
@@ -367,7 +367,7 @@ namespace Wasm.Build.Tests
                 }
                 """;
 
-            (_, string output) = BuildForVariadicFunctionTests(
+            (_, string output) = await BuildForVariadicFunctionTestsAsync(
                 code,
                 buildArgs with { ProjectName = $"cb_fnptr_{buildArgs.Config}" },
                 id
@@ -400,7 +400,7 @@ namespace Wasm.Build.Tests
                 }
                 """;
 
-            (buildArgs, string output) = BuildForVariadicFunctionTests(
+            (buildArgs, string output) = await BuildForVariadicFunctionTestsAsync(
                 code,
                 buildArgs with { ProjectName = $"cb_filetype_{buildArgs.Config}" },
                 id
@@ -414,7 +414,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None)]
-        public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
+        public async Task IcallWithOverloadedParametersAndEnumAsync(BuildArgs buildArgs, string id)
         {
             // Build a library containing icalls with overloaded parameters.
 
@@ -444,7 +444,7 @@ namespace Wasm.Build.Tests
                 buildArgs with { ProjectName = $"icall_enum_library_{buildArgs.Config}_{id}" }
             );
 
-            (string libraryDir, string output) = BuildProject(
+            (string libraryDir, string output) = await BuildProjectAsync(
                 libraryBuildArgs,
                 id: id + "library",
                 new BuildProjectOptions(
@@ -534,7 +534,7 @@ namespace Wasm.Build.Tests
 
             _projectDir = null;
 
-            (_, output) = BuildProject(
+            (_, output) = await BuildProjectAsync(
                 buildArgs,
                 id: id + "tasks",
                 new BuildProjectOptions(
@@ -580,7 +580,7 @@ namespace Wasm.Build.Tests
                 { "LC_ALL", culture },
             };
 
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                         id: id,
                                         new BuildProjectOptions(
                                             InitProject: () =>
@@ -620,7 +620,7 @@ namespace Wasm.Build.Tests
                                                             : "<WasmBuildNative>true</WasmBuildNative>");
 
             int baseArg = 10;
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                         id: id,
                                         new BuildProjectOptions(
                                             InitProject: () => GenerateSourceFiles(_projectDir!, baseArg),
@@ -669,7 +669,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id, string? verbosity = null, string extraProperties = "")
+        private async Task<(BuildArgs, string)> BuildForVariadicFunctionTestsAsync(string programText, BuildArgs buildArgs, string id, string? verbosity = null, string extraProperties = "")
         {
             extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
 
@@ -678,7 +678,7 @@ namespace Wasm.Build.Tests
                                         extraItems: $"<NativeFileReference Include=\"{filename}\" />",
                                         extraProperties: extraProperties);
 
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                         id: id,
                                         new BuildProjectOptions(
                                             InitProject: () =>

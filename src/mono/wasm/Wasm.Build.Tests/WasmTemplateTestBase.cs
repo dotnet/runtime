@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
@@ -22,7 +23,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         _provider.BundleDirName = "AppBundle";
     }
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
+    public async Task<string> CreateWasmTemplateProjectAsync(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
     {
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -43,10 +44,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+        CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync($"new {template} {extraArgs}");
+        res.EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
         string extraProperties = string.Empty;
@@ -89,7 +90,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         File.WriteAllText(runtimeconfigTemplatePath, runtimeconfigTemplate!.ToString());
     }
 
-    public (string projectDir, string buildOutput) BuildTemplateProject(BuildArgs buildArgs,
+    public async Task<(string projectDir, string buildOutput)> BuildTemplateProjectAsync(BuildArgs buildArgs,
         string id,
         BuildProjectOptions buildProjectOptions)
     {
@@ -97,7 +98,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
             buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
         buildProjectOptions.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
 
-        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
+        (CommandResult res, string logFilePath) = await BuildProjectWithoutAssertAsync(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)
             _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
 

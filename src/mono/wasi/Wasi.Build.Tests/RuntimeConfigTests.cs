@@ -46,7 +46,7 @@ public class RuntimeConfigTests : BuildTestBase
         string runArgs = $"run --no-silent --no-build -c {config}";
         new RunCommand(s_buildEnv, _testOutput, label: id)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput(runArgs)
+                .ExecuteWithCapturedOutputAsync(runArgs)
                 .EnsureSuccessful();
     }
 }

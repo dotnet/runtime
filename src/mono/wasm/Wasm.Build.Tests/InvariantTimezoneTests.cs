@@ -53,7 +53,7 @@ namespace Wasm.Build.Tests
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"), Path.Combine(_projectDir!, "Program.cs")),

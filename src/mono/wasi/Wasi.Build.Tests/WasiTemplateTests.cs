@@ -134,7 +134,7 @@ public class WasiTemplateTests : BuildTestBase
 
         CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
-                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                    .ExecuteWithCapturedOutputAsync($"run --no-silent --no-build -c {config} x y z")
                                     .EnsureSuccessful();
 
         Assert.Contains("Hello, Wasi Console!", res.Output);

@@ -61,7 +61,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 
         // Rebuild
 
-        string output = Rebuild(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: $" {cflags} {ldflags}", verbosity: "normal");
+        string output = await RebuildAsync(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: $" {cflags} {ldflags}", verbosity: "normal");
         var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
         _provider.CompareStat(originalStat, newStat, pathsDict.Values);
 

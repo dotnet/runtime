@@ -312,7 +312,7 @@ namespace Wasm.Build.Tests
 
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
+                    .ExecuteWithCapturedOutputAsync($"new {template} {extraArgs}")
                     .EnsureSuccessful();
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
@@ -340,7 +340,7 @@ namespace Wasm.Build.Tests
             CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
                                         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                        .ExecuteWithCapturedOutput(combinedArgs)
+                                        .ExecuteWithCapturedOutputAsync(combinedArgs)
                                         .EnsureSuccessful();
 
             return (res, logPath);
@@ -710,7 +710,7 @@ namespace Wasm.Build.Tests
             int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
             CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
                             .WithWorkingDirectory(_projectDir!)
-                            .ExecuteWithCapturedOutput(runArgs)
+                            .ExecuteWithCapturedOutputAsync(runArgs)
                             .EnsureExitCode(expectedExitCode);
 
             Assert.Contains("Hello, Wasi Console!", res.Output);

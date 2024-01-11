@@ -22,7 +22,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     public async Task FileInVfs()
     {
         string id = $"blazor_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
 
         string projectDirectory = Path.GetDirectoryName(projectFile)!;
 
@@ -38,7 +38,7 @@ public class AppsettingsTests : BlazorWasmTestBase
         """);
         File.WriteAllText(programPath, programContent);
 
-        BlazorBuild(new BlazorBuildOptions(id, "debug", NativeFilesType.FromRuntimePack));
+        await BlazorBuildAsync(new BlazorBuildOptions(id, "debug", NativeFilesType.FromRuntimePack));
 
         bool existsChecked = false;
         bool contentChecked = false;

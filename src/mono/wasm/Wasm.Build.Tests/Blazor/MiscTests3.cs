@@ -41,7 +41,7 @@ public class MiscTests3 : BlazorWasmTestBase
         else
             id += "publish";
 
-        string projectFile = CreateProjectWithNativeReference(id);
+        string projectFile = await CreateProjectWithNativeReferenceAsync(id);
         string nativeSource = @"
             #include <stdio.h>
 
@@ -72,10 +72,10 @@ public class MiscTests3 : BlazorWasmTestBase
         """);
 
         if (build)
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
         if (publish)
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
+            await BlazorPublishAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
 
         BlazorRunOptions runOptions = new() { Config = config, Test = TestDllImport };
         if (publish)
@@ -92,7 +92,7 @@ public class MiscTests3 : BlazorWasmTestBase
     }
 
     [Fact]
-    public void BugRegression_60479_WithRazorClassLib()
+    public async void BugRegression_60479_WithRazorClassLib()
     {
         string id = $"blz_razor_lib_top_{GetRandomId()}";
         InitBlazorWasmProjectDir(id);
@@ -100,20 +100,20 @@ public class MiscTests3 : BlazorWasmTestBase
         string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
         string wasmProjectFile = Path.Combine(wasmProjectDir, "wasm.csproj");
         Directory.CreateDirectory(wasmProjectDir);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+        CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(wasmProjectDir)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new blazorwasm")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync("new blazorwasm");
+        res.EnsureSuccessful();
 
 
         string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
         Directory.CreateDirectory(razorProjectDir);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+        res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(razorProjectDir)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new razorclasslib")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync("new razorclasslib");
+        res.EnsureSuccessful();
 
         string razorClassLibraryFileName = $"RazorClassLibrary{ProjectProviderBase.WasmAssemblyExtension}";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
@@ -124,10 +124,10 @@ public class MiscTests3 : BlazorWasmTestBase
         _projectDir = wasmProjectDir;
         string config = "Release";
         // No relinking, no AOT
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will relink
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+        await BlazorPublishAsync(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
 
         // publish/wwwroot/_framework/blazor.boot.json
         string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true);

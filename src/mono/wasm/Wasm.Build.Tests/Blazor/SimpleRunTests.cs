@@ -28,9 +28,9 @@ public class SimpleRunTests : BlazorWasmTestBase
     public async Task BlazorBuildRunTest(string config)
     {
         string id = $"blazor_{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
@@ -42,7 +42,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     public async Task BlazorBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
     {
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
         string extraPropertiesForDBP = "";
@@ -72,7 +72,7 @@ public class SimpleRunTests : BlazorWasmTestBase
                                                "_framework")
             };
         }
-        BlazorBuild(buildOptions);
+        await BlazorBuildAsync(buildOptions);
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
@@ -84,11 +84,11 @@ public class SimpleRunTests : BlazorWasmTestBase
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
         string id = $"blazor_{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        BlazorPublish(new BlazorBuildOptions(
+        await BlazorPublishAsync(new BlazorBuildOptions(
             id,
             config,
             aot ? NativeFilesType.AOT

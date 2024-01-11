@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -75,8 +76,8 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(GetTestData))]
-    public void NonWasmConsoleBuild_WithoutWorkload(string config, string extraBuildArgs, string targetFramework)
-        => NonWasmConsoleBuild(config,
+    public Task NonWasmConsoleBuild_WithoutWorkload(string config, string extraBuildArgs, string targetFramework)
+        => NonWasmConsoleBuildAsync(config,
                                extraBuildArgs,
                                targetFramework,
                                // net6 is sdk would be needed to run the app
@@ -84,14 +85,14 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
 
     [Theory]
     [MemberData(nameof(GetTestData))]
-    public void NonWasmConsoleBuild_WithWorkload(string config, string extraBuildArgs, string targetFramework)
-        => NonWasmConsoleBuild(config,
+    public Task NonWasmConsoleBuild_WithWorkload(string config, string extraBuildArgs, string targetFramework)
+        => NonWasmConsoleBuildAsync(config,
                                extraBuildArgs,
                                targetFramework,
                                // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
-    private void NonWasmConsoleBuild(string config,
+    private async Task NonWasmConsoleBuildAsync(string config,
                                      string extraBuildArgs,
                                      string targetFramework,
                                      string? directoryBuildTargets = null,
@@ -108,22 +109,22 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"), directoryBuildTargets);
 
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+        CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput("new console --no-restore")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync("new console --no-restore");
+        res.EnsureSuccessful();
 
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+        res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput($"build -restore -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {extraBuildArgs} -f {targetFramework}")
-                .EnsureSuccessful();
+                .ExecuteWithCapturedOutputAsync($"build -restore -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {extraBuildArgs} -f {targetFramework}");
+        res.EnsureSuccessful();
 
         if (shouldRun)
         {
-            var result = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+            var result = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                                 .WithWorkingDirectory(_projectDir!)
-                                .ExecuteWithCapturedOutput($"run -c {config} -f {targetFramework} --no-build")
-                                .EnsureSuccessful();
+                                .ExecuteWithCapturedOutputAsync($"run -c {config} -f {targetFramework} --no-build");
+            result.EnsureSuccessful();
 
             Assert.Contains("Hello, World!", result.Output);
         }

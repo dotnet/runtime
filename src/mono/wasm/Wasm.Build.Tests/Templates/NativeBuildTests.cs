@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -20,7 +21,7 @@ namespace Wasm.Build.Templates.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
+        public async Task BuildWithUndefinedNativeSymbolAsync(bool allowUndefined)
         {
             string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{GetRandomId()}";
 
@@ -34,7 +35,7 @@ namespace Wasm.Build.Templates.Tests
                 [DllImport(""undefined_xyz"")] static extern void call();
             ";
 
-            string projectPath = CreateWasmTemplateProject(id);
+            string projectPath = await CreateWasmTemplateProjectAsync(id);
 
             AddItemsPropertiesToProject(
                 projectPath,
@@ -45,10 +46,10 @@ namespace Wasm.Build.Templates.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
 
-            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
+            CommandResult result = await new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-c Release");
+                .ExecuteWithCapturedOutputAsync("build", "-c Release");
 
             if (allowUndefined)
             {
@@ -65,10 +66,10 @@ namespace Wasm.Build.Templates.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
+        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameterAsync(string config)
         {
             string id = $"dllimport_incompatible_{GetRandomId()}";
-            string projectPath = CreateWasmTemplateProject(id, template: "wasmconsole");
+            string projectPath = await CreateWasmTemplateProjectAsync(id, template: "wasmconsole");
 
             string nativeSourceFilename = "incompatible_type.c";
             string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
@@ -83,17 +84,17 @@ namespace Wasm.Build.Templates.Tests
                                     Path.Combine(_projectDir!, "Program.cs"),
                                     overwrite: true);
 
-            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
+            CommandResult result = await new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", $"-c {config} -bl");
+                .ExecuteWithCapturedOutputAsync("build", $"-c {config} -bl");
 
             Assert.True(result.ExitCode == 0, "Expected build to succeed");
 
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+            CommandResult res = await new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
-                                        .EnsureSuccessful();
+                                        .ExecuteWithCapturedOutputAsync($"run --no-silent --no-build -c {config}");
+            res.EnsureSuccessful();
             Assert.Contains("Hello, Console!", res.Output);
             Assert.Contains("Hello, World! Greetings from node version", res.Output);
         }

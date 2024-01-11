@@ -26,7 +26,7 @@ public class AppSettingsTests : AppTestBase
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
         CopyTestAsset("WasmBasicTestApp", "AppSettingsTests");
-        PublishProject("Debug");
+        await PublishProjectAsync("Debug");
 
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",

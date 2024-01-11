@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -42,14 +42,14 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, host: RunHost.None)]
-        public void AOTNotSupportedWithNoTrimming(BuildArgs buildArgs, string id)
+        public async Task AOTNotSupportedWithNoTrimmingAsync(BuildArgs buildArgs, string id)
         {
             string projectName = $"mono_aot_cross_{buildArgs.Config}_{buildArgs.AOT}";
 
             buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:PublishTrimmed=false" };
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            (_, string output) = BuildProject(
+            (_, string output) = await BuildProjectAsync(
                                     buildArgs,
                                     id: id,
                                     new BuildProjectOptions(
@@ -62,7 +62,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None, aot: true)]
-        public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(BuildArgs buildArgs, string id)
+        public async Task IntermediateBitcodeToObjectFilesAreNotLLVMIRAsync(BuildArgs buildArgs, string id)
         {
             string printFileTypeTarget = @"
                 <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, insertAtEnd: printFileTypeTarget);
 
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                     id: id,
                                     new BuildProjectOptions(
                                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),

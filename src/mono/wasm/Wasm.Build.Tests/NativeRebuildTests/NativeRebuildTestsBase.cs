@@ -49,7 +49,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         internal async Task<(BuildArgs BuildArgs, BuildPaths paths)> FirstNativeBuildAsync(string programText, bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="")
         {
             buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
@@ -61,7 +61,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             return (buildArgs, GetBuildPaths(buildArgs));
         }
 
-        protected string Rebuild(bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="", string extraBuildArgs="", string? verbosity=null)
+        protected async Task<string> RebuildAsync(bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="", string extraBuildArgs="", string? verbosity=null)
         {
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -83,7 +83,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             Thread.Sleep(5000);
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                             id: id,
                                             new BuildProjectOptions(
                                                 DotnetWasmFromRuntimePack: false,

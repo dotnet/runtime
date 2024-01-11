@@ -29,13 +29,13 @@ public class IcuTests : BlazorWasmTestBase
     public async Task HybridWithInvariant(string config, bool? invariant)
     {
         string id = $"blz_hybrid_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
         string extraProperties = "<HybridGlobalization>true</HybridGlobalization>";
         if (invariant != null)
             extraProperties += $"<InvariantGlobalization>{invariant}</InvariantGlobalization>";
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-        (CommandResult res, string logPath) = BlazorBuild(
+        (CommandResult res, string logPath) = await BlazorBuildAsync(
             new BlazorBuildOptions(
                 id,
                 config,
@@ -67,13 +67,13 @@ public class IcuTests : BlazorWasmTestBase
     public async Task HybridWithFullIcuFromRuntimePack(string config, bool? fullIcu)
     {
         string id = $"blz_hybrid_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
         string extraProperties = "<HybridGlobalization>true</HybridGlobalization>";
         if (fullIcu != null)
             extraProperties += $"<BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData>";
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-        (CommandResult res, string logPath) = BlazorBuild(
+        (CommandResult res, string logPath) = await BlazorBuildAsync(
             new BlazorBuildOptions(
                 id,
                 config,
@@ -104,13 +104,13 @@ public class IcuTests : BlazorWasmTestBase
     public async Task FullIcuFromRuntimePackWithInvariant(string config, bool? invariant)
     {
         string id = $"blz_hybrid_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
         string extraProperties = "<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>";
         if (invariant != null)
             extraProperties += $"<InvariantGlobalization>{invariant}</InvariantGlobalization>";
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-        (CommandResult res, string logPath) = BlazorBuild(
+        (CommandResult res, string logPath) = await BlazorBuildAsync(
             new BlazorBuildOptions(
                 id,
                 config,

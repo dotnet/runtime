@@ -138,7 +138,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        public (CommandResult res, string logPath) BuildProjectWithoutAssert(
+        public async Task<(CommandResult res, string logPath)> BuildProjectWithoutAssertAsync(
             string id,
             string config,
             BuildProjectOptions buildProjectOptions,
@@ -170,7 +170,7 @@ namespace Wasm.Build.Tests
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
                 cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
 
-            CommandResult res = cmd.ExecuteWithCapturedOutput(commandLineArgs.ToArray());
+            CommandResult res = await cmd.ExecuteWithCapturedOutputAsync(commandLineArgs.ToArray());
             if (buildProjectOptions.ExpectSuccess)
                 res.EnsureSuccessful();
             else if (res.ExitCode == 0)

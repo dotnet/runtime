@@ -34,7 +34,7 @@ public class InterpPgoTests : WasmTemplateTestBase
 
         string id = $"browser_{config}_{GetRandomId()}";
         _testOutput.WriteLine("/// Creating project");
-        string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasmbrowser");
 
         _testOutput.WriteLine("/// Updating JS");
         UpdateBrowserMainJs((js) => {

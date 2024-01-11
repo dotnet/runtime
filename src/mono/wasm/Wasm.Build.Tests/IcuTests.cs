@@ -50,7 +50,7 @@ public class IcuTests : IcuTestsBase
 
         string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
+        (_, string output) = await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
@@ -74,7 +74,7 @@ public class IcuTests : IcuTestsBase
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
+        (_, string output) = await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
@@ -90,14 +90,14 @@ public class IcuTests : IcuTestsBase
     [Theory]
     [BuildAndRun(host: RunHost.None, parameters: new object[] { "icudtNonExisting.dat", true })]
     [BuildAndRun(host: RunHost.None, parameters: new object[] { "incorrectName.dat", false })]
-    public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string customFileName, bool isFilenameCorrect, string id)
+    public async Task NonExistingCustomFileAssertErrorAsync(BuildArgs buildArgs, string customFileName, bool isFilenameCorrect, string id)
     {
         string projectName = $"invalidCustomIcu_{buildArgs.Config}_{buildArgs.AOT}";
         buildArgs = buildArgs with { ProjectName = projectName };
         string customIcu = Path.Combine(BuildEnvironment.TestAssetsPath, customFileName);
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcu}</WasmIcuDataFileName>");
 
-        (_, string output) = BuildProject(buildArgs,
+        (_, string output) = await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),

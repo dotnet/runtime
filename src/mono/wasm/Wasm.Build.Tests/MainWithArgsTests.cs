@@ -84,7 +84,7 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),

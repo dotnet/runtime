@@ -51,7 +51,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 }}";
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
 
-            Rebuild(nativeRelink, invariant, buildArgs, id);
+            await RebuildAsync(nativeRelink, invariant, buildArgs, id);
             var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);

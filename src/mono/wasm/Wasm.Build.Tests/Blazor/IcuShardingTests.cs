@@ -27,7 +27,7 @@ public class IcuShardingTests : BlazorWasmTestBase
     public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
     {
         string id = $"blz_customFromRuntimePack_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
         var buildOptions = new BlazorBuildOptions(
                 id,
                 config,
@@ -40,7 +40,7 @@ public class IcuShardingTests : BlazorWasmTestBase
             extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
-        (CommandResult res, string logPath) = BlazorBuild(buildOptions);
+        (CommandResult res, string logPath) = await BlazorBuildAsync(buildOptions);
         await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
     }
 
@@ -49,10 +49,10 @@ public class IcuShardingTests : BlazorWasmTestBase
     [InlineData("Release", "incorrectName.dat", false)]
     [InlineData("Debug", "icudtNonExisting.dat", true)]
     [InlineData("Release", "icudtNonExisting.dat", true)]
-    public void NonExistingCustomFileAssertError(string config, string fileName, bool isFilenameCorrect)
+    public async Task NonExistingCustomFileAssertErrorAsync(string config, string fileName, bool isFilenameCorrect)
     {
         string id = $"blz_invalidCustomIcu_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
         AddItemsPropertiesToProject(
             projectFile,
             extraProperties:
@@ -60,7 +60,7 @@ public class IcuShardingTests : BlazorWasmTestBase
 
         try
         {
-            (CommandResult res, string logPath) = BlazorBuild(
+            (CommandResult res, string logPath) = await BlazorBuildAsync(
                 new BlazorBuildOptions(
                     id,
                     config,
@@ -93,13 +93,13 @@ public class IcuShardingTests : BlazorWasmTestBase
     public async Task CustomFileNotFromRuntimePackAbsolutePath(string config)
     {
         string id = $"blz_invalidCustomIcu_{config}_{GetRandomId()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectFile = await CreateBlazorWasmTemplateProjectAsync(id);
         AddItemsPropertiesToProject(
             projectFile,
             extraProperties:
                 $"<BlazorIcuDataFileName>{IcuTestsBase.CustomIcuPath}</BlazorIcuDataFileName>");
 
-        (CommandResult res, string logPath) = BlazorBuild(
+        (CommandResult res, string logPath) = await BlazorBuildAsync(
             new BlazorBuildOptions(
                 id,
                 config,

@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -55,7 +55,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
 
             // no-op Rebuild
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: true,

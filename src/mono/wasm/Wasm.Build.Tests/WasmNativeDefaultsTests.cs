@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -100,9 +101,9 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(DefaultsTestData), parameters: false)]
         [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: false)]
-        public void DefaultsWithBuild(string config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
+        public async Task DefaultsWithBuildAsync(string config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
         {
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_build", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForBuild, publish: false);
+            (string output, string? line) = await CheckWasmNativeDefaultValueAsync("native_defaults_build", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForBuild, publish: false);
 
             InferAndCheckPropertyValues(line, isPublish: false, wasmBuildNative: expectWasmBuildNativeForBuild, config: config);
         }
@@ -110,9 +111,9 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(DefaultsTestData), parameters: true)]
         [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: true)]
-        public void DefaultsWithPublish(string config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
+        public async Task DefaultsWithPublishAsync(string config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
         {
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: true);
+            (string output, string? line) = await CheckWasmNativeDefaultValueAsync("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: true);
 
             InferAndCheckPropertyValues(line, isPublish: true, wasmBuildNative: expectWasmBuildNativeForPublish, config: config);
         }
@@ -137,9 +138,9 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SetWasmNativeStripExplicitlyTestData), parameters: /*publish*/ false)]
         [MemberData(nameof(SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData))]
-        public void WasmNativeStripDefaultWithBuild(string config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
+        public async Task WasmNativeStripDefaultWithBuildAsync(string config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
         {
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNativeValue, publish: false);
+            (string output, string? line) = await CheckWasmNativeDefaultValueAsync("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNativeValue, publish: false);
 
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
@@ -151,9 +152,9 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SetWasmNativeStripExplicitlyTestData), parameters: /*publish*/ true)]
         [MemberData(nameof(SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData))]
-        public void WasmNativeStripDefaultWithPublish(string config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
+        public async Task WasmNativeStripDefaultWithPublishAsync(string config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
         {
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNativeValue, publish: true);
+            (string output, string? line) = await CheckWasmNativeDefaultValueAsync("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNativeValue, publish: true);
 
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
@@ -169,11 +170,11 @@ namespace Wasm.Build.Tests
         [InlineData("Release", "",   /*publish*/ false)]
         [InlineData("Release", "",   /*publish*/ true)]
         [InlineData("Release", "<PublishTrimmed>false</PublishTrimmed>", /*publish*/ true)]
-        public void WithNativeReference(string config, string extraProperties, bool publish)
+        public async Task WithNativeReferenceAsync(string config, string extraProperties, bool publish)
         {
             string nativeLibPath = Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o");
             string nativeRefItem = @$"<NativeFileReference Include=""{nativeLibPath}"" />";
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish",
+            (string output, string? line) = await CheckWasmNativeDefaultValueAsync("native_defaults_publish",
                                                         config,
                                                         extraProperties,
                                                         aot: false,
@@ -184,7 +185,7 @@ namespace Wasm.Build.Tests
             InferAndCheckPropertyValues(line, isPublish: publish, wasmBuildNative: true, config: config);
         }
 
-        private (string, string?) CheckWasmNativeDefaultValue(string projectName,
+        private async Task<(string, string?)> CheckWasmNativeDefaultValueAsync(string projectName,
                                                    string config,
                                                    string extraProperties,
                                                    bool aot,
@@ -209,7 +210,7 @@ namespace Wasm.Build.Tests
                                         extraItems: extraItems,
                                         insertAtEnd: printValueTarget);
 
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                                 id: GetRandomId(),
                                                 new BuildProjectOptions(
                                                     InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),

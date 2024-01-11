@@ -32,15 +32,15 @@ public abstract class AppTestBase : BlazorWasmTestBase
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
     }
 
-    protected void BuildProject(string configuration)
+    protected async Task BuildProjectAsync(string configuration)
     {
-        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration));
+        (CommandResult result, _) = await BlazorBuildAsync(new BlazorBuildOptions(Id, configuration));
         result.EnsureSuccessful();
     }
 
-    protected void PublishProject(string configuration)
+    protected async Task PublishProjectAsync(string configuration)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration));
+        (CommandResult result, _) = await BlazorPublishAsync(new BlazorBuildOptions(Id, configuration));
         result.EnsureSuccessful();
     }
 

@@ -34,7 +34,7 @@ namespace Wasm.Build.Tests
 
             // no relinking for build
             bool relinked = false;
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -54,7 +54,7 @@ namespace Wasm.Build.Tests
 
             // relink by default for Release+publish
             relinked = buildArgs.Config == "Release";
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !relinked,
@@ -84,7 +84,7 @@ namespace Wasm.Build.Tests
 
             // no relinking for build
             bool relinked = false;
-            (_, string output) = BuildProject(buildArgs,
+            (_, string output) = await BuildProjectAsync(buildArgs,
                                     id,
                                     new BuildProjectOptions(
                                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -114,7 +114,7 @@ namespace Wasm.Build.Tests
 
             Dictionary<string, FileStat> publishStat = new();
             // relink by default for Release+publish
-            (_, output) = BuildProject(buildArgs,
+            (_, output) = await BuildProjectAsync(buildArgs,
                                 id: id,
                                 new BuildProjectOptions(
                                     DotnetWasmFromRuntimePack: false,
@@ -132,7 +132,7 @@ namespace Wasm.Build.Tests
             await Run(expectAOT: true);
 
             // second build
-            (_, output) = BuildProject(buildArgs,
+            (_, output) = await BuildProjectAsync(buildArgs,
                                         id: id,
                                         new BuildProjectOptions(
                                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),

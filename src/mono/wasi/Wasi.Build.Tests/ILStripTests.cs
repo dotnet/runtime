@@ -51,7 +51,7 @@ public class ILStripTests : BuildTestBase
         string runArgs = $"run --no-silent --no-build -c {config}";
         new RunCommand(s_buildEnv, _testOutput, label: id)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput(runArgs)
+                .ExecuteWithCapturedOutputAsync(runArgs)
                 .EnsureSuccessful();
 
         string frameworkDir = singleFileBundle ? "" : Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, "wasi-wasm", "AppBundle", "managed");

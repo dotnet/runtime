@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -19,9 +20,9 @@ public class MiscTests2 : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void NativeRef_EmitsWarningBecauseItRequiresWorkload(string config)
+    public async Task NativeRef_EmitsWarningBecauseItRequiresWorkloadAsync(string config)
     {
-        CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
+        CommandResult res = await PublishForRequiresWorkloadTestAsync(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
         res.EnsureSuccessful();
         Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
     }
@@ -29,9 +30,9 @@ public class MiscTests2 : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void AOT_FailsBecauseItRequiresWorkload(string config)
+    public async Task AOT_FailsBecauseItRequiresWorkloadAsync(string config)
     {
-        CommandResult res = PublishForRequiresWorkloadTest(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+        CommandResult res = await PublishForRequiresWorkloadTestAsync(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
         Assert.NotEqual(0, res.ExitCode);
         Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
@@ -39,9 +40,9 @@ public class MiscTests2 : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(string config)
+    public async Task AOT_And_NativeRef_FailBecauseTheyRequireWorkloadAsync(string config)
     {
-        CommandResult res = PublishForRequiresWorkloadTest(config,
+        CommandResult res = await PublishForRequiresWorkloadTestAsync(config,
                                 extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
                                 extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
 
@@ -49,20 +50,20 @@ public class MiscTests2 : BlazorWasmTestBase
         Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
 
-    private CommandResult PublishForRequiresWorkloadTest(string config, string extraItems="", string extraProperties="")
+    private async Task<CommandResult> PublishForRequiresWorkloadTestAsync(string config, string extraItems="", string extraProperties="")
     {
         string id = $"needs_workload_{config}_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
+        await CreateBlazorWasmTemplateProjectAsync(id);
 
         AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
                                     extraProperties: extraProperties,
                                     extraItems: extraItems);
 
         string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-        return new DotNetCommand(s_buildEnv, _testOutput)
+        return await new DotNetCommand(s_buildEnv, _testOutput)
                         .WithWorkingDirectory(_projectDir!)
                         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                        .ExecuteWithCapturedOutput("publish",
+                        .ExecuteWithCapturedOutputAsync("publish",
                                                     $"-bl:{publishLogPath}",
                                                     $"-p:Configuration={config}");
     }

@@ -53,7 +53,7 @@ namespace Wasm.Build.Tests
                                         projectTemplate: s_resourcesProjectTemplate,
                                         extraProperties: extraProperties);
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () =>
@@ -95,7 +95,7 @@ namespace Wasm.Build.Tests
                                         extraProperties: extraProperties,
                                         extraItems: $"<ProjectReference Include=\"..\\LibraryWithResources\\LibraryWithResources.csproj\" />");
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
@@ -130,7 +130,7 @@ namespace Wasm.Build.Tests
 #pragma warning disable xUnit1026
         [Theory]
         [BuildAndRun(host: RunHost.None, aot: true)]
-        public void CheckThatSatelliteAssembliesAreNotAOTed(BuildArgs buildArgs, string id)
+        public async Task CheckThatSatelliteAssembliesAreNotAOTedAsync(BuildArgs buildArgs, string id)
         {
             string projectName = $"check_sat_asm_not_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -142,7 +142,7 @@ namespace Wasm.Build.Tests
                                             <WasmDedup>false</WasmDedup>", // -O0 can cause aot-instances.dll to blow up, and fail to compile, and it is not really needed here
                                         extraItems: $"<EmbeddedResource Include=\"{BuildEnvironment.RelativeTestAssetsPath}resx\\*\" />");
 
-            BuildProject(buildArgs,
+            await BuildProjectAsync(buildArgs,
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => CreateProgramForCultureTest(_projectDir!, $"{projectName}.words", "TestClass"),
