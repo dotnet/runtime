@@ -85,7 +85,7 @@ namespace System.Buffers.Text
                             goto DoneExit;
                     }
 
-#if !MONO // https://github.com/dotnet/runtime/issues/96828
+#if !MONO // https://github.com/dotnet/runtime/issues/93081
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -491,7 +491,7 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
-#if !MONO // https://github.com/dotnet/runtime/issues/96828
+#if !MONO // https://github.com/dotnet/runtime/issues/93081
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void AdvSimdEncode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
