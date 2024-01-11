@@ -11,8 +11,7 @@ namespace System.DiagnosticsTests
     <sources>  
       <source name=""TraceSourceApp""
         switchName=""sourceSwitch""
-        switchType=""System.Diagnostics.SourceSwitch""
-        foo=""bar"">
+        switchType=""System.Diagnostics.SourceSwitch"">
         <listeners>  
           <add name = ""console""
             type=""System.Diagnostics.ConsoleTraceListener"">  

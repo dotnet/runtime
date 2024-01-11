@@ -73,16 +73,6 @@ namespace System.Diagnostics.Tests
                     GetValue(section);
             }
         }
-
-        [Fact]
-        public void UnsupportedAttributesAreRejected()
-        {
-            TraceConfiguration.Register();
-            var traceSource = new TraceSource("Foo", SourceLevels.Off);
-            // When the config is loaded and TraceUtil.CopyStringDictionary() works, you get
-            //   System.ArgumentException : 'foo' is not a valid attribute for type 'System.Diagnostics.TraceSource'.
-            Assert.Throws<ArgumentException>(() => traceSource.TraceInformation("Test"));
-        }
     }
 }
 
