@@ -460,55 +460,53 @@ namespace System.Reflection.Emit.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public static void DefinePInvokeMethodExecution_Windows()
         {
             const string EnvironmentVariable = "COMPUTERNAME";
 
-            RemoteExecutor.Invoke(() =>
+            using (TempFile file = TempFile.Create())
             {
-                using (TempFile file = TempFile.Create())
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("DefinePInvokeMethodExecution_Windows"), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder mb = tb.DefinePInvokeMethod(
+                    "GetEnvironmentVariableW",
+                    "kernel32.dll",
+                    MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.PinvokeImpl,
+                    CallingConventions.Standard,
+                    typeof(int),
+                    [typeof(string), typeof(StringBuilder), typeof(int)],
+                    CallingConvention.StdCall,
+                    CharSet.Unicode);
+                mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
+
+                Type t = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("GetEnvironmentVariableW", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(methodFromDisk);
+
+                string expected = Environment.GetEnvironmentVariable(EnvironmentVariable);
+
+                int numCharsRequired = (int)methodFromDisk.Invoke(null, [EnvironmentVariable, null, 0]);
+                if (numCharsRequired == 0)
                 {
-                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("DefinePInvokeMethodExecution_Windows"), out MethodInfo saveMethod);
-                    TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
-                    MethodBuilder mb = tb.DefinePInvokeMethod(
-                        "GetEnvironmentVariableW",
-                        "kernel32.dll",
-                        MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.PinvokeImpl,
-                        CallingConventions.Standard,
-                        typeof(int),
-                        [typeof(string), typeof(StringBuilder), typeof(int)],
-                        CallingConvention.StdCall,
-                        CharSet.Unicode);
-                    mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
-
-                    Type t = tb.CreateType();
-                    saveMethod.Invoke(ab, [file.Path]);
-
-                    Assembly assemblyFromDisk = Assembly.LoadFrom(file.Path);
-                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
-                    MethodInfo methodFromDisk = typeFromDisk.GetMethod("GetEnvironmentVariableW", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                    Assert.NotNull(methodFromDisk);
-
-                    string expected = Environment.GetEnvironmentVariable(EnvironmentVariable);
-
-                    int numCharsRequired = (int)methodFromDisk.Invoke(null, [EnvironmentVariable, null, 0]);
-                    if (numCharsRequired == 0)
-                    {
-                        // Environment variable is not defined. Make sure we got that result using both techniques.
-                        Assert.Null(expected);
-                    }
-                    else
-                    {
-                        StringBuilder sb = new StringBuilder(numCharsRequired);
-                        int numCharsWritten = (int)methodFromDisk.Invoke(null, [EnvironmentVariable, sb, numCharsRequired]);
-                        Assert.NotEqual(0, numCharsWritten);
-                        string actual = sb.ToString();
-                        Assert.Equal(expected, actual);
-                    }
+                    // Environment variable is not defined. Make sure we got that result using both techniques.
+                    Assert.Null(expected);
                 }
-                return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
+                else
+                {
+                    StringBuilder sb = new StringBuilder(numCharsRequired);
+                    int numCharsWritten = (int)methodFromDisk.Invoke(null, [EnvironmentVariable, sb, numCharsRequired]);
+                    Assert.NotEqual(0, numCharsWritten);
+                    string actual = sb.ToString();
+                    Assert.Equal(expected, actual);
+                }
+                tlc.Unload();
+            }
         }
 
         public static IEnumerable<object[]> TestData
@@ -665,31 +663,28 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public void DefineTypeInitializer()
         {
-            RemoteExecutor.Invoke(() =>
+            using (TempFile file = TempFile.Create())
             {
-                using (TempFile file = TempFile.Create())
-                {
-                    AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                    FieldBuilder greetingField = tb.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
-                    ConstructorBuilder constructor = tb.DefineTypeInitializer();
-                    ILGenerator constructorIlGenerator = constructor.GetILGenerator();
-                    constructorIlGenerator.Emit(OpCodes.Ldstr, "hello");
-                    constructorIlGenerator.Emit(OpCodes.Stsfld, greetingField);
-                    constructorIlGenerator.Emit(OpCodes.Ret);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                FieldBuilder greetingField = tb.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
+                ConstructorBuilder constructor = tb.DefineTypeInitializer();
+                ILGenerator constructorIlGenerator = constructor.GetILGenerator();
+                constructorIlGenerator.Emit(OpCodes.Ldstr, "hello");
+                constructorIlGenerator.Emit(OpCodes.Stsfld, greetingField);
+                constructorIlGenerator.Emit(OpCodes.Ret);
 
-                    tb.CreateType();
-                    saveMethod.Invoke(ab, [file.Path]);
+                tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
 
-                    Type typeFromDisk = Assembly.LoadFrom(file.Path).GetType("MyType");
-                    FieldInfo createdField = typeFromDisk.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
-                    Assert.Equal("hello", createdField.GetValue(null));
-                }
-
-                return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                FieldInfo createdField = typeFromDisk.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.Equal("hello", createdField.GetValue(null));
+                tlc.Unload();
+            }
         }
     }
 }
