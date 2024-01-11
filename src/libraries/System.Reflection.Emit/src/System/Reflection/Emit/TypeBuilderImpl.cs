@@ -44,7 +44,7 @@ namespace System.Reflection.Emit
         // Only for creating the global type
         internal TypeBuilderImpl(ModuleBuilderImpl module)
         {
-            _name = "<Module>";
+            _name = "<Module>"; // Defined in ECMA-335 II.10.8
             _module = module;
             _isHiddenGlobalType = true;
             _handle = MetadataTokens.TypeDefinitionHandle(1);
