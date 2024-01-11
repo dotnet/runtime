@@ -128,8 +128,8 @@
       <!-- this allows use of test attributes from dotnet.xunitextensions -->
       <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
 
-      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg% %XUnitExtraArgs%</RunScriptCommand>
-      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg %24XUnitExtraArgs</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg% %HELIX_XUNIT_ARGS% %XUnitExtraArgs%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg %24HELIX_XUNIT_ARGS %24XUnitExtraArgs</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>

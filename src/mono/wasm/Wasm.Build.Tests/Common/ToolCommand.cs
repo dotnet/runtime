@@ -137,9 +137,9 @@ namespace Wasm.Build.Tests
             var completionTask = CurrentProcess.StartAndWaitForExitAsync(_testOutput);
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
-            _testOutput.WriteLine($"Waiting on the task returned from .. StartAndWaitForExitAsync for 5mins, on process: {CurrentProcess.HasExited}, {executable} {args}");
+            _testOutput.WriteLine($"Waiting on the task returned from .. StartAndWaitForExitAsync for 5mins, on process: {CurrentProcess.HasExited}, {executable} {args}, task: {completionTask.Status}");
 
-            await Task.WhenAny(completionTask, Task.Delay(TimeSpan.FromMinutes(5)));
+            await Task.WhenAny(completionTask, Task.Delay(TimeSpan.FromMinutes(5))).ConfigureAwait(false);
 
             //if (!completionTask.Wait(TimeSpan.FromMinutes(5)))
             if (!completionTask.IsCompleted)
