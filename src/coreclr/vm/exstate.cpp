@@ -543,14 +543,15 @@ ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTrackerBase* head = m_pCurrentTracker;
-#else // FEATURE_EH_FUNCLETS
-    ExInfo*           head = &m_currentExInfo;
-#endif // FEATURE_EH_FUNCLETS
 
     if (head == NULL)
     {
         return;
     }
+
+#else // FEATURE_EH_FUNCLETS
+    ExInfo*           head = &m_currentExInfo;
+#endif // FEATURE_EH_FUNCLETS
 
     for (;;)
     {
