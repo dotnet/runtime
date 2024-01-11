@@ -8,22 +8,22 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		public static void Main ()
 		{
 #if SUPPORTS_DEFAULT_INTERFACE_METHODS
-			Foo<Derived> ();
+			CallStaticInterfaceMethod<Derived> ();
 #endif
 		}
 
 #if SUPPORTS_DEFAULT_INTERFACE_METHODS
 		[Kept]
-		static void Foo<T> () where T : IBase
+		static void CallStaticInterfaceMethod<T> () where T : IBase
 		{
-			T.Foo ();
+			T.StaticInterfaceMethod ();
 		}
 
 		[Kept]
 		interface IBase
 		{
 			[Kept]
-			static abstract void Foo ();
+			static abstract void StaticInterfaceMethod ();
 		}
 
 		[Kept]
@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		interface IDerived : IBase
 		{
 			[Kept]
-			static void IBase.Foo () { }
+			static void IBase.StaticInterfaceMethod () { }
 		}
 
 		[Kept]
