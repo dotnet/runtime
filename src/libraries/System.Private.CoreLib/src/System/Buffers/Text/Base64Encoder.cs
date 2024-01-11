@@ -84,7 +84,7 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
-#if !MONO
+
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -93,7 +93,7 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
-#endif
+
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
@@ -493,9 +493,9 @@ namespace System.Buffers.Text
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void AdvSimdEncode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
-#if MONO
+#if MONO // https://github.com/dotnet/runtime/issues/96828
             return;
-#else
+#endif
             // C# implementatino of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/enc_loop.c
             Vector128<byte> str1;
             Vector128<byte> str2;
@@ -548,7 +548,6 @@ namespace System.Buffers.Text
 
             srcBytes = src;
             destBytes = dest;
-#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
