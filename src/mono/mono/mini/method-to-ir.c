@@ -226,10 +226,6 @@ const gint8 mini_ins_sreg_counts[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
-
 guint32
 mono_alloc_ireg (MonoCompile *cfg)
 {
@@ -11176,35 +11172,8 @@ field_access_end:
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
 
 			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-				MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
-				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
-				int swift_error_args = 0, swift_self_args = 0;
-				ERROR_DECL (swiftcall_error);
-				for (int i = 0; i < method->signature->param_count; ++i) {
-					MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
-					if (param_klass) {
-						if (param_klass == swift_error) {
-							swift_error_args = swift_self_args = 0;
-                            mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("SwiftError argument must be a pointer."), mono_method_full_name (method, TRUE));
-							break;
-						} else if (param_klass == swift_error_ptr) {
-							swift_error_args++;
-						} else if (param_klass == swift_self) {
-							swift_self_args++;
-						}
-					}
-				}
-				if (swift_self_args > 1 || swift_error_args > 1) {
-					mono_error_set_invalid_program (swiftcall_error, g_strdup_printf ("Method signature contains multiple SwiftSelf/SwiftError arguments."), mono_method_full_name (method, TRUE));
-				}
-
-				if (!is_ok (swiftcall_error)) {
-					emit_invalid_program_with_msg (cfg, swiftcall_error, method, cmethod);
-					mono_error_cleanup (swiftcall_error);
-				}
-#else
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
+				// Swift calling convention is not supported on this platform.
 				emit_not_supported_failure (cfg);
 #endif
 			}

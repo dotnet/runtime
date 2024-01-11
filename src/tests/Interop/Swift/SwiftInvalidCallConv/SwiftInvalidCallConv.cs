@@ -9,23 +9,32 @@ using Xunit;
 
 public class InvalidCallingConvTests
 {
+    // Dummy class with a dummy attribute
+    public class StringClass
+    {
+        public string value { get; set; }
+    }
     private const string SwiftLib = "libSwiftInvalidCallConv.dylib";
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public static extern nint FuncWithTwoSelfParameters(SwiftSelf self1, SwiftSelf self2);
+    public static extern void FuncWithTwoSelfParameters(SwiftSelf self1, SwiftSelf self2);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public unsafe static extern nint FuncWithTwoErrorParameters(SwiftError* error1, SwiftError* error2);
+    public unsafe static extern void FuncWithTwoErrorParameters(SwiftError* error1, SwiftError* error2);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public unsafe static extern nint FuncWithMixedParameters(SwiftSelf self1, SwiftSelf self2, SwiftError* error1, SwiftError* error2);
+    public unsafe static extern void FuncWithMixedParameters(SwiftSelf self1, SwiftSelf self2, SwiftError* error1, SwiftError* error2);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public static extern nint FuncWithSwiftErrorAsArg(SwiftError error1);
+    public static extern void FuncWithSwiftErrorAsArg(SwiftError error1);
+
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
+    public static extern void FuncWithNonPrimitiveArg(StringClass arg1);
 
     [Fact]
     public static void TestFuncWithTwoSelfParameters()
@@ -60,5 +69,14 @@ public class InvalidCallingConvTests
         // Invalid due to SwiftError not passed as a pointer.
         SwiftError error = new SwiftError();
         Assert.Throws<InvalidProgramException>(() => FuncWithSwiftErrorAsArg(error));
+    }
+
+    [Fact]
+    public unsafe static void TestFuncWithNonPrimitiveArg()
+    {
+        // Invalid due to a non-primitive argument.
+        StringClass arg1 = new StringClass();
+        arg1.value = "fail";
+        Assert.Throws<InvalidProgramException>(() => FuncWithNonPrimitiveArg(arg1));
     }
 }
