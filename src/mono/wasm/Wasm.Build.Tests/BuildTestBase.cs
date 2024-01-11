@@ -300,7 +300,7 @@ namespace Wasm.Build.Tests
                                         workingDir: bundleDir,
                                         envVars: envVars,
                                         label: testCommand,
-                                        timeoutMs: s_defaultPerTestTimeoutMs);
+                                        timeoutMs: 5*60*1000); //s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
             if (useWasmConsoleOutput)
@@ -501,7 +501,7 @@ namespace Wasm.Build.Tests
                 using CancellationTokenSource cts = new();
                 cts.CancelAfter(timeoutMs ?? s_defaultPerTestTimeoutMs);
 
-                _testOutput.WriteLine($"calling process.WaitForExitAsync");
+                _testOutput.WriteLine($"calling process.WaitForExitAsync with timeout: {timeoutMs ?? s_defaultPerTestTimeoutMs}");
                 await process.WaitForExitAsync(cts.Token);
                 _testOutput.WriteLine($"back from calling process.WaitForExitAsync");
 
