@@ -8673,6 +8673,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_andqv:
         case INS_sve_eorqv:
         case INS_sve_orqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -8704,6 +8705,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             break;
 
         case INS_sve_addqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -8728,6 +8730,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_sminqv:
         case INS_sve_umaxqv:
         case INS_sve_uminqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -9052,6 +9055,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_fminnmqv:
         case INS_sve_fmaxqv:
         case INS_sve_fminqv:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -9107,6 +9111,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
 
         case INS_sve_famax:
         case INS_sve_famin:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
