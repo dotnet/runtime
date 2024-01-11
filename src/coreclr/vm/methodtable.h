@@ -92,9 +92,10 @@ enum class FindDefaultInterfaceImplementationFlags
 
 enum class MethodDataComputeOptions
 {
-    NoCache,
-    NoCacheVirtualsOnly,
-    Cache
+    NoCache, // Do not place the results of getting the MethodData into the cache, but use it if it is there
+    NoCacheVirtualsOnly, // Do not place the results of getting the MethodData into the cache, but use it if it is there. If freshly computed, only fill in virtual data, and ignore non-virtuals
+    Cache, // Place result of getting MethodData into the cache if it is not already there
+    CacheOnly, // Get the MethodData from the cache. If not present, simply do not return one
 };
 
 //============================================================================
@@ -2916,13 +2917,13 @@ protected:
             MethodData(pMT, pMT),
             m_numMethods(ComputeNumMethods(pMT, computeOptions)),
             m_virtualsOnly(computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
-            { WRAPPER_NO_CONTRACT; Init(NULL); }
+            { WRAPPER_NO_CONTRACT; _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly); Init(NULL); }
 
         inline MethodDataObject(MethodTable *pMT, MethodData *pParentData, MethodDataComputeOptions computeOptions) : 
             MethodData(pMT, pMT),
             m_numMethods(ComputeNumMethods(pMT, computeOptions)),
             m_virtualsOnly(computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
-            { WRAPPER_NO_CONTRACT; Init(pParentData); }
+            { WRAPPER_NO_CONTRACT; _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly); Init(pParentData); }
 
         virtual ~MethodDataObject() { LIMITED_METHOD_CONTRACT; }
 
@@ -2942,6 +2943,8 @@ protected:
 
         static UINT32 ComputeNumMethods(MethodTable *pMT, MethodDataComputeOptions computeOptions)
         {
+            _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
+
             if (computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
             {
                 return pMT->GetCanonicalMethodTable()->GetNumVtableSlots();
@@ -3028,6 +3031,7 @@ protected:
 
         static void* operator new(size_t size, TargetMethodTable targetMT, MethodDataComputeOptions computeOptions)
         {
+            _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
