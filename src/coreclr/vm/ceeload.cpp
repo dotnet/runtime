@@ -2488,7 +2488,7 @@ ILStubCache* Module::GetILStubCache()
 
     if (m_pILStubCache == NULL)
     {
-        ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator()->GetHighFrequencyHeap());
+        ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator());
 
         if (InterlockedCompareExchangeT(&m_pILStubCache, pILStubCache, NULL) != NULL)
         {

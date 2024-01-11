@@ -2843,7 +2843,7 @@ void CEEInfo::embedGenericHandle(
         {
             MethodDesc * pDeclaringMD = (MethodDesc *)pResolvedToken->hMethod;
 
-            if (!pDeclaringMD->GetMethodTable()->HasSameTypeDefAs(th.GetMethodTable()))
+            if (!pDeclaringMD->GetMethodTable()->HasSameTypeDefAs(th.GetMethodTable()) && !pDeclaringMD->GetMethodTable()->IsArray())
             {
                 //
                 // The method type may point to a sub-class of the actual class that declares the method.
