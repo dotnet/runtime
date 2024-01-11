@@ -76,9 +76,9 @@ namespace System.Reflection.Emit
             _initLocals = true;
         }
 
-        internal void CreateDllData(string dllName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        internal void CreateDllImportData(string dllName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
-            _dllImportData = DllImportData.CreateDllImportData(dllName, entryName, nativeCallConv, nativeCharSet);
+            _dllImportData = DllImportData.Create(dllName, entryName, nativeCallConv, nativeCharSet);
         }
 
         internal int ParameterCount => _parameterTypes == null ? 0 : _parameterTypes.Length;
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(names, nameof(names));
-                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _declaringType);
             }
 
             return _typeParameters = typeParameters;
@@ -182,7 +182,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.DllImportAttribute":
                     {
-                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
+                        _dllImportData = DllImportData.Create(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
                         _attributes |= MethodAttributes.PinvokeImpl;
                         _canBeRuntimeImpl = true;
                         if (preserveSig)

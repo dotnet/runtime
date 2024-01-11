@@ -130,6 +130,7 @@ namespace System.Reflection.Emit
             // All generic parameters for all types and methods should be written in specific order
             List<GenericTypeParameterBuilderImpl> genericParams = new();
             PopulateTokensForTypesAndItsMembers();
+
             // Add global members
             WriteFields(_globalTypeBuilder, fieldDataBuilder);
             WriteMethods(_globalTypeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
@@ -449,6 +450,7 @@ namespace System.Reflection.Emit
                 {
                     _metadataBuilder.AddFieldRelativeVirtualAddress(handle, fieldDataBuilder.Count);
                     fieldDataBuilder.WriteBytes(field._rvaData!);
+                    fieldDataBuilder.Align(8);
                 }
             }
         }
@@ -516,18 +518,19 @@ namespace System.Reflection.Emit
                 method: methodHandle,
                 instantiation: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetMethodSpecificationSignature(genericArgs, this)));
 
-        private EntityHandle GetMemberReferenceHandle(MemberInfo member)
+        private EntityHandle GetMemberReferenceHandle(MemberInfo memberInfo)
         {
-            if (!_memberReferences.TryGetValue(member, out var memberHandle))
+            if (!_memberReferences.TryGetValue(memberInfo, out var memberHandle))
             {
+                MemberInfo member = GetOriginalMemberIfConstructedType(memberInfo);
                 switch (member)
                 {
                     case FieldInfo field:
-                        memberHandle = AddMemberReference(field.Name, GetTypeHandle(field.DeclaringType!),
+                        memberHandle = AddMemberReference(field.Name, GetTypeHandle(memberInfo.DeclaringType!),
                             MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                         break;
                     case ConstructorInfo ctor:
-                        memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(ctor.DeclaringType!), MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this));
+                        memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(memberInfo.DeclaringType!), MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this));
                         break;
                     case MethodInfo method:
                         if (method.IsConstructedGenericMethod)
@@ -536,7 +539,7 @@ namespace System.Reflection.Emit
                         }
                         else
                         {
-                            memberHandle = AddMemberReference(method.Name, GetTypeHandle(method.DeclaringType!), GetMethodSignature(method, null));
+                            memberHandle = AddMemberReference(method.Name, GetTypeHandle(memberInfo.DeclaringType!), GetMethodSignature(method, null));
                         }
                         break;
                     default:
@@ -544,7 +547,7 @@ namespace System.Reflection.Emit
 
                 }
 
-                _memberReferences.Add(member, memberHandle);
+                _memberReferences.Add(memberInfo, memberHandle);
             }
 
             return memberHandle;

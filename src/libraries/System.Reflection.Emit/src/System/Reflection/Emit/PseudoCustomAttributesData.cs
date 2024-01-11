@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
 
         public MethodImportAttributes Flags => _flags;
 
-        internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
+        internal static DllImportData Create(CustomAttributeInfo attr, out bool preserveSig)
         {
             string? moduleName = (string?)attr._ctorArgs[0];
             if (string.IsNullOrEmpty(moduleName))
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit
             return new DllImportData(moduleName, entryPoint, importAttributes);
         }
 
-        internal static DllImportData CreateDllImportData(string moduleName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        internal static DllImportData Create(string moduleName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             if (string.IsNullOrEmpty(moduleName))
             {

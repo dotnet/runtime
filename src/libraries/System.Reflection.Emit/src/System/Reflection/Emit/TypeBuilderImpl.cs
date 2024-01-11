@@ -517,7 +517,7 @@ namespace System.Reflection.Emit
             attributes |= MethodAttributes.PinvokeImpl;
             MethodBuilderImpl method = new MethodBuilderImpl(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
                 returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
-            method.CreateDllData(dllName, entryName, nativeCallConv, nativeCharSet);
+            method.CreateDllImportData(dllName, entryName, nativeCallConv, nativeCharSet);
 
             if (_methodDefinitions.Contains(method))
             {

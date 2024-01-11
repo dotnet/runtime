@@ -194,7 +194,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo saveMethod);
                     ModuleBuilder module = ab.DefineDynamicModule("MyModule");
-
+                    TypeBuilder tb = module.DefineType("MyType", TypeAttributes.Public);
                     // Create static field data in a variety of orders that requires the runtime to actively apply alignment
                     // RuntimeHelpers.CreateSpan requires data to be naturally aligned within the "PE" file. At this time CreateSpan only
                     // requires alignments up to 8 bytes.
@@ -204,11 +204,13 @@ namespace System.Reflection.Emit.Tests
                     byte[] field4Byte_2_data = new byte[] { 5, 6, 7, 8 };
                     byte[] field8Byte_2_data = new byte[] { 9, 10, 11, 12, 13, 14, 15, 16 };
                     FieldBuilder field4Byte_1 = module.DefineInitializedData("Field4Bytes_1", field4Byte_1_data, FieldAttributes.Public);
+                    FieldBuilder tbField4Byte_1 = tb.DefineInitializedData("Field4Bytes_1", field4Byte_1_data, FieldAttributes.Public);
                     FieldBuilder field8Byte_1 = module.DefineInitializedData("Field8Bytes_1", field8Byte_1_data, FieldAttributes.Public);
                     FieldBuilder field4Byte_2 = module.DefineInitializedData("Field4Bytes_2", field4Byte_2_data, FieldAttributes.Public);
                     FieldBuilder field8Byte_2 = module.DefineInitializedData("Field8Bytes_2", field8Byte_2_data, FieldAttributes.Public);
+                    FieldBuilder tbField8Byte_2 = tb.DefineInitializedData("Field8Bytes_2", field8Byte_2_data, FieldAttributes.Public);
                     module.CreateGlobalFunctions();
-
+                    tb.CreateType();
                     Assert.Null(field4Byte_1.DeclaringType);
                     Assert.Null(field8Byte_1.DeclaringType);
                     Assert.Null(field4Byte_2.DeclaringType);
@@ -217,9 +219,11 @@ namespace System.Reflection.Emit.Tests
                     var checkTypeBuilder = module.DefineType("CheckType", TypeAttributes.Public);
                     CreateLoadAddressMethod("LoadAddress1", field1Byte);
                     CreateLoadAddressMethod("LoadAddress4_1", field4Byte_1);
+                    CreateLoadAddressMethod("LoadAddress4_3", tbField4Byte_1);
                     CreateLoadAddressMethod("LoadAddress4_2", field4Byte_2);
                     CreateLoadAddressMethod("LoadAddress8_1", field8Byte_1);
                     CreateLoadAddressMethod("LoadAddress8_2", field8Byte_2);
+                    CreateLoadAddressMethod("LoadAddress8_3", tbField8Byte_2);
 
                     void CreateLoadAddressMethod(string name, FieldBuilder fieldBuilder)
                     {
@@ -236,9 +240,11 @@ namespace System.Reflection.Emit.Tests
                     Type checkType = assemblyFromDisk.GetType("CheckType");
 
                     CheckMethod("LoadAddress4_1", 4, field4Byte_1_data);
+                    CheckMethod("LoadAddress4_3", 4, field4Byte_1_data);
                     CheckMethod("LoadAddress4_2", 4, field4Byte_2_data);
                     CheckMethod("LoadAddress8_1", 8, field8Byte_1_data);
                     CheckMethod("LoadAddress8_2", 8, field8Byte_2_data);
+                    CheckMethod("LoadAddress8_3", 8, field8Byte_2_data);
 
                     void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
                     {
@@ -249,7 +255,7 @@ namespace System.Reflection.Emit.Tests
                         {
                             Assert.Equal(dataToVerify[i], Marshal.ReadByte(address + (nint)i));
                         }
-                        //Assert.Equal(name + "_0" + "_" + address.ToString(), name + "_" + (address % minAlignmentRequired).ToString() + "_" + address.ToString());
+                        Assert.Equal(name + "_0" + "_" + address.ToString(), name + "_" + (address % minAlignmentRequired).ToString() + "_" + address.ToString());
                     }
                 }
 

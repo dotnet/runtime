@@ -187,7 +187,7 @@ namespace System.Reflection.PortableExecutable
 
         public int ComputeSizeOfTextSection()
         {
-            // Debug.Assert(MappedFieldDataSize % MappedFieldDataAlignment == 0);
+            Debug.Assert(MappedFieldDataSize % MappedFieldDataAlignment == 0);
             return CalculateOffsetToMappedFieldDataStream() + MappedFieldDataSize;
         }
 
