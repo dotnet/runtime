@@ -17,7 +17,7 @@ namespace System.Linq
 
             if (count == 0)
             {
-                return Empty<TResult>();
+                return [];
             }
 
             return new RepeatIterator<TResult>(element, count);

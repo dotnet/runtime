@@ -7,18 +7,16 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public sealed class CharMarshallingGeneratorFactory : IMarshallingGeneratorFactory
+    public sealed class CharMarshallingGeneratorResolver : IMarshallingGeneratorResolver
     {
         private static readonly IMarshallingGenerator s_blittable = new BlittableMarshaller();
         private static readonly IMarshallingGenerator s_utf16Char = new Utf16CharMarshaller();
 
-        private readonly IMarshallingGeneratorFactory _inner;
         private readonly bool _useBlittableMarshallerForUtf16;
         private readonly string _stringMarshallingAttribute;
 
-        public CharMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner, bool useBlittableMarshallerForUtf16, string stringMarshallingAttribute)
+        public CharMarshallingGeneratorResolver(bool useBlittableMarshallerForUtf16, string stringMarshallingAttribute)
         {
-            _inner = inner;
             _useBlittableMarshallerForUtf16 = useBlittableMarshallerForUtf16;
             _stringMarshallingAttribute = stringMarshallingAttribute;
         }
@@ -30,7 +28,7 @@ namespace Microsoft.Interop
                 return CreateCharMarshaller(info, context);
             }
 
-            return _inner.Create(info, context);
+            return ResolvedGenerator.UnresolvedGenerator;
         }
 
         private ResolvedGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)

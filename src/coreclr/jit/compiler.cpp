@@ -4842,14 +4842,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Compute dominators and exceptional entry blocks
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
-
-        // The loop table is no longer valid.
-        optLoopTableValid = false;
-        optLoopTable      = nullptr;
-        optLoopCount      = 0;
-
-        // Old dominators and reachability sets are no longer valid.
-        fgDomsComputed = false;
     }
 
 #ifdef DEBUG
@@ -5864,6 +5856,11 @@ void Compiler::RecomputeFlowGraphAnnotations()
 
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    if (fgHasLoops)
+    {
+        optFindAndScaleGeneralLoopBlocks();
+    }
 
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 
