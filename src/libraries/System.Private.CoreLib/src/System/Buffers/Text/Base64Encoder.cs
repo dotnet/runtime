@@ -84,7 +84,7 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
-
+#if !MONO
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -93,7 +93,7 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
-
+#endif
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
