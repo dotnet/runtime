@@ -52,6 +52,7 @@ class ThreadExceptionState
 
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
+    friend struct ExInfo;
 #else
     friend class ExInfo;
 #endif // FEATURE_EH_FUNCLETS
@@ -147,26 +148,23 @@ private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker    m_pCurrentTracker;
+    PTR_ExceptionTrackerBase m_pCurrentTracker;
     ExceptionTracker        m_OOMTracker;
-    PTR_ExInfo m_pExInfo;
 public:
-    PTR_ExceptionTracker    GetCurrentExceptionTracker()
+    PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
     }
-    PTR_ExInfo    GetCurrentExInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pExInfo;
-    }
 
-    void SetCurrentExInfo(PTR_ExInfo pExInfo)
+#ifndef DACCESS_COMPILE
+    void SetCurrentExceptionTracker(ExceptionTrackerBase* pTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pExInfo = pExInfo;
+        m_pCurrentTracker = pTracker;
     }
+#endif // DACCESS_COMPILE
+
 #else
     ExInfo                  m_currentExInfo;
 public:

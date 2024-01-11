@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -11,7 +13,10 @@ namespace System.Text.RegularExpressions.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public class RegexCompileToAssemblyTests : FileCleanupTestBase
     {
-        [Fact]
+        public static bool IsDebug => typeof(Regex).Assembly.GetCustomAttributes(false).OfType<DebuggableAttribute>().Any(da => da.IsJITTrackingEnabled);
+        public static bool IsRelease => !IsDebug;
+
+        [ConditionalFact(nameof(IsRelease))]
         public void CompileToAssembly_PNSE()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Regex.CompileToAssembly(null, null));
@@ -19,19 +24,48 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Regex.CompileToAssembly(null, null, null, null));
 
             Assert.Throws<PlatformNotSupportedException>(() => Regex.CompileToAssembly(
-                new[] { new RegexCompilationInfo("abcd", RegexOptions.None, "abcd", "SomeNamespace", true) },
+                [new RegexCompilationInfo("abcd", RegexOptions.None, "abcd", "SomeNamespace", true)],
                 new AssemblyName("abcd")));
 
             Assert.Throws<PlatformNotSupportedException>(() => Regex.CompileToAssembly(
-                new[] { new RegexCompilationInfo("abcd", RegexOptions.None, "abcd", "SomeNamespace", true) },
+                [new RegexCompilationInfo("abcd", RegexOptions.None, "abcd", "SomeNamespace", true)],
                 new AssemblyName("abcd"),
-                new[] { new CustomAttributeBuilder(typeof(AssemblyCompanyAttribute).GetConstructor(new[] { typeof(string) }), new[] { "TestCompany" }) }));
+                [new CustomAttributeBuilder(typeof(AssemblyCompanyAttribute).GetConstructor([typeof(string)]), new[] { "TestCompany" })]));
 
             Assert.Throws<PlatformNotSupportedException>(() => Regex.CompileToAssembly(
-                new[] { new RegexCompilationInfo("abcd", RegexOptions.None, "abcd", "SomeNamespace", true) },
+                [new RegexCompilationInfo("abcd", RegexOptions.None, "abcd", "SomeNamespace", true)],
                 new AssemblyName("abcd"),
-                new[] { new CustomAttributeBuilder(typeof(AssemblyCompanyAttribute).GetConstructor(new[] { typeof(string) }), new[] { "TestCompany" }) },
+                [new CustomAttributeBuilder(typeof(AssemblyCompanyAttribute).GetConstructor([typeof(string)]), new[] { "TestCompany" })],
                 "resourceFile"));
+        }
+
+        [ConditionalFact(nameof(IsDebug))]
+        public void CompileToAssembly_SimpleUseInDebug()
+        {
+            (RegexCompilationInfo rci, string validInput, string invalidInput)[] regexes =
+            [
+                (new RegexCompilationInfo("abcd", RegexOptions.None, "Type1", "Namespace1", ispublic: true), "123abcd123", "123abed123"),
+                (new RegexCompilationInfo("(a|b|cde)+", RegexOptions.None, "Type2", "Namespace2.Sub", ispublic: true), "abcde", "cd"),
+            ];
+
+            string assemblyName = Path.GetRandomFileName();
+
+            string cwd = Environment.CurrentDirectory;
+            Environment.CurrentDirectory = TestDirectory;
+            try
+            {
+                Regex.CompileToAssembly(regexes.Select(r => r.rci).ToArray(), new AssemblyName(assemblyName));
+            }
+            finally
+            {
+                Environment.CurrentDirectory = cwd;
+            }
+
+            string assemblyPath = Path.Combine(TestDirectory, assemblyName + ".dll");
+            Assert.True(File.Exists(assemblyPath));
+
+            // Uncomment to save the assembly to the desktop for inspection:
+            // File.Copy(assemblyPath, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Path.GetFileName(assemblyPath)));
         }
     }
 }
