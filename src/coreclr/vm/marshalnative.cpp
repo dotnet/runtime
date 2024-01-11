@@ -193,8 +193,6 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD)
     }
     else
     {
-        GCX_PREEMP();
-
         // Verify the type can be marshalled.
         if (!IsStructMarshalable(th))
         {
