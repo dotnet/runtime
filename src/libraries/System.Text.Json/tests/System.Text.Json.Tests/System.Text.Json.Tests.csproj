@@ -213,6 +213,7 @@
     <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\StreamTests.ChunkedReaderStream.cs" />
     <Compile Include="Serialization\TypeInfoResolverFunctionalTests.cs" />
     <Compile Include="Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />

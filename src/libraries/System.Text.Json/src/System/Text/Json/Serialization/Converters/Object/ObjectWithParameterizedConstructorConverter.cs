@@ -304,7 +304,7 @@ namespace System.Text.Json.Serialization.Converters
                     // Set the property value.
                     reader.ReadWithVerify();
 
-                    if (!(jsonParameterInfo!.ShouldDeserialize))
+                    if (!jsonParameterInfo.ShouldDeserialize)
                     {
                         // The Utf8JsonReader.Skip() method will fail fast if it detects that we're reading
                         // from a partially read buffer, regardless of whether the next value is available.
@@ -383,13 +383,12 @@ namespace System.Text.Json.Serialization.Converters
                 // Determine the property.
                 if (state.Current.PropertyState == StackFramePropertyState.None)
                 {
-                    state.Current.PropertyState = StackFramePropertyState.ReadName;
-
                     if (!reader.Read())
                     {
-                        // The read-ahead functionality will do the Read().
                         return false;
                     }
+
+                    state.Current.PropertyState = StackFramePropertyState.ReadName;
                 }
 
                 JsonParameterInfo? jsonParameterInfo;
@@ -397,8 +396,6 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
                 {
-                    state.Current.PropertyState = StackFramePropertyState.Name;
-
                     JsonTokenType tokenType = reader.TokenType;
 
                     if (tokenType == JsonTokenType.EndObject)
@@ -430,6 +427,8 @@ namespace System.Text.Json.Serialization.Converters
 
                         state.Current.UseExtensionProperty = useExtensionProperty;
                     }
+
+                    state.Current.PropertyState = StackFramePropertyState.Name;
                 }
                 else
                 {
@@ -466,7 +465,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!jsonParameterInfo.ShouldDeserialize)
                 {
-                    if (!reader.TrySkip())
+                    if (!reader.TrySkipPartial(targetDepth: state.Current.OriginalDepth + 1))
                     {
                         return false;
                     }
@@ -475,13 +474,12 @@ namespace System.Text.Json.Serialization.Converters
                     return true;
                 }
 
-                // Returning false below will cause the read-ahead functionality to finish the read.
-                state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-                if (!SingleValueReadWithReadAhead(jsonParameterInfo.EffectiveConverter.RequiresReadAhead, ref reader, ref state))
+                if (!reader.TryAdvanceWithOptionalReadAhead(jsonParameterInfo.EffectiveConverter.RequiresReadAhead))
                 {
                     return false;
                 }
+
+                state.Current.PropertyState = StackFramePropertyState.ReadValue;
             }
 
             if (!ReadAndCacheConstructorArgument(ref state, ref reader, jsonParameterInfo))
@@ -503,7 +501,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!jsonPropertyInfo.CanDeserialize)
                 {
-                    if (!reader.TrySkip())
+                    if (!reader.TrySkipPartial(targetDepth: state.Current.OriginalDepth + 1))
                     {
                         return false;
                     }
@@ -516,6 +514,8 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     return false;
                 }
+
+                state.Current.PropertyState = StackFramePropertyState.ReadValue;
             }
 
             object? propValue;
@@ -598,7 +598,7 @@ namespace System.Text.Json.Serialization.Converters
             scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            out JsonParameterInfo? jsonParameterInfo)
+            [NotNullWhen(true)] out JsonParameterInfo? jsonParameterInfo)
         {
             Debug.Assert(state.Current.JsonTypeInfo.Kind == JsonTypeInfoKind.Object);
 
