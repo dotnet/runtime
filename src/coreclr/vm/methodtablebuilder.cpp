@@ -10253,7 +10253,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     BYTE *pbDispatchMapTemp = NULL;
     UINT32 cbDispatchMapTemp = 0;
-    S_SIZE_T dispatchMapAllocationSize = S_SIZE_T(0);
+    size_t dispatchMapAllocationSize = 0;
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
     {
         DispatchMapBuilder          *pDispatchMapBuilder = bmtVT->pDispatchMapBuilder;
@@ -10267,7 +10267,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
             &cbDispatchMapTemp);
 
         // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableAuxiliaryData
-        dispatchMapAllocationSize = S_SIZE_T((size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp));
+        dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
     }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
@@ -10326,10 +10326,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
     }
 
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
-        pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
-
-    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), dispatchMapAllocationSize);
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
 
     // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
@@ -10337,18 +10334,18 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
     {
+        pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
+
         DispatchMap                 *pDispatchMap        = NULL;
         BYTE* pAllocatedSpaceAfterMethodTableAuxiliaryData = (BYTE *)(pMT->GetAuxiliaryDataForWrite() + 1);
         // Use placement new
         pDispatchMap = new (pAllocatedSpaceAfterMethodTableAuxiliaryData) DispatchMap(pbDispatchMapTemp, cbDispatchMapTemp);
 
 #ifdef LOGGING
-        if (dispatchMapAllocationSize.IsOverflow())
-            ThrowHR(E_FAIL);
         g_sdStats.m_cDispatchMap++;
-        g_sdStats.m_cbDispatchMap += (UINT32) dispatchMapAllocationSize.Value();
+        g_sdStats.m_cbDispatchMap += (UINT32) dispatchMapAllocationSize;
         LOG((LF_LOADER, LL_INFO1000, "SD: Dispatch map for %s: %d bytes for map, %d bytes total for object.\n",
-            pMT->GetDebugClassName(), cbDispatchMapTemp, dispatchMapAllocationSize.Value()));
+            pMT->GetDebugClassName(), cbDispatchMapTemp, (int)dispatchMapAllocationSize));
 #endif // LOGGING
 
         bmtVT->pDispatchMapBuilder = NULL; // Now that the builder has been used to set flags and create the dispatch map it is done
