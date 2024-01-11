@@ -25,17 +25,16 @@ namespace System.Numerics
             if (left.Length != right.Length)
                 return left.Length < right.Length ? -1 : 1;
 
-            ref uint rightPtr = ref MemoryMarshal.GetReference(right);
-
-            for (int i = left.Length - 1; i >= 0; i--)
+            int iv = left.Length;
+            while (--iv >= 0)
             {
-                uint leftElement = left[i];
-                uint rightElement = Unsafe.Add(ref rightPtr, i);
-                if (leftElement != rightElement)
-                    return leftElement < rightElement ? -1 : 1;
+                if (left[iv] != right[iv])
+                    break;
             }
 
-            return 0;
+            if (iv < 0)
+                return 0;
+            return left[iv] < right[iv] ? -1 : 1;
         }
 
         private static int ActualLength(ReadOnlySpan<uint> value)
