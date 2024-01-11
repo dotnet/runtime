@@ -91,6 +91,7 @@ internal class BrowserRunner : IAsyncDisposable
         string browserUrl,
         bool headless = true
     ) {
+        _testOutput.WriteLine($"SpawnBrowserAsync ENTER");
         var url = new Uri(browserUrl);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}" };
@@ -114,6 +115,7 @@ internal class BrowserRunner : IAsyncDisposable
         _testOutput.WriteLine("BrowserRunner.RunAsync ENTER");
         var urlString = await StartServerAndGetUrlAsync(cmd, args);
         var browser = await SpawnBrowserAsync(urlString, headless);
+        _testOutput.WriteLine("BrowserRunner.RunAsync browser spawned creating new context");
         var context = await browser.NewContextAsync();
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
     }

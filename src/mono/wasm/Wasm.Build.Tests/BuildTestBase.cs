@@ -501,12 +501,16 @@ namespace Wasm.Build.Tests
                 using CancellationTokenSource cts = new();
                 cts.CancelAfter(timeoutMs ?? s_defaultPerTestTimeoutMs);
 
+                _testOutput.WriteLine($"calling process.WaitForExitAsync");
                 await process.WaitForExitAsync(cts.Token);
+                _testOutput.WriteLine($"back from calling process.WaitForExitAsync");
 
                 if (cts.IsCancellationRequested)
                 {
                     // process didn't exit
+                    _testOutput.WriteLine($"process.WaitForExitAsync timed out, attemping to kill it");
                     process.Kill(entireProcessTree: true);
+                    _testOutput.WriteLine($"back from process.kill");
                     lock (syncObj)
                     {
                         var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
@@ -517,10 +521,13 @@ namespace Wasm.Build.Tests
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
                 // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                _testOutput.WriteLine($"calling process.WaitForExit");
                 process.WaitForExit();
+                _testOutput.WriteLine($"back from calling process.WaitForExit");
 
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;
+                _testOutput.WriteLine($"cancelling err/out");
                 process.CancelErrorRead();
                 process.CancelOutputRead();
 

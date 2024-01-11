@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
 
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
-            _testOutput.WriteLine("ToolCommand.ExecuteAsyncInternal ENTER");
+            _testOutput.WriteLine($"ToolCommand.ExecuteAsyncInternal ENTER: {executable} {args}");
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
             CurrentProcess.ErrorDataReceived += (s, e) =>
@@ -137,15 +137,18 @@ namespace Wasm.Build.Tests
             var completionTask = CurrentProcess.StartAndWaitForExitAsync(_testOutput);
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
-            _testOutput.WriteLine($"Waiting on the task returned from .. StartAndWaitForExitAsync, on process: {CurrentProcess.HasExited}");
-            if (!completionTask.Wait(TimeSpan.FromMinutes(5)))
+            _testOutput.WriteLine($"Waiting on the task returned from .. StartAndWaitForExitAsync for 5mins, on process: {CurrentProcess.HasExited}, {executable} {args}");
+
+            await Task.WhenAny(completionTask, Task.Delay(TimeSpan.FromMinutes(5)));
+
+            //if (!completionTask.Wait(TimeSpan.FromMinutes(5)))
+            if (!completionTask.IsCompleted)
             {
-                throw new Exception($"** process task timed out, hasexited: {CurrentProcess.HasExited}");
+                throw new Exception($"** process task timed out, hasexited: {CurrentProcess.HasExited}, task status: {completionTask.Status}");
             }
             _testOutput.WriteLine("back from waiting on the task returned from .. StartAndWaitForExitAsync");
 
             RemoveNullTerminator(output);
-            await Task.CompletedTask;
 
             return new CommandResult(
                 CurrentProcess.StartInfo,

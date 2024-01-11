@@ -74,7 +74,6 @@
       <_SdkPathForLocalTesting>$([System.IO.Path]::GetFilename($(_SdkPathForLocalTesting)))</_SdkPathForLocalTesting>
     </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
-      <!-- FIXME: update these to support overriding too? -->
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
 
