@@ -28,8 +28,13 @@ namespace System.ComponentModel
         // class load anyway.
         private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
         private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
-        private static readonly Hashtable s_defaultProviders = new Hashtable();          // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
-        private static readonly object s_initializedProvider = new object();             // Used with s_defaultProviders to determine when the check for default providers has finished.
+
+        private static readonly Hashtable s_defaultProviderInitialized = new Hashtable(); // A table of type -> object to track DefaultTypeDescriptionProviderAttributes.
+                                                                                          // A value of `null` indicates initialization is in progress.
+                                                                                          // A value of s_initializedDefaultProvider indicates the provider is initialized.
+        private static readonly object s_initializedDefaultProvider = new object();
+        private static readonly object s_defaultProviderSyncObject = new object();
+
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
 
@@ -75,8 +80,6 @@ namespace System.ComponentModel
             Guid.NewGuid(), // properties
             Guid.NewGuid()  // events
         };
-
-        private static readonly object s_internalSyncObject = new object();
 
         private TypeDescriptor()
         {
@@ -263,46 +266,50 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            bool providerAdded = false;
-
-            if (s_defaultProviders[type] == s_initializedProvider)
+            if (s_defaultProviderInitialized[type] == s_initializedDefaultProvider)
             {
                 return;
             }
 
-            lock (s_internalSyncObject)
+            lock (s_defaultProviderSyncObject)
             {
-                if (s_defaultProviders.ContainsKey(type))
+                AddDefaultProvider(type);
+            }
+        }
+
+        /// <summary>
+        /// Add the default provider, if it exists.
+        /// For threading, this is always called under a 'lock (s_defaultProviderSyncObject)'.
+        /// </summary>
+        private static void AddDefaultProvider(Type type)
+        {
+            bool providerAdded = false;
+
+            if (s_defaultProviderInitialized.ContainsKey(type))
+            {
+                // Either another thread finished initializing for this type, or we are recursing on the same thread.
+                return;
+            }
+
+            // Immediately set this to null to indicate we are in progress setting the default provider for a type.
+            // This prevents re-entrance to this method.
+            s_defaultProviderInitialized[type] = null;
+
+            // Always use core reflection when checking for the default provider attribute.
+            // If there is a provider, we probably don't want to build up our own cache state against the type.
+            // There shouldn't be more than one of these, but walk anyway.
+            // Walk in reverse order so that the most derived takes precedence.
+            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+            for (int idx = attrs.Length - 1; idx >= 0; idx--)
+            {
+                TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
+                Type? providerType = Type.GetType(pa.TypeName);
+                if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
                 {
-                    // Either another thread finished initializing for this type, or we are recursing on the same thread.
-                    return;
+                    TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
+                    AddProvider(prov, type);
+                    providerAdded = true;
                 }
-
-                // Immediately set this so we can short circuit in the ContainsKey check above.
-                // If we find a default provider and it starts messing around with type information,
-                // this could infinitely recurse.
-                s_defaultProviders[type] = null;
-
-                // Always use core reflection when checking for
-                // the default provider attribute. If there is a
-                // provider, we probably don't want to build up our
-                // own cache state against the type. There shouldn't be
-                // more than one of these, but walk anyway. Walk in
-                // reverse order so that the most derived takes precedence.
-                object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
-                for (int idx = attrs.Length - 1; idx >= 0; idx--)
-                {
-                    TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
-                    Type? providerType = Type.GetType(pa.TypeName);
-                    if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
-                    {
-                        TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
-                        AddProvider(prov, type);
-                        providerAdded = true;
-                    }
-                }
-
-                s_defaultProviders[type] = s_initializedProvider;
             }
 
             // If we did not add a provider, check the base class.
@@ -311,9 +318,11 @@ namespace System.ComponentModel
                 Type? baseType = type.BaseType;
                 if (baseType != null && baseType != type)
                 {
-                    CheckDefaultProvider(baseType);
+                    AddDefaultProvider(baseType);
                 }
             }
+
+            s_defaultProviderInitialized[type] = s_initializedDefaultProvider;
         }
 
         /// <summary>
