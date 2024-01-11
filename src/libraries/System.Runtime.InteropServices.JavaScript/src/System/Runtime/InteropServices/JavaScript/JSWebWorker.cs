@@ -51,14 +51,14 @@ namespace System.Runtime.InteropServices.JavaScript
             private CancellationTokenRegistration? _cancellationRegistration;
             private Func<Task<T>>? _bodyRes;
             private Func<Task>? _bodyVoid;
-            private Task? _result;
+            private Task? _resultTask;
             private bool _isDisposed;
 
             public JSWebWorkerInstance(Func<Task<T>>? bodyRes, Func<Task>? bodyVoid, CancellationToken cancellationToken)
             {
                 _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
-                _result = null;
+                _resultTask = null;
                 _cancellationToken = cancellationToken;
                 _cancellationRegistration = null;
                 _bodyRes = bodyRes;
@@ -71,10 +71,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (JSProxyContext.MainThreadContext.IsCurrentThread())
                 {
                     // give browser chance to load more threads
-                    JavaScriptImports.ThreadAvailable().ContinueWith(_ =>
+                    // until there at least one thread loaded, it doesn't make sense to `Start`
+                    // because that would also hang, but in a way blocking the UI thread, much worse.
+                    JavaScriptImports.ThreadAvailable().ContinueWith(t =>
                     {
-                        _thread.Start();
-                    }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
+                        if (t.IsCompletedSuccessfully)
+                        {
+                            _thread.Start();
+                        }
+                        return t;
+                    }, _cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
                 }
                 else
                 {
@@ -106,15 +112,15 @@ namespace System.Runtime.InteropServices.JavaScript
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
                     if (_bodyRes != null)
                     {
-                        _result = _bodyRes();
+                        _resultTask = _bodyRes();
                     }
                     else
                     {
-                        _result = _bodyVoid!();
+                        _resultTask = _bodyVoid!();
                     }
                     // This code is exiting thread ThreadMain() before all promises are resolved.
                     // the continuation is executed by setTimeout() callback of the WebWorker thread.
-                    _result.ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
+                    _resultTask.ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
                 }
                 catch (Exception ex)
                 {
@@ -125,7 +131,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // run actions on correct thread
             private void PropagateCompletionAndDispose(Task result)
             {
-                _result = result;
+                _resultTask = result;
 
                 _cancellationRegistration?.Dispose();
                 _cancellationRegistration = null;
@@ -166,18 +172,18 @@ namespace System.Runtime.InteropServices.JavaScript
 
             private void PropagateCompletion()
             {
-                if (_result!.IsFaulted)
+                if (_resultTask!.IsFaulted)
                 {
-                    if (_result.Exception is AggregateException ag && ag.InnerException != null)
+                    if (_resultTask.Exception is AggregateException ag && ag.InnerException != null)
                     {
                         _taskCompletionSource.TrySetException(ag.InnerException);
                     }
                     else
                     {
-                        _taskCompletionSource.TrySetException(_result.Exception);
+                        _taskCompletionSource.TrySetException(_resultTask.Exception);
                     }
                 }
-                else if (_result.IsCanceled)
+                else if (_resultTask.IsCanceled)
                 {
                     _taskCompletionSource.TrySetCanceled();
                 }
@@ -185,7 +191,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (_bodyRes != null)
                     {
-                        _taskCompletionSource.TrySetResult(((Task<T>)_result).Result);
+                        _taskCompletionSource.TrySetResult(((Task<T>)_resultTask).Result);
                     }
                     else
                     {
