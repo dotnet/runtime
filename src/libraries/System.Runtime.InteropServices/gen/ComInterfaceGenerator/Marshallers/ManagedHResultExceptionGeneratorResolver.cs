@@ -13,18 +13,16 @@ namespace Microsoft.Interop
 {
     internal sealed record ManagedHResultExceptionMarshallingInfo : MarshallingInfo;
 
-    internal sealed class ManagedHResultExceptionMarshallerFactory : IMarshallingGeneratorFactory
+    internal sealed class ManagedHResultExceptionGeneratorResolver : IMarshallingGeneratorResolver
     {
-        private readonly IMarshallingGeneratorFactory _inner;
         private readonly MarshalDirection _direction;
 
-        public ManagedHResultExceptionMarshallerFactory(IMarshallingGeneratorFactory inner, MarshalDirection direction)
+        public ManagedHResultExceptionGeneratorResolver(MarshalDirection direction)
         {
             if (direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.UnmanagedToManaged))
             {
                 throw new ArgumentOutOfRangeException(nameof(direction));
             }
-            _inner = inner;
             _direction = direction;
         }
 
@@ -41,7 +39,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                return _inner.Create(info, context);
+                return ResolvedGenerator.UnresolvedGenerator;
             }
         }
 

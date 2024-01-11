@@ -806,6 +806,11 @@ private:
         operator PCCOR_SIGNATURE() const
             { return GetSignature(); }
 
+        //-----------------------------------------------------------------------------------------
+        // Get a hash of the Name that can be compared with hashes from other MethodSignatures
+        UINT32
+        GetNameHash() const;
+
     protected:
         //-----------------------------------------------------------------------------------------
         Module *                m_pModule;
@@ -832,10 +837,6 @@ private:
         //-----------------------------------------------------------------------------------------
         void
         GetMethodAttributes() const;
-
-        //-----------------------------------------------------------------------------------------
-        UINT32
-        GetNameHash() const;
 
     private:
         //-----------------------------------------------------------------------------------

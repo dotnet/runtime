@@ -6,24 +6,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-public static class Program
+public static class ClassLibrary
 {
-    [DllImport("__Internal")]
-    public static extern void mono_ios_set_summary (string value);
-
     [UnmanagedCallersOnly(EntryPoint = nameof(SayHello))]
     public static int SayHello()
     {
         Console.WriteLine("Called from native!  Hello!");
-        return 42;
-    }
-
-    public static async Task<int> Main(string[] args)
-    {
-        mono_ios_set_summary($"Starting functional test");
-        Console.WriteLine("Done!");
-        await Task.Delay(5000);
-
         return 42;
     }
 }

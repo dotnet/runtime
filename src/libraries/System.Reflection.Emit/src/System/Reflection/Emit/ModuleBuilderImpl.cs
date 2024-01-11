@@ -185,7 +185,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Members are retrieved from internal cache")]
         private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
         {
             if (typeBuilder._interfaces != null)
