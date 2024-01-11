@@ -10,6 +10,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector64Tests
     {
+        /// <summary>Verifies that two <see cref="Vector64{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void AssertEqual(Vector64<float> expected, Vector64<float> actual, Vector64<float> variance)
+        {
+            for (int i = 0; i < Vector64<float>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector64{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void AssertEqual(Vector64<double> expected, Vector64<double> actual, Vector64<double> variance)
+        {
+            for (int i = 0; i < Vector64<double>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
         [Fact]
         public unsafe void Vector64IsHardwareAcceleratedTest()
         {
@@ -4083,7 +4109,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Log2DoubleTest(double value, double expectedResult, double variance)
         {
             Vector64<double> actualResult = Vector64.Log2(Vector64.Create(value));
-            AssertExtensions.Equal(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
         }
 
         [Theory]
@@ -4093,7 +4119,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertExtensions.Equal(0.0f, 0.0f, 0.0f);
 
             Vector64<float> actualResult = Vector64.Log2(Vector64.Create(value));
-            AssertExtensions.Equal(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
         }
     }
 }

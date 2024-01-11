@@ -11,6 +11,28 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector128Tests
     {
+        /// <summary>Verifies that two <see cref="Vector128{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void AssertEqual(Vector128<float> expected, Vector128<float> actual, Vector128<float> variance)
+        {
+            Vector64Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Vector64Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector128{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        public static void AssertEqual(Vector128<double> expected, Vector128<double> actual, Vector128<double> variance)
+        {
+            Vector64Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Vector64Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Vector128))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
@@ -4670,7 +4692,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Log2DoubleTest(double value, double expectedResult, double variance)
         {
             Vector128<double> actualResult = Vector128.Log2(Vector128.Create(value));
-            AssertExtensions.Equal(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
         }
 
         [Theory]
@@ -4678,7 +4700,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Log2SingleTest(float value, float expectedResult, float variance)
         {
             Vector128<float> actualResult = Vector128.Log2(Vector128.Create(value));
-            AssertExtensions.Equal(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
         }
     }
 }
