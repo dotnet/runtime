@@ -927,6 +927,11 @@ inline static bool insOptsScalableWide(insOpts opt)
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
 }
 
+inline static bool insScalableOptsNone(insScalableOpts sopt)
+{
+    return sopt == INS_SCALABLE_OPTS_NONE;
+}
+
 static bool isValidImmCond(ssize_t imm);
 static bool isValidImmCondFlags(ssize_t imm);
 static bool isValidImmCondFlagsImm5(ssize_t imm);
