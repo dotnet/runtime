@@ -144,11 +144,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
  */
 extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable)
 {
-    CONTRACTL
-    {
-        QCALL_CHECK;
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     INT32 rv = 0;
 
@@ -176,59 +172,54 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
     return rv;
 }
 
-extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOfInternal(QCall::ObjectHandleOnStack field)
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOfInternal(FieldDesc* pFD)
 {
-    QCALL_CONTRACT;
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(pFD != NULL);
+    }
+    CONTRACTL_END;
 
     SIZE_T offset = 0;
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    TypeHandle th = TypeHandle(pFD->GetApproxEnclosingMethodTable());
 
-    REFLECTFIELDREF refField = NULL;
-    GCPROTECT_BEGIN(refField);
+    if (th.IsBlittable())
     {
-        refField = (REFLECTFIELDREF)field.Get();
-
-        FieldDesc* pField = refField->GetField();
-        TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());
-
-        if (th.IsBlittable())
-        {
-            offset = pField->GetOffset();
-        }
-        else
-        {
-            GCX_PREEMP();
-
-            // Verify the type can be marshalled.
-            if (!IsStructMarshalable(th))
-            {
-                StackSString strTypeName;
-                TypeString::AppendType(strTypeName, th);
-                COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
-            }
-
-            EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
-            NativeFieldDescriptor const* pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
-            UINT numReferenceFields = pNativeLayoutInfo->GetNumFields();
-
-            INDEBUG(bool foundField = false;)
-            while (numReferenceFields--)
-            {
-                if (pNFD->GetFieldDesc() == pField)
-                {
-                    offset = pNFD->GetExternalOffset();
-                    INDEBUG(foundField = true);
-                    break;
-                }
-                pNFD++;
-            }
-            CONSISTENCY_CHECK_MSG(foundField, "We should never hit this point since we already verified that the requested field was present from managed code");
-        }
+        offset = pFD->GetOffset();
     }
-    GCPROTECT_END();
+    else
+    {
+        GCX_PREEMP();
+
+        // Verify the type can be marshalled.
+        if (!IsStructMarshalable(th))
+        {
+            StackSString strTypeName;
+            TypeString::AppendType(strTypeName, th);
+            COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
+        }
+
+        EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
+        NativeFieldDescriptor const* pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
+        UINT numReferenceFields = pNativeLayoutInfo->GetNumFields();
+
+        INDEBUG(bool foundField = false;)
+        while (numReferenceFields--)
+        {
+            if (pNFD->GetFieldDesc() == pFD)
+            {
+                offset = pNFD->GetExternalOffset();
+                INDEBUG(foundField = true);
+                break;
+            }
+            pNFD++;
+        }
+        CONSISTENCY_CHECK_MSG(foundField, "We should never hit this point since we already verified that the requested field was present from managed code");
+    }
 
     END_QCALL;
 

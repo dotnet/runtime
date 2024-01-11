@@ -49,11 +49,13 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            return OffsetOfInternal(ObjectHandleOnStack.Create(ref rtField));
+            nint offset = OffsetOfInternal(rtField.GetFieldHandle());
+            GC.KeepAlive(rtField);
+            return offset;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOfInternal")]
-        private static partial nint OffsetOfInternal(ObjectHandleOnStack f);
+        private static partial nint OffsetOfInternal(IntPtr pFD);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
