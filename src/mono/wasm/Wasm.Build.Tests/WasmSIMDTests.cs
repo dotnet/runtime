@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,7 +25,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, true /* simd */ })]
-        public void Build_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
+        public async Task Build_NoAOT_ShouldNotRelinkAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_with_workload_no_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -40,7 +41,7 @@ namespace Wasm.Build.Tests
             // Confirm that we didn't relink
             Assert.DoesNotContain("Compiling native assets with emcc", output);
 
-            RunAndTestWasmApp(buildArgs,
+            await RunAndTestWasmAppAsync(buildArgs,
                                 extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd --engine-arg=--experimental-wasm-eh" : "",
                                 expectedExitCode: 42,
                                 test: output =>
@@ -53,7 +54,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void PublishWithSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
+        public async Task PublishWithSIMD_AOTAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"simd_with_workload_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -65,7 +66,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
                                 DotnetWasmFromRuntimePack: false));
 
-            RunAndTestWasmApp(buildArgs,
+            await RunAndTestWasmAppAsync(buildArgs,
                                 extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd --engine-arg=--experimental-wasm-eh" : "",
                                 expectedExitCode: 42,
                                 test: output =>
@@ -77,7 +78,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void PublishWithoutSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
+        public async Task PublishWithoutSIMD_AOTAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"nosimd_with_workload_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -89,7 +90,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
                                 DotnetWasmFromRuntimePack: false));
 
-            RunAndTestWasmApp(buildArgs,
+            await RunAndTestWasmAppAsync(buildArgs,
                                 expectedExitCode: 42,
                                 test: output =>
                                 {

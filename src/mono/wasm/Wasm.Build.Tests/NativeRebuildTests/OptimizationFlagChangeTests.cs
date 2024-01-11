@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,11 +30,11 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     [Theory]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
-    public void OptimizationFlagChange(BuildArgs buildArgs, string cflags, string ldflags, RunHost host, string id)
+    public async Task OptimizationFlagChangeAsync(BuildArgs buildArgs, string cflags, string ldflags, RunHost host, string id)
     {
         // force _WasmDevel=false, so we don't get -O0
         buildArgs = buildArgs with { ProjectName = $"rebuild_flags_{buildArgs.Config}", ExtraBuildArgs = "/p:_WasmDevel=false" };
-        (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
+        (buildArgs, BuildPaths paths) = await FirstNativeBuildAsync(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
 
         string mainAssembly = $"{buildArgs.ProjectName}.dll";
         var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
@@ -64,7 +65,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
         _provider.CompareStat(originalStat, newStat, pathsDict.Values);
 
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+        string runOutput = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
         TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
                             contains: buildArgs.AOT);
     }

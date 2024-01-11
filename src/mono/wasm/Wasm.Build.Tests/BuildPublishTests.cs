@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -24,7 +25,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
-        public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
+        public async Task BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = GetTestProjectPath(prefix: "build_publish", config: buildArgs.Config);
 
@@ -42,7 +43,7 @@ namespace Wasm.Build.Tests
                         Publish: false
                         ));
 
-            Run();
+            await Run();
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -61,9 +62,9 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             UseCache: false));
 
-            Run();
+            await Run();
 
-            void Run() => RunAndTestWasmApp(
+            Task Run() => RunAndTestWasmAppAsync(
                                 buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                                 test: output => {},
                                 host: host, id: id);
@@ -72,7 +73,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
+        public async Task BuildThenPublishWithAOTAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             bool testUnicode = true;
             string projectName = GetTestProjectPath(
@@ -102,7 +103,7 @@ namespace Wasm.Build.Tests
 
             CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, buildArgs, output, testUnicode);
 
-            Run(expectAOT: false);
+            await Run(expectAOT: false);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -128,7 +129,7 @@ namespace Wasm.Build.Tests
             CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output, testUnicode);
             _provider.CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
-            Run(expectAOT: true);
+            await Run(expectAOT: true);
 
             // second build
             (_, output) = BuildProject(buildArgs,
@@ -148,7 +149,7 @@ namespace Wasm.Build.Tests
             pathsDict.UpdateTo(unchanged: true);
             _provider.CompareStat(publishStat, secondBuildStat, pathsDict.Values);
 
-            void Run(bool expectAOT) => RunAndTestWasmApp(
+            Task Run(bool expectAOT) => RunAndTestWasmAppAsync(
                                 buildArgs with { AOT = expectAOT },
                                 buildDir: _projectDir, expectedExitCode: 42,
                                 host: host, id: id);

@@ -42,7 +42,7 @@ namespace Wasm.Build.Tests
                                 DotnetWasmFromRuntimePack: true,
                                 CreateProject: true));
 
-            Run();
+            await Run();
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -62,9 +62,9 @@ namespace Wasm.Build.Tests
                             CreateProject: false,
                             UseCache: false));
 
-            Run();
+            await Run();
 
-            void Run() => RunAndTestWasmApp(
+            Task Run() => RunAndTestWasmAppAsync(
                                 buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                                 test: output => {},
                                 host: host, id: id);

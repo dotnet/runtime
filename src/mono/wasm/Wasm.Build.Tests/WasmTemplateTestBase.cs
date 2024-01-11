@@ -78,10 +78,13 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (perHostConfigs == null || perHostConfigs.Count == 0 || perHostConfigs[0] == null)
             throw new Exception($"Unable to find perHostConfig in runtimeconfigtemplate at '{runtimeconfigTemplatePath}'");
 
-        perHostConfigs[0]!["host-args"] = new JsonArray(
-            "--experimental-wasm-simd",
-            "--experimental-wasm-eh"
-        );
+        if (s_buildEnv.IsRunningOnCI)
+        {
+            perHostConfigs[0]!["host-args"] = new JsonArray(
+                "--experimental-wasm-simd",
+                "--experimental-wasm-eh"
+            );
+        }
 
         File.WriteAllText(runtimeconfigTemplatePath, runtimeconfigTemplate!.ToString());
     }

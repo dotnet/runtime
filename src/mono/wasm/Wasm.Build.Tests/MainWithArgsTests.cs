@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -27,8 +28,8 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void AsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
-            => TestMainWithArgs("async_main_with_args", @"
+        public Task AsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
+            => TestMainWithArgsAsync("async_main_with_args", @"
                 public class TestClass {
                     public static async System.Threading.Tasks.Task<int> Main(string[] args)
                     {
@@ -41,16 +42,16 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
-            => TestMainWithArgs("top_level_args",
+        public Task TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
+            => TestMainWithArgsAsync("top_level_args",
                                 @"##CODE## return await System.Threading.Tasks.Task.FromResult(42 + count);",
                                 buildArgs, args, host, id);
 
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void NonAsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
-            => TestMainWithArgs("non_async_main_args", @"
+        public Task NonAsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
+            => TestMainWithArgsAsync("non_async_main_args", @"
                 public class TestClass {
                     public static int Main(string[] args)
                     {
@@ -59,7 +60,7 @@ namespace Wasm.Build.Tests
                     }
                 }", buildArgs, args, host, id);
 
-        void TestMainWithArgs(string projectNamePrefix,
+        async Task TestMainWithArgsAsync(string projectNamePrefix,
                               string projectContents,
                               BuildArgs buildArgs,
                               string[] args,
@@ -89,7 +90,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + args.Length, args: string.Join(' ', args),
+            await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + args.Length, args: string.Join(' ', args),
                 test: output =>
                 {
                     Assert.Contains($"args#: {args.Length}", output);

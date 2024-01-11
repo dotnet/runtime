@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -21,7 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun]
-        public void SimpleNativeBuild(BuildArgs buildArgs, RunHost host, string id)
+        public async Task SimpleNativeBuildAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"simple_native_build_{buildArgs.Config}_{buildArgs.AOT}";
 
@@ -34,7 +35,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
                                 DotnetWasmFromRuntimePack: false));
 
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
+            await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                         test: output => { },
                         host: host, id: id);
         }

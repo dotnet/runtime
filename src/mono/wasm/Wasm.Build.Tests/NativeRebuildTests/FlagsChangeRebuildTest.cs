@@ -7,6 +7,7 @@ using System.Linq;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -29,10 +30,10 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
-        public void ExtraEmccFlagsSetButNoRealChange(BuildArgs buildArgs, string extraCFlags, string extraLDFlags, RunHost host, string id)
+        public async Task ExtraEmccFlagsSetButNoRealChangeAsync(BuildArgs buildArgs, string extraCFlags, string extraLDFlags, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"rebuild_flags_{buildArgs.Config}" };
-            (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
+            (buildArgs, BuildPaths paths) = await FirstNativeBuildAsync(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
             var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
@@ -61,7 +62,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.DoesNotContain("Compiling assembly bitcode files", output);
             }
 
-            string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            string runOutput = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
                                 contains: buildArgs.AOT);
         }

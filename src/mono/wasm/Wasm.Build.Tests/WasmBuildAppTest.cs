@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,7 +19,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
+        public Task TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("top_level",
                     @"System.Console.WriteLine(""Hello, World!""); return await System.Threading.Tasks.Task.FromResult(42);",
                     buildArgs, host, id);
@@ -26,7 +27,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void AsyncMain(BuildArgs buildArgs, RunHost host, string id)
+        public Task AsyncMain(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("async_main", @"
             using System;
             using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void NonAsyncMain(BuildArgs buildArgs, RunHost host, string id)
+        public Task NonAsyncMain(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("non_async_main", @"
                 using System;
                 using System.Threading.Tasks;
@@ -57,7 +58,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void ExceptionFromMain(BuildArgs buildArgs, RunHost host, string id)
+        public Task ExceptionFromMain(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("main_exception", """
                 using System;
                 using System.Threading.Tasks;
@@ -82,19 +83,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void Bug49588_RegressionTest_AOT(BuildArgs buildArgs, RunHost host, string id)
+        public Task Bug49588_RegressionTest_AOT(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("bug49588_aot", s_bug49588_ProgramCS, buildArgs, host, id);
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void Bug49588_RegressionTest_NativeRelinking(BuildArgs buildArgs, RunHost host, string id)
+        public Task Bug49588_RegressionTest_NativeRelinking(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("bug49588_native_relinking", s_bug49588_ProgramCS, buildArgs, host, id,
                         extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
                         dotnetWasmFromRuntimePack: false);
 
         [Theory]
         [BuildAndRun]
-        public void PropertiesFromRuntimeConfigJson(BuildArgs buildArgs, RunHost host, string id)
+        public async Task PropertiesFromRuntimeConfigJsonAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"runtime_config_{buildArgs.Config}_{buildArgs.AOT}" };
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -126,13 +127,13 @@ namespace Wasm.Build.Tests
                                 },
                                 DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
 
-            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
+            await RunAndTestWasmAppAsync(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("test_runtimeconfig_json: 25", output), host: host, id: id);
         }
 
         [Theory]
         [BuildAndRun]
-        public void PropertiesFromCsproj(BuildArgs buildArgs, RunHost host, string id)
+        public async Task PropertiesFromCsprojAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"runtime_config_csproj_{buildArgs.Config}_{buildArgs.AOT}" };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<ThreadPoolMaxThreads>20</ThreadPoolMaxThreads>");
@@ -155,7 +156,7 @@ namespace Wasm.Build.Tests
                                 },
                                 DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
 
-            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
+            await RunAndTestWasmAppAsync(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
         }
     }
@@ -171,7 +172,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        protected void TestMain(string projectName,
+        protected async Task TestMain(string projectName,
               string programText,
               BuildArgs buildArgs,
               RunHost host,
@@ -193,7 +194,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            RunAndTestWasmApp(buildArgs, expectedExitCode: expectedExitCode,
+            await RunAndTestWasmAppAsync(buildArgs, expectedExitCode: expectedExitCode,
                                 test: output => Assert.Contains(expectedOutput, output), host: host, id: id);
         }
     }

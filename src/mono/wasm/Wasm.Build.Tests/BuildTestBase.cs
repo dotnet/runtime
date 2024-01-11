@@ -179,7 +179,7 @@ namespace Wasm.Build.Tests
             return (res, logFilePath);
         }
 
-        protected string RunAndTestWasmApp(BuildArgs buildArgs,
+        protected async Task<string> RunAndTestWasmAppAsync(BuildArgs buildArgs,
                                            RunHost host,
                                            string id,
                                            Action<string>? test = null,
@@ -223,7 +223,7 @@ namespace Wasm.Build.Tests
             extraXHarnessArgs += " " + xharnessArgs;
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
-            string output = RunWithXHarness(
+            string output = await RunWithXHarnessAsync(
                                 testCommand,
                                 testLogPath,
                                 buildArgs.ProjectName,
@@ -256,7 +256,7 @@ namespace Wasm.Build.Tests
             return output;
         }
 
-        protected static string RunWithXHarness(string testCommand, string testLogPath, string projectName, string bundleDir,
+        protected async static Task<string> RunWithXHarnessAsync(string testCommand, string testLogPath, string projectName, string bundleDir,
                                         ITestOutputHelper _testOutput, IDictionary<string, string>? envVars = null,
                                         int expectedAppExitCode = 0, int xharnessExitCode = 0, string? extraXHarnessArgs = null,
                                         string? appArgs = null, string? extraXHarnessMonoArgs = null, bool useWasmConsoleOutput = false)
@@ -295,12 +295,12 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine(string.Empty);
             _testOutput.WriteLine($"---------- Running with {testCommand} ---------");
-            var (exitCode, output) = RunProcess(s_buildEnv.DotNet, _testOutput,
+            var (exitCode, output) = await RunProcessAsync(s_buildEnv.DotNet, _testOutput,
                                         args: args.ToString(),
                                         workingDir: bundleDir,
                                         envVars: envVars,
                                         label: testCommand,
-                                        timeoutMs: 5*60*1000); //s_defaultPerTestTimeoutMs);
+                                        timeoutMs: 5*60*1000).ConfigureAwait(false); //s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
             if (useWasmConsoleOutput)
@@ -421,18 +421,18 @@ namespace Wasm.Build.Tests
             return Path.Combine(dir!, "obj", config, targetFramework, "browser-wasm");
         }
 
-        public static (int exitCode, string buildOutput) RunProcess(string path,
-                                         ITestOutputHelper _testOutput,
-                                         string args = "",
-                                         IDictionary<string, string>? envVars = null,
-                                         string? workingDir = null,
-                                         string? label = null,
-                                         int? timeoutMs = null)
-        {
-            var t = RunProcessAsync(path, _testOutput, args, envVars, workingDir, label, timeoutMs);
-            t.Wait();
-            return t.Result;
-        }
+        // public static (int exitCode, string buildOutput) RunProcess(string path,
+        //                                  ITestOutputHelper _testOutput,
+        //                                  string args = "",
+        //                                  IDictionary<string, string>? envVars = null,
+        //                                  string? workingDir = null,
+        //                                  string? label = null,
+        //                                  int? timeoutMs = null)
+        // {
+        //     var t = RunProcessAsync(path, _testOutput, args, envVars, workingDir, label, timeoutMs);
+        //     t.Wait();
+        //     return t.Result;
+        // }
 
         public static async Task<(int exitCode, string buildOutput)> RunProcessAsync(string path,
                                          ITestOutputHelper _testOutput,

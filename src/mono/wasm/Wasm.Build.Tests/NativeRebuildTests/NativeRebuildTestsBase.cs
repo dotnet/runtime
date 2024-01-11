@@ -46,7 +46,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                         .UnwrapItemsAsArrays().ToList();
         }
 
-        internal (BuildArgs BuildArgs, BuildPaths paths) FirstNativeBuild(string programText, bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="")
+        internal async Task<(BuildArgs BuildArgs, BuildPaths paths)> FirstNativeBuildAsync(string programText, bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="")
         {
             buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
             BuildProject(buildArgs,
@@ -57,7 +57,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                                 GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
                                 CreateProject: true));
 
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
+            await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
             return (buildArgs, GetBuildPaths(buildArgs));
         }
 

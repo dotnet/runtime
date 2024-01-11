@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -102,7 +103,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         public record Locale(string Code, string? SundayName);
         ";
 
-    protected void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
+    protected Task TestIcuShardsAsync(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
     {
         string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
@@ -124,6 +125,6 @@ public abstract class IcuTestsBase : TestMainJsTestBase
                             GlobalizationMode: GlobalizationMode.PredefinedIcu,
                             PredefinedIcudt: shardName));
 
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+        return RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
     }
 }

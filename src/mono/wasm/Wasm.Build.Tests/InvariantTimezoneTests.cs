@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,17 +30,17 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void AOT_InvariantTimezone(BuildArgs buildArgs, bool? invariantTimezone, RunHost host, string id)
-            => TestInvariantTimezone(buildArgs, invariantTimezone, host, id);
+        public Task AOT_InvariantTimezone(BuildArgs buildArgs, bool? invariantTimezone, RunHost host, string id)
+            => TestInvariantTimezoneAsync(buildArgs, invariantTimezone, host, id);
 
         [Theory]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void RelinkingWithoutAOT(BuildArgs buildArgs, bool? invariantTimezone, RunHost host, string id)
-            => TestInvariantTimezone(buildArgs, invariantTimezone, host, id,
+        public Task RelinkingWithoutAOT(BuildArgs buildArgs, bool? invariantTimezone, RunHost host, string id)
+            => TestInvariantTimezoneAsync(buildArgs, invariantTimezone, host, id,
                                             extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
                                             dotnetWasmFromRuntimePack: false);
 
-        private void TestInvariantTimezone(BuildArgs buildArgs, bool? invariantTimezone,
+        private async Task TestInvariantTimezoneAsync(BuildArgs buildArgs, bool? invariantTimezone,
                                                         RunHost host, string id, string extraProperties="", bool? dotnetWasmFromRuntimePack=null)
         {
             string projectName = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
@@ -58,7 +59,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantTimezone.cs"), Path.Combine(_projectDir!, "Program.cs")),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
+            string output = await RunAndTestWasmAppAsync(buildArgs, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("UTC BaseUtcOffset is 0", output);
             if (invariantTimezone == true)
             {

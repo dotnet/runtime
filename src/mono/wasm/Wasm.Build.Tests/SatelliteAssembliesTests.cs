@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,7 +33,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
-        public void ResourcesFromMainAssembly(BuildArgs buildArgs,
+        public async Task ResourcesFromMainAssembly(BuildArgs buildArgs,
                                               bool nativeRelink,
                                               string? argCulture,
                                               RunHost host,
@@ -62,7 +63,7 @@ namespace Wasm.Build.Tests
                                 },
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            RunAndTestWasmApp(
+            await RunAndTestWasmAppAsync(
                             buildArgs, expectedExitCode: 42,
                             args: argCulture,
                             host: host, id: id,
@@ -74,7 +75,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
-        public void ResourcesFromProjectReference(BuildArgs buildArgs,
+        public async Task ResourcesFromProjectReferenceAsync(BuildArgs buildArgs,
                                                   bool nativeRelink,
                                                   string? argCulture,
                                                   RunHost host,
@@ -120,7 +121,7 @@ namespace Wasm.Build.Tests
                                     File.WriteAllText(Path.Combine(rootDir, "Directory.Build.targets"), "<Project />");
                                 }));
 
-            RunAndTestWasmApp(buildArgs,
+            await RunAndTestWasmAppAsync(buildArgs,
                               expectedExitCode: 42,
                               args: argCulture,
                               host: host, id: id);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,7 +18,7 @@ public class ConfigSrcTests : TestMainJsTestBase
     // NOTE: port number determinizes dynamically, so could not generate absolute URI
     [Theory]
     [BuildAndRun(host: RunHost.V8 | RunHost.NodeJS)]
-    public void ConfigSrcAbsolutePath(BuildArgs buildArgs, RunHost host, string id)
+    public async Task ConfigSrcAbsolutePathAsync(BuildArgs buildArgs, RunHost host, string id)
     {
         buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };
         buildArgs = ExpandBuildArgs(buildArgs);
@@ -32,6 +33,6 @@ public class ConfigSrcTests : TestMainJsTestBase
         string bundleDir = Path.Combine(binDir, "AppBundle");
         string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "_framework", "blazor.boot.json"));
 
-        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src=\"{configSrc}\"");
+        await RunAndTestWasmAppAsync(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src=\"{configSrc}\"");
     }
 }

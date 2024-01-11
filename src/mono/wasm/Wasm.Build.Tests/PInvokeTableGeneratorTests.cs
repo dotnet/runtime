@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,7 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void NativeLibraryWithVariadicFunctions(BuildArgs buildArgs, RunHost host, string id)
+        public async Task NativeLibraryWithVariadicFunctionsAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
                 using System;
@@ -52,13 +53,13 @@ namespace Wasm.Build.Tests
             Assert.Matches("warning.*native function.*sum.*varargs", output);
             Assert.Matches("warning.*sum_(one|two|three)", output);
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
         }
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
+        public async Task DllImportWithFunctionPointersCompilesWithWarningAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
@@ -87,13 +88,13 @@ namespace Wasm.Build.Tests
             Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
             Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
         }
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
+        public async Task DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarningAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
                 using System;
@@ -117,7 +118,7 @@ namespace Wasm.Build.Tests
             Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
             Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
         }
 
@@ -138,7 +139,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
+        public async Task UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittableAsync
                         (BuildArgs buildArgs, RunHost host, string id)
         {
             (buildArgs, _) = SingleProjectForDisabledRuntimeMarshallingTest(
@@ -148,7 +149,7 @@ namespace Wasm.Build.Tests
                 id
             );
 
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            string output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running 5", output);
         }
 
@@ -214,9 +215,9 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Debug")]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Release")]
-        public void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+        public Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (BuildArgs buildArgs, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, RunHost host, string id)
-            => SeparateAssembliesForDisableRuntimeMarshallingTest(
+            => SeparateAssembliesForDisableRuntimeMarshallingTestAsync(
                 libraryHasAttribute: libraryHasAttribute,
                 appHasAttribute: appHasAttribute,
                 expectSuccess: expectSuccess,
@@ -225,7 +226,7 @@ namespace Wasm.Build.Tests
                 id
             );
 
-        private void SeparateAssembliesForDisableRuntimeMarshallingTest
+        private async Task SeparateAssembliesForDisableRuntimeMarshallingTestAsync
                         (bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
@@ -301,7 +302,7 @@ namespace Wasm.Build.Tests
 
             if (expectSuccess)
             {
-                output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+                output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
                 Assert.Contains("Main running 5", output);
             }
             else
@@ -312,7 +313,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void DllImportWithFunctionPointers_WarningsAsMessages(BuildArgs buildArgs, RunHost host, string id)
+        public async Task DllImportWithFunctionPointers_WarningsAsMessagesAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
@@ -341,7 +342,7 @@ namespace Wasm.Build.Tests
 
             Assert.DoesNotContain("warning WASM0001", output);
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
         }
 
@@ -377,7 +378,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void UnmanagedCallback_InFileType(BuildArgs buildArgs, RunHost host, string id)
+        public async Task UnmanagedCallback_InFileTypeAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
@@ -406,8 +407,8 @@ namespace Wasm.Build.Tests
             );
 
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
-    
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+
+            output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
         }
 
@@ -553,7 +554,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, parameters: new object[] { "tr_TR.UTF-8" })]
-        public void BuildNativeInNonEnglishCulture(BuildArgs buildArgs, string culture, RunHost host, string id)
+        public async Task BuildNativeInNonEnglishCultureAsync(BuildArgs buildArgs, string culture, RunHost host, string id)
         {
             // Check that we can generate interp tables in non-english cultures
             // Prompted by https://github.com/dotnet/runtime/issues/71149
@@ -593,7 +594,7 @@ namespace Wasm.Build.Tests
                                             ExtraBuildEnvironmentVariables: extraEnvVars
                                             ));
 
-            output = RunAndTestWasmApp(buildArgs,
+            output = await RunAndTestWasmAppAsync(buildArgs,
                                        buildDir: _projectDir,
                                        expectedExitCode: 42,
                                        host: host,
@@ -610,7 +611,7 @@ namespace Wasm.Build.Tests
                 "with🚀unicode#"
             } })]
 
-        public void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(BuildArgs buildArgs, string[] libraryNames, RunHost host, string id)
+        public async Task CallIntoLibrariesWithNonAlphanumericCharactersInTheirNamesAsync(BuildArgs buildArgs, string[] libraryNames, RunHost host, string id)
         {
             buildArgs = ExpandBuildArgs(buildArgs,
                                         extraItems: @$"<NativeFileReference Include=""*.c"" />",
@@ -627,7 +628,7 @@ namespace Wasm.Build.Tests
                                             DotnetWasmFromRuntimePack: false
                                             ));
 
-            output = RunAndTestWasmApp(buildArgs,
+            output = await RunAndTestWasmAppAsync(buildArgs,
                                        buildDir: _projectDir,
                                        expectedExitCode: 42,
                                        host: host,

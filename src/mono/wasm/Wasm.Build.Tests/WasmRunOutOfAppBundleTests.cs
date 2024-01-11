@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,7 +17,7 @@ public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
 
     [Theory]
     [BuildAndRun]
-    public void RunOutOfAppBundle(BuildArgs buildArgs, RunHost host, string id)
+    public async Task RunOutOfAppBundleAsync(BuildArgs buildArgs, RunHost host, string id)
     {
         buildArgs = buildArgs with { ProjectName = $"outofappbundle_{buildArgs.Config}_{buildArgs.AOT}" };
         buildArgs = ExpandBuildArgs(buildArgs);
@@ -46,7 +47,7 @@ public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
             }
         }
 
-        RunAndTestWasmApp(buildArgs,
+        await RunAndTestWasmAppAsync(buildArgs,
                             expectedExitCode: 42,
                             host: host,
                             id: id,

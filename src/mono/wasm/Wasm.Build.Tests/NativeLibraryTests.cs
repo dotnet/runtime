@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,7 +21,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
-        public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
+        public async Task ProjectWithNativeReferenceAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingNativeLib-a";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -40,7 +41,7 @@ namespace Wasm.Build.Tests
                             id: id,
                             new BuildProjectOptions(DotnetWasmFromRuntimePack: false));
 
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
+            string output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
                                 test: output => {},
                                 host: host, id: id);
 
@@ -51,7 +52,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
-        public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)
+        public async Task ProjectUsingSkiaSharpAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingSkiaSharp";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -83,7 +84,7 @@ public class Test
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: false));
 
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
+            string output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
                                 test: output => {},
                                 host: host, id: id,
                                 args: "mono.png");
@@ -94,7 +95,7 @@ public class Test
         [Theory]
         [BuildAndRun(aot: false, host: RunHost.Chrome)]
         [BuildAndRun(aot: true, host: RunHost.Chrome)]
-        public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
+        public async Task ProjectUsingBrowserNativeCryptoAsync(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingBrowserNativeCrypto";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -125,7 +126,7 @@ public class Test
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: !buildArgs.AOT && buildArgs.Config != "Release"));
 
-            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
+            string output = await RunAndTestWasmAppAsync(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
                                 test: output => {},
                                 host: host, id: id);
 
