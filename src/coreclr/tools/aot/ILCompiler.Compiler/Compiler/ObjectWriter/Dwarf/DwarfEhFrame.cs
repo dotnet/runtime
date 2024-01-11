@@ -43,6 +43,11 @@ namespace ILCompiler.ObjectWriter
             WriteFde(fde, cieOffset);
         }
 
+        private static uint PaddingSize(uint length, uint alignment)
+        {
+            return ((length + alignment - 1u) & ~(alignment - 1u)) - length;
+        }
+
         private void WriteCie(DwarfCie cie)
         {
             Utf8StringBuilder augmentationString = new Utf8StringBuilder();
@@ -82,8 +87,7 @@ namespace ILCompiler.ObjectWriter
                 DwarfHelper.SizeOfULEB128(cie.ReturnAddressRegister) +
                 (uint)(augmentationLength > 0 ? DwarfHelper.SizeOfULEB128(augmentationLength) + augmentationLength : 0) +
                 (uint)cie.Instructions.Length;
-            uint pointerEncodingSize = AddressSize(cie.PointerEncoding);
-            uint padding = ((length + pointerEncodingSize - 1u) & ~(pointerEncodingSize - 1u)) - length;
+            uint padding = PaddingSize(length, AddressSize(cie.PointerEncoding));
 
             _sectionWriter.WriteLittleEndian<uint>(length + padding - 4u);
             _sectionWriter.WriteLittleEndian<uint>(0);
@@ -124,7 +128,6 @@ namespace ILCompiler.ObjectWriter
                     (fde.Cie.LsdaEncoding != 0 ? AddressSize(fde.Cie.LsdaEncoding) : 0) : 0;
 
             uint pointerEncodingSize = AddressSize(fde.Cie.PointerEncoding);
-
             uint length =
                 4u + // Length
                 4u + // CIE offset
@@ -132,7 +135,7 @@ namespace ILCompiler.ObjectWriter
                 pointerEncodingSize + // PC end
                 augmentationLength +
                 (uint)fde.Instructions.Length;
-            uint padding = ((length + pointerEncodingSize - 1u) & ~(pointerEncodingSize - 1u)) - length;
+            uint padding = PaddingSize(length, pointerEncodingSize);
 
             _sectionWriter.WriteLittleEndian<uint>(length + padding - 4u);
             _sectionWriter.WriteLittleEndian<uint>((uint)(_sectionWriter.Position - cieOffset));
