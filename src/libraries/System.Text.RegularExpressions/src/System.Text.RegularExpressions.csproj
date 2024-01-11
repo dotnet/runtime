@@ -28,6 +28,7 @@
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.EnumerateMatches.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexAssemblyCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseBehavior.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseEquivalences.cs" />

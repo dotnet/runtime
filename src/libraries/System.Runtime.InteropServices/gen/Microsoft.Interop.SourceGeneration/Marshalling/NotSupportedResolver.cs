@@ -3,7 +3,7 @@
 
 namespace Microsoft.Interop
 {
-    public sealed class UnsupportedMarshallingFactory : IMarshallingGeneratorFactory
+    public sealed class NotSupportedResolver : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context) =>
             ResolvedGenerator.NotSupported(new(info, context));

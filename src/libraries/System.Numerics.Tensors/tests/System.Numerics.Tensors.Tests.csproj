@@ -1,8 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Workaround an OOM in LLVM -->
+    <WasmDedup>false</WasmDedup>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +20,7 @@
     <Compile Include="TensorPrimitives.ConvertTo.cs" />
     <Compile Include="TensorPrimitives.Generic.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.Numerics.Tensors.csproj" SkipUseReferenceAssembly="true" />
