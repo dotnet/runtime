@@ -172,7 +172,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
     return rv;
 }
 
-extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOfInternal(FieldDesc* pFD)
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD)
 {
     CONTRACTL
     {
@@ -460,11 +460,7 @@ extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandle
 
     GCX_COOP();
 
-    OBJECTREF exceptObj = NULL;
-    GCPROTECT_BEGIN(exceptObj);
-    exceptObj = obj.Get();
-    hr = SetupErrorInfo(exceptObj);
-    GCPROTECT_END();
+    hr = SetupErrorInfo(obj.Get());
 
     END_QCALL;
 

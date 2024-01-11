@@ -34,7 +34,7 @@ public:
 #endif // FEATURE_COMINTEROP
 };
 
-extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOfInternal(FieldDesc* pFD);
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD);
 
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();

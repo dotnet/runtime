@@ -49,13 +49,13 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            nint offset = OffsetOfInternal(rtField.GetFieldHandle());
+            nint offset = OffsetOf(rtField.GetFieldHandle());
             GC.KeepAlive(rtField);
             return offset;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOfInternal")]
-        private static partial nint OffsetOfInternal(IntPtr pFD);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOf")]
+        private static partial nint OffsetOf(IntPtr pFD);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
@@ -366,12 +366,12 @@ namespace System.Runtime.InteropServices
         internal static Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
         {
             Exception? exception = null;
-            GetExceptionForHRWorker(errorCode, errorInfo, ObjectHandleOnStack.Create(ref exception));
+            GetExceptionForHRInternal(errorCode, errorInfo, ObjectHandleOnStack.Create(ref exception));
             return exception!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetExceptionForHR")]
-        private static partial void GetExceptionForHRWorker(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception);
+        private static partial void GetExceptionForHRInternal(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception);
 
 #if FEATURE_COMINTEROP
         /// <summary>
