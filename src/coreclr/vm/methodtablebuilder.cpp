@@ -10357,8 +10357,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
 
-    // This also disables IBC logging until the type is sufficiently initialized so
-    // it needs to be done early
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
@@ -10812,7 +10810,7 @@ MethodTableBuilder::SetupMethodTable2(
     pMT->SetCl(GetCl());
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
+    // Mark the type as restored to avoid avoid asserts.
     pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG

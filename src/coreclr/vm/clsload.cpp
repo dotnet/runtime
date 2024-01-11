@@ -769,19 +769,10 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
 
     // Lookup in the classes that this class loader knows about
 
-    if (pKey->HasInstantiation() && ClassLoader::IsTypicalSharedInstantiation(pKey->GetInstantiation()))
+    typeHnd = LookupTypeHandleForTypeKey(pKey);
+    if (!typeHnd.IsNull())
     {
-        _ASSERTE(pKey->GetModule() == ComputeLoaderModule(pKey));
-        typeHnd = pKey->GetModule()->LookupFullyCanonicalInstantiation(pKey->GetTypeToken(), &existingLoadLevel);
-    }
-
-    if (typeHnd.IsNull())
-    {
-        typeHnd = LookupTypeHandleForTypeKey(pKey);
-        if (!typeHnd.IsNull())
-        {
-            existingLoadLevel = typeHnd.GetLoadLevel();
-        }
+        existingLoadLevel = typeHnd.GetLoadLevel();
     }
 
     // If something has been published in the tables, and it's at the right level, just return it
