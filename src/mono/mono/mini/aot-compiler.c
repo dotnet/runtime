@@ -3764,6 +3764,7 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 	if (sig->pinvoke)
 		flags |= 0x80;
 	flags |= (sig->call_convention & 0x0F);
+	// TODO: Encode ext_callconv
 
 	*p = flags;
 	++p;
