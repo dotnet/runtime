@@ -424,10 +424,10 @@ namespace Wasm.Build.Tests
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
-            new DotNetCommand(s_buildEnv, _testOutput)
+            var res = await new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}")
-                    .EnsureSuccessful();
+                    .ExecuteAsync($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}");
+            res.EnsureSuccessful();
 
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);

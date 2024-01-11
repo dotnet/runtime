@@ -61,10 +61,10 @@ public class InterpPgoTests : WasmTemplateTestBase
 
         _testOutput.WriteLine("/// Building");
 
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                .EnsureSuccessful();
+        var res = await new DotNetCommand(s_buildEnv, _testOutput)
+                            .WithWorkingDirectory(_projectDir!)
+                            .ExecuteAsync($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}");
+        res.EnsureSuccessful();
 
         _testOutput.WriteLine("/// Starting server");
 

@@ -84,7 +84,7 @@ internal class BrowserRunner : IAsyncDisposable
             throw new Exception("Timed out waiting for the web server url");
 
         RunTask = runTask;
-        return urlAvailable.Task.Result;
+        return await urlAvailable.Task;
     }
 
     public async Task<IBrowser> SpawnBrowserAsync(

@@ -70,10 +70,10 @@ namespace Wasm.Build.Tests
             return this;
         }
 
-        public virtual CommandResult Execute(params string[] args)
-        {
-            return Task.Run(async () => await ExecuteAsync(args)).Result;
-        }
+        // public virtual CommandResult Execute(params string[] args)
+        // {
+        //     return Task.Run(async () => await ExecuteAsync(args)).Result;
+        // }
 
         public async virtual Task<CommandResult> ExecuteAsync(params string[] args)
         {
