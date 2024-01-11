@@ -5063,8 +5063,12 @@ void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* pre
         return;
     }
 
-    // The preheader is only considered to have profile weights if all the
-    // entering blocks and the loop header itself did.
+    // The preheader is only considered to have profile weights when all the
+    // following conditions are true:
+    // - The loop header has a profile weight
+    // - All entering blocks have a profile weight
+    // - The successors of all entering blocks have a profile weight (so that
+    //   we can trust the computed taken/not taken ratio)
     //
     bool     hasProfWeight   = fgIsUsingProfileWeights();
     weight_t preheaderWeight = BB_ZERO_WEIGHT;
