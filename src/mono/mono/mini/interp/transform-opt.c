@@ -3841,6 +3841,10 @@ interp_optimize_code (TransformData *td)
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		MONO_TIME_TRACK (mono_interp_stats.optimize_bblocks_time, interp_optimize_bblocks (td));
 
+	// Nothing to optimize if we don't have cprop enabled
+	if (!(mono_interp_opt & INTERP_OPT_CPROP))
+		return;
+
 	if (!(mono_interp_opt & INTERP_OPT_SSA))
 		td->disable_ssa = TRUE;
 
@@ -3864,15 +3868,13 @@ optimization_retry:
 	else
 		MONO_TIME_TRACK (mono_interp_stats.ssa_compute_time, interp_compute_ssa (td));
 
-	if (mono_interp_opt & INTERP_OPT_CPROP)
-		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
+	MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
 
 	interp_var_deadce (td);
 
 	// We run this after var deadce to detect more single use vars. This pass will clear
 	// unnecessary instruction on the fly so deadce is no longer needed to run.
-	if ((mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS) &&
-			(mono_interp_opt & INTERP_OPT_CPROP))
+	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)
 		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
 
 	if (!td->disable_ssa)
