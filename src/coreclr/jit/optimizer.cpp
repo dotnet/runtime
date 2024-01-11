@@ -5094,7 +5094,7 @@ void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* pre
 
         if (useEdgeWeights)
         {
-            prevEntering->VisitRegularSuccs(this, [&, loop](BasicBlock* succ) {
+            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
                 FlowEdge* edge       = fgGetPredForBlock(succ, prevEntering);
                 weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
 
@@ -5121,7 +5121,7 @@ void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* pre
             loopEnterCount = 0;
             loopSkipCount  = 0;
 
-            prevEntering->VisitRegularSuccs(this, [&, loop](BasicBlock* succ) {
+            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
                 if (succ == preheader)
                 {
                     loopEnterCount += succ->bbWeight;
