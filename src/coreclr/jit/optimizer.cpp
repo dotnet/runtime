@@ -5154,7 +5154,7 @@ void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* pre
 
         // Normalize prevEntering -> preheader edge
         FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
-        noway_assert(edgeToPreheader != nullptr);
+        assert(edgeToPreheader != nullptr);
         edgeToPreheader->setEdgeWeights(enterContribution, enterContribution, preheader);
     }
 
@@ -5172,7 +5172,7 @@ void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* pre
 
     // Normalize preheader -> header weight
     FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
-    noway_assert(edgeFromPreheader != nullptr);
+    assert(edgeFromPreheader != nullptr);
     edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
 }
 
