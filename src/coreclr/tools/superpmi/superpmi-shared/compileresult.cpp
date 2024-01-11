@@ -935,23 +935,6 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         {
                             DWORDLONG key   = tmp.target;
                             int       index = rc->mc->GetRelocTypeHint->GetIndex(key);
-                            if (index == -1)
-                            {
-                                // See if the original address is in the replay address map. This happens for
-                                // relocations on static field addresses found via getFieldInfo().
-                                void* origAddr = repAddressMap((void*)tmp.target);
-                                if ((origAddr != (void*)-1) && (origAddr != nullptr))
-                                {
-                                    key   = CastPointer(origAddr);
-                                    index = rc->mc->GetRelocTypeHint->GetIndex(key);
-                                    if (index != -1)
-                                    {
-                                        LogDebug("    Using address map: target %016" PRIX64 ", original target %016" PRIX64,
-                                            tmp.target, key);
-                                    }
-                                }
-                            }
-
                             if (index != -1)
                             {
                                 WORD retVal = (WORD)rc->mc->GetRelocTypeHint->Get(key);
@@ -1131,52 +1114,6 @@ const char* CompileResult::repProcessName()
         return (const char*)ProcessName->GetBuffer(ProcessName->Get((DWORD)0));
     }
     return nullptr;
-}
-
-void CompileResult::recAddressMap(void* originalAddress, void* replayAddress, unsigned int size)
-{
-    if (AddressMap == nullptr)
-        AddressMap = new LightWeightMap<DWORDLONG, Agnostic_AddressMap>();
-
-    Agnostic_AddressMap value;
-
-    value.Address = CastPointer(originalAddress);
-    value.size    = (DWORD)size;
-
-    AddressMap->Add(CastPointer(replayAddress), value);
-}
-void CompileResult::dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value)
-{
-    printf("AddressMap key %016" PRIX64 ", value addr-%016" PRIX64 ", size-%u", key, value.Address, value.size);
-}
-void* CompileResult::repAddressMap(void* replayAddress)
-{
-    if (AddressMap == nullptr)
-        return nullptr;
-
-    int index = AddressMap->GetIndex(CastPointer(replayAddress));
-
-    if (index != -1)
-    {
-        Agnostic_AddressMap value;
-        value = AddressMap->Get(CastPointer(replayAddress));
-        return (void*)value.Address;
-    }
-
-    return nullptr;
-}
-void* CompileResult::searchAddressMap(void* newAddress)
-{
-    if (AddressMap == nullptr)
-        return (void*)-1;
-    for (unsigned int i = 0; i < AddressMap->GetCount(); i++)
-    {
-        DWORDLONG           replayAddress = AddressMap->GetRawKeys()[i];
-        Agnostic_AddressMap value         = AddressMap->Get(replayAddress);
-        if ((replayAddress <= CastPointer(newAddress)) && (CastPointer(newAddress) < (replayAddress + value.size)))
-            return (void*)(value.Address + (CastPointer(newAddress) - replayAddress));
-    }
-    return (void*)-1;
 }
 
 void CompileResult::recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)

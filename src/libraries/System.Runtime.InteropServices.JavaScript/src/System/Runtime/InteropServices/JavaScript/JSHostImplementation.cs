@@ -87,13 +87,14 @@ namespace System.Runtime.InteropServices.JavaScript
         public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken)
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
-            var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
+            var wrappedTask = CancellationHelper(modulePromise, cancellationToken);
             return await wrappedTask.ConfigureAwait(
                 ConfigureAwaitOptions.ContinueOnCapturedContext |
                 ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
-        public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
             {
@@ -152,6 +153,9 @@ namespace System.Runtime.InteropServices.JavaScript
             signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
 #endif
 
+#if DEBUG
+            signature.FunctionName = functionName;
+#endif
             for (int i = 0; i < argsCount; i++)
             {
                 var type = signature.Sigs[i] = types[i + 1]._signatureType;
@@ -233,6 +237,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
             }
+            JSProxyContext.CurrentThreadContext = null;
+            JSProxyContext.ExecutionContext = null;
             ctx.Dispose();
         }
 

@@ -12616,6 +12616,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public partial class CallConvSwift
+    {
+        public CallConvSwift() { }
+    }
     public partial class CallConvSuppressGCTransition
     {
         public CallConvSuppressGCTransition() { }
@@ -13819,20 +13823,18 @@ namespace System.Runtime.InteropServices.Marshalling
 }
 namespace System.Runtime.InteropServices.Swift
 {
-    public readonly struct SwiftSelf
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftSelf
     {
-        public SwiftSelf(IntPtr value) { }
-        public IntPtr Value { get; }
+        public SwiftSelf(void* value) { }
+        public void* Value { get; }
     }
-    public readonly struct SwiftError
+
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftError
     {
-        public SwiftError(IntPtr value) { }
-        public IntPtr Value { get; }
-    }
-    public readonly struct SwiftAsyncContext
-    {
-        public SwiftAsyncContext(IntPtr value) { }
-        public IntPtr Value { get; }
+        public SwiftError(void* value) { }
+        public void* Value { get; }
     }
 }
 namespace System.Runtime.Remoting

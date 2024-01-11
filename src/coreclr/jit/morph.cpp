@@ -6340,10 +6340,19 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 // Notes:
 //   This function needs to handle somewhat complex IR that appears after
 //   tailcall candidates due to inlining.
+//   Does not support checking struct returns since physical promotion can
+//   create very hard to validate IR patterns.
 //
 void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 {
 #ifdef DEBUG
+    if (call->TypeIs(TYP_STRUCT))
+    {
+        // Due to struct fields it can be very hard to track valid return
+        // patterns; just give up on validating those.
+        return;
+    }
+
     class TailCallIRValidatorVisitor final : public GenTreeVisitor<TailCallIRValidatorVisitor>
     {
         GenTreeCall* m_tailcall;
@@ -9139,13 +9148,6 @@ DONE_MORPHING_CHILDREN:
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->IsNeverNegative(this) &&
-                op2->IsNeverNegative(this))
-            {
-                // Some branch optimizations don't work well with unsigned relops
-                tree->ClearUnsigned();
-            }
-
             // Change "CNS relop op2" to "op2 relop* CNS"
             if (!optValnumCSE_phase && op1->IsIntegralConst() && tree->OperIsCompare() && gtCanSwapOrder(op1, op2))
             {

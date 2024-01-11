@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
@@ -188,15 +187,15 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 FrameworkDependentApp = SingleFileTestApp.CreateFrameworkDependent("AppWithSubDirs");
-                BundleHelper.AddLongNameContentToAppWithSubDirs(FrameworkDependentApp.NonBundledLocation);
+                AddLongNameContent(FrameworkDependentApp.NonBundledLocation);
 
                 SelfContainedApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
-                BundleHelper.AddLongNameContentToAppWithSubDirs(SelfContainedApp.NonBundledLocation);
+                AddLongNameContent(SelfContainedApp.NonBundledLocation);
 
                 // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
                 //               This should be an app built with the equivalent of PublishReadyToRun=true and PublishReadyToRunComposite=true
                 SelfContainedCompositeApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
-                BundleHelper.AddLongNameContentToAppWithSubDirs(SelfContainedCompositeApp.NonBundledLocation);
+                AddLongNameContent(SelfContainedCompositeApp.NonBundledLocation);
             }
 
             public void Dispose()
@@ -204,6 +203,20 @@ namespace AppHost.Bundle.Tests
                 FrameworkDependentApp.Dispose();
                 SelfContainedApp.Dispose();
                 SelfContainedCompositeApp.Dispose();
+            }
+
+            public static void AddLongNameContent(string directory)
+            {
+                // For tests using the AppWithSubDirs, One of the sub-directories with a really long name
+                // is generated during test-runs rather than being checked in as a test asset.
+                // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
+                var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
+                var longDirPath = Path.Combine(directory, "Sentence", longDirName);
+                Directory.CreateDirectory(longDirPath);
+                using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
+                {
+                    writer.Write(".");
+                }
             }
         }
     }

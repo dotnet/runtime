@@ -8,8 +8,8 @@ import { CharPtr, VoidPtr } from "./types/emscripten";
 
 let prefix = "MONO_WASM: ";
 
-export function mono_set_thread_id(tid: string) {
-    prefix = `MONO_WASM [${tid}]: `;
+export function mono_set_thread_name(threadName: string) {
+    prefix = `MONO_WASM [${threadName}]: `;
 }
 
 export function mono_log_debug(msg: string, ...data: any) {

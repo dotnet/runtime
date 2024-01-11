@@ -1954,14 +1954,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // Don't compact blocks from different loops.
-    //
-    if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
-        (block->bbNatLoopNum != bNext->bbNatLoopNum))
-    {
-        return false;
-    }
-
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
     for (BasicBlock* const predBlock : bNext->PredBlocks())
@@ -2356,54 +2348,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->RemoveFlags(BBF_NONE_QUIRK);
     }
 
-    // If we're collapsing a block created after the dominators are
-    // computed, copy block number the block and reuse dominator
-    // information from bNext to block.
-    //
-    // Note we have to do this renumbering after the full set of pred list
-    // updates above, since those updates rely on stable bbNums; if we renumber
-    // before the updates, we can create pred lists with duplicate m_block->bbNum
-    // values (though different m_blocks).
-    //
-    if ((fgDomsComputed || fgCompactRenumberQuirk) && (block->bbNum > fgDomBBcount))
-    {
-        if (fgDomsComputed)
-        {
-            assert(fgReachabilitySetsValid);
-            BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-            BlockSetOps::ClearD(this, bNext->bbReach);
-
-            block->bbIDom = bNext->bbIDom;
-            bNext->bbIDom = nullptr;
-
-            // In this case, there's no need to update the preorder and postorder numbering
-            // since we're changing the bbNum, this makes the basic block all set.
-            //
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
-                    bNext->bbNum);
-        }
-        else
-        {
-            // TODO-Quirk: Remove
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " for a quirk\n", block->bbNum, bNext->bbNum);
-        }
-
-        block->bbNum = bNext->bbNum;
-
-        // Because we may have reordered pred lists when we swapped in
-        // block for bNext above, we now need to re-reorder pred lists
-        // to reflect the bbNum update.
-        //
-        // This process of reordering and re-reordering could likely be avoided
-        // via a different update strategy. But because it's probably rare,
-        // and we avoid most of the work if pred lists are already in order,
-        // we'll just ensure everything is properly ordered.
-        //
-        for (BasicBlock* const checkBlock : Blocks())
-        {
-            checkBlock->ensurePredListOrder(this);
-        }
-    }
+    assert(!fgDomsComputed);
 
     if (optLoopTableValid)
     {
@@ -2586,7 +2531,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
                " is true or false)\n",
-               block->bbNum, block->GetFalseTarget()->bbNum);
+               block->bbNum, block->GetTarget()->bbNum);
     }
 #endif
 
@@ -2979,14 +2924,13 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
             }
 
-            /* special case if this is the last BB */
-            if (block == fgLastBB)
+            /* special case if this is the only BB */
+            if (block->IsFirst() && block->IsLast())
             {
-                if (!bPrev)
-                {
-                    break;
-                }
-                fgLastBB = bPrev;
+                assert(block == fgFirstBB);
+                assert(block == fgLastBB);
+                assert(bPrev == nullptr);
+                break;
             }
 
             // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile

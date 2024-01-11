@@ -3478,9 +3478,9 @@ simd_type_to_shl_op (int t)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #if TARGET_SIZEOF_VOID_P == 8
-		return OP_PSHLD;
-#else
 		return OP_PSHLQ;
+#else
+		return OP_PSHLD;
 #endif
 	default:
 		g_assert_not_reached ();
@@ -5751,6 +5751,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_branch8 (code, X86_CC_NZ, -1, 1);
 
 			code = emit_call (cfg, NULL, code, MONO_JIT_ICALL_mono_generic_class_init);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
+
+			x86_patch (jump, code);
+			break;
+		}
+		case OP_INIT_MRGCTX: {
+			int field_offset;
+			guint8 *jump;
+
+			field_offset = MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, entries);
+
+			g_assert (ins->sreg1 == MONO_AMD64_ARG_REG1);
+
+			amd64_mov_reg_membase (code, GP_SCRATCH_REG, ins->sreg1, field_offset, sizeof (gpointer));
+			amd64_test_reg_reg (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+			jump = code;
+			amd64_branch8 (code, X86_CC_NZ, -1, 1);
+
+			/* Slowpath */
+			if (ins->sreg2 != MONO_AMD64_ARG_REG2)
+				amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG2, ins->sreg2, sizeof (target_mgreg_t));
+			code = emit_call (cfg, NULL, code, MONO_JIT_ICALL_mini_init_method_rgctx);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
 
