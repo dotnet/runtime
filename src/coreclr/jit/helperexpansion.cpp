@@ -444,7 +444,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
     // Always expand for NativeAOT
     const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-    if (!isNativeAOT && opts.OptimizationDisabled())
+    if (opts.OptimizationDisabled())
     {
         JITDUMP("Optimizations aren't allowed - bail out.\n")
         return result;
