@@ -666,6 +666,9 @@ static insOpts optWidenElemsizeArrangement(insOpts arrangement);
 //  element.
 static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
 
+//  For the given SVE 'arrangement', return the one when reduced to a quadword vector.
+static insOpts optSveToQuadwordElemsizeArrangement(insOpts arrangement);
+
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
 
@@ -962,90 +965,51 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 
 inline static bool insOptsScalable(insOpts opt)
 {
-    // Opt is any of the scalable types.
-    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
-            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) || (opt == INS_OPTS_SCALABLE_Q) ||
-            insOptsScalableWithPredicateMerge(opt));
+    // `opt` is any of the scalable types.
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
+            (opt == INS_OPTS_SCALABLE_D) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
-inline static bool insOptsScalableSimple(insOpts opt)
+inline static bool insOptsScalableStandard(insOpts opt)
 {
-    // `opt` is any of the standard scalable types.
+    // `opt` is any of the scalable types, except Quadword.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
             (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableWords(insOpts opt)
 {
-    // `opt` is any of the standard word and above scalable types.
+    // `opt` is any of the word and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableWordsOrQuadwords(insOpts opt)
 {
-    // `opt` is any of the standard word, quadword and above scalable types.
+    // `opt` is any of the word, quadword and above scalable types.
     return (insOptsScalableWords(opt) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
 inline static bool insOptsScalableAtLeastHalf(insOpts opt)
 {
-    // `opt` is any of the standard half and above scalable types.
+    // `opt` is any of the half and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableFloat(insOpts opt)
 {
-    // `opt` is any of the standard scalable types that are valid for FP.
+    // `opt` is any of the scalable types that are valid for FP.
     return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableWide(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for widening to size D.
-    return ((opt == INS_OPTS_SCALABLE_WIDE_B) || (opt == INS_OPTS_SCALABLE_WIDE_H) ||
-            (opt == INS_OPTS_SCALABLE_WIDE_S));
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
 }
 
-inline static bool insOptsScalableWithSimdVector(insOpts opt)
+inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
-    // `opt` is any of the scalable types that are valid for conversion to an Advsimd SIMD Vector.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR));
-}
-
-inline static bool insOptsScalableWithSimdScalar(insOpts opt)
-{
-    // `opt` is any of the scalable types that are valid for conversion to/from a scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
-}
-
-inline static bool insOptsScalableWithSimdFPScalar(insOpts opt)
-{
-    // `opt` is any of the scalable types that are valid for conversion to/from a FP scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
-}
-
-inline static bool insOptsScalableWideningToSimdScalar(insOpts opt)
-{
-    // `opt` is any of the scalable types that are valid for widening then conversion to a scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR));
-}
-
-inline static bool insOptsScalableWithScalar(insOpts opt)
-{
-    // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
-}
-
-inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
-{
-    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
+    return sopt == INS_SCALABLE_OPTS_NONE;
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -1108,8 +1072,13 @@ void emitIns_R_R_I(
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
 
-void emitIns_R_R_R(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_R(instruction     ins,
+                   emitAttr        attr,
+                   regNumber       reg1,
+                   regNumber       reg2,
+                   regNumber       reg3,
+                   insOpts         opt  = INS_OPTS_NONE,
+                   insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I(instruction ins,
                      emitAttr    attr,
