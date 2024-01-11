@@ -6101,10 +6101,6 @@ MethodTableBuilder::InitMethodDesc(
             // NDirect specific initialization.
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
 
-            // Allocate writeable data
-            pNewNMD->ndirect.m_pWriteableData = (NDirectWriteableData*)
-                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData)));
-
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
             pNewNMD->ndirect.m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
                 GetLoaderAllocator(), GetMemTracker())->AsNDirectImportPrecode();
@@ -6124,7 +6120,7 @@ MethodTableBuilder::InitMethodDesc(
                 pNewNMD->SetIsEarlyBound();
             }
 
-            pNewNMD->GetWriteableData()->m_pNDirectTarget = pNewNMD->GetNDirectImportThunkGlue()->GetEntrypoint();
+            pNewNMD->ndirect.m_pNDirectTarget = pNewNMD->GetNDirectImportThunkGlue()->GetEntrypoint();
         }
         break;
 
