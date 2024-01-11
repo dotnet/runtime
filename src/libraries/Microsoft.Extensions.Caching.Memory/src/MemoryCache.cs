@@ -77,14 +77,13 @@ namespace Microsoft.Extensions.Caching.Memory
         public int Count => _coherentState.Count;
 
         /// <summary>
-        /// Gets a snapshot containing all the keys in the <see cref="MemoryCache"/>.
+        /// Gets an enumerable of the all the keys in the <see cref="MemoryCache"/>.
         /// </summary>
         public IEnumerable<object> Keys
         {
             get
             {
-                CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-                foreach (KeyValuePair<object, CacheEntry> pairs in coherentState._entries)
+                foreach (KeyValuePair<object, CacheEntry> pairs in _coherentState._entries)
                 {
                     yield return pairs.Key;
                 }
