@@ -410,12 +410,12 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         // Only use lea if the original was relocatable. Otherwise we can get spurious
         // instruction selection due to different memory placement at runtime.
         if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
-        {            
+        {
             if (!EA_IS_CNS_SEC_RELOC(origAttr))
             {
                 // We will use lea so displacement and not immediate will be relocatable
                 size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-                GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));                
+                GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
             }
             else
             {
