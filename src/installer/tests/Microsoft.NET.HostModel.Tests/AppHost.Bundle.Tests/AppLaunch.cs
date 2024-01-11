@@ -3,12 +3,11 @@
 
 using System;
 using System.IO;
-using Xunit;
-using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.DotNet.CoreSetup.Test;
-using BundleTests.Helpers;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
