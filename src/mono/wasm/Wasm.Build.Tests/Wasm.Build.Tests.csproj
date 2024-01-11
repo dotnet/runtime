@@ -81,8 +81,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=${SDK_DIR_NAME:-$(_SdkPathForLocalTesting)}" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include='if "%SDK_DIR_NAME%"=="" set SDK_DIR_NAME=$(_SdkPathForLocalTesting)' />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=${TEST_USING_WEBCIL:-$(TestUsingWebcil)}" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include='if "%TEST_USING_WEBCIL%"=="" set TEST_USING_WEBCIL=$(TestUsingWebcil)' />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=${XUnitTraitArg:-$(_XUnitTraitArg)}&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include='if "%XUnitTraitArg%"=="" set "XUnitTraitArg=$(_XUnitTraitArg)"' />
@@ -93,8 +93,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=${BROWSER_PATH_FOR_TESTS:-$(_WasmBrowserPathForTests)}" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include='if "%BROWSER_PATH_FOR_TESTS%"=="" set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)' />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export V8_PATH_FOR_TESTS=${V8_PATH_FOR_TESTS:-$(_WasmJSEnginePathForTests)}" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include='if "%V8_PATH_FOR_TESTS%"=="" set V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)' />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=${BUILT_NUGETS_PATH:-$(LibrariesShippingPackagesDir)}/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include='if "%BUILT_NUGETS_PATH%"=="" set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)' />
