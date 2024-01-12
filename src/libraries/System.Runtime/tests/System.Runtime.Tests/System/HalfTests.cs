@@ -400,6 +400,14 @@ namespace System.Tests
                 (BitConverter.UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000))) // highest negative normal
             };
 
+            if (PlatformDetection.IsRiscV64Process) // RISC-V does not preserve payload
+            {
+                data[12] = (BitConverter.UInt16BitsToHalf(0b0_11111_1010101010),
+                                BitConverter.Int32BitsToSingle(0x7FC00000)); // Positive Signalling NaN
+                data[13] = (BitConverter.UInt16BitsToHalf(0b1_11111_1010101010),
+                                BitConverter.Int32BitsToSingle(unchecked((int)0xFFC00000))); // Negative Signalling NaN
+            }
+
             foreach ((Half original, float expected) in data)
             {
                 yield return new object[] { original, expected };
@@ -410,18 +418,6 @@ namespace System.Tests
         [Theory]
         public static void ExplicitConversion_ToSingle(Half value, float expected) // Check the underlying bits for verifying NaNs
         {
-            if (PlatformDetection.IsRiscV64Process)
-            {
-                if (BitConverter.HalfToUInt16Bits(value) == 0b0_11111_1010101010)  // Positive Signalling NaN - RISC-V does not preserve payload
-                {
-                    expected = BitConverter.Int32BitsToSingle(0x7FC00000);
-                }
-                else if (BitConverter.HalfToUInt16Bits(value) == 0b1_11111_1010101010) // Negative Signalling NaN - RISC-V does not preserve payload
-                {
-                    expected = BitConverter.Int32BitsToSingle(unchecked((int)0xFFC00000));
-                }
-            }
-
             float f = (float)value;
             Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(f));
         }
@@ -555,6 +551,14 @@ namespace System.Tests
                 (BitConverter.Int32BitsToSingle(0x33000000), BitConverter.UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
+            if (PlatformDetection.IsRiscV64Process) // RISC-V does not preserve payload
+            {
+                data[10] = (BitConverter.Int32BitsToSingle(unchecked((int)0xFFD55555)),
+                                BitConverter.UInt16BitsToHalf(0b1_11111_1000000000)); // Negative Signalling NaN
+                data[11] = (BitConverter.Int32BitsToSingle(0x7FD55555),
+                                BitConverter.UInt16BitsToHalf(0b0_11111_1000000000)); // Positive Signalling NaN
+            }
+
             foreach ((float original, Half expected) in data)
             {
                 yield return new object[] { original, expected };
@@ -565,18 +569,6 @@ namespace System.Tests
         [Theory]
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
-            if (PlatformDetection.IsRiscV64Process)
-            {
-                if (BitConverter.SingleToInt32Bits(f) == 0x7FD55555) // Positive Signalling NaN - RISC-V does not preserve payload
-                {
-                    expected = BitConverter.UInt16BitsToHalf(0b0_11111_1000000000);
-                }
-                else if (BitConverter.SingleToInt32Bits(f) == unchecked((int)0xFFD55555)) // Negative - Signalling NaN RISC-V does not preserve payload
-                {
-                    expected = BitConverter.UInt16BitsToHalf(0b1_11111_1000000000);
-                }
-            }
-
             Half h = (Half)f;
             Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
         }
