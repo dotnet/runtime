@@ -2520,7 +2520,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
  *
  */
 
-static unsigned castFloatOrIntegralReg(regNumber reg)
+/*static*/ unsigned emitter::castFloatOrIntegralReg(regNumber reg)
 {
     static constexpr unsigned kRegisterMask = 0x1f;
 

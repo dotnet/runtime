@@ -112,6 +112,8 @@ static void emitOutput_BTypeInstr_SanityCheck(instruction ins, regNumber rs1, re
 static void emitOutput_JTypeInstr_SanityCheck(instruction ins, regNumber rd);
 #endif // DEBUG
 
+static unsigned castFloatOrIntegralReg(regNumber reg);
+
 unsigned emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const;
 unsigned emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, unsigned imm12) const;
 unsigned emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm12) const;
