@@ -99,96 +99,15 @@ thread_local MonoDomain *gCurrentDomain = NULL;
 MonoDomain *gRootDomain = NULL;
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
-CrstStatic g_add_internal_lock;
-
 static SString* s_AssemblyDir;
 static SString* s_EtcDir;
 static SString* s_AssemblyPaths;
-
-// Import this function manually as it is not defined in a header
-extern "C" HRESULT  GetCLRRuntimeHost(REFIID riid, IUnknown **ppUnk);
 
 #define ASSERT_NOT_IMPLEMENTED printf("Function not implemented: %s\n", __func__);
 
 #define FIELD_ATTRIBUTE_PRIVATE               0x0001
 #define FIELD_ATTRIBUTE_FAMILY                0x0004
 #define FIELD_ATTRIBUTE_PUBLIC                0x0006
-
-template <COUNT_T MEMSIZE>
-static STRINGREF AllocateString(const InlineSString<MEMSIZE>& sstr)
-{
-    STRINGREF strObj = AllocateString(sstr.GetCount());
-    memcpyNoGCRefs(strObj->GetBuffer(), sstr.GetUnicode(), sstr.GetCount() * sizeof(WCHAR));
-    return strObj;
-}
-
-class GCNativeFrame : public Frame
-{
-    VPTR_VTABLE_CLASS(GCNativeFrame, Frame)
-
-public:
-
-    GCNativeFrame() {
-        stackBase = NULL;
-    };
-
-    VOID Pop();
-
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc)
-    {
-        for (UINT32 i=0; i<bits.GetCount(); i++)
-        {
-            UInt64 mask = bits[i];
-            for (int j=0; mask != 0; j++, mask >>= 1)
-            {
-                if (mask & 1)
-                {
-                    void *ptr = stackBase - (i * sizeof(UInt64) * 8) - j;
-                    fn ((PTR_PTR_Object)ptr, sc, 0);
-                }
-            }
-        }
-    }
-
-    void PushStackPtr(void **addr)
-    {
-        if (stackBase < addr)
-            stackBase = addr + 1024;
-        ptrdiff_t bitOffs = stackBase - addr;
-        size_t arrayIndex = bitOffs / (sizeof(UInt64) * 8);
-        UInt64 bitIndex = bitOffs % (sizeof(UInt64) * 8);
-        size_t count = bits.GetCount();
-        if (count < arrayIndex + 1)
-        {
-            bits.SetCount((COUNT_T)arrayIndex + 1);
-            for (size_t i=count;i<=arrayIndex;i++)
-                bits[(COUNT_T)i] = 0;
-        }
-        bits[(COUNT_T)arrayIndex] |= 1LL << bitIndex;
-    }
-
-    void PopStackPtr(void **addr)
-    {
-        ptrdiff_t bitOffs = stackBase - addr;
-        size_t arrayIndex = bitOffs / (sizeof(UInt64) * 8);
-        UInt64 bitIndex = bitOffs % (sizeof(UInt64) * 8);
-        if (bits.GetCount() > arrayIndex)
-            bits[(COUNT_T)arrayIndex] &= ~(1LL << bitIndex);
-    }
-
-private:
-    void **stackBase;
-    SArray<UInt64> bits;
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_DTOR(GCNativeFrame)
-};
-
-#ifndef __GNUC__
-__declspec(thread) GCNativeFrame * pCurrentThreadNativeFrame;
-#else // !__GNUC__
-thread_local GCNativeFrame * pCurrentThreadNativeFrame;
-#endif // !__GNUC__
 
 thread_local int g_isManaged = 0;
 
@@ -225,16 +144,6 @@ static void get_dirname(char* source)
             return;
         }
     }
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_add_internal_call(const char *name, gconstpointer method)
-{
-    TRACE_API("%s, %p", name, method);
-
-    assert(name != nullptr);
-    assert(method != nullptr);
-    CrstHolder lock(&g_add_internal_lock);
-    ECall::RegisterICall(name, (PCODE)method);
 }
 
 extern "C" EXPORT_API int EXPORT_CC mono_array_element_size(MonoClass* classOfArray)
@@ -602,73 +511,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_debugger_set_generate_debug_info(gbool
 {
 }
 
-struct MonoInternalCallFrame
-{
-    FrameWithCookie<HelperMethodFrame> frame;
-    bool didSetupFrame;
-};
-
-// If this fails the size of MonoInternalCallFrameOpaque needs to be updted in MonoTypes.h in this repo and the Unity repo.
-static_assert(sizeof(MonoInternalCallFrame) <= sizeof(MonoInternalCallFrameOpaque), "MonoInternalCallFrameOpaque needs to be larger");
-
-// We currently need to wrap Unity icalls called from managed code mono_enter/exit_internal_call.
-// This has two reasons:
-// 1. We want to set up a CoreCLR stack frame for the icall to make call stack unwinding work
-// (so we can get managed stack traces which cross native frames, as verified by the
-// can_get_full_stack_trace_in_internal_method test).
-// 2. We want to switch the thread to preemptive GC mode when running our icalls, to avoid delays and
-// deadlocks when the GC waits for the icall to finish.
-//
-// Now, the problem is that this adds some overhead to calling icalls, which is not insignificant for
-// small icalls (like Profiler.BeginSample). In most cases we can run icalls without wrapping them,
-// but it is not generally safe to do so. So we need to find a solution to selectively wrap icalls
-// only where needed.
-extern "C" EXPORT_API void EXPORT_CC mono_enter_internal_call(MonoInternalCallFrameOpaque *_frame)
-{
-    TRACE_API("%x", _frame);
-
-    FrameWithCookie<HelperMethodFrame>* frame = (FrameWithCookie<HelperMethodFrame>*)_frame;
-    memset((void*)frame, 0, sizeof(MonoInternalCallFrame));
-    new(frame) FrameWithCookie<HelperMethodFrame>(0, 0);
-
-    // Should we set up the frame? We only need to do this when calling the icall from CoreCLR JITed code, but not when
-    // calling it from Burst code (in which case GetThread() may not be valid if the worker thread is not attached).
-    ((MonoInternalCallFrame*)_frame)->didSetupFrame = GetThread() != NULL && GetThread()->PreemptiveGCDisabled();
-
-    // FCalls in CoreCLR always run in cooperative mode, as they are not written in a way which is
-    // safe to use for the precice GC. However, for Unity ICalls (which use the same transition mechanism),
-    // we cannot do that. Our icalls may often take non-trivial amounst of time, and in some cases use locking
-    // mechanisms, which can cause a deadlock, if we need to wait for it to exit to start GC on another thread.
-    // Because we disable the precise GC in Unity, we should be safe to interrupt our icalls for GC.
-    if (((MonoInternalCallFrame*)_frame)->didSetupFrame)
-    {
-        INDEBUG(static BOOL __haveCheckedRestoreState = FALSE;)
-        FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN;
-        FORLAZYMACHSTATE(CAPTURE_STATE(frame->MachineState(), return);)
-        FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END;
-        INDEBUG(frame->SetAddrOfHaveCheckedRestoreState(&__haveCheckedRestoreState));
-        frame->Push();
-
-        GetThread()->EnablePreemptiveGC();
-    }
-}
-
-// If we enabled preemptive mode on icall enter we need to make sure we leave GC in preemptive modewhen detaching,
-// so the thread can be further suspended by the GC at any point.
-extern "C" EXPORT_API void EXPORT_CC mono_exit_internal_call(MonoInternalCallFrameOpaque *_frame)
-{
-    TRACE_API("%x", _frame);
-
-    FrameWithCookie<HelperMethodFrame>* frame = (FrameWithCookie<HelperMethodFrame>*)_frame;
-
-    if (((MonoInternalCallFrame*)_frame)->didSetupFrame)
-    {
-        GetThread()->DisablePreemptiveGC();
-        frame->Pop();
-    }
-    frame->~FrameWithCookie<HelperMethodFrame>();
-}
-
 extern "C" EXPORT_API const char* EXPORT_CC mono_field_get_name(MonoClassField *field)
 {
     CONTRACTL
@@ -884,8 +726,6 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
     }
 #endif
 
-    g_add_internal_lock.Init(CrstLeafLock);
-
     HRESULT hr;
 
     if (!g_CLRRuntimeHost)
@@ -981,12 +821,6 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
 
     //SetupDomainPaths(gALCWrapperObject);
     //gRootDomain = gCurrentDomain;
-
-/*
-    FrameWithCookie<GCNativeFrame>* frame = (FrameWithCookie<GCNativeFrame>*)malloc(sizeof(FrameWithCookie<GCNativeFrame>));
-    new (frame) FrameWithCookie<GCNativeFrame> ();
-    pCurrentThreadNativeFrame = &(*frame);
-    frame->Push();*/
 
 
     TRACE_API("%s, %s", file, runtime_version);

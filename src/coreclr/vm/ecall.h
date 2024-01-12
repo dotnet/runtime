@@ -83,10 +83,6 @@ class ECall
         static MethodDesc* MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint = NULL);
         static DWORD GetIDForMethod(MethodDesc *pMD);
 
-#ifdef FEATURE_UNITY_ECALL_DYNAMIC_REGISTRATION
-        static void RegisterICall(const char* fullMethodName, PCODE code);
-#endif
-
         // Some fcalls (delegate ctors and tlbimpl ctors) shared one implementation.
         // We should never patch vtable for these since they have 1:N mapping between
         // MethodDesc and the actual implementation
