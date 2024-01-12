@@ -186,7 +186,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     {
         if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
             runArgs += $" {runOptions.ExtraArgs}";
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+        await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(workingDirectory);
 
         await using var runner = new BrowserRunner(_testOutput);

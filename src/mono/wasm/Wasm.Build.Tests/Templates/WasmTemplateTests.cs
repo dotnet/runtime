@@ -271,7 +271,7 @@ namespace Wasm.Build.Tests
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
-                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
@@ -280,8 +280,11 @@ namespace Wasm.Build.Tests
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
 
+            _testOutput.WriteLine($"-- waiting a bit before running again --");
+            await Task.Delay(2000);
+
             {
-                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
@@ -307,7 +310,7 @@ namespace Wasm.Build.Tests
             {
                 string runArgs = $"run --no-silent -c {config} --project \"{projectFile}\"";
                 runArgs += " x y z";
-                using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
+                await using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                     .WithWorkingDirectory(workingDir)
                                     .WithEnvironmentVariables(s_buildEnv.EnvVars);
                 var res = await cmd.ExecuteWithCapturedOutputAsync(runArgs);
@@ -324,7 +327,7 @@ namespace Wasm.Build.Tests
                 // Run with --no-build
                 string runArgs = $"run --no-silent -c {config} --project \"{projectFile}\" --no-build";
                 runArgs += " x y z";
-                using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
+                await using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(workingDir);
                 var res = await cmd.ExecuteWithCapturedOutputAsync(runArgs);
                 res.EnsureExitCode(42);
@@ -429,7 +432,7 @@ namespace Wasm.Build.Tests
                     .ExecuteAsync($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}");
             res.EnsureSuccessful();
 
-            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+            await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner(_testOutput);

@@ -14,12 +14,14 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class ToolCommand : IDisposable
+    public class ToolCommand : IAsyncDisposable
     {
         private string _label;
         protected ITestOutputHelper _testOutput;
         private TaskCompletionSource<bool> _exited = new();
         private CancellationTokenSource _cancelRequested = new();
+        private CancellationTokenSource _timeoutCts = new();
+        private CancellationTokenSource _linkedCts = new();
         private int pid = -1;
 
         protected string _command;
@@ -105,20 +107,26 @@ namespace Wasm.Build.Tests
             return ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
-        public virtual async void Dispose()
+        public virtual async ValueTask DisposeAsync()
         {
             _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose ENTER, cancel'ing cancelRequested");
             _cancelRequested.Cancel();
-            if (CurrentProcess is not null && !CurrentProcess.HasExited)
+            if (CurrentProcess is not null)// && !CurrentProcess.HasExited)
             {
-                _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose calling Kill, exited: {_exited.Task.Status}");
-                CurrentProcess.Kill();//entireProcessTree: true);
-                _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}, and calling waitforexit, _exited: {_exited.Task.Status}");
+                if (!CurrentProcess.HasExited)
+                {
+                    _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose has not exited, so calling Kill, exited: {_exited.Task.Status}");
+                    CurrentProcess.Kill();//entireProcessTree: true);
+                    _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}");
+                }
+                _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose waiting on _exited: {_exited.Task.Status}");
                 await _exited.Task.ConfigureAwait(false);
                 // CurrentProcess.WaitForExit();
                 _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from waiting on exited event, hasexited: {CurrentProcess.HasExited}");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
+
+                await Task.Delay(100);
             }
         }
 
@@ -126,6 +134,9 @@ namespace Wasm.Build.Tests
 
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
+            _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cancelRequested.Token, _timeoutCts.Token);
+            _timeoutCts.CancelAfter((int)Timeout.TotalMilliseconds);
+
             _testOutput.WriteLine($"ToolCommand.ExecuteAsyncInternal ENTER: {executable} {args}");
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
@@ -168,14 +179,16 @@ namespace Wasm.Build.Tests
                 CurrentProcess.BeginOutputReadLine();
                 CurrentProcess.BeginErrorReadLine();
 
-                using CancellationTokenSource cts = new();
-                cts.CancelAfter((int)Timeout.TotalMilliseconds);
-
                 _testOutput.WriteLine($"[{pid}] calling CurrentProcess.WaitForExitAsync, exited: {CurrentProcess.HasExited}");
                 try {
-                    await CurrentProcess.WaitForExitAsync(cts.Token);
+                    await CurrentProcess.WaitForExitAsync(_linkedCts.Token);
                 } catch (TaskCanceledException) {
                     _testOutput.WriteLine($"[{pid}] [{DateTime.Now}] CurrentProcess is null: {CurrentProcess is null}");
+                    if (_cancelRequested.IsCancellationRequested)
+                    {
+                        _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync cancelled, cancelRequested, returning");
+                        throw new Exception($"IGNORE this exception.. it's expected because the toolcommand is being cancelled");
+                    }
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, exited: {CurrentProcess?.HasExited}");
                     CurrentProcess?.Refresh();
                     DumpProcess($"timed out", pid);
@@ -225,7 +238,7 @@ namespace Wasm.Build.Tests
             }
             catch (Exception ex) when (ex is not XunitException)
             {
-                _testOutput.WriteLine($"[{pid}] -- exception -- {ex}. CurrentProcess is null: {CurrentProcess is null}, hasExited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.Status}, _cancelRequested: {_cancelRequested.IsCancellationRequested}");
+                _testOutput.WriteLine($"[{pid}] -- exception -- {ex}. CurrentProcess is null: {CurrentProcess is null}, hasExited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.Status}, _cancelRequested: {_cancelRequested.IsCancellationRequested}, _timeoutCts: {_timeoutCts.IsCancellationRequested}, _linkedCts: {_linkedCts.IsCancellationRequested}");
                 if (!_cancelRequested.IsCancellationRequested)
                     throw;
                 else
