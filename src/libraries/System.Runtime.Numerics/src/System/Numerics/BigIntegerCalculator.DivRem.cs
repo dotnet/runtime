@@ -388,9 +388,6 @@ namespace System.Numerics
                             : aFromPool = ArrayPool<uint>.Shared.Rent(aLength)).Slice(0, aLength);
 
             // 4. normalize
-            Normalize(left, sigmaDigit, sigmaSmall, a);
-            Normalize(right, sigmaDigit, sigmaSmall, b);
-
             static void Normalize(ReadOnlySpan<uint> src, int sigmaDigit, int sigmaSmall, Span<uint> bits)
             {
                 Debug.Assert((uint)sigmaSmall <= 32);
@@ -416,34 +413,47 @@ namespace System.Numerics
                 }
             }
 
+            Normalize(left, sigmaDigit, sigmaSmall, a);
+            Normalize(right, sigmaDigit, sigmaSmall, b);
+
 
             int t = Math.Max(2, (a.Length + n - 1) / n); // Max(2, Ceil(a.Length/n))
+            Debug.Assert(t < a.Length || (t == a.Length && (int)a[^1] >= 0));
+
+            uint[]? rFromPool = null;
+            Span<uint> r = ((n + 1) <= StackAllocThreshold ?
+                            stackalloc uint[StackAllocThreshold]
+                            : rFromPool = ArrayPool<uint>.Shared.Rent(n + 1)).Slice(0, n + 1);
 
             uint[]? zFromPool = null;
             Span<uint> z = (2 * n <= StackAllocThreshold ?
                             stackalloc uint[StackAllocThreshold]
                             : zFromPool = ArrayPool<uint>.Shared.Rent(2 * n)).Slice(0, 2 * n);
-            uint[]? qFromPool = null;
-            Span<uint> q = (b.Length <= StackAllocThreshold ?
-                            stackalloc uint[StackAllocThreshold]
-                            : qFromPool = ArrayPool<uint>.Shared.Rent(b.Length)).Slice(0, b.Length);
-            uint[]? rFromPool = null;
-            Span<uint> r = ((b.Length + 1) <= StackAllocThreshold ?
-                            stackalloc uint[StackAllocThreshold]
-                            : rFromPool = ArrayPool<uint>.Shared.Rent(b.Length + 1)).Slice(0, b.Length + 1);
             a.Slice((t - 2) * n).CopyTo(z);
             z.Slice(a.Length - (t - 2) * n).Clear();
 
-            BurnikelZieglerD2n1n(z, b, q, r);
-
-            Span<uint> quotientLeft = quotient.Slice((t - 2) * n);
-            if (q.Length < quotientLeft.Length)
+            Span<uint> quotientUpper = quotient.Slice((t - 2) * n);
+            if (quotientUpper.Length < n)
             {
-                q.CopyTo(quotientLeft);
-                quotientLeft.Slice(q.Length).Clear();
+                uint[]? qFromPool = null;
+                Span<uint> q = (n <= StackAllocThreshold ?
+                                stackalloc uint[StackAllocThreshold]
+                                : qFromPool = ArrayPool<uint>.Shared.Rent(n)).Slice(0, n);
+
+                BurnikelZieglerD2n1n(z, b, q, r);
+
+                Debug.Assert(!q.Slice(quotientUpper.Length).ContainsAnyExcept(0u));
+                q.Slice(0, quotientUpper.Length).CopyTo(quotientUpper);
+
+                if (qFromPool != null)
+                    ArrayPool<uint>.Shared.Return(qFromPool);
             }
             else
-                q.Slice(0, quotientLeft.Length).CopyTo(quotientLeft);
+            {
+                BurnikelZieglerD2n1n(z, b, quotientUpper.Slice(0, n), r);
+                quotientUpper.Slice(n).Clear();
+            }
+
             if (t > 2)
             {
                 a.Slice((t - 3) * n, n).CopyTo(z);
@@ -451,16 +461,21 @@ namespace System.Numerics
 
                 for (int i = t - 3; i > 0; i--)
                 {
-                    BurnikelZieglerD2n1n(z, b, q, r);
+                    BurnikelZieglerD2n1n(z, b, quotient.Slice(i * n, n), r);
 
-                    q.CopyTo(quotient.Slice(i * n));
                     a.Slice((i - 1) * n, n).CopyTo(z);
                     r.Slice(0, n).CopyTo(z.Slice(n));
                 }
 
-                BurnikelZieglerD2n1n(z, b, q, r);
-                q.CopyTo(quotient);
+                BurnikelZieglerD2n1n(z, b, quotient.Slice(0, n), r);
             }
+
+            if (zFromPool != null)
+                ArrayPool<uint>.Shared.Return(zFromPool);
+            if (bFromPool != null)
+                ArrayPool<uint>.Shared.Return(bFromPool);
+            if (aFromPool != null)
+                ArrayPool<uint>.Shared.Return(aFromPool);
 
             Debug.Assert(r[^1] == 0);
             Debug.Assert(!r.Slice(0, sigmaDigit).ContainsAnyExcept(0u));
@@ -475,7 +490,7 @@ namespace System.Numerics
                     Debug.Assert((uint)sigmaSmall <= 32);
                     int carryShift = 32 - sigmaSmall;
                     uint carry = 0;
-                    for (int i = 0; i < rt.Length; i++)
+                    for (int i = rt.Length - 1; i >= 0; i--)
                     {
                         uint carryTmp = rt[i] << carryShift;
                         rt[i] = rt[i] >> sigmaSmall | carry;
@@ -489,15 +504,6 @@ namespace System.Numerics
 
             if (rFromPool != null)
                 ArrayPool<uint>.Shared.Return(rFromPool);
-            if (qFromPool != null)
-                ArrayPool<uint>.Shared.Return(qFromPool);
-            if (zFromPool != null)
-                ArrayPool<uint>.Shared.Return(zFromPool);
-
-            if (aFromPool != null)
-                ArrayPool<uint>.Shared.Return(aFromPool);
-            if (bFromPool != null)
-                ArrayPool<uint>.Shared.Return(bFromPool);
         }
 
         private static void BurnikelZieglerFallback(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient, Span<uint> remainder)
