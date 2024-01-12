@@ -728,6 +728,13 @@ static inline uintptr_t handle_to_uintptr(OBJECTHANDLE h, bool pinned)
     return p;
 }
 
+// The embedding api has moved to managed, however, there is still a usage by another native embedding api that will need to be moved to managed
+// before this can be removed
+MonoClass* mono_get_object_class()
+{
+    return (MonoClass*)CoreLibBinder::GetClass(CLASS__OBJECT);
+}
+
 static ASSEMBLYREF ASSEMBLYREF_From_AssemblyIntPtrHandle(MonoImage* assemblyIntPtrHandle)
 {
     OBJECTHANDLE assemblyHandle = handle_from_uintptr((uintptr_t)assemblyIntPtrHandle);
