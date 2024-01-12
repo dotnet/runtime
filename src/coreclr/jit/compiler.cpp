@@ -293,9 +293,6 @@ Histogram domsChangedIterationTable(domsChangedIterationBuckets);
 unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
 Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
 
-unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
-Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
-
 #endif // COUNT_BASIC_BLOCKS
 
 /*****************************************************************************
@@ -1575,12 +1572,6 @@ void Compiler::compShutdown()
     jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
     jitprintf("--------------------------------------------------\n");
     computeReachabilitySetsIterationTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("fgComputeReachability `while (change)` iterations:\n");
-    jitprintf("--------------------------------------------------\n");
-    computeReachabilityIterationTable.dump(jitstdout());
     jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_BASIC_BLOCKS
@@ -5854,6 +5845,7 @@ void Compiler::RecomputeFlowGraphAnnotations()
     optSetBlockWeights();
     optFindLoops();
 
+    fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
@@ -9650,7 +9642,14 @@ JITDBGAPI void __cdecl cReach(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Reach %u\n", sequenceNumber++);
-    comp->fgDispReach();
+    if (comp->m_reachabilitySets != nullptr)
+    {
+        comp->m_reachabilitySets->Dump();
+    }
+    else
+    {
+        printf("  Not computed\n");
+    }
 }
 
 JITDBGAPI void __cdecl cDoms(Compiler* comp)
