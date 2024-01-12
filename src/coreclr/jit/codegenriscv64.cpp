@@ -7486,23 +7486,27 @@ void CodeGen::genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLim
     // make sure frameSize safely fits within 4 bytes
     noway_assert((ssize_t)(int)frameSize == (ssize_t)frameSize);
 
+    const target_size_t pageSize = compiler->eeGetPageSize();
+
     // According to RISC-V Privileged ISA page size should be equal 4KiB
-    noway_assert(compiler->eeGetPageSize() == 0x1000);
+    noway_assert(pageSize == 0x1000);
 
     emitter* emit = GetEmitter();
 
     emit->emitLoadImmediate(EA_PTRSIZE, rLimit, -frameSize);
     regSet.verifyRegUsed(rLimit);
 
-    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, compiler->eeGetPageSize() >> 12);
+    emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, rLimit, rLimit, REG_SPBASE);
+
+    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
     regSet.verifyRegUsed(rPageSize);
 
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rOffset, REG_SPBASE, 0);
+    emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, REG_SPBASE, rPageSize);
 
     // Loop:
-    emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, rOffset, rPageSize);
     // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
     emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, rOffset, 0);
+    emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, rOffset, rOffset, rPageSize);
 
     // each instr is 4 bytes
     // if (rOffset >= rLimit) goto Loop;
