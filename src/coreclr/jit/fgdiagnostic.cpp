@@ -4787,12 +4787,6 @@ void Compiler::fgDebugCheckLoopTable()
     {
         for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
         {
-            // TODO-Quirk: Remove
-            if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-            {
-                continue;
-            }
-
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
         }

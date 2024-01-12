@@ -105,6 +105,9 @@ namespace System
         internal const int TrailingSignificandLength = 23;
         internal const int SignificandLength = TrailingSignificandLength + 1;
 
+        internal const int PositiveInfinityBits = 0x7F80_0000;
+        internal const int SmallestNormalBits = 0x0080_0000;
+
         internal byte BiasedExponent
         {
             get
