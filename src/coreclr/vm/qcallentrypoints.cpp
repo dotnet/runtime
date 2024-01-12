@@ -288,6 +288,9 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(OAVariant_ChangeType)
+#endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
     DllImportEntry(NativeLibrary_FreeLib)

@@ -386,12 +386,6 @@ FCFuncStart(gVariantFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gOAVariantFuncs)
-    FCFuncElement("ChangeTypeEx", COMOAVariant::ChangeTypeEx)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP
-
 FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
@@ -656,9 +650,6 @@ FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMar
 #endif // FEATURE_COMINTEROP
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
-#endif
 FCClassElement("Object", "System", gObjectFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
