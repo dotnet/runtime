@@ -2440,13 +2440,13 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
         case INS_sh:
         case INS_sw:
         case INS_sd:
-            assert(isGeneralRegisterOrR0(rs1));
+            assert(isGeneralRegister(rs1));
             assert(isGeneralRegisterOrR0(rs2));
             break;
         case INS_fsw:
         case INS_fsd:
-            assert(isFloatReg(rs1));
-            assert(isGeneralRegisterOrR0(rs2));
+            assert(isGeneralRegister(rs1));
+            assert(isFloatRegType(rs2));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_STypeInstr!");
@@ -2511,6 +2511,26 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 
 /*****************************************************************************
  *
+ *  Casts an integral or float register from their identification number to
+ *  theirs binary format. In case of the integral registers the encoded number
+ *  is the register id. In case of the floating point registers the encoded
+ *  number is shifted back by the floating point register base (32) (The
+ *  instruction itself specifies whether the register contains floating
+ *  point or integer, in their encoding they are indistinguishable)
+ *
+ */
+
+static unsigned castFloatOrIntegralReg(regNumber reg)
+{
+    static constexpr unsigned kRegisterMask = 0x1f;
+
+    assert(isGeneralRegisterOrR0(reg) || isFloatRegType(reg));
+
+    return reg & kRegisterMask;
+}
+
+/*****************************************************************************
+ *
  *  Emit a 32-bit RISCV64 R-Type instruction to the given buffer. Returns a
  *  length of an encoded instruction opcode
  *
@@ -2525,7 +2545,8 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
     unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 25;
-    return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, rd, funct3, rs1, rs2, funct7));
+    return emitOutput_Instr(dst, insEncodeRTypeInstr(opcode, castFloatOrIntegralReg(rd), funct3,
+                                                     castFloatOrIntegralReg(rs1), castFloatOrIntegralReg(rs2), funct7));
 }
 
 /*****************************************************************************
@@ -2544,7 +2565,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
     unsigned funct7 = (insCode & kInstructionFunct7Mask) >> 20; // only used by some of the immediate shifts
-    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, rd & 0x1f, funct3, rs1, imm12 | funct7));
+    return emitOutput_Instr(dst, insEncodeITypeInstr(opcode, castFloatOrIntegralReg(rd), funct3, rs1, imm12 | funct7));
 }
 
 /*****************************************************************************
@@ -2562,7 +2583,7 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs
 #endif // DEBUG
     unsigned opcode = insCode & kInstructionOpcodeMask;
     unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
-    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, rs2 & 0x1f, imm12));
+    return emitOutput_Instr(dst, insEncodeSTypeInstr(opcode, funct3, rs1, castFloatOrIntegralReg(rs2), imm12));
 }
 
 /*****************************************************************************
