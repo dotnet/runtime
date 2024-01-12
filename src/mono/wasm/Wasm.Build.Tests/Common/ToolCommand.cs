@@ -109,7 +109,9 @@ namespace Wasm.Build.Tests
             {
                 _testOutput.WriteLine("ToolCommand.Dispose calling Kill");
                 CurrentProcess.Kill();//entireProcessTree: true);
-                _testOutput.WriteLine("ToolCommand.Dispose back from calling Kill");
+                _testOutput.WriteLine($"ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}, and calling waitforexit");
+                CurrentProcess.WaitForExit();
+                _testOutput.WriteLine($"ToolCommand.Dispose back from calling waitforexit, hasexited: {CurrentProcess.HasExited}");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
@@ -155,7 +157,7 @@ namespace Wasm.Build.Tests
 
             try
             {
-                _testOutput.WriteLine($"[{pid}] Started CurrentProcess for {executable} {args}");
+                _testOutput.WriteLine($"[{pid}] [{DateTime.Now}] Started CurrentProcess for {executable} {args}");
                 CurrentProcess.ErrorDataReceived += logStdErr;
                 CurrentProcess.OutputDataReceived += logStdOut;
                 CurrentProcess.BeginOutputReadLine();
@@ -168,15 +170,17 @@ namespace Wasm.Build.Tests
                 try {
                     await CurrentProcess.WaitForExitAsync(cts.Token);
                 } catch (TaskCanceledException) {
-                    _testOutput.WriteLine($"[{pid}] CurrentProcess is null: {CurrentProcess is null}");
-                    _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid} timed out, exited: {CurrentProcess?.HasExited}");
+                    _testOutput.WriteLine($"[{pid}] [{DateTime.Now}] CurrentProcess is null: {CurrentProcess is null}");
+                    _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, exited: {CurrentProcess?.HasExited}");
                     CurrentProcess?.Refresh();
                     DumpProcess($"timed out", pid);
 
-                    _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid}) timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
+                    _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
                     CurrentProcess.Kill();//entireProcessTree: true);
-                    _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill for id:{pid}, exited: {CurrentProcess.HasExited}");
-                    DumpProcess($"After killing", pid);
+                    _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill, exited: {CurrentProcess.HasExited}");
+                    DumpProcess($"After killing, and calling waitforexit", pid);
+                    CurrentProcess.WaitForExit();
+                    _testOutput.WriteLine($"[{pid}] back from CurrentProcess.WaitForExit, exited: {CurrentProcess.HasExited}");
                     lock (syncObj)
                     {
                         RemoveNullTerminator(output);
@@ -184,7 +188,7 @@ namespace Wasm.Build.Tests
                         throw new XunitException($"[{pid}] CurrentProcess timed out.{System.Environment.NewLine}----------------{System.Environment.NewLine}{string.Join(System.Environment.NewLine, output)}--------------------");
                     }
                 }
-                _testOutput.WriteLine($"[{pid}] back from calling CurrentProcess.WaitForExitAsync{pid}");
+                _testOutput.WriteLine($"[{pid}] [{DateTime.Now}] back from calling CurrentProcess.WaitForExitAsync{pid}");
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after CurrentProcess.WaitForExit(int)
@@ -239,7 +243,7 @@ namespace Wasm.Build.Tests
                 Arguments = args,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
-                RedirectStandardInput = true,
+                // RedirectStandardInput = true,
                 UseShellExecute = false
             };
 
