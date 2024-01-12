@@ -32,6 +32,7 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal sealed class ElfObjectWriter : UnixObjectWriter
     {
+        private readonly bool _useInlineRelocationAddends;
         private readonly ushort _machine;
         private readonly List<ElfSectionDefinition> _sections = new();
         private readonly List<ElfSymbol> _symbols = new();
@@ -52,6 +53,7 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.ARM64 => EM_AARCH64,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
+            _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
 
             // By convention the symbol table starts with empty symbol
             _symbols.Add(new ElfSymbol {});
@@ -155,16 +157,37 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            // We read the addend from the data and clear it. This is necessary
-            // to produce correct addends in the `.rela` sections which override
-            // the destination with the addend from relocation table.
             fixed (byte *pData = data)
             {
-                long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
-                if (inlineValue != 0)
+                if (relocType is IMAGE_REL_BASED_REL32 && _machine is EM_386 or EM_X86_64)
                 {
-                    addend += inlineValue;
-                    Relocation.WriteValue(relocType, (void*)pData, 0);
+                    addend -= 4;
+                }
+                else if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24)
+                {
+                    addend -= 4;
+                }
+
+                if (!_useInlineRelocationAddends)
+                {
+                    // We read the addend from the data and clear it. This is necessary
+                    // to produce correct addends in the `.rela` sections which override
+                    // the destination with the addend from relocation table.
+                    long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                    if (inlineValue != 0)
+                    {
+                        addend += inlineValue;
+                        Relocation.WriteValue(relocType, (void*)pData, 0);
+                    }
+                }
+                else
+                {
+                    if (addend != 0)
+                    {
+                        long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                        Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
+                        addend = 0;
+                    }
                 }
             }
 
@@ -182,10 +205,11 @@ namespace ILCompiler.ObjectWriter
                 var type =
                     (section.SectionHeader.Flags & SHF_TLS) == SHF_TLS ? STT_TLS :
                     definition.Size > 0 ? STT_FUNC : STT_NOTYPE;
+                ulong thumbBit = _machine == EM_ARM && type == STT_FUNC ? 1u : 0u;
                 sortedSymbols.Add(new ElfSymbol
                 {
                     Name = name,
-                    Value = (ulong)definition.Value,
+                    Value = (ulong)definition.Value | thumbBit,
                     Size = (ulong)definition.Size,
                     Section = _sections[definition.SectionIndex],
                     Info = (byte)(type | (STB_GLOBAL << 4)),
@@ -246,13 +270,10 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitRelocationsX86(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            // TODO: We are emitting .rela sections on x86 which is technically wrong. We should be
-            // using .rel sections with the addend embedded in the data. Since x86 is not an officially
-            // supported platform this is left for future enhancement.
             if (relocationList.Count > 0)
             {
-                Span<byte> relocationEntry = stackalloc byte[12];
-                var relocationStream = new MemoryStream(12 * relocationList.Count);
+                Span<byte> relocationEntry = stackalloc byte[8];
+                var relocationStream = new MemoryStream(8 * relocationList.Count);
                 _sections[sectionIndex].RelocationStream = relocationStream;
                 foreach (SymbolicRelocation symbolicRelocation in relocationList)
                 {
@@ -267,15 +288,8 @@ namespace ILCompiler.ObjectWriter
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
-                    long addend = symbolicRelocation.Addend;
-                    if (symbolicRelocation.Type == IMAGE_REL_BASED_REL32)
-                    {
-                        addend -= 4;
-                    }
-
                     BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)symbolicRelocation.Offset);
                     BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)symbolIndex << 8) | type);
-                    BinaryPrimitives.WriteInt32LittleEndian(relocationEntry.Slice(8), (int)addend);
                     relocationStream.Write(relocationEntry);
                 }
             }
@@ -302,15 +316,9 @@ namespace ILCompiler.ObjectWriter
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
-                    long addend = symbolicRelocation.Addend;
-                    if (symbolicRelocation.Type == IMAGE_REL_BASED_REL32)
-                    {
-                        addend -= 4;
-                    }
-
                     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
                     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
-                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), addend);
+                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
                 }
             }
@@ -320,8 +328,8 @@ namespace ILCompiler.ObjectWriter
         {
             if (relocationList.Count > 0)
             {
-                Span<byte> relocationEntry = stackalloc byte[12];
-                var relocationStream = new MemoryStream(12 * relocationList.Count);
+                Span<byte> relocationEntry = stackalloc byte[8];
+                var relocationStream = new MemoryStream(8 * relocationList.Count);
                 _sections[sectionIndex].RelocationStream = relocationStream;
                 foreach (SymbolicRelocation symbolicRelocation in relocationList)
                 {
@@ -333,19 +341,12 @@ namespace ILCompiler.ObjectWriter
                         IMAGE_REL_BASED_REL32 => R_ARM_REL32,
                         IMAGE_REL_BASED_THUMB_MOV32 => R_ARM_THM_MOVW_ABS_NC,
                         IMAGE_REL_BASED_THUMB_MOV32_PCREL => R_ARM_THM_MOVW_PREL_NC,
-                        IMAGE_REL_BASED_THUMB_BRANCH24 => R_ARM_THM_PC22,
+                        IMAGE_REL_BASED_THUMB_BRANCH24 => R_ARM_THM_CALL,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
-                    long addend = symbolicRelocation.Addend;
-                    if (symbolicRelocation.Type == IMAGE_REL_BASED_REL32)
-                    {
-                        addend -= 4;
-                    }
-
                     BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)symbolicRelocation.Offset);
                     BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry.Slice(4), ((uint)symbolIndex << 8) | type);
-                    BinaryPrimitives.WriteInt32LittleEndian(relocationEntry.Slice(8), (int)addend);
                     relocationStream.Write(relocationEntry);
 
                     if (symbolicRelocation.Type is IMAGE_REL_BASED_THUMB_MOV32 or IMAGE_REL_BASED_THUMB_MOV32_PCREL)
@@ -461,7 +462,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.RelocationStream != Stream.Null)
                 {
-                    _stringTable.ReserveString(".rela" + section.Name);
+                    _stringTable.ReserveString((_useInlineRelocationAddends ? ".rel" : ".rela") + section.Name);
                     sectionCount++;
                 }
 
@@ -582,8 +583,8 @@ namespace ILCompiler.ObjectWriter
                 {
                     ElfSectionHeader relaSectionHeader = new ElfSectionHeader
                     {
-                        NameIndex = _stringTable.GetStringOffset(".rela" + section.Name),
-                        Type = SHT_RELA,
+                        NameIndex = _stringTable.GetStringOffset((_useInlineRelocationAddends ? ".rel" : ".rela") + section.Name),
+                        Type = _useInlineRelocationAddends ? SHT_REL : SHT_RELA,
                         Flags = (section.GroupSection is not null ? SHF_GROUP : 0u) | SHF_INFO_LINK,
                         Address = 0u,
                         Offset = section.SectionHeader.Offset + section.SectionHeader.Size,
@@ -591,7 +592,7 @@ namespace ILCompiler.ObjectWriter
                         Link = symTabSectionIndex,
                         Info = section.SectionIndex,
                         Alignment = 8u,
-                        EntrySize = (ulong)default(TSize).GetByteCount() * 3u,
+                        EntrySize = (ulong)default(TSize).GetByteCount() * (_useInlineRelocationAddends ? 2u : 3u),
                     };
                     relaSectionHeader.Write<TSize>(outputFileStream);
                 }
