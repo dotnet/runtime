@@ -2163,13 +2163,14 @@ static void assertCodeLength(unsigned code, uint8_t size)
  */
 
 /*static*/ emitter::code_t emitter::insEncodeITypeInstr(
-    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, int imm12)
+    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned imm12)
 {
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
-    assert(isValidSimm12(imm12));
+    // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
+    assertCodeLength(imm12, 12);
 
     return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (imm12 << 20);
 }
@@ -2186,7 +2187,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
  */
 
 /*static*/ emitter::code_t emitter::insEncodeSTypeInstr(
-    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm12)
+    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12)
 {
     static constexpr unsigned kLoMask = 0x1f; // 0b00011111
     static constexpr unsigned kHiMask = 0x7f; // 0b01111111
@@ -2195,7 +2196,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
-    assert(isValidSimm12(imm12));
+    // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
+    assertCodeLength(imm12, 12);
 
     unsigned imm12Lo = imm12 & kLoMask;
     unsigned imm12Hi = (imm12 >> 5) & kHiMask;
@@ -2214,11 +2216,12 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeUTypeInstr(unsigned opcode, unsigned rd, int imm20)
+/*static*/ emitter::code_t emitter::insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20)
 {
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
-    assert(isValidSimm20(imm20));
+    // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
+    assertCodeLength(imm20, 20);
 
     return opcode | (rd << 7) | (imm20 << 12);
 }
@@ -2235,7 +2238,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
  */
 
 /*static*/ emitter::code_t emitter::insEncodeBTypeInstr(
-    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13)
+    unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13)
 {
     static constexpr unsigned kLoSectionMask = 0x0f; // 0b00001111
     static constexpr unsigned kHiSectionMask = 0x3f; // 0b00111111
@@ -2245,7 +2248,9 @@ static void assertCodeLength(unsigned code, uint8_t size)
     assertCodeLength(funct3, 3);
     assertCodeLength(rs1, 5);
     assertCodeLength(rs2, 5);
-    assert(isValidSimm13(imm13));
+    // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
+    assertCodeLength(imm13, 13);
+    assert((imm13 & 0x01) == 0);
 
     unsigned imm12          = imm13 >> 1;
     unsigned imm12LoSection = imm12 & kLoSectionMask;
@@ -2268,7 +2273,7 @@ static void assertCodeLength(unsigned code, uint8_t size)
  *  -------------------------------------------------------------------
  */
 
-/*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21)
+/*static*/ emitter::code_t emitter::insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21)
 {
     static constexpr unsigned kHiSectionMask = 0x3ff; // 0b1111111111
     static constexpr unsigned kLoSectionMask = 0xff;  // 0b11111111
@@ -2276,7 +2281,8 @@ static void assertCodeLength(unsigned code, uint8_t size)
 
     assertCodeLength(opcode, 7);
     assertCodeLength(rd, 5);
-    assert(isValidSimm21(imm21));
+    // This assert may be triggered by the untrimmed signed integers. Please refer to the TrimSigned helpers
+    assertCodeLength(imm21, 21);
     assert((imm21 & 0x01) == 0);
 
     unsigned imm20          = imm21 >> 1;
@@ -2366,7 +2372,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 }
 
 /*static*/ void emitter::emitOutput_ITypeInstr_SanityCheck(
-    instruction ins, regNumber rd, regNumber rs1, int immediate, unsigned opcode)
+    instruction ins, regNumber rd, regNumber rs1, unsigned immediate, unsigned opcode)
 {
     switch (ins)
     {
@@ -2402,14 +2408,14 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
         case INS_slli:
         case INS_srli:
         case INS_srai:
-            assert(0 <= immediate < 64);
+            assert(immediate < 64);
             assert(isGeneralRegisterOrR0(rd));
             assert(isGeneralRegisterOrR0(rs1));
             break;
         case INS_slliw:
         case INS_srliw:
         case INS_sraiw:
-            assert(0 <= immediate < 32);
+            assert(immediate < 32);
             assert(isGeneralRegisterOrR0(rd));
             assert(isGeneralRegisterOrR0(rs1));
             break;
@@ -2529,7 +2535,7 @@ unsigned emitter::emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd
  *
  */
 
-unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, int imm12) const
+unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, unsigned imm12) const
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
@@ -2548,7 +2554,7 @@ unsigned emitter::emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd
  *
  */
 
-unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm12) const
+unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm12) const
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
@@ -2566,7 +2572,7 @@ unsigned emitter::emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs
  *
  */
 
-unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm20) const
+unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm20) const
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
@@ -2582,7 +2588,7 @@ unsigned emitter::emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd
  *
  */
 
-unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
+unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
@@ -2606,7 +2612,7 @@ unsigned emitter::emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs
  */
 
 unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
-    BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, int imm13) const
+    BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const
 {
     unsigned insCode = emitInsCode(ins) ^ 0x1000;
 #ifdef DEBUG
@@ -2624,7 +2630,7 @@ unsigned emitter::emitOutput_BTypeInstr_InvertComparation(
  *
  */
 
-unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, int imm21) const
+unsigned emitter::emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const
 {
     unsigned insCode = emitInsCode(ins);
 #ifdef DEBUG
@@ -2840,7 +2846,7 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
     {
         // special for INT64_MAX or UINT32_MAX
         dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, 0xfff);
-        ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
+        const ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
         dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
     }
     else
@@ -3001,7 +3007,7 @@ BYTE* emitter::emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ins
     regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
 
     dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x8);
-    dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, immediate);
+    dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
     return dst;
 }
 
@@ -3027,9 +3033,6 @@ BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
 
 BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate)
 {
-    assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) || (INS_bnez == ins) ||
-           (INS_beqz == ins));
-
     regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
     dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x1c);
 
@@ -3039,11 +3042,10 @@ BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, in
 BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
 {
     ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
-    assert((immediate & 0x01) == 0);
 
     *ins = id->idIns();
 
-    dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), immediate);
+    dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), TrimSignedToImm13(immediate));
     return dst;
 }
 
@@ -3057,17 +3059,17 @@ BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* i
     switch (*ins)
     {
         case INS_jal:
-            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_RA, immediate);
+            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_RA, TrimSignedToImm21(immediate));
             break;
         case INS_j:
-            dst += emitOutput_JTypeInstr(dst, INS_j, REG_ZERO, immediate);
+            dst += emitOutput_JTypeInstr(dst, INS_j, REG_ZERO, TrimSignedToImm21(immediate));
             break;
         case INS_jalr:
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg1(), id->idReg2(), immediate);
+            dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg1(), id->idReg2(), TrimSignedToImm12(immediate));
             break;
         case INS_bnez:
         case INS_beqz:
-            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), REG_ZERO, immediate);
+            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), REG_ZERO, TrimSignedToImm13(immediate));
             break;
         case INS_beq:
         case INS_bne:
@@ -3075,10 +3077,11 @@ BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* i
         case INS_bge:
         case INS_bltu:
         case INS_bgeu:
-            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), immediate);
+            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), TrimSignedToImm13(immediate));
             break;
         default:
             unreached();
+            break;
     }
     return dst;
 }
