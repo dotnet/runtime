@@ -738,26 +738,26 @@ namespace System.Reflection.Emit.Tests
                 ilg.EmitCall(OpCodes.Call, GMOfString, null);
                 ilg.Emit(OpCodes.Ret);
                 dummy.CreateType();
-                /* Generated IL would like this in C#:
-                public class MyType<T>
-                {
-                    public T Field;
+/* Generated IL would like this in C#:
+public class MyType<T>
+{
+    public T Field;
 
-                    public static void GM<U>(U P_0)
-                    {
-                        MyType<U> myType = new MyType<U>();
-                        myType.Field = P_0;
-                        Console.WriteLine(myType.Field);
-                    }
-                }
+    public static void GM<U>(U P_0)
+    {
+        MyType<U> myType = new MyType<U>();
+        myType.Field = P_0;
+        Console.WriteLine(myType.Field);
+    }
+}
 
-                internal class Dummy
-                {
-                    public static void Main()
-                    {
-                        MyType<string>.GM("HelloWorld");
-                    }
-                }               */
+internal class Dummy
+{
+    public static void Main()
+    {
+        MyType<string>.GM("HelloWorld");
+    }
+}               */
                 saveMethod.Invoke(ab, new[] { file.Path });
 
                 Module module = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
@@ -1594,7 +1594,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void EmitCalliBlittable()
         {
-                int a = 1, b = 1, result = 2;
+            int a = 1, b = 1, result = 2;
             using (TempFile file = TempFile.Create())
             {
                 AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliBlittable"), out MethodInfo saveMethod);

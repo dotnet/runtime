@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -450,7 +451,7 @@ namespace System.Reflection.Emit
                 {
                     _metadataBuilder.AddFieldRelativeVirtualAddress(handle, fieldDataBuilder.Count);
                     fieldDataBuilder.WriteBytes(field._rvaData!);
-                    fieldDataBuilder.Align(8);
+                    fieldDataBuilder.Align(ManagedPEBuilder.MappedFieldDataAlignment);
                 }
             }
         }
