@@ -196,7 +196,7 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD)
         // Verify the type can be marshalled.
         if (!IsStructMarshalable(th))
         {
-            StackSString strTypeName;
+            SString strTypeName;
             TypeString::AppendType(strTypeName, th);
             COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
         }
