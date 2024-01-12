@@ -3430,12 +3430,6 @@ RETRY_UNROLL:
     // Visit loops in post order (inner loops before outer loops).
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         if (BitVecOps::IsMember(&loopTraits, loopsWithUnrolledDescendant, loop->GetIndex()))
         {
             continue;
