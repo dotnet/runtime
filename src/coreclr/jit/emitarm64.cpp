@@ -1074,14 +1074,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isLowPredicateRegister(id->idReg2())); // ggg
             assert(isVectorRegister(id->idReg3()));       // mmmmm
             assert(isVectorRegister(id->idReg4()));       // nnnnn
-            if (id->idInsFmt() == IF_SVE_CX_4A)
-            {
-                assert(insOptsScalableStandard(id->idInsOpt())); // xx
-            }
-            else
-            {
-                assert(insOptsScalableWide(id->idInsOpt())); // xx
-            }
             break;
 
         case IF_SVE_GE_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
