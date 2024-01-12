@@ -10907,7 +10907,7 @@ MethodTableBuilder::SetupMethodTable2(
     // load and so caching it would result in errors down the road since the memory and
     // type occupying the same memory location would very likely be incorrect. The second
     // argument specifies that GetMethodData should not cache the returned object.
-    MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, bmtProp->fComEventItfType ? MethodDataComputeOptions::NoCache : MethodDataComputeOptions::NoCacheVirtualsOnly));
+    MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::NoCacheVirtualsOnly));
 
     if (!IsInterface())
     {
