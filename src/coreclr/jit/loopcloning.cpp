@@ -3162,6 +3162,7 @@ PhaseStatus Compiler::optCloneLoops()
         fgDomsComputed = false;
         fgRenumberBlocks();
 
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
