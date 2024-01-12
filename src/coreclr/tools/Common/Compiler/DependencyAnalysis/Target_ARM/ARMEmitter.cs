@@ -137,26 +137,17 @@ namespace ILCompiler.DependencyAnalysis.ARM
             }
         }
 
-        // movw  reg, [reloc - 12] & 0x0000FFFF
-        // movt  reg, [reloc - 12] & 0xFFFF0000
-        // add   reg, pc
+        // movw  reg, [reloc] & 0x0000FFFF
+        // movt  reg, [reloc] & 0xFFFF0000
         // reg range: [0..12, LR]
         public void EmitMOV(Register destination, ISymbolNode symbol)
         {
             Debug.Assert(destination >= Register.R0 && (destination <= Register.R12 || destination == TargetRegister.LR));
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL);
-            Builder.EmitShort(unchecked((short)0xf64f));
-            Builder.EmitShort(unchecked((short)(0x70f4u | ((byte)destination << 8))));
-            Builder.EmitShort(unchecked((short)0xf6cf));
-            Builder.EmitShort(unchecked((short)(0x70f4u | ((byte)destination << 8))));
-            if (destination <= Register.R7)
-            {
-                Builder.EmitShort(unchecked((short)(0x4478u + (byte)destination)));
-            }
-            else
-            {
-                Builder.EmitShort(unchecked((short)(0x44f0u + (byte)destination)));
-            }
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32);
+            Builder.EmitShort(unchecked((short)0xf240));
+            Builder.EmitShort((short)((byte)destination << 8));
+            Builder.EmitShort(unchecked((short)0xf2c0));
+            Builder.EmitShort((short)((byte)destination << 8));
         }
 
         // b.w symbol
