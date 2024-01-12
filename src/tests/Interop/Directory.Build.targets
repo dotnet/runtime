@@ -11,7 +11,7 @@
   <Target Name="CopyInteropNativeRuntimeDependencies"
     BeforeTargets="CopyAllNativeProjectReferenceBinaries"
     Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
-    <Warning Message="Building C++/CLI tests requires a Visual Studio Dev Command Prompt" Condition="'$(VCToolsRedistDir)' == '' or '$(ExtensionSdkDir)' == ''" />
+    <Warning Text="Building C++/CLI tests requires a Visual Studio Dev Command Prompt" Condition="'$(VCToolsRedistDir)' == '' or '$(ExtensionSdkDir)' == ''" />
     <!-- Required debug vcruntime and UCRT dlls -->
     <ItemGroup Condition="'$(VCToolsRedistDir)' != '' and '$(ExtensionSdkDir)' != ''">
       <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />

@@ -5857,6 +5857,11 @@ void Compiler::RecomputeFlowGraphAnnotations()
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
+    if (fgHasLoops)
+    {
+        optFindAndScaleGeneralLoopBlocks();
+    }
+
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 
     // Dominators and the loop table are computed above for old<->new loop
