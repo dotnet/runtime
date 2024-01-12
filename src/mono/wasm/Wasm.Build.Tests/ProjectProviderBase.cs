@@ -381,6 +381,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
+        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
+            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
         AssertFilesOnDisk(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
             TestUtils.AssertSameFile(assertOptions.PredefinedIcudt!, actual.Single());
