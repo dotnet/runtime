@@ -9010,6 +9010,12 @@ retry:
 	if (td->optimized) {
 		MONO_TIME_TRACK (mono_interp_stats.optimize_time, interp_optimize_code (td));
 		interp_alloc_offsets (td);
+		// Offset allocator uses computed ref counts from var values. We have to free this
+		// table later here.
+		if (td->var_values != NULL) {
+			g_free (td->var_values);
+			td->var_values = NULL;
+		}
 #if HOST_BROWSER
 		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
 			jiterp_insert_entry_points (rtm, td);

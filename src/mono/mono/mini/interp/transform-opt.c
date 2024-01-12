@@ -532,8 +532,8 @@ dfs_visit (TransformData *td)
 {
 	int dfs_index = 0;
 	int next_stack_index = 0;
-	td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
-	InterpBasicBlock **stack = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+	td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->opt_mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+	InterpBasicBlock **stack = (InterpBasicBlock**)g_malloc0 (sizeof (InterpBasicBlock*) * td->bb_count);
 
 	g_assert (!td->entry_bb->in_count);
 	stack [next_stack_index++] = td->entry_bb;
@@ -558,6 +558,7 @@ dfs_visit (TransformData *td)
 		}
 	}
 
+	g_free (stack);
 	return dfs_index;
 }
 
@@ -622,7 +623,7 @@ is_bblock_ssa_cfg (TransformData *td, InterpBasicBlock *bb)
 static void
 interp_compute_dominators (TransformData *td)
 {
-	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
+	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->opt_mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
 
 	idoms [0] = td->entry_bb;
 	gboolean changed = TRUE;
@@ -698,7 +699,7 @@ static void
 interp_compute_dominance_frontier (TransformData *td)
 {
 	int bitsize = mono_bitset_alloc_size (td->bblocks_count, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bblocks_count);
+	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count);
 
 	for (int i = 0; i < td->bblocks_count; i++) {
 		td->bblocks [i]->dfrontier = mono_bitset_mem_new (mem, td->bblocks_count, 0);
@@ -975,7 +976,7 @@ static void
 compute_gen_kill_sets (TransformData *td)
 {
 	int bitsize = mono_bitset_alloc_size (td->renamable_vars_size, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->mempool, bitsize * td->bblocks_count * 4);
+	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count * 4);
 
 	for (int i = 0; i < td->bblocks_count; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
@@ -1094,7 +1095,7 @@ bb_insert_phi (TransformData *td, InterpBasicBlock *bb, int var)
 		g_print ("BB%d NEW_PHI %d\n", bb->index, var);
 
 	phi->dreg = var;
-	phi->info.args = (int*)mono_mempool_alloc (td->mempool, (bb->in_count + 1) * sizeof (int));
+	phi->info.args = (int*)mono_mempool_alloc (td->opt_mempool, (bb->in_count + 1) * sizeof (int));
 	int i;
 	for (i = 0; i < bb->in_count; i++)
 		phi->info.args [i] = var;
@@ -1109,7 +1110,7 @@ bb_insert_dead_phi (TransformData *td, InterpBasicBlock *bb, int var)
 		bitset = bb->first_ins->info.dead_phi_vars;
 	} else {
 		InterpInst *phi = interp_insert_ins_bb (td, bb, NULL, MINT_DEAD_PHI);
-		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (td->renamable_vars_size, 0));
+		gpointer mem = mono_mempool_alloc0 (td->opt_mempool, mono_bitset_alloc_size (td->renamable_vars_size, 0));
 		phi->info.dead_phi_vars = bitset = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
 	}
 	int ext_index = td->vars [var].ext_index;
@@ -1322,7 +1323,7 @@ rename_vars_in_bb_start (TransformData *td, InterpBasicBlock *bb)
 				if (renamed_var != -1) {
 					g_assert (td->vars [renamed_var].renamed_ssa_fixed);
 					int renamed_var_ext = td->vars [renamed_var].ext_index;
-					InterpLivenessPosition *liveness_ptr = (InterpLivenessPosition*)mono_mempool_alloc (td->mempool, sizeof (InterpLivenessPosition));
+					InterpLivenessPosition *liveness_ptr = (InterpLivenessPosition*)mono_mempool_alloc (td->opt_mempool, sizeof (InterpLivenessPosition));
 					*liveness_ptr = current_liveness;
 					td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks = g_slist_prepend (td->renamed_fixed_vars [renamed_var_ext].live_limit_bblocks, liveness_ptr);
 				}
@@ -1347,7 +1348,7 @@ rename_vars_in_bb_end (TransformData *td, InterpBasicBlock *bb)
 				g_assert (td->vars [renamed_var].renamed_ssa_fixed);
 				int renamed_var_ext = td->vars [renamed_var].ext_index;
 				if (!td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks) {
-					gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (td->bblocks_count, 0));
+					gpointer mem = mono_mempool_alloc0 (td->opt_mempool, mono_bitset_alloc_size (td->bblocks_count, 0));
 					td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks = mono_bitset_mem_new (mem, td->bblocks_count, 0);
 				}
 
@@ -1386,8 +1387,8 @@ static void
 rename_vars (TransformData *td)
 {
 	int next_stack_index = 0;
-	InterpBasicBlock **stack = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
-	gboolean *bb_status = (gboolean*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
+	InterpBasicBlock **stack = (InterpBasicBlock**)g_malloc0 (sizeof (InterpBasicBlock*) * td->bblocks_count);
+	gboolean *bb_status = (gboolean*)g_malloc0 (sizeof (InterpBasicBlock*) * td->bblocks_count);
 
 	stack [next_stack_index++] = td->entry_bb;
 
@@ -1413,6 +1414,9 @@ rename_vars (TransformData *td)
 			rename_vars_in_bb_end (td, bb);
 		}
 	}
+
+	g_free (stack);
+	g_free (bb_status);
 
 	if (td->verbose_level) {
 		g_print ("\nFIXED SSA VARS LIVENESS LIMIT:\n");
@@ -1718,7 +1722,7 @@ interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock
 static void
 interp_mark_reachable_bblocks (TransformData *td)
 {
-	InterpBasicBlock **queue = mono_mempool_alloc0 (td->mempool, td->bb_count * sizeof (InterpBasicBlock*));
+	InterpBasicBlock **queue = g_malloc0 (td->bb_count * sizeof (InterpBasicBlock*));
 	InterpBasicBlock *current;
 	int cur_index = 0;
 	int next_position = 0;
@@ -1761,6 +1765,8 @@ retry:
 		if (needs_retry)
 			goto retry;
 	}
+
+	g_free (queue);
 }
 
 /**
@@ -2714,7 +2720,7 @@ interp_cprop (TransformData *td)
 	// FIXME
 	// There is no need to zero, if we pay attention to phi args vars. They
 	// can be used before the definition.
-	td->var_values = (InterpVarValue*) mono_mempool_alloc0 (td->mempool, td->vars_size * sizeof (InterpVarValue));
+	td->var_values = (InterpVarValue*) g_malloc0 (td->vars_size * sizeof (InterpVarValue));
 
 	// Traverse in dfs order. This guarantees that we always reach the definition first before the
 	// use of the var. Exception is only for phi nodes, where we don't care about the definition
@@ -3790,8 +3796,7 @@ interp_prepare_no_ssa_opt (TransformData *td)
 		td->vars [i].has_indirects = (td->vars [i].indirects > 0) ? TRUE : FALSE;
 	}
 
-	if (!td->bblocks)
-		td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * td->bb_count);
+	td->bblocks = (InterpBasicBlock**)mono_mempool_alloc0 (td->opt_mempool, sizeof (InterpBasicBlock*) * td->bb_count);
 
 	int i = 0;
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
@@ -3861,6 +3866,14 @@ interp_optimize_code (TransformData *td)
 			g_print ("Huge method. SSA disabled for first iteration\n");
 	}
 optimization_retry:
+	if (td->opt_mempool != NULL)
+		mono_mempool_destroy (td->opt_mempool);
+	if (td->var_values != NULL) {
+		g_free (td->var_values);
+		td->var_values = NULL;
+	}
+	td->opt_mempool = mono_mempool_new ();
+
 	td->need_optimization_retry = FALSE;
 
 	if (td->disable_ssa)
@@ -3896,6 +3909,8 @@ optimization_retry:
 			g_print ("Retry optimization\n");
 		goto optimization_retry;
 	}
+
+	mono_mempool_destroy (td->opt_mempool);
 
 	if (td->verbose_level) {
 		g_print ("\nOptimized IR:\n");

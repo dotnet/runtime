@@ -328,6 +328,7 @@ typedef struct
 	InterpBasicBlock **idoms; // immediate dominator for each bblock, index from reverse postorder dfs
 	int bb_count;
 	MonoMemPool     *mempool;
+	MonoMemPool     *opt_mempool;
 	MonoMemoryManager *mem_manager;
 	GList *basic_blocks;
 	GPtrArray *relocs;
