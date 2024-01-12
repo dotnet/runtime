@@ -2122,7 +2122,7 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
     return sizeof(code_t);
 }
 
-static void assertCodeLength(unsigned code, uint8_t size)
+static inline void assertCodeLength(unsigned code, uint8_t size)
 {
     assert((code >> size) == 0);
 }
@@ -2732,7 +2732,7 @@ static constexpr size_t NBitMask(uint8_t bits)
 template <uint8_t MaskSize>
 static ssize_t LowerNBitsOfWord(ssize_t word)
 {
-    static_assert(MaskSize < 32, "Given mask size is bigger tham the word itself");
+    static_assert(MaskSize < 32, "Given mask size is bigger than the word itself");
     static_assert(MaskSize > 0, "Given mask size cannot be zero");
 
     static constexpr size_t kMask = NBitMask(MaskSize);
