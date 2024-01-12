@@ -70,8 +70,6 @@
 typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
 
 MethodDataCache *MethodTable::s_pMethodDataCache = NULL;
-BOOL MethodTable::s_fUseMethodDataCache = FALSE;
-BOOL MethodTable::s_fUseParentMethodData = FALSE;
 
 #ifdef _DEBUG
 extern unsigned g_dupMethods;
@@ -7871,28 +7869,17 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
 }
 
 //==========================================================================================
-void MethodTable::CheckInitMethodDataCache()
+void MethodTable::InitMethodDataCache()
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    if (s_pMethodDataCache == NULL)
-    {
-        UINT32 cb = MethodDataCache::GetObjectSize(8);
-        NewArrayHolder<BYTE> hb(new BYTE[cb]);
-        MethodDataCache *pCache = new (hb.GetValue()) MethodDataCache(8);
-        if (InterlockedCompareExchangeT(
-                &s_pMethodDataCache, pCache, NULL) == NULL)
-        {
-            hb.SuppressRelease();
-        }
-        // If somebody beat us, return and allow the holders to take care of cleanup.
-        else
-        {
-            return;
-        }
-    }
+    _ASSERTE(s_pMethodDataCache == NULL);
+
+    UINT32 cb = MethodDataCache::GetObjectSize(8);
+    NewArrayHolder<BYTE> hb(new BYTE[cb]);
+    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
 }
 
 //==========================================================================================
@@ -7910,7 +7897,6 @@ MethodTable::MethodData *MethodTable::FindMethodDataHelper(MethodTable *pMTDecl,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        CONSISTENCY_CHECK(s_fUseMethodDataCache);
     } CONTRACTL_END;
 
     return s_pMethodDataCache->Find(pMTDecl, pMTImpl);
@@ -7927,13 +7913,11 @@ MethodTable::MethodData *MethodTable::FindParentMethodDataHelper(MethodTable *pM
     }
     CONTRACTL_END;
     MethodData *pData = NULL;
-    if (s_fUseMethodDataCache && s_fUseParentMethodData) {
-        if (!pMT->IsInterface()) {
-            //@todo : this won't be correct for non-shared code
-            MethodTable *pMTParent = pMT->GetParentMethodTable();
-            if (pMTParent != NULL) {
-                pData = FindMethodDataHelper(pMTParent, pMTParent);
-            }
+    if (!pMT->IsInterface()) {
+        //@todo : this won't be correct for non-shared code
+        MethodTable *pMTParent = pMT->GetParentMethodTable();
+        if (pMTParent != NULL) {
+            pData = FindMethodDataHelper(pMTParent, pMTParent);
         }
     }
     return pData;
@@ -8015,20 +7999,16 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
     //@TODO: potentially cause deadlocks on the debug thread.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
-    if (s_fUseMethodDataCache) {
-        MethodData *pData = FindMethodDataHelper(pMTDecl, pMTImpl);
-        if (pData != NULL) {
-            return pData;
-        }
+    MethodData *pData = FindMethodDataHelper(pMTDecl, pMTImpl);
+    if (pData != NULL) {
+        return pData;
     }
 
-    if (computeOptions == MethodDataComputeOptions::CacheOnly)
-    {
+    if (computeOptions == MethodDataComputeOptions::CacheOnly) {
         return NULL;
     }
 
     // If we get here, there are no entries in the cache.
-    MethodData *pData = NULL;
     if (pMTDecl == pMTImpl) {
         if (pMTDecl->IsInterface()) {
             pData = new MethodDataInterface(pMTDecl);
@@ -8048,7 +8028,7 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
     }
 
     // Insert in the cache if it is active.
-    if (computeOptions == MethodDataComputeOptions::Cache && s_fUseMethodDataCache) {
+    if (computeOptions == MethodDataComputeOptions::Cache) {
         s_pMethodDataCache->Insert(pData);
     }
 
@@ -8064,11 +8044,7 @@ MethodTable::MethodData *MethodTable::GetMethodData(MethodTable *pMTDecl,
                                                     MethodTable *pMTImpl,
                                                     MethodDataComputeOptions computeOptions)
 {
-    CONTRACTL {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-    } CONTRACTL_END;
-
+    WRAPPER_NO_CONTRACT;
     return GetMethodDataHelper(pMTDecl, pMTImpl, computeOptions);
 }
 

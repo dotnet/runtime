@@ -2943,6 +2943,10 @@ protected:
 
         static UINT32 ComputeNumMethods(MethodTable *pMT, MethodDataComputeOptions computeOptions)
         {
+            LIMITED_METHOD_DAC_CONTRACT;
+
+            // MethodDataComputeOptions::CacheOnly is used for asking for a MethodDataObject that already exists,
+            // so there should never be a reason to ask what the size of a new one might be.
             _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
 
             if (computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
@@ -3186,16 +3190,11 @@ protected:
 
     //--------------------------------------------------------------------------------------
     static MethodDataCache *s_pMethodDataCache;
-    static BOOL             s_fUseParentMethodData;
-    static BOOL             s_fUseMethodDataCache;
 
 public:
-    static void AllowMethodDataCaching()
-        { WRAPPER_NO_CONTRACT; CheckInitMethodDataCache(); s_fUseMethodDataCache = TRUE; }
+    static void InitMethodDataCache();
     static void ClearMethodDataCache();
-    static void AllowParentMethodDataCopy()
-        { LIMITED_METHOD_CONTRACT; s_fUseParentMethodData = TRUE; }
-    // NOTE: The fCanCache argument determines if the resulting MethodData object can
+    // NOTE: The computeOption argument determines if the resulting MethodData object can
     //       be added to the global MethodDataCache. This is used when requesting a
     //       MethodData object for a type currently being built.
     static MethodData *GetMethodData(MethodTable *pMT, MethodDataComputeOptions computeOption);
@@ -3212,7 +3211,6 @@ public:
     void CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT);
 
 protected:
-    static void CheckInitMethodDataCache();
     static MethodData *FindParentMethodDataHelper(MethodTable *pMT);
     static MethodData *FindMethodDataHelper(MethodTable *pMTDecl, MethodTable *pMTImpl);
     static MethodData *GetMethodDataHelper(MethodTable *pMTDecl, MethodTable *pMTImpl, MethodDataComputeOptions computeOption);
