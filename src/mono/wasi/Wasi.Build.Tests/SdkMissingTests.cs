@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 using Xunit.Sdk;
 using Wasm.Build.Tests;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -33,18 +34,18 @@ public class SdkMissingTests : BuildTestBase
     [Theory]
     [MemberData(nameof(TestDataForNativeBuildFails), "<WasmSingleFileBundle>true</WasmSingleFileBundle>")]
     [MemberData(nameof(TestDataForNativeBuildFails), "<InvariantGlobalization>true</InvariantGlobalization>")]
-    public void NativeBuildOrPublishFails(string config, string extraProperties, bool publish)
+    public async Task NativeBuildOrPublishFailsAsync(string config, string extraProperties, bool publish)
     {
-        string output = BuildWithInvalidSdkPath(config, extraProperties, publish, expectSuccess: false);
+        string output = await BuildWithInvalidSdkPathAsync(config, extraProperties, publish, expectSuccess: false);
         Assert.Contains("SDK is required for building native files.", output);
     }
 
     [Theory]
     [InlineData("Debug", "<RunAOTCompilation>true</RunAOTCompilation>", false)]
     [InlineData("Release", "<RunAOTCompilation>true</RunAOTCompilation>", true)]
-    public void AOTFailsOnlyOnPublish(string config, string extraProperties, bool publish)
+    public async Task AOTFailsOnlyOnPublishAsync(string config, string extraProperties, bool publish)
     {
-        string output = BuildWithInvalidSdkPath(config, extraProperties, publish, expectSuccess: !publish);
+        string output = await BuildWithInvalidSdkPathAsync(config, extraProperties, publish, expectSuccess: !publish);
         if (publish)
             Assert.Contains("SDK is required for AOT'ing assemblies", output);
         else
@@ -54,13 +55,13 @@ public class SdkMissingTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void SimpleBuildDoesNotFail(string config)
-        => BuildWithInvalidSdkPath(config, "", publish: false, expectSuccess: true);
+    public Task SimpleBuildDoesNotFail(string config)
+        => BuildWithInvalidSdkPathAsync(config, "", publish: false, expectSuccess: true);
 
-    private string BuildWithInvalidSdkPath(string config, string extraProperties, bool publish, bool expectSuccess)
+    private async Task<string> BuildWithInvalidSdkPathAsync(string config, string extraProperties, bool publish, bool expectSuccess)
     {
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
         var buildArgs = new BuildArgs(projectName, config, /*aot*/ true, id, null);

@@ -6,6 +6,7 @@ using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 using Wasm.Build.Tests;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -20,10 +21,10 @@ public class InvariantTests : BuildTestBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsolePublishAndRunForSingleFileBundle_InvariantTimeZone(string config, bool invariantTimezone, bool aot)
+    public async Task ConsolePublishAndRunForSingleFileBundle_InvariantTimeZoneAsync(string config, bool invariantTimezone, bool aot)
     {
         string extraProperties = invariantTimezone ? "<InvariantTimezone>true</InvariantTimezone>" : "";
-        CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantTimezones.cs", aot, extraProperties: extraProperties);
+        CommandResult res = await ConsolePublishAndRunForSingleFileBundleInternalAsync(config, "InvariantTimezones.cs", aot, extraProperties: extraProperties);
         if(invariantTimezone)
             Assert.Contains("Could not find Asia/Tokyo", res.Output);
         else
@@ -32,20 +33,20 @@ public class InvariantTests : BuildTestBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsolePublishAndRunForSingleFileBundle_InvariantGlobalization(string config, bool invariantGlobalization, bool aot)
+    public async Task ConsolePublishAndRunForSingleFileBundle_InvariantGlobalizationAsync(string config, bool invariantGlobalization, bool aot)
     {
         string extraProperties = invariantGlobalization ? "<InvariantGlobalization>true</InvariantGlobalization>" : "";
-        CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantGlobalization.cs", aot, extraProperties: extraProperties);
+        CommandResult res = await ConsolePublishAndRunForSingleFileBundleInternalAsync(config, "InvariantGlobalization.cs", aot, extraProperties: extraProperties);
         Assert.Contains("Number: 1", res.Output);
     }
 
-    private CommandResult ConsolePublishAndRunForSingleFileBundleInternal(string config, string programFileName, bool aot, string extraProperties = "")
+    private async Task<CommandResult> ConsolePublishAndRunForSingleFileBundleInternalAsync(string config, string programFileName, bool aot, string extraProperties = "")
     {
         if (string.IsNullOrEmpty(programFileName))
             throw new ArgumentException("Cannot be empty", nameof(programFileName));
 
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, programFileName), Path.Combine(_projectDir!, "Program.cs"), true);
 
@@ -63,6 +64,6 @@ public class InvariantTests : BuildTestBase
                         Publish: true,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
                         UseCache: false));
-        return RunWithoutBuild(config, id);
+        return await RunWithoutBuildAsync(config, id);
     }
 }

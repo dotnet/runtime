@@ -7,6 +7,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Wasm.Build.Tests;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -24,13 +25,13 @@ public class WasiTemplateTests : BuildTestBase
     [InlineData("Release", /*singleFileBundle*/ false)]
     [InlineData("Debug", /*singleFileBundle*/ true)]
     [InlineData("Release", /*singleFileBundle*/ true)]
-    public void ConsoleBuildAndRunAOT(string config, bool singleFileBundle)
+    public async Task ConsoleBuildAndRunAOTAsync(string config, bool singleFileBundle)
     {
         // This is specfically for the case where the project file has `RunATOCompilation=true`
         // and user *builds* the project, but the above setting ends up affecting the
         // build in some unexpected way. For example by add -DENABLE_AOT=1
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
 
@@ -50,15 +51,15 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        await RunWithoutBuildAsync(config, id);
     }
 
     [Theory]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsoleBuildThenRunThenPublish(string config, bool singleFileBundle, bool aot)
+    public async Task ConsoleBuildThenRunThenPublishAsync(string config, bool singleFileBundle, bool aot)
     {
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
 
@@ -80,7 +81,7 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        await RunWithoutBuildAsync(config, id);
 
         if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -104,7 +105,7 @@ public class WasiTemplateTests : BuildTestBase
     [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
     [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
     [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
-    public void ConsoleBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+    public async Task ConsoleBuildAndRunForDifferentOutputPathsAsync(string config, bool appendRID, bool useArtifacts)
     {
         string extraPropertiesForDBP = "";
         if (appendRID)
@@ -113,7 +114,7 @@ public class WasiTemplateTests : BuildTestBase
             extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
 
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
         if (!string.IsNullOrEmpty(extraPropertiesForDBP))
@@ -132,10 +133,10 @@ public class WasiTemplateTests : BuildTestBase
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
                         UseCache: false));
 
-        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+        CommandResult res = await new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
-                                    .ExecuteWithCapturedOutputAsync($"run --no-silent --no-build -c {config} x y z")
-                                    .EnsureSuccessful();
+                                    .ExecuteWithCapturedOutputAsync($"run --no-silent --no-build -c {config} x y z");
+        res.EnsureSuccessful();
 
         Assert.Contains("Hello, Wasi Console!", res.Output);
     }

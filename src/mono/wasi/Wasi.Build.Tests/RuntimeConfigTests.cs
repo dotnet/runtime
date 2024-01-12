@@ -5,6 +5,7 @@ using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 using Wasm.Build.Tests;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -21,11 +22,11 @@ public class RuntimeConfigTests : BuildTestBase
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95345")]
     [InlineData(false)]
     [InlineData(true)]
-    public void MissingRuntimeConfigTemplateJson(bool singleFileBundle)
+    public async Task MissingRuntimeConfigTemplateJsonAsync(bool singleFileBundle)
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
         File.Delete(Path.Combine(_projectDir!, "runtimeconfig.template.json"));
@@ -44,9 +45,9 @@ public class RuntimeConfigTests : BuildTestBase
                         UseCache: false));
 
         string runArgs = $"run --no-silent --no-build -c {config}";
-        new RunCommand(s_buildEnv, _testOutput, label: id)
-                .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutputAsync(runArgs)
-                .EnsureSuccessful();
+        CommandResult res = await new RunCommand(s_buildEnv, _testOutput, label: id)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutputAsync(runArgs);
+        res.EnsureSuccessful();
     }
 }

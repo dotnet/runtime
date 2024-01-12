@@ -5,6 +5,7 @@ using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 using Wasm.Build.Tests;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -22,11 +23,11 @@ public class ILStripTests : BuildTestBase
     [InlineData("", /*expectILStripping*/ true, /*singleFileBundle*/true)] // Default case
     [InlineData("false", /*expectILStripping*/ false, /*singleFileBundle*/false)] // the opposite of the default case
     [InlineData("false", /*expectILStripping*/ false, /*singleFileBundle*/true)] // the opposite of the default case
-    public void WasmStripILAfterAOT_TestDefaultAndOverride(string stripILAfterAOT, bool expectILStripping, bool singleFileBundle)
+    public async Task WasmStripILAfterAOT_TestDefaultAndOverrideAsync(string stripILAfterAOT, bool expectILStripping, bool singleFileBundle)
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
         string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
@@ -49,10 +50,10 @@ public class ILStripTests : BuildTestBase
                         UseCache: false));
 
         string runArgs = $"run --no-silent --no-build -c {config}";
-        new RunCommand(s_buildEnv, _testOutput, label: id)
-                .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutputAsync(runArgs)
-                .EnsureSuccessful();
+        CommandResult res = await new RunCommand(s_buildEnv, _testOutput, label: id)
+                                        .WithWorkingDirectory(_projectDir!)
+                                        .ExecuteWithCapturedOutputAsync(runArgs);
+        res.EnsureSuccessful();
 
         string frameworkDir = singleFileBundle ? "" : Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, "wasi-wasm", "AppBundle", "managed");
         string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasi-wasm", "wasm", "for-publish");

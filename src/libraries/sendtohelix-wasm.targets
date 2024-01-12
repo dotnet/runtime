@@ -72,6 +72,8 @@
     <!--</ReadLinesFromFile>-->
     <ItemGroup>
       <BuildWasmApps_PerJobList Include="Wasm.Build.Tests.WasmTemplateTests" />
+      <BuildWasmApps_PerJobList Include="Wasm.Build.Templates.Tests.InterpPgoTests" />
+      <BuildWasmApps_PerJobList Include="Wasm.Build.Tests.Blazor.SimpleRunTests" />
     </ItemGroup>
 
     <!-- for testing with workloads, we use separate items -->

@@ -293,7 +293,7 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
+        public async Task<string> CreateWasmTemplateProjectAsync(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
         {
             InitPaths(id);
             InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -310,10 +310,10 @@ namespace Wasm.Build.Tests
                 </Project>
                 """);
 
-            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                    .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutputAsync($"new {template} {extraArgs}")
-                    .EnsureSuccessful();
+            CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
+                                            .WithWorkingDirectory(_projectDir!)
+                                            .ExecuteWithCapturedOutputAsync($"new {template} {extraArgs}");
+            res.EnsureSuccessful();
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
             if (runAnalyzers)
@@ -321,7 +321,7 @@ namespace Wasm.Build.Tests
             return projectfile;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
+        protected async Task<(CommandResult, string)> BuildInternalAsync(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
@@ -337,11 +337,11 @@ namespace Wasm.Build.Tests
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
             }.Concat(extraArgs).ToArray();
 
-            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
+            CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
                                         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                        .ExecuteWithCapturedOutputAsync(combinedArgs)
-                                        .EnsureSuccessful();
+                                        .ExecuteWithCapturedOutputAsync(combinedArgs);
+            res.EnsureSuccessful();
 
             return (res, logPath);
         }
@@ -702,16 +702,17 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
 
-        protected CommandResult RunWithoutBuild(string config, string id)
+        protected async Task<CommandResult> RunWithoutBuildAsync(string config, string id)
         {
             string runArgs = $"run --no-build -c {config}";
             runArgs += " x y z";
             // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
             int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
-                            .WithWorkingDirectory(_projectDir!)
-                            .ExecuteWithCapturedOutputAsync(runArgs)
-                            .EnsureExitCode(expectedExitCode);
+            CommandResult res = await new RunCommand(s_buildEnv, _testOutput, label: id)
+                                            .WithWorkingDirectory(_projectDir!)
+                                            .ExecuteWithCapturedOutputAsync(runArgs);
+
+            res.EnsureExitCode(expectedExitCode);
 
             Assert.Contains("Hello, Wasi Console!", res.Output);
             Assert.Contains("args[0] = x", res.Output);
