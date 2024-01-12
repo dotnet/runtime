@@ -25,7 +25,7 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
-FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
+FCIMPL4(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -50,22 +50,14 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
     TypeHandle fieldType = gc.pFieldType->GetType();
     TypeHandle declaringType = (gc.pDeclaringType != NULL) ? gc.pDeclaringType->GetType() : TypeHandle();
 
-    Assembly *pAssem;
-    if (declaringType.IsNull())
-    {
-        // global field
-        pAssem = gc.refField->GetField()->GetModule()->GetAssembly();
-    }
-    else
-    {
-        pAssem = declaringType.GetAssembly();
-    }
-
     OBJECTREF rv = NULL; // not protected
+
+    // The caller should have ran the cctor already.
+    CLR_BOOL domainInitialized = TRUE;
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     // There can be no GC after this until the Object is returned.
-    rv = InvokeUtil::GetFieldValue(gc.refField->GetField(), fieldType, &gc.target, declaringType, pDomainInitialized);
+    rv = InvokeUtil::GetFieldValue(gc.refField->GetField(), fieldType, &gc.target, declaringType, &domainInitialized);
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(rv);
@@ -169,7 +161,7 @@ FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
 }
 FCIMPLEND
 
-FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, DWORD attr, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
+FCIMPL5(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -195,24 +187,16 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
     TypeHandle fieldType = gc.fieldType->GetType();
     TypeHandle declaringType = gc.declaringType != NULL ? gc.declaringType->GetType() : TypeHandle();
 
-    Assembly *pAssem;
-    if (declaringType.IsNull())
-    {
-        // global field
-        pAssem = gc.refField->GetField()->GetModule()->GetAssembly();
-    }
-    else
-    {
-        pAssem = declaringType.GetAssembly();
-    }
-
     FC_GC_POLL_NOT_NEEDED();
 
     FieldDesc* pFieldDesc = gc.refField->GetField();
 
+    // The caller should have ran the cctor already.
+    CLR_BOOL domainInitialized = TRUE;
+
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
+    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, &domainInitialized);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -1240,6 +1224,81 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
 
 lExit: ;
     HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    if (refField == NULL)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    FieldDesc* pFieldDesc = refField->GetField();
+    return pFieldDesc->IsEnCNew() ? FALSE : TRUE;
+}
+FCIMPLEND
+
+FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldAddress, ReflectFieldObject *pFieldUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFieldUNSAFE));
+    }
+    CONTRACTL_END;
+
+    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    if (refField == NULL)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    FieldDesc* pFieldDesc = refField->GetField();
+
+    // IsFastPathSupported needs to checked before calling this method.
+    _ASSERTE(!pFieldDesc->IsEnCNew());
+
+    return pFieldDesc->GetOffset();
+}
+FCIMPLEND
+
+FCIMPL2(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pFieldUNSAFE, CLR_BOOL *isBoxed)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFieldUNSAFE));
+    }
+    CONTRACTL_END;
+
+    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    if (refField == NULL)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    void *ret = NULL;
+    FieldDesc* pFieldDesc = refField->GetField();
+
+    // IsFastPathSupported needs to checked before calling this method.
+    _ASSERTE(!pFieldDesc->IsEnCNew());
+
+    GCPROTECT_BEGIN(refField);
+
+    if (refField->GetField()->IsThreadStatic()) {
+        ret = Thread::GetStaticFieldAddress(pFieldDesc);
+    }
+    else {
+        PTR_BYTE base = 0;
+        if (!pFieldDesc->IsRVA()) // For RVA the base is ignored.
+            base = pFieldDesc->GetBase();
+
+        ret = pFieldDesc->GetStaticAddressHandle(base);
+    }
+
+    *isBoxed = ((pFieldDesc->GetFieldType() == ELEMENT_TYPE_VALUETYPE && !pFieldDesc->IsRVA())) ? TRUE : FALSE;
+
+    GCPROTECT_END();
+    return ret;
 }
 FCIMPLEND
 

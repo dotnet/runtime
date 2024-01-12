@@ -4,7 +4,6 @@
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
     <StringResourcesName Condition="'$(StringResourcesName)' == ''">System.Private.CoreLib.Strings</StringResourcesName>
     <GenerateResourcesSubstitutions>true</GenerateResourcesSubstitutions>
-
     <!-- CA2252: Opt in to preview features before using them (for System.Threading.Lock) -->
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
@@ -702,6 +701,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAccessor.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\GenericParameterAttributes.cs" />

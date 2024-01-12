@@ -1516,7 +1516,7 @@ TypeKey TypeHandle::GetTypeKey() const
 
 #ifdef _DEBUG
 // Check that a type handle matches the key provided
-CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
+CHECK TypeHandle::CheckMatchesKey(const TypeKey *pKey) const
 {
     WRAPPER_NO_CONTRACT;
     CONTRACT_VIOLATION(TakesLockViolation);        // this is debug-only code

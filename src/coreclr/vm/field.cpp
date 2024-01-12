@@ -180,8 +180,8 @@ void* FieldDesc::GetStaticAddress(void *base)
 
     void* ret = GetStaticAddressHandle(base);       // Get the handle
 
-        // For value classes, the handle points at an OBJECTREF
-        // which holds the boxed value class, so dereference and unbox.
+    // For value classes, the handle points at an OBJECTREF
+    // which holds the boxed value class, so dereference and unbox.
     if (GetFieldType() == ELEMENT_TYPE_VALUETYPE && !IsRVA())
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) ret);
@@ -211,11 +211,10 @@ MethodTable * FieldDesc::GetExactDeclaringType(MethodTable * ownerOrSubType)
 
 #endif // #ifndef DACCESS_COMPILE
 
-    // static value classes are actually stored in their boxed form.
-    // this means that their address moves.
+// Static value classes are actually stored in their boxed form.
+// This means that their address moves.
 PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 {
-
     CONTRACTL
     {
         INSTANCE_CHECK;
@@ -256,7 +255,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
     }
 #endif // FEATURE_METADATA_UPDATER
 
-
     if (IsRVA())
     {
         Module* pModule = GetModule();
@@ -271,10 +269,8 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 
     PTR_VOID ret = PTR_VOID(dac_cast<PTR_BYTE>(base) + GetOffset());
 
-
     return ret;
 }
-
 
 
 // These routines encapsulate the operation of getting and setting

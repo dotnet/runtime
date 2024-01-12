@@ -4283,4 +4283,7 @@
   <data name="Reflection_Disabled" xml:space="preserve">
     <value>This operation is not available because the reflection support was disabled at compile time.</value>
   </data>
+  <data name="RFLCT_CannotSetInitonlyStaticField" xml:space="preserve">
+    <value>Cannot set initonly static field '{0}' after type '{1}' is initialized.</value>
+  </data>
 </root>

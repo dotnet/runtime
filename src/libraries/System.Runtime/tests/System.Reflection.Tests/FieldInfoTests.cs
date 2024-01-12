@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Xunit;
 
@@ -29,7 +31,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetValue_ReadonlyField()
         {
-            FieldInfo fieldInfo = typeof(FieldInfoTests).GetTypeInfo().GetDeclaredField("readonlyIntField");
+            FieldInfo fieldInfo = typeof(FieldInfoTests).GetTypeInfo().GetDeclaredField(nameof(readonlyIntField));
             FieldInfoTests myInstance = new FieldInfoTests();
 
             object current = fieldInfo.GetValue(myInstance);
@@ -55,11 +57,34 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> GetValue_TestData()
         {
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), new FieldInfoTests(), 100 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), null, 100 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intField), new FieldInfoTests(), 101 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_stringField), new FieldInfoTests(), "static" };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new FieldInfoTests(), "non static" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_boolField), null, true };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_intField), new FieldInfoTests(), 100 }; // Non-null 'obj' ignored.
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_intField), null, 100 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_stringField), null, "static" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_myStruct), null, new MyStruct() };
+
+            yield return new object[] { typeof(FieldInfoTests), nameof(boolField), new FieldInfoTests(), true };
+            yield return new object[] { typeof(FieldInfoTests), nameof(intField), new FieldInfoTests(), 101 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(stringField), new FieldInfoTests(), "non static" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(_myStruct), new FieldInfoTests(), new MyStruct() };
+
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_boolField), null, true };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intField), null, 100 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intField), null, 100 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_constIntField), null, 102 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField), null, "static" };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField), null, MyStruct.s_objectField };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_fcnPtr), null, (IntPtr)45 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr), null, MyStruct.s_intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), new MyStruct(), MyStruct.s_rvaIntField };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField), null, 100 };
+
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "non static" };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.intField), new MyStruct(), 101 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.intPtr), new MyStruct(), MyStruct.intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.fcnPtr), new MyStruct(), (IntPtr)44 };
+
+            yield return new object[] { typeof(MyStruct_OnlyPrimitiveTypes), nameof(MyStruct_OnlyPrimitiveTypes.intField), new MyStruct_OnlyPrimitiveTypes(), 101 };
         }
 
         [Theory]
@@ -68,6 +93,22 @@ namespace System.Reflection.Tests
         {
             FieldInfo fieldInfo = GetField(type, name);
             Assert.Equal(expected, fieldInfo.GetValue(obj));
+        }
+
+        [Fact]
+        public void GetAndSetValueTypeFromStatic()
+        {
+            FieldInfo fieldInfo = GetField(typeof(FieldInfoTests), nameof(s_myStruct_GetAndSet));
+            s_myStruct_GetAndSet.intField = 10;
+            object obj = fieldInfo.GetValue(null);
+            Assert.Equal(10, ((MyStruct)obj).intField);
+            s_myStruct_GetAndSet.intField = 11;
+
+            // Make sure the previously boxed value didn't change. The runtime boxes non-primitive value types internally.
+            Assert.Equal(10, ((MyStruct)obj).intField);
+
+            obj = fieldInfo.GetValue(null);
+            Assert.Equal(11, ((MyStruct)obj).intField);
         }
 
         public static IEnumerable<object[]> GetValue_Invalid_TestData()
@@ -86,14 +127,37 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> SetValue_TestData()
         {
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), new FieldInfoTests(), 1000, 1000 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), null, 1000, 1000 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intField), new FieldInfoTests(), 1000, 1000 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_stringField), new FieldInfoTests(), "new", "new" };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new FieldInfoTests(), "new", "new" };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.shortEnumField), new FieldInfoTests(), (byte)1, (ShortEnum)1 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intEnumField), new FieldInfoTests(), (short)2, (IntEnum)2 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.longEnumField), new FieldInfoTests(), (int)3, (LongEnum)3 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_boolField_Set), null, true, true };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_boolField_Set), null, false, false };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_intField_Set), new FieldInfoTests(), 1000, 1000 }; // Non-null 'obj' ignored.
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_intField_Set), null, 1001, 1001 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_stringField_Set), null, "new", "new" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(s_myStruct_Set), null, s_myStruct_Set, s_myStruct_Set };
+
+            yield return new object[] { typeof(FieldInfoTests), nameof(boolField), new FieldInfoTests(), true, true };
+            yield return new object[] { typeof(FieldInfoTests), nameof(boolField), new FieldInfoTests(), false, false };
+            yield return new object[] { typeof(FieldInfoTests), nameof(stringField), new FieldInfoTests(), "new", "new" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(shortEnumField), new FieldInfoTests(), (byte)1, (ShortEnum)1 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(intEnumField), new FieldInfoTests(), (short)2, (IntEnum)2 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(longEnumField), new FieldInfoTests(), (int)3, (LongEnum)3 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(_myStruct), new FieldInfoTests(), s_myStruct_Set, s_myStruct_Set };
+
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_boolField_Set), null, true, true };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_boolField_Set), null, false, false };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intField_Set), null, 1001, 1001 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField_Set), null, "new", "new" };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField_Set), null, MyStruct.s_objectField, MyStruct.s_objectField };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr_Set), null, MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_fcnPtr_Set), null, (IntPtr)201, (IntPtr)201 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField_Set), null, 100, 100 };
+
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.boolField), new MyStruct(), true, true };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.boolField), new MyStruct(), false, false };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.intField), new MyStruct(), 1002, 1002 };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "new", "new" };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.objectField), new MyStruct(), MyStruct.s_objectField, MyStruct.s_objectField };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.intPtr), new MyStruct(), MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.fcnPtr), new MyStruct(), (IntPtr)200, (IntPtr)200 };
         }
 
         [Theory]
@@ -115,9 +179,11 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> SetValue_Invalid_TestData()
         {
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), null, "new", typeof(TargetException) };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new object(), "new", typeof(ArgumentException) };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new FieldInfoTests(), 100, typeof(ArgumentException) };
+            yield return new object[] { typeof(FieldInfoTests), nameof(stringField), null, "new", typeof(TargetException) };
+            yield return new object[] { typeof(FieldInfoTests), nameof(stringField), new object(), "new", typeof(ArgumentException) };
+            yield return new object[] { typeof(FieldInfoTests), nameof(stringField), new FieldInfoTests(), 100, typeof(ArgumentException) };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_constIntField), null, 100, typeof(FieldAccessException) };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), null, new int[] { 3, 4 }, typeof(FieldAccessException) };
         }
 
         [Theory]
@@ -239,6 +305,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.readonlyIntField), true)]
+        [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.s_readonlyIntField), true)]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.intField), false)]
         public void IsInitOnly(Type type, string name, bool expected)
         {
@@ -462,11 +529,22 @@ namespace System.Reflection.Tests
         public const long ConstInt64Field = 1000;
         public const byte ConstByteField = 0;
 
+        public static bool s_boolField = true;
+        public static bool s_boolField_Set = false;
         public static int s_intField = 100;
+        public static int s_intField_Set = 0;
         public static string s_stringField = "static";
+        public static string s_stringField_Set = "static";
+        public static readonly int s_readonlyIntField = 100;
 
+        public bool boolField = true;
         public int intField = 101;
         public string stringField = "non static";
+
+        public MyStruct _myStruct = new MyStruct();
+        public static MyStruct s_myStruct = new MyStruct();
+        public static MyStruct s_myStruct_Set = new MyStruct();
+        public static MyStruct s_myStruct_GetAndSet = new MyStruct();
 
         public enum ShortEnum : short {}
         public enum IntEnum {}
@@ -585,6 +663,46 @@ namespace System.Reflection.Tests
             object result = fieldFieldInfo.GetValueDirect(reference);
 
             Assert.Equal(value, result);
+        }
+
+
+        public struct MyStruct_OnlyPrimitiveTypes
+        {
+            public int intField = 101;
+
+            public MyStruct_OnlyPrimitiveTypes()
+            {
+            }
+        }
+
+        public struct MyStruct
+        {
+            public static bool s_boolField = true;
+            public static bool s_boolField_Set = false;
+            public static int s_intField = 100;
+            public static int s_intField_Set = 0;
+            [ThreadStatic] public static int threadStatic_intField = 100;
+            [ThreadStatic] public static int threadStatic_intField_Set = 0;
+            public static string s_stringField = "static";
+            public static string s_stringField_Set = null;
+            public static object s_objectField = new MyClass1();
+            public static object s_objectField_Set = null;
+            public static readonly int[] s_rvaIntField = [1, 2];
+            public unsafe static object intPtrForComparison = Pointer.Box((void*)42, typeof(int*));
+            public unsafe static int* s_intPtr = (int*)43;
+            public unsafe static int* s_intPtr_Set = (int*)0;
+            public unsafe static object s_intPtrForComparison = Pointer.Box((void*)43, typeof(int*));
+            public unsafe static delegate*<void> s_fcnPtr = (delegate*<void>)45;
+            public unsafe static delegate*<void> s_fcnPtr_Set = (delegate*<void>)0;
+            public bool boolField = true;
+            public int intField = 101;
+            public object objectField = null;
+            public string stringField = "non static";
+            public const int s_constIntField = 102;
+            public unsafe int* intPtr = (int*)42;
+            public unsafe delegate*<void> fcnPtr = (delegate*<void>)44;
+
+            public MyStruct() { }
         }
     }
 }
